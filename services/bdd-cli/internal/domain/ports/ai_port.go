@@ -8,7 +8,7 @@ import (
 
 // AIPort defines the interface for AI communication. ModelRef names both
 // the CLI and model for the turn, so a role can point at a different
-// provider with no code change; Role does NOT affect dispatch — it only attributes the turn in logs.
+// provider with no code change; Role attributes telemetry and confines execution options to their role.
 type AIPort interface {
 	ExecutePromptWithSystem(
 		ctx context.Context,
@@ -20,5 +20,6 @@ type AIPort interface {
 		// resultSchema empty leaves the turn unconstrained; set, the
 		// answer IS that schema's object.
 		resultSchema string,
+		options ...provider.TurnOptions,
 	) (string, error)
 }

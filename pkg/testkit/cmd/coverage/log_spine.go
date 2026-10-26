@@ -22,6 +22,8 @@ const (
 	evFixGenerated  logEventKind = "fix_generated"
 	evFixApplied    logEventKind = "fix_applied"
 	evWarnProtocol  logEventKind = "warn_protocol"
+	evCodeDiscovery logEventKind = "code_discovery"
+	evCodeComplete  logEventKind = "code_complete"
 )
 
 // logEvent is one relevant, ordered record from the slog JSON stream.
@@ -33,6 +35,7 @@ type logEvent struct {
 	Command     string // for loaded_prompts
 	Items       int
 	Prompts     int
+	Failures    int
 }
 
 // logSegment is the event slice of one CLI invocation, bound to the
@@ -101,6 +104,7 @@ func parseLogSpine(path string) ([]logSegment, int, error) {
 
 // rawLogLine is the superset of fields the spine reads from one record.
 type rawLogLine struct {
+	Failures    *int    `json:"failures"`
 	Msg         string  `json:"msg"`
 	File        string  `json:"file"`
 	Path        string  `json:"path"`
@@ -126,12 +130,25 @@ func parseLogLine(line []byte) (logEvent, bool, bool) {
 		return logEvent{}, false, true
 	}
 
-	filePath := raw.File
-	if filePath == "" {
-		filePath = raw.Path
+	if raw.File == "" {
+		raw.File = raw.Path
 	}
 
+	return spineEvent(raw)
+}
+
+func spineEvent(raw rawLogLine) (logEvent, bool, bool) {
+	filePath := raw.File
+
 	switch raw.Msg {
+	case "Total failing tests across architecture":
+		if raw.Failures == nil {
+			return logEvent{}, false, false
+		}
+
+		return logEvent{Kind: evCodeDiscovery, Failures: *raw.Failures}, true, false
+	case "BUILD CODE COMPLETE":
+		return logEvent{Kind: evCodeComplete}, true, false
 	case "Loaded prompts":
 		return logEvent{Kind: evLoadedPrompts, Command: raw.Command,
 			Items: int(raw.Items), Prompts: int(raw.Prompts)}, true, false
@@ -179,7 +196,7 @@ func attributeApplies(seg logSegment) []applyAttribution {
 			}
 
 			attributions = append(attributions, attr)
-		case evLoadedPrompts, evResultSaved, evWarnProtocol:
+		case evLoadedPrompts, evResultSaved, evWarnProtocol, evCodeDiscovery, evCodeComplete:
 		}
 	}
 
@@ -195,9 +212,18 @@ func cleanWalkProven(seg logSegment) bool {
 		return false
 	}
 
-	saves, generated := postApplyActivity(seg.Events[lastApply+1:])
+	events := seg.Events[lastApply+1:]
 
-	return !generated && saves > items*prompts
+	saves, generated := postApplyActivity(events)
+	if generated {
+		return false
+	}
+
+	if seg.Events[0].Command == "build code" {
+		return codeDiscoveryConverged(events)
+	}
+
+	return saves > items*prompts
 }
 
 // walkShape extracts the last apply position and the items×prompts
@@ -212,7 +238,7 @@ func walkShape(seg logSegment) (int, int, int) {
 			items, prompts = event.Items, event.Prompts
 		case evFixApplied:
 			lastApply = eventIdx
-		case evFixGenerated, evResultSaved, evWarnProtocol:
+		case evFixGenerated, evResultSaved, evWarnProtocol, evCodeDiscovery, evCodeComplete:
 		}
 	}
 
@@ -232,9 +258,26 @@ func postApplyActivity(events []logEvent) (int, bool) {
 			return saves, true
 		case evResultSaved:
 			saves++
-		case evLoadedPrompts, evFixApplied:
+		case evLoadedPrompts, evFixApplied, evCodeDiscovery, evCodeComplete:
 		}
 	}
 
 	return saves, false
+}
+
+// codeDiscoveryConverged requires fresh full discovery and completion, not a restart alone.
+func codeDiscoveryConverged(events []logEvent) bool {
+	green, complete := false, false
+
+	for _, event := range events {
+		switch event.Kind {
+		case evCodeDiscovery:
+			green, complete = event.Failures == 0, false
+		case evCodeComplete:
+			complete = green
+		case evLoadedPrompts, evResultSaved, evFixGenerated, evFixApplied, evWarnProtocol:
+		}
+	}
+
+	return complete
 }

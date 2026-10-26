@@ -1,7 +1,0 @@
-Reasoning: The question asks whether the description or any step contains a specific measurable criterion (exact message, status code, timeout, error code, named field, or count). The Then step asserts an exact output message: `"Hello, <name>!"`, with the placeholder bound to the name supplied in the When step. An exact message is explicitly one of the enumerated criteria, so the step definition can assert on literal output rather than restating prose. No reference documents were listed in the prompt, and per instructions I did not consult the registry, the generated test file, or step definitions.
-
-=== FILE_START: tmp/{{RUN_DIR}}/01-E2E-001-checklist-scen-check-scenario_quality-result.yaml ===
-answer: pass
-context:
-  - "E2E-001: measurable — 'the exact message \"Hello, <name>!\" in the Then step'"
-=== FILE_END: tmp/{{RUN_DIR}}/01-E2E-001-checklist-scen-check-scenario_quality-result.yaml ===

@@ -1,0 +1,76 @@
+story:
+  id: claude-guard-writes
+  feature: engine
+  title: Keep writer guard and replay invariants under Claude
+  as_a: System Architect
+  i_want: the writer guard to confine files and accept only canonical replay commands
+  so_that: a writer cannot exceed its file and command grants
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 001-write-inside-root-allowed
+    description: A write to a file inside one of the turn's write roots must be allowed, even when the file does not exist
+      yet
+    steps:
+    - given:
+      - the "claude-guard-write-inside-root" project tree
+      - claude's write policy lets the turn write under "tests"
+      - claude names the tool "Write"
+      - claude names the file "tests/notes.md" of the project tree
+    - when:
+      - claude asks the guard about the tool call
+    - then:
+      - the guard allows the tool call
+  - id: 002-write-outside-roots-denied
+    description: A write to a file outside every one of the turn's write roots must be denied, naming the file and the roots
+    steps:
+    - given:
+      - the "claude-guard-write-outside-roots" project tree
+      - claude's write policy lets the turn write under "tests"
+      - and: claude's write policy lets the turn write under "services"
+      - claude names the tool "Write"
+      - claude names the file "docs/notes.md" of the project tree
+    - when:
+      - claude asks the guard about the tool call
+    - then:
+      - the guard denies the tool call
+      - and: the guard's reason matches write target is outside the claude writer roots
+  - id: 003-symlink-escape-denied
+    description: A write through a symbolic link inside a write root that points out of it must be denied, judged by where
+      the link leads rather than by the path claude names
+    steps:
+    - given:
+      - the "claude-guard-symlink-escape" project tree
+      - the project tree's "tests/node_modules/shared" is a symbolic link to "../../docs"
+      - claude's write policy lets the turn write under "tests"
+      - claude names the tool "Write"
+      - claude names the file "tests/node_modules/shared/README.md" of the project tree
+    - when:
+      - claude asks the guard about the tool call
+    - then:
+      - the guard denies the tool call
+      - and: the guard's reason matches write target is outside the claude writer roots
+  - id: 004-shared-prefix-denied
+    description: A write to a sibling directory whose name starts with a write root's name must be denied
+    steps:
+    - given:
+      - the "claude-guard-shared-prefix" project tree
+      - claude's write policy lets the turn write under "tests"
+      - claude names the tool "Write"
+      - claude names the file "tests-old/notes.md" of the project tree
+    - when:
+      - claude asks the guard about the tool call
+    - then:
+      - the guard denies the tool call
+      - and: the guard's reason matches write target is outside the claude writer roots
+  - id: 006-unnamed-path-denied
+    description: A Write naming no target defaults to the working directory, which is denied outside its write roots
+    steps:
+    - given:
+      - the "claude-guard-unnamed-path" project tree
+      - claude's write policy lets the turn write under "tests"
+      - claude names the tool "Write"
+    - when:
+      - claude asks the guard about the tool call
+    - then:
+      - the guard denies the tool call
+      - and: the guard's reason matches write target is outside the claude writer roots

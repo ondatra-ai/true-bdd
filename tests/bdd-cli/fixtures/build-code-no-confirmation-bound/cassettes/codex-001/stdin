@@ -1,0 +1,77 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are the production writer for a controlled lifecycle fixture. Follow the request's required stage exactly. Change only services/calc/, never tests or documents. Complete the changes during this turn and answer with nonempty prose only, without confirmation markers or a result file.
+
+
+### TASK
+
+## Required fixture lifecycle protocol
+
+Read services/calc/calc.go and services/calc/prepared.txt. If A returns 0, change only A to return 1 and leave B returning 0. Otherwise if prepared.txt is absent, create it containing prepared followed by a newline and leave calc.go unchanged. Otherwise change B to return 2 and preserve A. Complete only that stage in this apply, even if the plan proposes more.
+Never modify tests or documents. Only services/calc/ is writable.
+
+This fixture deliberately exercises a completed writer response without a confirmation. After making the stage's changes, end your final message in prose describing what changed. Do not include any FILE_START or FILE_END marker, and do not write a result file.
+
+## Remaining failing set
+Test: fixture/buildcodefix/tests/suite::TestA
+Test: fixture/buildcodefix/tests/suite::TestB
+
+
+## Proposed repair plan
+# Repair plan for failing-set
+
+## Diagnosis
+
+The failing set is two Go tests in one file, `tests/suite/calc_test.go` (package `suite_test`), which imports the production package `fixture/buildcodefix/services/calc`:
+
+- `TestA` calls `calc.A()` and fails with `A needs one` unless the return value is `1`.
+- `TestB` calls `calc.B()` and fails with `B needs two` unless the return value is `2`.
+
+The production file `services/calc/calc.go` currently defines both functions as constant-zero stubs:
+
+```
+package calc
+func A() int{return 0}
+func B() int{return 0}
+```
+
+So `calc.A()` returns `0` (≠ 1) and `calc.B()` returns `0` (≠ 2). Both assertions are correct as written; the production code is the thing that is wrong. There is no other production source in the module — `services/calc/calc.go` is the single file reachable from the suite — so the whole failing set is explained by these two stub bodies and nothing else needs to be built.
+
+## Write scope
+
+`docs/architecture/architecture.yaml` declares exactly one service, `calc`, with `path: services/calc`. That is the only tree the writer may touch. Concretely: edit **only** `services/calc/calc.go`.
+
+Do **not** touch, and do not propose touching:
+- `tests/suite/calc_test.go` or any `*_test.go` — the failing assertions are the specification.
+- `docs/architecture/architecture.yaml`, `true-bdd/`, `templates/`, `CLAUDE.md`, `go.mod`, or anything under `tmp/`.
+
+## The change
+
+### Part 1 — `services/calc/calc.go`: make `A` satisfy its contract
+
+Serves: `/go-test/go-test:fixture.buildcodefix.tests.suite::TestA`
+
+Contract: `A() int` is an exported, no-argument function in package `calc` whose value is the integer `1`. Change the body of the existing `func A() int` so it yields `1` instead of `0`. Keep the exported name, the empty parameter list and the single `int` result exactly as they are — the test calls `calc.A()` in a value comparison against `1`, so any change to the name, arity or result type would break compilation of the suite.
+
+### Part 2 — `services/calc/calc.go`: make `B` satisfy its contract
+
+Serves: `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB`
+
+Contract: `B() int` is an exported, no-argument function in package `calc` whose value is the integer `2`. Change the body of the existing `func B() int` so it yields `2` instead of `0`. Same signature-stability requirement as Part 1: `calc.B()` must stay callable as a zero-argument expression of type `int`.
+
+### Invariants to preserve while editing
+
+- Keep the first line `package calc` — the test's import path `fixture/buildcodefix/services/calc` resolves through module `fixture/buildcodefix` (declared in `go.mod`) plus directory `services/calc`, and the package name must continue to be `calc` for the selector `calc.A` / `calc.B` to bind.
+- Do not add imports, files, build tags or `init` work. The repair is two literal return values; anything more is scope the failing set does not ask for.
+- Leave the file valid gofmt-compatible Go. The current file is written in a compressed one-line-per-func style; either keep that style or expand to conventional formatting — both compile, so pick the minimal diff.
+- Do not introduce shared mutable state or make the two functions depend on each other. Each test runs independently and the suite is invoked with `-count=1`, so each call must be a pure, repeatable constant.
+
+## Verification
+
+The architecture's testing commands are all identical:
+
+```
+go test -json -count=1 ./tests/suite/...
+```
+
+Run that from the fixture root after the edit. Expect `TestA` and `TestB` both to report `--- PASS`, with no remaining occurrences of `A needs one` or `B needs two` in the output, and no compilation diagnostics from `services/calc`. Both members of the failing set are covered by the single file edit above; no new test files, fixtures or helpers are required.

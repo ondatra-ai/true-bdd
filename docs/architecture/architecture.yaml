@@ -35,9 +35,9 @@ architecture:
         Rationale: &rationale >-
           Checklist rationale scalar, YAML-decoded unchanged; empty omits the suffix, otherwise the template appends " SO THAT WE ENSURE " and this value without trimming.
         ResultPath: &validation-result-path >-
-          Run result path: run_dir is the cleaned paths.tmp_dir/date-pid join described in invocation.values.run_dir (./tmp yields tmp/<run>, relative; an absolute configured tmp_dir stays absolute); cassettes normalise its date-pid segment to {{RUN_DIR}}. Filename sanitising replaces each run of characters outside [A-Za-z0-9._-] with one hyphen; no other escaping. Format is <run_dir>/<index zero-padded to at least 2 digits>-<safe subject id>-checklist-<safe checklist-stem[/section-id]>-result.yaml. Index counts non-skipped Prompts from 1 in file section/Prompt order, before D Prompts are moved ahead of Q Prompts for walking. Subject id is Story id for us refine, lineage id for us apply, Registry key for build tests/scen check, runner BuildID for build code. A build-code id begins with / and sanitises to a leading hyphen, producing 01--go-test-...; an empty id likewise leaves two hyphens.
+          Run result path: run_dir is the cleaned paths.tmp_dir/date-pid join described in invocation.values.run_dir (./tmp yields tmp/<run>, relative; an absolute configured tmp_dir stays absolute); cassettes normalise its date-pid segment to {{RUN_DIR}}. Filename sanitising replaces each run of characters outside [A-Za-z0-9._-] with one hyphen; no other escaping. Format is <run_dir>/<index zero-padded to at least 2 digits>-<safe subject id>-checklist-<safe checklist-stem[/section-id]>-result.yaml. Index counts non-skipped Prompts from 1 in file section/Prompt order, before D Prompts are moved ahead of Q Prompts for walking. Subject id is Story id for us refine, lineage id for us apply, Registry key for build tests/scen check, the stable failing-set Item id for build code (discovery BuildID for a singleton, failing-set otherwise). A build-code id begins with / and sanitises to a leading hyphen, producing 01--go-test-...; an empty id likewise leaves two hyphens.
         Structured: &structured >-
-          Run boolean from the resolved role model CLI: true for claude and codex, false for crush. Validation and generation pass the same populated data to both templates; appliers never receive this field.
+          Run boolean from the resolved role model CLI: true for both supported CLIs, claude and codex. Validation and generation pass the same populated data to both templates; appliers never receive this field.
         Subject: >-
           Subject is StoryRefineData with the loaded Story inlined and TermDocuments excluded from YAML. toYaml is yaml.v3 Marshal, returning its string including the final newline, not TrimSpace and not wrapped in story:. Serialised field order is id, feature (omitted when empty), title, as_a, i_want, so_that, status, acceptance_criteria. Each criterion is id, description, steps (omitted when empty); each step emits given, when, then in that order, omitting empty blocks. A statement is a scalar when its Type is empty, else a one-key and/but map. Strings and block chomping follow yaml.v3; default indentation is four spaces. Empty acceptance_criteria is retained (as []); TermDocuments never serialises. Marshal failure becomes "# Error marshaling to YAML: <error>".
     checklist_system:
@@ -298,117 +298,183 @@ architecture:
       fields: *apply-fix-applier-system-fields
     build_code_checklist:
       rendering: *prompt-rendering
-      fields:
-        Docs: *docs
-        Docs[].FilePath: *document-file-path
-        FixTemplate: *fixtemplate
-        Question: *question
-        Rationale: *rationale
-        ResultPath: *validation-result-path
-        Structured: *structured
-        Subject.FailureOutput: &subject-failureoutput >-
-          Complete last runner output, never truncated or trimmed. Discovery Go concatenates Output events for package/test; build failure prepends compiler output to package output. Jest joins failureMessages with newline. Playwright failed/timedOut attempts emit "--- attempt <1-based>: <status> ---\n", each error message and nonempty stack followed by newline, then stdout text then stderr text. Startup uses stderr. Before a stale test is evaluated, RunOne replaces output with its latest result: Go the selected package/test event output (empty for a passing build marker); Jest matching failure or raw runner payload; Playwright matching failure or runner output (startup rerun uses its first failure). Inserted as-is inside template fences.
-        Subject.FilePath: &subject-filepath >-
-          Runner source location: Go package import path (NOT a .go filename); Jest file rebased against process cwd if absolute, falling back to original on error; Playwright deepest nonempty suite/spec file, startup uses runner config Path (empty for build-code discovery). No template path normalisation.
-        Subject.Framework: &subject-framework >-
-          Config architecture.testing.framework string, go-test, jest or playwright, copied to the runner result unchanged.
-        Subject.ID: &failing-test-id >-
-          Runner BuildID at discovery: service+"/"+suite+"/"+framework+":"+native id, replacing / with . and spaces with _ in the native id only. Discovery passes empty service and framework as suite, so id starts /<framework>/ even when Service is enriched afterwards; never rebuilt after enrichment.
-        Subject.LastRunPassed: >-
-          Run boolean initially false for discovered failures. A verdict invalidated by any completed apply is refreshed through RunOne before evaluation; true skips the Item, false renders false. No model runs tests to compute it.
-        Subject.Service: &failing-test-service >-
-          Initially empty from discovery; set to the sole architecture service name when there is exactly one, then overridden by a matched Registry Scenario service. With multiple services and no match stays empty; checklist prints blank, fix templates print "none is known".
-        Subject.Suite: &subject-suite >-
-          Run discovery suite label is architecture.testing.framework, e.g. go-test, unchanged (there is no testing.suites entry).
-        Subject.TestName: &subject-testname >-
-          Runner native id: Go package+"::"+test name (or <build>); Jest repo-relative file+"::"+assertion fullName; Playwright file+"::"+nonempty suite/spec titles joined by " > ". Startup Playwright failure uses <startup>. No template trim.
+      fields: {}
     build_code_checklist_system:
       rendering: *prompt-rendering
-      fields: *checklist-system-fields
+      fields: {}
     build_code_fix_generator:
       rendering: *prompt-rendering
       fields:
-        DocPaths: *docpaths
-        FailedCheck.ActualAnswer: *failedcheck-actualanswer
-        FailedCheck.FixPrompt: *failedcheck-fixprompt
-        FailedCheck.Question: *failedcheck-question
-        FailedCheck.SectionPath: *failedcheck-sectionpath
-        ResultPath: *generation-result-path
-        Structured: *structured
-        Subject.FailureOutput: *subject-failureoutput
-        Subject.FilePath: *subject-filepath
-        Subject.Framework: *subject-framework
-        Subject.ID: *failing-test-id
-        Subject.Scenario: &subject-scenario >-
-          Optional subject Registry Scenario matched only for Go, by exact module-aware package::CamelCase test identity; an unavailable or unreadable Registry or failed identity match (including non-Go, subtest or package-build failure) leaves nil. An unreadable or catalogue-less product document only empties Subject.Spec; the matched Scenario and its steps remain set. Template if suppresses the whole Scenario/spec section when nil; no guessing from filename.
-        Subject.Scenario.Description: *registry-description
-        Subject.Scenario.FormatSteps: *registry-steps
-        Subject.Scenario.ID: *registry-id
-        Subject.Scenario.Path: &subject-scenario-path >-
-          Subject path from the Registry, YAML-decoded unchanged; missing strings are empty. Registry Items walk in ascending id order.
-        Subject.Scenario.Service: *registry-service
-        Subject.Service: *failing-test-service
-        Subject.Spec.Declared: *subject-spec-declared
-        Subject.Spec.Phrases: *subject-spec-phrases
-        Subject.Spec.Phrases[].Block: *subject-spec-phrasesitem-block
-        Subject.Spec.Phrases[].Means: *subject-spec-phrasesitem-means
-        Subject.Spec.Phrases[].Template: *subject-spec-phrasesitem-template
-        Subject.Spec.Phrases[].Terms: *subject-spec-phrasesitem-terms
-        Subject.Spec.Steps: *subject-spec-steps
-        Subject.Spec.Steps[].Block: *subject-spec-stepsitem-block
-        Subject.Spec.Steps[].Templates: *subject-spec-stepsitem-templates
-        Subject.Spec.Steps[].Text: *subject-spec-stepsitem-text
-        Subject.Spec.Terms: *subject-spec-terms
-        Subject.Spec.Terms[].Mappings: *subject-spec-termsitem-mappings
-        Subject.Spec.Terms[].Mappings[].ObservedBy: *subject-spec-termsitem-mappingsitem-observedby
-        Subject.Spec.Terms[].Mappings[].Technical: *subject-spec-termsitem-mappingsitem-technical
-        Subject.Spec.Terms[].Means: *subject-spec-termsitem-means
-        Subject.Spec.Terms[].Term: *subject-spec-termsitem-term
-        Subject.Suite: *subject-suite
-        Subject.TestName: *subject-testname
+        DocPaths: >-
+          Resolved configured Specification paths, keyed by document key.
+        FailedCheck.ActualAnswer: >-
+          Engine verdict, fail.
+        FailedCheck.FixPrompt: >-
+          Shipped F: plan guidance, unchanged.
+        FailedCheck.Question: >-
+          D: tests-pass.
+        FailedCheck.SectionPath: >-
+          Checklist stem and section, unchanged.
+        ResultPath: >-
+          Cell generation artifact path, with the sanitized stable Item id; clarification iteration artifacts are overwritten by a later repair of the same Cell.
+        Structured: >-
+          Provider result-schema support; controls the JSON answer contract.
+        Subject.Tests: >-
+          Remaining failing members, sorted by discovery id; passing members leave after each completed apply.
+        Subject.Tests[].ID: >-
+          Discovery BuildID: empty service + / + framework + / + framework + : + native id with slashes folded to dots and spaces to underscores. Enrichment never rebuilds it.
+        Subject.Tests[].Service: >-
+          Sole architecture service name when one exists, overridden by an exactly matched Go Registry Scenario service; otherwise empty, displayed as none is known.
+        Subject.Tests[].Suite: >-
+          Architecture testing.framework, unchanged.
+        Subject.Tests[].Framework: >-
+          Architecture testing.framework: go-test, jest or playwright.
+        Subject.Tests[].TestName: >-
+          Native id: Go package::function or package::<build>; Jest repository-relative file::fullName; Playwright file::title chain joined by > with surrounding spaces, or <startup>.
+        Subject.Tests[].FilePath: >-
+          Go package import path; Jest file rebased against process cwd when absolute; Playwright deepest nonempty suite/spec file, or startup config Path.
+        Subject.Groups: >-
+          Remaining failures grouped by build tests runtime normalization: test identity, Scenario heading, source prefixes and runner elapsed times are ignored for comparison only. Group order follows first member.
+        Subject.Groups[].IDs: >-
+          Every member id in this group, in discovery order, joined with comma and space.
+        Subject.Groups[].Output: >-
+          The whole first member output, untrimmed. Go concatenates test output or compiler and package output; Jest joins failureMessages by newline; Playwright retains failed attempts with errors, stacks, stdout and stderr. Missing own results say did not run; a selected Go test with no output because its package failed to build also carries the compiler and package output. Refreshed after every apply.
+        Subject.Documents: >-
+          Configured product, architecture_yaml and scenarios_yaml paths available through the resolver, with architecture from the command argument. Optional unavailable documents warn and are omitted; map renders in key order.
+        Subject.Scenarios: >-
+          Each matched remaining Registry Scenario once, in member order; only exact module-aware Go package::CamelCase matches enrich members. No guessing for subtests, synthetic or non-Go members.
+        Subject.Scenarios[].ID: >-
+          Registry key, unchanged.
+        Subject.Scenarios[].Description: >-
+          Registry description, unchanged.
+        Subject.Scenarios[].Service: >-
+          Registry service, unchanged.
+        Subject.Scenarios[].Path: >-
+          Registry path, unchanged.
+        Subject.Scenarios[].FormatSteps: >-
+          All original Given, When and Then steps, in Registry order, with their block headings.
+        Subject.Specification: >-
+          Union of the remaining members catalogue Specifications in discovery order. Optional unreadable or catalogue-less product leaves it undeclared without dropping matched Scenarios.
+        Subject.Specification.Declared: >-
+          True when any remaining member has a declared catalogue.
+        Subject.Specification.Phrases: >-
+          Each reached catalogue phrase once, in first-reached order across members.
+        Subject.Specification.Phrases[].Template: >-
+          Catalogue template, unchanged.
+        Subject.Specification.Phrases[].Block: >-
+          Catalogue block, unchanged.
+        Subject.Specification.Phrases[].Means: >-
+          Catalogue meaning, unchanged.
+        Subject.Specification.Phrases[].Terms: >-
+          Declared words in catalogue order, joined by comma and space, or none.
+        Subject.Specification.Terms: >-
+          Each declared word once, in first-reached order across members.
+        Subject.Specification.Terms[].Term: >-
+          Declared word, unchanged.
+        Subject.Specification.Terms[].Means: >-
+          All glossary definitions for this word in source order, or a missing-definition sentence.
+        Subject.Specification.Terms[].Mappings: >-
+          All architecture word mappings in source order, or a missing-mapping sentence.
+        Subject.Specification.Terms[].Mappings[].Technical: >-
+          Mapping technical text, unchanged.
+        Subject.Specification.Terms[].Mappings[].ObservedBy: >-
+          Mapping observed_by text, unchanged.
         SubjectID: >-
-          Run subject identifier, unchanged for display: runner BuildID (keeps its original empty-service prefix after enrichment). Only artifact filenames sanitise it.
-        UserAnswers: *useranswers
+          Stable Item id: discovery BuildID for a singleton, failing-set otherwise. Membership changes do not change it within the walk.
+        UserAnswers: >-
+          Clarification answers by question id; _user_refinement carries the persons feedback.
     build_code_fix_generator_system:
       rendering: *prompt-rendering
       fields: *checklist-system-fields
     build_code_fix_applier:
       rendering: *prompt-rendering
       fields:
-        FixPrompt: *fixprompt
-        ResultPath: *application-result-path
-        Subject.FailureOutput: *subject-failureoutput
-        Subject.FilePath: *subject-filepath
-        Subject.Framework: *subject-framework
-        Subject.ID: *failing-test-id
-        Subject.Scenario: *subject-scenario
-        Subject.Scenario.Description: *registry-description
-        Subject.Scenario.FormatSteps: *registry-steps
-        Subject.Scenario.ID: *registry-id
-        Subject.Scenario.Path: *subject-scenario-path
-        Subject.Scenario.Service: *registry-service
-        Subject.Service: *failing-test-service
-        Subject.Spec.Declared: *subject-spec-declared
-        Subject.Spec.Phrases: *subject-spec-phrases
-        Subject.Spec.Phrases[].Block: *subject-spec-phrasesitem-block
-        Subject.Spec.Phrases[].Means: *subject-spec-phrasesitem-means
-        Subject.Spec.Phrases[].Template: *subject-spec-phrasesitem-template
-        Subject.Spec.Phrases[].Terms: *subject-spec-phrasesitem-terms
-        Subject.Spec.Steps: *subject-spec-steps
-        Subject.Spec.Steps[].Block: *subject-spec-stepsitem-block
-        Subject.Spec.Steps[].Templates: *subject-spec-stepsitem-templates
-        Subject.Spec.Steps[].Text: *subject-spec-stepsitem-text
-        Subject.Spec.Terms: *subject-spec-terms
-        Subject.Spec.Terms[].Mappings: *subject-spec-termsitem-mappings
-        Subject.Spec.Terms[].Mappings[].ObservedBy: *subject-spec-termsitem-mappingsitem-observedby
-        Subject.Spec.Terms[].Mappings[].Technical: *subject-spec-termsitem-mappingsitem-technical
-        Subject.Spec.Terms[].Means: *subject-spec-termsitem-means
-        Subject.Spec.Terms[].Term: *subject-spec-termsitem-term
-        Subject.Suite: *subject-suite
-        Subject.TestName: *subject-testname
+        FixPrompt: >-
+          The person-approved repair plan, unchanged.
+        ResultPath: >-
+          Per-turn apply confirmation artifact path, with the sanitized stable Item id.
+          The writer ends its final message with the FILE_START/FILE_END block
+          in the message itself. The heading names where the engine saves
+          extracted content; the writer never writes that path itself.
+          A successful response with no extractable block follows PostNotApplied
+          in build code alone, preserving files, warning once with this path
+          and rerunning the remaining set. Started codex or Claude writer failures also follow the not-applied rerun; other provider failures remain fatal;
+          malformed extracted content retains its existing handling.
+        Subject.Tests: >-
+          Remaining failing members, sorted by discovery id; passing members leave after each completed apply.
+        Subject.Tests[].ID: >-
+          Discovery BuildID: empty service + / + framework + / + framework + : + native id with slashes folded to dots and spaces to underscores. Enrichment never rebuilds it.
+        Subject.Tests[].Service: >-
+          Sole architecture service name when one exists, overridden by an exactly matched Go Registry Scenario service; otherwise empty, displayed as none is known.
+        Subject.Tests[].Suite: >-
+          Architecture testing.framework, unchanged.
+        Subject.Tests[].Framework: >-
+          Architecture testing.framework: go-test, jest or playwright.
+        Subject.Tests[].TestName: >-
+          Native id: Go package::function or package::<build>; Jest repository-relative file::fullName; Playwright file::title chain joined by > with surrounding spaces, or <startup>.
+        Subject.Tests[].FilePath: >-
+          Go package import path; Jest file rebased against process cwd when absolute; Playwright deepest nonempty suite/spec file, or startup config Path.
+        Subject.Groups: >-
+          Remaining failures grouped by build tests runtime normalization: test identity, Scenario heading, source prefixes and runner elapsed times are ignored for comparison only. Group order follows first member.
+        Subject.Groups[].IDs: >-
+          Every member id in this group, in discovery order, joined with comma and space.
+        Subject.Groups[].Output: >-
+          The whole first member output, untrimmed. Go concatenates test output or compiler and package output; Jest joins failureMessages by newline; Playwright retains failed attempts with errors, stacks, stdout and stderr. Missing own results say did not run; a selected Go test with no output because its package failed to build also carries the compiler and package output. Refreshed after every apply.
+        Subject.Documents: >-
+          Configured product, architecture_yaml and scenarios_yaml paths available through the resolver, with architecture from the command argument. Optional unavailable documents warn and are omitted; map renders in key order.
+        Subject.Scenarios: >-
+          Each matched remaining Registry Scenario once, in member order; only exact module-aware Go package::CamelCase matches enrich members. No guessing for subtests, synthetic or non-Go members.
+        Subject.Scenarios[].ID: >-
+          Registry key, unchanged.
+        Subject.Scenarios[].Description: >-
+          Registry description, unchanged.
+        Subject.Scenarios[].Service: >-
+          Registry service, unchanged.
+        Subject.Scenarios[].Path: >-
+          Registry path, unchanged.
+        Subject.Scenarios[].FormatSteps: >-
+          All original Given, When and Then steps, in Registry order, with their block headings.
+        Subject.Specification: >-
+          Union of the remaining members catalogue Specifications in discovery order. Optional unreadable or catalogue-less product leaves it undeclared without dropping matched Scenarios.
+        Subject.Specification.Declared: >-
+          True when any remaining member has a declared catalogue.
+        Subject.Specification.Phrases: >-
+          Each reached catalogue phrase once, in first-reached order across members.
+        Subject.Specification.Phrases[].Template: >-
+          Catalogue template, unchanged.
+        Subject.Specification.Phrases[].Block: >-
+          Catalogue block, unchanged.
+        Subject.Specification.Phrases[].Means: >-
+          Catalogue meaning, unchanged.
+        Subject.Specification.Phrases[].Terms: >-
+          Declared words in catalogue order, joined by comma and space, or none.
+        Subject.Specification.Terms: >-
+          Each declared word once, in first-reached order across members.
+        Subject.Specification.Terms[].Term: >-
+          Declared word, unchanged.
+        Subject.Specification.Terms[].Means: >-
+          All glossary definitions for this word in source order, or a missing-definition sentence.
+        Subject.Specification.Terms[].Mappings: >-
+          All architecture word mappings in source order, or a missing-mapping sentence.
+        Subject.Specification.Terms[].Mappings[].Technical: >-
+          Mapping technical text, unchanged.
+        Subject.Specification.Terms[].Mappings[].ObservedBy: >-
+          Mapping observed_by text, unchanged.
+        WriteRoots: >-
+          Every architecture service path, in declaration order.
+        CodexWriter: >-
+          True only for an explicitly requested build-code codex writer; selects native process polling; the Claude branch requires foreground completion.
+        TestCommand: >-
+          Codex and explicitly requested Claude build-code writers get the configured canonical replay forms; nil for other Claude turns or an unrepresentable command. Codex polls its native process tool; Claude requires foreground completion and receives the shell-quoted suite-directory cd prefix before rendering.
+        TestCommand.Command: >-
+          Canonical replay command without machine-output flags, per ADR-0018.
+        TestCommand.Selector: >-
+          Framework selector: -run, --testNamePattern or --grep.
+        TestCommand.Dir: >-
+          Absolute suite working directory from testing.config, or the project root.
     build_code_fix_applier_system:
       rendering: *prompt-rendering
-      fields: *apply-fix-applier-system-fields
+      fields: {}
     scen_check_checklist:
       rendering: *prompt-rendering
       fields:
@@ -424,7 +490,8 @@ architecture:
         Subject.FormatUserStories: &subject-formatuserstories >-
           Subject lineage projected from Registry user_stories in list order, dropping merge_date. Empty returns "(none — no story claims this scenario)\n"; otherwise each line is "  - <story> (<scenario_id>)\n", with strings unchanged.
         Subject.ID: *registry-id
-        Subject.Path: *subject-scenario-path
+        Subject.Path: &subject-scenario-path >-
+          Registry path, YAML-decoded unchanged.
         Subject.Service: *registry-service
     scen_check_checklist_system:
       rendering: *prompt-rendering
@@ -507,69 +574,12 @@ architecture:
       #	internal    — another service declared in this file
       #	self_hosted — we run the instance (redis, postgres, kafka); builds
       #	              use the real thing
-      #	third_party — a vendor's service, wherever the binary lives (crush is
+      #	third_party — a vendor's service, wherever the binary lives (a vendor CLI is
       #	              local, GLM's API is not); builds mock these (record/replay)
       dependencies:
         # Replay hashes every AI turn's argv and stdin, so each CLI states its
         # invocation exactly (docs/qna Q2, Q19): a rebuilt engine must send
         # the same requests.
-        - name: crush
-          protocol: cli
-          scope: third_party
-          # binary and args match every crush cassette's `binary` and `argv`.
-          invocation:
-            binary: crush
-            args: [run, --quiet, -m, "{model}", --cwd, "{work_dir}"]
-            # Neither CLI has a system-prompt flag, so the system prompt is
-            # folded into stdin when it is not blank after trimming whitespace.
-            stdin: &folded-prompt
-              with_system: "### SYSTEM INSTRUCTIONS (authoritative — follow exactly)\n\n{system_prompt}\n\n### TASK\n\n{user_prompt}"
-              without_system: "{user_prompt}"
-            values:
-              model: >-
-                The model half of the `<cli>:<model>` reference the turn's tier
-                resolves to under `engine.models`, split on the first colon:
-                `zhipu-coding/glm-5.2` in every crush cassette.
-              work_dir: &work-dir >-
-                The directory true-bdd was started in, as an absolute path: the
-                host project root. Cassettes record it as `{{CWD}}`.
-              system_prompt: &system-prompt The turn's system prompt, rendered from templates/.
-              user_prompt: &user-prompt The turn's user prompt, rendered from templates/.
-              run_dir: &run-dir >-
-                The run's artifact directory, `<paths.tmp_dir>/<YYYY-MM-DD-HH-MM-SS>-<pid>`,
-                created at startup. The join is cleaned and stays relative to
-                `{work_dir}`, so `paths.tmp_dir: ./tmp` gives `tmp/<...>`.
-                Cassettes record the `<YYYY-MM-DD-HH-MM-SS>-<pid>` part as
-                `{{RUN_DIR}}`.
-            dir: "{work_dir}"
-            env:
-              CRUSH_GLOBAL_CONFIG: >-
-                A new `{run_dir}/crush-config-<random>` directory per turn holding
-                the generated `crush.json`: `options.data_directory` under that
-                directory, `permissions.allowed_tools` for the turn's mode, and
-                one `PreToolUse` hook named `true-bdd-guard` whose command is
-                this executable's path in single quotes, a space and
-                `crush-guard`, with a 15-second timeout.
-              TRUE_BDD_CRUSH_POLICY: >-
-                The JSON write policy `crush-guard` enforces: `read_root`, the
-                absolute project working directory for local reads, the
-                turn's `write_roots` and whether it may run bash (`allow_bash`).
-            notes:
-              - >-
-                crush has no permission gate of its own and runs a tool when its
-                hook cannot run, so the engine probes `crush-guard` before every
-                turn with a valid policy including its read root and no write roots,
-                and refuses the turn unless the prohibited write is denied.
-              - >-
-                crush silently ignores a model it does not know when the model is
-                named in config, so the model travels only as `-m`.
-              - >-
-                A grandchild of crush's embedded shell can hold stdout open past
-                the exit, so the turn runs as its own process group, killed as
-                one, with a 10-second bound on the wait after the exit.
-              - >-
-                stdout and stderr merge into one transcript; a non-zero exit
-                fails the turn.
         - name: codex
           protocol: cli
           scope: third_party
@@ -578,12 +588,14 @@ architecture:
             binary: codex
             args:
               - exec
-              - -s
-              - "{sandbox}"
+              - when: The turn is a plan or validation turn.
+                args: [-s, "{sandbox}"]
               - --ephemeral
               - --skip-git-repo-check
               - --color
               - never
+              - when: The turn is an apply turn of any command.
+                args: [--strict-config, --ignore-rules, --json]
               - -C
               - "{work_dir}"
               - -m
@@ -595,21 +607,28 @@ architecture:
               - -o
               - "{answer_path}"
               - "-"
-            stdin: *folded-prompt
+            stdin: &folded-prompt
+              with_system: "### SYSTEM INSTRUCTIONS (authoritative — follow exactly)\n\n{system_prompt}\n\n### TASK\n\n{user_prompt}"
+              without_system: "{user_prompt}"
             values:
               sandbox: >-
-                `workspace-write` when the turn may write a project tree outside
-                the run directory (the apply turn of `build code --fix` and
-                `build tests --fix`, which hold write roots); `read-only` for
-                every other turn. codex has no level between the two.
+                `read-only` for every plan and validation turn, independently of scratch tool permissions.
+                Every apply turn instead selects its generated named writer permission profile, with no -s flag.
               model: >-
                 The model half of the `<cli>:<model>` reference the turn's tier
                 resolves to under `engine.models`, split on the first colon:
                 `gpt-6.1-sol` in every codex cassette.
-              work_dir: *work-dir
-              system_prompt: *system-prompt
-              user_prompt: *user-prompt
-              run_dir: *run-dir
+              work_dir: &work-dir >-
+                The directory true-bdd was started in, as an absolute path: the
+                host project root. Cassettes record it as `{{CWD}}`.
+              system_prompt: &system-prompt The turn's system prompt, rendered from templates/.
+              user_prompt: &user-prompt The turn's user prompt, rendered from templates/.
+              run_dir: &run-dir >-
+                The run's artifact directory, `<paths.tmp_dir>/<YYYY-MM-DD-HH-MM-SS>-<pid>`,
+                created at startup. The join is cleaned and stays relative to
+                `{work_dir}`, so `paths.tmp_dir: ./tmp` gives `tmp/<...>`.
+                Cassettes record the `<YYYY-MM-DD-HH-MM-SS>-<pid>` part as
+                `{{RUN_DIR}}`.
               label: >-
                 `codex-turn<NNN>`: NNN is this turn's number, from 1 and
                 zero-padded to three digits, among every AI turn the run
@@ -625,18 +644,156 @@ architecture:
             dir: "{work_dir}"
             notes:
               - >-
-                `-s` is mandatory: without a sandbox level `codex exec` blocks on
-                an approval prompt and hangs forever.
+                Plan and validation turns select -s read-only explicitly. Every apply turn selects default_permissions=writer and approval_policy=never in its generated configuration.
               - The trailing `-` makes codex read the prompt from stdin.
               - >-
                 `--skip-git-repo-check`: a BDD fixture's run directory is no git
                 repository, and codex refuses to run outside one without it.
               - >-
-                The environment is inherited unchanged. Process group, wait bound
-                and merged output are as for crush.
+                Ordinary turns inherit the environment and merge stdout/stderr as before.
+                Every apply turn sets CODEX_HOME to {host}/tmp/codex-homes/{run_basename}/{label}-codex-home,
+                copying only auth.json with private permissions, never user config,
+                sessions, AGENTS.md, history or MCP definitions. The provider removes auth.json
+                after preparation or turn completion, on success and failure, reporting cleanup errors. --ephemeral remains.
+                Its generated config disables web search, apps, plugins, multi-agent,
+                memories, login shells, shell snapshots and host skill discovery;
+                project_doc_max_bytes=0 suppresses AGENTS.md and --ignore-rules
+                suppresses execpolicy files. No outer sandbox-exec wraps codex.
+              - >-
+                The apply profile grants host-root reads, that execution mode's exact file or directory roots, and host tmp writes. :minimal supplies OS runtime exceptions listed
+                in ADR-0021; go env resolves GOROOT and GOMODCACHE as read-only.
+                Both GOMODCACHE/github.com/ondatra-ai and its cache/download mirror,
+                GOMODCACHE/cache/vcs, the shared host tmp/codex-homes subtree, /private/tmp and /private/var/tmp are denied.
+                The narrower host and tmp grants still work when nested under a denied root.
+                Every other filesystem path is restricted by default, including
+                sibling cuts, user work, codex sessions and claude transcripts.
+                Before spawning, the engine creates missing directory roots and literal parents of file roots inside the host,
+                using rooted filesystem operations that cannot follow a symlink outside it, and logs each created root once at INFO.
+                Edit roots resolving outside the host are refused. The profile grants remain limited to the edit roots and host tmp;
+                creating their parents does not grant the writer any other host-root writes. Existing files stay files; missing files are not made into directories. Configured globs authorize creating and changing matching files even without existing matches. Terminal /** grants its literal subtree; other wildcards grant their narrowest literal directory and enforce the original patterns after every turn, including failed turns. Newly created non-matching files are removed; a changed, deleted, renamed or permission-changed pre-existing non-matching file fails the turn with one WARN naming it. Overlapping grants authorize their union. Such violations are fatal even for build code, with changed pre-existing contents retained for diagnosis. Non-matching files can be changed during the turn; this boundary is enforced afterward. Generated homes are excluded from comparison. Malformed patterns, host-root grants and escapes refuse (ADR-0024).
+              - >-
+                Writer subprocesses inherit no environment: the profile sets PATH to
+                GOROOT/bin, system bin directories and a generated runtime-bin with installed node, npm, npx and docker links; HOME, TMPDIR and GOCACHE inside
+                host tmp, GOROOT/GOMODCACHE, GOPROXY=off, GOSUMDB=off,
+                GOTOOLCHAIN=local, GOFLAGS='-trimpath -buildvcs=false', GOTELEMETRY=off
+                and CGO_ENABLED=0. Optional node/npm/npx/docker executables, npm's validated package, Mach-O dependency libraries and their installation links are listed as read grants. Homebrew opt link directories supply symlink metadata, while unrelated canonical installation targets remain denied. npm/npx JavaScript package grants require bin/npm-cli.js or bin/npx-cli.js beneath a package.json naming npm, outside the host and authentication roots and the user's sensitive .codex, .claude, work, .ssh, .aws and .config roots and their ancestors. An unsafe or unverifiable runtime is refused with a WARN and no link or grant. npm uses offline mode and scratch cache/config; Docker uses scratch config without a daemon/socket grant; OPENSSL_CONF=/dev/null suppresses outside configuration. Network is disabled for commands and their children.
+                Codex's own model connection remains available. This is calibrated
+                for codex-cli 0.162.1 on macOS; no weaker fallback is supplied.
+              - >-
+                The writer config selects high reasoning and model_context_window=1050000.
+                A configured window is not a demonstrated prompt size: 1M remains
+                unverified. Model selection still comes from the resolved tier.
+              - >-
+                The writer saves stdout JSONL as {run_dir}/{label}-codex-events.jsonl
+                and stdout plus stderr as {run_dir}/{label}-codex.log. The final message
+                still comes only through -o. Drill audit reads command_execution and
+                file_change items, preserving raw evidence and marking decisions unknown;
+                commands do not prove successful reads. Invalid evidence is reported.
+                Recording excludes generated homes and shell/build scratch state.
+              - >-
+                A started codex writer exiting non-zero (including usage limits),
+                missing its answer file or returning whitespace carries CodexTurnError.
+                Build code keeps its edits, counts the attempt, warns once and runs
+                PostNotApplied. Start failures and refusals before spawning stay fatal.
+                No role or CLI receives a router deadline (ADR-0025); every turn runs until it ends or the caller cancels.
+                Cancellation stops the turn's process group and descendants and remains fatal. There is no codex stall watch; codex's own request timeouts apply. Plan and validation turns retain their inherited environment and read-only sandbox. Other commands' confined applies retain fatal failure handling; build code alone requests recovery and replay forms. Process group and wait bound
+                remain as for the other writers.
               - >-
                 Before the spawn the engine logs the turn's sandbox level as
                 msg="Codex turn sandboxed" with the turn's `label` and `sandbox`.
+
+              - |
+                Generated config.toml wire form (codex-cli 0.162.1, ADR-0026). The following template fixes every key and table, in emission order. Braced names are path substitutions, not literal TOML. Paths and values are TOML quoted strings; {runtime_read_entries} and {write_entries} expand to complete quoted-path assignments. Blank lines and the explanatory :minimal comments have no semantic effect. There is no [permissions.writer] network boolean, file_system table, type field or entries array. The filesystem table itself is the restricted path-to-access map: no :root grant or inherited workspace profile is emitted.
+
+                default_permissions = "writer"
+                approval_policy = "never"
+                model_reasoning_effort = "high"
+                model_context_window = 1050000
+                web_search = "disabled"
+                project_doc_max_bytes = 0
+                allow_login_shell = false
+                cli_auth_credentials_store = "file"
+                [history]
+                persistence = "none"
+                [features]
+                apps = false
+                plugins = false
+                multi_agent = false
+                memories = false
+                shell_snapshot = false
+                skip_host_skill_discovery = true
+
+                [permissions.writer.filesystem]
+                ":minimal" = "read"
+                "{host}" = "read"
+                "{GOROOT}" = "read"
+                "{GOMODCACHE}" = "read"
+                {runtime_read_entries}
+                {write_entries}
+                "{host}/tmp/codex-homes" = "deny"
+                "/private/tmp" = "deny"
+                "/private/var/tmp" = "deny"
+                "{GOMODCACHE}/cache/vcs" = "deny"
+                "{GOMODCACHE}/github.com/ondatra-ai" = "deny"
+                "{GOMODCACHE}/cache/download/github.com/ondatra-ai" = "deny"
+
+                [permissions.writer.network]
+                enabled = false
+                [shell_environment_policy]
+                inherit = "none"
+                [shell_environment_policy.set]
+                CGO_ENABLED = "0"
+                DOCKER_CONFIG = "{host}/tmp/codex-shell-home/.docker"
+                GOCACHE = "{host}/tmp/codex-go-build"
+                GOFLAGS = "-trimpath -buildvcs=false"
+                GOMODCACHE = "{GOMODCACHE}"
+                GOPROXY = "off"
+                GOROOT = "{GOROOT}"
+                GOSUMDB = "off"
+                GOTELEMETRY = "off"
+                GOTOOLCHAIN = "local"
+                HOME = "{host}/tmp/codex-shell-home"
+                OPENSSL_CONF = "/dev/null"
+                PATH = "{GOROOT}/bin:/usr/bin:/bin:/usr/sbin:/sbin:{host}/tmp/codex-shell-home/runtime-bin"
+                TMPDIR = "{host}/tmp/codex-tmp"
+                npm_config_cache = "{host}/tmp/codex-shell-home/npm-cache"
+                npm_config_offline = "true"
+                npm_config_userconfig = "{host}/tmp/codex-shell-home/.npmrc"
+
+                {host} is the symlink-resolved Host project root; go env -json GOROOT GOMODCACHE supplies the two Go roots. Scratch paths resolve within the host before emission. Shell set keys are sorted lexically. The runtime PATH suffix and Docker/npm/OpenSSL environment entries are always emitted, even when no optional executable is installed. Runtime discovery visits installed docker, node, npm, npx in lexical name order. For each it emits the executable, recursively enumerated non-system Mach-O libraries (installation alias then canonical path), validated npm package when applicable, then installation symlink ancestors, necessary Homebrew opt metadata directories and dylib parent directories, preserving discovery order and deduplicating paths by first occurrence. Each is a quoted path = "read" assignment; no installed runtime means no such entries. The acceptance and refusal rules above govern these paths.
+
+                {write_entries} emits each accepted execution-mode write root as a quoted resolved path = "write" assignment, in Write/Edit/MultiEdit pattern order, then any additional SourceWriteRoots, then host tmp. Overlapping roots are deduplicated by first occurrence. Literal files stay exact; terminal /** strips the suffix; other globs grant their narrowest literal directory and retain the post-turn enforcement described above. For writer-config-001-codex this is exactly "{host}/tmp" = "write", then "{host}/services/calc" = "write" (scratch already occurs in the mode patterns). The six deny entries follow all write grants in the stated order. The network value must be enabled = false within [permissions.writer.network]; network = false directly under [permissions.writer] is refused by the real CLI.
+
+                writer-config-001-codex matches the entire generated file through the existing scratch-file comparison step. Its anchored pattern substitutes {{CWD}}, {{GOROOT}} and {{GOMODCACHE}} with resolved host and go env paths, TOML-string-escaped then regex-escaped, tolerates the :minimal comments and the optional runtime read entries, and pins every other byte, including the ordered write/deny entries and complete shell environment. No authentication or other generated-home file is read by the assertion.
+
+              - >-
+                Live-only writer provisioning is held by writer-lifecycle-001-success and
+                writer-lifecycle-002-failure (ADR-0026). Their fixtures supply only dummy
+                auth.json and deterministic external CLI stand-ins, not model credentials.
+                At the codex spawn boundary, before either recording or replaying file effects,
+                the harness shim resolves CODEX_HOME beneath host tmp/codex-homes, requires
+                a private 0700 home containing only regular, non-symlink 0600 files:
+                config.toml and auth.json, the latter byte-identical to the declared dummy fixture;
+                an already-created empty services/calc edit root; private HOME/TMPDIR/GOCACHE scratch directories;
+                and the shared generated-home deny entry. It writes a non-secret receipt
+                outside cassette file effects. The Then step requires that receipt, exactly
+                one generated home, and no auth.json after the turn. The failure fixture's
+                CLI exits 7 after editing; its Scenario requires the non-zero-exit warning.
+                Both Scenarios compare stdout-only JSONL events exactly and require both
+                the stdout event sentinel and separate stderr sentinel in the combined transcript.
+                The stand-in never creates the edit root, and replay validates before applying its recorded edit.
+                The existing writer-config-001-codex pins every shell environment setting,
+                inherited-environment suppression, ordered permissions and generated config
+                content. A configured shell policy is the engine's contract; enforcement
+                by native codex remains the installation-dependent live calibration in
+                ADR-0021/0024, not something a replaying stand-in can demonstrate.
+                The shim activates this inspection only for the explicit fixture-controlled
+                Given; ordinary turns never have authentication opened by the harness.
+                Record uses the fixture's cli/ executables behind the shim. In services:live
+                these two fixtures use an observing pass-through shim and the same stand-ins,
+                without cassettes; normal live turns remain unmediated. Existing request
+                hashes are unchanged. Generated homes and runtime scratch stay excluded
+                before snapshot traversal; authentication bytes never enter a cassette or log.
 
         - name: claude
           protocol: cli
@@ -650,11 +807,12 @@ architecture:
               - --setting-sources
               - ""
               - --strict-mcp-config
-              - --safe-mode
-              - --allowedTools
-              - "{allowed_tools}"
-              - --disallowed-tools
-              - "{disallowed_tools}"
+              - when: Every Claude turn except the build-code writer.
+                args: [--safe-mode, --allowedTools, "{allowed_tools}", --disallowed-tools, "{disallowed_tools}"]
+              - when: Only the explicitly requested build-code writer.
+                args: [--restricted, --disable-slash-commands, --tools, "Read,Glob,Grep,Edit,Write,MultiEdit,Bash", --settings, "{writer_settings}", --session-id, "{session_id}"]
+              - when: Each extra read root of the build-code writer, in order.
+                args: [--add-dir, "{read_root}"]
               - --model
               - "{model}"
               - when: >-
@@ -662,7 +820,7 @@ architecture:
                   turn's is.
                 args: [--system-prompt, "{system_prompt}"]
               - --permission-mode
-              - acceptEdits
+              - "{permission_mode}"
               - --output-format
               - stream-json
               - --verbose
@@ -676,6 +834,30 @@ architecture:
             # Safe mode excludes discovered CLAUDE.md memory, skills, plugins and hooks.
             # Auth and built-in tools remain; --bare would require API-key auth.
             values:
+              permission_mode: default for the build-code Claude writer; acceptEdits otherwise.
+              run_dir: *run-dir
+              label: >-
+                `claude-turn<NNN>`: NNN is this turn's number, from 1 and
+                zero-padded to three digits, among every AI turn the run
+                dispatched, whichever CLI ran it. The counter is shared with
+                codex, not restarted per CLI or role. Thus the Claude writer
+                after one plan turn is `claude-turn002`.
+              writer_settings: >-
+                {run_dir}/{label}-claude-config/settings.json. Explicit PreToolUse
+                hook runs this engine's claude-guard --policy pointing to sibling
+                policy.json, with replay (the canonical command/write-root
+                policy), read_roots, excluded_roots and protected_roots (the
+                generated configuration directory). Permissions allow Read/Glob/Grep, deny Agent/Task,
+                WebFetch/WebSearch/NotebookEdit, and never grant Bash patterns.
+                Bash and writes require the hook's explicit allow. Both Bash
+                timeouts are 600000 ms in settings and environment.
+              session_id: A fresh UUID for this writer only.
+              read_root: >-
+                go env GOROOT, GOMODCACHE, then this session's tool-results
+                directory under CLAUDE_CONFIG_DIR/projects (default ~/.claude).
+                The host cwd is always a working root. The hook denies
+                github.com/ondatra-ai and cache/download/github.com/ondatra-ai
+                outside the host even though the module cache is a working root.
               allowed_tools: >-
                 The turn's allowed tools joined by commas. A validation or fix
                 turn: `Read(**),Write({tmp_glob}),Glob(**),Grep(**)`. An apply
@@ -742,14 +924,68 @@ architecture:
               CLAUDE_HISTORY_ROLE: Empty; the engine labels no turn.
               CLAUDE_CODE_DISABLE_ADVISOR_TOOL: "1"
             notes:
+              - |
+                Generated settings.json wire form (Claude Code 2.1.285, ADR-0026). It is UTF-8 JSON with the exact layout below: two-space indentation, one array element per line, nonempty objects expanded across lines, and a final newline. JSON object keys are emitted in sorted lexical order at every depth; empty objects stay {}. {guard_command} below is a JSON string value, escaped as JSON, not a nested object.
+
+                {
+                  "autoMemoryEnabled": false,
+                  "claudeMdExcludes": [
+                    "**"
+                  ],
+                  "enabledPlugins": {},
+                  "env": {
+                    "BASH_DEFAULT_TIMEOUT_MS": "600000",
+                    "BASH_MAX_TIMEOUT_MS": "600000"
+                  },
+                  "hooks": {
+                    "PreToolUse": [
+                      {
+                        "hooks": [
+                          {
+                            "command": "{guard_command}",
+                            "timeout": 15,
+                            "type": "command"
+                          }
+                        ],
+                        "matcher": "*"
+                      }
+                    ]
+                  },
+                  "permissions": {
+                    "allow": [
+                      "Read",
+                      "Glob",
+                      "Grep"
+                    ],
+                    "defaultMode": "default",
+                    "deny": [
+                      "Agent",
+                      "Task",
+                      "WebFetch",
+                      "WebSearch",
+                      "NotebookEdit"
+                    ]
+                  }
+                }
+
+                The guard command is the shell-single-quoted current engine executable, then the literal ` claude-guard --policy `, then the shell-single-quoted sibling policy.json path ({run_dir}/{label}-claude-config/policy.json). A single quote inside an argument is replaced by the shell sequence '"'"' before surrounding the whole argument with single quotes. JSON escaping is applied afterward (including encoding <, > and & as Unicode escapes). Bash has no allow pattern. The hook array has exactly one command hook with numeric timeout 15 and matcher "*". These settings accompany the separately generated guard policy described under writer_settings; that policy remains the authority for allowed file roots and replay forms.
+
+                writer-config-002-claude matches the entire generated settings file through the existing scratch-file comparison step, substituting {{ENGINE}} with the engine executable (invoked or symlink-resolved path), escaping internal single quotes for the shell, then JSON-string-escaping and regex-escaping, and eliding only the run-directory basename in the hook command. It pins the hook arguments, arrays, deny rules, environment, empty plugin map and memory/document exclusions in record and replay alike.
+              - >-
+                Only the build-code writer adds or strips these environment entries:
+                BASH_DEFAULT_TIMEOUT_MS/BASH_MAX_TIMEOUT_MS=600000;
+                CLAUDE_CODE_DISABLE_CLAUDE_MDS, DISABLE_AUTO_MEMORY,
+                DISABLE_BUNDLED_SKILLS, DISABLE_WORKFLOWS,
+                DISABLE_OFFICIAL_MARKETPLACE_AUTOINSTALL, DISABLE_PLUGIN_FORWARDING,
+                DISABLE_BACKGROUND_TASKS each use the CLAUDE_CODE_ prefix and value 1.
+                CLAUDE_CODE_SAFE_MODE, CLAUDE_CODE_SIMPLE and inherited
+                CLAUDE_RELAUNCH_SESSION_ADD_DIRS are stripped.
               - >-
                 No stdin: the prompts travel in argv. `CLAUDECODE` is removed
                 from the inherited environment, so the turn does not look
                 launched from a Claude session.
               - >-
-                `--setting-sources project` keeps user-scope settings (an
-                operator's advisor model, plugins) out while the project's own
-                settings still apply; `--strict-mcp-config` loads no MCP
+                `--setting-sources ""` excludes user, project and local settings; `--strict-mcp-config` loads no MCP
                 server, since the command line names none. The advisor is a
                 server-side tool `--disallowed-tools` cannot reach, so only
                 the environment entry turns it off.
@@ -760,8 +996,15 @@ architecture:
                 The answer is the stream's `result` record: its
                 `structured_output` object when the turn carried a schema,
                 else its text. A schema turn whose result holds no object, or
-                a non-zero exit, fails the turn, and the turn is bounded by
-                the router's 20 minutes.
+                a non-zero exit, fails the turn. Every role and CLI runs with the caller's context
+                and its own process group without a router deadline (ADR-0025); cancellation
+                stops the turn and its descendants and remains fatal. No request, prompt,
+                checklist or template adds a time, turn, token or cost budget.
+                For the explicit build-code writer, non-zero exits, is_error or
+                api_error_status >=400 results, assistant error records, absent
+                envelopes and empty answers are started outcomes; available cost
+                and usage survive errors. Start failures and pre-spawn refusals
+                stay fatal. Other roles retain fatal provider-error handling.
 
   # How each product word the catalogue declares is built and observed, in
   # words naming no code identifier, so the steps can be rebuilt from it.
@@ -814,7 +1057,9 @@ architecture:
         run directory `tmp/test_run/<session>/<name>/`, the command's working
         directory. Beside `input/` sit `cassettes/` (the recorded AI turns and
         the recorded outcome) and the optional `prep.sh`, `teardown.sh` and
-        `checklist-prompts.yaml`.
+        `checklist-prompts.yaml`. An explicit fixture-controlled writer Given also uses
+        auth/auth.json (declared dummy bytes only) and cli/claude and cli/codex
+        deterministic external CLI stand-ins, all outside the overlaid input tree.
       observed_by: >-
         Set up by the Given step naming the tree: it loads that fixture, and
         decides per caller where the run's AI turns come from (the fixture's
@@ -839,6 +1084,10 @@ architecture:
         of it because the path leads out. A step about a created or modified
         file only compares the quoted path, as written, with the paths of the
         run's file changes, and reads no file.
+        The fixture-controlled writer Given inserts its cli/ behind the services
+        shim and sets CODEX_HOME to its auth/ directory. The writer lifecycle
+        Then requires the shim's per-run non-secret spawn receipt and checks
+        that exactly one generated home has no auth.json after the command.
 
     - term: exit code
       technical: >-
@@ -892,6 +1141,15 @@ architecture:
       observed_by: >-
         Compiled by the step that holds it; one that does not compile fails
         the step rather than matching nothing.
+        The every-file comparison expands {{CWD}} to the symlink-resolved
+        run root, {{ENGINE}} to the engine executable (invoked or symlink-resolved path), and
+        {{GOROOT}}/{{GOMODCACHE}} through go env -json,
+        escaping each path as the matched file represents it before
+        regex-escaping: JSON string contents for .json, TOML basic string
+        contents for .toml, raw paths otherwise. In JSON hook commands,
+        {{ENGINE}} also escapes internal single quotes for the surrounding
+        shell single quotes before JSON escaping. Other patterns and files
+        are unchanged; a lookup failure fails the step.
 
     - term: file change
       technical: >-
@@ -928,19 +1186,41 @@ architecture:
 
     - term: AI turn
       technical: >-
-        One request through the engine's AI router to claude, crush or codex,
+        One request through the engine's AI router to claude or codex,
         logged once as msg="Dispatching AI turn" before the CLI is spawned; in
         replay the answer comes from a cassette.
       observed_by: >-
         Count the "Dispatching AI turn" records in the run's JSON log file;
         "no" is zero, and a missing log file fails instead of counting zero.
 
+    - term: model override
+      technical: >-
+        Repeated command-local --model values are passed to lazy bootstrap.
+        After validating the loaded engine.models and role defaults, bootstrap
+        validates every override against those declared tiers and the same
+        model-reference parser, rejecting duplicate tiers. Only then it builds
+        the in-memory registry with the replacements and logs each once at INFO
+        as msg="Model tier overridden", tier, from and to. Role selection still
+        resolves Prompt, checklist, then role default against this registry.
+        No config or override file is written and no override environment
+        variable is exported; the resolved model reaches its CLI's argv.
+        The drill permits only repeated --model value pairs after its exact
+        build tests --fix or build code --fix prefix, stores the original
+        arguments in its run record, and forwards the values unchanged through
+        typed model-override options in its engine wrapper. Semantic validation
+        stays with the spawned engine; all other extra arguments are refused.
+      observed_by: >-
+        Read the Model tier overridden records and the cli and model fields
+        of Dispatching AI turn. A refusal has exit 1 and no dispatch records;
+        the configuration file stays unchanged. Drill checks inspect its run
+        record and the spawned engine's arguments.
+
     - term: AI CLI
       technical: >-
-        The binary an AI turn is spawned as, `claude`, `crush` or `codex`
+        The binary an AI turn is spawned as, `claude` or `codex`
         (see `dependencies[]` above): the half before the first colon of the
         `<cli>:<model>` reference the turn's tier resolves to under
-        `engine.models`. The tier is the Prompt's own `model:`, `fix_model:`
+        `engine.models`, with any run-only model overrides applied at bootstrap. The tier is the Prompt's own `model:`, `fix_model:`
         or `apply_model:` for a validation, fix or apply turn, else its
         checklist's `engine:` block, else `engine.default_<role>_model`.
       observed_by: >-
@@ -950,15 +1230,33 @@ architecture:
         apply turn. The records of that role and CLI are counted; "no" is
         zero, and a missing log file fails instead of counting zero.
 
+    - term: failing set
+      technical: >-
+        One build code Item containing every discovered failure, its latest
+        runner evidence and matched Specification context. Discovery sorts
+        members by id and yields zero or one Item. After each apply a single
+        set rerun replaces verdicts, passing members leave and evidence is
+        grouped afresh. A new outer walk always discovers the full suite.
+      observed_by: >-
+        Read Suite failures and Loaded prompts items in the engine log,
+        grouped fix requests, tests-pass Check answered records and the
+        selected runner arguments after each completed apply.
+
     - term: fix loop
       technical: >-
         The engine's interactive answer to a failed Prompt under `--fix`. A
         clarifying question prints its suggested answers numbered from 1,
         plus `0) Other`, then reads one line of stdin as the answer, a number
-        picking that suggestion. The proposed
+        picking that suggestion. An optional `Your answer: ` prompt follows
+        the options before the read; the original engine prints it, with
+        indentation and blank lines, and labels Other as `0) Other (type custom answer)`.
+        For build code the Item is the whole failing set, zero Items when discovery is green. Its tests-pass D: Prompt passes exactly when every remaining member passed its latest run; failing findings group every still-failing id beside the whole first output using runtime-failure normalization. No validation model runs. The unchanged walker allowance counts applies on that set Item, including applied false, successful responses missing the confirmation, and started codex writers that exit non-zero or answer empty, and started Claude writer turns that exit non-zero, return error results or answer empty; allowance two still permits three applies before stopping. Each missing confirmation warns once with the result path and follows the not-applied rerun. Each started writer failure logs one WARN and follows the same rerun, preserving its files. Start failures, engine refusals before spawning, failures in other roles stay fatal. The next plan sees the rerun's remaining set and rebuilt grouped evidence, including build failures. The terminal attempt is rerun but still stops at the bound even if it passed. The proposed repair plan names changes, files and served tests. The writer gets the same set, Specification, edit roots and codex and Claude command forms, implements the service, tests each part and the whole set, then reports changes and observed passes without a stated time, turn, token or cost budget. The proposed
         fix is then followed by `[1] Apply this fix to working copy`, `[2]
-        Refine the fix prompt` and `[3] Exit without applying`, and one line
-        is read: `1` or `apply` applies the fix, `2` or `refine` reads
+        Refine the fix prompt` and `[3] Exit without applying`, on separate
+        lines in that order. An optional `Your choice (1/2/3): ` prompt
+        follows before one line is read; the original engine prints it,
+        indents the options, adds separators and appends `(provide feedback)`
+        to option 2. `1` or `apply` applies the fix, `2` or `refine` reads
         feedback lines up to an empty one, and anything else exits. End of
         input reads as an empty line, so it exits.
       observed_by: >-
@@ -1155,8 +1453,15 @@ architecture:
         A subprocess the engine starts from the suite command the
         architecture document declares under `testing.commands` (`replay`
         for `build code`), split into arguments by shell quoting rules, with
-        a filter of the engine's own appended when it re-runs one test after
-        a fix. Before each start it writes one log record, msg="Spawning
+        one runner start after every completed build-code apply, applied or
+        not applied, including the terminal attempt. The remaining failing
+        set is selected by joining member selectors with alternation: Go
+        -run, Jest --testNamePattern, Playwright --grep. A Go <build> or
+        Playwright <startup> member makes the rerun unfiltered. Every
+        ordinary member needs its own passing result; missing or skipped
+        members remain failing with a did-not-run finding. Synthetic members
+        require their package or startup success. A new outer walk discovers
+        the full suite afresh, catching regressions outside the previous set. Before each start it writes one log record, msg="Spawning
         test runner", with the program in `binary` and its arguments in
         `args`. Optional `testing.prebuilt_engine_arg` is one argument
         containing `{engine_bin}` exactly once; only `build tests --fix`
@@ -1193,91 +1498,63 @@ architecture:
         status other than the quoted one, printing the shell command's stdout
         and stderr.
 
-    - term: crush
+    - term: claude
       technical: >-
-        The `crush` CLI the engine spawns for a turn whose tier names it (the
-        crush dependency above), with a per-turn generated config whose
-        `PreToolUse` hook runs this binary's `crush-guard` subcommand and with
-        the turn's write policy in that hook's environment. Hooks from a host
-        project's own `.crush.json` or `crush.json` run beside it, and a
-        denial from either stops the tool.
+        Claude Code 2.1.285. The build-code applier alone explicitly requests
+        an isolated unbounded writer. Generated --settings declares a PreToolUse
+        hook for every exposed tool, invoking this binary's claude-guard with
+        --policy pointing to generated JSON. It emits an explicit allow decision
+        or exits 2 with a reason; Bash is never permission-pattern granted.
+        --restricted confines file tools to cwd and --add-dir roots, resolving
+        symlinks. The hook protects its generated configuration directory from writes, further restricts writes and excludes module-cache
+        ondatra-ai copies, with the host taking precedence. Search roots outside
+        the host must not contain any excluded directory; Glob checks its
+        pattern's fixed root too and denies parent traversal. Read roots are the
+        host, go env GOROOT/GOMODCACHE, and only this session's tool-results
+        directory. The generated session UUID makes historical transcripts
+        inaccessible. The default sign-in is retained: an empty CLAUDE_CONFIG_DIR
+        was signed out in the live probe. No credentials are copied.
       observed_by: >-
-        A Scenario about the write guard never starts crush: its Given steps
-        record what crush would hand the guard, and its When step runs the
-        guard the way crush does, so it spends no AI turn and needs no CLI.
+        Hook Scenarios pass cwd, tool_input.command and run_in_background on
+        stdin and a policy file under scratch, without running Claude. Writer
+        Scenarios pin Sonnet 5.5, run a granted selection and assert the engine's
+        rerun, edits, exit and once-only failure warning. The recording wrapper
+        runs real Claude unchanged before injecting a non-zero exit.
 
     - term: write guard
-      technical: >-
-        The engine binary's hidden `crush-guard` subcommand, run with no
-        arguments. It reads the write policy, then the tool call, and exits 0
-        to allow or 2 to deny, writing one line `true-bdd guard: <reason>` to
-        stderr for a denial. A missing or unreadable policy, or a readable
-        policy naming no read root, denies before the tool call is read, each
-        with its own reason. A relative `read_root` is refused as a malformed
-        policy. `view`, `ls`, `grep`, `glob` and `diagnostics`
-        may read only inside `read_root`, resolving symbolic links on both
-        sides and comparing whole path components. Relative reads start at
-        that root; reads naming no path are allowed to use the project.
-        `sourcegraph`, `fetch` and the `context7` MCP tools remain allowed; `bash` is allowed only when the policy allows the shell; the
-        file tools `edit`, `write`, `multiedit`, `patch`, `create` and
-        `download` are allowed only for an absolute target inside a write
-        root, with symbolic links resolved on both sides (through the deepest
-        part of the path that exists) and whole path components compared;
-        any other tool is denied as a writer.
-      observed_by: >-
-        Run once by the When step as the engine binary's subprocess in the
-        run directory, under the Scenario's timeout, its exit status, stdout,
-        stderr and file changes kept as a command's are. As a command's run
-        is, the guard's run is handed to the harness's run recorder as soon
-        as it returns, before the step passes or fails, a run that could not
-        complete included, so the Scenario's `bdd-cli-logs/harness.json` in
-        the run directory records its run directory, output files and file
-        changes, and its exit status once it completed, for the BDD report.
-        The allow and deny steps compare the status with 0 and 2, failing
-        with the reason it gave; the reason step matches its pattern anywhere
-        in the kept stderr.
+      technical: claude-guard --policy reads generated JSON and the complete Claude payload. An explicit hook allow object grants
+        execution; denial exits 2 with one true-bdd guard reason on stderr. Read, Glob and Grep use host/toolchain/spill roots
+        and module exclusions; Write, Edit and MultiEdit use declared write roots and cannot change protected configuration. Symlinks
+        and file identity prevent escapes and shared-prefix confusion. Bash accepts exactly the canonical whole-suite command
+        or one nonempty single-quoted selector in the resolved suite directory, including the shell-quoted cd prefix from the
+        host or suite. Background commands and unknown tools are denied.
+      observed_by: The When step runs the hidden hook in the prepared project with a generated policy file and complete payload.
+        Then steps assert exit 0 or 2 and match the denial reason. File boundary Scenarios cover inside, outside, relative and
+        symbolic-link paths. No model runs for hook-only Scenarios.
 
     - term: write policy
-      technical: >-
-        A JSON object in the environment variable `TRUE_BDD_CRUSH_POLICY`:
-        `read_root`, the absolute project working directory, `write_roots`,
-        a list of absolute directory paths, and `allow_bash`, true or false. The engine derives it per turn from the turn's write
-        globs, each cut at its first wildcard and made absolute against the
-        project root, and from whether the turn may run the shell. Every engine
-        execution mode disallows `Bash`, so its own crush turns always set
-        `allow_bash` to false. A relative `read_root` is malformed and refused.
-      observed_by: >-
-        Built by the Given steps for the When step: `read_root` is the run
-        directory, and each write-under step adds
-        the quoted directory joined to the run directory, the shell step sets
-        `allow_bash`, and with neither the policy allows project reads only. The
-        no-read-root step sets `read_root` to an empty string. The
-        no-policy step leaves the variable blank, which the guard reads as
-        unset, and the unreadable step sets it to text that is not JSON.
+      technical: Generated JSON carries replay.read_root, replay.write_roots, replay.test_command, replay.test_selector and replay.test_dir,
+        with extra read_roots, excluded_roots and protected_roots. The write globs are reduced to their fixed prefixes against
+        the host root. CanonicalReplayCommand removes machine flags before -args or --, preserves the boundary and later arguments,
+        joins with one space and quotes all but A-Za-z0-9_./:=,@%+-. Quotes, newline and NUL withhold the grant with one warning.
+        Selectors are -run, --testNamePattern or --grep. The suite directory follows testing.config. Codex receives these forms
+        as instructions and uses ADR-0021's profile; only the explicit Claude build-code writer uses the hook.
+      observed_by: Given steps build the replay policy with absolute run and write roots. The test-command step supplies command,
+        selector and suite. Missing policy omits the file; unreadable policy writes invalid JSON; missing read root writes an
+        empty root. Guard Scenarios observe the resulting refusal.
 
     - term: tool call
-      technical: >-
-        The tool's name in `CRUSH_TOOL_NAME` and its target file in
-        `CRUSH_TOOL_INPUT_FILE_PATH`, the variables crush exports to a hook;
-        a blank or unset variable names nothing.
-      observed_by: >-
-        The When step sets both variables and the write policy every time,
-        blank where no Given step named them, so nothing the test process
-        exports reaches the guard. A file of the project tree is joined to
-        the run directory; a path as written passes unchanged.
+      technical: Claude's tool_name and tool_input in its hook payload; cwd supplies the Bash working directory and relative file
+        base, and run_in_background is denied. File tools resolve file_path, then path, then cwd. The complete payload is decoded
+        as one call.
+      observed_by: Given steps name a tool and a tree file or literal path, or a shell command with foreground/background mode.
+        The When step serializes the fields to stdin every time so exported environment cannot supply a different call.
 
     - term: hook payload
-      technical: >-
-        The JSON crush pipes to a hook's stdin. The guard reads its
-        `tool_name` for a blank tool name, and its `input.file_path`, else
-        `input.path`, for a blank target; an empty or unparseable payload
-        names nothing.
-      observed_by: >-
-        The When step writes `{"tool_name": <tool>, "input": {"file_path":
-        <the file joined to the run directory>}}` to the guard's stdin; with
-        no payload step the guard's stdin is empty. The path payload step instead
-        writes `input.path` exactly as quoted, without joining it to the run
-        directory.
+      technical: JSON with tool_name, cwd and tool_input containing file_path, path, command and run_in_background. The generated
+        policy path is a required --policy argument. Unreadable policy, malformed JSON or a non-absolute read root fails closed.
+      observed_by: The When step pipes that complete JSON into claude-guard. Tree-file paths join the run root; literal paths
+        remain unchanged until the guard resolves them.
 
     - term: symbolic link
       technical: >-

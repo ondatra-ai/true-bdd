@@ -1,9 +1,0 @@
-`prepared.txt` existed, so the fix was applied: `Add` now returns `a + b` in services/calc/calc.go:3.
-
-```
-=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter2-result.yaml ===
-applied: true
-target: "services/calc/calc.go"
-summary: "Changed Add to return a + b instead of a - b so Add(2, 3) = 5; prepared.txt already present and left unchanged"
-=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter2-result.yaml ===
-```

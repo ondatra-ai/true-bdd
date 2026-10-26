@@ -1,7 +1,0 @@
-```
-=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===
-applied: true
-target: "services/calc/calc.go"
-summary: "Changed calc.Double to return value * 2 so doubling 3 yields 6"
-=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===
-```

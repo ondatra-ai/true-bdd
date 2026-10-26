@@ -1,5 +1,5 @@
 // Command aiproxy is the record/replay PATH shim for the AI CLIs the
-// true-bdd engine spawns (claude / crush / codex). The BDD harness
+// true-bdd engine spawns (claude / codex). The BDD harness
 // installs it under those names in a shim directory prepended to the
 // engine subprocess's PATH — the engine is never modified and never
 // knows which mode it runs under (design: tmp/ai-proxy-design.md).
@@ -9,11 +9,12 @@
 //     dir), tee stdio through unmodified into a cassette, and
 //     snapshot/diff the working tree around the call so file effects
 //     are captured alongside the byte streams.
+//   - observe: verify opted-in fixture spawns and pass through without recording.
 //   - replay: never touch the real CLI — apply the cassette's fs-diff,
 //     emit the recorded stdout verbatim, exit with the recorded code.
 //
 // Cassettes are matched by arrival order per binary name (claude-001,
-// claude-002, crush-001, …); a normalized request hash verifies each
+// claude-002, codex-001, …); a normalized request hash verifies each
 // match and fails loudly on drift instead of replaying garbage.
 package main
 
@@ -48,7 +49,29 @@ func main() {
 }
 
 func run(cfg config, name string, argv []string) (int, error) {
+	_, err := installedGoRoot()
+	if err != nil {
+		return 0, fmt.Errorf("resolve recording toolchain: %w", err)
+	}
+
+	err = verifyWriterSpawn(cfg, name)
+	if err != nil {
+		return 0, err
+	}
+
 	switch cfg.Mode {
+	case "observe":
+		path, err := resolveRealBinary(name, cfg.ShimDir)
+		if err != nil {
+			return 0, err
+		}
+
+		result, err := runReal(path, argv)
+		if err != nil {
+			return 0, err
+		}
+
+		return result.ExitCode, nil
 	case modeRecord:
 		return record(cfg, name, argv)
 	case modeReplay:

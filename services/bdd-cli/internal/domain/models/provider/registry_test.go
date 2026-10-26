@@ -11,7 +11,7 @@ import (
 const (
 	fableRef  = "claude:" + fableModel
 	opusRef   = "claude:" + opusModel
-	glmRef    = "crush:" + glmModel
+	coderRef  = "codex:" + coderModel
 	sonnetRef = "claude:" + sonnetModel
 
 	tierHigh = "high"
@@ -21,7 +21,7 @@ func validModels() map[string]string {
 	return map[string]string{
 		"xhigh":  fableRef,
 		tierHigh: opusRef,
-		"coder":  glmRef,
+		"coder":  coderRef,
 	}
 }
 
@@ -49,7 +49,7 @@ func TestRegistryResolvesEachTier(t *testing.T) {
 		t.Fatalf("Resolve(coder): %v", err)
 	}
 
-	if coder.CLI != provider.CLICrush || coder.Model != glmModel {
+	if coder.CLI != provider.CLICodex || coder.Model != coderModel {
 		t.Errorf("Resolve(coder) = %v", coder)
 	}
 }
@@ -74,7 +74,7 @@ func TestRegistryEmptyTierUsesTheRoleDefault(t *testing.T) {
 	wantModel := map[provider.Role]string{
 		provider.RolePrompt: fableModel,
 		provider.RoleFix:    opusModel,
-		provider.RoleApply:  glmModel,
+		provider.RoleApply:  coderModel,
 	}
 
 	for _, role := range provider.Roles() {

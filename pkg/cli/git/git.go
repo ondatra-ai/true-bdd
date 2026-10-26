@@ -12,6 +12,7 @@ package git
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/pkg/shell"
@@ -39,9 +40,24 @@ func ChangedAgainst(base string) ([]string, error) {
 	return lines(diffVerb, "--name-only", base)
 }
 
-// StagedPaths lists what the next commit changes, deletions included.
+// StagedPaths lists the hook's pending commit, deletions included.
+// Only this query keeps GIT_INDEX_FILE, which may name a partial commit's index.
 func StagedPaths() ([]string, error) {
-	return lines(diffVerb, "--cached", "--name-only")
+	opt := defaults()
+	if index, exists := os.LookupEnv("GIT_INDEX_FILE"); exists {
+		opt.Env = opt.Env.Set("GIT_INDEX_FILE=" + index)
+	}
+
+	result, err := shell.Run(context.Background(), []string{Bin, diffVerb, "--cached", "--name-only"}, opt)
+	if err != nil {
+		return nil, err
+	}
+
+	if result.Code != 0 {
+		return nil, fmt.Errorf("git staged paths: %w", result.Err())
+	}
+
+	return nonEmptyLines(result.Stdout), nil
 }
 
 // UntrackedPaths lists what git does not track and does not ignore.
@@ -70,7 +86,7 @@ func IsIgnored(path string) (bool, error) {
 // defaults blank CLAUDECODE rather than stripping it: a child should know it
 // is not interactive.
 func defaults() shell.Options {
-	return shell.Options{Env: shell.Inherit().Blank("CLAUDECODE")}
+	return shell.Options{Env: Environment().Blank("CLAUDECODE")}
 }
 
 // run spawns git. A non-zero exit is Result.Code, never an error: which exits
@@ -101,6 +117,10 @@ func lines(args ...string) ([]string, error) {
 		return nil, err
 	}
 
+	return nonEmptyLines(out), nil
+}
+
+func nonEmptyLines(out string) []string {
 	var paths []string
 
 	for line := range strings.SplitSeq(out, "\n") {
@@ -109,5 +129,5 @@ func lines(args ...string) ([]string, error) {
 		}
 	}
 
-	return paths, nil
+	return paths
 }

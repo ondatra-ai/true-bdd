@@ -2,11 +2,13 @@ package drill_test
 
 import (
 	"context"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
 
+	gitcli "github.com/ondatra-ai/true-bdd/pkg/cli/git"
 	"github.com/ondatra-ai/true-bdd/pkg/cli/ps"
 	"github.com/ondatra-ai/true-bdd/scripts/drill"
 )
@@ -16,6 +18,7 @@ func TestDetachedCommandSurvivesLauncherAndStopsCleanly(t *testing.T) {
 	must(t, err)
 	worker := filepath.Join(t.TempDir(), "drill")
 	build := exec.CommandContext(t.Context(), realGo, buildCommand, "-trimpath", "-o", worker, "../cmd/drill")
+	build.Env = gitcli.ScrubEnvironment(os.Environ())
 
 	output, err := build.CombinedOutput()
 	if err != nil {
@@ -23,7 +26,7 @@ func TestDetachedCommandSurvivesLauncherAndStopsCleanly(t *testing.T) {
 	}
 
 	runner, record, _ := prepare(t, `#!/bin/sh
-printf '\nCLARIFICATION NEEDED\n[1/1] What is specified?\n\n    Your answer: '
+printf '\nCLARIFICATION NEEDED\n[1/1] What is specified?\n1) Follow Specification\n0) Other\n\n    Your answer: '
 read answer
 `)
 	command := exec.CommandContext(t.Context(),

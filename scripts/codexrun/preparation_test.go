@@ -50,7 +50,7 @@ func TestPrintingPreparationHasHardDeadline(t *testing.T) {
 
 			status := "failed"
 			if command == codexCommand {
-				status = "unavailable"
+				status = unavailableStatus
 			}
 
 			assertStatus(t, record, err, status)

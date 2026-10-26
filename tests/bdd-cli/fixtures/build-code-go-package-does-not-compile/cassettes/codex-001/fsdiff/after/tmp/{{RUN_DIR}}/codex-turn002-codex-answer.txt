@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodecompile.tests.suite-build--iter1-result.yaml ===
+applied: true
+target: "services/calc"
+summary: "Added Multiply(a, b int) int returning a * b and replaced the stale defect comment. TestAddSumsItsArguments and TestMultiplyMultipliesItsArguments passed. Ran the full suite; compilation succeeded, but TestCanaryRecordsEachSuiteRun failed because the sandbox denied writing suite-runs.log."
+=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodecompile.tests.suite-build--iter1-result.yaml ===

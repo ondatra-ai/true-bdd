@@ -1,9 +1,0 @@
-**Reasoning:** The product document's `forbidden_qualifiers` list (docs/product/product.yaml:22-30) includes `quickly`. The scenario description reads "The greeter must print the configured greeting followed by the name it is given **quickly**" — the word `quickly` appears verbatim. The steps already carry the measurable criterion behind it ("the command exits with code 0 within 100 milliseconds"), but the description itself uses the vague qualifier, so no run of the steps can settle the description as written. Verdict: fail, one forbidden qualifier.
-
-=== FILE_START: tmp/{{RUN_DIR}}/01-E2E-001-checklist-scen-check-scenario_quality-result.yaml ===
-answer: fail
-context:
-  - "E2E-001: contains 'quickly'"
-fix_prompt: |
-  Replace each forbidden qualifier in this Scenario's description, in its registry entry, with the measurable criterion it stands for, taken from the Scenario's steps, asking for that criterion first when the steps do not state it. Change no step.
-=== FILE_END: tmp/{{RUN_DIR}}/01-E2E-001-checklist-scen-check-scenario_quality-result.yaml ===

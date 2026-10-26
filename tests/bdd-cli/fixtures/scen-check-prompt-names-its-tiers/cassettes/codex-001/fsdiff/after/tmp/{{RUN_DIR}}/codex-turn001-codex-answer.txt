@@ -1,0 +1,1 @@
+{"answer":"fail","context":["E2E-001: contains 'quickly'"],"fix_prompt":"Replace each forbidden qualifier in this Scenario's description, in its registry entry, with the measurable criterion it stands for, taken from the Scenario's steps, asking for that criterion first when the steps do not state it. Change no step."}

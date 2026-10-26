@@ -1,9 +1,0 @@
-The file matches the fix prompt's expectations exactly. Applying both edits.File matches the reference. Running the declared replay verification.Shell execution is blocked by the environment's guard, so I cannot run `sh replay.sh` myself; the edits are complete and the file matches the fix prompt's reference exactly (all imports remain used, `Register` still lists all three definitions).
-
-```
-=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-001-double-iter2-result.yaml ===
-applied: true
-target: "tests/calc/steps/steps.go"
-summary: "Doubled definition now multiplies by 2 via named func; removed value==3 off-by-one and added parse-error guard in number"
-=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-001-double-iter2-result.yaml ===
-```

@@ -1,0 +1,341 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Step Definition Editor applying fixes that bind a registry
+scenario's unbound steps to executable code.
+
+**Your Task:**
+1. Read the step definitions already registered by the suite the fix
+   prompt names.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described — using the Write tool to
+   create a new file or the Edit tool to extend an existing one, inside
+   that suite's `steps/` package.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read, Glob, Grep to inspect existing files before writing.
+- Use Write to create a new file in the suite's steps package.
+- Use Edit to mutate an existing file in the suite's steps package.
+- Do NOT touch the scenario registry.
+- Do NOT write to any path outside the steps package the fix prompt
+  names. That path came from the architectural spec: it is the one tree
+  the spec says holds this suite's tests.
+
+**Output Requirements:**
+- After your Write/Edit calls succeed, output a YAML confirmation
+  inside FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other content in the target file — only add the
+  registration and the function the fix prompt specifies.
+
+**Output Format:**
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
+```
+
+**CRITICAL:**
+- Apply changes EXACTLY as described in the fix prompt.
+- Do NOT add, remove, or modify content beyond what the fix prompt
+  specifies.
+- Do NOT duplicate a definition whose pattern already matches the same
+  step, and do NOT loosen an existing pattern to make it match — a
+  definition that matches two steps is refused by the runner for the
+  same reason as one that matches none.
+- Register every new definition in the suite's existing `Register`
+  function.
+- Make all file changes during this turn — the confirmation block is
+  informational only.
+
+
+### TASK
+
+## Subject — Registry Scenario
+
+**Scenario ID:** INT-900
+**Description:** MCP /mcp endpoint responds 200 to a valid initialize POST
+**Service:** mcp-service
+**Requirement:** fixture seed — expects `build tests` to write the step definitions
+
+### Steps
+Given:
+  - the MCP server is running on its configured port
+When:
+  - the Claude User posts a valid JSON-RPC initialize request to /mcp
+Then:
+  - the server returns HTTP 200
+
+
+---
+
+## Fix Prompt to Apply
+
+# Fix Prompt for Scenario INT-900: MCP /mcp endpoint responds 200 to a valid initialize POST
+
+## Context resolved (do not re-litigate)
+
+- `docs/architecture/architecture.yaml` declares service `mcp-service`; the suite that owns INT-900 is the `tests/mcp` tree (confirmed by `CLAUDE.md` and by `tests/mcp/scenarios/scenarios.go`, which constructs `bddgo.New[steps.State](... Suite: "mcp-service")`).
+- The ONLY tree you may write is `tests/mcp/steps/`.
+- `tests/mcp/steps/state.go` already declares the shared types. **Do not edit or re-declare them:**
+  - `type State struct { BaseURL string; Client *http.Client; Response *http.Response }`
+  - `type Suite interface { Step(string, func(*State, []string) error) }`
+- There is **no** `Register` function anywhere in the package yet (grep for `func Register` returns nothing), and `tests/mcp/scenarios/scenarios.go` calls `steps.Register(suite)`. So `Register(suite Suite)` must be created in a NEW file in this package — this is the suite's single registration entry point; do not add a second one later.
+- `docs/scenarios.yaml` contains exactly one scenario (INT-900) for `service: mcp-service`. There are **no registry neighbours** to sweep in, so the three definitions below are the whole vocabulary. All three are parameterised anyway (server name, actor, JSON-RPC method, request path, status code) so the next scenario added to the registry phrasing these actions binds without a new fix cycle.
+- Do NOT touch `docs/scenarios.yaml`, `tests/mcp/mcp_test.go`, `tests/mcp/scenarios/scenarios.go`, or `tests/mcp/steps/state.go`.
+
+## Step → definition mapping
+
+| Step text (keyword stripped) | Pattern |
+|---|---|
+| `the MCP server is running on its configured port` | `^the (.+?) server is running on its configured port$` |
+| `the Claude User posts a valid JSON-RPC initialize request to /mcp` | `^the (.+?) posts a valid JSON-RPC (\S+) request to (/\S*)$` |
+| `the server returns HTTP 200` | `^the server returns HTTP (\d+)$` |
+
+Note on the `args []string` callback parameter: the harness's convention (submatches only, vs. full match at index 0) is not visible from this fixture tree, so every function below routes its captures through the `tail` helper, which takes the LAST `n` entries. That is correct under either convention — keep it.
+
+## Required Changes
+
+### Change #1: create the suite's step-definition file
+
+**File:** `tests/mcp/steps/definitions.go`
+**Action:** Use the **Write** tool (new file) with exactly the content below. No build tag (sibling `state.go` has none — the `//go:build bdd` tag belongs to the generated `_test.go` only).
+
+**Content:**
+```go
+package steps
+
+// Step definitions for the `mcp-service` suite.
+//
+// Every definition is anchored and parameterised: the server name, the
+// acting user, the JSON-RPC method, the request path and the expected
+// status code are captures, so one definition serves every registry
+// scenario phrased that way. Assertions name what was expected and what
+// actually happened, because that error IS the failure a reader gets.
+
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"net"
+	"net/http"
+	"net/url"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+)
+
+// Register wires this suite's vocabulary into the harness. It is the
+// suite's single registration entry point: add new definitions here.
+func Register(suite Suite) {
+	suite.Step(`^the (.+?) server is running on its configured port$`, givenServerRunningOnConfiguredPort)
+	suite.Step(`^the (.+?) posts a valid JSON-RPC (\S+) request to (/\S*)$`, whenPostsValidJSONRPCRequest)
+	suite.Step(`^the server returns HTTP (\d+)$`, thenServerReturnsHTTPStatus)
+}
+
+const (
+	defaultClientTimeout = 10 * time.Second
+	defaultDialTimeout   = 2 * time.Second
+	protocolVersion      = "2026-10-22"
+)
+
+// givenServerRunningOnConfiguredPort prepares: it resolves the suite's
+// base URL against the configured port and proves the listener is up.
+func givenServerRunningOnConfiguredPort(s *State, args []string) error {
+	captures := tail(args, 1)
+	name := "server"
+	if len(captures) == 1 && strings.TrimSpace(captures[0]) != "" {
+		name = strings.TrimSpace(captures[0]) + " server"
+	}
+	if s == nil {
+		return fmt.Errorf("expected scenario state for the %s, got nil", name)
+	}
+
+	port := os.Getenv("MCP_PORT")
+	if port == "" {
+		return fmt.Errorf("expected the %s to have a configured port in MCP_PORT, got an empty value", name)
+	}
+	if s.Client == nil {
+		s.Client = &http.Client{Timeout: defaultClientTimeout}
+	}
+	if s.BaseURL == "" {
+		s.BaseURL = "http://127.0.0.1:" + port
+	}
+
+	address, err := url.Parse(s.BaseURL)
+	if err != nil {
+		return fmt.Errorf("expected the %s base URL %q to parse, got error: %w", name, s.BaseURL, err)
+	}
+	if address.Port() != port {
+		return fmt.Errorf("expected the %s to listen on its configured port %s, got base URL %q on port %q", name, port, s.BaseURL, address.Port())
+	}
+
+	host := address.Hostname()
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), defaultDialTimeout)
+	if err != nil {
+		return fmt.Errorf("expected the %s to be running on configured port %s, got dial error: %w", name, port, err)
+	}
+	_ = conn.Close()
+	return nil
+}
+
+// whenPostsValidJSONRPCRequest acts: it POSTs a well-formed JSON-RPC 2.0
+// envelope for the captured method to the captured path and records the
+// response on the state for the Then steps.
+func whenPostsValidJSONRPCRequest(s *State, args []string) error {
+	captures := tail(args, 3)
+	if len(captures) < 3 {
+		return fmt.Errorf("expected 3 captures (actor, JSON-RPC method, request path), got %d: %v", len(captures), captures)
+	}
+	actor, method, path := captures[0], captures[1], captures[2]
+
+	if s == nil {
+		return fmt.Errorf("expected scenario state before %s posts %s, got nil", actor, method)
+	}
+	if s.BaseURL == "" {
+		return fmt.Errorf("expected a base URL before %s posts a JSON-RPC %s request to %s, got an empty BaseURL (is the Given step registered?)", actor, method, path)
+	}
+	if s.Client == nil {
+		s.Client = &http.Client{Timeout: defaultClientTimeout}
+	}
+
+	params := "{}"
+	if strings.EqualFold(method, "initialize") {
+		params = fmt.Sprintf(`{"protocolVersion":%q,"capabilities":{},"clientInfo":{"name":%q,"version":"1.0.0"}}`, protocolVersion, actor)
+	}
+	payload := fmt.Sprintf(`{"jsonrpc":"2.0","id":1,"method":%q,"params":%s}`, method, params)
+
+	endpoint := strings.TrimSuffix(s.BaseURL, "/") + path
+	request, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(payload))
+	if err != nil {
+		return fmt.Errorf("expected to build a POST request for %s, got error: %w", endpoint, err)
+	}
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Accept", "application/json")
+
+	if s.Response != nil && s.Response.Body != nil {
+		_ = s.Response.Body.Close()
+	}
+	s.Response = nil
+
+	response, err := s.Client.Do(request)
+	if err != nil {
+		return fmt.Errorf("expected POST %s with a valid JSON-RPC %s request to reach the server, got transport error: %w", endpoint, method, err)
+	}
+
+	raw, err := io.ReadAll(response.Body)
+	_ = response.Body.Close()
+	if err != nil {
+		return fmt.Errorf("expected to read the response body of POST %s, got error: %w", endpoint, err)
+	}
+	// Re-arm the body so later assertions can still read it.
+	response.Body = io.NopCloser(bytes.NewReader(raw))
+	s.Response = response
+	return nil
+}
+
+// thenServerReturnsHTTPStatus asserts the recorded response's status code.
+func thenServerReturnsHTTPStatus(s *State, args []string) error {
+	captures := tail(args, 1)
+	if len(captures) < 1 {
+		return fmt.Errorf("expected 1 capture (the HTTP status code), got %d: %v", len(captures), captures)
+	}
+	want, err := strconv.Atoi(strings.TrimSpace(captures[0]))
+	if err != nil {
+		return fmt.Errorf("expected a numeric HTTP status in the step, got %q: %w", captures[0], err)
+	}
+	if s == nil || s.Response == nil {
+		return fmt.Errorf("expected HTTP %d, got no response at all: no request was recorded on the scenario state", want)
+	}
+	if s.Response.StatusCode != want {
+		return fmt.Errorf("expected HTTP %d, got HTTP %d (%q)%s", want, s.Response.StatusCode, s.Response.Status, bodySnippet(s.Response))
+	}
+	return nil
+}
+
+// tail returns the last n entries of args. Harnesses differ on whether
+// the full regexp match is prepended to the captures; taking the tail is
+// correct under either convention.
+func tail(args []string, n int) []string {
+	if n <= 0 || len(args) <= n {
+		return args
+	}
+	return args[len(args)-n:]
+}
+
+// bodySnippet renders a short, re-readable excerpt of a response body for
+// failure messages. It restores the body so callers can read it again.
+func bodySnippet(response *http.Response) string {
+	if response == nil || response.Body == nil {
+		return ""
+	}
+	raw, err := io.ReadAll(response.Body)
+	if err != nil {
+		return ""
+	}
+	response.Body = io.NopCloser(bytes.NewReader(raw))
+	trimmed := strings.TrimSpace(string(raw))
+	if trimmed == "" {
+		return ""
+	}
+	if len(trimmed) > 200 {
+		trimmed = trimmed[:200] + "…"
+	}
+	return "; body: " + trimmed
+}
+```
+
+## Verification the applier should expect
+
+After writing the file:
+- `gofmt -l tests/mcp/steps` must print nothing (the content above is already gofmt-shaped: tabs, grouped imports).
+- `go build ./tests/mcp/...` compiles; `steps.Register(suite)` in the shim now resolves.
+- Each INT-900 step matches exactly one pattern:
+  - `the MCP server is running on its configured port` → `^the (.+?) server is running on its configured port$`
+  - `the Claude User posts a valid JSON-RPC initialize request to /mcp` → `^the (.+?) posts a valid JSON-RPC (\S+) request to (/\S*)$`
+  - `the server returns HTTP 200` → `^the server returns HTTP (\d+)$`
+  No two patterns can match the same text (distinct literal tails: `server is running on its configured port`, `posts a valid JSON-RPC … request to …`, `server returns HTTP …`).
+- `go test -tags bdd -count=1 ./tests/mcp/...` passes against the shim's stub server, which answers `200` with a JSON-RPC result.
+
+## Do not
+- Do not create a second `Register` function or a second definitions file.
+- Do not edit `tests/mcp/steps/state.go`, the scenarios shim, the generated test, or `docs/scenarios.yaml`.
+- Do not loosen any pattern to make a step match; do not leave any function as a stub.
+
+---
+
+## Instructions
+
+1. Use the Read, Glob, and Grep tools to inspect the current state of
+   the file(s) the fix prompt targets, and the sibling step definitions
+   beside them.
+2. Apply the changes described in the "Fix Prompt to Apply" section
+   above:
+   - Use Write to create a new file when the fix prompt says so.
+   - Use Edit to extend an existing file when the fix prompt says so.
+3. You MAY only modify files under the `steps/` package of the test
+   suite the fix prompt names. That path came from the architectural
+   spec; do not write anywhere else, and do not invent a sibling
+   directory when the named one does not exist — report the failure
+   instead.
+4. You MUST NOT touch the scenario registry.
+5. Each new definition MUST be registered in the suite's existing
+   `Register` function, so a single call site still lists everything the
+   suite binds.
+6. Do not duplicate a definition whose pattern already matches the same
+   step, and do not loosen an existing pattern to make it match.
+7. After the changes succeed, output the confirmation block below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path of the file you wrote/edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===

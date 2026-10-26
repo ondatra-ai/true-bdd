@@ -1,0 +1,181 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are the production writer repairing a whole failing set. Read the Specification, harness and service source, then implement the proposed plan using your own investigation. Change the service as a whole. After each part, run the tests it serves and fix what fails; run every test of the failing set before reporting. Tests outside the set are not your subject.
+
+Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. If a repair cannot be completed, report applied: false and describe what changed and what remains.
+
+Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
+
+
+### TASK
+
+## Subject — Failing Set
+
+
+**Test ID:** /go-test/go-test:fixture.buildcodefix.tests.suite::TestAAdd
+**Service:** calc
+**Suite:** go-test
+**Framework:** go-test
+**Test Name:** fixture/buildcodefix/tests/suite::TestAAdd
+**Source File:** fixture/buildcodefix/tests/suite
+
+**Test ID:** /go-test/go-test:fixture.buildcodefix.tests.suite::TestBAdd
+**Service:** calc
+**Suite:** go-test
+**Framework:** go-test
+**Test Name:** fixture/buildcodefix/tests/suite::TestBAdd
+**Source File:** fixture/buildcodefix/tests/suite
+
+
+### Failure groups
+
+Tests: /go-test/go-test:fixture.buildcodefix.tests.suite::TestAAdd
+```
+=== RUN   TestAAdd
+    calc_test.go:10: Add(2, 3) = -1, want 5
+--- FAIL: TestAAdd (0.00s)
+
+```
+
+Tests: /go-test/go-test:fixture.buildcodefix.tests.suite::TestBAdd
+```
+=== RUN   TestBAdd
+    calc_test.go:16: Add(4, 3) = 1, want 7
+--- FAIL: TestBAdd (0.00s)
+
+```
+
+
+### Specification documents
+
+- Read(`./docs/architecture/architecture.yaml`) — architecture_yaml
+
+
+
+
+
+
+
+
+## Proposed repair plan
+# Repair plan for failing-set
+
+## Summary
+
+Both failing tests are the same single defect: `calc.Add` is implemented as
+subtraction instead of addition. One change in one production file inside the
+declared service root repairs the whole set. No new files, no new packages, no
+test or document edits.
+
+## Write root (hard boundary)
+
+`docs/architecture/architecture.yaml` declares exactly one service:
+
+- `name: calc`, `path: services/calc`, `language: go`
+
+Therefore the only file the writer may touch is **`services/calc/calc.go`**.
+Do not touch `tests/suite/calc_test.go`, `go.mod`, the architecture document,
+or anything else. Do not weaken, skip, relax or delete any assertion. Do not
+add build tags, `t.Skip`, or any form of test-side accommodation.
+
+## Evidence
+
+`services/calc/calc.go` currently reads:
+
+```
+package calc
+
+func Add(a, b int) int { return a - b }
+```
+
+The harness runs `go test -json -count=1 ./tests/suite/...` (record, replay and
+live are identical in the architecture document). The suite imports the
+production package by its module path `fixture/buildcodefix/services/calc`
+(module declared in `go.mod` as `fixture/buildcodefix`), so the test binary
+links the real production function — there is no stub, fake or fixture layer in
+between.
+
+Observed failures match `a - b` exactly:
+
+- `TestAAdd`: `Add(2, 3) = -1, want 5` — `2 - 3 == -1`
+- `TestBAdd`: `Add(4, 3) = 1, want 7` — `4 - 3 == 1`
+
+Both produce the correct value under `a + b`: `2 + 3 == 5`, `4 + 3 == 7`. There
+is no second, independent cause in the set.
+
+## Part 1 — correct the `Add` operator
+
+**File:** `services/calc/calc.go`
+
+**Contract.** `Add(a, b int) int` returns the integer sum of its two arguments.
+It is a pure total function: no state, no I/O, no error path, no panics, and
+order-independent (`Add(a, b) == Add(b, a)`). Keep the exported name,
+the parameter list `(a, b int)`, the single `int` result and the `package calc`
+declaration exactly as they are — the test file calls `calc.Add` with that
+signature, so any change to the name, arity, parameter types or return type
+would break compilation of a file the writer is forbidden to edit.
+
+**Intended implementation.** Replace the body's subtraction with addition, so
+the function returns the sum of `a` and `b` rather than their difference. This
+is a one-expression change to the existing single-line function body; keep the
+file otherwise byte-identical (same package clause, no new imports, no added
+helpers, no extra exported symbols). Do not introduce a wrapper, an interface,
+a configuration flag, or a second code path — the spec describes one plain
+arithmetic function and the tests exercise it directly.
+
+**Tests this part serves.** Both tests in the failing set, and nothing else is
+needed to close the set:
+
+- `/go-test/go-test:fixture.buildcodefix.tests.suite::TestAAdd` —
+  `fixture/buildcodefix/tests/suite::TestAAdd`, asserts `Add(2, 3) == 5`
+- `/go-test/go-test:fixture.buildcodefix.tests.suite::TestBAdd` —
+  `fixture/buildcodefix/tests/suite::TestBAdd`, asserts `Add(4, 3) == 7`
+
+## Explicitly out of scope
+
+- No changes to `tests/suite/calc_test.go` or any `*_test.go` file.
+- No new test files, helpers or testdata.
+- No changes to `go.mod` (the sentinel module boundary is deliberate and the
+  repair needs no dependency, and no Go version change).
+- No changes to `docs/architecture/architecture.yaml`.
+- No new files under `services/calc` — the existing `calc.go` is sufficient.
+
+## Verification the writer should perform
+
+From the run directory, run the architecture's own command and confirm both
+tests pass with the assertions untouched:
+
+- `go test -json -count=1 ./tests/suite/...`
+
+Expect `TestAAdd` and `TestBAdd` to report pass. Also confirm with
+`git diff --stat` that `services/calc/calc.go` is the only modified path; if any
+other file appears in the diff, revert it before finishing.
+
+## Edit roots
+
+- `services/calc`
+
+Never modify tests, *_test.go, __tests__, or documents. Never weaken, skip or remove assertions.
+
+
+## Test commands
+Run in `{{CWD}}` using exactly one of these forms:
+- Whole suite: `go test -count=1 ./tests/suite/...`
+- Selection: `go test -count=1 ./tests/suite/... -run '<selection>'`
+The selection is a nonempty framework regular expression. Keep the command in the foreground; if the tool returns a process/session id, poll that process with your native process tool until it completes.
+
+
+## How to work
+1. Read the Specification and the harness first to understand the service's contract.
+2. Change the service as a whole, using the plan and your investigation.
+3. After each part, run the tests that part serves and fix what fails.
+4. Run every test of the failing set before reporting. Tests outside the failing set are not your subject.
+5. Make all changes during this turn, then report what changed and which tests of the set you saw pass.
+
+End your final message with the confirmation block below, written in the message itself. The result path in its heading names where the engine saves it; never write that path yourself.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
+applied: true
+target: "<repo-relative service path>"
+summary: "<what changed and which tests of the set you saw pass>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===

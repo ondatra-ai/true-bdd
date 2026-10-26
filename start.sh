@@ -8,7 +8,10 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 # Every commit runs the gates its staged change needs (.githooks/pre-commit).
-git config core.hooksPath .githooks
+(
+  for name in $(git rev-parse --local-env-vars); do unset "$name"; done
+  git config core.hooksPath .githooks
+)
 
 if [[ ! -f .env ]]; then
   echo "Missing .env — copy .env.example and fill in values." >&2

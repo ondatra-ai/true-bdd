@@ -4,7 +4,7 @@ engine:
   # role at a different provider is a config edit, not a code change.
   #
   # Value format: "<cli>:<model>". Split on the FIRST colon only.
-  #   cli   — claude | crush | codex (each must be on $PATH)
+  #   cli   — claude | codex | codex (each must be on $PATH)
   #   model — passed through verbatim to that CLI's model flag
   models:
     xhigh: "claude:claude-fable-5"
@@ -12,7 +12,7 @@ engine:
     # DELIBERATELY BROKEN: `aider` is not a supported cli. The
     # engine must refuse to start rather than quietly running
     # this tier on some other model.
-    coder: "aider:whatever"
+    coder: "crush:whatever"
   # Tier per AI role, used when neither a prompt nor its checklist names
   # one. A checklist overrides any of these in its own `engine:` block.
   default_prompt_model: high

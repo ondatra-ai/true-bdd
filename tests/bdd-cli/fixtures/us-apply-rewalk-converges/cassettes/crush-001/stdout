@@ -1,7 +1,0 @@
-```
-=== FILE_START: tmp/{{RUN_DIR}}/apply-99.3-001-mcp-initialize-iter1-result.yaml ===
-applied: true
-target: "tmp/{{RUN_DIR}}/scenarios.yaml"
-summary: "Replaced empty scenarios map with new scenario 99.3-001-mcp-initialize (path tests/mcp_test.go, story 99.3-rewalk-fixture, merged given/when/then steps)"
-=== FILE_END: tmp/{{RUN_DIR}}/apply-99.3-001-mcp-initialize-iter1-result.yaml ===
-```

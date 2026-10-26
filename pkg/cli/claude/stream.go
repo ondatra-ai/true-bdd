@@ -38,35 +38,68 @@ type Event struct {
 // RunStream performs one headless turn over stream-json, calling on for every
 // record as it arrives, and returns the same Answer RunJSON would.
 func RunStream(prompt string, opts Options, on func(Event)) (Answer, error) {
-	opts.Stream = true
+	return RunStreamContext(context.Background(), prompt, opts, on)
+}
 
+// RunStreamContext preserves caller cancellation for the turn and its descendants.
+func RunStreamContext(ctx context.Context, prompt string, opts Options, on func(Event)) (Answer, error) {
+	opts.Stream = true
 	sink := &streamSink{on: on}
 	stderr := &bytes.Buffer{}
 
-	result, err := shell.Run(context.Background(), append([]string{Bin}, opts.Args(prompt)...), shell.Options{
-		Dir:     opts.Dir,
-		Env:     opts.Env(),
-		Output:  shell.Streams(sink, stderr),
-		Timeout: opts.Timeout,
+	result, err := shell.Run(ctx, append([]string{Bin}, opts.Args(prompt)...), shell.Options{
+		Dir: opts.Dir, Env: opts.Env(), Output: shell.Streams(sink, stderr), Timeout: opts.Timeout, Group: true,
 	})
+	answer, parseErr := streamAnswer(sink, opts.Role)
+
 	if err != nil {
-		if errors.Is(err, shell.ErrTimeout) {
-			return Answer{}, fmt.Errorf("%w after %s", ErrTimeout, opts.Timeout)
+		if ctx.Err() != nil {
+			return answer, fmt.Errorf("%w: %w", ErrFailed, ctx.Err())
 		}
 
-		return Answer{}, fmt.Errorf("%w: %w", ErrFailed, err)
+		if errors.Is(err, shell.ErrTimeout) {
+			return answer, fmt.Errorf("%w after %s", ErrTimeout, opts.Timeout)
+		}
+
+		return answer, fmt.Errorf("%w: %w", ErrFailed, err)
 	}
 
 	if result.Code != 0 {
-		return Answer{}, fmt.Errorf("%w (exit %d): %s",
-			ErrFailed, result.Code, truncate(stderr.String(), diagnosticLimit))
+		cause := fmt.Errorf("%w (exit %d): %s", ErrFailed, result.Code, truncate(stderr.String(), diagnosticLimit))
+		if parseErr != nil {
+			cause = fmt.Errorf("%w: %w", cause, parseErr)
+		}
+
+		return answer, &StartedTurnError{Outcome: TurnNonZeroExit, Cause: cause}
 	}
 
+	if parseErr != nil {
+		outcome := TurnErrorResult
+		if errors.Is(parseErr, ErrNoResult) {
+			outcome = TurnEmptyOutput
+		}
+
+		return answer, &StartedTurnError{Outcome: outcome, Cause: parseErr}
+	}
+
+	return answer, nil
+}
+
+func streamAnswer(sink *streamSink, role string) (Answer, error) {
 	if sink.result == nil {
+		if sink.failure != "" {
+			return Answer{}, fmt.Errorf("%w: %s", ErrResult, sink.failure)
+		}
+
 		return Answer{}, ErrNoResult
 	}
 
-	return parseEnvelope(sink.result, opts.Role)
+	answer, err := parseEnvelope(sink.result, role)
+	if err == nil && sink.failure != "" {
+		err = fmt.Errorf("%w: %s", ErrResult, sink.failure)
+	}
+
+	return answer, err
 }
 
 // streamSink splits the child's stdout into lines as they land. It is an
@@ -76,6 +109,7 @@ type streamSink struct {
 	on      func(Event)
 	pending []byte
 	result  []byte
+	failure string
 }
 
 func (s *streamSink) Write(chunk []byte) (int, error) {
@@ -101,6 +135,7 @@ func (s *streamSink) Write(chunk []byte) (int, error) {
 // streamLine is the sliver of one stream-json record the caller can act on.
 type streamLine struct {
 	Type    string `json:"type"`
+	Error   string `json:"error"`
 	Message struct {
 		Content []struct {
 			Type  string          `json:"type"`
@@ -125,6 +160,10 @@ func (s *streamSink) emit(line []byte) {
 
 	switch record.Type {
 	case "assistant":
+		if record.Error != "" {
+			s.failure = record.Error
+		}
+
 		s.on(Event{Kind: EventAssistant, Blocks: len(record.Message.Content)})
 
 		for _, block := range record.Message.Content {

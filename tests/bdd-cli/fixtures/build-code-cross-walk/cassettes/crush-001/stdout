@@ -1,5 +1,0 @@
-=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAVersion-iter1-result.yaml ===
-applied: true
-target: "services/calc/calc.go"
-summary: "Bumped Version() return value from 1 to 2; Compatible() left unchanged"
-=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAVersion-iter1-result.yaml ===

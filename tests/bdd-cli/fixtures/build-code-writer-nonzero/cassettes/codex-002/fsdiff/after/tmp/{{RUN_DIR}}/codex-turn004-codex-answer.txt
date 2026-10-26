@@ -1,0 +1,1 @@
+Updated services/calc/calc.go so A returns 1 and B returns 2, completing the required stage. TestA and TestB both passed. Tests and documents were unchanged.

@@ -1,12 +1,12 @@
-// Package codex is the `codex` command line, one of the three engine wrappers
+// Package codex is the `codex` command line, one of the two engine wrappers
 // that alone may reach pkg/shell from inside the engine. Only the engine spawns
 // codex, so the wrapper is engine code and a rebuild regenerates it; the argv
 // it builds is stated in docs/architecture/architecture.yaml.
 //
-// Four facts about the binary shape this package, none documented upstream:
+// Headless execution facts verified against codex-cli 0.162.1:
 //
-//	-s is mandatory     without a sandbox level `codex exec` blocks on an
-//	                    approval prompt and hangs forever headlessly.
+//	permissions         plan/validation select -s; every apply
+//	                    selects its generated named profile with no approval.
 //	the answer is a file stdout carries only a trace; the final message is
 //	                    written to the path given to -o.
 //	a trailing `-`      is what makes codex read the prompt from stdin.
@@ -26,8 +26,7 @@ import (
 // Bin is the binary this package spawns.
 const Bin = "codex"
 
-// The two usable sandbox levels. There is nothing between them: codex either
-// writes nothing or writes the whole working root.
+// Planning and validation use the read-only sandbox; apply turns use a named profile.
 const (
 	SandboxReadOnly       = "read-only"
 	SandboxWorkspaceWrite = "workspace-write"
@@ -40,7 +39,7 @@ const waitDelay = 10 * time.Second
 // Turn is one headless run. Prompt goes to stdin because codex has no
 // system-prompt flag, so a system prompt has to survive inside the user's.
 type Turn struct {
-	// Sandbox is the -s level; empty is not valid — see the package doc.
+	// Sandbox is the ordinary turn's -s level; Writer instead uses its generated profile.
 	Sandbox string
 	// WorkDir is both -C and the child's working directory.
 	WorkDir string
@@ -55,17 +54,30 @@ type Turn struct {
 	// SchemaPath points at a JSON Schema file the answer must satisfy.
 	// codex takes a PATH here, unlike claude's inline --json-schema.
 	SchemaPath string
+	// Writer selects the generated permission profile and JSON events.
+	Writer bool
+}
+
+// Result retains separate JSON evidence and the started-process fact.
+type Result struct {
+	Transcript string
+	Events     string
+	Started    bool
 }
 
 // Args is the argv this turn spawns, exported so a caller can assert on it.
 func (t Turn) Args() []string {
 	args := []string{
 		Bin, "exec",
-		"-s", t.Sandbox,
 		// No session files: every engine turn is single-shot.
 		"--ephemeral",
 		"--skip-git-repo-check",
 		"--color", "never",
+	}
+	if t.Writer {
+		args = append(args, "--strict-config", "--ignore-rules", "--json")
+	} else {
+		args = append(args[:2], append([]string{"-s", t.Sandbox}, args[2:]...)...)
 	}
 
 	if t.WorkDir != "" {
@@ -85,22 +97,37 @@ func (t Turn) Args() []string {
 
 // Run runs the turn and returns codex's TRACE — the answer is in AnswerPath.
 // The trace comes back even when the turn failed: it is what a caller archives.
-func (t Turn) Run() (string, error) {
-	result, err := shell.Run(context.Background(), t.Args(), shell.Options{
+func (t Turn) Run(ctx context.Context) (Result, error) {
+	output := shell.Combined()
+	if t.Writer {
+		output = shell.Capture()
+	}
+
+	result, err := shell.Run(ctx, t.Args(), shell.Options{
 		Dir:       t.WorkDir,
 		Env:       shell.Env{}.Exact(t.Env),
 		Stdin:     strings.NewReader(t.Prompt),
-		Output:    shell.Combined(),
+		Output:    output,
 		Group:     true,
 		WaitDelay: waitDelay,
 	})
+
+	answer := Result{Transcript: result.Stdout + result.Stderr, Started: err == nil}
+	if t.Writer {
+		answer.Events = result.Stdout
+	}
+
+	if ctx.Err() != nil {
+		return answer, fmt.Errorf("%s: %w", Bin, ctx.Err())
+	}
+
 	if err != nil {
-		return result.Stdout, fmt.Errorf("%s: %w", Bin, err)
+		return answer, fmt.Errorf("%s: %w", Bin, err)
 	}
 
 	if result.Code != 0 {
-		return result.Stdout, fmt.Errorf("%s: %w", Bin, result.Err())
+		return answer, fmt.Errorf("%s: %w", Bin, result.Err())
 	}
 
-	return result.Stdout, nil
+	return answer, nil
 }

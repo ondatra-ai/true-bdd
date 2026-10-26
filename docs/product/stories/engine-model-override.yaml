@@ -1,0 +1,87 @@
+story:
+  id: engine-model
+  feature: engine
+  title: Override a model tier for one run
+  as_a: System Architect
+  i_want: to choose a declared tier's model on the command line
+  so_that: a verification can choose its writer without changing the project configuration
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 001-dispatch
+    description: A run overriding its validation tier dispatches the turn to that model and logs the change once
+    steps:
+    - given:
+      - the "engine-model-dispatch" project tree
+      - and: the "scen-check" checklist is narrowed to its "whether this scenario's description follows the rule-based
+          format" prompt
+    - when:
+      - the System Architect runs "scen check E2E-001 --model high=claude:claude-sonnet-5-5"
+    - then:
+      - the command exits with code 0
+      - stdout matches level=INFO msg="Model tier overridden" tier=high from=claude:claude-opus-5 to=claude:claude-sonnet-5-5
+      - stdout matches msg="Dispatching AI turn".*cli=claude model=claude-sonnet-5-5
+      - the file matching "tmp/true-bdd.log.json" has exactly 1 match for "msg":"Model tier overridden"
+      - the engine dispatched 1 validation AI turn to "claude"
+      - stdout matches ALL CHECKS PASSED
+      - no file outside "tmp" changed
+      - the file "true-bdd/true-bdd.yaml" is unchanged
+  - id: 002-undeclared
+    description: An override of a tier absent from the loaded configuration is refused before any AI turn
+    steps:
+    - given:
+      - the "engine-model-undeclared" project tree
+    - when:
+      - the System Architect runs "build tests --model coder=claude:claude-sonnet-5-5"
+    - then:
+      - the command exits with code 1
+      - stdout matches level=ERROR msg="Refusing to start"
+      - stdout matches not configured
+      - the engine dispatched no AI turns
+      - stdout does not match Model tier overridden
+      - no file outside "tmp" changed
+      - the file "true-bdd/true-bdd.yaml" is unchanged
+  - id: 003-no-colon
+    description: An override whose reference has no colon is refused before any AI turn
+    steps:
+    - given:
+      - the "engine-model-no-colon" project tree
+    - when:
+      - the System Architect runs "us refine unused --model high=claude"
+    - then:
+      - the command exits with code 1
+      - stdout matches level=ERROR msg="Refusing to start"
+      - stdout matches model reference must be
+      - the engine dispatched no AI turns
+      - stdout does not match Model tier overridden
+      - no file outside "tmp" changed
+      - the file "true-bdd/true-bdd.yaml" is unchanged
+  - id: 004-empty-model
+    description: An override whose model is empty is refused before any AI turn
+    steps:
+    - given:
+      - the "engine-model-empty-model" project tree
+    - when:
+      - the System Architect runs "us apply unused --model high=claude:"
+    - then:
+      - the command exits with code 1
+      - stdout matches level=ERROR msg="Refusing to start"
+      - stdout matches empty model
+      - the engine dispatched no AI turns
+      - stdout does not match Model tier overridden
+      - no file outside "tmp" changed
+      - the file "true-bdd/true-bdd.yaml" is unchanged
+  - id: 005-unknown-cli
+    description: An override naming an unknown AI CLI is refused before any AI turn
+    steps:
+    - given:
+      - the "engine-model-unknown-cli" project tree
+    - when:
+      - the System Architect runs "build code --model high=aider:model"
+    - then:
+      - the command exits with code 1
+      - stdout matches level=ERROR msg="Refusing to start"
+      - stdout matches unknown cli
+      - the engine dispatched no AI turns
+      - stdout does not match Model tier overridden
+      - no file outside "tmp" changed
+      - the file "true-bdd/true-bdd.yaml" is unchanged

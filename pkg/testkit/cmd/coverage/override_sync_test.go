@@ -44,6 +44,7 @@ type declaredSelection struct {
 func declaredSelections() map[string]declaredSelection {
 	return map[string]declaredSelection{
 		"engine-claude-minimal":                  {Stem: scenCheckStem, QShort: "30469152", RequireF: false},
+		"engine-model-dispatch":                  {Stem: scenCheckStem, QShort: "30469152", RequireF: false},
 		"us-refine-fix-descriptions":             {Stem: usRefineStem, QShort: "800eb66b", RequireF: true},
 		"us-refine-fix-steps":                    {Stem: usRefineStem, QShort: "fa3f00d3", RequireF: true},
 		"us-refine-fix-desc-qualifier":           {Stem: usRefineStem, QShort: vagueDescriptionQ, RequireF: true},
@@ -67,9 +68,8 @@ func declaredSelections() map[string]declaredSelection {
 		"scen-check-fix-rewrites-implementation":     {Stem: scenCheckStem, QShort: "4ca30544", RequireF: true},
 		"scen-check-fix-adds-measurable-criterion":   {Stem: scenCheckStem, QShort: measurableQShort, RequireF: true},
 		"scen-check-fix-rewrites-subjective-outcome": {Stem: scenCheckStem, QShort: "17ccea8c", RequireF: true},
-		"scen-check-fix-by-crush":                    {Stem: scenCheckStem, QShort: measurableQShort, RequireF: true},
 		"scen-check-claude-turn-fails":               {Stem: scenCheckStem, QShort: measurableQShort, RequireF: false},
-		"scen-check-crush-turn-fails":                {Stem: scenCheckStem, QShort: measurableQShort, RequireF: false},
+		"scen-check-codex-turn-fails":                {Stem: scenCheckStem, QShort: measurableQShort, RequireF: false},
 	}
 }
 
@@ -167,6 +167,14 @@ const (
 // the behaviour under test; every other one declares checklist_prompts.
 func allowedOverrideFixtures() map[string]overridePurpose {
 	return map[string]overridePurpose{
+		"build-code-claude-replay":                overrideTiers,
+		"build-code-claude-failure":               overrideTiers,
+		"build-code-writer-bound":                 overrideFixLoop,
+		"build-code-codex-selection":              overrideTiers,
+		"build-code-codex-missing-root":           overrideTiers,
+		"build-code-codex-nonzero":                overrideTiers,
+		"build-code-no-confirmation-bound":        overrideFixLoop,
+		"build-code-shrinking-bound":              overrideFixLoop,
 		"build-code-not-applied-bound":            overrideFixLoop,
 		"build-tests-empty-checklist":             overrideEmpty,
 		"scen-check-every-prompt-skipped":         overrideEmpty,
@@ -208,6 +216,7 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"scen-check-fix-merges-phrases":           overrideChecks,
 		"scen-check-skipped-prompt":               overrideChecks,
 		"us-refine-fix-records-phrase":            overrideChecks,
+ "codex-apply-us-refine": overrideChecks,
 		"scen-check-prompt-names-its-tiers":       overrideTiers,
 		"fix-loop-refine-feedback":                overrideFixLoop,
 		"fix-loop-own-words":                      overrideFixLoop,

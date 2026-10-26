@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
 	"github.com/ondatra-ai/true-bdd/pkg/shell"
 )
 
@@ -21,6 +22,7 @@ func BuildTrimmed(ctx context.Context, dir, binary string) error {
 			binary,
 			"./services/bdd-cli"},
 		shell.Options{Dir: dir,
+			Env: git.Environment(),
 			Group: true})
 	if err != nil {
 		return err
@@ -38,12 +40,12 @@ func ToolchainRoots(ctx context.Context) ([]string, error) {
 	result,
 		err := shell.Run(ctx,
 		[]string{Bin,
-			"env",
-			"-json",
-			"GOROOT",
-			"GOMODCACHE",
+			envVerb,
+			jsonOutputFlag,
+			goRootEnv,
+			goModCacheEnv,
 			"GOCACHE"},
-		shell.Options{Group: true})
+		shell.Options{Group: true, Env: git.Environment()})
 	if err != nil {
 		return nil, err
 	}
@@ -59,5 +61,5 @@ func ToolchainRoots(ctx context.Context) ([]string, error) {
 		return nil, fmt.Errorf("decoding go roots: %w", err)
 	}
 
-	return []string{roots["GOROOT"], roots["GOMODCACHE"], roots["GOCACHE"]}, nil
+	return []string{roots[goRootEnv], roots[goModCacheEnv], roots["GOCACHE"]}, nil
 }

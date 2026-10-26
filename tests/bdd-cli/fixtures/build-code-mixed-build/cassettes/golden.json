@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "build-code-mixed-build",
+  "files": [
+    {
+      "path": "services/calc/calc.go",
+      "kind": "modified",
+      "size": 67,
+      "sha256": "5fabd689b1a436da28ab9cebccee1cdd6b7ea40759eefe2e07b3b4216e145e3d",
+      "text": "package calc\n\nfunc A() int { return 1 }\n\nfunc B() int { return 2 }\n"
+    }
+  ]
+}

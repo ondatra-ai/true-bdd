@@ -1,7 +1,0 @@
-Edit applied and the single-line scalar replacement keeps the YAML valid (no `: `, `#`, or leading quote/bracket introduced; shell verification is blocked in this mode, so confirmed by inspection).
-
-=== FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
-applied: true
-target: "tmp/{{RUN_DIR}}/scenarios_yaml.yaml"
-summary: "Rewrote E2E-001's description into a single 'must' rule: The greeter must print the configured greeting followed by the name it is given and exit with code 0"
-=== FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===

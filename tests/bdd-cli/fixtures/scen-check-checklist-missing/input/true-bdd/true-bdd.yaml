@@ -6,13 +6,13 @@
 # for the one `scen check` walks.
 
 engine:
-  # "<cli>:<model>", split on the FIRST colon only. cli is claude | crush |
+  # "<cli>:<model>", split on the FIRST colon only. cli is claude | codex |
   # codex and must be on $PATH; model passes through verbatim to that CLI's
   # model flag. A checklist asks for a tier by name.
   models:
     xhigh: "claude:claude-fable-5"
     high: "claude:claude-opus-5"
-    coder: "crush:zhipu-coding/glm-5.2"
+    coder: "codex:gpt-6.1-sol"
     # Pinned FULL id, never an alias: the BDD harness's judge resolves
     # its model here, and a floating alias silently migrates every
     # future verdict out from under the recordings it is compared to.

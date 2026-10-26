@@ -1,0 +1,195 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Technical Scrum Master applying fixes to a user story.
+
+**Your Task:**
+1. Read the current story and the fix prompt instructions.
+2. Apply the changes EXACTLY as specified in the fix prompt — they may
+   target any field of the story (`title`, `as_a`, `i_want`, `so_that`,
+   `status`, `acceptance_criteria`, …), not only acceptance criteria.
+3. Output the COMPLETE updated story body in YAML form.
+
+**Output Requirements:**
+- Output every field of the current story, with the fix prompt's
+  changes applied. Fields not mentioned by the fix prompt MUST be
+  preserved verbatim — do not invent, drop, or reorder unrelated
+  fields.
+- The `acceptance_criteria` array MUST always be present, even when
+  the fix only touches a top-level field; preserve all ACs unless the
+  fix prompt explicitly modifies them.
+- Each acceptance criterion must have an `id`, `description`, and
+  `steps` field. The `description` is a one-line rule-based statement
+  using must/should (NO Gherkin in `description`). The `steps` field
+  holds the Gherkin scenario as a structured given/when/then list.
+- Wrap the output with FILE_START/FILE_END markers.
+
+**Output Format:**
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply-doc-summary-iter1-result.yaml ===
+id: "<story id>"
+title: "<story title>"
+as_a: "<role>"
+i_want: "<desire>"
+so_that: "<benefit>"
+status: "<status>"
+acceptance_criteria:
+  - id: "AC-1"
+    description: "One-line rule-based statement with must/should"
+    steps:
+      - given:
+          - "precondition"
+      - when:
+          - "action"
+      - then:
+          - "outcome"
+          - and: "additional outcome"
+  - id: "AC-2"
+    description: "Another one-line rule-based statement"
+    steps:
+      - given:
+          - "precondition"
+      - when:
+          - "action"
+      - then:
+          - "outcome"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-doc-summary-iter1-result.yaml ===
+```
+
+**CRITICAL:**
+- Apply changes EXACTLY as described in the fix prompt.
+- Output the WHOLE story body — top-level fields AND
+  `acceptance_criteria`. Never output just one section.
+- Do NOT add, remove, or rename fields beyond what the fix prompt
+  specifies.
+- Preserve the exact wording from the fix prompt's "After" sections.
+- The `description` must NEVER contain Given/When/Then — those belong
+  in `steps`.
+
+
+### TASK
+
+## Current Story
+
+**ID:** doc-summary
+**Title:** Document Summary On Demand
+**As a:** Claude User
+**I want:** Claude to give me a short summary of a shared Google Doc when I ask for one
+**So that:** I can decide whether the document needs my attention without reading it in full
+**Status:** PLANNED
+
+### Current Acceptance Criteria
+
+**AC-1:**
+Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.
+
+**AC-2:**
+Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access.
+
+**AC-3:**
+Claude must properly display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.
+
+**AC-4:**
+Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words.
+
+
+---
+
+## Fix Prompt to Apply
+
+=== FILE_START: tmp/{{RUN_DIR}}/01-doc-summary-fix-prompts.md ===
+# Fix Prompt for Story doc-summary: Document Summary On Demand
+
+## Instructions
+Apply the following changes to the acceptance criteria for this story.
+
+Scope note: the failed check (`us-refine/acceptance_criteria`, forbidden qualifiers) faults **only AC-3**. AC-1, AC-2 and AC-4 contain no forbidden qualifier from the product document's `vocabulary.forbidden_qualifiers` list (properly, correctly, appropriate, appropriately, user-friendly, fast, quickly, easily, seamless, intuitive) and must be reproduced exactly as they stand — same description, same steps, word for word. Do not reword, split, merge or re-order them.
+
+## Original Acceptance Criteria
+1. AC-1: Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc. [has steps]
+2. AC-2: Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access. [has steps]
+3. AC-3: Claude must properly display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds. [has steps]
+4. AC-4: Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words. [has steps]
+
+## Required Changes
+
+### Change #1: AC-3
+**Before:** Claude must properly display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.
+
+**Issue:** The description contains the forbidden qualifier **'properly'** (listed in `vocabulary.forbidden_qualifiers` of the product document). 'Properly' is not testable: displaying the exact message string is already the observable, measurable outcome, so the qualifier adds no verifiable meaning while making the criterion fail the vague-word check.
+
+**After (description):** Claude must display the message 'The summary timed out - please try again' in the conversation when no summary is produced within 30 seconds of the Claude User asking for a summary.
+
+**After (steps):** The existing Given/When/Then steps are already correct, use the exact role "Claude User" from the story's as_a clause, and stay aligned with the revised description. Keep them, with the single clarification that the message is displayed *in the conversation* so the step matches the revised description:
+```yaml
+steps:
+  - given: "a Google Doc is shared with the Claude User's account"
+  - given: "the summary backend does not respond within 30 seconds"
+  - when: "the Claude User asks Claude to summarize the document"
+  - then: "Claude displays the message 'The summary timed out - please try again' in the conversation"
+```
+
+### No other changes
+- **AC-1** — unchanged. Description and both `then` steps (including the `and`-joined "the summary names the document title") are kept verbatim.
+- **AC-2** — unchanged. Description and both `then` steps (including the `and`-joined "Claude does not display any content from the document") are kept verbatim.
+- **AC-4** — unchanged. Description and both `then` steps (including the `and`-joined "Claude states that only the first 10000 words were summarized") are kept verbatim.
+- No new ACs are added and no ACs are merged or removed. The four criteria cover four distinct behaviours (normal summary, no-access error, timeout, oversized document), so there are no duplicates to reconcile.
+
+## Complete Fixed Acceptance Criteria
+
+This block replaces the whole acceptance-criteria list. Preserve the `and` conjunction markers on the second `then` of AC-1, AC-2 and AC-4 exactly as they exist in the story file today — only AC-3's description (and the "in the conversation" wording of its `then`) changes.
+
+```yaml
+- ac_id: AC-1
+  description: "Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc."
+  steps:
+    - given: "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
+    - when: "the Claude User asks Claude to summarize the document"
+    - then: "Claude displays a summary of 150 words or fewer in the conversation"
+    - and_then: "the summary names the document title"
+
+- ac_id: AC-2
+  description: "Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access."
+  steps:
+    - given: "a Google Doc exists that is not shared with the Claude User's account"
+    - when: "the Claude User asks Claude to summarize that document"
+    - then: "Claude displays the message 'This document is not shared with your account'"
+    - and_then: "Claude does not display any content from the document"
+
+- ac_id: AC-3
+  description: "Claude must display the message 'The summary timed out - please try again' in the conversation when no summary is produced within 30 seconds of the Claude User asking for a summary."
+  steps:
+    - given: "a Google Doc is shared with the Claude User's account"
+    - given: "the summary backend does not respond within 30 seconds"
+    - when: "the Claude User asks Claude to summarize the document"
+    - then: "Claude displays the message 'The summary timed out - please try again' in the conversation"
+
+- ac_id: AC-4
+  description: "Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words."
+  steps:
+    - given: "a Google Doc with more than 10000 words is shared with the Claude User's account"
+    - when: "the Claude User asks Claude to summarize the document"
+    - then: "Claude displays a summary of the first 10000 words"
+    - and_then: "Claude states that only the first 10000 words were summarized"
+```
+
+Note on step keys: AC-1, AC-2 and AC-4 each have a second `then` marked as an `and` conjunction in the source file. Write those continuation steps using whatever key the story file already uses for an `and`-joined `then` (shown above as `and_then`) — do not change the conjunction structure, only carry it over unchanged.
+
+=== FILE_END: tmp/{{RUN_DIR}}/01-doc-summary-fix-prompts.md ===
+
+---
+
+## Instructions
+
+Apply the changes described in the "Fix Prompt to Apply" section above.
+The fix may target any field of the story — top-level (`title`,
+`as_a`, `i_want`, `so_that`, `status`) or `acceptance_criteria` —
+so output the COMPLETE updated story body. Preserve every field that
+the fix prompt does not touch.
+
+Output the complete updated story body using FILE_START/FILE_END
+markers:
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-doc-summary-iter1-result.yaml ===
+(Complete story body YAML here — every top-level field plus
+`acceptance_criteria`)
+=== FILE_END: tmp/{{RUN_DIR}}/apply-doc-summary-iter1-result.yaml ===

@@ -13,8 +13,8 @@ import (
 // this package can't import the engine's internal config packages.
 var modelRefPattern = regexp.MustCompile(`(?m)^\s+\w+:\s*"?([a-z]+):[^"\n]+"?\s*$`)
 
-// supportedCLICount sizes the result: claude, crush, codex.
-const supportedCLICount = 3
+// supportedCLICount sizes the result: claude, codex.
+const supportedCLICount = 2
 
 // RequiredCLIs returns the distinct agent CLIs the engine config binds
 // its model tiers to. The suite gates on these, so a missing binary

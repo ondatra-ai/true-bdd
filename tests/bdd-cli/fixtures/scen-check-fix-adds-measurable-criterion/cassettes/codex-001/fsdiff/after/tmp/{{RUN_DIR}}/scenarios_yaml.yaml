@@ -1,0 +1,25 @@
+# Registry seed for `scen-check-fix-adds-measurable-criterion`.
+#
+# One Scenario that names no exact message, count, code or threshold
+# anywhere: the greeter "greets" the person, and nothing says with what.
+# The fix asks which criterion, then adds it to this entry.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-21"
+  description: "One scenario with no measurable criterion"
+
+scenarios:
+  E2E-001:
+    description: The greeter must greet the person whose name it is given
+    service: greeter
+    path: tests/greeter/greet_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the greeting is configured
+      when:
+        - the Operator runs the greeter with a name
+      then:
+        - stdout matches "^Hello, Alice$"

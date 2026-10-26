@@ -12,9 +12,6 @@ import (
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 )
 
-// aiPromptTimeout bounds one turn regardless of which CLI runs it.
-const aiPromptTimeout = 20 * time.Minute
-
 // Router dispatches each turn to the provider named by the ModelRef's CLI.
 // It is the sole implementation of the domain's AIPort, so changing which
 // CLI runs a checklist role is a config edit, not a code change.
@@ -33,7 +30,6 @@ type Router struct {
 func NewRouter(workDir, tmpDir string) *Router {
 	providers := map[provider.CLI]Provider{
 		provider.CLIClaude: NewClaudeProvider(),
-		provider.CLICrush:  NewCrushProvider(),
 		provider.CLICodex:  NewCodexProvider(),
 	}
 
@@ -51,6 +47,7 @@ func (r *Router) ExecutePromptWithSystem(
 	model provider.ModelRef,
 	mode ExecutionMode,
 	resultSchema string,
+	options ...provider.TurnOptions,
 ) (string, error) {
 	target, ok := r.providers[model.CLI]
 	if !ok {
@@ -70,12 +67,13 @@ func (r *Router) ExecutePromptWithSystem(
 		"user_length", len(userPrompt),
 	)
 
-	timeoutCtx, cancel := context.WithTimeout(ctx, aiPromptTimeout)
-	defer cancel()
+	turnOptions := writerOptions(role, model.CLI, options)
 
 	started := time.Now()
 
-	response, err := target.Execute(timeoutCtx, Request{
+	response, err := target.Execute(ctx, Request{
+		CodexApply:   role == provider.RoleApply && model.CLI == provider.CLICodex,
+		ClaudeWriter: turnOptions.ClaudeWriter,
 		SystemPrompt: systemPrompt,
 		UserPrompt:   userPrompt,
 		Model:        model.Model,
@@ -84,10 +82,10 @@ func (r *Router) ExecutePromptWithSystem(
 		TmpDir:       r.tmpDir,
 		Label:        label,
 		ResultSchema: resultSchema,
+		CodexWriter:  turnOptions.CodexWriter,
 	})
 
-	// Logged on both paths: a turn that burned twenty minutes and then
-	// failed is exactly the one worth seeing in a timing report.
+	// Failed turns retain timing evidence alongside successful turns.
 	elapsed := time.Since(started)
 
 	if err != nil {
@@ -114,4 +112,15 @@ func (r *Router) ExecutePromptWithSystem(
 	)
 
 	return response, nil
+}
+
+func writerOptions(role provider.Role, cli provider.CLI, options []provider.TurnOptions) provider.TurnOptions {
+	if role != provider.RoleApply || len(options) == 0 {
+		return provider.TurnOptions{}
+	}
+
+	return provider.TurnOptions{
+		ClaudeWriter: cli == provider.CLIClaude && options[0].ClaudeWriter,
+		CodexWriter:  cli == provider.CLICodex && options[0].CodexWriter,
+	}
 }

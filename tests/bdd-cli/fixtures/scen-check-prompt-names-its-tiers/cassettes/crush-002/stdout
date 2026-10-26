@@ -1,7 +1,0 @@
-Reasoning: The product document's `forbidden_qualifiers` list contains properly, correctly, appropriate, appropriately, user-friendly, fast, quickly, helpful. The scenario description — "The greeter must print the configured greeting followed by the name it is given, and the command must exit within 100 milliseconds" — contains none of these words; its timing claim is a concrete 100 ms bound, not a vague qualifier. No forbidden qualifier is present.
-
-=== FILE_START: tmp/{{RUN_DIR}}/01-E2E-001-checklist-scen-check-scenario_quality-result.yaml ===
-answer: pass
-context:
-  - "E2E-001: ok"
-=== FILE_END: tmp/{{RUN_DIR}}/01-E2E-001-checklist-scen-check-scenario_quality-result.yaml ===

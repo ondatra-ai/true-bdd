@@ -5,6 +5,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
 	"github.com/ondatra-ai/true-bdd/pkg/shell"
 )
 
@@ -28,7 +29,7 @@ func ReplayOracle(ctx context.Context, binary string, opt OracleOptions) (int, e
 		[]string{"test",
 			"-tags",
 			"bdd",
-			"-json",
+			jsonOutputFlag,
 			"-count=1",
 			"-timeout=40m",
 			"./tests/bdd-cli/",
@@ -44,9 +45,7 @@ func oracleCommand(ctx context.Context, args []string, opt OracleOptions) (int, 
 			args...),
 		shell.Options{Dir: opt.Directory,
 			Session: true,
-			Env: shell.Inherit().Strip("OLDPWD",
-				"GIT_DIR",
-				"GIT_WORK_TREE").Set("PWD="+opt.Directory,
+			Env: git.Environment().Strip("OLDPWD").Set("PWD="+opt.Directory,
 				"TRUE_BDD_DRILL_RUN="+opt.Marker),
 			Output: shell.To(opt.Output)},
 		shell.Watchdog{Limit: opt.Limit,

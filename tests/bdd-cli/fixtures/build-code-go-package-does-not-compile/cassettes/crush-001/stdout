@@ -1,9 +1,0 @@
-The edit applied; the gopls diagnostic looks stale. Verifying the build:File matches the specified content exactly (tab-indented, gofmt-clean). The earlier gopls diagnostic was stale — the edit was made in the same event that reported it.
-
-```
-=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodecompile.tests.suite-build--iter1-result.yaml ===
-applied: true
-target: "services/calc/calc.go"
-summary: "Declared func Multiply(a, b int) int returning a*b, replacing the planted-defect comment so the suite compiles."
-=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodecompile.tests.suite-build--iter1-result.yaml ===
-```

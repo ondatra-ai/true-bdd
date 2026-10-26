@@ -38,8 +38,8 @@ type BuildCodeDeps struct {
 }
 
 // RunBuildCode drives `build code`. Loads architecture.yaml, discovers
-// failing tests across every declared suite, and walks each through the
-// build-code checklist, editing production source under services/* until it converges.
+// failures and walks their whole set through the build-code checklist.
+// Its built-in verdict needs no model; the writer edits declared service roots.
 func RunBuildCode(
 	ctx context.Context,
 	deps BuildCodeDeps,
@@ -47,13 +47,14 @@ func RunBuildCode(
 	fix bool,
 ) error {
 	tmpDir := deps.RunDir.GetTmpOutPath()
-	execution := newBuildCodeExecution(deps, architectureFile)
+	execution := newBuildCodeExecution(deps, architectureFile, fix)
 
-	err := runner.Run(ctx, runner.Spec[*testrunner.FailingTest]{
-		Name:          "build code",
-		ChecklistName: "build-code",
-		StoryID:       "",
-		Fix:           fix,
+	err := runner.Run(ctx, runner.Spec[*BuildCodeItem]{
+		Name:                  "build code",
+		ChecklistName:         "build-code",
+		StoryID:               "",
+		Fix:                   fix,
+		RecoverWriterFailures: true,
 
 		LoadItems:      execution.discover,
 		ReloadItems:    execution.discover,
@@ -61,7 +62,8 @@ func RunBuildCode(
 		PostFix:        execution.postFix,
 		PostNotApplied: execution.postNotApplied,
 		Finalize:       finalizeBuildCode,
-		GetSubject:     testrunner.Subject,
+		GetSubject:     buildCodeSubject,
+		Checks:         BuildCodeChecks(),
 		OnItemStart:    buildCodeOnItemStart,
 
 		Evaluator:    deps.BuildCodeEvaluator,
@@ -84,7 +86,10 @@ func RunBuildCode(
 func loadFailingTests(
 	deps BuildCodeDeps,
 	architectureFile string,
+	fix bool,
 ) func(ctx context.Context) ([]*testrunner.FailingTest, error) {
+	configured := false
+
 	return func(ctx context.Context) ([]*testrunner.FailingTest, error) {
 		arch, err := architecture.Load(architectureFile)
 		if err != nil {
@@ -100,6 +105,12 @@ func loadFailingTests(
 		// so "edits production source, never tests" is enforced by the same
 		// document that defines where production source lives.
 		deps.BuildCodeFixApplier.UseWriteRoots(servicePaths(arch.Services))
+
+		if fix && !configured {
+			configureReplayGrant(deps.BuildCodeFixApplier, arch.Testing)
+
+			configured = true
+		}
 
 		failures, err := walkSuites(ctx, deps.TestRunnerDispatcher, arch)
 		if err != nil {
@@ -214,14 +225,14 @@ func runSuiteDiscovery(
 }
 
 // buildCodeOnItemStart prints the per-item progress banner.
-func buildCodeOnItemStart(idx, total int, item *testrunner.FailingTest) {
-	slog.Info("test", "index", idx+1, "total", total, "id", item.ID)
+func buildCodeOnItemStart(idx, total int, item *BuildCodeItem) {
+	slog.Info("test", "index", idx+1, "total", total, "id", item.id)
 }
 
 // finalizeBuildCode is the Finalize closure for `build code`. Non-nil
 // error iff the walk did not converge so the CLI exits non-zero on any
 // still-failing test.
-func finalizeBuildCode(result *engine.Result[*testrunner.FailingTest]) error {
+func finalizeBuildCode(result *engine.Result[*BuildCodeItem]) error {
 	if result.Reason == engine.Converged && len(result.Items) == 0 {
 		return nil
 	}

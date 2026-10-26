@@ -1,0 +1,24 @@
+# One Item is the whole failing set; the engine answers its runner verdict.
+version: "1.0"
+last_updated: "2026-10-24"
+config:
+  max_apply_attempts: 1
+engine:
+  fix_model: high
+  apply_model: coder
+sections:
+  - id: test-passes
+    name: "Test Passes"
+    description: "Every member of the failing set must pass its latest run."
+    validation_prompts:
+      - D: tests-pass
+        rationale: "A production repair succeeds when every member of the failing set passes its latest run."
+        docs:
+          - architecture_yaml
+        F: |
+          Propose one production repair plan for the whole failing set.
+          Read the Specification, harness and service source. Explain what
+          to build or change, in which files, and which tests each part serves.
+          The writer implements the plan after the person chooses apply.
+          Edit only the declared service roots; never tests, *_test.go,
+          __tests__, documents, or assertions.

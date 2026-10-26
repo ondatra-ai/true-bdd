@@ -1,7 +1,0 @@
-`prepared-first.txt` exists; `prepared-second.txt` is absent. Creating the second preparation file and leaving calc.go unchanged per protocol.```
-=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter2-result.yaml ===
-applied: false
-target: "services/calc/calc.go"
-summary: "second preparation only; test still fails"
-=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter2-result.yaml ===
-```

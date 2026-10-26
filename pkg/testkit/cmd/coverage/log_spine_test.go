@@ -159,3 +159,42 @@ func TestParseLogSpineEdgeCases(t *testing.T) {
 		t.Errorf("garbled log must count 1 malformed line: %v %d %v", segments, malformed, err)
 	}
 }
+
+func TestBuildCodeCleanWalkRequiresFreshGreenDiscovery(t *testing.T) {
+	t.Parallel()
+
+	for _, example := range []struct {
+		name, tail string
+		want       bool
+	}{
+		{"green after apply", `{"msg":"Total failing tests across architecture","failures":0}
+{"msg":"BUILD CODE COMPLETE"}`, true},
+		{"completion with failures", `{"msg":"Total failing tests across architecture","failures":1}
+{"msg":"BUILD CODE COMPLETE"}`, false},
+		{"completion without discovery", `{"msg":"BUILD CODE COMPLETE"}`, false},
+		{"green without completion", `{"msg":"Total failing tests across architecture","failures":0}`, false},
+	} {
+		t.Run(example.name, func(t *testing.T) {
+			t.Parallel()
+			path := filepath.Join(t.TempDir(), "log.json")
+			content := `{"msg":"Loaded prompts","command":"build code","items":1,"prompts":1}
+{"msg":"Fix applied successfully","subjectID":"failing-set"}
+{"msg":"Result file saved","file":"tmp/2026-01-01-00-00/01-failing-set-checklist-build-code-test-passes-result.yaml"}
+` + example.tail + "\n"
+
+			err := os.WriteFile(path, []byte(content), 0o644)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			segments, malformed, err := parseLogSpine(path)
+			if err != nil || malformed != 0 || len(segments) != 1 {
+				t.Fatalf("scan: %+v %d %v", segments, malformed, err)
+			}
+
+			if got := cleanWalkProven(segments[0]); got != example.want {
+				t.Fatalf("clean=%v, want %v", got, example.want)
+			}
+		})
+	}
+}

@@ -1,0 +1,68 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+Implement the failing service in services/calc/ only. Never edit tests or documents. Follow the requested replay and final-message protocol.
+
+
+### TASK
+
+## Failing set
+Test: fixture/buildcodefix/tests/suite::TestA
+Test: fixture/buildcodefix/tests/suite::TestB
+
+## Plan
+# Repair plan for failing-set
+
+## Diagnosis
+
+Both failures are the same defect, in one file, with no missing structure: the production accessors in the `calc` service return a placeholder zero instead of the values the suite requires. Nothing is unimplemented or unwired — the package exists, the import path resolves, the harness command (`go test -json -count=1 ./tests/suite/...`) already compiles and runs both tests to a real `fail` verdict (see `tmp/{{RUN_DIR}}/testrun-001-go-test-discover-stdout.jsonl`). The only wrong thing is the returned data.
+
+Evidence:
+
+- `tests/suite/calc_test.go:8-12` (`TestA`) imports `fixture/buildcodefix/services/calc` and fails with `A needs one` unless `calc.A()` is exactly `1`.
+- `tests/suite/calc_test.go:13-17` (`TestB`) fails with `B needs two` unless `calc.B()` is exactly `2`.
+- `services/calc/calc.go:3-4` currently has `func A() int { return 0 }` and `func B() int { return 0 }` — both stubbed at zero, so both assertions trip.
+
+## Write scope
+
+`docs/architecture/architecture.yaml` declares exactly one service, `calc`, at `path: services/calc`. That is the only writable root. The entire repair fits inside it; do not touch `tests/suite/calc_test.go`, `go.mod`, the checklist, the templates, or anything under `docs/`.
+
+## Part 1 — Correct the `A` accessor (serves `TestA`)
+
+**File:** `services/calc/calc.go`
+
+**Contract:** `calc.A()` is an exported, no-argument function returning `int`. Its contract is that it yields the value one. Keep the signature byte-identical (`func A() int`) so the existing call site in `tests/suite/calc_test.go:9` keeps compiling; change only the returned value from `0` to `1`.
+
+**Intended implementation:** a direct constant return — `func A() int { return 1 }`. There is no input, no state and no branch to introduce; anything more (a receiver, a config lookup, a computed expression) adds surface the suite does not exercise and cannot justify. Resist the temptation to "generalise" into a parameterised calculator.
+
+**Serves:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestA` — the `if calc.A() != 1` guard stops firing, so `t.Fatal("A needs one")` is never reached and the test reports `pass`.
+
+## Part 2 — Correct the `B` accessor (serves `TestB`)
+
+**File:** `services/calc/calc.go`
+
+**Contract:** `calc.B()` is an exported, no-argument function returning `int`, whose contract is that it yields the value two. Again keep `func B() int` exactly as declared so `tests/suite/calc_test.go:14` still resolves; change only the returned value from `0` to `2`.
+
+**Intended implementation:** `func B() int { return 2 }`. Independent of `A` — do not express `B` in terms of `A` (e.g. `A() + 1`), which would couple two separately-asserted contracts so that a future change to one silently breaks the other test.
+
+**Serves:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB` — the `if calc.B() != 2` guard stops firing and the test reports `pass`.
+
+## What must NOT change
+
+- Keep `package calc` as the first declaration; the import path `fixture/buildcodefix/services/calc` is derived from `module fixture/buildcodefix` in `go.mod` plus the directory, so renaming the package or moving the directory breaks compilation of the suite.
+- Keep both functions exported (capital `A`, `B`) and keep their arity and return type; the test calls them as zero-argument functions in an `int` comparison.
+- Do not add, rename or delete any other exported symbol in the package — nothing else consumes it, so new surface is dead code.
+- Do not edit `tests/suite/calc_test.go` or any `*_test.go`, do not relax or delete the two `t.Fatal` assertions, and do not add build tags, `t.Skip`, or `-run` filters anywhere.
+
+## Verification
+
+From the run directory root, re-run the architecture's own command: `go test -json -count=1 ./tests/suite/...`. Expect `Action: "pass"` records for `TestA`, for `TestB`, and for the package `fixture/buildcodefix/tests/suite`, with no `fail` action and no build error. Both members of the failing set must pass in that same run — a partial green (one test fixed, the other still red) does not satisfy the `tests-pass` item, which requires every member of the set to pass its latest run.
+Implement calc.A() returning 1 and calc.B() returning 2 in services/calc/calc.go.
+Run the granted selection in `{{CWD}}`:
+`go test -count=1 ./tests/suite/... -run 'TestA|TestB'`
+Poll your process with the native process tool until completion if it yields a session id. Do not stop before the selection passes.
+End your final message with this block in the message itself, never write the result file:
+=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
+applied: true
+target: services/calc/calc.go
+summary: Implemented A and B and observed both selection members passing.
+=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===

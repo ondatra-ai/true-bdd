@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+cat >/dev/null
+answer=
+while [ "$#" -gt 0 ]; do
+  if [ "$1" = -o ]; then shift; answer=$1; fi
+  shift
+done
+# Do not create the edit root: the engine must provision it before spawn.
+printf 'package calc\n\nfunc A() int { return 1 }\nfunc B() int { return 2 }\n' > services/calc/calc.go
+printf '%s\n' '{"type":"item.completed","item":{"type":"command_execution","command":"fixture writer sentinel","exit_code":0}}'
+printf '%s\n' 'fixture writer stderr sentinel' >&2
+printf '=== FILE_START: %s/apply-failing-set-iter1-result.yaml ===\napplied: true\ntarget: services/calc/calc.go\nsummary: Controlled writer repaired calc.\n=== FILE_END: %s/apply-failing-set-iter1-result.yaml ===\n' "$(dirname "$answer")" "$(dirname "$answer")" > "$answer"
+exit 7

@@ -53,8 +53,8 @@ type Harness struct {
 	BinPath string
 	// SessionRoot is tmp/test_run/<timestamp>/.
 	SessionRoot string
-	// Shims holds one aiproxy dir per caller. A caller running live has
-	// no dir at all.
+	// Shims holds one aiproxy dir per caller. The services dir also supports
+	// opted-in fixture observation live; ordinary live turns never arm it.
 	Shims runner.ShimDirs
 	// Modes is the per-caller mode this run was given.
 	Modes runner.Modes

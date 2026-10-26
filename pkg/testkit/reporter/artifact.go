@@ -60,7 +60,7 @@ func artifactKind(name string) string {
 		return "result"
 	case strings.HasSuffix(name, "-fix-prompts.md"):
 		return "fix prompt"
-	case strings.HasSuffix(name, "-crush.log"), strings.HasSuffix(name, "-codex.log"):
+	case strings.HasSuffix(name, "-codex.log"):
 		return "CLI transcript"
 	default:
 		return "artifact"
@@ -133,7 +133,7 @@ func (c ChecklistCell) String() string {
 var iterationSuffix = regexp.MustCompile(`-(fix-)?iter\d+$`)
 
 // cellFromArtifact parses a cell out of an artifact filename (false for
-// names with no cell, e.g. the crush transcript). Three shapes exist:
+// names with no cell, e.g. the codex transcript). Three shapes exist:
 //
 //	01-<subject>-checklist-<section>-user.txt   the validation turn
 //	01-<subject>-fix-iter1-user.txt             the fix turn

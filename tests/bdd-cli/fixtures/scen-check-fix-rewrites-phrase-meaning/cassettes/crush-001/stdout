@@ -1,9 +1,0 @@
-Shell access is blocked in this mode, so validation runs on the engine side; the edit mirrors the neighbouring entries' folded `>-` style exactly, so the copy parses.
-
-=== FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
-```yaml
-applied: true
-target: "tmp/{{RUN_DIR}}/product.yaml"
-summary: "Rewrote the means of catalogue entry 'stdout matches {expected:pattern}' to name the printed standard-output lines the pattern is matched against, one line at a time; template, block, terms and all other entries untouched."
-```
-=== FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===

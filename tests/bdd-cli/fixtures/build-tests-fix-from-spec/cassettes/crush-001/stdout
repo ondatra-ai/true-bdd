@@ -1,7 +1,0 @@
-Wiring confirmed (`steps.Register(suite)` awaited in scenarios.go:32). Writing the new definitions file.File written (stale gopls diagnostic expected to clear). Running verification:Shell is blocked by the guard hook; verifying via LSP diagnostics instead:Write applied exactly as specified. Shell and diagnostics tools are blocked by the true-bdd guard hook, so `go vet`/`go test` verification could not be run in this mode (the earlier `undefined: steps.Register` diagnostic predates the file).
-
-=== FILE_START: tmp/{{RUN_DIR}}/apply-INT-901-iter1-result.yaml ===
-applied: true
-target: "tests/mcp/steps/steps.go"
-summary: "Created steps.go registering all four suite phrases (INT-901 Given/When/Then plus INT-902 Then) with health-poll Given, initialize-POST When, and header-validating Thens"
-=== FILE_END: tmp/{{RUN_DIR}}/apply-INT-901-iter1-result.yaml ===

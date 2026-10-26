@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "fixture": "build-code-shrinking-bound",
+  "files": [
+    {
+      "path": "services/calc/attempted.txt",
+      "kind": "created",
+      "size": 10,
+      "sha256": "5ace7808da8ae6d03f8f0b1215b6b6571b99aa4e759788ce40a4268530254138",
+      "text": "attempted\n"
+    },
+    {
+      "path": "services/calc/calc.go",
+      "kind": "modified",
+      "size": 59,
+      "sha256": "bab34dfd837b153dc102486d5332fd21ac4bcf66a78c2a7a61f39e58c5bd4e69",
+      "text": "package calc\nfunc A() int{return 1}\nfunc B() int{return 0}\n"
+    }
+  ]
+}

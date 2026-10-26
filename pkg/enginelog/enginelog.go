@@ -26,7 +26,7 @@ const (
 	MsgAnswerUnusable = "Model answer unusable"
 	MsgReturned       = "AI turn returned"
 	MsgFailed         = "AI turn failed"
-	// MsgTranscriptSaved is crush's and codex's only result boundary: they
+	// MsgTranscriptSaved is codex's only result boundary: they
 	// stream nothing, so the archived transcript is the first evidence the
 	// turn produced anything.
 	MsgTranscriptSaved = "CLI transcript saved"

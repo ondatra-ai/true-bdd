@@ -1,5 +1,0 @@
-Preparation files are absent — creating `prepared-first.txt` only, leaving `calc.go` unchanged.=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter1-result.yaml ===
-applied: false
-target: "services/calc/calc.go"
-summary: "first preparation only; test still fails"
-=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter1-result.yaml ===

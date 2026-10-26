@@ -57,7 +57,7 @@ func TestJudgeGradedDropsScratch(t *testing.T) {
 	diff := []FileChange{
 		{Path: "tmp/2026-01-01/checklist-01.txt"},
 		{Path: "docs/product/stories/96.1-story.yaml"},
-		{Path: "tmp/aiproxy-state/cursor-crush"},
+		{Path: "tmp/aiproxy-state/cursor-codex"},
 		{Path: testRegistryPath},
 	}
 

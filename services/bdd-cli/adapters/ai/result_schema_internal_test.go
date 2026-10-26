@@ -7,8 +7,6 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/provider"
 )
 
-// crush has no schema flag at all, so a turn routed to it can only be held
-// to the delimited contract. This repo routes every apply turn there.
 func TestSupportsResultSchema(t *testing.T) {
 	t.Parallel()
 
@@ -18,7 +16,6 @@ func TestSupportsResultSchema(t *testing.T) {
 	}{
 		{provider.CLIClaude, true},
 		{provider.CLICodex, true},
-		{provider.CLICrush, false},
 	}
 
 	for _, testCase := range tests {
@@ -40,10 +37,10 @@ func TestOptionsAddSchemaOnlyWhenSet(t *testing.T) {
 	claudeProvider := &ClaudeProvider{}
 	req := Request{SystemPrompt: "sys", Model: "claude-opus-5"}
 
-	bare := claudeProvider.options(t.Context(), req).Args("body")
+	bare := claudeProvider.options(req).Args("body")
 
 	req.ResultSchema = `{"type":"object"}`
-	withSchema := claudeProvider.options(t.Context(), req).Args("body")
+	withSchema := claudeProvider.options(req).Args("body")
 
 	if slices.Contains(bare, "--json-schema") {
 		t.Errorf("unconstrained turn carries a schema: %q", bare)
@@ -60,7 +57,7 @@ func TestOptionsAddSchemaOnlyWhenSet(t *testing.T) {
 func TestOptionsIsolateTheTurn(t *testing.T) {
 	t.Parallel()
 
-	args := (&ClaudeProvider{}).options(t.Context(), Request{Model: "claude-opus-5"}).Args("body")
+	args := (&ClaudeProvider{}).options(Request{Model: "claude-opus-5"}).Args("body")
 
 	want := []string{"--setting-sources", "", "--strict-mcp-config", "--safe-mode"}
 	if !slices.Equal(args[:len(want)], want) {

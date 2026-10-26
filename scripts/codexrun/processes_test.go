@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	gitcli "github.com/ondatra-ai/true-bdd/pkg/cli/git"
 	"github.com/ondatra-ai/true-bdd/scripts/codexrun"
 )
 
@@ -19,13 +20,13 @@ const failedStatus = "failed"
 
 func TestRunStopsDetachedChildBeforeSummary(t *testing.T) {
 	for _, test := range []struct {
-		name, mode, status, login string
-		resume                    bool
+		name, mode, status string
+		resume             bool
 	}{
 		{name: "writer-timeout", mode: "stall", status: "timed-out"},
 		{name: "writer-done", status: doneStatus},
 		{name: "writer-failed", mode: "fail", status: failedStatus},
-		{name: "crush-done", status: doneStatus, login: "out"},
+		{name: "writer-unavailable", mode: limitStatus, status: unavailableStatus},
 		{name: "writer-resume", status: doneStatus, resume: true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -44,7 +45,6 @@ func TestRunStopsDetachedChildBeforeSummary(t *testing.T) {
 
 			installDetachedAgent(t, root)
 			t.Setenv("MODE", test.mode)
-			t.Setenv("LOGIN", test.login)
 			t.Setenv("COMMIT", "yes")
 
 			var (
@@ -79,7 +79,7 @@ func installDetachedAgent(t *testing.T, root string) {
 	setupDetachedProcess(t, root)
 	t.Setenv("DETACHED_LEAVE", "yes")
 
-	for _, agent := range []string{"codex", crushAgent} {
+	for _, agent := range []string{codexCommand} {
 		path := filepath.Join(root, "bin", agent)
 		script := strings.Replace(read(t, path), "cat > \"$CAPTURE.stdin\"",
 			"cat > \"$CAPTURE.stdin\"\n\"$DETACHED_EXECUTABLE\" -test.run=^TestDetachedProcessHelper$", 1)
@@ -226,6 +226,7 @@ func assertResumeExitCode(t *testing.T, root, name string, pid int) {
 	binary := filepath.Join(root, "bin/codex-runner")
 
 	build := exec.CommandContext(t.Context(), "go", "build", "-o", binary, "../cmd/codex")
+	build.Env = gitcli.ScrubEnvironment(os.Environ())
 
 	output, err := build.CombinedOutput()
 	if err != nil {

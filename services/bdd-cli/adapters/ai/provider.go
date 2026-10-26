@@ -4,8 +4,12 @@ import "context"
 
 // Request is one single-turn prompt handed to a provider.
 type Request struct {
+	// CodexApply confines every codex apply independently of build-code recovery.
+	CodexApply bool
+	// ClaudeWriter enables build code's hooked, unbounded claude writer.
+	ClaudeWriter bool
 	// SystemPrompt is passed natively where the CLI supports it and
-	// prepended to UserPrompt where it does not (crush, codex).
+	// prepended to UserPrompt where it does not (codex).
 	SystemPrompt string
 	// UserPrompt is the rendered checklist/fix template.
 	UserPrompt string
@@ -26,6 +30,8 @@ type Request struct {
 	TmpDir string
 	// Label distinguishes concurrent artifacts within TmpDir.
 	Label string
+	// CodexWriter selects build-code started-turn recovery; CodexApply selects confinement.
+	CodexWriter bool
 }
 
 // Provider runs one prompt through a single agent CLI and returns the

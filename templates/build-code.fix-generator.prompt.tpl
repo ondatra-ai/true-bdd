@@ -1,103 +1,73 @@
-# Generate Fix Prompt for Failing Test
+# Plan a production repair for the failing set
 
-## Edit Roots (HARD LIMITS)
-
-The fix applier may only Write or Edit files under `services/*`.
-
-The fix applier MUST NOT touch:
-- Any file under `tests/`
-- Any file matching `*_test.go`
-- Any file under `services/*/__tests__/`
-- `docs/scenarios.yaml` or anything else under `docs/`
-
-Do NOT propose changes that violate these limits.
-
-## Investigation Tools
-
-Use Read, Glob, and Grep to inspect:
-- The failing test file (`{{.Subject.FilePath}}`) to understand the
-  contract being asserted.
-{{- if .Subject.Service }}
-- The production source for service `{{.Subject.Service}}`, at its path
-  declared in the architecture.
-{{- else }}
-- The production source at the service paths declared in the architecture;
-  no service is known for this test.
-{{- end }}
-- Sibling tests passing today, to mirror conventions.
+Read the Specification, the harness and the production source to propose one repair for the whole set. The writer may edit only the architecture's declared service roots, never tests, *_test.go, __tests__, or documents. Tests outside this set are not the repair's subject.
 
 ## Reference Documentation
-{{- range $key, $path := .DocPaths }}
+{{ range $key, $path := .DocPaths }}
 - Read(`{{ $path }}`) — {{ $key }}
-{{- end }}
+{{ end }}
 
-## Subject — Failing Test
+## Subject — Failing Set
 
-**Test ID:** {{.Subject.ID}}
-**Service:** {{if .Subject.Service}}{{.Subject.Service}}{{else}}none is known{{end}}
-**Suite:** {{.Subject.Suite}}
-**Framework:** {{.Subject.Framework}}
-**Test Name:** {{.Subject.TestName}}
-**Source File:** {{.Subject.FilePath}}
+{{ range .Subject.Tests }}
+**Test ID:** {{ .ID }}
+**Service:** {{ if .Service }}{{ .Service }}{{ else }}none is known{{ end }}
+**Suite:** {{ .Suite }}
+**Framework:** {{ .Framework }}
+**Test Name:** {{ .TestName }}
+**Source File:** {{ .FilePath }}
+{{ end }}
 
-### Last Failure Output
+### Failure groups
+{{ range .Subject.Groups }}
+Tests: {{ join ", " .IDs }}
 ```
-{{.Subject.FailureOutput}}
+{{ .Output }}
 ```
+{{ end }}
 
-{{ if .Subject.Scenario }}
-## Subject — Registry Scenario
+### Specification documents
+{{ range $key, $path := .Subject.Documents }}
+- Read(`{{ $path }}`) — {{ $key }}
+{{ end }}
 
-**Scenario ID:** {{.Subject.Scenario.ID}}
-**Description:** {{.Subject.Scenario.Description}}
-**Service:** {{.Subject.Scenario.Service}}
-**Path:** {{.Subject.Scenario.Path}}
+{{ range .Subject.Scenarios }}
+### Registry Scenario
+**Scenario ID:** {{ .ID }}
+**Description:** {{ .Description }}
+**Service:** {{ .Service }}
+**Path:** {{ .Path }}
 
-### Steps
-{{.Subject.Scenario.FormatSteps}}
-{{ if .Subject.Spec.Declared }}
+{{ .FormatSteps }}
+{{ end }}
+
+{{ with .Subject.Specification }}
+{{ if .Declared }}
 ## What the spec says these steps mean
 
-The Specification defines the contract the production code must satisfy.
-Use these phrases, glossary meanings and word mappings with the whole
-Scenario above when repairing the failing test.
-
-### Scenario steps and their phrases
-{{ range .Subject.Spec.Steps }}
-- {{ .Block }} step "{{ .Text }}"{{ range .Templates }} matches `{{ . }}`{{ else }} matches no catalogue phrase{{ end }}
-{{- end }}
-
 ### Phrases
-{{ range .Subject.Spec.Phrases }}
+{{ range .Phrases }}
 - `{{ .Template }}` ({{ .Block }} step): {{ .Means }}
   Words: {{ if .Terms }}{{ join ", " .Terms }}{{ else }}none{{ end }}
-{{- end }}
+{{ end }}
 
 ### Words
-{{ range .Subject.Spec.Terms }}
+{{ range .Terms }}
 #### {{ .Term }}
-
-{{ if .Means }}{{ range .Means }}- Means: {{ . }}
-{{ end }}{{ else }}- The glossary does not define it.
+{{ range .Means }}- Means: {{ . }}
+{{ else }}- The glossary does not define it.
 {{ end }}
-{{- range .Mappings }}- In the implementation: {{ .Technical }}
+{{ range .Mappings }}- In the implementation: {{ .Technical }}
 - Observed by: {{ .ObservedBy }}
 {{ else }}- The architecture's word mapping does not map it.
 {{ end }}
-{{- end }}
 {{ end }}
 {{ end }}
+{{ end }}
 
-## Validation Failure
-
-The following check failed and needs to be fixed:
-
-### Failed Check: {{ .FailedCheck.SectionPath }}
-
-**Question:** {{ .FailedCheck.Question }}
+## Failed Prompt
+{{ .FailedCheck.SectionPath }}: {{ .FailedCheck.Question }}
 **Actual:** {{ .FailedCheck.ActualAnswer }}
-
-**Suggested Fix Template:**
 {{ .FailedCheck.FixPrompt }}
 
 {{- if .UserAnswers }}
@@ -135,63 +105,14 @@ feedback to CORRECT IT:
 
 ## Your Task
 
-{{- if index .UserAnswers "_user_refinement" }}
-**REFINEMENT MODE**: Apply user feedback and regenerate the fix prompt.
-DO NOT ask questions.
-{{- else if .UserAnswers }}
-Using the user's clarifications above, generate a complete fix prompt.
-{{- else }}
-Analyze if you have enough context to generate a confident fix.
-{{- end }}
+Propose a plan: what to build or change, in which files, and which tests each part serves. Explain the contract and the intended implementation so the writer can investigate and implement it. Do not write replacement files into the plan. Never weaken, skip or remove assertions.
 
-**If you can generate a confident fix**, output a fix prompt that the
-applier can execute. The applier is allowed to Write new files and Edit
-existing ones, but ONLY under `services/*` (and never any test file
-or anything under `docs/`). The fix MUST:
-- Make the smallest production change that causes the test to pass
-  without weakening, removing, or skipping any assertion.
-- Reference exact file paths and use exact code snippets the applier
-  can copy verbatim.
-- Never modify the test itself.
-- Never modify `docs/scenarios.yaml` or anything else under `docs/`.
+=== FILE_START: {{ .ResultPath }} ===
+# Repair plan for {{ .SubjectID }}
+<parts, files, intended behaviour, and the set's tests each part serves>
+=== FILE_END: {{ .ResultPath }} ===
 
-=== FILE_START: {{.ResultPath}} ===
-# Fix Prompt for Failing Test {{.SubjectID}}
-
-## Target
-Apply the change(s) under `services/*` only. The test at
-`{{.Subject.FilePath}}` is the contract; do NOT modify it.
-
-## Required Changes
-### Change #N: [description]
-**File:** <repo-relative path under `services/*`>
-**Action:** Use the Write tool (new file) or the Edit tool (existing
-file) with the exact content below.
-**Content / new_string:**
-```
-<paste the exact code block here>
-```
-**old_string** (only for Edit on an existing file):
-```
-<verbatim slice the new code should replace or anchor against>
-```
-=== FILE_END: {{.ResultPath}} ===
-
-**If you need clarification first**, output:
-
-=== QUESTIONS_START ===
-questions:
-  - id: q1
-    question: "<your question>"
-    context: "<why you need this information>"
-    options:
-      - "<option 1>"
-      - "<option 2>"
-=== QUESTIONS_END ===
-
-**Important:**
-- Output EXACTLY ONE block (FILE_START/FILE_END or QUESTIONS_START/QUESTIONS_END)
-- Never output both
+If clarification is required, output one QUESTIONS_START/QUESTIONS_END block with questions containing id, question, context and options. Return either a plan or questions, never both. In refinement mode return the revised plan.
 
 {{ if .Structured }}
 **ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END

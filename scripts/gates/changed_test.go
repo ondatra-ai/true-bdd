@@ -7,6 +7,7 @@ import (
 	"slices"
 	"testing"
 
+	gitcli "github.com/ondatra-ai/true-bdd/pkg/cli/git"
 	"github.com/ondatra-ai/true-bdd/scripts/gates"
 )
 
@@ -15,6 +16,7 @@ func git(t *testing.T, dir string, args ...string) {
 
 	cmd := exec.CommandContext(t.Context(), "git", args...)
 	cmd.Dir = dir
+	cmd.Env = gitcli.ScrubEnvironment(os.Environ())
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {

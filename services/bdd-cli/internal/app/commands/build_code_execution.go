@@ -4,77 +4,106 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"time"
 
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/testrunner"
 )
 
-// buildCodeExecution invalidates every stored verdict after any apply turn.
+// buildCodeExecution discovers one set and refreshes it after every completed apply.
 type buildCodeExecution struct {
-	deps       BuildCodeDeps
-	load       func(context.Context) ([]*testrunner.FailingTest, error)
-	generation int
-	verdicts   map[*testrunner.FailingTest]int
+	deps             BuildCodeDeps
+	load             func(context.Context) ([]*testrunner.FailingTest, error)
+	architectureFile string
+	generation       int
+	verdicts         map[*BuildCodeItem]int
 }
 
-func newBuildCodeExecution(deps BuildCodeDeps, architectureFile string) *buildCodeExecution {
+func newBuildCodeExecution(deps BuildCodeDeps, architectureFile string, fix bool) *buildCodeExecution {
 	return &buildCodeExecution{
-		deps:     deps,
-		load:     loadFailingTests(deps, architectureFile),
-		verdicts: make(map[*testrunner.FailingTest]int),
+		deps: deps, load: loadFailingTests(deps, architectureFile, fix),
+		verdicts:         make(map[*BuildCodeItem]int),
+		architectureFile: architectureFile,
 	}
 }
 
-func (e *buildCodeExecution) discover(ctx context.Context) ([]*testrunner.FailingTest, error) {
-	items, err := e.load(ctx)
+func (e *buildCodeExecution) discover(ctx context.Context) ([]*BuildCodeItem, error) {
+	tests, err := e.load(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	clear(e.verdicts)
 
-	for _, item := range items {
-		e.verdicts[item] = e.generation
+	if len(tests) == 0 {
+		return nil, nil
 	}
 
-	return items, nil
-}
-
-func (e *buildCodeExecution) beforeEvaluate(ctx context.Context, item *testrunner.FailingTest) (bool, error) {
-	if generation, known := e.verdicts[item]; !known || generation != e.generation {
-		runnerImpl, err := e.deps.TestRunnerDispatcher.For(item.Framework)
-		if err != nil {
-			return false, fmt.Errorf("rerun dispatch %s: %w", item.Framework, err)
-		}
-
-		passed, output, err := runnerImpl.RunOne(ctx, item)
-		if err != nil {
-			return false, fmt.Errorf("rerun %s: %w", item.ID, err)
-		}
-
-		item.LastRunPassed = passed
-		item.FailureOutput = output
-		item.LastRunAt = time.Now()
-		e.verdicts[item] = e.generation
+	subjectID, title := "failing-set", "Failing set"
+	if len(tests) == 1 {
+		subjectID, title = testrunner.Subject(tests[0])
 	}
 
-	return item.LastRunPassed, nil
+	documents := map[string]string{"architecture_yaml": e.architectureFile}
+	for _, key := range []string{"product", "scenarios_yaml"} {
+		if path := optionalCodeDocument(e.deps.DocResolver, key); path != "" {
+			documents[key] = path
+		}
+	}
+
+	item := &BuildCodeItem{Tests: tests, Documents: documents, id: subjectID, title: title}
+
+	e.verdicts[item] = e.generation
+
+	return []*BuildCodeItem{item}, nil
 }
 
-func (e *buildCodeExecution) postFix(
-	_ context.Context, item *testrunner.FailingTest, _ string,
-) (*testrunner.FailingTest, error) {
-	slog.Info("Fix applied; re-running this test in isolation")
+func (e *buildCodeExecution) beforeEvaluate(ctx context.Context, item *BuildCodeItem) (bool, error) {
+	_, err := e.refresh(ctx, item)
 
-	e.generation++
+	return false, err
+}
+
+func (e *buildCodeExecution) refresh(ctx context.Context, item *BuildCodeItem) (*BuildCodeItem, error) {
+	if generation, known := e.verdicts[item]; known && generation == e.generation {
+		return item, nil
+	}
+
+	return e.rerun(ctx, item)
+}
+
+func (e *buildCodeExecution) rerun(ctx context.Context, item *BuildCodeItem) (*BuildCodeItem, error) {
+	impl, err := e.deps.TestRunnerDispatcher.For(item.Tests[0].Framework)
+	if err != nil {
+		return item, fmt.Errorf("rerun dispatch: %w", err)
+	}
+
+	err = impl.RunSet(ctx, item.Tests)
+	if err != nil {
+		return item, fmt.Errorf("rerun failing set: %w", err)
+	}
+
+	remaining := make([]*testrunner.FailingTest, 0, len(item.Tests))
+	for _, test := range item.Tests {
+		if !test.LastRunPassed {
+			remaining = append(remaining, test)
+		}
+	}
+
+	item.Tests = remaining
+	e.verdicts[item] = e.generation
 
 	return item, nil
 }
 
-func (e *buildCodeExecution) postNotApplied(
-	_ context.Context, item *testrunner.FailingTest,
-) (*testrunner.FailingTest, error) {
+func (e *buildCodeExecution) postFix(ctx context.Context, item *BuildCodeItem, _ string) (*BuildCodeItem, error) {
+	slog.Info("Fix applied; re-running the failing set")
+
 	e.generation++
 
-	return item, nil
+	return e.refresh(ctx, item)
+}
+
+func (e *buildCodeExecution) postNotApplied(ctx context.Context, item *BuildCodeItem) (*BuildCodeItem, error) {
+	e.generation++
+
+	return e.refresh(ctx, item)
 }

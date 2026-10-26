@@ -194,7 +194,7 @@ sections:
 			fieldSubjectID: raw, fieldIteration: 1}),
 		logLine(t, "2026-08-10T23:03:40Z", "Prompt saved", map[string]any{
 			fieldFile: "tmp/run/apply-" + testSubject + "--iter1-system.txt"}),
-		dispatch(t, "2026-08-10T23:03:41Z", 3, roleApply, cliCrush, crushModel),
+		dispatch(t, "2026-08-10T23:03:41Z", 3, roleApply, cliCodex, codexModel),
 		returned(t, "2026-08-10T23:05:00Z", 3, roleApply),
 		logLine(t, "2026-08-10T23:05:00Z", "Fix applied successfully", map[string]any{
 			fieldSubjectID: raw}),
@@ -449,7 +449,7 @@ func applyRunRecords(t *testing.T) []string {
 			fieldSubjectID: firstAC, fieldIteration: 1}),
 		logLine(t, "2026-08-10T23:18:40Z", "Prompt saved", map[string]any{
 			fieldFile: "tmp/run/apply-99.3-001-iter1-system.txt"}),
-		dispatch(t, "2026-08-10T23:18:41Z", 3, roleApply, cliCrush, crushModel),
+		dispatch(t, "2026-08-10T23:18:41Z", 3, roleApply, cliCodex, codexModel),
 		returned(t, "2026-08-10T23:21:00Z", 3, roleApply),
 		logLine(t, "2026-08-10T23:21:00Z", "Fix applied successfully", map[string]any{
 			fieldSubjectID: firstAC}),

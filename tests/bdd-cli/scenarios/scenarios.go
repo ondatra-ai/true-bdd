@@ -345,7 +345,7 @@ func installShims(modes runner.Modes) (runner.ShimDirs, error) {
 		runner.CallerServices: modes.Services,
 		runner.CallerTests:    modes.Tests,
 	} {
-		if mode == runner.ProxyModeLive {
+		if mode == runner.ProxyModeLive && caller != runner.CallerServices {
 			continue
 		}
 
@@ -373,7 +373,7 @@ func installShimNames(base, caller, proxyPath string) (string, error) {
 		return "", fmt.Errorf("create shim dir for %s: %w", caller, err)
 	}
 
-	for _, name := range []string{"claude", "crush", "codex"} {
+	for _, name := range []string{"claude", "codex"} {
 		err = os.Symlink(proxyPath, filepath.Join(dir, name))
 		if err != nil {
 			return "", fmt.Errorf("install shim %s: %w", name, err)

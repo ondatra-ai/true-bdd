@@ -3,10 +3,10 @@ package ai
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
-	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli/claude"
 	"github.com/ondatra-ai/true-bdd/pkg/enginelog"
@@ -29,18 +29,27 @@ func (c *ClaudeProvider) Name() string {
 	return "claude"
 }
 
-// Execute runs one single-turn prompt. The router owns the timeout.
+// Execute runs one single-turn prompt with caller cancellation.
 func (c *ClaudeProvider) Execute(ctx context.Context, req Request) (string, error) {
 	c.logPromptExecution(req.SystemPrompt, req.UserPrompt)
 
-	answer, err := claude.RunStream(req.UserPrompt, c.options(ctx, req), logEvent)
+	answer, err := c.executeTurn(ctx, req)
+	logClaudeAnswer(req, answer, err)
+
 	if err != nil {
+		if req.ClaudeWriter {
+			return "", claudeWriterFailure(err)
+		}
+
 		return c.handleExecutionResult("", err)
 	}
 
-	logTurnUsage(answer)
-
 	payload := answerText(answer.Data)
+	if req.ClaudeWriter && strings.TrimSpace(payload) == "" {
+		return "", &pkgerrors.ClaudeTurnError{
+			Outcome: pkgerrors.ClaudeTurnEmptyOutput, Cause: pkgerrors.ErrProviderProducedNoOutput(c.Name()),
+		}
+	}
 
 	// A schema-constrained turn that came back without its object is an
 	// infrastructure failure; falling back to the narration would grade
@@ -63,7 +72,7 @@ func (c *ClaudeProvider) logPromptExecution(systemPrompt, userPrompt string) {
 // options projects one Request onto the wrapper's argv. No empty-model
 // fallback: the registry validated the ref at startup, so an empty model here
 // is a bug worth surfacing rather than a silent downgrade to some default.
-func (c *ClaudeProvider) options(ctx context.Context, req Request) claude.Options {
+func (c *ClaudeProvider) options(req Request) claude.Options {
 	opts := claude.Options{
 		Minimal:        true,
 		SystemPrompt:   req.SystemPrompt,
@@ -71,7 +80,6 @@ func (c *ClaudeProvider) options(ctx context.Context, req Request) claude.Option
 		PermissionMode: permissionAcceptEdits,
 		Schema:         req.ResultSchema,
 		Dir:            req.WorkDir,
-		Timeout:        remaining(ctx),
 	}
 
 	if len(req.Mode.AllowedTools) > 0 {
@@ -93,18 +101,6 @@ func (c *ClaudeProvider) options(ctx context.Context, req Request) claude.Option
 // writes are already fenced by the engine's tool allowlist,
 // so a prompt would only stall a run nobody is watching.
 const permissionAcceptEdits = "acceptEdits"
-
-// remaining is the router's own budget, read back off the context. The
-// wrapper bounds a turn by duration rather than by cancellation, so the
-// deadline has to be handed over as one.
-func remaining(ctx context.Context) time.Duration {
-	deadline, ok := ctx.Deadline()
-	if !ok {
-		return 0
-	}
-
-	return time.Until(deadline)
-}
 
 // answerText reads the envelope's payload. A schema turn's answer IS the
 // object and rides back as its own JSON; a prose turn's is a JSON string, and
@@ -149,8 +145,7 @@ func logToolUse(event claude.Event) {
 }
 
 // logTurnUsage logs the cost/token counters as a standalone "AI turn usage"
-// record: only the claude provider returns a usage report at all — crush
-// and codex return bare text, so this can't merge into the router's line.
+// record: only Claude returns usage; codex returns bare text.
 func logTurnUsage(answer claude.Answer) {
 	// Cache reads and cache writes are priced differently from ordinary
 	// input, so each counter is kept separate rather than summed.
@@ -187,4 +182,44 @@ func (c *ClaudeProvider) handleExecutionResult(resultStr string, err error) (str
 	slog.Info("Claude returned result", "length", len(resultStr))
 
 	return resultStr, nil
+}
+
+func claudeWriterFailure(err error) error {
+	var started *claude.StartedTurnError
+	if !errors.As(err, &started) {
+		return pkgerrors.ErrProviderExecutionFailed("claude", err)
+	}
+
+	outcomes := map[claude.TurnOutcome]pkgerrors.ClaudeTurnOutcome{
+		claude.TurnNonZeroExit: pkgerrors.ClaudeTurnNonZeroExit,
+		claude.TurnErrorResult: pkgerrors.ClaudeTurnErrorResult,
+		claude.TurnEmptyOutput: pkgerrors.ClaudeTurnEmptyOutput,
+	}
+
+	return &pkgerrors.ClaudeTurnError{Outcome: outcomes[started.Outcome], Cause: err}
+}
+
+func (c *ClaudeProvider) executeTurn(ctx context.Context, req Request) (claude.Answer, error) {
+	opts := c.options(req)
+	if !req.ClaudeWriter {
+		return claude.RunStreamContext(ctx, req.UserPrompt, opts, logEvent)
+	}
+
+	writer, err := claudeWriterOptions(ctx, req)
+	if err != nil {
+		return claude.Answer{}, pkgerrors.ErrProviderExecutionFailed(c.Name(), err)
+	}
+
+	opts.Writer = writer
+	opts.AllowedTools = ""
+	opts.DisallowedTools = nil
+	opts.PermissionMode = "default"
+
+	return claude.RunStreamContext(ctx, req.UserPrompt, opts, logEvent)
+}
+
+func logClaudeAnswer(req Request, answer claude.Answer, err error) {
+	if err == nil || (req.ClaudeWriter && (answer.CostUSD != 0 || answer.Tokens != nil)) {
+		logTurnUsage(answer)
+	}
 }

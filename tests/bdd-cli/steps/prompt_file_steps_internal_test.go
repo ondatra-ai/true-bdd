@@ -20,7 +20,7 @@ func TestEveryFileMatchIsContainedBeforeReading(t *testing.T) {
 
 			plantPromptMatch(t, kind, root)
 
-			err := assertEveryFileMatches(runAt(root), []string{"*.txt", "matches", "secret"})
+			err := assertEveryFileMatches(runAt(root), []string{"*.txt", filePatternMatches, "secret"})
 			if kind == regularFile || kind == insideSymlink {
 				if err != nil {
 					t.Fatal(err)

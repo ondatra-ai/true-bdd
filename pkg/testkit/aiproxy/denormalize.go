@@ -16,6 +16,7 @@ var errRunDirUnresolved = errors.New(
 // becomes the current working directory, {{HOME}} the replaying machine's
 // home, and {{RUN_DIR}} the engine's current run-directory name.
 func denormalize(text, cwd, runDir string) (string, error) {
+	text = strings.ReplaceAll(text, goRootPlaceholder, goRoot())
 	text = strings.ReplaceAll(text, cwdPlaceholder, cwd)
 
 	// The replaying machine's own home, not the recording one's — that

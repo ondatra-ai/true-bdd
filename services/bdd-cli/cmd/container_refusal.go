@@ -13,7 +13,9 @@ import (
 // containerFor builds the container a command runs on, refusing to start
 // when it cannot: cobra alone prints the error to stderr, which no step reads.
 func containerFor(cmd *cobra.Command, provide containerProvider) (*bootstrap.Container, error) {
-	container, err := provide()
+	overrides, _ := cmd.Flags().GetStringArray("model")
+
+	container, err := provide(overrides...)
 	if err != nil {
 		return nil, runner.RefuseStartup(commandName(cmd), fmt.Errorf("initialize container: %w", err))
 	}

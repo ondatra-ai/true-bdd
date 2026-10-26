@@ -17,7 +17,7 @@ func (r Repository) Archive(ctx context.Context, commit string) ([]byte, error) 
 			"archive",
 			"--format=tar",
 			commit},
-		shell.Options{Dir: r.Dir},
+		shell.Options{Dir: r.Dir, Env: Environment()},
 		r.Watchdog)
 	if err != nil {
 		return nil, err

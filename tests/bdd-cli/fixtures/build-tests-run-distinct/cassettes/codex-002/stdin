@@ -1,0 +1,209 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Step Definition Editor applying fixes that bind a registry
+scenario's unbound steps to executable code.
+
+**Your Task:**
+1. Read the step definitions already registered by the suite the fix
+   prompt names.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described — using the Write tool to
+   create a new file or the Edit tool to extend an existing one, inside
+   that suite's `steps/` package.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read, Glob, Grep to inspect existing files before writing.
+- Use Write to create a new file in the suite's steps package.
+- Use Edit to mutate an existing file in the suite's steps package.
+- Do NOT touch the scenario registry.
+- Do NOT write to any path outside the steps package the fix prompt
+  names. That path came from the architectural spec: it is the one tree
+  the spec says holds this suite's tests.
+
+**Output Requirements:**
+- After your Write/Edit calls succeed, output a YAML confirmation
+  inside FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other content in the target file — only add the
+  registration and the function the fix prompt specifies.
+
+**Output Format:**
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-001-double-iter2-result.yaml ===
+applied: true
+target: "<repo-relative path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-001-double-iter2-result.yaml ===
+```
+
+**CRITICAL:**
+- Apply changes EXACTLY as described in the fix prompt.
+- Do NOT add, remove, or modify content beyond what the fix prompt
+  specifies.
+- Do NOT duplicate a definition whose pattern already matches the same
+  step, and do NOT loosen an existing pattern to make it match — a
+  definition that matches two steps is refused by the runner for the
+  same reason as one that matches none.
+- Register every new definition in the suite's existing `Register`
+  function.
+- Make all file changes during this turn — the confirmation block is
+  informational only.
+
+
+### TASK
+
+## Subject — Registry Scenario
+
+**Scenario ID:** calc-001-double
+**Description:** Double a number
+**Service:** calc
+
+### Steps
+Given:
+  - the number is 2
+When:
+  - the number is doubled
+Then:
+  - the result is 4
+
+
+---
+
+## Fix Prompt to Apply
+
+=== FILE_START: tmp/{{RUN_DIR}}/01-calc-001-double-fix-prompts.md ===
+# Fix Prompt for Scenario calc-001-double: Double a number
+
+## Resolution of the target suite
+`docs/architecture/architecture.yaml` declares the service `calc`, and the
+suite tree that owns it is `tests/calc/` (registry `docs/scenarios.yaml`,
+shim `tests/calc/scenarios/scenarios.go` with `Suite: "calc"`). The only
+tree you may write is:
+
+    tests/calc/steps/
+
+Do NOT touch `docs/scenarios.yaml`, `tests/calc/calc_test.go`,
+`tests/calc/scenarios/scenarios.go`, or `replay.sh`.
+
+## Diagnosis (all three steps are already registered — two are wrong)
+`tests/calc/steps/steps.go` already registers all three patterns of the
+vocabulary, so nothing new needs to be registered; the registered
+functions compute the wrong values, which is why both scenarios in the
+selection fail on `Then the result is …`:
+
+1. **`^the number is doubled$` multiplies by 3, not 2.**
+   `suite.Step(`^the number is doubled$`, func(s *State, _ []string) error { s.Value *= 3; return nil })`
+   - calc-001-double: 2 * 3 = 6, registry expects 4 → `expected 4, got 6`.
+   - calc-002-peer:   4 * 3 = 12, registry expects 8 → `expected 8, got 12`.
+   One edit fixes both the subject and its neighbour, which share this
+   When step verbatim.
+
+2. **`^the number is (\d+)$` corrupts the state for the input `3`.**
+   `number` does `if value == 3 { state.Value++ }` after the parse, so a
+   Given of `the number is 3` seeds 4 instead of 3. No scenario in the
+   current selection uses 3, but this is the same class of injected
+   arithmetic drift as #1 and the next registry scenario phrased
+   `the number is 3` would fail for a reason the step text does not
+   admit. Remove it in the same pass so the walk does not buy another
+   cycle for it.
+
+`result` (`^the result is (\d+)$`) is already correct — it parses the
+expected value, compares against the state, and returns an error naming
+both the expectation and the actual value plus its evidence block. Leave
+it exactly as it is, including the `EVIDENCE-BEGIN`/`EVIDENCE-END`
+payload and the `strings` import that feeds it.
+
+## Required Changes
+
+### Change #1: make the "doubled" When step actually double the value
+**File:** `tests/calc/steps/steps.go`
+**Action:** Use the Edit tool on the existing file.
+**old_string:**
+```
+ suite.Step(`^the number is doubled$`, func(s *State, _ []string) error { s.Value *= 3; return nil })
+```
+**Content / new_string:**
+```
+ suite.Step(`^the number is doubled$`, doubled)
+```
+
+### Change #2: name the When behaviour as a sibling-style function, and stop the Given from mutating the parsed input
+**File:** `tests/calc/steps/steps.go`
+**Action:** Use the Edit tool on the existing file. This replaces the
+whole `number` function with a version that seeds exactly the captured
+number and reports a parse failure honestly, and adds the `doubled`
+action function referenced by Change #1 next to it (same package, same
+`*State` / `[]string` signature and the same `Registrar` contract from
+`tests/calc/steps/state.go` — do not introduce a new state type, a new
+`Register` function, or a new file).
+**old_string:**
+```
+func number(state *State, args []string) error {
+ value, err := strconv.Atoi(args[0]); state.Value = value; if value == 3 { state.Value++ }; return err
+}
+```
+**Content / new_string:**
+```
+func number(state *State, args []string) error {
+ value, err := strconv.Atoi(args[0]); if err != nil { return fmt.Errorf("expected a number, got %q: %w", args[0], err) }
+ state.Value = value; return nil
+}
+func doubled(state *State, _ []string) error {
+ state.Value *= 2; return nil
+}
+```
+
+## Constraints to honour while applying
+- Keep the three registrations inside the existing `Register(suite Registrar)`
+  function, in their current order, each anchored with `^…$`.
+- Keep the capture group `(\d+)` on both `^the number is (\d+)$` and
+  `^the result is (\d+)$` so the definitions serve every registry
+  scenario that phrases a number there (calc-001-double seeds 2/expects 4,
+  calc-002-peer seeds 4/expects 8 — both must bind to the same two
+  definitions).
+- Do not weaken or broaden any existing pattern, and do not delete the
+  failure evidence emitted by `result`.
+- All three imports (`fmt`, `strconv`, `strings`) remain in use after
+  these edits; leave the import line unchanged.
+
+## Expected result after applying
+`sh replay.sh -json` runs both tests green: calc-001-double seeds 2,
+doubles to 4, asserts 4; calc-002-peer seeds 4, doubles to 8, asserts 8.
+Every step of calc-001-double resolves to exactly one registered pattern:
+- `the number is 2` -> `^the number is (\d+)$`
+- `the number is doubled` -> `^the number is doubled$`
+- `the result is 4` -> `^the result is (\d+)$`
+=== FILE_END: tmp/{{RUN_DIR}}/01-calc-001-double-fix-prompts.md ===
+
+---
+
+## Instructions
+
+1. Use the Read, Glob, and Grep tools to inspect the current state of
+   the file(s) the fix prompt targets, and the sibling step definitions
+   beside them.
+2. Apply the changes described in the "Fix Prompt to Apply" section
+   above:
+   - Use Write to create a new file when the fix prompt says so.
+   - Use Edit to extend an existing file when the fix prompt says so.
+3. You MAY only modify files under the `steps/` package of the test
+   suite the fix prompt names. That path came from the architectural
+   spec; do not write anywhere else, and do not invent a sibling
+   directory when the named one does not exist — report the failure
+   instead.
+4. You MUST NOT touch the scenario registry.
+5. Each new definition MUST be registered in the suite's existing
+   `Register` function, so a single call site still lists everything the
+   suite binds.
+6. Do not duplicate a definition whose pattern already matches the same
+   step, and do not loosen an existing pattern to make it match.
+7. After the changes succeed, output the confirmation block below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-001-double-iter2-result.yaml ===
+applied: true
+target: "<repo-relative path of the file you wrote/edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-001-double-iter2-result.yaml ===

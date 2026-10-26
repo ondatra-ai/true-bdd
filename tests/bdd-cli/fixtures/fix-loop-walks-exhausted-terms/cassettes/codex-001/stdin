@@ -1,0 +1,152 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Term Document Editor applying an approved fix to the working
+copy of one term document: the product document's step-phrase catalogue
+or glossary.
+
+**Your Task:**
+1. Read the working copy the fix names.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described, with the Edit tool on the
+   working copy.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read to inspect the working copy before editing.
+- Use Edit to change it: append an entry at the end of its list, at the
+  list's own indentation, or replace an old_string verbatim.
+- Do NOT touch the document the working copy stands for: the engine
+  replaces it with your copy once the copy parses.
+- Do NOT touch the scenario registry, a generated test file or a step
+  definition. A term is defined where every Scenario reads it, never in
+  the Scenario that lacked it.
+
+**Output Requirements:**
+- After your Edit calls succeed, output a YAML confirmation inside
+  FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target:` — the working copy you edited (QUOTED)
+  - `summary:` — one line on what changed
+
+
+### TASK
+
+## Subject — Registry Scenario
+
+**Scenario ID:** E2E-001
+**Description:** The service must answer a ping with a pong within 200 milliseconds
+
+### Steps
+Given:
+  - the mcp service is running
+When:
+  - the Operator sends "ping"
+Then:
+  - the service answers "pong"
+  - and the service answers within 200 milliseconds
+
+---
+
+## Fix Prompt to Apply
+
+# Fix Prompt for Scenario E2E-001: The service must answer a ping with a pong within 200 milliseconds
+
+## Target
+The `product` document — `docs/product/product.yaml` — and only its `catalogue:` list.
+
+Do **not** touch: the Scenario registry entry for E2E-001, `tests/mcp/ping_test.go`, any step definition, `docs/product/stories/ping-answers.yaml`, the `roles:` list, or the `glossary:` list. The glossary already carries both terms this entry relies on (`mcp service`, `reply`), so no glossary change is needed.
+
+## Background
+Scen-check `term_closure` (D: step-phrases) reported:
+
+- `E2E-001: then step "the service answers within 200 milliseconds" matches no template`
+
+The Scenario writes this step as `and the service answers within 200 milliseconds`; the leading conjunction is not part of the step text that is matched. The existing entry `'the service answers "{reply}"'` cannot match it, because that template requires a double-quoted slot immediately after `answers`. One new catalogue entry is required, phrasing the timing step with the duration as a number slot so other Scenarios can reuse the shape.
+
+## Required Changes
+
+### Change #1: Add the catalogue entry for the reply-latency step
+**Document:** `docs/product/product.yaml`
+**Action:** Append this entry to the end of the `catalogue:` list (it becomes the fourth and last entry). Keep the existing two-space list indentation exactly as shown.
+**YAML:**
+```yaml
+  - template: 'the service answers within {limit:number} milliseconds'
+    block: then
+    means: >-
+      The MCP service's reply to the message arrives no later than
+      {limit} milliseconds after the message was sent.
+    terms: [mcp service, reply]
+```
+
+**Apply it as this exact replacement:**
+
+old_string:
+```
+  - template: 'the service answers "{reply}"'
+    block: then
+    means: The MCP service's reply to the message is exactly the quoted text.
+    terms: [mcp service, reply]
+```
+
+new_string:
+```
+  - template: 'the service answers "{reply}"'
+    block: then
+    means: The MCP service's reply to the message is exactly the quoted text.
+    terms: [mcp service, reply]
+  - template: 'the service answers within {limit:number} milliseconds'
+    block: then
+    means: >-
+      The MCP service's reply to the message arrives no later than
+      {limit} milliseconds after the message was sent.
+    terms: [mcp service, reply]
+```
+
+(The old_string is the current final entry of `catalogue:`; the file ends with its `terms:` line. Append, do not reorder or reword the three existing entries.)
+
+## Why this entry and not another shape
+- `{limit:number}` matches `200` (and the word `no`, for a zero budget), so the one entry phrases every Scenario that bounds the reply delay, instead of hard-coding `200`.
+- `milliseconds` stays literal: the unit carries the meaning and there is no second unit in the catalogue to disambiguate against.
+- `block: then` matches the block the step sits in for E2E-001.
+- `terms: [mcp service, reply]` are spelled exactly as the glossary spells them; `reply` already states that a reply's delay is behaviour, so the meaning is closed without a new term.
+
+## Non-collision check the applier should confirm after editing
+- `the mcp service is running` → still matches only the `'the mcp service is running'` entry.
+- `the Operator sends "ping"` → still matches only the `'the {actor:role} sends "{message}"'` entry (`Operator` is a `roles[].name`).
+- `the service answers "pong"` → still matches only the `'the service answers "{reply}"'` entry; the new template requires the literal `within ` after `answers`, so it cannot match a quoted reply.
+- `the service answers within 200 milliseconds` → matches only the new entry; the quoted-reply template cannot match it because no `"` follows `answers`.
+
+No other step in any Scenario changes its matching entry.
+
+---
+
+## Where to write
+
+Each term document has a working copy in this run's tmp directory. Edit
+the working copy, never the document itself:
+- `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
+
+The engine replaces each document with its working copy once the copy
+reads as valid YAML, so a copy you leave unparseable changes nothing.
+
+## Instructions
+
+1. Use the Read tool to load the working copy the fix prompt's
+   document names, and find the list it changes (`catalogue:` or
+   `glossary:`).
+2. Apply the changes described in the "Fix Prompt to Apply" section
+   above with the Edit tool on that working copy: append a new entry at
+   the end of its list, at the list's own indentation, or replace the
+   old_string verbatim.
+3. Copy each entry's YAML exactly as the fix prompt gives it. Keep a
+   template single-quoted: it carries `{`, `[` and `"` of its own.
+4. You MAY only edit the working copies listed above. The documents
+   themselves, the scenario registry, a generated test file and a step
+   definition are all out of bounds.
+5. After the edits succeed, output the confirmation block below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
+applied: true
+target: "<path of the working copy you edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===

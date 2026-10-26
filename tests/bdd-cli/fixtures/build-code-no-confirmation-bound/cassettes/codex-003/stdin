@@ -1,0 +1,66 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are the production writer for a controlled lifecycle fixture. Follow the request's required stage exactly. Change only services/calc/, never tests or documents. Complete the changes during this turn and answer with nonempty prose only, without confirmation markers or a result file.
+
+
+### TASK
+
+## Required fixture lifecycle protocol
+
+Read services/calc/calc.go and services/calc/prepared.txt. If A returns 0, change only A to return 1 and leave B returning 0. Otherwise if prepared.txt is absent, create it containing prepared followed by a newline and leave calc.go unchanged. Otherwise change B to return 2 and preserve A. Complete only that stage in this apply, even if the plan proposes more.
+Never modify tests or documents. Only services/calc/ is writable.
+
+This fixture deliberately exercises a completed writer response without a confirmation. After making the stage's changes, end your final message in prose describing what changed. Do not include any FILE_START or FILE_END marker, and do not write a result file.
+
+## Remaining failing set
+Test: fixture/buildcodefix/tests/suite::TestB
+
+
+## Proposed repair plan
+# Repair plan for failing-set
+
+## Scope
+
+Single failing test: `fixture/buildcodefix/tests/suite::TestB` (service `calc`, suite `go-test`).
+
+Write root per `docs/architecture/architecture.yaml` is **`services/calc`** only. Do not touch `tests/suite/calc_test.go`, `go.mod`, or any document.
+
+## Contract the tests assert
+
+`tests/suite/calc_test.go` imports `fixture/buildcodefix/services/calc` and asserts two independent constants of the package API:
+
+- `TestA`: `calc.A()` must equal `1` — already satisfied, must not regress.
+- `TestB`: `calc.B()` must equal `2` — currently fails with `calc_test.go:4: B needs two`.
+
+There is no fixture, table, or input parameter in the suite: both functions are niladic (`func() int`) and are compared directly against literal integers. So the contract is simply that `A` reports 1 and `B` reports 2.
+
+## Root cause
+
+`services/calc/calc.go` line 3 declares `func B() int{return 0}`. The suite requires `2`, so the comparison `calc.B()!=2` is true and `t.Fatal` fires. `A()` is correct at `return 1`. Nothing else in the module is involved — the failure is a wrong constant in production source, not a missing type, signature mismatch, or build error (the package compiles and `TestA` runs green, which proves the import path and signatures already line up).
+
+## Change to make
+
+**File: `services/calc/calc.go`** (the only file to edit)
+
+1. Change the body of `B` so it returns `2` instead of `0`. Keep the exported name `B`, keep the package-level receiverless function form, and keep the return type `int` — the test calls `calc.B()` with no arguments and compares to an untyped integer constant, so any change to arity or return type would break compilation of the suite.
+2. Leave `func A() int` returning `1` exactly as it is. It is the subject of `TestA`, which currently passes; editing it would regress a green test.
+3. Leave `package calc` as the package clause so the import path `fixture/buildcodefix/services/calc` continues to resolve.
+
+No new files, no new packages, no helper indirection. The repair is one literal in one existing function body. Do not introduce a configurable value, a constructor, or an exported constant to carry the number — the suite has no way to inject one, so added indirection would be dead weight.
+
+## Tests each part serves
+
+| Change | Test served |
+|---|---|
+| `B()` returns `2` in `services/calc/calc.go` | `fixture/buildcodefix/tests/suite::TestB` (the failing set) |
+| `A()` left returning `1` in `services/calc/calc.go` | `fixture/buildcodefix/tests/suite::TestA` (regression guard — currently green) |
+
+## Verification
+
+Run the suite command declared in the architecture from the run directory (module root):
+
+```
+go test -json -count=1 ./tests/suite/...
+```
+
+Expect both `TestA` and `TestB` to report `pass`. No assertion is weakened, skipped, or removed; no test file is modified.

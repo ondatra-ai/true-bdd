@@ -1,0 +1,93 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are the production writer for a controlled lifecycle fixture. Follow the request's required stage exactly. Change only services/calc/, never tests or documents. Complete the changes during this turn and answer with nonempty prose only, without confirmation markers or a result file.
+
+
+### TASK
+
+## Required fixture lifecycle protocol
+
+Read services/calc/calc.go and services/calc/prepared.txt. If A returns 0, change only A to return 1 and leave B returning 0. Otherwise if prepared.txt is absent, create it containing prepared followed by a newline and leave calc.go unchanged. Otherwise change B to return 2 and preserve A. Complete only that stage, even if the plan proposes more.
+Never modify tests or documents. Only services/calc/ is writable.
+
+Fixture transport outcome: non-zero exit
+A recording wrapper injects this transport outcome after your turn completes. Make the required file changes and end your final message with nonempty prose describing them, without a confirmation block or result file. Do not try to cause the transport failure yourself.
+
+## Remaining failing set
+Test: fixture/buildcodefix/tests/suite::TestA
+Test: fixture/buildcodefix/tests/suite::TestB
+
+
+## Proposed repair plan
+# Repair plan for failing-set
+
+## Diagnosis
+
+Both failures are production stubs, not test problems. The suite `tests/suite/calc_test.go` imports `fixture/buildcodefix/services/calc` (module root `fixture/buildcodefix`, declared service root `services/calc` per `docs/architecture/architecture.yaml`) and asserts two exported zero-arg accessors:
+
+- `TestA` (calc_test.go:8-12) requires `calc.A() == 1`; failure message `A needs one`.
+- `TestB` (calc_test.go:13-17) requires `calc.B() == 2`; failure message `B needs two`.
+
+`services/calc/calc.go` currently returns the zero value from both:
+
+```
+func A() int { return 0 }
+func B() int { return 0 }
+```
+
+So `A()` yields 0 (≠ 1) and `B()` yields 0 (≠ 2) — exactly the two reported `t.Fatal` lines. There is no missing wiring, no compile error, and no fixture or harness defect: the package compiles, the import path resolves, and the runner (`go test -json -count=1 ./tests/suite/...`) reaches both tests and executes the assertions. Only the returned values are wrong.
+
+## Scope
+
+Single file, inside the only declared service root:
+
+- `services/calc/calc.go` — the entire repair lives here.
+
+Do **not** touch `tests/suite/calc_test.go`, `go.mod`, `docs/architecture/architecture.yaml`, `true-bdd/**`, `templates/**`, or anything under `tmp/`. No new files, no new packages, no test helpers, no build tags, no changes to assertions or failure messages.
+
+## Part 1 — `calc.A()` must report one
+
+**File:** `services/calc/calc.go`
+
+**Contract:** exported `func A() int`, package `calc`, no parameters, no receiver, no error return — the signature the test already calls must stay source-compatible. Observable behaviour: every call returns the integer `1`, deterministically, with no dependence on call order, global state, time, environment, or prior invocations (the suite runs with `-count=1`, but the function must be pure regardless).
+
+**Intended implementation:** change the single return expression in `A` from `0` to `1`, keeping the one-line body form already used in the file. Nothing else in the declaration changes — same name, same exported casing, same `int` result type.
+
+**Tests served:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestA` (`fixture/buildcodefix/tests/suite::TestA`). After the change the guard `calc.A() != 1` is false, so `t.Fatal("A needs one")` is not reached and the test passes on its own merits — the assertion itself is untouched.
+
+## Part 2 — `calc.B()` must report two
+
+**File:** `services/calc/calc.go`
+
+**Contract:** exported `func B() int`, package `calc`, same shape constraints as Part 1. Observable behaviour: every call returns the integer `2`, deterministically and independently of `A()`. `A()` and `B()` must remain distinct values (1 and 2) — do not collapse them into a shared constant or make one delegate to the other in a way that couples their values.
+
+**Intended implementation:** change the single return expression in `B` from `0` to `2`. Signature, name and placement unchanged.
+
+**Tests served:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB` (`fixture/buildcodefix/tests/suite::TestB`). The guard `calc.B() != 2` becomes false, so `t.Fatal("B needs two")` is not reached.
+
+## Part 3 — keep the package importable and the module boundary intact
+
+**File:** `services/calc/calc.go` (verification only; no change expected)
+
+**Contract:** the file must remain `package calc` at path `services/calc/` so the test's import of `fixture/buildcodefix/services/calc` keeps resolving against the sentinel module `fixture/buildcodefix` declared in `go.mod`. No imports should be added — the repair needs none, and an unused import would turn two assertion failures into a build failure that fails *both* tests for a new reason.
+
+**Intended implementation:** after editing, the file should still be four lines of trivial Go: package clause plus the two one-line functions. Confirm the result is gofmt-clean (same tabs/spacing as the original) and that no stray declarations, comments claiming the stub is deliberate, or `//go:build` lines were introduced.
+
+**Tests served:** both members of the set — a compile error in this package fails `TestA` and `TestB` together, so this part is the guard that Parts 1 and 2 actually land as passing tests rather than as a red build.
+
+## Verification
+
+Run the architecture's declared command from the run directory:
+
+```
+go test -json -count=1 ./tests/suite/...
+```
+
+Expected: `TestA` and `TestB` both `--- PASS`, zero failures, no build or vet diagnostics. Both failure groups in the subject set are then empty, which is what the `build-code/test-passes` → `D: tests-pass` prompt checks.
+
+## Explicitly out of scope / do not do
+
+- Do not edit, rename, skip, re-point, or relax `tests/suite/calc_test.go` or any `*_test.go`; do not change `t.Fatal` into `t.Log`, add `t.Skip`, or alter the `!= 1` / `!= 2` comparisons.
+- Do not satisfy the tests by changing the expected numbers anywhere — the expectations are the specification here; production must meet them.
+- Do not refactor beyond the two return values: no new types, interfaces, config, dependency injection, or generalised `Calc` struct. The spec declares exactly one service with two zero-arg accessors; added abstraction is unjustified surface.
+- Do not edit documents (`docs/architecture/architecture.yaml`), checklists, or prompt templates.

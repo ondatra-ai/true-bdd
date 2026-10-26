@@ -1,5 +1,0 @@
-=== FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
-applied: true
-target: "{{CWD}}/tmp/{{RUN_DIR}}/scenarios_yaml.yaml"
-summary: "Rewrote E2E-001's second then step pattern from the internal call formatGreeting\\(\\) was called to the printed answer line ^Hello Ada$"
-=== FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===

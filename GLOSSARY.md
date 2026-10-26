@@ -76,6 +76,14 @@ _Avoid_: spec check, term check
 The process a scenario exercises — the `true-bdd` binary for the CLI suite — as distinct from the tests that drive it. Its `third_party` CLI dependencies are the ones the harness shims; a Services caller declaring none has a vacuous mode axis.
 _Avoid_: SUT, subject, system, target
 
+**Failing set**:
+All tests failing in one `build code` discovery, walked as one Item with one proposed repair plan. After each completed apply, including a started codex writer that exits non-zero or answers empty, or a started Claude writer that exits non-zero, returns an error result or answers empty, the engine reruns its remaining members once; passing members leave, missing results stay failing. A green discovery yields no Item. Its `D:` Prompt answers the whole set's latest runner verdict without an AI turn.
+_Avoid_: repair batch, failure queue
+
+**Model override**:
+A repeatable `--model <tier>=<cli>:<model>` command-line flag that replaces one declared `engine.models` binding in memory for one run. Every command running AI turns accepts it. It changes neither project configuration nor spawned processes' environments; each applied change is logged once.
+_Avoid_: model environment variable, model config overlay
+
 ## Repository vocabulary
 
 Words for how this repository plans and executes its own work. Not the engine's domain — nothing here reaches a host project.

@@ -1,0 +1,37 @@
+story:
+  id: writer-config
+  feature: build-code
+  title: Preserve the generated writer configurations across engine rebuilds
+  as_a: System Architect
+  i_want: the exact generated configuration forms held by Scenarios
+  so_that: a rebuilt engine cannot pass replay while generating a configuration the real writer CLI refuses
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 001-codex
+    description: The codex writer generates the complete configuration with restricted filesystem entries, network table and isolated shell environment
+    steps:
+    - given:
+      - the "writer-config-codex" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 0
+      - the engine dispatched 1 apply AI turn to "codex"
+      - every file matching "tmp/codex-homes/*/*-codex-home/config.toml" matches ^default_permissions = "writer"\napproval_policy = "never"\nmodel_reasoning_effort = "high"\nmodel_context_window = 1050000\nweb_search = "disabled"\nproject_doc_max_bytes = 0\nallow_login_shell = false\ncli_auth_credentials_store = "file"\n\[history\]\npersistence = "none"\n\[features\]\napps = false\nplugins = false\nmulti_agent = false\nmemories = false\nshell_snapshot = false\nskip_host_skill_discovery = true\n\n\[permissions\.writer\.filesystem\]\n(?:#[^\n]*\n)*":minimal" = "read"\n"{{CWD}}" = "read"\n"{{GOROOT}}" = "read"\n"{{GOMODCACHE}}" = "read"\n(?:"/[^"\n]+" = "read"\n)*"{{CWD}}/tmp" = "write"\n"{{CWD}}/services/calc" = "write"\n"{{CWD}}/tmp/codex-homes" = "deny"\n"/private/tmp" = "deny"\n"/private/var/tmp" = "deny"\n"{{GOMODCACHE}}/cache/vcs" = "deny"\n"{{GOMODCACHE}}/github.com/ondatra-ai" = "deny"\n"{{GOMODCACHE}}/cache/download/github.com/ondatra-ai" = "deny"\n\n\[permissions\.writer\.network\]\nenabled = false\n\[shell_environment_policy\]\ninherit = "none"\n\[shell_environment_policy\.set\]\nCGO_ENABLED = "0"\nDOCKER_CONFIG = "{{CWD}}/tmp/codex-shell-home/\.docker"\nGOCACHE = "{{CWD}}/tmp/codex-go-build"\nGOFLAGS = "-trimpath -buildvcs=false"\nGOMODCACHE = "{{GOMODCACHE}}"\nGOPROXY = "off"\nGOROOT = "{{GOROOT}}"\nGOSUMDB = "off"\nGOTELEMETRY = "off"\nGOTOOLCHAIN = "local"\nHOME = "{{CWD}}/tmp/codex-shell-home"\nOPENSSL_CONF = "/dev/null"\nPATH = "{{GOROOT}}/bin:/usr/bin:/bin:/usr/sbin:/sbin:{{CWD}}/tmp/codex-shell-home/runtime-bin"\nTMPDIR = "{{CWD}}/tmp/codex-tmp"\nnpm_config_cache = "{{CWD}}/tmp/codex-shell-home/npm-cache"\nnpm_config_offline = "true"\nnpm_config_userconfig = "{{CWD}}/tmp/codex-shell-home/\.npmrc"\n$
+      - the file "tests/suite/calc_test.go" is unchanged
+      - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
+  - id: 002-claude
+    description: The Claude writer generates the complete settings with the guard hook, permissions and disabled discovery
+    steps:
+    - given:
+      - the "writer-config-claude" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 0
+      - the engine dispatched 1 apply AI turn to "claude"
+      - 'every file matching "tmp/*/*-claude-config/settings.json" matches ^\{\n  "autoMemoryEnabled": false,\n  "claudeMdExcludes": \[\n    "\*\*"\n  \],\n  "enabledPlugins": \{\},\n  "env": \{\n    "BASH_DEFAULT_TIMEOUT_MS": "600000",\n    "BASH_MAX_TIMEOUT_MS": "600000"\n  \},\n  "hooks": \{\n    "PreToolUse": \[\n      \{\n        "hooks": \[\n          \{\n            "command": "''{{ENGINE}}'' claude-guard --policy ''tmp/[^/\n]+/claude-turn002-claude-config/policy\.json''",\n            "timeout": 15,\n            "type": "command"\n          \}\n        \],\n        "matcher": "\*"\n      \}\n    \]\n  \},\n  "permissions": \{\n    "allow": \[\n      "Read",\n      "Glob",\n      "Grep"\n    \],\n    "defaultMode": "default",\n    "deny": \[\n      "Agent",\n      "Task",\n      "WebFetch",\n      "WebSearch",\n      "NotebookEdit"\n    \]\n  \}\n\}\n$'
+      - the file "tests/suite/calc_test.go" is unchanged
+      - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0

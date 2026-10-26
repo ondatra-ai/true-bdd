@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli/codex"
-	"github.com/ondatra-ai/true-bdd/pkg/cli/crush"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
@@ -25,10 +24,10 @@ func (r Runner) attempt(ctx context.Context, record Record, note string) (Record
 		return r.finish(record, "failed", ctx.Err().Error(), -1)
 	}
 
-	if login != "" && !record.writer() {
+	if login != "" {
 		record.CodexStatus = login
 
-		return r.finish(record, "unavailable", "Codex sign-in check: "+login, -1)
+		return r.finish(record, "unavailable", "Codex sign-in check: "+login+"; Claude takes the work", -1)
 	}
 
 	err = r.prepareWorkspace(ctx, record)
@@ -48,7 +47,7 @@ func (r Runner) attempt(ctx context.Context, record Record, note string) (Record
 
 	began := time.Now()
 
-	result, err := r.execute(ctx, &record, prompt, note, login, began)
+	result, err := r.execute(ctx, &record, prompt, began)
 	if err != nil {
 		return r.finish(record, codex.FailureStatus(err), err.Error(), result.Code)
 	}
@@ -65,7 +64,7 @@ func (r Runner) prompt(record Record, note string) (string, error) {
 	prompt := string(brief)
 
 	if record.Attempt > 1 {
-		if record.SessionID != "" && record.Agent != agentCrush {
+		if record.SessionID != "" {
 			prompt = ""
 		}
 
@@ -81,12 +80,8 @@ func (r Runner) prompt(record Record, note string) (string, error) {
 }
 
 func (r Runner) execute(
-	ctx context.Context, record *Record, prompt, note, login string, began time.Time,
+	ctx context.Context, record *Record, prompt string, began time.Time,
 ) (codex.Result, error) {
-	if login != "" || record.Agent == agentCrush {
-		return r.takeover(ctx, record, note, login, began)
-	}
-
 	opts := codex.Options{Dir: record.Workdir, Final: record.Final, Writer: record.writer(), Search: record.Search,
 		Output: logWriter{path: record.Log}, Watchdog: r.remaining(began)}
 
@@ -116,11 +111,8 @@ func (r Runner) execute(
 	}
 
 	record.CodexStatus = terminal
-	if !record.writer() {
-		return result, nil
-	}
 
-	return r.takeover(ctx, record, note, terminal, began)
+	return result, nil
 }
 
 func (r Runner) remaining(began time.Time) codex.Watchdog {
@@ -130,51 +122,9 @@ func (r Runner) remaining(began time.Time) codex.Watchdog {
 	return watch
 }
 
-func (r Runner) takeover(
-	ctx context.Context, record *Record, note, reason string, began time.Time,
-) (codex.Result, error) {
-	record.Agent = agentCrush
-
-	record.SessionID = ""
-	if reason != "" {
-		record.CodexStatus = reason
-	}
-
-	err := r.save(*record)
-	if err != nil {
-		return codex.Result{Code: -1}, err
-	}
-
-	brief, err := disk.Read(r.file(record.Name, "brief.md"))
-	if err != nil {
-		return codex.Result{Code: -1}, err
-	}
-
-	prompt := string(brief) + "\n\n" + note +
-		"\nAn earlier agent may have left work half-done; start by reading git status and the diff before continuing.\n"
-
-	filename := "crush.md"
-	if record.Attempt > 1 {
-		filename = fmt.Sprintf("crush-%d.md", record.Attempt)
-	}
-
-	err = disk.Write(r.file(record.Name, filename), []byte(prompt), disk.Private)
-	if err != nil {
-		return codex.Result{Code: -1}, err
-	}
-
-	err = disk.Write(record.Final, nil, disk.Private)
-	if err != nil {
-		return codex.Result{Code: -1}, err
-	}
-
-	return crush.WriteCode(ctx, prompt, crush.Options{Dir: record.Workdir, RunMarker: r.marker(*record),
-		Output: logWriter{path: record.Log}, Report: logWriter{path: record.Final}, Watchdog: r.remaining(began)})
-}
-
 func (r Runner) completed(record Record, code int) (Record, error) {
-	if record.CodexStatus != "" && !record.writer() {
-		return r.finish(record, "unavailable", "Codex ended "+record.CodexStatus+"; Claude does the reading", code)
+	if record.CodexStatus != "" {
+		return r.finish(record, "unavailable", "Codex ended "+record.CodexStatus+"; Claude takes the work", code)
 	}
 
 	if code != 0 {

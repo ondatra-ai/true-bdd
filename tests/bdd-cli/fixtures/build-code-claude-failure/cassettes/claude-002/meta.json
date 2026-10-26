@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "binary": "claude",
+  "argv": [
+    "--setting-sources",
+    "",
+    "--strict-mcp-config",
+    "--restricted",
+    "--disable-slash-commands",
+    "--tools",
+    "Read,Glob,Grep,Edit,Write,MultiEdit,Bash",
+    "--settings",
+    "tmp/{{RUN_DIR}}/claude-turn002-claude-config/settings.json",
+    "--session-id",
+    "{{CLAUDE_SESSION}}",
+    "--add-dir",
+    "{{GOROOT}}",
+    "--add-dir",
+    "{{GOMODCACHE}}",
+    "--add-dir",
+    "{{CLAUDE_SPILLS}}",
+    "--model",
+    "claude-sonnet-5-5",
+    "--system-prompt",
+    "You are the production writer for a controlled fixture. Change only services/calc/, never tests or documents. Follow the requested protocol and use Bash only for the granted replay.\n",
+    "--permission-mode",
+    "default",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "-p",
+    "## Required fixture protocol\nRead services/calc/calc.go. Change A to return 1 and B to return 2. Keep both functions and make no other service change. Never modify tests or documents.\nAfter the repair you MUST use Bash to run this exact foreground selection in {{CWD}}:\ncd '{{CWD}}' \u0026\u0026 go test -count=1 ./tests/suite/... -run '^Test(A|B)$'\nWait for its passing result. Do not use any other command or background execution.\n\n# Repair plan for failing-set\n\n## Diagnosis\n\nBoth failures are the same defect: `services/calc/calc.go` ships placeholder\nstubs that return the zero value instead of the contract the suite asserts.\n\n`services/calc/calc.go` (the whole file today):\n\n```\npackage calc\n\nfunc A() int { return 0 }\nfunc B() int { return 0 }\n```\n\nThe suite at `tests/suite/calc_test.go` imports the package as\n`fixture/buildcodefix/services/calc` (module `fixture/buildcodefix`, per\n`go.mod`) and asserts:\n\n- `TestA` — `calc.A() != 1` fails with `A needs one`, so `A()` must return `1`.\n- `TestB` — `calc.B() != 2` fails with `B needs two`, so `B()` must return `2`.\n\nThe observed failure output matches exactly that: `calc_test.go:10: A needs one`\nand `calc_test.go:15: B needs two`. There is no compile error, no missing\nsymbol, no wiring problem — the package name, the import path, the function\nnames, the arities and the `int` return types are all already correct. Only the\nreturned values are wrong.\n\n## Scope / write boundary\n\n`docs/architecture/architecture.yaml` declares exactly one service:\n\n```\nservices:\n  - name: calc\n    path: services/calc\n    language: go\n```\n\nSo `services/calc` is the only writable root. This repair needs **one file**:\n\n- `services/calc/calc.go`\n\nDo **not** touch `tests/suite/calc_test.go`, any `*_test.go`, `go.mod`,\n`docs/architecture/architecture.yaml`, anything under `true-bdd/`, `templates/`\nor `tmp/`. Do not add, remove, weaken or skip any assertion, and do not add\nbuild tags, `t.Skip`, or a second definition of these functions elsewhere.\n\n## Part 1 — `A()` returns the unit value\n\n**File:** `services/calc/calc.go`\n\n**Change:** make the body of `func A() int` return `1` instead of `0`.\n\n**Contract:** `calc.A()` is a nullary function returning `int`, and its value is\n`1`. Keep the exported name `A`, the empty parameter list, the single `int`\nresult and the `calc` package clause exactly as they are — the test calls\n`calc.A()` with no arguments and compares the result to the untyped constant\n`1`, so any change to the signature breaks compilation of the suite.\n\n**Serves:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestA`\n(`fixture/buildcodefix/tests/suite::TestA`).\n\n## Part 2 — `B()` returns two\n\n**File:** `services/calc/calc.go`\n\n**Change:** make the body of `func B() int` return `2` instead of `0`.\n\n**Contract:** `calc.B()` is a nullary function returning `int`, and its value is\n`2`. Same signature-stability requirement as Part 1.\n\n**Serves:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB`\n(`fixture/buildcodefix/tests/suite::TestB`).\n\n## Implementation notes\n\n- Both parts land in the same four-line file; the minimal correct edit is to\n  replace the two `return 0` bodies with `return 1` and `return 2`\n  respectively. Keep the file gofmt-clean (tabs, no trailing whitespace, final\n  newline) so the Go toolchain and any lint pass stay green.\n- Keep the file as a single `package calc` declaration in\n  `services/calc/calc.go`. Do not split the two functions into new files, do\n  not introduce helper types, constants, state, interfaces or a constructor —\n  the suite exercises package-level functions directly and extra indirection\n  adds surface with no test behind it.\n- Do not add a `main`, an `init()`, or any package-level variable: `A` and `B`\n  must be pure and deterministic, because the suite runs with `-count=1` and\n  may call them in either order within the same process.\n\n## Verification\n\nRun the architecture's declared command from the run-dir root (all three of\n`record`, `replay` and `live` are identical):\n\n```\ngo test -json -count=1 ./tests/suite/...\n```\n\nExpect `TestA` and `TestB` both to report `--- PASS`, with no remaining\n`A needs one` / `B needs two` output and no build failure for\n`fixture/buildcodefix/services/calc`. The failing set is exactly these two\ntests, so a green run of that package closes the whole set.\n\nEnd your final message with:\n=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===\napplied: true\ntarget: \"services/calc/calc.go\"\nsummary: \"Fixed A and B and ran the granted selection.\"\n=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===\n\nFixture transport outcome: non-zero exit\nThe recording wrapper runs this turn unchanged and then injects exit 7. Do not cause a failure yourself.\n"
+  ],
+  "exit_code": 7,
+  "duration_ms": 9864,
+  "request_hash": "sha256:902c778b363ca1ff0060f0fb6a0f4d8fe41030b59acafedbd4c5819962214de0",
+  "fsdiff": {
+    "created": [],
+    "modified": [
+      "services/calc/calc.go"
+    ],
+    "deleted": []
+  },
+  "recorded_at": "2026-10-25T12:26:49Z"
+}

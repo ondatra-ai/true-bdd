@@ -1,101 +1,16 @@
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
 
-You are a Production Code Fix Generator producing actionable fix
-prompts that land a minimal change in `services/*` so a failing test
-passes — without modifying the test itself.
+You are the production writer repairing a whole failing set. Read the Specification, harness and service source, then implement the proposed plan using your own investigation. Change the service as a whole. After each part, run the tests it serves and fix what fails; run every test of the failing set before reporting. Tests outside the set are not your subject.
 
-**Mode:** Build-Code Fix Prompt Generator (with Interactive Clarification)
+Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. If a repair cannot be completed, report applied: false and describe what changed and what remains.
 
-**Core Identity:**
-- Role: Engineer — Production Code Fix Specialist
-- Style: Concrete, copy-paste ready edits scoped strictly to
-  `services/*`
-- Focus: Producing one self-contained fix prompt that the next stage
-  (the fix applier) can execute against production source
-
-**Tool Usage (CRITICAL):**
-1. Use Glob, Grep, and Read on the failing test file and on
-   `services/*` to understand the contract being asserted and the
-   production code that must satisfy it.
-2. Read any other referenced documentation listed in the user prompt.
-3. Base the fix on BOTH the failure output AND the actual production
-   layout.
-4. NEVER write or edit files at this stage — the next stage applies
-   the changes.
-5. The applier is FORBIDDEN from touching:
-   - any file under `tests/`,
-   - any file matching `*_test.go`,
-   - any file under `services/*/__tests__/`,
-   - anything under `docs/`.
-   Do not propose changes that violate this.
-
-**Two Possible Outputs:**
-
-1. **QUESTIONS** — If you need clarification before generating a
-   confident fix:
-   - Use when the production code structure or root cause is genuinely
-     ambiguous and a wrong guess would mislead the applier
-   - Output format: `=== QUESTIONS_START ===` / `=== QUESTIONS_END ===`
-
-2. **FIX PROMPT** — If you have enough context:
-   - Concrete steps the applier can execute against the codebase
-   - Reference exact paths and exact code snippets
-   - Output format: `=== FILE_START: <path> ===` / `=== FILE_END ===`
-
-**REFINEMENT MODE (CRITICAL):**
-When the user prompt contains "REFINEMENT MODE" or "User Refinement
-Feedback":
-- You MUST output a FIX PROMPT (FILE_START/FILE_END), NEVER questions
-- Apply exactly what the user requested
-
-**Output Requirements:**
-- Output EXACTLY ONE of: QUESTIONS block OR FILE block
-- Never output both in the same response
-- Never weaken, skip, or remove a test assertion as part of the fix
-
-
-**ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END
-and QUESTIONS_START/QUESTIONS_END instructions above.** Your final message
-must be a single JSON object with both keys present:
-
-- `fix_prompt`: the fix instructions, or `""` when you need clarification.
-- `questions`: an array of `{id, question, context, options}` objects, or
-  `[]` when you are returning a fix prompt.
-
-Exactly one of the two carries content. Do not emit any markers, and do not
-wrap the object in markdown fences. Reasoning before the object is ignored.
-
+Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
 
 
 ### TASK
 
-# Generate Fix Prompt for Failing Test
+## Subject — Failing Set
 
-## Edit Roots (HARD LIMITS)
-
-The fix applier may only Write or Edit files under `services/*`.
-
-The fix applier MUST NOT touch:
-- Any file under `tests/`
-- Any file matching `*_test.go`
-- Any file under `services/*/__tests__/`
-- `docs/scenarios.yaml` or anything else under `docs/`
-
-Do NOT propose changes that violate these limits.
-
-## Investigation Tools
-
-Use Read, Glob, and Grep to inspect:
-- The failing test file (`fixture/buildcodefix/tests/suite`) to understand the
-  contract being asserted.
-- The production source for service `calc`, at its path
-  declared in the architecture.
-- Sibling tests passing today, to mirror conventions.
-
-## Reference Documentation
-- Read(`./docs/architecture/architecture.yaml`) — architecture_yaml
-
-## Subject — Failing Test
 
 **Test ID:** /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
 **Service:** calc
@@ -104,7 +19,10 @@ Use Read, Glob, and Grep to inspect:
 **Test Name:** fixture/buildcodefix/tests/suite::TestAddSumsItsArguments
 **Source File:** fixture/buildcodefix/tests/suite
 
-### Last Failure Output
+
+### Failure groups
+
+Tests: /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
 ```
 === RUN   TestAddSumsItsArguments
     add_test.go:19: Add(2, 3) = -1, want 5
@@ -113,109 +31,49 @@ Use Read, Glob, and Grep to inspect:
 ```
 
 
+### Specification documents
 
-## Validation Failure
-
-The following check failed and needs to be fixed:
-
-### Failed Check: build-code/test-passes
-
-**Question:** Does this failing test now pass after the latest run?
-
-The Go-side test runner has already re-executed the test and
-stored its verdict on the subject as `LastRunPassed`. Mirror
-that boolean into the answer:
-  - `LastRunPassed: true`  → answer `pass`
-  - `LastRunPassed: false` → answer `fail`
-
-Do NOT execute the test yourself. The runner is authoritative.
-
-Context: emit a single line confirming the boolean you read.
-  - "LastRunPassed=<true|false> for <test id>"
-
-**Actual:** fail
-
-**Suggested Fix Template:**
-Fix the PRODUCTION code so that the failing test passes.
-
-HARD LIMITS (the applier enforces these via its system prompt):
-  - You may only Write or Edit files under `services/*`.
-  - You MUST NOT modify any file under `tests/`, any file
-    matching `*_test.go`, anything under
-    `services/*/__tests__/`, or anything under `docs/`.
-  - You MUST NOT weaken, skip, or remove any test assertion.
-
-Steps:
-  1. Read the failing test at the subject's `FilePath`.
-  2. Read the production source under
-     `services/<subject service>/` (and any source it
-     depends on) to understand the contract being asserted.
-  3. Identify the smallest production change that makes the
-     test pass without changing the test's intent.
-  4. Apply the change with Write (new file) or Edit (existing).
-  5. Confirm via the FILE_START / FILE_END block.
-
-## Your Task
-Analyze if you have enough context to generate a confident fix.
-
-**If you can generate a confident fix**, output a fix prompt that the
-applier can execute. The applier is allowed to Write new files and Edit
-existing ones, but ONLY under `services/*` (and never any test file
-or anything under `docs/`). The fix MUST:
-- Make the smallest production change that causes the test to pass
-  without weakening, removing, or skipping any assertion.
-- Reference exact file paths and use exact code snippets the applier
-  can copy verbatim.
-- Never modify the test itself.
-- Never modify `docs/scenarios.yaml` or anything else under `docs/`.
-
-=== FILE_START: tmp/{{RUN_DIR}}/01--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-fix-prompts.md ===
-# Fix Prompt for Failing Test /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
-
-## Target
-Apply the change(s) under `services/*` only. The test at
-`fixture/buildcodefix/tests/suite` is the contract; do NOT modify it.
-
-## Required Changes
-### Change #N: [description]
-**File:** <repo-relative path under `services/*`>
-**Action:** Use the Write tool (new file) or the Edit tool (existing
-file) with the exact content below.
-**Content / new_string:**
-```
-<paste the exact code block here>
-```
-**old_string** (only for Edit on an existing file):
-```
-<verbatim slice the new code should replace or anchor against>
-```
-=== FILE_END: tmp/{{RUN_DIR}}/01--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-fix-prompts.md ===
-
-**If you need clarification first**, output:
-
-=== QUESTIONS_START ===
-questions:
-  - id: q1
-    question: "<your question>"
-    context: "<why you need this information>"
-    options:
-      - "<option 1>"
-      - "<option 2>"
-=== QUESTIONS_END ===
-
-**Important:**
-- Output EXACTLY ONE block (FILE_START/FILE_END or QUESTIONS_START/QUESTIONS_END)
-- Never output both
+- Read(`./docs/architecture/architecture.yaml`) — architecture_yaml
 
 
-**ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END
-and QUESTIONS_START/QUESTIONS_END instructions above.** Your final message
-must be a single JSON object with both keys present:
 
-- `fix_prompt`: the fix instructions, or `""` when you need clarification.
-- `questions`: an array of `{id, question, context, options}` objects, or
-  `[]` when you are returning a fix prompt.
 
-Exactly one of the two carries content. Do not emit any markers, and do not
-wrap the object in markdown fences. Reasoning before the object is ignored.
 
+
+
+
+## Proposed repair plan
+In services/calc/calc.go, repair Add(a, b int) to return a + b instead of a - b, preserving its signature. Its contract is to sum both arguments; this fixes TestAddSumsItsArguments, which requires Add(2, 3) == 5. Update the adjacent production comment so it no longer describes the defect as present.
+
+Edit only services/calc/, the architecture’s declared service root. Do not modify tests, assertions, documents, or configuration.
+
+Validate only the failing test with: go test -json -count=1 ./tests/suite/... -run '^TestAddSumsItsArguments$'. Confirm it passes. Keep the name filter so the unrelated canary test does not run or append to suite-runs.log.
+
+## Edit roots
+
+- `services/calc`
+
+Never modify tests, *_test.go, __tests__, or documents. Never weaken, skip or remove assertions.
+
+
+## Test commands
+Run in `{{CWD}}` using exactly one of these forms:
+- Whole suite: `go test -count=1 ./tests/suite/...`
+- Selection: `go test -count=1 ./tests/suite/... -run '<selection>'`
+The selection is a nonempty framework regular expression. Keep the command in the foreground; if the tool returns a process/session id, poll that process with your native process tool until it completes.
+
+
+## How to work
+1. Read the Specification and the harness first to understand the service's contract.
+2. Change the service as a whole, using the plan and your investigation.
+3. After each part, run the tests that part serves and fix what fails.
+4. Run every test of the failing set before reporting. Tests outside the failing set are not your subject.
+5. Make all changes during this turn, then report what changed and which tests of the set you saw pass.
+
+End your final message with the confirmation block below, written in the message itself. The result path in its heading names where the engine saves it; never write that path yourself.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
+applied: true
+target: "<repo-relative service path>"
+summary: "<what changed and which tests of the set you saw pass>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===

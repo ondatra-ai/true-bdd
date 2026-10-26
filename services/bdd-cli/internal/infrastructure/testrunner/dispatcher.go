@@ -18,10 +18,10 @@ const (
 // framework the Dispatcher cannot route to.
 var ErrUnknownFramework = errors.New("unknown test framework")
 
-// Status values shared across runner JSON parsers. Each framework
-// happens to use the same lowercase string for a test failure.
+// Status values shared across runner JSON parsers.
 const (
-	statusFailed   = "failed"
+	statusPassed = "passed"
+ statusFailed   = "failed"
 	statusTimedOut = "timedOut"
 )
 
@@ -46,8 +46,11 @@ type Config struct {
 
 // Runner is the framework-agnostic primitive every per-framework runner
 // implements: Discover walks every test under Config and returns the
-// currently-failing ones; RunOne re-executes one by its framework-native id.
+// currently-failing ones; RunOne and RunSet rerun their native selections.
 type Runner interface {
+	// RunSet refreshes all members with one selected runner start.
+	RunSet(ctx context.Context, members []*FailingTest) error
+
 	// Discover runs every test under cfg, returning one FailingTest per
 	// failure tagged with service/suite/framework. A non-nil error means an
 	// infrastructure problem — test failures are values, not errors.
@@ -59,7 +62,7 @@ type Runner interface {
 	RunOne(ctx context.Context, ft *FailingTest) (passed bool, output string, err error)
 }
 
-// Dispatcher routes Discover/RunOne calls to the right framework
+// Dispatcher routes runner calls to the right framework
 // implementation. Built once at bootstrap time; concrete runners are
 // registered via NewDispatcher.
 type Dispatcher struct {

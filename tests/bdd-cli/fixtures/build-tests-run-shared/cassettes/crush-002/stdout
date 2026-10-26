@@ -1,7 +1,0 @@
-Edit applied exactly as specified; shell execution is blocked by a guard hook in this mode, so the replay could not be run here.
-
-=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-001-double-iter2-result.yaml ===
-applied: true
-target: "tests/calc/steps/steps.go"
-summary: "Replaced tripling closure with named doubled (*2) and removed number's stray value==3 increment plus pre-err state assignment"
-=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-001-double-iter2-result.yaml ===

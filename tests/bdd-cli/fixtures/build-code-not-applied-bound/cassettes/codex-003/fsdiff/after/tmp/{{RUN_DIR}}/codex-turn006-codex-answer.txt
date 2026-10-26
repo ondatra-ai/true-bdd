@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter3-result.yaml ===
+applied: true
+target: "services/calc/calc.go"
+summary: "Changed Add to return a + b; kept both preparation files. TestAdd passed with go test -json -count=1 ./tests/suite/..."
+=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter3-result.yaml ===

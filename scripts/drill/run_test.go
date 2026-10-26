@@ -14,7 +14,13 @@ import (
 	"github.com/ondatra-ai/true-bdd/scripts/drill"
 )
 
-const fixArgument = "--fix"
+const (
+	doneStatus    = "done"
+	fixArgument   = "--fix"
+	testsArgument = "tests"
+	modelArgument = "--model"
+	helpArgument  = "--help"
+)
 
 func prepare(t *testing.T, script string) (drill.Runner, drill.Record, drill.Cut) {
 	t.Helper()
@@ -36,7 +42,7 @@ printf 'Your choice (1/2/3): '
 read menu
 [ "$menu" = 1 ] || exit 12
 printf '\nCLARIFICATION NEEDED\n[1/1] How is it specified?\n    Options:\n'
-printf '      1) Restore from history\n      2) Write from specification\n\n    Your answer: '
+printf '      1) Restore from history\n      2) Write from specification\n      0) Other\n\n    Your answer: '
 
 read answer
 [ "$answer" = 'Write from specification' ] || exit 13
@@ -77,7 +83,7 @@ read answer
 	must(t, err)
 
 	final := current.Runs[run.Tag]
-	if final.Status != "done" || final.ExitCode == nil || *final.ExitCode != 0 || final.EndedAt.IsZero() {
+	if final.Status != doneStatus || final.ExitCode == nil || *final.ExitCode != 0 || final.EndedAt.IsZero() {
 		t.Fatalf("final: %+v", final)
 	}
 
@@ -168,12 +174,18 @@ func TestRebuildCommandsAreExplicit(t *testing.T) {
 		args    []string
 		allowed bool
 	}{
-		{[]string{buildCommand, "tests", fixArgument}, true},
+		{[]string{buildCommand, testsArgument, fixArgument}, true},
 		{[]string{buildCommand, codeArgument, fixArgument}, true},
+		{[]string{buildCommand, codeArgument, fixArgument,
+			modelArgument, "coder=claude:one", modelArgument, "quick=codex:two:three"}, true},
+		{[]string{buildCommand, testsArgument, fixArgument, modelArgument, "high=claude:one"}, true},
+		{[]string{buildCommand, testsArgument, fixArgument, modelArgument}, false},
+		{[]string{buildCommand, testsArgument, fixArgument, modelArgument, "high=claude:one", helpArgument}, false},
+		{[]string{buildCommand, codeArgument, fixArgument, modelArgument, helpArgument}, false},
 		{[]string{buildCommand}, false},
 		{[]string{buildCommand, codeArgument}, false},
 		{[]string{"scen", "check", fixArgument}, false},
-		{[]string{buildCommand, "tests", fixArgument, "--help"}, false},
+		{[]string{buildCommand, testsArgument, fixArgument, helpArgument}, false},
 		{[]string{"oracle"}, false},
 	} {
 		t.Run(strings.Join(command.args, " "), func(t *testing.T) {
@@ -186,6 +198,17 @@ func TestRebuildCommandsAreExplicit(t *testing.T) {
 
 			if command.allowed {
 				must(t, runner.Supervise(t.Context(), record.Directory, attempt.Tag))
+				current, err := drill.Read(record.Directory)
+				must(t, err)
+
+				final := current.Runs[attempt.Tag]
+				if final.ExitCode == nil || *final.ExitCode != 0 {
+					t.Fatalf("engine did not receive arguments: %+v", final)
+				}
+
+				if strings.Join(final.Args, " ") != strings.Join(command.args, " ") {
+					t.Fatalf("record lost arguments: %v", final.Args)
+				}
 			}
 		})
 	}
