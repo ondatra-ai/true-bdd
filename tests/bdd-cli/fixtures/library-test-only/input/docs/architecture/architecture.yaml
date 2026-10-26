@@ -1,0 +1,14 @@
+architecture:
+  services:
+    - name: calc
+      path: services/calc
+      language: go
+  testing:
+    framework: go-test
+    libraries:
+      - module: github.com/google/uuid
+        version: v1.6.0
+    commands:
+      record: go test -json ./tests/suite/...
+      replay: go test -json ./tests/suite/...
+      live: go test -json ./tests/suite/...

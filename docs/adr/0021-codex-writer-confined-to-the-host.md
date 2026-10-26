@@ -1,5 +1,7 @@
 # Confine the codex build-code writer through its own permission profile
 
+**Library access amended by [ADR-0028](0028-architecture-declares-access.md):** generated profiles now grant only exact architecture-declared Go libraries, their downloaded build graph and version metadata. The engine downloads them before build-code writers; no rule singles out an organization or the engine's module. The broad module-cache grants and organization exclusions below describe the original trial, superseded by ADR-0028. Claude's file tools follow the declaration; its replay and executed code remain unconfined with network, a known limit retained for model trials (Q15).
+
 **Amended by [ADR-0024](0024-confine-every-codex-apply.md):** every codex apply now uses this isolation; replay forms and recovery remain build-code-only. The original trial decision follows.
 
 Only `build code --fix`'s codex apply turn uses a generated per-turn `CODEX_HOME` and named `writer` permission profile. This amends ADR-0018 and ADR-0019's codex exceptions and ADR-0020's original provider restriction. Other commands and roles retain their exact sandbox arguments, inherited environment, prompts and failure handling. No outer `sandbox-exec` is used: nesting a Seatbelt profile under codex's fails.

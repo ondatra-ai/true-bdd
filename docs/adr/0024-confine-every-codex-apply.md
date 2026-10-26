@@ -1,5 +1,7 @@
 # Confine every codex apply turn to its Host project
 
+**Library access amended by [ADR-0028](0028-architecture-declares-access.md):** generated profiles now grant only exact architecture-declared Go libraries, their downloaded build graph and version metadata. The engine downloads them before build-code writers; no rule singles out an organization or the engine's module. The broad module-cache grants and organization exclusions below describe the original trial, superseded by ADR-0028. Claude's file tools follow the declaration; its replay and executed code remain unconfined with network, a known limit retained for model trials (Q15).
+
 Issue #205 restores ADR-0017's project read boundary for every codex apply, resolving ADR-0023's migration blocker. It extends ADR-0021's isolation to `us refine`, `us apply`, `scen check` and `build tests`; build code retains its replay forms and recovery. The router selects confinement by apply role and codex CLI, independently of Think/Edit tool capabilities and the explicit build-code writer option. Plan and validation turns remain `-s read-only` with their previous environment. This decision does not claim their read sandbox excludes outside files.
 
 ## Profile and write roots
