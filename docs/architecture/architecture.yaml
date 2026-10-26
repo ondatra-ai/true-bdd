@@ -569,6 +569,48 @@ architecture:
       language: go
       frameworks:
         - cobra
+      patterns:
+        project_resources:
+          description: Configuration, checklists and prompt templates are host files initialized once and checked before work (ADR-0029).
+          rules:
+            - >-
+              The init command uses no bootstrap configuration. It carries copies under
+              services/bdd-cli/internal/infrastructure/initialization/files/, embedded by
+              the initialization package so go:embed stays within its directory and Go
+              stays within services/. Only init reads these copies; runtime loaders
+              read project files exclusively and never fall back to embedded content.
+              The existing embedded Go scenario-test generation template is separate.
+            - >-
+              Init writes missing true-bdd/true-bdd.yaml, all true-bdd/checklists/ files
+              and all templates/ prompt templates in the current folder. The host
+              configuration has no scripts; this repository keeps scripts in its own
+              true-bdd/true-bdd.yaml. Existing files, including empty, invalid and symbolic
+              link entries, are left untouched. Each path is reported as Created or
+              Left existing. Creation rechecks existence under the disk channel's
+              exclusive directory Hold. Init writes no Specification or schema and
+              performs no framework detection. Version and init need none of these files.
+            - >-
+              Every checklist-driven command loads its configuration and selected
+              checklist and parses its selected system and user validation templates
+              before loading Items, starting test discovery or dispatching an AI turn.
+              Under --fix it also parses its system and user fix-generator and
+              fix-applier templates. Selection uses the configured paths of that
+              command's generator triple, so another command's templates are not required.
+              Parsing uses the same Go text/template functions as rendering, including
+              Sprig and toYaml. Missing files name the path and true-bdd init; invalid
+              files retain the parse error and path and ask to fix the file without
+              init advice. All refuse before command work.
+            - >-
+              The Init defaults drift gate runs TestInitDefaultsMatchProjectFiles in
+              scripts/gates. It compares the complete relative path sets and bytes
+              of the embedded checklist and template trees against true-bdd/checklists/
+              and templates/, detecting missing and extra copies too. YAML-decoded host
+              configuration must equal true-bdd/true-bdd.yaml after removing only scripts;
+              a scripts key in the host copy fails. Comments and formatting are not
+              configuration values. Resource and copy changes select this gate in CI
+              and the local changed-file pipeline. An installed-binary test initializes
+              an outside folder twice and drives its own Specification and failing Go
+              tests to the first planning turn with fake claude/codex executables.
       # What this service talks to at runtime: `protocol` is the connection
       # mechanism (cli, http, ws, sql, redis, …); `scope` places it:
       #	internal    — another service declared in this file

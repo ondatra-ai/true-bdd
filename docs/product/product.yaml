@@ -150,6 +150,19 @@ glossary:
       after `true-bdd`, such as `scen check --fix`. It is what a role runs,
       and the unit whose exit code, stdout and file changes a Scenario
       observes. Commands that run AI turns accept model overrides.
+      `init` runs without configuration and creates, in the current folder,
+      true-bdd/true-bdd.yaml without scripts, every checklist under
+      true-bdd/checklists/ and every prompt template under templates/.
+      It reports each created or existing file and never overwrites one,
+      even an empty or invalid one. It creates no Specification document
+      or schema and detects no test framework. `version` also needs none
+      of these files. Other commands use only the project files, with no
+      embedded runtime fallback. Before their first test run, Item or AI
+      turn, they load their configuration and checklist and parse both
+      validation prompt templates, plus both fix-generator and both
+      fix-applier templates under --fix. A missing file refuses startup,
+      naming the file and true-bdd init; an invalid file names the file
+      and parse error and asks to fix it, without init advice.
       Checklist commands print their existing upper-case command name followed
       by ` COMPLETE` on stdout only when they succeed, after finalization and
       any post-run validation. A command returning an error prints no COMPLETE
@@ -172,7 +185,7 @@ glossary:
   - term: project tree
     means: >-
       The files of the project a command works on (its specification
-      documents, the engine's configuration and checklists, its code and
+      documents, the engine's configuration, checklists and prompt templates, its code and
       tests) as a Scenario starts from them. Named, so a Scenario says
       exactly which starting point its behaviour depends on.
 
@@ -196,9 +209,9 @@ glossary:
     means: >-
       Everything a command prints on its standard error: the error that
       stopped it, followed by the command's usage when it was given an
-      argument it does not take. A command that cannot read its
-      configuration says so only there, since it never starts the log it
-      would print on stdout.
+      argument it does not take. Startup refusals also name their cause on
+      stdout; a configuration read failure precedes installation of the
+      engine's JSON log.
 
   - term: log record
     means: >-
