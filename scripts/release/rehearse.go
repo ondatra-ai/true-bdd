@@ -19,6 +19,9 @@ import (
 type Options struct {
 	Live            bool
 	HarnessRevision string
+	harnessVersion  string
+	moduleProxy     string
+	moduleCache     string
 }
 
 // Rehearse installs artifacts in a fresh private user folder and runs sample hosts.
@@ -65,9 +68,9 @@ func rehearse(ctx context.Context, root, artifacts string, opt Options, report *
 		return err
 	}
 
-	report.Harness = "exported source at " + metadata.Commit + " (no pushed commit required)"
-	if opt.HarnessRevision != "" {
-		report.Harness = "module proxy at " + opt.HarnessRevision
+	opt, err = prepareRehearsalLibraries(ctx, root, source, metadata, opt, report)
+	if err != nil {
+		return err
 	}
 
 	if !opt.Live {
@@ -79,7 +82,21 @@ func rehearse(ctx context.Context, root, artifacts string, opt Options, report *
 		}
 	}
 
-	return rehearseHosts(ctx, binary, source, opt, report)
+return runRehearsalHosts(ctx, binary, source, opt, report)
+}
+
+func runRehearsalHosts(ctx context.Context, binary, source string, opt Options, report *Report) error {
+	err := rehearseHosts(ctx, binary, source, opt, report)
+	if err != nil {
+		return err
+	}
+
+	if !opt.Live {
+		err = rehearseMissingLibrary(ctx, binary, source, opt, report)
+		report.Passed = err == nil
+	}
+
+	return err
 }
 
 func installBinary(ctx context.Context, folder, artifacts string, metadata Metadata) (string, error) {
@@ -143,4 +160,29 @@ func fakeAgents(directory string) error {
 	}
 
 	return nil
+}
+
+func prepareRehearsalLibraries(ctx context.Context, root, source string,
+	metadata Metadata, opt Options, report *Report,
+) (Options, error) {
+	opt.moduleCache = filepath.Join(report.Root, "module-cache")
+	report.ModuleCache = opt.moduleCache
+
+	opt.harnessVersion = opt.HarnessRevision
+	if opt.HarnessRevision == "" {
+		var err error
+
+		opt.harnessVersion, opt.moduleProxy, err = localHarnessProxy(ctx, root, source, report.Root, metadata.Commit)
+
+		err = report.step("", "local module proxy", err)
+		if err != nil {
+			return opt, err
+		}
+
+		report.Harness = "local file module proxy at " + opt.harnessVersion + " (no pushed commit required)"
+	} else {
+		report.Harness = "module proxy at " + opt.HarnessRevision
+	}
+
+	return opt, nil
 }

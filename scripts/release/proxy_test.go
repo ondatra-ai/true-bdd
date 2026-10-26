@@ -21,8 +21,10 @@ func TestProxyHarnessUsesTheNamedRevisionWithoutLocalReplacement(t *testing.T) {
 
 	write(t, tool, `#!/bin/sh
 if test "$1" = mod; then exit 0; fi
+if test "$1" = list; then echo v0.0.0-published; exit 0; fi
 test "$1" = get || exit 11
 test "$2" = github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo@published-commit || exit 12
+echo 'require github.com/ondatra-ai/true-bdd v0.0.0-published' >> go.mod
 echo proxy-installed > proxy-receipt
 `)
 
@@ -31,7 +33,7 @@ echo proxy-installed > proxy-receipt
 		t.Fatal(err)
 	}
 
-	engine := strings.Replace(installedEngine, "/usr/bin/grep -q replace go.mod", "test -f proxy-receipt", 1)
+	engine := installedEngine
 	artifacts := artifactSet(t, engine)
 	report, err := release.Rehearse(context.Background(), root, artifacts,
 		release.Options{HarnessRevision: "published-commit"})

@@ -33,12 +33,17 @@ func (a *Architecture) validateLibraries() error {
 	return validateLibraryVersions(libraries)
 }
 
+var (
+	libraryModulePattern  = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._~/+\-]*$`)
+	libraryVersionPattern = regexp.MustCompile(`^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+incompatible)?$`)
+)
+
 func validateLibraryVersions(libraries []Library) error {
 	versions := make(map[string]string)
 
 	for _, library := range libraries {
-		if !regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._~/+\-]*$`).MatchString(library.Module) ||
-			!regexp.MustCompile(`^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+incompatible)?$`).MatchString(library.Version) {
+		if !libraryModulePattern.MatchString(library.Module) ||
+			!libraryVersionPattern.MatchString(library.Version) {
 			return fmt.Errorf("%s@%s: %w", library.Module, library.Version, ErrInvalidLibrary)
 		}
 

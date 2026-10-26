@@ -75,7 +75,7 @@ func rehearseHost(ctx context.Context, binary, source string, sample sampleHost,
 		return err
 	}
 
-	commandOptions := hostOptions(host, binary)
+	commandOptions := rehearsalOptions(host, binary, opt, false)
 
 	result, err := truebdd.InitHost(ctx, binary, commandOptions)
 	if err == nil {
@@ -87,7 +87,10 @@ func rehearseHost(ctx context.Context, binary, source string, sample sampleHost,
 		return err
 	}
 
-	err = installHostRequirements(ctx, source, sample, commandOptions, opt)
+	version, err := installHostRequirements(ctx, sample, rehearsalOptions(host, binary, opt, true), opt)
+	if sample.name != jestHost && err == nil {
+		report.HarnessVersion = version
+	}
 
 	step := "harness"
 	if sample.name == jestHost {
@@ -112,7 +115,7 @@ func rehearseHost(ctx context.Context, binary, source string, sample sampleHost,
 }
 
 func runSample(ctx context.Context, binary, host string, sample sampleHost, opt Options, report *Report) error {
-	commandOptions := hostOptions(host, binary)
+	commandOptions := rehearsalOptions(host, binary, opt, false)
 
 	if opt.Live {
 		commandOptions.Timeout = liveBudget
@@ -173,26 +176,24 @@ func prepareSample(source, host string, sample sampleHost) error {
 	return nil
 }
 
-func installHostRequirements(ctx context.Context, source string, sample sampleHost,
+func installHostRequirements(ctx context.Context, sample sampleHost,
 	commandOptions cli.Options, opt Options,
-) error {
+) (string, error) {
 	if sample.name == jestHost {
 		err := npm.InstallTests(ctx, commandOptions)
 		if err != nil {
-			return fmt.Errorf("install dependencies: %w", err)
+			return "", fmt.Errorf("install dependencies: %w", err)
 		}
 
-		return nil
+		return "", nil
 	}
 
-	if opt.HarnessRevision != "" {
-		source = ""
-	}
-
-	err := gotool.RequireHarness(ctx, commandOptions, source, opt.HarnessRevision)
+	version, err := gotool.RequireHarness(ctx, commandOptions, opt.harnessVersion)
 	if err != nil {
-		return fmt.Errorf("install harness: %w", err)
+		return "", fmt.Errorf("install harness: %w", err)
 	}
 
-	return nil
+	err = declareTestingLibrary(commandOptions.Dir, harnessModule, version)
+
+	return version, err
 }
