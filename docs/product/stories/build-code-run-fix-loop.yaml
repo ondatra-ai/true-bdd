@@ -80,7 +80,7 @@ story:
       - stdout matches msg="Running tests" framework=go-test
       - stdout matches msg="Suite failures" failures=1 framework=go-test
       - stdout matches msg="Total failing tests across architecture" failures=1
-      - stdout matches BUILD CODE COMPLETE
+      - stdout does not match BUILD CODE COMPLETE
       - stdout matches msg="Check answered" check=tests-pass.*answer=fail
       - but: no file outside "tmp" changed
       - and: the engine spawned the test runner "go"

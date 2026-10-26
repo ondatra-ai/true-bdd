@@ -1148,6 +1148,12 @@ architecture:
         The engine's standard output: console answer lines (banners such as
         `SCEN CHECK`, the report table, `ALL CHECKS PASSED!`) and every log
         record in text form, `time=… level=… msg="…" key=value`.
+        The shared checklist runner logs the upper-case command name plus
+        ` COMPLETE` only after Finalize returns no error; an earlier error
+        or a Finalize error emits no completion banner. A command deferring
+        completion owns that announcement: build tests logs BUILD TESTS COMPLETE
+        only after finalization, generated-test integrity checks and runtime
+        verification cleanup all succeed. Existing banner text is preserved.
       observed_by: >-
         The kept stdout, as one string, is asked for a match of the step's
         pattern anywhere in it, or for none; a failed match prints the tail of

@@ -163,6 +163,11 @@ glossary:
       fix-applier templates under --fix. A missing file refuses startup,
       naming the file and true-bdd init; an invalid file names the file
       and parse error and asks to fix it, without init advice.
+      Checklist commands print their existing upper-case command name followed
+      by ` COMPLETE` on stdout only when they succeed, after finalization and
+      any post-run validation. A command returning an error prints no COMPLETE
+      banner. Success means exit 0, including the reported failing-check
+      verdicts of `us refine` and `us apply` described under exit code.
 
   - term: model override
     means: >-

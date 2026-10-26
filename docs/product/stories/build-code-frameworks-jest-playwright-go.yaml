@@ -27,7 +27,7 @@ story:
       - stdout matches msg="Suite failures" failures=1 framework=jest
       - stdout matches msg="Total failing tests across architecture" failures=1
       - stdout matches msg=test index=1 total=1 id=/jest/jest:tests\.unit\.greeting\.test\.js::greet_greets_the_world_when_no_name_is_given
-      - stdout matches BUILD CODE COMPLETE
+      - stdout does not match BUILD CODE COMPLETE
       - but: no file outside "tmp" changed
       - and: the engine spawned the test runner "npx"
       - and: the engine spawned exactly 1 test runner
@@ -139,6 +139,7 @@ story:
       - the System Architect runs "build code --fix"
     - then:
       - the command exits with code 1
+      - but: stdout does not match BUILD CODE COMPLETE
       - and: stdout matches level=WARN msg="Fix was NOT applied"
       - and: stdout matches level=ERROR msg="Walk stopped".*gave up after 3 applied fix
       - and: the engine dispatched no validation AI turns to "claude"
