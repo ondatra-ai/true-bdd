@@ -19,7 +19,7 @@ import (
 //	*/testdata/*                 golden files — the bytes ARE the assertion
 //	tests/{legacy,fixtures}/     parked and fixture trees, as in Comments
 const excluded = `^\.claude/skills/mpc_[^/]+/|^proto-product-snapshot\.md$|/testdata/|` +
-	`^tests/(legacy|bdd-cli/fixtures)/`
+	`^tests/(legacy|true-bdd/fixtures)/`
 
 var excludedRE = regexp.MustCompile(excluded)
 

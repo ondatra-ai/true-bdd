@@ -15,7 +15,7 @@ import (
 // SpawnLogDir is the tmpdir subdirectory holding the harness's own
 // spawn evidence: every process the runner starts. Timed to fall
 // outside the before/after snapshot window, so nothing here reaches the judge's diff.
-const SpawnLogDir = "bdd-cli-logs"
+const SpawnLogDir = "true-bdd-logs"
 
 const (
 	spawnLogDirPerm  = 0755

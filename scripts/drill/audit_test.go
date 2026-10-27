@@ -214,7 +214,7 @@ func TestAuditNamesEngineAndCodexEvidenceWithoutDatabases(t *testing.T) {
 
 func TestAuditReportsEngineImportGateOnRebuiltCut(t *testing.T) {
 	runner, record, cut := prepare(t, "#!/bin/sh\nexit 0\n")
-	path := filepath.Join(cut.Directory, "services/bdd-cli/rebuilt.go")
+	path := filepath.Join(cut.Directory, "services/true-bdd/rebuilt.go")
 	put(t, path, `package main; import "fmt"; func main() { fmt.Println("rebuilt") }`)
 	audit, err := runner.Audit(t.Context(), record.Directory, "a")
 	must(t, err)

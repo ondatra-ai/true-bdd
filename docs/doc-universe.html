@@ -579,7 +579,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           <tr data-edge="7"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>7</td><td class="from">scenario service:</td><td class="to">testing.suites[].service</td>
             <td>the one join that says which suite owns a scenario, and therefore where its step definitions live. Replaced the id-prefix convention (INT- / E2E-), which lived in prompt prose and in no code</td></tr>
           <tr data-edge="8"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>8</td><td class="from">services[].path</td><td class="to">services/&lt;name&gt;/</td>
-            <td><code>path: services/bdd-cli</code> tells <strong>build code</strong> where production source lives — any path works; the fixtures use <code>services/calc</code></td></tr>
+            <td><code>path: services/true-bdd</code> tells <strong>build code</strong> where production source lives — any path works; the fixtures use <code>services/calc</code></td></tr>
           <tr data-edge="9"><td class="n"><i class="sw" style="--cat:var(--c-code)"></i>9</td><td class="from">failing test</td><td class="to">production source</td>
             <td><strong>build code --fix</strong> edits the service's source (its <code>services[].path</code>) until the runner's <code>LastRunPassed</code> flips to true</td></tr>
           <tr data-edge="10"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>10</td><td class="from">checklist prompt docs:</td><td class="to">true-bdd.yaml documents:</td>
@@ -601,7 +601,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
 </section>
 
 <footer>
-  <div class="inner">Drawn from the engine seed (<code>true-bdd/</code>, <code>templates/</code>) and <code>tests/bdd-cli</code> fixture documents — 2026-08-27 — set in the S&amp;F design system.</div>
+  <div class="inner">Drawn from the engine seed (<code>true-bdd/</code>, <code>templates/</code>) and <code>tests/true-bdd</code> fixture documents — 2026-08-27 — set in the S&amp;F design system.</div>
 </footer>
 
 <script>

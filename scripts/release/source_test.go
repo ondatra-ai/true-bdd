@@ -13,7 +13,7 @@ func sourceRepository(t *testing.T) string {
 	root := t.TempDir()
 	write(t, filepath.Join(root, "go.mod"), "module github.com/ondatra-ai/true-bdd\n\ngo 1.25.0\n")
 	write(t, filepath.Join(root, "pkg/testkit/bddgo/harness.go"), "package bddgo\n")
-	fixture := filepath.Join(root, "tests/bdd-cli/fixtures/build-code-spec-scenario/input")
+	fixture := filepath.Join(root, "tests/true-bdd/fixtures/build-code-spec-scenario/input")
 	write(t, filepath.Join(fixture, "go.mod"), "module fixture/stepsrun\n\ngo 1.25.0\n")
 	write(t, filepath.Join(fixture, "services/calc/calc.go"), "package calc\n")
 	write(t, filepath.Join(fixture, "docs/architecture/architecture.yaml"), `architecture:

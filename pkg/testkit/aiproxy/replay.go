@@ -13,9 +13,9 @@ import (
 
 var (
 	errCassetteMissing = errors.New("no cassette for this call — the engine made more AI calls than were " +
-		"recorded; re-record with `go test -tags bdd ./tests/bdd-cli/... -mode=record`")
+		"recorded; re-record with `go test -tags bdd ./tests/true-bdd/... -mode=record`")
 	errCassetteStale = errors.New("stale cassette — the request differs from the recording (template, " +
-		"checklist, or engine change); re-record with `go test -tags bdd ./tests/bdd-cli/... -mode=record`")
+		"checklist, or engine change); re-record with `go test -tags bdd ./tests/true-bdd/... -mode=record`")
 )
 
 // replay serves one recorded call: verify the incoming request against the

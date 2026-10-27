@@ -142,7 +142,7 @@ type RunResult struct {
 	Diff     []FileChange
 	TmpDir   string // predictable per-fixture path under tmp/test_run/<session>/; preserved after every run
 	// StdoutFile/StderrFile are where the CLI's streams were persisted
-	// under TmpDir/bdd-cli-logs, empty when capture failed — a failing
+	// under TmpDir/true-bdd-logs, empty when capture failed — a failing
 	// fixture is read long after the test binary's own output scrolled away.
 	StdoutFile string
 	StderrFile string
@@ -422,7 +422,7 @@ func prepareRunDir(fixture *Fixture, sessionRoot string) (string, error) {
 }
 
 // runPrepCommands executes each fixture-provided prep command, teed to
-// console and bdd-cli-logs/. Its own budget, decoupled from the run timeout:
+// console and true-bdd-logs/. Its own budget, decoupled from the run timeout:
 // npm/playwright installs are external, cold-cache work.
 func runPrepCommands(tmpDir string, prepCmds []string) error {
 	if len(prepCmds) == 0 {
@@ -443,7 +443,7 @@ const prepTimeout = 15 * time.Minute
 const teardownTimeout = 2 * time.Minute
 
 // Teardown executes each fixture-provided teardown command on its own
-// budget, teed to bdd-cli-logs/ — failures are logged, never returned.
+// budget, teed to true-bdd-logs/ — failures are logged, never returned.
 // Called at SCENARIO end: a Then re-run needs the stack left standing.
 func Teardown(tmpDir string, teardownCmds []string) {
 	if len(teardownCmds) == 0 {
@@ -456,7 +456,7 @@ func Teardown(tmpDir string, teardownCmds []string) {
 }
 
 // phase is one fixture-declared command list, each command teed to its own
-// pair of files under bdd-cli-logs/. CLAUDECODE is STRIPPED, not blanked: a
+// pair of files under true-bdd-logs/. CLAUDECODE is STRIPPED, not blanked: a
 // prep step may launch an agent CLI, which must look unlaunched-from-a-session.
 func phase(name, tmpDir string, budget time.Duration) spec.Phase {
 	spawn := newSpawnLog(tmpDir)

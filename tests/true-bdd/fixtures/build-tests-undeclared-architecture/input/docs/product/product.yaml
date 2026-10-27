@@ -1,0 +1,21 @@
+# Product document for `build-tests-undeclared-architecture`.
+#
+# It declares roles and a glossary but no `catalogue:` key, so no step
+# is held to a phrase and only the missing declaration refuses the run.
+
+title: "Fixture host project"
+
+description:
+  summary: >-
+    A single MCP server a Claude User's client opens sessions at, used
+    by the true-bdd fixtures as the host project a scenario registry
+    describes.
+
+roles:
+  - name: Claude User
+    definition: Uses Claude, whose client opens sessions at the MCP server.
+
+glossary:
+  - term: ticket
+    means: >-
+      The credential the MCP server grants a session when it accepts it.

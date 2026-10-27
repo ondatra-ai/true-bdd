@@ -23,7 +23,7 @@ rules:
         - "**/*.pyc"
         - "**/*.pyo"
       exclude:
-        - "tests/bdd-cli/fixtures/**"
+        - "tests/true-bdd/fixtures/**"
     message: >-
       Python in a Go and sh repository. Port it to Go under scripts/, or
       delete it. Bytecode: rm -rf the __pycache__.
@@ -35,7 +35,7 @@ rules:
       include:
         - "**/__pycache__"
       exclude:
-        - "tests/bdd-cli/fixtures/**"
+        - "tests/true-bdd/fixtures/**"
     message: "rm -rf the __pycache__ — this repository runs no Python."
 
   # start.sh exports .env before `claude` starts, which nothing inside a
@@ -50,7 +50,7 @@ rules:
         - "**/*.bash"
       exclude:
         - "start.sh"
-        - "tests/bdd-cli/fixtures/**"
+        - "tests/true-bdd/fixtures/**"
     message: >-
       Shell in a Go repository. Port it to Go under scripts/ and invoke it as
       `go run ./scripts/cmd/<x>`; start.sh is the only exception.
@@ -130,8 +130,8 @@ rules:
         - "**/*.go"
       exclude:
         - "pkg/shell/**"
-        - "services/bdd-cli/internal/infrastructure/shell/**"
-        - "tests/bdd-cli/fixtures/**"
+        - "services/true-bdd/internal/infrastructure/shell/**"
+        - "tests/true-bdd/fixtures/**"
         - "**/*_test.go"
     forbid: '^os/exec$'
     message: >-
@@ -149,17 +149,17 @@ rules:
         - "pkg/shell/**"
         - "pkg/cli/**"
         # Engine shell access is confined to its shell and explicitly named wrappers.
-        - "services/bdd-cli/internal/infrastructure/shell/**"
-        - "services/bdd-cli/internal/infrastructure/cli/cli.go"
-        - "services/bdd-cli/internal/infrastructure/cli/claude/*.go"
-        - "services/bdd-cli/internal/infrastructure/cli/codex/*.go"
-        - "services/bdd-cli/internal/infrastructure/cli/git/*.go"
-        - "services/bdd-cli/internal/infrastructure/cli/gotool/*.go"
-        - "services/bdd-cli/internal/infrastructure/cli/spec/*.go"
-        - "services/bdd-cli/internal/infrastructure/cli/truebdd/*.go"
-        - "tests/bdd-cli/fixtures/**"
+        - "services/true-bdd/internal/infrastructure/shell/**"
+        - "services/true-bdd/internal/infrastructure/cli/cli.go"
+        - "services/true-bdd/internal/infrastructure/cli/claude/*.go"
+        - "services/true-bdd/internal/infrastructure/cli/codex/*.go"
+        - "services/true-bdd/internal/infrastructure/cli/git/*.go"
+        - "services/true-bdd/internal/infrastructure/cli/gotool/*.go"
+        - "services/true-bdd/internal/infrastructure/cli/spec/*.go"
+        - "services/true-bdd/internal/infrastructure/cli/truebdd/*.go"
+        - "tests/true-bdd/fixtures/**"
         - "**/*_test.go"
-    forbid: 'true-bdd/(pkg|services/bdd-cli/internal/infrastructure)/shell$'
+    forbid: 'true-bdd/(pkg|services/true-bdd/internal/infrastructure)/shell$'
     message: >-
       spawn: reach a binary through its owning typed CLI wrapper — add one
       if it is missing.
@@ -198,7 +198,7 @@ rules:
         - "**/*_mips64.go"
         - "**/*_loong64.go"
       exclude:
-        - "tests/bdd-cli/fixtures/**"
+        - "tests/true-bdd/fixtures/**"
     message: >-
       A GOOS/GOARCH filename suffix makes this file invisible to golangci-lint
       on every platform this repository builds on, with no build tag for
@@ -214,7 +214,7 @@ rules:
       include:
         - "**/*.go"
       exclude:
-        - "tests/bdd-cli/fixtures/**"
+        - "tests/true-bdd/fixtures/**"
     pattern: '^// \+build '
     message: >-
       Pre-1.17 build-tag syntax; go-build-tag-allowlist only reads //go:build.
@@ -222,7 +222,7 @@ rules:
 
   # JS belongs to the report UI's browser code and the fenced fixture trees.
   # This repository authors no other JavaScript: what it refuses is JS in
-  # scripts/, services/bdd-cli/ or the bdd-cli tests.
+  # scripts/, services/true-bdd/ or the true-bdd tests.
   - id: js-fenced
     kind: file_absent
     level: error
@@ -236,7 +236,7 @@ rules:
         - "**/*.tsx"
       exclude:
         - "pkg/testkit/reportserver/web/**"
-        - "tests/bdd-cli/fixtures/**"
+        - "tests/true-bdd/fixtures/**"
     message: >-
       JavaScript where this repo is Go and sh. The report UI's browser code
       is the exception; everything else is Go or sh.
@@ -255,7 +255,7 @@ rules:
         - "**/pnpm-lock.yaml"
         - "**/node_modules/**"
       exclude:
-        - "tests/bdd-cli/fixtures/**"
+        - "tests/true-bdd/fixtures/**"
     message: >-
       A manifest or lockfile means a second build system. This repository
       authors none; only a fixture tree may carry one.
@@ -270,7 +270,7 @@ rules:
     timeout: 300
     paths:
       include: ["**/*.go"]
-      exclude: ["tests/bdd-cli/fixtures/**", "**/testdata/**"]
+      exclude: ["tests/true-bdd/fixtures/**", "**/testdata/**"]
     scope_filter:
       include_manifest_paths:
         source: "{{env.TRUEBDD_SCOPE | default('tmp/no-scope.txt')}}"
@@ -287,7 +287,7 @@ rules:
     timeout: 120
     paths:
       include: ["**/*.md"]
-      exclude: ["tests/bdd-cli/fixtures/**", "**/testdata/**"]
+      exclude: ["tests/true-bdd/fixtures/**", "**/testdata/**"]
     scope_filter:
       include_manifest_paths:
         source: "{{env.TRUEBDD_SCOPE | default('tmp/no-scope.txt')}}"
@@ -304,7 +304,7 @@ rules:
     timeout: 120
     paths:
       include: ["**/*.go", "**/*.sh", "**/*.yaml", "**/*.yml"]
-      exclude: ["tests/bdd-cli/fixtures/**", "**/testdata/**"]
+      exclude: ["tests/true-bdd/fixtures/**", "**/testdata/**"]
     scope_filter:
       include_manifest_paths:
         source: "{{env.TRUEBDD_SCOPE | default('tmp/no-scope.txt')}}"
@@ -321,7 +321,7 @@ rules:
     timeout: 120
     paths:
       include: ["**/*.yaml", "**/*.yml"]
-      exclude: ["tests/bdd-cli/fixtures/**", "**/testdata/**"]
+      exclude: ["tests/true-bdd/fixtures/**", "**/testdata/**"]
     scope_filter:
       include_manifest_paths:
         source: "{{env.TRUEBDD_SCOPE | default('tmp/no-scope.txt')}}"

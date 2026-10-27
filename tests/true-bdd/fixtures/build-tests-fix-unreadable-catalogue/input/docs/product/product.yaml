@@ -1,0 +1,19 @@
+# Product document for `build-tests-fix-unreadable-catalogue`.
+#
+# Its `catalogue:` holds a string where a list of phrases belongs, so no
+# step's phrase can be read from it.
+
+title: "Fixture host project"
+
+description:
+  summary: >-
+    A single MCP server, used by the true-bdd fixtures as the host project
+    a scenario registry describes.
+
+roles:
+  - name: Claude User
+    definition: Uses Claude, whose client opens sessions at the MCP server.
+
+glossary: []
+
+catalogue: "the MCP server is running"

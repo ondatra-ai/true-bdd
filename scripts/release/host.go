@@ -150,7 +150,7 @@ func runSample(ctx context.Context, binary, host string, sample sampleHost, opt 
 }
 
 func prepareSample(source, host string, sample sampleHost) error {
-	input := filepath.Join(source, "tests/bdd-cli/fixtures", sample.fixture, "input")
+	input := filepath.Join(source, "tests/true-bdd/fixtures", sample.fixture, "input")
 
 	err := disk.CopyTree(host, input, disk.Private)
 	if err != nil {

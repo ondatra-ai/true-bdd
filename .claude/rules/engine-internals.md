@@ -1,6 +1,6 @@
 ---
 paths:
-  - "services/bdd-cli/**"
+  - "services/true-bdd/**"
   - "true-bdd/**"
   - "templates/**"
 ---

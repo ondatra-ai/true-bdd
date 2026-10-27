@@ -32,7 +32,7 @@ func ReplayOracle(ctx context.Context, binary string, opt OracleOptions) (int, e
 			jsonOutputFlag,
 			"-count=1",
 			"-timeout=40m",
-			"./tests/bdd-cli/",
+			"./tests/true-bdd/",
 			"-mode=services:replay,tests:replay",
 			"-engine-bin=" + binary},
 		opt)

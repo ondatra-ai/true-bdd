@@ -2,7 +2,7 @@
 // wrappers pkg/shell may be reached through.
 //
 // Every `claude` turn this repo spawns comes through here. A vendored SDK
-// under services/bdd-cli/claudecode used to run the engine's turns over a
+// under services/true-bdd/claudecode used to run the engine's turns over a
 // bidirectional stream-json protocol; it was deleted once it was measured,
 // because the engine only ever sent one prompt per spawn and the second
 // path was where an un-isolated child leaked in.

@@ -15,7 +15,7 @@ import (
 
 const (
 	repositoryImport = "github.com/ondatra-ai/true-bdd"
-	enginePath       = "services/bdd-cli"
+	enginePath       = "services/true-bdd"
 )
 
 var errEngineImport = errors.New("engine must own all repository code it uses")

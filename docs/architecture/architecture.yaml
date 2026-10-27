@@ -585,14 +585,14 @@ architecture:
     # and its build graph for build-code-spec-005-matched-scenario-embedded.
     # Warm that graph first for a fully disconnected replay.
     commands:
-      record: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ -mode=services:record,tests:record"
-      replay: "go test -tags bdd -json -count=1 -timeout=40m ./tests/bdd-cli/ -mode=services:replay,tests:replay"
-      live: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ -mode=services:live,tests:live"
+      record: "go test -tags bdd -json -count=1 -timeout=180m ./tests/true-bdd/ -mode=services:record,tests:record"
+      replay: "go test -tags bdd -json -count=1 -timeout=40m ./tests/true-bdd/ -mode=services:replay,tests:replay"
+      live: "go test -tags bdd -json -count=1 -timeout=180m ./tests/true-bdd/ -mode=services:live,tests:live"
 
   services:
-    - name: bdd-cli
+    - name: true-bdd
       type: "cli"
-      path: services/bdd-cli
+      path: services/true-bdd
       writable: [go.mod, go.sum]
       language: go
       libraries:
@@ -648,11 +648,11 @@ architecture:
         - cobra
       patterns:
         owned_io:
-          description: The engine owns all repository code it uses, including its IO layer; a cut-A rebuild deletes and regenerates the whole services/bdd-cli folder.
+          description: The engine owns all repository code it uses, including its IO layer; a cut-A rebuild deletes and regenerates the whole services/true-bdd folder.
           rules:
             - >-
               No engine Go package, including its tests or files hidden by build constraints,
-              imports this repository outside services/bdd-cli. The engine uses only the
+              imports this repository outside services/true-bdd. The engine uses only the
               exact third-party module versions in this service's libraries above; that list
               includes the complete imported graph, verified with go list -deps. Tests and
               tooling retain independent pkg implementations and are never engine libraries.
@@ -718,7 +718,7 @@ architecture:
           rules:
             - >-
               The init command uses no bootstrap configuration. It carries copies under
-              services/bdd-cli/internal/infrastructure/initialization/files/, embedded by
+              services/true-bdd/internal/infrastructure/initialization/files/, embedded by
               the initialization package so go:embed stays within its directory and Go
               stays within services/. Only init reads these copies; runtime loaders
               read project files exclusively and never fall back to embedded content.
@@ -1208,7 +1208,7 @@ architecture:
 
     - term: engine
       technical: >-
-        The `true-bdd` binary, built from `services/bdd-cli` once per test
+        The `true-bdd` binary, built from `services/true-bdd` once per test
         session. It owns the IO implementation described in patterns.owned_io.
         INFO and higher log records go out as text on stdout; DEBUG and higher
         records go out as one JSON line in `tmp/true-bdd.log.json` under the directory
@@ -1250,7 +1250,7 @@ architecture:
         could not complete included: its run directory, its stdout and
         stderr files, its file changes, and its exit code once it completed.
         The recorder writes them, when the Scenario ends, to
-        `bdd-cli-logs/harness.json` in the run directory, the record the BDD
+        `true-bdd-logs/harness.json` in the run directory, the record the BDD
         report reads; a When step that does not hand the run over leaves
         that record without a run directory, an exit code or a file change,
         though every step passes. A run that could not complete fails the
@@ -1258,7 +1258,7 @@ architecture:
 
     - term: project tree
       technical: >-
-        A fixture directory `tests/bdd-cli/fixtures/<name>/`. Its `input/` is
+        A fixture directory `tests/true-bdd/fixtures/<name>/`. Its `input/` is
         laid over this repository's `true-bdd/` and `templates/` in a fresh
         run directory `tmp/test_run/<session>/<name>/`, the command's working
         directory. Beside `input/` sit `cassettes/` (the recorded AI turns and

@@ -114,7 +114,7 @@ and `documents.architecture_yaml` in `true-bdd.yaml`).
 Requires Go 1.25 and the `claude` CLI on `$PATH`.
 
 ```bash
-mkdir -p ./bin && go build -o ./bin/true-bdd ./services/bdd-cli
+mkdir -p ./bin && go build -o ./bin/true-bdd ./services/true-bdd
 ```
 
 ## Usage
@@ -494,12 +494,12 @@ architecture:
     framework: go-test            # go-test | jest | playwright
     prebuilt_engine_arg: "-engine-bin={engine_bin}" # optional; runner must consume it
     commands:
-      record: "go test -tags bdd -json -count=1 ./tests/bdd-cli/ -mode=services:record,tests:record"
-      replay: "go test -tags bdd -json -count=1 ./tests/bdd-cli/ -mode=services:replay,tests:replay"
-      live: "go test -tags bdd -json -count=1 ./tests/bdd-cli/ -mode=services:live,tests:live"
+      record: "go test -tags bdd -json -count=1 ./tests/true-bdd/ -mode=services:record,tests:record"
+      replay: "go test -tags bdd -json -count=1 ./tests/true-bdd/ -mode=services:replay,tests:replay"
+      live: "go test -tags bdd -json -count=1 ./tests/true-bdd/ -mode=services:live,tests:live"
   services:
-    - name: bdd-cli
-      path: services/bdd-cli
+    - name: true-bdd
+      path: services/true-bdd
       language: go
 ```
 
@@ -539,7 +539,7 @@ The rules, all enforced at startup rather than discovered mid-run:
 go test ./...
 
 # end-to-end BDD scenarios — real Claude calls, ~3–5 min per scenario
-go test -tags bdd -timeout=180m ./tests/bdd-cli/...
+go test -tags bdd -timeout=180m ./tests/true-bdd/...
 ```
 
 The suite's contents come from `docs/scenarios.yaml`: every scenario the
@@ -547,11 +547,11 @@ architectural spec assigns to it gets one top-level Go test named from
 its key in CamelCase (`scen-check-003-unknown-id-refused` gives `TestScenCheck003UnknownIdRefused`),
 written into the file the scenario's `path:` names
 by `true-bdd build tests --fix` and by nothing else. Its steps are bound
-by regexp to the definitions in `tests/bdd-cli/steps/`. A scenario's
+by regexp to the definitions in `tests/true-bdd/steps/`. A scenario's
 Given step names the fixture tree it drives.
 
 **A fixture is a directory, not a document — there is no manifest.**
-Trees under `tests/bdd-cli/fixtures/<name>/` hold the designed
+Trees under `tests/true-bdd/fixtures/<name>/` hold the designed
 host-project content under `input/` (`docs/` at minimum, plus project
 sources, a per-fixture `CLAUDE.md`, or engine-config overrides under
 `true-bdd/` when the scenario needs them) and the recording under

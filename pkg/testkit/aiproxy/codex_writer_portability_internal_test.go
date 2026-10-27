@@ -10,7 +10,7 @@ import (
 func TestCodexWriterCassetteHashesSurviveRelocation(t *testing.T) {
 	for _, fixture := range []string{"build-code-fix-by-codex", "build-code-codex-selection", "build-code-codex-nonzero"} {
 		t.Run(fixture, func(t *testing.T) {
-			dirs, err := filepath.Glob(filepath.Join("../../../tests/bdd-cli/fixtures", fixture, "cassettes/codex-*"))
+			dirs, err := filepath.Glob(filepath.Join("../../../tests/true-bdd/fixtures", fixture, "cassettes/codex-*"))
 			if err != nil || len(dirs) == 0 {
 				t.Fatalf("codex cassettes: %v, %v", dirs, err)
 			}

@@ -20,8 +20,8 @@ func TestEngineImportsRejectsRepositoryCodeOutsideEngine(t *testing.T) {
 		{"tooling", `package engine; import _ "github.com/ondatra-ai/true-bdd/scripts/drill"`, true},
 		{"other-service", `package engine; import alias "github.com/ondatra-ai/true-bdd/services/other"`, true},
 		{"root", "package engine; import `github.com/ondatra-ai/true-bdd`", true},
-		{"prefix-collision", `package engine; import "github.com/ondatra-ai/true-bdd/services/bdd-cli-x"`, true},
-		{"own-package", `package engine; import "github.com/ondatra-ai/true-bdd/services/bdd-cli/api"`, false},
+		{"prefix-collision", `package engine; import "github.com/ondatra-ai/true-bdd/services/true-bdd-x"`, true},
+		{"own-package", `package engine; import "github.com/ondatra-ai/true-bdd/services/true-bdd/api"`, false},
 		{"third-party", `package engine; import "github.com/spf13/cobra"`, false},
 		{"other-repo", `package engine; import "github.com/ondatra-ai/true-bdd-extra/pkg"`, false},
 		{"malformed", `package engine; import "unterminated`, true},
@@ -30,7 +30,7 @@ func TestEngineImportsRejectsRepositoryCodeOutsideEngine(t *testing.T) {
 			t.Parallel()
 			root := t.TempDir()
 
-			dir := filepath.Join(root, "services/bdd-cli/nested")
+			dir := filepath.Join(root, "services/true-bdd/nested")
 
 			err := os.MkdirAll(dir, 0o700)
 			if err != nil {
