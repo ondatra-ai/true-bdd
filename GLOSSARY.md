@@ -84,6 +84,10 @@ _Avoid_: repair batch, failure queue
 A repeatable `--model <tier>=<cli>:<model>` command-line flag that replaces one declared `engine.models` binding in memory for one run. Every command running AI turns accepts it. It changes neither project configuration nor spawned processes' environments; each applied change is logged once.
 _Avoid_: model environment variable, model config overlay
 
+**Library**:
+Code supplied apart from a service's own source that the service or its tests build with, named in the architecture document with its exact version; what a named library itself needs to build comes with it. A rebuild may use nothing else, and a service may not use a library named only for its tests.
+_Avoid_: dependency (a service's dependencies are the processes and CLIs it talks to while it runs), package, framework
+
 ## Repository vocabulary
 
 Words for how this repository plans and executes its own work. Not the engine's domain — nothing here reaches a host project.
