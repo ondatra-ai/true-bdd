@@ -28,6 +28,10 @@ func MatchGlob(glob, path string) bool {
 	switch {
 	case strings.HasPrefix(glob, "**/*."):
 		return strings.HasSuffix(path, strings.TrimPrefix(glob, "**/*"))
+	case strings.HasPrefix(glob, "**/"):
+		name := strings.TrimPrefix(glob, "**/")
+
+		return path == name || strings.HasSuffix(path, "/"+name)
 	case strings.HasSuffix(glob, "/**"):
 		return strings.HasPrefix(path, strings.TrimSuffix(glob, "**"))
 	default:
@@ -42,6 +46,8 @@ func SupportedGlob(glob string) bool {
 	switch {
 	case strings.HasPrefix(glob, "**/*."):
 		return !strings.ContainsAny(strings.TrimPrefix(glob, "**/*."), "*/")
+	case strings.HasPrefix(glob, "**/"):
+		return !strings.ContainsAny(strings.TrimPrefix(glob, "**/"), "*/")
 	case strings.HasSuffix(glob, "/**"):
 		return !strings.Contains(strings.TrimSuffix(glob, "/**"), "*")
 	default:

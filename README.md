@@ -114,7 +114,7 @@ and `documents.architecture_yaml` in `true-bdd.yaml`).
 Requires Go 1.25 and the `claude` CLI on `$PATH`.
 
 ```bash
-mkdir -p ./bin && go build -o ./bin/true-bdd ./services/true-bdd
+mkdir -p ./bin && GOWORK=off go -C services/true-bdd build -o ../../bin/true-bdd .
 ```
 
 ## Usage
@@ -536,10 +536,10 @@ The rules, all enforced at startup rather than discovered mid-run:
 
 ```bash
 # unit tests
-go test ./...
+go run ./scripts/cmd/gates test
 
-# end-to-end BDD scenarios — real Claude calls, ~3–5 min per scenario
-go test -tags bdd -timeout=180m ./tests/true-bdd/...
+# end-to-end BDD scenarios — offline replay, no AI calls
+GOWORK=off go test -tags bdd -timeout=180m ./tests/true-bdd/... -mode=services:replay,tests:replay
 ```
 
 The suite's contents come from `docs/scenarios.yaml`: every scenario the
@@ -608,9 +608,11 @@ drifting.
 ## Contributing
 
 Pre-1.0 and direction-finding. Open an issue before non-trivial work.
-Lint with `golangci-lint run` against `.golangci.yaml`.
+Lint all three modules with `go run ./scripts/cmd/alint`, using the root `.golangci.yaml`.
 
 ## Release rehearsal (repository tooling)
+
+The repository has three Go modules: the root (tests and scripts), `pkg/` (shared libraries and the test library), and `services/true-bdd/` (the engine). Local development uses the root module's `replace` for `pkg/`; release engine builds use `GOWORK=off` and no replacements. The release and test library move together: `vX.Y.Z` and `pkg/vX.Y.Z` always name the same commit.
 
 This repository's `scripts/cmd/release` repeats the installation path against local artifacts; it does not publish a release or a tag. Run from a checkout:
 

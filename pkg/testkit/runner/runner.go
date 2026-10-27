@@ -321,7 +321,7 @@ func Execute(
 	// unlaunched-from-a-session, as pkg/cli/claude's own child does.
 	options := cli.Options{
 		Dir:     tmpDir,
-		Env:     cli.Inherit().Strip("CLAUDECODE").Set(extraEnv...),
+		Env:     cli.Inherit().Strip("CLAUDECODE").Set(extraEnv...).Set("GOWORK=off"),
 		Timeout: runTimeout,
 	}
 	if fixture.Stdin != nil {
@@ -464,7 +464,7 @@ func phase(name, tmpDir string, budget time.Duration) spec.Phase {
 	return spec.Phase{
 		Name:   name,
 		Dir:    tmpDir,
-		Env:    git.Environment().Strip("CLAUDECODE"),
+		Env:    git.Environment().Strip("CLAUDECODE").Set("GOWORK=off"),
 		Budget: budget,
 		Output: func(index int) (cli.Sink, func()) {
 			stdout, stderr, flush := spawn.Tee(spawnLogName(name, index))

@@ -57,6 +57,7 @@ func fixtureEngine(t *testing.T, script string) (drill.Runner, drill.Record) {
 	bin := t.TempDir()
 	put(t, filepath.Join(bin, "go"), `#!/bin/sh
 printf '%s\n' "$@" >> "$DRILL_CAPTURE"
+if [ "$1" = mod ] && [ "$2" = tidy ]; then touch go.sum; exit; fi
 if [ "$1" = env ]; then printf '{"GOROOT":"/toolchain","GOMODCACHE":"/modules","GOCACHE":"/cache"}'; exit; fi
 while [ $# -gt 0 ]; do
  if [ "$1" = -o ]; then shift; cp "$DRILL_FAKE_ENGINE" "$1"; chmod 700 "$1"; exit; fi
@@ -91,12 +92,18 @@ done
 		".claude/rules/secret.md",
 		"docs/adr/secret.md",
 		"docs/qna/secret.yaml",
+		"services/true-bdd/go.mod",
+		"services/true-bdd/go.sum",
 		"services/true-bdd/main.go",
 		"services/true-bdd/internal/infrastructure/disk/disk.go",
 		"services/true-bdd/internal/infrastructure/shell/shell.go",
 		"other.txt"} {
 		put(t, filepath.Join(root, path), "seed\n")
 	}
+
+	put(t, filepath.Join(root, "services/true-bdd/go.mod"), "module example.com/engine\n\ngo 1.25.0\n")
+	put(t, filepath.Join(root, "docs/architecture/architecture.yaml"),
+		"architecture:\n  services:\n    - path: services/true-bdd\n")
 
 	put(t,
 		filepath.Join(root,

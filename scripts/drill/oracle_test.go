@@ -48,6 +48,8 @@ exit 1
 `)
 	t.Setenv("PATH", filepath.Dir(fakeGo)+string(os.PathListSeparator)+os.Getenv("PATH"))
 
+	put(t, filepath.Join(nextCut.Directory, "services/true-bdd/main.go"), "package main\nfunc main() {}\n")
+
 	run, err := runner.PrepareOracle(t.Context(), next.Directory, "a")
 	must(t, err)
 

@@ -92,6 +92,7 @@ func scratchDirectory(t *testing.T) string {
 	}
 
 	t.Cleanup(func() { _ = os.RemoveAll(path) })
+	write(t, path, "go.mod", "module fixture/git-environment\n\ngo 1.25.0\n")
 
 	return path
 }

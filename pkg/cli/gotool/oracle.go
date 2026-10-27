@@ -3,6 +3,7 @@ package gotool
 import (
 	"context"
 	"io"
+	"path/filepath"
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
@@ -11,15 +12,18 @@ import (
 
 // OracleOptions supervises build and replay with the same run identity.
 type OracleOptions struct {
-	Directory string
-	Marker    string
-	Output    io.Writer
-	Limit     time.Duration
-	Grace     time.Duration
+	Directory   string
+	ModuleCache string
+	Marker      string
+	Output      io.Writer
+	Limit       time.Duration
+	Grace       time.Duration
 }
 
 // BuildOracle compiles the engine a cut produced.
 func BuildOracle(ctx context.Context, binary string, opt OracleOptions) (int, error) {
+	opt.Directory = filepath.Join(opt.Directory, engineDirectory)
+
 	return oracleCommand(ctx, []string{buildVerb, trimPathFlag, "-o", binary, enginePackage}, opt)
 }
 
@@ -39,15 +43,20 @@ func ReplayOracle(ctx context.Context, binary string, opt OracleOptions) (int, e
 }
 
 func oracleCommand(ctx context.Context, args []string, opt OracleOptions) (int, error) {
+	env := git.Environment().Strip("OLDPWD").Set("PWD="+opt.Directory,
+		"TRUE_BDD_DRILL_RUN="+opt.Marker, "GOWORK=off")
+	if opt.ModuleCache != "" {
+		env = env.Set("GOMODCACHE=" + opt.ModuleCache)
+	}
+
 	result,
 		err := shell.Watch(ctx,
 		append([]string{Bin},
 			args...),
 		shell.Options{Dir: opt.Directory,
 			Session: true,
-			Env: git.Environment().Strip("OLDPWD").Set("PWD="+opt.Directory,
-				"TRUE_BDD_DRILL_RUN="+opt.Marker),
-			Output: shell.To(opt.Output)},
+			Env:     env,
+			Output:  shell.To(opt.Output)},
 		shell.Watchdog{Limit: opt.Limit,
 			Grace: opt.Grace})
 

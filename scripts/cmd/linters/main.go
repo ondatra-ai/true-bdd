@@ -128,7 +128,16 @@ func packages(req alint.AlintLintParams, named []string) []string {
 		return named
 	}
 
-	return []string{filepath.Dir(req.Path)}
+	if req.Path == "go.work" || req.Path == "go.work.sum" {
+		return nil
+	}
+
+	dir := filepath.Dir(req.Path)
+	if name := filepath.Base(req.Path); name == "go.mod" || name == "go.sum" {
+		dir += "/..."
+	}
+
+	return []string{dir}
 }
 
 // capture turns a gate's report into the closure's verdict: a pass narrates,

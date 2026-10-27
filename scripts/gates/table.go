@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli/alint"
+	"github.com/ondatra-ai/true-bdd/scripts/gomodules"
 )
 
 // Gate is one check: what to run, and which changed paths make it necessary.
@@ -38,14 +39,16 @@ const (
 	// testkitGlob is the harness tree every BDD gate depends on.
 	testkitGlob = "pkg/testkit/**"
 	// countOnce defeats the test cache, so a gate re-runs what it claims to.
-	countOnce = "-count=1"
-	registry  = "docs/scenarios.yaml"
-	goGlob    = "**/*.go"
-	goMod     = "go.mod"
-	goSum     = "go.sum"
-	lintCmd   = "./scripts/cmd/linters"
-	runVerb   = "run"
-	gatesCmd  = "./scripts/cmd/gates"
+	countOnce   = "-count=1"
+	registry    = "docs/scenarios.yaml"
+	goGlob      = "**/*.go"
+	goMod       = "go.mod"
+	nestedGoMod = "**/go.mod"
+	nestedGoSum = "**/go.sum"
+	goSum       = "go.sum"
+	lintCmd     = "./scripts/cmd/linters"
+	runVerb     = "run"
+	gatesCmd    = "./scripts/cmd/gates"
 )
 
 // Cheapest first, so a doomed run dies in under a second.
@@ -53,12 +56,12 @@ const (
 //nolint:gochecknoglobals // this package IS a table; see the package doc.
 var (
 	// goSources is every path that can change what the Go compiler sees.
-	goSources = []string{goGlob, goMod, goSum}
+	goSources = []string{goGlob, goMod, goSum, nestedGoMod, nestedGoSum, "go.work", "go.work.sum"}
 
 	// lintInputs is every path .alint.yml has a rule about, which is what the
 	// one Lint gate now covers.
 	lintInputs = []string{
-		goGlob, goMod, goSum, "**/*.md", "**/*.sh",
+		goGlob, goMod, goSum, nestedGoMod, nestedGoSum, "go.work", "go.work.sum", "**/*.md", "**/*.sh",
 		"**/*.yaml", "**/*.yml", "**/*.py",
 		"true-bdd/**",
 		"docs/architecture/**", "docs/product/**", "scripts/lint/**",
@@ -83,13 +86,15 @@ var (
 			Name:    "Engine owns repository code",
 			Command: []string{goBin, runVerb, gatesCmd, "engine-imports"},
 			Run:     engineImports,
-			Globs:   []string{"services/**", "scripts/gates/**", "scripts/cmd/gates/**", goMod, goSum},
+			Globs:   append([]string{"services/**", "scripts/gates/**", "scripts/cmd/gates/**"}, goSources...),
 		},
 		{
 			Name:    "Release rehearsal",
 			Command: []string{goBin, runVerb, gatesCmd, "release-rehearsal"},
 			Run:     ReleaseRehearsal,
-			Globs:   []string{"services/**", "pkg/**", "scripts/**", "tests/**", "true-bdd/**", templatesGlob, goMod, goSum},
+			Globs: append([]string{
+				"services/**", "pkg/**", "scripts/**", "tests/**", "true-bdd/**", templatesGlob,
+			}, goSources...),
 		},
 		{
 			Name:    "Init defaults drift",
@@ -101,12 +106,14 @@ var (
 		},
 		{
 			Name:    "Build",
-			Command: []string{goBin, "build", "-o", "./bin/true-bdd", "./services/true-bdd"},
-			Globs:   []string{"services/true-bdd/**", "pkg/**", "go.mod", "go.sum"},
+			Command: []string{goBin, runVerb, gatesCmd, "build"},
+			Run:     gomodules.Build,
+			Globs:   goSources,
 		},
 		{
 			Name:    "Test",
-			Command: []string{goBin, testVerb, "./..."},
+			Command: []string{goBin, runVerb, gatesCmd, "test"},
+			Run:     gomodules.Test,
 			Globs:   goSources,
 		},
 		{
@@ -114,8 +121,9 @@ var (
 			// `generated: lax` skips the generated tests — where a Testfoo
 			// that compiles, never runs and passes is exactly the risk.
 			Name:    "Vet the BDD tree",
-			Command: []string{goBin, "vet", tagsFlag, bddTag, "./tests/...", "./pkg/testkit/..."},
-			Globs:   []string{"tests/**", testkitGlob},
+			Command: []string{goBin, runVerb, gatesCmd, "vet"},
+			Run:     gomodules.Vet,
+			Globs:   goSources,
 		},
 		{
 			// Hand-written, model-free, and answer in a second.

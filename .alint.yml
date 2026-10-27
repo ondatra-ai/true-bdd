@@ -269,7 +269,7 @@ rules:
     when: "env.TRUEBDD_SCOPE"
     timeout: 300
     paths:
-      include: ["**/*.go"]
+      include: ["**/*.go", "go.mod", "**/go.mod", "go.sum", "**/go.sum", "go.work", "go.work.sum"]
       exclude: ["tests/true-bdd/fixtures/**", "**/testdata/**"]
     scope_filter:
       include_manifest_paths:
@@ -333,7 +333,7 @@ rules:
 
   # A command rule fires ONCE PER MATCHING FILE (verified, 0.15.2, three-file
   # probe), so `paths: "**/*.go"` here would spawn one golangci-lint per file.
-  # Hence a sentinel path that exists once, and a leaf that walks the tree.
+  # Hence one root sentinel; its leaf checks all three repository modules.
   - id: lint-all
     kind: command
     level: error

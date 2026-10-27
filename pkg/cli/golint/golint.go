@@ -29,14 +29,14 @@ const FixFlag = "--fix"
 // Lint lints the named directories — the whole module when none are named —
 // rewriting what it can when fix is set, and writes the findings to out with
 // golangci's chatter dropped. A non-zero Result.Code is a finding.
-func Lint(out io.Writer, fix bool, dirs ...string) (shell.Result, error) {
+func Lint(out io.Writer, fix bool, module string, dirs ...string) (shell.Result, error) {
 	argv := []string{Bin, "run"}
 	if fix {
 		argv = append(argv, FixFlag)
 	}
 
 	result, err := shell.Run(context.Background(), append(argv, dirs...),
-		shell.Options{Output: shell.Combined()})
+		shell.Options{Dir: module, Env: shell.Inherit().Set("GOWORK=off"), Output: shell.Combined()})
 	if err != nil {
 		return result, fmt.Errorf("running %s: %w", Bin, err)
 	}

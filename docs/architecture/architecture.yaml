@@ -15,6 +15,20 @@
 # engine still supports `jest` and `playwright` for host projects that
 # want them; this repo declares neither.
 
+# Three Go modules: github.com/ondatra-ai/true-bdd (tests/scripts),
+# github.com/ondatra-ai/true-bdd/pkg (shared/test libraries), and
+# github.com/ondatra-ai/true-bdd/services/true-bdd (engine, no repository dependencies).
+# Development uses only the root module's replace to ./pkg; release engine builds
+# run in services/true-bdd with GOWORK=off and no replaces. Gates/lint check all
+# three modules independently, excluding fixture sentinels. Fixtures force GOWORK=off.
+# Release and test-library tags always move together: vX.Y.Z and pkg/vX.Y.Z
+# sit at the same commit. No tag is created by the drill or release rehearsal.
+# Before cuts, the drill caches the engine libraries below and their complete graph.
+# A scratch export loses the engine go.mod/go.sum, recreates them from those pins
+# with GOPROXY=off and GOSUMDB=off, then builds with a fresh build cache.
+# record.json records deleted paths, offline result, cache and diagnostic log.
+# Cut A removes services/true-bdd in full, including both manifests.
+#
 # Repository tooling: scripts/cmd/release builds git-archive binary artifacts and
 # rehearses init and sample hosts outside the checkout; scripts/gates runs its
 # zero-cost pass in CI. This is tooling, not an engine command or a published release.
@@ -593,7 +607,6 @@ architecture:
     - name: true-bdd
       type: "cli"
       path: services/true-bdd
-      writable: [go.mod, go.sum]
       language: go
       libraries:
         - module: github.com/Masterminds/goutils
@@ -644,6 +657,23 @@ architecture:
           version: v0.37.0
         - module: gopkg.in/yaml.v3
           version: v3.0.1
+        # Exact dependency-test pins make offline go mod tidy reproducible.
+        - module: github.com/google/go-cmp
+          version: v0.7.0
+        - module: github.com/kr/pretty
+          version: v0.3.1
+        - module: github.com/kr/text
+          version: v0.2.0
+        - module: github.com/rogpeppe/go-internal
+          version: v1.11.0
+        - module: gopkg.in/check.v1
+          version: v1.0.0-20201130134442-10cb98267c6c
+        - module: go.uber.org/atomic
+          version: v1.9.0
+        - module: go.uber.org/multierr
+          version: v1.9.0
+        - module: github.com/inconshreveable/mousetrap
+          version: v1.1.0
       frameworks:
         - cobra
       patterns:

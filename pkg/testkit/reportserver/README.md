@@ -1,7 +1,7 @@
 # BDD run report server
 
 ```bash
-go run ./tests/true-bdd/cmd/report-server        # http://127.0.0.1:7331
+go run github.com/ondatra-ai/true-bdd/pkg/testkit/cmd/report-server        # http://127.0.0.1:7331
 ```
 
 Flags: `-addr` (default `127.0.0.1:7331`), `-runs` (default `tmp/test_run`),

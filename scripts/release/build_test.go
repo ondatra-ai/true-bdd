@@ -28,8 +28,9 @@ set -eu
 test "$1" = build
 test "$2" = -trimpath
 test "$3" = -o
+test "$GOWORK" = off
 test ! -e untracked
-/usr/bin/grep -q 'module github.com/ondatra-ai/true-bdd' go.mod
+/usr/bin/grep -q 'module github.com/ondatra-ai/true-bdd/services/true-bdd$' go.mod
 printf '#!/bin/sh\necho %s/%s\n' "$GOOS" "$GOARCH" > "$4"
 `)
 

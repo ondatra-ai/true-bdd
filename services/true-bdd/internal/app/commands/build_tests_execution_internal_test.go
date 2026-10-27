@@ -99,10 +99,10 @@ func executionFixture(t *testing.T) (*buildTestsExecution, *BuildTestsItem) {
 	mod, err := disk.Read(filepath.Join(root, "go.mod"))
 	requireExecutionSuccess(t, err)
 
-	mod = append(mod, []byte("\nreplace github.com/ondatra-ai/true-bdd => "+repo+"\n")...)
+	mod = append(mod, []byte("\nreplace github.com/ondatra-ai/true-bdd/pkg => "+filepath.Join(repo, "pkg")+"\n")...)
 	requireExecutionSuccess(t, disk.Write(filepath.Join(root, "go.mod"), mod, disk.Shared))
 
-	sum, err := disk.Read(filepath.Join(repo, "go.sum"))
+	sum, err := disk.Read(filepath.Join(repo, "pkg/go.sum"))
 	requireExecutionSuccess(t, err)
 
 	requireExecutionSuccess(t, disk.Write(filepath.Join(root, "go.sum"), sum, disk.Shared))

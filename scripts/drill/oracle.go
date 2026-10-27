@@ -77,10 +77,11 @@ func (r Runner) executeOracle(ctx context.Context, record Record, run Attempt, c
 	}
 
 	opt := gotool.OracleOptions{Directory: cut.Directory,
-		Marker: run.Marker,
-		Output: fileWriter{run.Log},
-		Limit:  r.Limit,
-		Grace:  r.Grace}
+		ModuleCache: record.Manifests.Cache,
+		Marker:      run.Marker,
+		Output:      fileWriter{run.Log},
+		Limit:       r.Limit,
+		Grace:       r.Grace}
 
 	code, err := gotool.BuildOracle(ctx, oracle.Binary, opt)
 	if err != nil || code != 0 {

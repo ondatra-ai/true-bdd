@@ -17,9 +17,11 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
-const harnessModule = "github.com/ondatra-ai/true-bdd"
+const harnessModule = "github.com/ondatra-ai/true-bdd/pkg"
 
 func localHarnessProxy(ctx context.Context, root, source, folder, ref string) (string, string, error) {
+	source = filepath.Join(source, "pkg")
+
 	repository := git.Repository{Dir: root}
 
 	commit, err := repository.ResolveCommit(ctx, ref)
