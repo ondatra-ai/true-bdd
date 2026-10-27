@@ -30,8 +30,8 @@ story:
                 - the System Architect runs "version"
             - then:
                 - the command exits with code 0
-                - stdout matches (?m)^true-bdd version \S+ commit \S+$
-                - and: no file outside "tmp" changed
+                - stdout matches \Atrue-bdd version \S+ commit \S+\n\z
+                - and: no file changed
         - id: 002-stray-argument-prints-usage
           description: A command given an argument it does not take must exit 1 before it starts its walk, printing an error that names the argument followed by that command's usage, and must change no file
           steps:
@@ -74,7 +74,7 @@ story:
                 - and: stderr does not match command failed
                 - and: no file outside "tmp" changed
         - id: 005-version-reports-build
-          description: The version command prints the build version and commit and logs the same build identity once at start, without reading configuration
+          description: The version command prints only the build version and commit answer, without reading configuration, installing a log or changing any file
           steps:
             - given:
                 - the "version-reports-build" project tree
@@ -83,7 +83,5 @@ story:
                 - the System Architect runs "version"
             - then:
                 - the command exits with code 0
-                - stdout matches (?m)^true-bdd version \S+ commit \S+$
-                - and: the engine logged its build identity once at start
-                - and: no file outside "tmp" changed
-                - and: the engine dispatched no AI turns
+                - stdout matches \Atrue-bdd version \S+ commit \S+\n\z
+                - and: no file changed

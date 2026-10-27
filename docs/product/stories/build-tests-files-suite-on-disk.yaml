@@ -50,6 +50,7 @@ story:
                 - and: the file "tests/mcp/ticket_test.go" matches the session is granted a ticket within 5 seconds
                 - but: the file "tests/mcp/session_test.go" is unchanged
                 - and: stdout matches BUILD TESTS COMPLETE
+                - and: the engine logged its build identity once at start
                 - and: the engine dispatched no AI turns
                 - and: no file outside "tmp" and "tests" changed
         - id: 003-hand-written-test-kept

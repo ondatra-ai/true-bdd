@@ -1231,16 +1231,17 @@ architecture:
         Linker symbols are github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/buildinfo.version
         and github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/buildinfo.commit,
         set using -ldflags '-X <symbol>=<value>'. The version command prints one answer
-        line, true-bdd version <version> commit <commit>, and installs the default
-        tmp/true-bdd.log.json log without loading configuration. Every engine log
+        line, true-bdd version <version> commit <commit>, terminated by a newline,
+        without loading configuration, installing logging or creating any file or directory. Every engine log
         installation emits INFO msg="Engine started" with version and commit before
         any other record. Configuration-based commands install logging after loading
-        configuration, init and version install it directly; help, argument refusals,
+        configuration, init installs it directly; version, help, argument refusals,
         configuration-read failures and the hidden guard do not install logging.
       observed_by: >-
-        engine-entry-005-version-reports-build checks the answer shape and reads the
-        engine log, requiring its first record to be the only Engine started record
-        and both fields to equal the answer. Pure resolver unit checks cover stamped,
+        engine-entry-005-version-reports-build checks the whole stdout answer and no file
+        changes, including tmp. build-tests-files-002-stale-test-regenerated reads the
+        engine log, requiring its first record to be the only INFO Engine started record
+        with nonempty, whitespace-free version and commit fields. Pure resolver unit checks cover stamped,
         module, VCS, archive and mixed-precedence inputs. engine-entry-001 retains
         configuration-free operation.
 
@@ -1454,7 +1455,8 @@ architecture:
       observed_by: >-
         A step reads the kept diff. A path lies outside a directory unless it
         is that directory or starts with it plus a slash, so `tmp-x.yaml` is
-        outside `tmp`; the step lists every change outside it.
+        outside `tmp`; the step lists every change outside it. The no-file-changed
+        assertion requires an empty diff without excluding tmp.
 
     - term: checklist
       technical: >-

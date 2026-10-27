@@ -30,6 +30,10 @@ The engine drives two agent CLIs — `claude`, `codex` — picked per checklist 
 
 `docs/architecture/architecture.yaml` states the data each configured prompt template reads under `architecture.prompt_data`, including its source and every transformation before rendering. A change to any transformation stated there updates its `prompt_data` entry in the same change. Keep shared anchors accurate for every template using them. The field-inventory guard in `internal/infrastructure/template/prompt_inventory_internal_test.go` compares template reads with those entries in both directions; it does not verify shaping.
 
+## Build identity
+
+`version` is a plain terminal answer: exactly `true-bdd version <version> commit <commit>` and a newline, without loading configuration, installing logging or creating files or directories. Commands that install the engine log, including `init`, emit one INFO `Engine started` record with `version` and `commit` before any other record. `engine-entry-005-version-reports-build` pins the file-free answer; `build-tests-files-002-stale-test-regenerated` pins the start record without an AI turn.
+
 ## Package notes
 
 - The engine owns all code it uses from this repository: `internal/infrastructure/{console,disk,logging,shell,enginelog}` are its IO channels and log vocabulary; `internal/infrastructure/cli/` exposes the spawn vocabulary and typed wrappers `claude`, `codex`, `git` (environment scrubbing), `gotool`, `spec` and `truebdd`. Only the shell imports `os/exec`; only those explicitly named wrappers import the shell. Logs use the engine's logging channel, files its disk channel and terminal descriptors its console channel. The domain imports none of these implementations. `pkg/` remains independent code for tests and tooling and the engine never imports it. The `Engine owns repository code` gate scans all engine Go imports, including tests and hidden build variants; the drill records its result in `engine_imports`. CLI argv/stdin remain the byte contract stated in `docs/architecture/architecture.yaml` (`dependencies[].invocation`); change an invocation and that statement together.

@@ -161,9 +161,9 @@ glossary:
       VCS revision), otherwise (devel) for version and unknown for commit.
       A stamp is a string supplied at link time with -ldflags -X.
       A VCS build may carry a pseudo-version; an archive export carries no VCS metadata.
-      On installing its log, including for version and init, the engine emits one
+      On installing its log, including for init, the engine emits one
       INFO record with message "Engine started" and version and commit fields before
-      other records. Commands refused before logging, help and the hidden guard do not install a log.
+      other records. The version command prints exactly one newline-terminated answer line and creates no file or directory. Commands refused before logging, version, help and the hidden guard do not install a log.
 
   - term: command
     means: >-
@@ -695,6 +695,11 @@ catalogue:
       mistyped argument earns never followed an error it did not earn.
     terms: [command, stderr, pattern, template]
 
+  - template: 'no file changed'
+    block: then
+    means: The run created, modified or deleted no file in the project tree, including tmp.
+    terms: [file change, project tree]
+
   - template: 'no file outside "{dir}" changed'
     block: then
     means: >-
@@ -1119,5 +1124,5 @@ catalogue:
 
   - template: 'the engine logged its build identity once at start'
     block: then
-    means: The first engine log record is the single Engine started record, with version and commit fields equal to the version command's answer.
-    terms: [engine, build identity, log record, command, stdout]
+    means: The first engine log record is the single INFO Engine started record, with nonempty version and commit fields containing no whitespace.
+    terms: [engine, build identity, log record]

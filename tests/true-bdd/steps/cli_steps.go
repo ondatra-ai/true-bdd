@@ -33,6 +33,7 @@ func Register(suite *bddgo.Suite[State]) {
 	// usage, a missing true-bdd.yaml. Undelimited, as stdout is.
 	suite.Step(`^stderr matches (.+)$`, assertStderr)
 	suite.Step(`^stderr does not match (.+)$`, assertStderrNoMatch)
+	suite.Step(`^no file changed$`, assertNoChanges)
 	suite.Step(`^no file outside "([^"]+)" changed$`, assertNoChangesOutside)
 	// The two-directory twin of the read-only check: proves nothing moved
 	// outside either of two named scratch prefixes, e.g. a `build tests

@@ -60,21 +60,19 @@ func TestEngineEntry001VersionRunsWithoutConfig(t *testing.T) {
 	s.And(`the project tree has no "true-bdd/true-bdd.yaml"`)
 	s.When(`the System Architect runs "version"`)
 	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches (?m)^true-bdd version \S+ commit \S+$`)
-	s.And(`no file outside "tmp" changed`)
+	s.And(`stdout matches \Atrue-bdd version \S+ commit \S+\n\z`)
+	s.And(`no file changed`)
 	s.Done()
 }
 
-// engine-entry-005-version-reports-build: The version command prints the build version and commit and logs the same build identity once at start, without reading configuration
+// engine-entry-005-version-reports-build: The version command prints only the build version and commit answer, without reading configuration, installing a log or changing any file
 func TestEngineEntry005VersionReportsBuild(t *testing.T) {
 	s := scenarios.New(t, "engine-entry-005-version-reports-build")
 	s.Given(`the "version-reports-build" project tree`)
 	s.And(`the project tree has no "true-bdd/true-bdd.yaml"`)
 	s.When(`the System Architect runs "version"`)
 	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches (?m)^true-bdd version \S+ commit \S+$`)
-	s.And(`the engine logged its build identity once at start`)
-	s.And(`no file outside "tmp" changed`)
-	s.And(`the engine dispatched no AI turns`)
+	s.And(`stdout matches \Atrue-bdd version \S+ commit \S+\n\z`)
+	s.And(`no file changed`)
 	s.Done()
 }
