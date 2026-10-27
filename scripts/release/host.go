@@ -178,10 +178,6 @@ func installHostRequirements(ctx context.Context, sample sampleHost,
 
 	err := gotool.DropHarness(ctx, commandOptions)
 	if err == nil {
-		err = dropTestingLibrary(commandOptions.Dir, repositoryModules)
-	}
-
-	if err == nil {
 		err = runGuide(commandOptions.Dir, commandOptions.Env, nil,
 			fillGuide(guideHarness, "", opt.harnessRef))
 	}

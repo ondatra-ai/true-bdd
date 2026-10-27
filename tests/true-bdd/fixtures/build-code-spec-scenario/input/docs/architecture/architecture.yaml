@@ -9,8 +9,8 @@ architecture:
   testing:
     framework: go-test
     libraries:
-      - module: github.com/ondatra-ai/true-bdd
-        version: v0.0.0-20261026072958-954797a04424
+      - module: github.com/ondatra-ai/true-bdd/pkg
+        version: v0.0.0-20261027174914-58543b8e324b
     commands:
       record: go test -tags bdd -json -count=1 ./tests/calc/...
       replay: go test -tags bdd -json -count=1 ./tests/calc/...
