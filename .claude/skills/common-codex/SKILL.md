@@ -55,7 +55,7 @@ go run ./scripts/cmd/codex resume --name <run> --note '<what went wrong>'
 
 Resume names the recorded session id, never the last session, and keeps workspace, sandbox, search, model, effort and original commit baseline. With no session id it starts fresh using the saved brief and note, fetching issues preparation did not save. A refusal consumes no attempt: exit 2 means invalid input, an unknown/done/unavailable/exhausted run, a live command, four busy writers, a held worktree, or a branch moved from its recorded checkout. A dead command recorded as running may be retried. Exit 0 means `done`; exit 1 means an attempted run ended otherwise. After the second failure Claude takes the work and tells the Owner, naming both logs.
 
-When Codex is signed out, its sign-in check is missing, broken or stalled, its access token expires, or it hits its usage limit, a writer or reader ends `unavailable` with the reason in its closing summary. Claude takes the work itself and says so. Other execution failures use the normal retry path.
+When Codex is signed out, its sign-in check is missing, broken or stalled, its access token expires, or it hits its usage limit or workspace spend cap, a writer or reader ends `unavailable` with the reason in its closing summary. The workspace spend cap has Codex status `spend-cap`, distinct from the usage limit's `limit`. Claude takes the work itself and says so. Other execution failures use the normal retry path.
 
 ## Files and shutdown
 
