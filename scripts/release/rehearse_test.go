@@ -8,7 +8,21 @@ import (
 	"testing"
 
 	"github.com/ondatra-ai/true-bdd/scripts/release"
+	"gopkg.in/yaml.v3"
 )
+
+func TestCalculatorFixtureDeclaresItsTestLibrary(t *testing.T) {
+	t.Parallel()
+
+	fixture := "../../tests/true-bdd/fixtures/build-code-spec-scenario/input"
+
+	architecture, err := os.ReadFile(filepath.Join(fixture, "docs/architecture/architecture.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assertTestingLibraryPin(t, architecture, "v0.0.0-20261027174914-58543b8e324b")
+}
 
 func TestMissingArchiveIsAnInstallFailure(t *testing.T) {
 	t.Parallel()
@@ -125,7 +139,32 @@ func assertCalculatorFollowedTheGuide(t *testing.T, report release.Report) {
 	}
 
 	architecture, err := os.ReadFile(filepath.Join(report.Root, "calculator", "docs/architecture/architecture.yaml"))
-	if err != nil || strings.Contains(string(architecture), "module: github.com/ondatra-ai/true-bdd\n") {
-		t.Errorf("the fixture's root-module pin survived the guide's harness step: %s %v", architecture, err)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assertTestingLibraryPin(t, architecture, report.HarnessVersion)
+}
+
+func assertTestingLibraryPin(t *testing.T, architecture []byte, version string) {
+	t.Helper()
+
+	var document struct {
+		Architecture struct {
+			Testing struct {
+				Libraries []map[string]string `yaml:"libraries"`
+			} `yaml:"testing"`
+		} `yaml:"architecture"`
+	}
+
+	err := yaml.Unmarshal(architecture, &document)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	libraries := document.Architecture.Testing.Libraries
+	if len(libraries) != 1 || libraries[0]["module"] != "github.com/ondatra-ai/true-bdd/pkg" ||
+		libraries[0]["version"] != version {
+		t.Errorf("testing.libraries = %v, want only github.com/ondatra-ai/true-bdd/pkg@%s", libraries, version)
 	}
 }
