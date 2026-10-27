@@ -164,15 +164,6 @@ func prepareSample(source, host string, sample sampleHost) error {
 		}
 	}
 
-	if sample.name == jestHost {
-		const guard = "test('deleted service loads', () => { require('../../services/greeter/greeting'); });\n"
-
-		err := disk.Write(filepath.Join(host, "tests/unit/release-install.test.js"), []byte(guard), disk.Private)
-		if err != nil {
-			return fmt.Errorf("preparing Jest missing-service discovery: %w", err)
-		}
-	}
-
 	return nil
 }
 

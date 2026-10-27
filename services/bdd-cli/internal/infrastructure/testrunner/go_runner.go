@@ -66,11 +66,11 @@ func (r *GoTestRunner) Discover(
 	events := parseGoTestEvents(stdout.Bytes())
 
 	failures := events.toFailingTests(service, suite)
-	if len(cfg.Tests) > 0 && len(failures) == 0 {
-		if runErr != nil {
-			return nil, fmt.Errorf("selected scenarios failed: %w: %s", runErr, stderr.String())
-		}
+	if runErr != nil && len(failures) == 0 {
+		return nil, runErr
+	}
 
+	if len(cfg.Tests) > 0 && len(failures) == 0 {
 		err := events.requireTests(cfg.Tests)
 		if err != nil {
 			return nil, err
@@ -112,6 +112,10 @@ func (r *GoTestRunner) RunOne(
 	}
 
 	events := parseGoTestEvents(stdout.Bytes())
+
+	if runErr != nil && len(events.toFailingTests("", "")) == 0 {
+		return false, stdout.String(), runErr
+	}
 
 	passed := !events.hasFailureFor(pkg, test)
 	if test == goBuildFailureMarker {

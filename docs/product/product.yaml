@@ -321,6 +321,13 @@ glossary:
       leave only on their own passing result. A member with no result stays
       failing and is reported as not having run. A Go build member's own
       passing result is a package pass or a no-test-files skip with no failure.
+      A Jest file that fails to load is one file::<load> member carrying
+      Jest's message. It passes only when its file loads and reports no failure;
+      a file still failing to load or missing from output stays failing.
+      A test command that exits non-zero with no failing member, synthetic
+      members included, stops the run with the command, exit code and output
+      tail, before any AI turn or BUILD CODE COMPLETE. Playwright's startup
+      member is retained. Build code reports success only when the test command succeeded.
 
   - term: test dependencies
     means: >-
@@ -424,7 +431,8 @@ glossary:
       `npx playwright test`, as the architecture document declares it.
       `build code` starts it to find the failing set and after every completed
       apply to rerun all remaining members in one selection. Go build and
-      Playwright startup members make the rerun unfiltered. A member with
+      Playwright startup members make the rerun unfiltered. Jest load members
+      select the remaining members' files by path rather than test name. A member with
       no passing result of its own stays failing; the next outer walk
       discovers the whole suite afresh.
 
