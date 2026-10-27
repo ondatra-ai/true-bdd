@@ -95,14 +95,14 @@ var (
 			Name:    "Init defaults drift",
 			Command: []string{goBin, testVerb, countOnce, "-run", "^TestInitDefaultsMatchProjectFiles$", "./scripts/gates/"},
 			Globs: []string{
-				"services/bdd-cli/internal/infrastructure/initialization/**",
+				"services/true-bdd/internal/infrastructure/initialization/**",
 				"true-bdd/true-bdd.yaml", "true-bdd/checklists/**", templatesGlob, "scripts/gates/**",
 			},
 		},
 		{
 			Name:    "Build",
-			Command: []string{goBin, "build", "-o", "./bin/true-bdd", "./services/bdd-cli"},
-			Globs:   []string{"services/bdd-cli/**", "pkg/**", "go.mod", "go.sum"},
+			Command: []string{goBin, "build", "-o", "./bin/true-bdd", "./services/true-bdd"},
+			Globs:   []string{"services/true-bdd/**", "pkg/**", "go.mod", "go.sum"},
 		},
 		{
 			Name:    "Test",
@@ -123,16 +123,16 @@ var (
 			Command: []string{
 				goBin, testVerb, tagsFlag, bddTag, countOnce, "-run",
 				"^Test(ScenarioCoverage|FixtureTreesArePaired|FixtureTemplateOverlays)$",
-				"./tests/bdd-cli/",
+				"./tests/true-bdd/",
 			},
-			Globs: []string{registry, "tests/bdd-cli/**", templatesGlob, testkitGlob},
+			Globs: []string{registry, "tests/true-bdd/**", templatesGlob, testkitGlob},
 		},
 		{
 			// Committed recordings must not carry the recording machine's identity.
 			Name:    "Recordings",
 			Command: []string{goBin, runVerb, gatesCmd, "recordings"},
 			Run:     ScanRecordings,
-			Globs:   []string{"tests/bdd-cli/fixtures/**"},
+			Globs:   []string{"tests/true-bdd/fixtures/**"},
 		},
 	}
 )

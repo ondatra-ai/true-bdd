@@ -12,7 +12,7 @@ import (
 const (
 	buildVerb     = "build"
 	trimPathFlag  = "-trimpath"
-	enginePackage = "./services/bdd-cli"
+	enginePackage = "./services/true-bdd"
 )
 
 // BuildTrimmed builds an engine without embedding its source directory.

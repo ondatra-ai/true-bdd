@@ -14,7 +14,7 @@ import (
 )
 
 func kept(path string) bool {
-	for _, root := range []string{"docs/product/", "true-bdd/", "templates/", "pkg/", "scripts/", "tests/bdd-cli/"} {
+	for _, root := range []string{"docs/product/", "true-bdd/", "templates/", "pkg/", "scripts/", "tests/true-bdd/"} {
 		if strings.HasPrefix(path, root) {
 			return true
 		}
@@ -34,7 +34,7 @@ func kept(path string) bool {
 }
 
 func removed(cut, path string, data []byte) bool {
-	if strings.HasPrefix(path, "services/bdd-cli/") {
+	if strings.HasPrefix(path, "services/true-bdd/") {
 		return true
 	}
 
@@ -42,11 +42,11 @@ func removed(cut, path string, data []byte) bool {
 		return false
 	}
 
-	if strings.HasPrefix(path, "tests/bdd-cli/steps/") {
+	if strings.HasPrefix(path, "tests/true-bdd/steps/") {
 		return true
 	}
 
-	if filepath.Dir(path) == "tests/bdd-cli" && strings.HasSuffix(path,
+	if filepath.Dir(path) == "tests/true-bdd" && strings.HasSuffix(path,
 		"_test.go") && regexp.MustCompile(`(?m)^// Code generated[^\n]*`).Match(data) {
 		return true
 	}
@@ -55,7 +55,7 @@ func removed(cut, path string, data []byte) bool {
 		return false
 	}
 
-	if strings.HasPrefix(path, "tests/bdd-cli/fixtures/") {
+	if strings.HasPrefix(path, "tests/true-bdd/fixtures/") {
 		return cut == "d" || strings.Contains(path, "/cassettes/")
 	}
 

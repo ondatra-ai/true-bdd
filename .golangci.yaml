@@ -186,15 +186,15 @@ linters:
         # own implementation is a seam that breaks nothing.
         hex-domain:
           files:
-            - "**/services/bdd-cli/internal/domain/**"
+            - "**/services/true-bdd/internal/domain/**"
           deny:
-            - pkg: "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure"
+            - pkg: "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure"
               desc: 'the domain defines; it does not reach outward'
-            - pkg: "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app"
+            - pkg: "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app"
               desc: 'the domain defines; it does not reach outward'
-            - pkg: "github.com/ondatra-ai/true-bdd/services/bdd-cli/adapters"
+            - pkg: "github.com/ondatra-ai/true-bdd/services/true-bdd/adapters"
               desc: 'a port names domain types only — never its own implementation'
-            - pkg: "github.com/ondatra-ai/true-bdd/services/bdd-cli/cmd"
+            - pkg: "github.com/ondatra-ai/true-bdd/services/true-bdd/cmd"
               desc: 'the domain defines; it does not reach outward'
         # Spawning is the fourth channel. _test.go is exempt: several
         # tests exist to synthesise the raw behaviour shell abstracts — a real
@@ -203,7 +203,7 @@ linters:
           files:
             - "$all"
             - "!**/pkg/shell/**"
-            - "!**/services/bdd-cli/internal/infrastructure/shell/**"
+            - "!**/services/true-bdd/internal/infrastructure/shell/**"
             - "!**/*_test.go"
           deny:
             - pkg: "os/exec$"
@@ -218,18 +218,18 @@ linters:
             - "!**/pkg/cli/**"
             - "!**/pkg/shell/**"
             # Engine shell access is confined to explicitly named wrappers.
-            - "!**/services/bdd-cli/internal/infrastructure/shell/**"
-            - "!**/services/bdd-cli/internal/infrastructure/cli/cli.go"
-            - "!**/services/bdd-cli/internal/infrastructure/cli/claude/*.go"
-            - "!**/services/bdd-cli/internal/infrastructure/cli/codex/*.go"
-            - "!**/services/bdd-cli/internal/infrastructure/cli/git/*.go"
-            - "!**/services/bdd-cli/internal/infrastructure/cli/gotool/*.go"
-            - "!**/services/bdd-cli/internal/infrastructure/cli/spec/*.go"
-            - "!**/services/bdd-cli/internal/infrastructure/cli/truebdd/*.go"
+            - "!**/services/true-bdd/internal/infrastructure/shell/**"
+            - "!**/services/true-bdd/internal/infrastructure/cli/cli.go"
+            - "!**/services/true-bdd/internal/infrastructure/cli/claude/*.go"
+            - "!**/services/true-bdd/internal/infrastructure/cli/codex/*.go"
+            - "!**/services/true-bdd/internal/infrastructure/cli/git/*.go"
+            - "!**/services/true-bdd/internal/infrastructure/cli/gotool/*.go"
+            - "!**/services/true-bdd/internal/infrastructure/cli/spec/*.go"
+            - "!**/services/true-bdd/internal/infrastructure/cli/truebdd/*.go"
           deny:
             - pkg: "github.com/ondatra-ai/true-bdd/pkg/shell"
               desc: 'spawn: reach a binary through its pkg/cli wrapper — add one if it is missing'
-            - pkg: "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/shell"
+            - pkg: "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/shell"
               desc: 'spawn: reach a binary through its owning typed CLI wrapper'
         logging:
           # depguard matches by PREFIX, so a bare `log` would deny log/slog
@@ -238,7 +238,7 @@ linters:
           files:
             - "$all"
             - "!**/pkg/logging/**"
-            - "!**/services/bdd-cli/internal/infrastructure/logging/**"
+            - "!**/services/true-bdd/internal/infrastructure/logging/**"
           deny:
             - pkg: "log$"
               desc: 'log/slog only, and only through the owning logging channel'
@@ -301,13 +301,13 @@ linters:
       # Don't require wrapping for errors from internal packages
       # Our internal/pkg/errors package provides properly wrapped errors
       ignore-package-globs:
-        - "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/*"
+        - "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/*"
         - "*/internal/*"
         # Same reason as internal/pkg/errors above: every error pkg/disk
         # returns already names the path and the operation that failed.
         - "github.com/ondatra-ai/true-bdd/pkg/*"
       ignore-sig-regexps:
-        - 'github\.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors\.Err.*'
+        - 'github\.com/ondatra-ai/true-bdd/services/true-bdd/internal/pkg/errors\.Err.*'
     tagliatelle:
       # For internal domain models and application code
       case:
@@ -322,24 +322,24 @@ linters:
     warn-unused: true
     rules:
       # GitHub API structures must use camelCase to match GitHub's API contract
-      - path: services/bdd-cli/internal/adapters/github/.*\.go
+      - path: services/true-bdd/internal/adapters/github/.*\.go
         linters:
           - tagliatelle
-      - path: services/bdd-cli/internal/domain/models/thread\.go
+      - path: services/true-bdd/internal/domain/models/thread\.go
         linters:
           - tagliatelle
       # Test-runner DTOs mirror third-party JSON wire formats
       # (`go test -json` PascalCase, `jest --json` camelCase). The field
       # casing is the wire contract, not ours.
-      - path: services/bdd-cli/internal/infrastructure/testrunner/dto/.*\.go
+      - path: services/true-bdd/internal/infrastructure/testrunner/dto/.*\.go
         linters:
           - tagliatelle
       # Don't require wrapping for internal package returns
       # Our internal/pkg/errors package provides properly wrapped errors
-      - path: (services/bdd-cli/internal/.*|services/bdd-cli/adapters/.*)\.go
+      - path: (services/true-bdd/internal/.*|services/true-bdd/adapters/.*)\.go
         linters:
           - wrapcheck
-        text: 'github\.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors'
+        text: 'github\.com/ondatra-ai/true-bdd/services/true-bdd/internal/pkg/errors'
       # Allow dynamic errors in test files for test fixtures
       - path: _test\.go
         linters:
@@ -347,15 +347,15 @@ linters:
       # Permanent. Each channel is exempt from its OWN pattern only; pkg/
       # logging gets no entry, since it reaches stdout and its file through the
       # other two — so the linter proves that layering instead of ignoring it.
-      - path: ^(pkg|services/bdd-cli/internal/infrastructure)/console/
+      - path: ^(pkg|services/true-bdd/internal/infrastructure)/console/
         linters:
           - forbidigo
         text: 'three channels: reach a terminal'
-      - path: ^(pkg|services/bdd-cli/internal/infrastructure)/disk/
+      - path: ^(pkg|services/true-bdd/internal/infrastructure)/disk/
         linters:
           - forbidigo
         text: 'three channels: read and write files'
-      - path: ^(pkg|services/bdd-cli/internal/infrastructure)/shell/
+      - path: ^(pkg|services/true-bdd/internal/infrastructure)/shell/
         linters:
           - forbidigo
         text: 'spawn: subprocesses go through the owning shell channel'
@@ -367,7 +367,7 @@ linters:
         text: 'three channels: read and write files'
       # Each logging package IS its constructor; the harness wraps its handler to tap
       # usage records; a test swaps the default around a capture and restores.
-      - path: ^(pkg|services/bdd-cli/internal/infrastructure)/logging/
+      - path: ^(pkg|services/true-bdd/internal/infrastructure)/logging/
         linters:
           - forbidigo
         text: 'log construction:'

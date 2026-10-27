@@ -17,7 +17,7 @@ func TestOracleBuildGitDropsRepositoryEnvironment(t *testing.T) {
 	root := scratchDirectory(t)
 	seedRepository(t, root)
 	write(t, root, "go.mod", "module example.com/oracle\n\ngo 1.25\n")
-	write(t, root, "services/bdd-cli/main.go", "package main\nfunc main() {}\n")
+	write(t, root, "services/true-bdd/main.go", "package main\nfunc main() {}\n")
 	local := strings.Fields(gitOutput(t, root, "rev-parse", "--local-env-vars"))
 	capture := captureIndirectGit(t, root, local)
 

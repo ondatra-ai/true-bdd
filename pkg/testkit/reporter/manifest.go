@@ -56,7 +56,7 @@ func loadManifest(repoRoot, name, dir string) *Manifest {
 		return manifest
 	}
 
-	fixture, err := runner.LoadFixture(filepath.Join(repoRoot, "tests", "bdd-cli", "fixtures", name))
+	fixture, err := runner.LoadFixture(filepath.Join(repoRoot, "tests", "true-bdd", "fixtures", name))
 	if err != nil {
 		return &Manifest{Source: ManifestAbsent}
 	}

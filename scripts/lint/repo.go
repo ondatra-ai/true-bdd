@@ -16,7 +16,7 @@ var ErrFailed = errors.New("lint failed")
 // Fixtures and testdata are host content, not this repository's source.
 //
 //nolint:gochecknoglobals // a prefix list; a constant in all but syntax.
-var excludedTrees = []string{"tests/bdd-cli/fixtures/"}
+var excludedTrees = []string{"tests/true-bdd/fixtures/"}
 
 func excludedTree(path string) bool {
 	// testdata is invisible to the Go toolchain wherever it sits, and holds

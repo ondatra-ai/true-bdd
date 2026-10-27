@@ -30,6 +30,6 @@
 // packages, which is what keeps argv construction typed and greppable instead
 // of scattered. Those two are the wrappers only the engine uses (codex
 // and its own binary), so they live in the engine, under
-// services/bdd-cli/internal/infrastructure/cli/, and a rebuild regenerates
+// services/true-bdd/internal/infrastructure/cli/, and a rebuild regenerates
 // them with it; each lint rule names them one by one.
 package shell

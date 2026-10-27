@@ -24,12 +24,11 @@ type FixtureRun struct {
 // the seconds/pid suffix is optional to keep matching older, retained runs.
 var partitionRe = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}(-\d{2}(-\d+)?)?$`)
 
-// configDirNames covers the current and the pre-rename config dir
-// name, both present among retained runs.
-func configDirNames() []string { return []string{"true-bdd", "bdd-cli"} }
+// configDirNames lists the engine configuration directories in retained runs.
+func configDirNames() []string { return []string{"true-bdd"} }
 
-// logFileNames covers the current and the pre-rename slog file name.
-func logFileNames() []string { return []string{"true-bdd.log.json", "bdd-cli.log.json"} }
+// logFileNames lists the engine log files in retained runs.
+func logFileNames() []string { return []string{"true-bdd.log.json"} }
 
 // ScanRoot discovers every fixture run directory under root, sorted by
 // session then fixture.

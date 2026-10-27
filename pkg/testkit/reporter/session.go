@@ -9,7 +9,7 @@
 //     turn returned"/"AI turn failed" (duration_ms). The spans BETWEEN
 //     those records are the engine's deterministic work.
 //
-//  2. tmp/test_run/<session>/<fixture>/bdd-cli-logs/harness.json — the
+//  2. tmp/test_run/<session>/<fixture>/true-bdd-logs/harness.json — the
 //     harness's own record. Four things live only here, because the
 //     engine cannot see them from inside its own process: the fixture's
 //     wall clock, its verdict, the file diff, and what the judge spent.

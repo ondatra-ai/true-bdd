@@ -25,7 +25,7 @@ func TestRawGitCallersScrubRepositoryEnvironment(t *testing.T) {
 	}
 
 	for _, path := range paths {
-		if !strings.HasSuffix(path, ".go") || strings.HasPrefix(path, "tests/bdd-cli/fixtures/") ||
+		if !strings.HasSuffix(path, ".go") || strings.HasPrefix(path, "tests/true-bdd/fixtures/") ||
 			strings.Contains(path, "/testdata/") {
 			continue
 		}
@@ -247,5 +247,5 @@ func importPath(expression ast.Expr, tree *ast.File) string {
 
 func isGitScrubber(path string) bool {
 	return path == "github.com/ondatra-ai/true-bdd/pkg/cli/git" ||
-		path == "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/cli/git"
+		path == "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/cli/git"
 }

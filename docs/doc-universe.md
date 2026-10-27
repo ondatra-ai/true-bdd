@@ -149,7 +149,7 @@ Example values come from the BDD fixtures. Numbers match the arrows on the map.
 | 5 | scenario service: | architecture services[].name | `service: "mcp-service"` must name a declared service |
 | 6 | scenario steps | step definitions | **build tests** passes only if every Given/When/Then step binds to exactly one ``suite.Step(`regexp`, …)`` in the owning suite's `steps/` package — except steps prefixed `llm:` (a model performs it) or `judge:` (a model rules on it once the scenario has run), which bind to nothing and must never be given a definition. The engine answers that question itself, by parsing the `steps/` package, and walks only the scenarios with gaps, so a converged repository spends no model at all. Separately, the scenario's `path:` names the generated `func Test<Key>` (the key in CamelCase) that runs it — with the steps stated literally, and cross-checked against the registry before any of them run. That file is deterministic codegen rather than a model turn: `--fix` writes it, and without `--fix` the same renderer verifies the tree by regenerating and comparing |
 | 7 | scenario service: | testing.suites[].service | the one join that says which suite owns a scenario, and therefore where its step definitions live. Replaced the id-prefix convention (INT- / E2E-), which lived in prompt prose and in no code |
-| 8 | services[].path | services/&lt;name&gt;/ | `path: services/bdd-cli` tells **build code** where production source lives — any path works; the fixtures use `services/calc` |
+| 8 | services[].path | services/&lt;name&gt;/ | `path: services/true-bdd` tells **build code** where production source lives — any path works; the fixtures use `services/calc` |
 | 9 | failing test | production source | **build code --fix** edits the service's source (its `services[].path`) until the runner's `LastRunPassed` flips to true |
 | 10 | checklist prompt docs: | true-bdd.yaml documents: | `docs: [product, architecture_yaml]` are keys — resolved to file paths, contents embedded in the prompt |
 | 11 | command name | checklist file | `paths.checklists_dir` + hyphenation: `us apply` → `checklists/us-apply.yaml` |
@@ -160,4 +160,4 @@ Example values come from the BDD fixtures. Numbers match the arrows on the map.
 
 ---
 
-*Drawn from the engine seed (`true-bdd/`, `templates/`) and the `tests/bdd-cli` fixture documents — 2026-08-27.*
+*Drawn from the engine seed (`true-bdd/`, `templates/`) and the `tests/true-bdd` fixture documents — 2026-08-27.*

@@ -1,0 +1,17 @@
+# Product document for `scen-check-phrase-no-catalogue`.
+#
+# Roles, but no `catalogue:` key: this host has not adopted the
+# catalogue, so none of its Scenarios is checked against one.
+
+title: "Fixture host project"
+
+description:
+  summary: >-
+    A single MCP service, used by the true-bdd fixtures as the host
+    project a scenario registry describes.
+
+roles:
+  - name: Operator
+    definition: Runs the MCP service and watches what it answers.
+  - name: Client Developer
+    definition: Writes the clients that send the MCP service its requests.
