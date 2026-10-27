@@ -25,11 +25,6 @@ type Module struct {
 	Error   string `json:"error"`
 }
 
-// DownloadModules downloads the complete graph of an isolated manifest, without changing the host's module files.
-func DownloadModules(ctx context.Context, dir string) ([]Module, error) {
-	return downloadModules(ctx, dir, git.Environment())
-}
-
 // DownloadModulesInCache prepares the drill's private cache from its declared library manifest.
 func DownloadModulesInCache(ctx context.Context, dir, cache string) ([]Module, error) {
 	return downloadModules(ctx, dir, git.Environment().Set("GOMODCACHE="+cache))
