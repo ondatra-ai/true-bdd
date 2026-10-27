@@ -25,6 +25,8 @@ type Options struct {
 	Branch string   `json:"branch,omitempty"`
 	Base   string   `json:"base,omitempty"`
 	Search bool     `json:"search"`
+	Model  string   `json:"model,omitempty"`
+	Effort string   `json:"effort,omitempty"`
 	Issues []string `json:"issues,omitempty"`
 }
 
@@ -52,6 +54,12 @@ func (o Options) validate() error {
 		}
 	}
 
+	switch o.Effort {
+	case "", "low", "medium", "high", "xhigh", "max", "ultra":
+	default:
+		return refuse("--effort must be low, medium, high, xhigh, max or ultra")
+	}
+
 	return o.validateWorkspace()
 }
 
@@ -77,4 +85,16 @@ func (o Options) validateWorkspace() error {
 
 func invalidBranch(branch string) bool {
 	return strings.TrimSpace(branch) == "" || strings.HasPrefix(branch, "-")
+}
+
+func (o Options) reasoningEffort() string {
+	if o.Effort != "" {
+		return o.Effort
+	}
+
+	if o.writer() {
+		return "high"
+	}
+
+	return "configured default"
 }

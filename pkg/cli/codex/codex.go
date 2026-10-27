@@ -17,6 +17,8 @@ type Options struct {
 	Final     string
 	Writer    bool
 	Search    bool
+	Model     string
+	Effort    string
 	Output    io.Writer
 	Watchdog  shell.Watchdog
 }
@@ -80,8 +82,17 @@ func (o Options) args(session string) []string {
 	}
 
 	args = append(args, "exec", "-s", sandbox, "-c", `approval_policy="never"`)
-	if o.Writer {
-		args = append(args, "-c", `model_reasoning_effort="high"`)
+	if o.Model != "" {
+		args = append(args, "-m", o.Model)
+	}
+
+	effort := o.Effort
+	if effort == "" && o.Writer {
+		effort = "high"
+	}
+
+	if effort != "" {
+		args = append(args, "-c", `model_reasoning_effort="`+effort+`"`)
 	}
 
 	if !o.Search {

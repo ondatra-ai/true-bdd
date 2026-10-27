@@ -97,10 +97,10 @@ func (r Runner) Resume(ctx context.Context, name, note string) (Record, error) {
 func (r Record) context(runner Runner) string {
 	text := "You run read-only without network. Read saved issues instead of calling gh."
 	if r.writer() {
-		text = fmt.Sprintf("You run with full access at high reasoning effort in %s. Stay inside this worktree.\n"+
+		text = fmt.Sprintf("You run with full access at %s reasoning effort in %s. Stay inside this worktree.\n"+
 			"Branch: %s; starting commit: %s. Done requires a clean checkout and a new commit.\n"+
 			"Use plain local git commits; never push or open a PR. End commit messages with Refs #<issue>.",
-			r.Worktree, r.Branch, r.Since)
+			r.reasoningEffort(), r.Worktree, r.Branch, r.Since)
 	}
 
 	text += fmt.Sprintf("\nWeb search enabled: %t. Your final message is the report Claude reads.\n", r.Search)

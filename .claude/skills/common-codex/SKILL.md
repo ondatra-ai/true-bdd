@@ -15,7 +15,7 @@ Codex takes the code work and readings Claude would otherwise spend its subscrip
 - **review**: a diff along one axis. `mpc_code-review`'s standards and spec reviewers are two review runs, started together.
 - **research**: one precise question about the code or public sources; use `--search` when it needs the web.
 
-Readers (plan-read, review, research) run read-only without network. Writers (code, fix) have full access at high reasoning effort in worktrees the command owns. There is no complexity exception: Claude takes a code task itself when Codex is unavailable or after two failed attempts. An edit or question Claude settles in two or three calls on files already held stays with Claude; a handover costs more.
+Readers (plan-read, review, research) run read-only without network. Writers (code, fix) have full access at high reasoning effort by default in worktrees the command owns. There is no complexity exception: Claude takes a code task itself when Codex is unavailable or after two failed attempts. An edit or question Claude settles in two or three calls on files already held stays with Claude; a handover costs more.
 
 Claude keeps the conversation with the Owner, decisions, specs and tickets, briefs, reading reports and diffs, the Owner's texts, and research through the Owner's connectors, which Codex lacks. Findings are evidence to check: sort each as valid, invalid or needs a test, and explain which you took and why.
 
@@ -27,8 +27,10 @@ From the repository root, start the command as a background Bash task with `run_
 
 ```bash
 go run ./scripts/cmd/codex start --kind <kind> --name <run> \
-  --brief tmp/codex-briefs/<run>.md [--search] [--issue <n>]...
+  --brief tmp/codex-briefs/<run>.md [--model <slug>] [--effort <level>] [--search] [--issue <n>]...
 ```
+
+Choose `--model gpt-6-astra --effort xhigh` for a reading the Owner wants on the largest model; effort accepts `low`, `medium`, `high`, `xhigh`, `max` or `ultra`, and omitting either flag keeps its existing default.
 
 For **code**, add `--branch impl/<n>-<slug> --base <branch-or-commit>`. The new checkout is `tmp/codex-worktrees/<run>/`, containing the whole repository. For **fix**, add `--branch <code-run-branch>` and no `--base`: the command requires a code run's record of that branch and checkout, and fixes must add a commit beyond the tip at which they start. Writers never run in Claude's checkout or an unrelated worktree. At most four writers run at once; a worktree is held by one running command.
 
@@ -51,7 +53,7 @@ After any other result than `done` or `unavailable`, resume once as the same kin
 go run ./scripts/cmd/codex resume --name <run> --note '<what went wrong>'
 ```
 
-Resume names the recorded session id, never the last session, and keeps workspace, sandbox, search and original commit baseline. With no session id it starts fresh using the saved brief and note, fetching issues preparation did not save. A refusal consumes no attempt: exit 2 means invalid input, an unknown/done/unavailable/exhausted run, a live command, four busy writers, a held worktree, or a branch moved from its recorded checkout. A dead command recorded as running may be retried. Exit 0 means `done`; exit 1 means an attempted run ended otherwise. After the second failure Claude takes the work and tells the Owner, naming both logs.
+Resume names the recorded session id, never the last session, and keeps workspace, sandbox, search, model, effort and original commit baseline. With no session id it starts fresh using the saved brief and note, fetching issues preparation did not save. A refusal consumes no attempt: exit 2 means invalid input, an unknown/done/unavailable/exhausted run, a live command, four busy writers, a held worktree, or a branch moved from its recorded checkout. A dead command recorded as running may be retried. Exit 0 means `done`; exit 1 means an attempted run ended otherwise. After the second failure Claude takes the work and tells the Owner, naming both logs.
 
 When Codex is signed out, its sign-in check is missing, broken or stalled, its access token expires, or it hits its usage limit, a writer or reader ends `unavailable` with the reason in its closing summary. Claude takes the work itself and says so. Other execution failures use the normal retry path.
 

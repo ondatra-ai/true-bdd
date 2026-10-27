@@ -110,6 +110,9 @@ func startFlags(set *flag.FlagSet, opts *codexrun.Options) {
 	set.StringVar(&opts.Brief, "brief", "", "brief file")
 	set.StringVar(&opts.Branch, "branch", "", "new code branch, or a code run's branch to fix")
 	set.StringVar(&opts.Base, "base", "", "code run's starting commit or branch")
+	set.StringVar(&opts.Model, "model", "", "Codex model slug (default: configured model)")
+	set.StringVar(&opts.Effort, "effort", "",
+		"low, medium, high, xhigh, max or ultra (default: high for writers, configured for readers)")
 	set.BoolVar(&opts.Search, "search", false, "enable web search")
 	set.Func("issue", "issue number to save (repeatable)", func(value string) error {
 		for _, existing := range opts.Issues {
