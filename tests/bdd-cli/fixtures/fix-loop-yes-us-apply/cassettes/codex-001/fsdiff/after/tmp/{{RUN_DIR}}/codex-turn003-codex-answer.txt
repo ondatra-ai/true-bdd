@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-99.3-001-mcp-initialize-iter1-result.yaml ===
+applied: true
+target: "tmp/{{RUN_DIR}}/scenarios.yaml"
+summary: "Added the exact 99.3-001-mcp-initialize entry; comments and metadata remain byte-identical."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-99.3-001-mcp-initialize-iter1-result.yaml ===

@@ -1,0 +1,163 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are the production writer repairing a whole failing set. Read the Specification, harness and service source, then implement the proposed plan using your own investigation. Change the service as a whole. After each part, run the tests it serves and fix what fails; run every test of the failing set before reporting. Tests outside the set are not your subject.
+
+Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. Find a solution within the declared service path and exact writable paths first. If no solution exists there, report impossible as a list of {path, reason} for the required undeclared files. Keep files already written. A preferred undeclared change is not impossible. For ordinary unfinished work, report applied: false and impossible: [].
+
+Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, impossible, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
+
+
+### TASK
+
+## Subject — Failing Set
+
+
+**Test ID:** /go-test/go-test:fixture.buildcodefix.tests.suite::TestAdd
+**Service:** calc
+**Suite:** go-test
+**Framework:** go-test
+**Test Name:** fixture/buildcodefix/tests/suite::TestAdd
+**Source File:** fixture/buildcodefix/tests/suite
+
+
+### Failure groups
+
+Tests: /go-test/go-test:fixture.buildcodefix.tests.suite::TestAdd
+```
+=== RUN   TestAdd
+    calc_test.go:10: Add(2, 3) = -1, want 5
+--- FAIL: TestAdd (0.00s)
+
+```
+
+
+### Specification documents
+
+- Read(`./docs/architecture/architecture.yaml`) — architecture_yaml
+
+
+
+
+
+
+
+
+## Proposed repair plan
+# Repair plan for /go-test/go-test:fixture.buildcodefix.tests.suite::TestAdd
+
+## Diagnosis
+
+`services/calc/calc.go` is the entire production surface of the `calc` service:
+
+```
+package calc
+
+func Add(a, b int) int { return a - b }
+```
+
+The exported `Add` is named and consumed as integer addition, but its body
+performs subtraction. The suite calls `calc.Add(2, 3)` and expects `5`; the
+current body evaluates `2 - 3 = -1`, which is exactly the observed failure
+(`calc_test.go:10: Add(2, 3) = -1, want 5`). This is a single sign/operator
+defect in production code, not a test or harness problem.
+
+Supporting facts gathered:
+
+- `docs/architecture/architecture.yaml` declares one service, `calc`, at
+  `services/calc`, language `go`, and one suite command for record/replay/live:
+  `go test -json -count=1 ./tests/suite/...`.
+- `go.mod` declares module `fixture/buildcodefix`, so the test's import
+  `fixture/buildcodefix/services/calc` resolves to `services/calc/calc.go`.
+  There is no second implementation, build tag, generated file, or alternate
+  package shadowing it — `services/calc/calc.go` and `tests/suite/calc_test.go`
+  are the only `.go` files in the tree.
+- Nothing else in the repository calls `Add`, so correcting the operator has no
+  other caller to regress.
+
+## Contract to implement
+
+`calc.Add(a, b int) int` must return the integer sum of its two arguments:
+for all `a, b`, `Add(a, b) == a + b`. In particular it must be commutative in
+the arguments (`Add(2, 3) == Add(3, 2) == 5`), return `a` when `b == 0`, and
+return `0` when both arguments are `0`. Keep the existing exported signature,
+name, parameter order, and package (`package calc`) unchanged — the suite
+imports and calls it exactly as written today, so any signature change would
+break compilation.
+
+## Part 1 — fix the operator in the only service file
+
+**File:** `services/calc/calc.go` (inside the declared edit root
+`services/calc`; this is the only file that needs to change)
+
+**Change:** Replace the subtraction in the body of `Add` with addition, so the
+function returns `a + b` instead of `a - b`. Nothing else in the file requires
+modification: the package clause, the function name, the parameter list, and
+the return type are all already correct and are what the suite depends on. Do
+not add new exported symbols, new files, build tags, or dependencies — the
+service has no other requirement in the spec, and extra surface would be
+unjustified by any test in this set.
+
+**Tests served:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestAdd`
+(`tests/suite/calc_test.go`, `TestAdd`). With `Add` returning `a + b`,
+`calc.Add(2, 3)` yields `5`, the `got != 5` guard does not trip, and
+`t.Fatalf` is never reached, so the test passes. This is the whole failing set;
+no other test in the repository exercises `calc`.
+
+## Constraints and verification
+
+- Do not touch `tests/suite/calc_test.go` or any `*_test.go` file, and do not
+  weaken, skip, or delete the `got != 5` assertion or its `t.Fatalf` message —
+  the assertion is correct and must continue to hold on its own merit.
+- Do not edit `docs/architecture/architecture.yaml` or `go.mod`; both already
+  describe the intended wiring accurately.
+- Verify with the spec's declared suite command from the run root:
+  `go test -json -count=1 ./tests/suite/...`. Expect `TestAdd` to report pass.
+  A plain `go test ./tests/suite/...` is a fine quick local check, and
+  `go build ./...` confirms the service still compiles.
+
+## Note on late obstructions
+
+If, after making this edit, a deployment/packaging step reports a checksum,
+manifest, or lockfile mismatch for the changed service, treat that as part of
+the same repair: re-derive the recorded checksum from the corrected
+`services/calc` source via whatever regeneration command the toolchain
+provides, rather than reverting the operator fix or altering the test. Do not
+satisfy such a check by editing test files or assertions. If the artifact that
+must be refreshed genuinely lives outside `services/calc` and outside host tmp
+and cannot be regenerated from a permitted path, stop and report the exact path
+and reason instead of working around it.
+
+## Edit roots
+
+- `services/calc`
+
+Never modify tests or step definitions. Never weaken, skip or remove assertions.
+
+
+## Test commands
+Run in `{{CWD}}` using exactly one of these forms:
+- Whole suite: `go test -count=1 ./tests/suite/...`
+- Selection: `go test -count=1 ./tests/suite/... -run '<selection>'`
+The selection is a nonempty framework regular expression. Keep the command in the foreground; if the tool returns a process/session id, poll that process with your native process tool until it completes.
+
+
+## How to work
+1. Read the Specification and the harness first to understand the service's contract.
+2. Change the service as a whole, using the plan and your investigation.
+3. After each part, run the tests that part serves and fix what fails.
+4. Run every test of the failing set before reporting. Tests outside the failing set are not your subject.
+5. Make all changes during this turn, then report what changed and which tests of the set you saw pass.
+
+End your final message with the confirmation block below, written in the message itself. The result path in its heading names where the engine saves it; never write that path yourself.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter1-result.yaml ===
+applied: true
+impossible: []
+target: "<repo-relative service path>"
+summary: "<what changed and which tests of the set you saw pass>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter1-result.yaml ===
+
+Only when no solution exists inside the declared edit roots, fill impossible with a list of {path, reason} for required undeclared files. Keep any edits already made and report their outcome. Otherwise leave impossible empty; applied: false by itself permits another attempt.
+
+## Controlled writer-discovery protocol
+Repair Add in services/calc/calc.go, and create services/calc/prepared.txt containing exactly "prepared" followed by a newline. After those changes, report impossible: [{path: go.sum, reason: "deployment requires a root checksum repair outside the declared paths"}]. Report applied: true, retaining the service edits. This exercises an obstruction discovered only by the writer; do not seek another attempt or modify go.sum.

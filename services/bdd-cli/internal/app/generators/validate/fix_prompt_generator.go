@@ -24,6 +24,7 @@ import (
 
 // FixPromptData represents data needed for fix prompt generation templates.
 type FixPromptData struct {
+	WriteRoots  []string
 	Subject     any
 	SubjectID   string
 	FailedCheck checklist.ValidationResult
@@ -72,13 +73,15 @@ type GenerateParams struct {
 
 // FixPromptGenerator generates complete, actionable fix prompts for failed checklist validations.
 type FixPromptGenerator struct {
-	aiClient     ports.AIPort
-	config       *config.ViperConfig
-	models       *provider.Registry
-	modeFactory  *ai.ModeFactory
-	docResolver  *docs.Resolver
-	systemLoader *template.TemplateLoader[FixPromptData]
-	userLoader   *template.TemplateLoader[FixPromptData]
+	impossibleReport bool
+	writeRoots       []string
+	aiClient         ports.AIPort
+	config           *config.ViperConfig
+	models           *provider.Registry
+	modeFactory      *ai.ModeFactory
+	docResolver      *docs.Resolver
+	systemLoader     *template.TemplateLoader[FixPromptData]
+	userLoader       *template.TemplateLoader[FixPromptData]
 }
 
 // NewFixPromptGenerator creates a new fix prompt generator with config-based template paths.
@@ -111,7 +114,13 @@ func NewFixPromptGeneratorWithPaths(
 	}
 }
 
-// Generate creates a fix prompt OR returns questions if clarification is needed.
+// UseImpossibleReport enables the build-code impossibility verdict.
+func (g *FixPromptGenerator) UseImpossibleReport(roots []string) {
+	g.impossibleReport = true
+	g.writeRoots = roots
+}
+
+// Generate returns a plan or questions, or stops on a build-code impossibility verdict.
 func (g *FixPromptGenerator) Generate(
 	ctx context.Context,
 	params GenerateParams,
@@ -166,6 +175,7 @@ func (g *FixPromptGenerator) buildPromptData(params GenerateParams, resultPath s
 	)
 
 	return FixPromptData{
+		WriteRoots:  g.writeRoots,
 		Subject:     params.Subject,
 		SubjectID:   params.SubjectID,
 		FailedCheck: params.FailedCheck,
@@ -230,7 +240,7 @@ func (g *FixPromptGenerator) executeAIGeneration(
 
 	schema := ""
 	if promptData.Structured {
-		schema = fixResultSchema
+		schema = g.resultSchema()
 	}
 
 	response, err := g.aiClient.ExecutePromptWithSystem(
@@ -289,15 +299,14 @@ func (g *FixPromptGenerator) saveFixPrompt(resultPath, fixPrompt string) {
 	}
 }
 
-// decodeStructuredResult reads a schema-enforced fix answer. Exactly one
-// of the two branches carries content — the schema cannot express that,
-// so the engine checks it here.
+// decodeStructuredResult reads a plan, questions or build-code impossibility verdict.
 func (g *FixPromptGenerator) decodeStructuredResult(
 	response, resultPath string,
 ) (checklist.GenerateResult, error) {
 	var decoded struct {
-		FixPrompt string                      `json:"fix_prompt"`
-		Questions []checklist.ClarifyQuestion `json:"questions"`
+		FixPrompt  string                      `json:"fix_prompt"`
+		Questions  []checklist.ClarifyQuestion `json:"questions"`
+		Impossible []pkgerrors.RequiredChange  `json:"impossible"`
 	}
 
 	err := json.Unmarshal([]byte(response), &decoded)
@@ -305,6 +314,12 @@ func (g *FixPromptGenerator) decodeStructuredResult(
 		slog.Error(enginelog.MsgAnswerUnusable, "path", resultPath, "error", err)
 
 		return checklist.GenerateResult{}, pkgerrors.ErrFixGeneratorQuestionsDidNotParse(err)
+	}
+
+	if g.impossibleReport && len(decoded.Impossible) > 0 {
+		g.saveFixPrompt(resultPath, response)
+
+		return checklist.GenerateResult{}, pkgerrors.ImpossibleWork(decoded.Impossible)
 	}
 
 	fixPrompt := strings.TrimSpace(decoded.FixPrompt)
@@ -404,4 +419,20 @@ func (g *FixPromptGenerator) parseQuestions(response string) ([]checklist.Clarif
 	}
 
 	return wrapper.Questions, nil
+}
+
+func (g *FixPromptGenerator) resultSchema() string {
+	if !g.impossibleReport {
+		return fixResultSchema
+	}
+
+	const impossibleProperty = `"fix_prompt": {"type": "string"},
+    "impossible": {"type":"array", "items":{"type":"object", ` +
+		`"properties":{"path":{"type":"string"}, "reason":{"type":"string"}}, ` +
+		`"required":["path","reason"], "additionalProperties":false}},`
+
+	schema := strings.Replace(fixResultSchema, `"fix_prompt": {"type": "string"},`, impossibleProperty, 1)
+
+	return strings.Replace(schema, `"required": ["fix_prompt", "questions"]`,
+		`"required": ["fix_prompt", "questions", "impossible"]`, 1)
 }

@@ -2,6 +2,7 @@ package validate
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"regexp"
@@ -54,14 +55,15 @@ type ApplyParams struct {
 
 // FixApplier applies fix prompts to stories using AI.
 type FixApplier struct {
-	testCommand  *provider.TestCommand
-	aiClient     ports.AIPort
-	config       *config.ViperConfig
-	models       *provider.Registry
-	modeFactory  *ai.ModeFactory
-	systemLoader *template.TemplateLoader[FixApplierData]
-	userLoader   *template.TemplateLoader[FixApplierData]
-	tmpDir       string
+	libraryReadRoots []string
+	testCommand      *provider.TestCommand
+	aiClient         ports.AIPort
+	config           *config.ViperConfig
+	models           *provider.Registry
+	modeFactory      *ai.ModeFactory
+	systemLoader     *template.TemplateLoader[FixApplierData]
+	userLoader       *template.TemplateLoader[FixApplierData]
+	tmpDir           string
 	// useEditMode toggles Apply's tool-permission set: false (default) is
 	// ThinkMode for FILE_START/FILE_END handlers; true, set via
 	// UseEditMode(), is EditMode for handlers that mutate the scratch file directly (us apply's F: prompts).
@@ -69,8 +71,9 @@ type FixApplier struct {
 	// writeRoots are project trees outside tmp this applier may write,
 	// for the `build` commands whose whole job is authoring source. Set
 	// via UseWriteRoots(); empty keeps the tmp-only behaviour.
-	writeRoots []string
-	writeGlobs bool
+	writeRoots    []string
+	writePatterns []string
+	writeGlobs    bool
 }
 
 // NewFixApplier creates a new fix applier with config-based template paths.
@@ -109,6 +112,11 @@ func (a *FixApplier) UseEditMode() {
 	a.useEditMode = true
 }
 
+// UseDeclaredWriteRoots retains exact file grants, including absent files.
+func (a *FixApplier) UseDeclaredWriteRoots(roots, patterns []string) {
+	a.writeRoots, a.writePatterns = roots, patterns
+}
+
 // UseWriteRoots grants this applier write access to project trees outside
 // tmp — the `services/*` roots for build code, test roots for build tests.
 // Without it, ExecutionMode (writer guard, codex sandbox) denies every write the system prompt instructs.
@@ -127,6 +135,9 @@ func (a *FixApplier) UseWriteGlobs(patterns []string) {
 func (a *FixApplier) UseTestCommand(command *provider.TestCommand) {
 	a.testCommand = command
 }
+
+// UseLibraryReadRoots grants only the downloaded architecture library graph.
+func (a *FixApplier) UseLibraryReadRoots(roots []string) { a.libraryReadRoots = roots }
 
 // Apply applies a fix prompt to the subject and returns the extracted content as a string.
 // The caller is responsible for parsing the returned content into the appropriate type.
@@ -186,7 +197,12 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 	// impossible — treating that as success let a blocked applier spin until an external timeout.
 	appliedErr := checkFixApplied(content)
 	if appliedErr != nil {
-		slog.Warn("Fix was NOT applied",
+		message := "Fix was NOT applied"
+		if errors.Is(appliedErr, pkgerrors.ErrImpossibleWork) {
+			message = "Writer reported impossible repair"
+		}
+
+		slog.Warn(message,
 			"subjectID", params.SubjectID,
 			"iteration", params.Iteration,
 			"error", appliedErr,
@@ -204,9 +220,10 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 // for. Applied is a POINTER: nil (no `applied:` key, as us refine's
 // story body emits) must stay distinguishable from explicit false, or every such turn misreports as a failed fix.
 type applyResultYAML struct {
-	Applied *bool  `yaml:"applied"`
-	Target  string `yaml:"target"`
-	Summary string `yaml:"summary"`
+	Applied    *bool                      `yaml:"applied"`
+	Target     string                     `yaml:"target"`
+	Summary    string                     `yaml:"summary"`
+	Impossible []pkgerrors.RequiredChange `yaml:"impossible"`
 }
 
 // checkFixApplied returns an error when the applier explicitly reported
@@ -219,6 +236,10 @@ func checkFixApplied(content string) error {
 		// scan for a literal `applied:` line: an unquoted `": "` in `target:` makes
 		// invalid YAML, and reading that as pass-through would turn a refusal into "Fix applied successfully".
 		return checkFixAppliedFallback(content)
+	}
+
+	if len(result.Impossible) > 0 {
+		return pkgerrors.ImpossibleWork(result.Impossible)
 	}
 
 	// Three ways to have no objection: the content is not a
@@ -276,6 +297,10 @@ func parseApplyResult(content string) (applyResultYAML, bool) {
 // when write roots were declared, EditMode (Edit/MultiEdit on scratch) when
 // configured via UseEditMode(), ThinkMode (Edit disallowed) otherwise.
 func (a *FixApplier) selectMode() ai.ExecutionMode {
+	if a.writePatterns != nil {
+		return a.modeFactory.GetHostEditMode(a.writePatterns)
+	}
+
 	if len(a.writeRoots) > 0 {
 		if a.writeGlobs {
 			return a.modeFactory.GetGlobEditMode(a.writeRoots)
@@ -310,6 +335,7 @@ func (a *FixApplier) savePromptFile(storyID string, iteration int, suffix, conte
 func (a *FixApplier) execute(ctx context.Context, model provider.ModelRef, systemPrompt, userPrompt string,
 	options provider.TurnOptions) (string, error) {
 	mode := a.selectMode()
+	mode.LibraryReadRoots = a.libraryReadRoots
 	options.CodexWriter = model.CLI == provider.CLICodex && options.CodexWriter
 
 	options.ClaudeWriter = options.ClaudeWriter && model.CLI == provider.CLIClaude

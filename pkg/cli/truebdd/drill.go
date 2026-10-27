@@ -9,6 +9,11 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/shell"
 )
 
+const (
+	fixFlag   = "--fix"
+	buildVerb = "build"
+)
+
 // ModelOverride is one unchanged <tier>=<cli>:<model> flag value.
 type ModelOverride string
 
@@ -25,12 +30,12 @@ type Options struct {
 
 // BuildTests authors and verifies step definitions with the iteration's engine.
 func BuildTests(ctx context.Context, binary string, opt Options) (int, error) {
-	return rebuild(ctx, binary, []string{"build", "tests", "--fix"}, opt)
+	return rebuild(ctx, binary, []string{buildVerb, "tests", fixFlag}, opt)
 }
 
 // BuildCode repairs production code with the iteration's engine.
 func BuildCode(ctx context.Context, binary string, opt Options) (int, error) {
-	return rebuild(ctx, binary, []string{"build", "code", "--fix"}, opt)
+	return rebuild(ctx, binary, []string{buildVerb, "code", fixFlag}, opt)
 }
 
 // rebuild closes stdin forwarding so answer writers cannot outlive their reader.

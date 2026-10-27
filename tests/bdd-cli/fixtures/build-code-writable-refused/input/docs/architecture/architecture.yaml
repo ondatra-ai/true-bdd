@@ -1,0 +1,12 @@
+architecture:
+  services:
+    - name: calc
+      path: services/calc
+      writable: [tests/suite]
+      language: go
+  testing:
+    framework: go-test
+    commands:
+      record: go test -json ./tests/suite/...
+      replay: go test -json ./tests/suite/...
+      live: go test -json ./tests/suite/...

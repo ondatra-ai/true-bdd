@@ -1,5 +1,6 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
-applied: false
+applied: true
+impossible: []
 target: "services/calc"
-summary: "Changed Mode() from 0 to 1 as required by the single-stage lifecycle. Ran go test -count=1 ./tests/suite/...: TestA skipped and TestB failed; neither test passed. Repair remains incomplete until a subsequent apply changes Mode() to 2."
+summary: "Changed Mode() from 0 to 1 and formatted calc.go, completing the required lifecycle stage. Ran go test -count=1 ./tests/suite/... covering both tests: TestA skipped and TestB failed with 'B needs mode two'. Neither test passed."
 === FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===

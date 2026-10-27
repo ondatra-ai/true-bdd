@@ -1,7 +1,8 @@
-Created `services/calc/prepared-second.txt` containing exactly `prepared\n`; left `calc.go` unchanged. Ran `go test -json -count=1 ./tests/suite/...`: `TestAdd` failed (`-1`, expected `5`); no tests passed.
+Created `prepared-second.txt` containing exactly `prepared\n`; kept the first file and `calc.go` unchanged. Ran the full failing set: `TestAdd` failed; no tests passed. Build was blocked by restricted directory access; Git diff was unavailable because this directory is not a repository.
 
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter2-result.yaml ===
 applied: false
+impossible: []
 target: "services/calc/calc.go"
 summary: "second preparation only; test still fails"
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter2-result.yaml ===

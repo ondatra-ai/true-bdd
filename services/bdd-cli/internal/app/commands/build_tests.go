@@ -64,6 +64,7 @@ func RunBuildTests(
 	tmpDir := deps.RunDir.GetTmpOutPath()
 
 	prep := &buildTestsPrep{
+		libraryApplier:   deps.BuildTestsFixApplier,
 		architectureFile: architectureFile,
 		productFile:      productDocument(deps.DocResolver),
 		registryFile:     requirementsFile,
@@ -116,6 +117,7 @@ func RunBuildTests(
 // buildTestsPrep holds what the walk's preparation stage resolves, so
 // the post-walk re-check can reuse the plan rather than rebuild it.
 type buildTestsPrep struct {
+	libraryApplier   *validate.FixApplier
 	architectureFile string
 	// productFile is "" for a host without a product document.
 	productFile  string
@@ -135,7 +137,7 @@ type buildTestsPrep struct {
 // spec says about the unbound ones, renders the generated tests, then
 // narrows the walk to the scenarios with a gap — all without a model.
 func (p *buildTestsPrep) run(
-	_ context.Context,
+	ctx context.Context,
 	items []*BuildTestsItem,
 ) ([]*BuildTestsItem, error) {
 	scenarios := registryScenarios(items)
@@ -192,7 +194,7 @@ func (p *buildTestsPrep) run(
 		item.Spec = specs[item.ID]
 	}
 
-	return walked, nil
+	return walked, p.prepareLibraries(ctx, arch, len(walked))
 }
 
 // renderTests writes the generated files under --fix, and refuses a run

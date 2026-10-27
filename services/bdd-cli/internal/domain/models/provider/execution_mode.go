@@ -12,8 +12,9 @@ const bashToolName = "Bash"
 // domain because a port names it: the interface an adapter satisfies cannot
 // be declared in terms of that adapter's own package.
 type ExecutionMode struct {
-	AllowedTools    []string
-	DisallowedTools []string
+	LibraryReadRoots []string
+	AllowedTools     []string
+	DisallowedTools  []string
 	// SourceWriteRoots are project trees outside tmp this mode opens for
 	// writing (set by ModeFactory); tool patterns also carry scratch and exact file grants.
 	SourceWriteRoots []string

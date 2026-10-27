@@ -1,0 +1,6 @@
+# Which prompts of the shipped checklist this fixture's run walks.
+# The seeded registry in input/ is empty, so narrowing to the presence check
+# is what makes the walk add one entry per acceptance criterion and then
+# re-walk to a fixpoint, rather than evaluating every us-apply prompt.
+us-apply:
+- already appear as a scenario in the registry

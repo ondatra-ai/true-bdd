@@ -2,9 +2,9 @@
 
 You are the production writer repairing a whole failing set. Read the Specification, harness and service source, then implement the proposed plan using your own investigation. Change the service as a whole. After each part, run the tests it serves and fix what fails; run every test of the failing set before reporting. Tests outside the set are not your subject.
 
-Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. If a repair cannot be completed, report applied: false and describe what changed and what remains.
+Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. Find a solution within the declared service path and exact writable paths first. If no solution exists there, report impossible as a list of {path, reason} for the required undeclared files. Keep files already written. A preferred undeclared change is not impossible. For ordinary unfinished work, report applied: false and impossible: [].
 
-Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
+Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, impossible, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
 
 
 ### TASK
@@ -43,17 +43,19 @@ Tests: /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArgument
 
 
 ## Proposed repair plan
-In services/calc/calc.go, repair Add(a, b int) to return a + b instead of a - b, preserving its signature. Its contract is to sum both arguments; this fixes TestAddSumsItsArguments, which requires Add(2, 3) == 5. Update the adjacent production comment so it no longer describes the defect as present.
+Repair `services/calc/calc.go`: `Add(a, b int)` promises the sum of its arguments but currently returns `a - b`. Change the return expression to `a + b`, preserving the function signature. Remove the stale production comment describing the deliberate defect while retaining the sum contract.
 
-Edit only services/calc/, the architecture’s declared service root. Do not modify tests, assertions, documents, or configuration.
+This repairs the entire failing set: `TestAddSumsItsArguments` calls `Add(2, 3)` and requires 5.
 
-Validate only the failing test with: go test -json -count=1 ./tests/suite/... -run '^TestAddSumsItsArguments$'. Confirm it passes. Keep the name filter so the unrelated canary test does not run or append to suite-runs.log.
+Validate with `go test -json -count=1 ./tests/suite/... -run '^TestAddSumsItsArguments$'`. Keep the exact test filter because the unrelated canary writes to `tests/suite/suite-runs.log` when executed.
+
+Restrict edits to `services/calc`; do not modify tests, assertions, documents, configuration, or logs.
 
 ## Edit roots
 
 - `services/calc`
 
-Never modify tests, *_test.go, __tests__, or documents. Never weaken, skip or remove assertions.
+Never modify tests or step definitions. Never weaken, skip or remove assertions.
 
 
 ## Test commands
@@ -74,6 +76,9 @@ End your final message with the confirmation block below, written in the message
 
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
 applied: true
+impossible: []
 target: "<repo-relative service path>"
 summary: "<what changed and which tests of the set you saw pass>"
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
+
+Only when no solution exists inside the declared edit roots, fill impossible with a list of {path, reason} for required undeclared files. Keep any edits already made and report their outcome. Otherwise leave impossible empty; applied: false by itself permits another attempt.

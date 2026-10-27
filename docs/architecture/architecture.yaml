@@ -5,7 +5,7 @@
 #               into. One section for the whole repository, because how
 #               a project runs its tests is a property of the project,
 #               not of any one service.
-#   services: — the production source roots `build code --fix` may edit.
+#   services: — source paths and exact additional writable paths for build code.
 #   terms:    — the word mapping: how each product glossary word is built
 #               and how a step definition observes it (`D: term-mappings`).
 #
@@ -14,6 +14,22 @@
 # This repository tests in Go and only in Go: `go-test` for everything. The
 # engine still supports `jest` and `playwright` for host projects that
 # want them; this repo declares neither.
+
+# Repository tooling: scripts/cmd/release builds git-archive binary artifacts and
+# rehearses init and sample hosts outside the checkout; scripts/gates runs its
+# zero-cost pass in CI. This is tooling, not an engine command or a published release.
+# That gate covers the init-host-first-AI-turn criterion: an installed binary
+# initializes a fresh host with its own Specification and tests and reaches fake CLIs.
+# The default harness uses a local file module proxy from the artifact export at
+# its commit-time pseudo-version. Both go get and the engine use that proxy, with
+# the public Go proxy for transitive modules. The copied testing.libraries is pinned
+# to go get's resolved version. --harness-revision uses the real proxy and records
+# its resolved exact version instead. No source replace is installed.
+# Install and engine module caches are separate fresh private directories. The
+# calculator must log Libraries downloaded before its first AI turn; the report
+# retains declared module versions and exact cache read roots. A second fresh host
+# naming example.invalid/true-bdd-missing@v0.0.0 must stop with that library's name
+# before any AI turn. An empty file proxy makes this refusal deterministic.
 
 architecture:
   # Template inputs are a byte contract beside the CLI invocation contract.
@@ -99,7 +115,7 @@ architecture:
         Subject.Title: &subject-title >-
           Subject Story title scalar from the selected file's story block, YAML-decoded unchanged (no trim); empty prints blank.
         UserAnswers: &useranswers >-
-          Run map of question id to answer, initially empty; later answers overwrite matching ids across clarification rounds. UI trims each answer, substitutes a valid positive numbered option (option text is not trimmed), and free text or an out-of-range number is retained after trimming; empty input stays empty. Refinement stores feedback lines (each trimmed, joined by newline) at _user_refinement. Map range is lexical by id, excludes that reserved key from bullets, and prints it separately as feedback; empty values are false in template conditionals.
+          Run map of question id to answer, initially empty; later answers overwrite matching ids across clarification rounds. UI trims each answer, substitutes a valid positive numbered option (option text is not trimmed), and free text or an out-of-range number is retained after trimming; an interactive blank line stays empty; EOF or --yes at a clarification stops before another AI request. Refinement stores feedback lines (each trimmed, joined by newline) at _user_refinement. Map range is lexical by id, excludes that reserved key from bullets, and prints it separately as feedback; empty values are false in template conditionals.
     fix_generator_system:
       rendering: *prompt-rendering
       fields: &fix-generator-system-fields
@@ -305,6 +321,8 @@ architecture:
     build_code_fix_generator:
       rendering: *prompt-rendering
       fields:
+        WriteRoots: >-
+          The remaining failing set's declared service paths and exact writable entries; unknown-service failures use all service declarations. Services are sorted by name, each path precedes its writable list, and equal grants are deduplicated. Host tmp is operational scratch. No protected tests or step definitions (as defined by writable paths) may overlap a grant.
         DocPaths: >-
           Resolved configured Specification paths, keyed by document key.
         FailedCheck.ActualAnswer: >-
@@ -461,7 +479,7 @@ architecture:
         Subject.Specification.Terms[].Mappings[].ObservedBy: >-
           Mapping observed_by text, unchanged.
         WriteRoots: >-
-          Every architecture service path, in declaration order.
+          The remaining failing set's service paths and exact writable entries, in the same order as the planner's roots. Unknown-service failures use every service. Grants are revalidated as passing members leave.
         CodexWriter: >-
           True only for an explicitly requested build-code codex writer; selects native process polling; the Claude branch requires foreground completion.
         TestCommand: >-
@@ -550,6 +568,11 @@ architecture:
   # How this repository runs its tests, stated once. No suites: a test's
   # service and file are the scenario's own.
   testing:
+    libraries:
+      - module: gopkg.in/yaml.v3
+        version: v3.0.1
+      - module: znkr.io/diff
+        version: v1.0.1
     framework: go-test
     # build tests verifies authored definitions against its running binary;
     # the harness consumes this argument and skips building service source.
@@ -557,6 +580,10 @@ architecture:
     # Gated behind //go:build bdd with a -mode flag naming a mode per
     # CALLER (`services:` the engine, `tests:` the judge) — not guessable,
     # hence commands:. build code runs replay, which reaches no model.
+
+    # Cold-cache replay downloads github.com/ondatra-ai/true-bdd@v0.0.0-20261026072958-954797a04424
+    # and its build graph for build-code-spec-005-matched-scenario-embedded.
+    # Warm that graph first for a fully disconnected replay.
     commands:
       record: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ -mode=services:record,tests:record"
       replay: "go test -tags bdd -json -count=1 -timeout=40m ./tests/bdd-cli/ -mode=services:replay,tests:replay"
@@ -566,9 +593,102 @@ architecture:
     - name: bdd-cli
       type: "cli"
       path: services/bdd-cli
+      writable: [go.mod, go.sum]
       language: go
+      libraries:
+        - module: github.com/Masterminds/goutils
+          version: v1.1.1
+        - module: github.com/Masterminds/semver/v3
+          version: v3.2.0
+        - module: github.com/Masterminds/sprig/v3
+          version: v3.2.3
+        - module: github.com/fsnotify/fsnotify
+          version: v1.8.0
+        - module: github.com/go-viper/mapstructure/v2
+          version: v2.4.0
+        - module: github.com/google/uuid
+          version: v1.6.0
+        - module: github.com/huandu/xstrings
+          version: v1.3.3
+        - module: github.com/imdario/mergo
+          version: v0.3.11
+        - module: github.com/mitchellh/copystructure
+          version: v1.0.0
+        - module: github.com/mitchellh/reflectwalk
+          version: v1.0.0
+        - module: github.com/pelletier/go-toml/v2
+          version: v2.2.3
+        - module: github.com/sagikazarmark/locafero
+          version: v0.7.0
+        - module: github.com/shopspring/decimal
+          version: v1.2.0
+        - module: github.com/sourcegraph/conc
+          version: v0.3.0
+        - module: github.com/spf13/afero
+          version: v1.12.0
+        - module: github.com/spf13/cast
+          version: v1.7.1
+        - module: github.com/spf13/cobra
+          version: v1.9.1
+        - module: github.com/spf13/pflag
+          version: v1.0.6
+        - module: github.com/spf13/viper
+          version: v1.20.1
+        - module: github.com/subosito/gotenv
+          version: v1.6.0
+        - module: golang.org/x/crypto
+          version: v0.52.0
+        - module: golang.org/x/sys
+          version: v0.46.0
+        - module: golang.org/x/text
+          version: v0.37.0
+        - module: gopkg.in/yaml.v3
+          version: v3.0.1
       frameworks:
         - cobra
+      patterns:
+        project_resources:
+          description: Configuration, checklists and prompt templates are host files initialized once and checked before work (ADR-0029).
+          rules:
+            - >-
+              The init command uses no bootstrap configuration. It carries copies under
+              services/bdd-cli/internal/infrastructure/initialization/files/, embedded by
+              the initialization package so go:embed stays within its directory and Go
+              stays within services/. Only init reads these copies; runtime loaders
+              read project files exclusively and never fall back to embedded content.
+              The existing embedded Go scenario-test generation template is separate.
+            - >-
+              Init writes missing true-bdd/true-bdd.yaml, all true-bdd/checklists/ files
+              and all templates/ prompt templates in the current folder. The host
+              configuration has no scripts; this repository keeps scripts in its own
+              true-bdd/true-bdd.yaml. Existing files, including empty, invalid and symbolic
+              link entries, are left untouched. Each path is reported through an INFO log record with msg Created or
+              Left existing and a path attribute. Init binds stdout text logging and
+              tmp/true-bdd.log.json without loading configuration. Creation rechecks existence under the disk channel's
+              exclusive directory Hold. Init writes no Specification or schema and
+              performs no framework detection. Version and init need none of these files.
+            - >-
+              Every checklist-driven command loads its configuration and selected
+              checklist and parses its selected system and user validation templates
+              before loading Items, starting test discovery or dispatching an AI turn.
+              Under --fix it also parses its system and user fix-generator and
+              fix-applier templates. Selection uses the configured paths of that
+              command's generator triple, so another command's templates are not required.
+              Parsing uses the same Go text/template functions as rendering, including
+              Sprig and toYaml. Missing files name the path and true-bdd init; invalid
+              files retain the parse error and path and ask to fix the file without
+              init advice. All refuse before command work.
+            - >-
+              The Init defaults drift gate runs TestInitDefaultsMatchProjectFiles in
+              scripts/gates. It compares the complete relative path sets and bytes
+              of the embedded checklist and template trees against true-bdd/checklists/
+              and templates/, detecting missing and extra copies too. YAML-decoded host
+              configuration must equal true-bdd/true-bdd.yaml after removing only scripts;
+              a scripts key in the host copy fails. Comments and formatting are not
+              configuration values. Resource and copy changes select this gate in CI
+              and the local changed-file pipeline. An installed-binary test initializes
+              an outside folder twice and drives its own Specification and failing Go
+              tests to the first planning turn with fake claude/codex executables.
       # What this service talks to at runtime: `protocol` is the connection
       # mechanism (cli, http, ws, sql, redis, …); `scope` places it:
       #	internal    — another service declared in this file
@@ -661,8 +781,8 @@ architecture:
                 suppresses execpolicy files. No outer sandbox-exec wraps codex.
               - >-
                 The apply profile grants host-root reads, that execution mode's exact file or directory roots, and host tmp writes. :minimal supplies OS runtime exceptions listed
-                in ADR-0021; go env resolves GOROOT and GOMODCACHE as read-only.
-                Both GOMODCACHE/github.com/ondatra-ai and its cache/download mirror,
+                in ADR-0021; go env resolves GOROOT as read-only and GOMODCACHE as denied by default.
+                Only the downloaded libraries and their version metadata receive narrower read entries.
                 GOMODCACHE/cache/vcs, the shared host tmp/codex-homes subtree, /private/tmp and /private/var/tmp are denied.
                 The narrower host and tmp grants still work when nested under a denied root.
                 Every other filesystem path is restricted by default, including
@@ -727,15 +847,15 @@ architecture:
                 ":minimal" = "read"
                 "{host}" = "read"
                 "{GOROOT}" = "read"
-                "{GOMODCACHE}" = "read"
+                "{GOMODCACHE}" = "deny"
+                {library_read_entries}
                 {runtime_read_entries}
                 {write_entries}
+                "{host}/tmp/library-download" = "deny"
                 "{host}/tmp/codex-homes" = "deny"
                 "/private/tmp" = "deny"
                 "/private/var/tmp" = "deny"
                 "{GOMODCACHE}/cache/vcs" = "deny"
-                "{GOMODCACHE}/github.com/ondatra-ai" = "deny"
-                "{GOMODCACHE}/cache/download/github.com/ondatra-ai" = "deny"
 
                 [permissions.writer.network]
                 enabled = false
@@ -760,7 +880,7 @@ architecture:
                 npm_config_offline = "true"
                 npm_config_userconfig = "{host}/tmp/codex-shell-home/.npmrc"
 
-                {host} is the symlink-resolved Host project root; go env -json GOROOT GOMODCACHE supplies the two Go roots. Scratch paths resolve within the host before emission. Shell set keys are sorted lexically. The runtime PATH suffix and Docker/npm/OpenSSL environment entries are always emitted, even when no optional executable is installed. Runtime discovery visits installed docker, node, npm, npx in lexical name order. For each it emits the executable, recursively enumerated non-system Mach-O libraries (installation alias then canonical path), validated npm package when applicable, then installation symlink ancestors, necessary Homebrew opt metadata directories and dylib parent directories, preserving discovery order and deduplicating paths by first occurrence. Each is a quoted path = "read" assignment; no installed runtime means no such entries. The acceptance and refusal rules above govern these paths.
+                {host} is the symlink-resolved Host project root; go env -json GOROOT GOMODCACHE supplies the two Go roots. The library_read_entries are sorted, deduplicated quoted read paths: each resolved module source directory and its exact .info, .mod, .zip and .ziphash files, with no organization-specific rule. Scratch paths resolve within the host before emission. Shell set keys are sorted lexically. The runtime PATH suffix and Docker/npm/OpenSSL environment entries are always emitted, even when no optional executable is installed. Runtime discovery visits installed docker, node, npm, npx in lexical name order. For each it emits the executable, recursively enumerated non-system Mach-O libraries (installation alias then canonical path), validated npm package when applicable, then installation symlink ancestors, necessary Homebrew opt metadata directories and dylib parent directories, preserving discovery order and deduplicating paths by first occurrence. Each is a quoted path = "read" assignment; no installed runtime means no such entries. The acceptance and refusal rules above govern these paths.
 
                 {write_entries} emits each accepted execution-mode write root as a quoted resolved path = "write" assignment, in Write/Edit/MultiEdit pattern order, then any additional SourceWriteRoots, then host tmp. Overlapping roots are deduplicated by first occurrence. Literal files stay exact; terminal /** strips the suffix; other globs grant their narrowest literal directory and retain the post-turn enforcement described above. For writer-config-001-codex this is exactly "{host}/tmp" = "write", then "{host}/services/calc" = "write" (scratch already occurs in the mode patterns). The six deny entries follow all write grants in the stated order. The network value must be enabled = false within [permissions.writer.network]; network = false directly under [permissions.writer] is refused by the real CLI.
 
@@ -855,20 +975,14 @@ architecture:
               read_root: >-
                 go env GOROOT, GOMODCACHE, then this session's tool-results
                 directory under CLAUDE_CONFIG_DIR/projects (default ~/.claude).
-                The host cwd is always a working root. The hook denies
-                github.com/ondatra-ai and cache/download/github.com/ondatra-ai
-                outside the host even though the module cache is a working root.
+                The host cwd is always a working root. The hook narrows module-cache file tools to the architecture library graph, even for a cache inside the host; add-dir on the cache is only the CLI outer boundary. The policy carries library_cache and read_roots containing GOROOT, the sorted graph roots and the spill directory; excluded_roots is empty.
               allowed_tools: >-
                 The turn's allowed tools joined by commas. A validation or fix
                 turn: `Read(**),Write({tmp_glob}),Glob(**),Grep(**)`. An apply
                 turn: `Read(**),Write({tmp_glob}),Edit({tmp_glob}),MultiEdit({tmp_glob}),Glob(**),Grep(**)`,
                 followed, for each write root the command grants its applier
                 in order, by `Write(<glob>),Edit(<glob>),MultiEdit(<glob>)`.
-                `build code` grants every declared service's `path:`, `build
-                tests` `paths.test_write_globs` (else `./tests/**` and
-                `./services/**`), the other commands none. A root holding `*`,
-                `?` or `[` is its own glob; any other has a trailing `/` dropped
-                and `/**` added; a blank one is skipped.
+                `build code` replaces its scratch glob with host `./tmp/**` and grants the remaining failing set's services' `path:` and exact `writable:` paths. Existing folders and explicitly declared absent folders receive recursive subtrees; exact files, including absent files, stay literal. `build tests` preserves `paths.test_write_globs` (else `./tests/**` and `./services/**`) as configured patterns and literal files. Other commands retain their existing scratch/document grants.
               disallowed_tools: >-
                 A validation or fix turn: `Bash,Edit(**),MultiEdit(**),Agent,Task`.
                 An apply turn: `Bash,Agent,Task`.
@@ -1010,6 +1124,22 @@ architecture:
   # words naming no code identifier, so the steps can be rebuilt from it.
   # It maps every word the catalogue declares, one entry per word.
   terms:
+    - term: Library
+      technical: >-
+        Optional libraries lists on each service and on testing contain {module, version}, exact Go module versions including pseudo-versions. Omitted lists grant no external module reads. Before a build-code fix walk's first runner and before each build-code writer preparation, or before a build-tests fix walk with unbound steps, the engine downloads all declarations and their complete module build graph through an isolated Go manifest under tmp/library-download, using the engine's network and the normal GOMODCACHE. No host go.mod or go.sum is modified. Each download has a private temporary manifest directory, removed afterward; writers cannot modify the library-download subtree. The manifest scratch is excluded from run snapshots and per-call fs-diffs; downloaded cache contents are never recorded. Conflicting declarations, versions selected away from a declared pin and incomplete downloads fail before the writer. Downloads name the declared libraries and the underlying error on failure. The writer reads exactly the resolved source directories and their .info, .mod, .zip and .ziphash files; other versions, cached modules and VCS repositories remain inaccessible. No rule names the engine's own module. Build code resolves service roots and follows linked source directories with cycle detection, then parses production Go imports (including platform-tagged files, excluding _test.go) before discovery and every rerun and refuses an import named only in testing.libraries for that service. Protected tests and step definitions remain read-only under the writable paths definition. Only codex enforces subprocess and network confinement; Claude's replay and the code it runs remain unconfined, with network, for model trials. For non-Go hosts libraries must be omitted or empty: npm/Jest/Playwright dependencies keep their existing host-local node_modules paths, with no new package-manager downloading or import check.
+      observed_by: >-
+        writer-config-001-codex pins the full profile with an exact named module; writer-config-002-claude pins settings and the policy read roots with a transitive module. libraries-003-test-only-import-refused and libraries-004-download-fails-before-writer assert the refusal, its cause and zero runner/model turns. Live codex sandbox probes use a fresh build cache to compile and run the calculator host and refuse an undeclared module.
+
+    - term: writable paths
+      technical: >-
+        Each service's optional writable is a list of exact project-relative files or folders, without patterns. Existing folders grant their subtree; an absent entry remains exact unless a trailing slash declares a folder. Together with the service's path and host tmp these bound the build-code writer. Before any runner, build code refuses absolute or escaping paths, patterns, parent traversal, host-root grants and overlap in either direction with protected test directories, symlinks included. Protected tests are tests/, Registry suite directories, the in-host directory holding testing.config, and in-host Go package directories named by every testing.commands entry (./dir or ./dir/..., resolved relative to the configuration directory or host root). Broad ./... names no separate test directory. Command package directories within a service path remain service code, with _test.go files writable by build code; a filename suffix alone grants no protection. Reserved tests/, Registry and configuration directories take precedence. Host tmp is checked too, and arbitrary configured scratch globs cannot expand these writer grants. Protected tests and step definitions stay read-only. The failing set's services receive grants; unknown-service failures use all declared services. Only codex fully enforces the subprocess boundary; Claude's replay remains unconfined for model trials (ADR-0028 and spec #213).
+      observed_by: Scenarios supply architecture entries, assert a successful go.sum repair and inspect exact generated file grants; refused test overlap produces no runner or AI turn.
+
+    - term: impossible repair
+      technical: >-
+        The plan first searches for a solution within the declaration; a preferred undeclared file is insufficient to declare impossible work. A build-code plan's structured response carries impossible: [{path, reason}] alongside fix_prompt and questions, exactly one branch carrying content. The writer's YAML confirmation carries the same impossible list independently of applied. An empty list preserves retries, including applied false. The first nonempty report keeps edits, reruns the remaining failing set once, and returns a distinct impossible-repair error naming every required file, reason and remaining member. Its remedy is to change the files by hand or add them to the service's writable. No further plan, writer, attempt or COMPLETE banner follows. This returns through the walk's error path before Finalize, independently of #218's banner-order change.
+      observed_by: Scenarios assert exit 1, files and reasons, remedy, no COMPLETE, exact plan, writer and runner counts, and retained files. Ordinary applied false without a report still retries.
+
     - term: engine
       technical: >-
         The `true-bdd` binary, built from `services/bdd-cli` once per test
@@ -1106,6 +1236,12 @@ architecture:
         The engine's standard output: console answer lines (banners such as
         `SCEN CHECK`, the report table, `ALL CHECKS PASSED!`) and every log
         record in text form, `time=… level=… msg="…" key=value`.
+        The shared checklist runner logs the upper-case command name plus
+        ` COMPLETE` only after Finalize returns no error; an earlier error
+        or a Finalize error emits no completion banner. A command deferring
+        completion owns that announcement: build tests logs BUILD TESTS COMPLETE
+        only after finalization, generated-test integrity checks and runtime
+        verification cleanup all succeed. Existing banner text is preserved.
       observed_by: >-
         The kept stdout, as one string, is asked for a match of the step's
         pattern anywhere in it, or for none; a failed match prints the tail of
@@ -1129,6 +1265,27 @@ architecture:
         One record of the engine's structured log: a level, a message and
         named fields. Message strings and field names are a wire contract the
         BDD report also reads, so a step may pin them.
+        A turn reporting refused tool calls emits one WARN with
+        msg="Tool calls were denied; this turn did less than it was asked to"
+        and keys label (the dispatch label), role (prompt, fix or apply), and
+        denied (calls in reported order, separated by "; "). Each call is
+        its tool name followed by a space and its target, or the tool alone
+        when no target is reported. Claude permission_denials supply tool_name
+        and tool_input: file_path, otherwise path; Glob uses its pattern,
+        joined to path when relative. Grep's query is never a target.
+        Each target is limited to its first 200 Unicode characters plus an
+        ellipsis when longer; unrelated input is omitted.
+        Codex JSONL item.completed events supply refused command_execution,
+        file_change or mcp_tool_call calls: status declined, or status failed
+        with an explicit permission/refusal error (permission denied,
+        operation not permitted, rejected by user/policy, exec command
+        rejected, outside of the project or outside the allowed roots).
+        Their targets are respectively path-like command arguments (absolute,
+        dot-relative, home-relative or containing a slash, omitting shell
+        launchers), each changes.path,
+        or arguments.file_path/arguments.path; MCP uses its tool name.
+        Other failures and non-event narration do not establish a refusal.
+        Refusal warnings do not change the turn's existing outcome.
       observed_by: >-
         Through stdout, by a pattern naming its text form, such as
         `level=ERROR msg="Refusing to start" command="scen check"`; in the
@@ -1257,8 +1414,25 @@ architecture:
         follows before one line is read; the original engine prints it,
         indents the options, adds separators and appends `(provide feedback)`
         to option 2. `1` or `apply` applies the fix, `2` or `refine` reads
-        feedback lines up to an empty one, and anything else exits. End of
-        input reads as an empty line, so it exits.
+        feedback lines up to an empty one, and anything else exits, including
+        an interactive blank line. The input collector retains read errors:
+        empty EOF is end of input, a final non-empty line without a newline
+        is an answer, and a blank newline is an empty answer.
+        All five --fix commands (build code, build tests, us refine, us apply,
+        scen check) accept --yes. Cobra rejects --yes without --fix as a usage
+        error before constructing the container. The run configures its input
+        collector to apply every proposed fix without printing the menu or
+        reading stdin under --yes; AI requests are unchanged.
+        Clarifying questions under --yes are printed with their suggested
+        answers and stop with ErrPersonRequired (a person must answer), without
+        reading stdin. Empty EOF at a clarifying question stops with the same
+        error. Empty EOF at a menu without --yes stops with a message naming
+        --yes with --fix, never the tests-still-failing error. Other read
+        failures propagate. The FixLoopUI and its adapter return input errors
+        through the cell handler and walker to runner.Run, which logs Walk
+        stopped and returns the error before finalization or COMPLETE.
+        No terminal detection is used: the drill's open pipe keeps supplying
+        menu choices and clarification answers with its existing prompt forms.
       observed_by: >-
         Set up by a Given step, which fails when no Given step prepared a
         project tree; nothing runs yet, the When step pipes the lines in. The
@@ -1460,7 +1634,11 @@ architecture:
         Playwright <startup> member makes the rerun unfiltered. Every
         ordinary member needs its own passing result; missing or skipped
         members remain failing with a did-not-run finding. Synthetic members
-        require their package or startup success. A new outer walk discovers
+        require their package or startup success. A Go <build> member passes
+        in both a single-member rerun and a set rerun only when its own package
+        reports a package-level pass or skip (no test files), with no package,
+        build or test failure. A package missing from the output stays failing.
+        A new outer walk discovers
         the full suite afresh, catching regressions outside the previous set. Before each start it writes one log record, msg="Spawning
         test runner", with the program in `binary` and its arguments in
         `args`. Optional `testing.prebuilt_engine_arg` is one argument
@@ -1506,11 +1684,10 @@ architecture:
         --policy pointing to generated JSON. It emits an explicit allow decision
         or exits 2 with a reason; Bash is never permission-pattern granted.
         --restricted confines file tools to cwd and --add-dir roots, resolving
-        symlinks. The hook protects its generated configuration directory from writes, further restricts writes and excludes module-cache
-        ondatra-ai copies, with the host taking precedence. Search roots outside
+        symlinks. The hook protects its generated configuration directory from writes, further restricts writes and limits module-cache reads to declared libraries, their build graph and exact version metadata. Search roots outside
         the host must not contain any excluded directory; Glob checks its
         pattern's fixed root too and denies parent traversal. Read roots are the
-        host, go env GOROOT/GOMODCACHE, and only this session's tool-results
+        host, go env GOROOT, the declared library graph, and only this session's tool-results
         directory. The generated session UUID makes historical transcripts
         inaccessible. The default sign-in is retained: an empty CLAUDE_CONFIG_DIR
         was signed out in the live probe. No credentials are copied.

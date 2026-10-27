@@ -1,0 +1,46 @@
+story:
+  id: init
+  feature: host-setup
+  title: Create the host files without overwriting customizations
+  as_a: System Architect
+  i_want: create the configuration, checklists and templates in a fresh host
+  so_that: the released binary can prepare a visible and customizable host configuration
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 001-empty-folder
+    description: Init creates the host configuration without scripts, every checklist and every prompt template without needing
+      configuration or Specification documents
+    steps:
+    - given:
+      - the "init-empty" project tree
+      - and: the project tree has no "true-bdd"
+      - and: the project tree has no "templates"
+    - when:
+      - the System Architect runs "init"
+    - then:
+      - the command exits with code 0
+      - every file matching "tmp/true-bdd.log.json" matches "msg":"Created","path":"true-bdd/true-bdd.yaml"
+      - and: exactly 1 file matching "true-bdd/true-bdd.yaml" is created
+      - and: exactly 5 files matching "true-bdd/checklists/*.yaml" are created
+      - and: exactly 30 files matching "templates/*.tpl" are created
+      - and: 'every file matching "true-bdd/true-bdd.yaml" does not match (?m)^scripts:'
+      - and: no file matching "docs/**" is created
+  - id: 002-existing-files
+    description: Init preserves and reports existing configuration, checklist and template files even when empty or invalid,
+      while creating missing files
+    steps:
+    - given:
+      - the "init-existing" project tree
+      - and: the project tree has no "templates/build-code.fix-applier.prompt.tpl"
+    - when:
+      - the System Architect runs "init"
+    - then:
+      - the command exits with code 0
+      - every file matching "tmp/true-bdd.log.json" matches "msg":"Left existing","path":"true-bdd/true-bdd.yaml"
+      - and: every file matching "tmp/true-bdd.log.json" matches "msg":"Left existing","path":"true-bdd/checklists/build-code.yaml"
+      - and: every file matching "tmp/true-bdd.log.json" matches "msg":"Left existing","path":"templates/build-code.fix-generator.prompt.tpl"
+      - and: every file matching "tmp/true-bdd.log.json" matches "msg":"Created","path":"templates/build-code.fix-applier.prompt.tpl"
+      - and: the file "true-bdd/true-bdd.yaml" is unchanged
+      - and: the file "true-bdd/checklists/build-code.yaml" is unchanged
+      - and: the file "templates/build-code.fix-generator.prompt.tpl" is unchanged
+      - and: the file "templates/build-code.fix-applier.prompt.tpl" is created

@@ -43,7 +43,7 @@ func (events *goEventStream) recordSet(members []*FailingTest) {
 
 		passed := events.testPassed[pkg+"\x00"+test] && !events.hasFailureFor(pkg, test)
 		if test == goBuildFailureMarker {
-			passed = events.packagePassed[pkg] && !events.packageFailed[pkg]
+			passed = events.buildPassed(pkg)
 		}
 
 		output := events.outputFor(pkg, test)

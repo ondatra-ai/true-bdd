@@ -50,7 +50,7 @@ func RunStreamContext(ctx context.Context, prompt string, opts Options, on func(
 	result, err := shell.Run(ctx, append([]string{Bin}, opts.Args(prompt)...), shell.Options{
 		Dir: opts.Dir, Env: opts.Env(), Output: shell.Streams(sink, stderr), Timeout: opts.Timeout, Group: true,
 	})
-	answer, parseErr := streamAnswer(sink, opts.Role)
+	answer, parseErr := streamAnswer(sink, opts)
 
 	if err != nil {
 		if ctx.Err() != nil {
@@ -85,7 +85,7 @@ func RunStreamContext(ctx context.Context, prompt string, opts Options, on func(
 	return answer, nil
 }
 
-func streamAnswer(sink *streamSink, role string) (Answer, error) {
+func streamAnswer(sink *streamSink, opts Options) (Answer, error) {
 	if sink.result == nil {
 		if sink.failure != "" {
 			return Answer{}, fmt.Errorf("%w: %s", ErrResult, sink.failure)
@@ -94,7 +94,7 @@ func streamAnswer(sink *streamSink, role string) (Answer, error) {
 		return Answer{}, ErrNoResult
 	}
 
-	answer, err := parseEnvelope(sink.result, role)
+	answer, err := parseEnvelope(sink.result, opts)
 	if err == nil && sink.failure != "" {
 		err = fmt.Errorf("%w: %s", ErrResult, sink.failure)
 	}

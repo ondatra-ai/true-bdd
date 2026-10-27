@@ -2,9 +2,9 @@
 
 You are the production writer repairing a whole failing set. Read the Specification, harness and service source, then implement the proposed plan using your own investigation. Change the service as a whole. After each part, run the tests it serves and fix what fails; run every test of the failing set before reporting. Tests outside the set are not your subject.
 
-Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. If a repair cannot be completed, report applied: false and describe what changed and what remains.
+Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. Find a solution within the declared service path and exact writable paths first. If no solution exists there, report impossible as a list of {path, reason} for the required undeclared files. Keep files already written. A preferred undeclared change is not impossible. For ordinary unfinished work, report applied: false and impossible: [].
 
-Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
+Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, impossible, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
 
 
 ### TASK
@@ -47,89 +47,72 @@ Tests: /go-test/go-test:fixture.buildcodefix.tests.suite::TestBCompatibility
 
 ## Scope
 
-Write root: `services/calc/` only — `docs/architecture/architecture.yaml` declares a single service `calc` with `path: services/calc`, and `CLAUDE.md` repeats that this is the only tree the fix loop may edit.
+The entire repair fits inside the single declared edit root `services/calc` (service `calc`, declared as `path: services/calc` in `docs/architecture/architecture.yaml`). Exactly one existing production file changes:
 
-Exactly one existing file changes: **`services/calc/calc.go`**. No new files, no new packages, no edits to `go.mod`, `docs/`, `true-bdd/`, `templates/`, or anything under `tests/`.
+- `services/calc/calc.go` (package `calc`)
 
-Do **not** touch `tests/suite/calc_test.go`. Its assertions are the specification for this repair. Do not add build tags, skips, or `t.Skip` anywhere, and do not relax any condition.
+No new files, no new packages, no dependencies. Do **not** touch `tests/suite/calc_test.go` (or any `*_test.go`), `go.mod`, `CLAUDE.md`, `docs/architecture/architecture.yaml`, or anything under `true-bdd/`. Nothing outside `services/calc` is required.
 
-## Current state (verified)
+## Current state
 
-`services/calc/calc.go` is two lines of body:
+`services/calc/calc.go` is two one-line functions:
 
-```
-package calc
+- `func Version() int` returns the literal `2`
+- `func Compatible() bool` returns the literal `false`
 
-func Version() int     { return 2 }
-func Compatible() bool { return false }
-```
+The suite `tests/suite/calc_test.go` imports `fixture/buildcodefix/services/calc` and holds two assertions:
 
-`tests/suite/calc_test.go` (package `suite_test`, importing `fixture/buildcodefix/services/calc`) holds two tests:
+1. `TestAVersion` (lines 8-12) — `calc.Version()` must equal `2`. This passes today.
+2. `TestBCompatibility` (lines 14-18) — `if calc.Version() != 1 && !calc.Compatible() { t.Fatal("version 2 requires compatibility support") }`.
 
-- `TestAVersion` requires `calc.Version() == 2`. It currently **passes**.
-- `TestBCompatibility` fails when `calc.Version() != 1 && !calc.Compatible()`. With `Version() == 2` and `Compatible() == false` both conjuncts are true, so it calls `t.Fatal("version 2 requires compatibility support")` — this is the reported failure.
+The reported failure is `calc_test.go:16: version 2 requires compatibility support`. Cause: a prior repair iteration bumped `Version()` from `1` to `2` to satisfy `TestAVersion` but left `Compatible()` returning the stale `false`. With the version at 2 the first operand `Version() != 1` is true and the second operand `!Compatible()` is also true, so the guard fires. The two functions were written as independent literals, so the version bump silently invalidated the compatibility answer — that decoupling is the actual defect, not just the wrong boolean.
 
-This is the second half of a coupled pair. A previous fix turn bumped `Version()` from `1` to `2` and left `Compatible()` at `false`. While `Version()` was `1`, `TestBCompatibility` passed only *vacuously*: Go short-circuits the `&&`, so `Compatible()` was never evaluated and its `false` was invisible. Bumping the version activated the second conjunct and exposed the real gap.
+## Invariant the suite specifies
 
-## The contract — both tests must hold simultaneously
+Read the two tests together as one contract on the `calc` package surface:
 
-The satisfying condition for the suite is the conjunction:
+- The package's declared version is `2`.
+- Any version other than `1` must advertise compatibility support — i.e. `Version() != 1` implies `Compatible() == true`.
 
-- `Version()` must return exactly `2`, **and**
-- `Compatible()` must return `true`.
+Version `1` is the only version permitted to report no compatibility support. So at version 2 the package must report `Compatible() == true`.
 
-Two tempting non-repairs, both explicitly out of bounds:
+## Intended implementation
 
-1. **Reverting `Version()` to `1`** would make `TestBCompatibility` green again by short-circuit, but it re-breaks `TestAVersion` (`Version() = 1, want 2`) and leaves the suite command red. The version must stay at `2`.
-2. Changing the test, or changing the exported surface so the test no longer compiles, is forbidden and would fail the whole package rather than fix it.
+In `services/calc/calc.go`, keep the package clause `package calc` and keep both exported identifiers with their exact current signatures — `func Version() int` and `func Compatible() bool`. The test file calls them as zero-argument package-level functions, so renaming them, adding parameters or a receiver, or turning them into exported variables would fail to compile the suite. Do not add or remove exported API.
 
-The invariant the failure message states — "version 2 requires compatibility support" — is a domain rule: any version past `1` must actually ship compatibility support. Satisfy it by providing that support, not by holding the version back.
+Make the two answers derive from one source of truth so they cannot drift again:
 
-## What to change in `services/calc/calc.go`
+1. Introduce a single unexported package-level constant holding the current version, e.g. `const currentVersion = 2`.
+2. `Version()` returns that constant.
+3. `Compatible()` computes its result from that same constant rather than returning a literal — the invariant above expressed directly, i.e. true for any version other than `1`.
 
-Keep the package clause `package calc`. Keep both exported signatures byte-for-byte compatible — `func Version() int` and `func Compatible() bool`. The suite imports the package by path and calls both with no setup; renaming, unexporting, adding parameters, changing return types, or relocating either function breaks compilation of `tests/suite` and fails everything.
+That way a future version bump updates one constant and both observable answers stay consistent, which is precisely the failure mode that produced this red test.
 
-One behavioural change plus a small structural tidy:
+Add a short doc comment on each exported function stating the contract (what the version means; that any non-1 version reports compatibility support) and keep the file free of build tags, `init` functions, and third-party imports — the `fixture/buildcodefix` module has no external requirements and must stay that way.
 
-1. **`Compatible()` must return `true`.** This is the whole substance of the failing set.
-
-2. **Make that truth derive from the version rather than be an unrelated literal**, so the two returns cannot drift apart again the way they just did. Preferred shape: introduce two unexported package-level constants — the current version (value `2`) and the version at which compatibility support begins (value `2`) — have `Version()` return the current-version constant, and have `Compatible()` return whether the current version is at or past the compatibility threshold. With both constants at `2` that evaluates to `true`, satisfying `TestBCompatibility`, while `Version()` keeps returning `2`, preserving `TestAVersion`.
-
-   A plain `return true` is also correct against both tests and acceptable if the derived form reads as overwrought for a two-function package. It just re-opens the same drift on the next version bump, which is exactly the trap this set is made of — prefer the derived form.
-
-3. `Compatible()` must be deterministic and dependency-free: no mutable package state, no `init()` ordering, no environment variables, no build tags, no file or network access. The suite calls it cold and expects `true` on the first call.
-
-Keep the file gofmt-clean with no new imports. Do not add configuration structs, version-string parsing, compatibility matrices, or a `SetCompatible`-style mutator — no assertion exercises any of that, and mutable state would make the result order-dependent across the two tests in the same package.
+A plain literal form (`Version()` returning `2`, `Compatible()` returning `true`) also satisfies both assertions and is acceptable if the writer prefers it; the derived-constant form is recommended because it encodes the coupling the suite is testing.
 
 ## Which tests each part serves
 
-| Change in `services/calc/calc.go` | Serves |
-| --- | --- |
-| `Compatible()` returns `true` (ideally derived: current version >= compatibility threshold) | **`TestBCompatibility`** — the failing set's subject; removes the `version 2 requires compatibility support` fatal |
-| `Version()` continues to return `2` (via the current-version constant) | `TestAVersion` — currently green; must not regress. Guards against the "just revert the version" pseudo-fix |
-
-Both parts live in the one file and land in one change.
+- **`Compatible()` reporting `true` at version 2** — serves the failing set member `/go-test/go-test:fixture.buildcodefix.tests.suite::TestBCompatibility` (`tests/suite/calc_test.go:14-18`). This is the only red assertion and the subject of this repair.
+- **`Version()` continuing to return `2`** — serves `TestAVersion` (`tests/suite/calc_test.go:8-12`), currently green. The refactor to a shared constant must preserve the value `2` exactly; this part is a regression guard so the fix for `TestBCompatibility` does not re-break the version assertion. Do not resolve the conflict by lowering the version to `1` — that would make `TestBCompatibility` pass only vacuously and would turn `TestAVersion` red, which is forbidden.
+- **Signatures and package path unchanged** — serves compilation of the whole suite package `fixture/buildcodefix/tests/suite`; if the suite fails to build, both tests report as failures.
 
 ## Verification
 
-From the run directory root, run the architecture's suite command verbatim:
+From the fixture root, run the architecture's configured command (identical for record/replay/live):
 
 ```
 go test -json -count=1 ./tests/suite/...
 ```
 
-Expected: `TestAVersion` **and** `TestBCompatibility` both report `pass`, and the package-level action is `pass`. Specifically check both names in the JSON output — a run where only one is green means the pair was traded off instead of satisfied:
-
-- `TestBCompatibility` green while `TestAVersion` fails ⇒ the version was reverted to `1`; undo that and fix `Compatible()` instead.
-- `TestAVersion` green while `TestBCompatibility` fails ⇒ `Compatible()` still returns `false`.
-
-Also confirm `git status` / the diff touches exactly one file under `services/calc/` and shows no modification to `tests/suite/calc_test.go`, `go.mod`, `docs/architecture/architecture.yaml`, `CLAUDE.md`, or `true-bdd/`. Run `gofmt -l services/calc` and expect empty output.
+Expect `pass` actions for both `TestBCompatibility` and `TestAVersion`, and `pass` for the package `fixture/buildcodefix/tests/suite`. Confirm that no test file was modified and that no assertion was weakened, skipped, or removed — only `services/calc/calc.go` changes.
 
 ## Edit roots
 
 - `services/calc`
 
-Never modify tests, *_test.go, __tests__, or documents. Never weaken, skip or remove assertions.
+Never modify tests or step definitions. Never weaken, skip or remove assertions.
 
 
 ## Test commands
@@ -150,9 +133,12 @@ End your final message with the confirmation block below, written in the message
 
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestBCompatibility-iter2-result.yaml ===
 applied: true
+impossible: []
 target: "<repo-relative service path>"
 summary: "<what changed and which tests of the set you saw pass>"
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestBCompatibility-iter2-result.yaml ===
+
+Only when no solution exists inside the declared edit roots, fill impossible with a list of {path, reason} for required undeclared files. Keep any edits already made and report their outcome. Otherwise leave impossible empty; applied: false by itself permits another attempt.
 
 ## Deterministic staged migration
 Read services/calc/calc.go. If Version is 1, change only Version to return 2; leave Compatible false, even though its test will regress. Do not repair tests outside the current failing set. If Version is already 2, change only Compatible to return true. This deliberate migration proves the next discovery finds a previously passing peer. Never edit tests or documents.
@@ -161,83 +147,66 @@ Read services/calc/calc.go. If Version is 1, change only Version to return 2; le
 
 ## Scope
 
-Write root: `services/calc/` only — `docs/architecture/architecture.yaml` declares a single service `calc` with `path: services/calc`, and `CLAUDE.md` repeats that this is the only tree the fix loop may edit.
+The entire repair fits inside the single declared edit root `services/calc` (service `calc`, declared as `path: services/calc` in `docs/architecture/architecture.yaml`). Exactly one existing production file changes:
 
-Exactly one existing file changes: **`services/calc/calc.go`**. No new files, no new packages, no edits to `go.mod`, `docs/`, `true-bdd/`, `templates/`, or anything under `tests/`.
+- `services/calc/calc.go` (package `calc`)
 
-Do **not** touch `tests/suite/calc_test.go`. Its assertions are the specification for this repair. Do not add build tags, skips, or `t.Skip` anywhere, and do not relax any condition.
+No new files, no new packages, no dependencies. Do **not** touch `tests/suite/calc_test.go` (or any `*_test.go`), `go.mod`, `CLAUDE.md`, `docs/architecture/architecture.yaml`, or anything under `true-bdd/`. Nothing outside `services/calc` is required.
 
-## Current state (verified)
+## Current state
 
-`services/calc/calc.go` is two lines of body:
+`services/calc/calc.go` is two one-line functions:
 
-```
-package calc
+- `func Version() int` returns the literal `2`
+- `func Compatible() bool` returns the literal `false`
 
-func Version() int     { return 2 }
-func Compatible() bool { return false }
-```
+The suite `tests/suite/calc_test.go` imports `fixture/buildcodefix/services/calc` and holds two assertions:
 
-`tests/suite/calc_test.go` (package `suite_test`, importing `fixture/buildcodefix/services/calc`) holds two tests:
+1. `TestAVersion` (lines 8-12) — `calc.Version()` must equal `2`. This passes today.
+2. `TestBCompatibility` (lines 14-18) — `if calc.Version() != 1 && !calc.Compatible() { t.Fatal("version 2 requires compatibility support") }`.
 
-- `TestAVersion` requires `calc.Version() == 2`. It currently **passes**.
-- `TestBCompatibility` fails when `calc.Version() != 1 && !calc.Compatible()`. With `Version() == 2` and `Compatible() == false` both conjuncts are true, so it calls `t.Fatal("version 2 requires compatibility support")` — this is the reported failure.
+The reported failure is `calc_test.go:16: version 2 requires compatibility support`. Cause: a prior repair iteration bumped `Version()` from `1` to `2` to satisfy `TestAVersion` but left `Compatible()` returning the stale `false`. With the version at 2 the first operand `Version() != 1` is true and the second operand `!Compatible()` is also true, so the guard fires. The two functions were written as independent literals, so the version bump silently invalidated the compatibility answer — that decoupling is the actual defect, not just the wrong boolean.
 
-This is the second half of a coupled pair. A previous fix turn bumped `Version()` from `1` to `2` and left `Compatible()` at `false`. While `Version()` was `1`, `TestBCompatibility` passed only *vacuously*: Go short-circuits the `&&`, so `Compatible()` was never evaluated and its `false` was invisible. Bumping the version activated the second conjunct and exposed the real gap.
+## Invariant the suite specifies
 
-## The contract — both tests must hold simultaneously
+Read the two tests together as one contract on the `calc` package surface:
 
-The satisfying condition for the suite is the conjunction:
+- The package's declared version is `2`.
+- Any version other than `1` must advertise compatibility support — i.e. `Version() != 1` implies `Compatible() == true`.
 
-- `Version()` must return exactly `2`, **and**
-- `Compatible()` must return `true`.
+Version `1` is the only version permitted to report no compatibility support. So at version 2 the package must report `Compatible() == true`.
 
-Two tempting non-repairs, both explicitly out of bounds:
+## Intended implementation
 
-1. **Reverting `Version()` to `1`** would make `TestBCompatibility` green again by short-circuit, but it re-breaks `TestAVersion` (`Version() = 1, want 2`) and leaves the suite command red. The version must stay at `2`.
-2. Changing the test, or changing the exported surface so the test no longer compiles, is forbidden and would fail the whole package rather than fix it.
+In `services/calc/calc.go`, keep the package clause `package calc` and keep both exported identifiers with their exact current signatures — `func Version() int` and `func Compatible() bool`. The test file calls them as zero-argument package-level functions, so renaming them, adding parameters or a receiver, or turning them into exported variables would fail to compile the suite. Do not add or remove exported API.
 
-The invariant the failure message states — "version 2 requires compatibility support" — is a domain rule: any version past `1` must actually ship compatibility support. Satisfy it by providing that support, not by holding the version back.
+Make the two answers derive from one source of truth so they cannot drift again:
 
-## What to change in `services/calc/calc.go`
+1. Introduce a single unexported package-level constant holding the current version, e.g. `const currentVersion = 2`.
+2. `Version()` returns that constant.
+3. `Compatible()` computes its result from that same constant rather than returning a literal — the invariant above expressed directly, i.e. true for any version other than `1`.
 
-Keep the package clause `package calc`. Keep both exported signatures byte-for-byte compatible — `func Version() int` and `func Compatible() bool`. The suite imports the package by path and calls both with no setup; renaming, unexporting, adding parameters, changing return types, or relocating either function breaks compilation of `tests/suite` and fails everything.
+That way a future version bump updates one constant and both observable answers stay consistent, which is precisely the failure mode that produced this red test.
 
-One behavioural change plus a small structural tidy:
+Add a short doc comment on each exported function stating the contract (what the version means; that any non-1 version reports compatibility support) and keep the file free of build tags, `init` functions, and third-party imports — the `fixture/buildcodefix` module has no external requirements and must stay that way.
 
-1. **`Compatible()` must return `true`.** This is the whole substance of the failing set.
-
-2. **Make that truth derive from the version rather than be an unrelated literal**, so the two returns cannot drift apart again the way they just did. Preferred shape: introduce two unexported package-level constants — the current version (value `2`) and the version at which compatibility support begins (value `2`) — have `Version()` return the current-version constant, and have `Compatible()` return whether the current version is at or past the compatibility threshold. With both constants at `2` that evaluates to `true`, satisfying `TestBCompatibility`, while `Version()` keeps returning `2`, preserving `TestAVersion`.
-
-   A plain `return true` is also correct against both tests and acceptable if the derived form reads as overwrought for a two-function package. It just re-opens the same drift on the next version bump, which is exactly the trap this set is made of — prefer the derived form.
-
-3. `Compatible()` must be deterministic and dependency-free: no mutable package state, no `init()` ordering, no environment variables, no build tags, no file or network access. The suite calls it cold and expects `true` on the first call.
-
-Keep the file gofmt-clean with no new imports. Do not add configuration structs, version-string parsing, compatibility matrices, or a `SetCompatible`-style mutator — no assertion exercises any of that, and mutable state would make the result order-dependent across the two tests in the same package.
+A plain literal form (`Version()` returning `2`, `Compatible()` returning `true`) also satisfies both assertions and is acceptable if the writer prefers it; the derived-constant form is recommended because it encodes the coupling the suite is testing.
 
 ## Which tests each part serves
 
-| Change in `services/calc/calc.go` | Serves |
-| --- | --- |
-| `Compatible()` returns `true` (ideally derived: current version >= compatibility threshold) | **`TestBCompatibility`** — the failing set's subject; removes the `version 2 requires compatibility support` fatal |
-| `Version()` continues to return `2` (via the current-version constant) | `TestAVersion` — currently green; must not regress. Guards against the "just revert the version" pseudo-fix |
-
-Both parts live in the one file and land in one change.
+- **`Compatible()` reporting `true` at version 2** — serves the failing set member `/go-test/go-test:fixture.buildcodefix.tests.suite::TestBCompatibility` (`tests/suite/calc_test.go:14-18`). This is the only red assertion and the subject of this repair.
+- **`Version()` continuing to return `2`** — serves `TestAVersion` (`tests/suite/calc_test.go:8-12`), currently green. The refactor to a shared constant must preserve the value `2` exactly; this part is a regression guard so the fix for `TestBCompatibility` does not re-break the version assertion. Do not resolve the conflict by lowering the version to `1` — that would make `TestBCompatibility` pass only vacuously and would turn `TestAVersion` red, which is forbidden.
+- **Signatures and package path unchanged** — serves compilation of the whole suite package `fixture/buildcodefix/tests/suite`; if the suite fails to build, both tests report as failures.
 
 ## Verification
 
-From the run directory root, run the architecture's suite command verbatim:
+From the fixture root, run the architecture's configured command (identical for record/replay/live):
 
 ```
 go test -json -count=1 ./tests/suite/...
 ```
 
-Expected: `TestAVersion` **and** `TestBCompatibility` both report `pass`, and the package-level action is `pass`. Specifically check both names in the JSON output — a run where only one is green means the pair was traded off instead of satisfied:
-
-- `TestBCompatibility` green while `TestAVersion` fails ⇒ the version was reverted to `1`; undo that and fix `Compatible()` instead.
-- `TestAVersion` green while `TestBCompatibility` fails ⇒ `Compatible()` still returns `false`.
-
-Also confirm `git status` / the diff touches exactly one file under `services/calc/` and shows no modification to `tests/suite/calc_test.go`, `go.mod`, `docs/architecture/architecture.yaml`, `CLAUDE.md`, or `true-bdd/`. Run `gofmt -l services/calc` and expect empty output.
+Expect `pass` actions for both `TestBCompatibility` and `TestAVersion`, and `pass` for the package `fixture/buildcodefix/tests/suite`. Confirm that no test file was modified and that no assertion was weakened, skipped, or removed — only `services/calc/calc.go` changes.
 
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestBCompatibility-iter2-result.yaml ===
 applied: true

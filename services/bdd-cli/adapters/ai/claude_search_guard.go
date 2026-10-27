@@ -42,6 +42,13 @@ func (p ClaudeGuardPolicy) allowsSearch(target string) (bool, string) {
 	}
 
 	resolved := resolveThroughSymlinks(target)
+
+	cache := resolveThroughSymlinks(p.LibraryCache)
+	if p.LibraryCache != "" && claudePathWithinRoot(cache, resolved) &&
+		!claudePathWithinRoot(resolveThroughSymlinks(p.Replay.ReadRoot), cache) {
+		return false, "search root contains the module cache; choose a declared library or narrower host directory"
+	}
+
 	if claudePathWithinRoot(resolved, resolveThroughSymlinks(p.Replay.ReadRoot)) {
 		return true, ""
 	}

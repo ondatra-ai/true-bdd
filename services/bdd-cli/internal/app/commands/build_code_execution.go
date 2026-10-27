@@ -2,9 +2,13 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
+	"os"
+	"strings"
 
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/architecture"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/testrunner"
 )
 
@@ -13,13 +17,14 @@ type buildCodeExecution struct {
 	deps             BuildCodeDeps
 	load             func(context.Context) ([]*testrunner.FailingTest, error)
 	architectureFile string
+	fix              bool
 	generation       int
 	verdicts         map[*BuildCodeItem]int
 }
 
 func newBuildCodeExecution(deps BuildCodeDeps, architectureFile string, fix bool) *buildCodeExecution {
 	return &buildCodeExecution{
-		deps: deps, load: loadFailingTests(deps, architectureFile, fix),
+		fix: fix, deps: deps, load: loadFailingTests(deps, architectureFile, fix),
 		verdicts:         make(map[*BuildCodeItem]int),
 		architectureFile: architectureFile,
 	}
@@ -58,8 +63,11 @@ func (e *buildCodeExecution) discover(ctx context.Context) ([]*BuildCodeItem, er
 
 func (e *buildCodeExecution) beforeEvaluate(ctx context.Context, item *BuildCodeItem) (bool, error) {
 	_, err := e.refresh(ctx, item)
+	if err != nil {
+		return false, err
+	}
 
-	return false, err
+	return false, e.configureWriter(ctx, item)
 }
 
 func (e *buildCodeExecution) refresh(ctx context.Context, item *BuildCodeItem) (*BuildCodeItem, error) {
@@ -71,6 +79,21 @@ func (e *buildCodeExecution) refresh(ctx context.Context, item *BuildCodeItem) (
 }
 
 func (e *buildCodeExecution) rerun(ctx context.Context, item *BuildCodeItem) (*BuildCodeItem, error) {
+	arch, err := architecture.Load(e.architectureFile)
+	if err != nil {
+		return item, fmt.Errorf("reload libraries: %w", err)
+	}
+
+	host, err := os.Getwd()
+	if err != nil {
+		return item, fmt.Errorf("locate service imports: %w", err)
+	}
+
+	err = arch.CheckLibraryImports(host)
+	if err != nil {
+		return item, err
+	}
+
 	impl, err := e.deps.TestRunnerDispatcher.For(item.Tests[0].Framework)
 	if err != nil {
 		return item, fmt.Errorf("rerun dispatch: %w", err)
@@ -106,4 +129,57 @@ func (e *buildCodeExecution) postNotApplied(ctx context.Context, item *BuildCode
 	e.generation++
 
 	return e.refresh(ctx, item)
+}
+
+func (e *buildCodeExecution) stopImpossible(ctx context.Context, item *BuildCodeItem, obstruction error) error {
+	_, err := e.postNotApplied(ctx, item)
+	if err != nil {
+		return errors.Join(obstruction, err)
+	}
+
+	remaining := make([]string, 0, len(item.Tests))
+	for _, test := range item.Tests {
+		remaining = append(remaining, test.ID)
+	}
+
+	slog.Error("Repair impossible", "error", obstruction, "still_failing", remaining)
+
+	remainingText := strings.Join(remaining, ", ")
+	if len(remaining) == 0 {
+		remainingText = "none"
+	}
+
+	return fmt.Errorf("%w; still failing after rerun: %s", obstruction, remainingText)
+}
+
+func (e *buildCodeExecution) configureWriter(ctx context.Context, item *BuildCodeItem) error {
+	if len(item.Tests) == 0 {
+		return nil
+	}
+
+	arch, err := architecture.Load(e.architectureFile)
+	if err != nil {
+		return fmt.Errorf("reload writer architecture: %w", err)
+	}
+
+	roots, err := codeWritableRoots(e.deps, arch)
+	if err != nil {
+		return err
+	}
+
+	host, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("locate libraries: %w", err)
+	}
+
+	if e.fix {
+		err = configureCodeLibraries(ctx, e.deps, arch, host)
+		if err != nil {
+			return err
+		}
+	}
+
+	configureCodeRoots(e.deps, codeRootsForSet(roots, arch.Services, item.Tests))
+
+	return nil
 }

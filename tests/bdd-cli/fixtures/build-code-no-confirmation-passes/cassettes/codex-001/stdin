@@ -22,96 +22,85 @@ Test: fixture/buildcodefix/tests/suite::TestB
 
 ## Diagnosis
 
-Both failures are the same defect in one file: the `calc` package's two
-exported accessors are stubs that return the zero value, while the suite
-asserts specific non-zero constants.
+The two failures are not a harness, wiring or build problem. Discovery and
+compilation already succeed: the suite command
+(`go test -json -count=1 ./tests/suite/...`) runs, both tests execute, and each
+one fails on its own value assertion. The module path `fixture/buildcodefix`
+in `go.mod` already makes the test's import of
+`fixture/buildcodefix/services/calc` resolve to the existing production
+package, so nothing structural is missing.
 
-Evidence:
+The specification lives in the (non-editable) test file `tests/suite/calc_test.go`:
 
-- `tests/suite/calc_test.go` (the specification — do not touch):
-  - `TestA` requires `calc.A() == 1`, else `t.Fatal("A needs one")`.
-  - `TestB` requires `calc.B() == 2`, else `t.Fatal("B needs two")`.
-- `services/calc/calc.go` (the only writable tree, per
-  `docs/architecture/architecture.yaml` → `services[0].path: services/calc`):
-  - `func A() int { return 0 }`
-  - `func B() int { return 0 }`
+- `TestA` asserts `calc.A()` equals `1`, failing with `A needs one`.
+- `TestB` asserts `calc.B()` equals `2`, failing with `B needs two`.
 
-So `A()` yields `0` where `1` is required and `B()` yields `0` where `2`
-is required. The harness reports the two tests as separate failure groups,
-but there is one root cause: unimplemented return values. Nothing about
-the module wiring, the import path (`fixture/buildcodefix/services/calc`,
-consistent with `module fixture/buildcodefix` in `go.mod`), the package
-name, or the test command (`go test -json -count=1 ./tests/suite/...`) is
-broken — compilation and discovery already succeed, the assertions are
-what fail.
+The production source `services/calc/calc.go` returns the zero value from
+both functions, so each assertion fails. These are two independent wrong
+constants in one file — one per test in the set.
 
 ## Scope
 
-- Edit **only** `services/calc/calc.go`. That is the declared service root
-  for service `calc` and the applier's sole write root.
-- Do **not** touch `tests/suite/calc_test.go` or any `*_test.go`, do not
-  touch `docs/architecture/architecture.yaml`, `go.mod`, `true-bdd/`,
-  `templates/`, or `CLAUDE.md`.
-- Do not add build tags, skips, or any change that would stop either test
-  from executing its assertion.
+Edit exactly one file, inside the single declared edit root `services/calc`:
 
-## Part 1 — Make `calc.A()` satisfy its contract
+- `services/calc/calc.go`
+
+Do not touch `tests/suite/` or any `*_test.go`, `go.mod`,
+`docs/architecture/architecture.yaml`, `true-bdd/`, `templates/` or `CLAUDE.md`.
+No new files are required and none should be added.
+
+## Part 1 — `calc.A()` returns the unit value
 
 **File:** `services/calc/calc.go`
-
-**Contract:** `A() int` is a pure, argument-free accessor that returns the
-constant `1`. It must be deterministic (same value on every call, no
-dependence on state, time, randomness, globals, or call order) because the
-suite runs with `-count=1` but may be run repeatedly and in any order.
-
-**Intended implementation:** change the body of the existing `func A() int`
-so it yields `1` instead of `0`. Keep the exported name, the empty
-parameter list, the single `int` result, and the `package calc` clause
-exactly as they are — the test imports this package by path and calls the
-function by name, so any signature or package rename breaks compilation.
-Return the value directly from the function body; no new types, fields,
-constructors, or package-level mutable state are warranted for a
-zero-argument constant accessor.
-
 **Serves:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestA`
-(`calc_test.go:3`, "A needs one").
 
-## Part 2 — Make `calc.B()` satisfy its contract
+Contract: `A()` is a nullary function in package `calc` returning `int`, and
+its specified result is `1`. Change its body so the function yields `1`
+instead of `0`. Keep the existing package clause, the exported name `A`, the
+empty parameter list and the `int` result type exactly as they are — the test
+calls `calc.A()` with no arguments and compares the result to an untyped
+integer constant, so any change to the name, arity or result type would break
+compilation of the untouched test file.
+
+## Part 2 — `calc.B()` returns two
 
 **File:** `services/calc/calc.go`
-
-**Contract:** `B() int` is a pure, argument-free accessor that returns the
-constant `2`, with the same determinism requirement as `A()`. `A()` and
-`B()` are independent — `B()` must not be derived from or share mutable
-state with `A()`, so that neither test can be affected by the other's
-execution.
-
-**Intended implementation:** change the body of the existing `func B() int`
-so it yields `2` instead of `0`, preserving the exported name, signature
-and package clause as above.
-
 **Serves:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB`
-(`calc_test.go:4`, "B needs two").
 
-## Notes for the writer
+Contract: `B()` is likewise a nullary function in package `calc` returning
+`int`, and its specified result is `2`. Change its body so the function yields
+`2` instead of `0`. Same signature-stability requirement as Part 1: only the
+returned value changes.
 
-- The two parts are two line-level edits inside one file; implement both,
-  since the failing set is only green when both tests pass.
-- Keep the file minimal and idiomatic Go: `package calc` followed by the
-  two functions. If you introduce named constants for readability, declare
-  them inside `services/calc/calc.go` and keep them unexported so the
-  package's public surface stays exactly `A` and `B`.
-- No new files, no new packages, no dependency or `go.mod` changes are
-  required; the import path already resolves.
+The two parts are independent; `A` must stay `1` and `B` must stay `2` — do
+not collapse them into a shared helper or make one delegate to the other, as
+that would couple two separately specified values with no benefit.
+
+## Intended implementation
+
+Keep the file minimal and idiomatic Go: `package calc` followed by the two
+exported functions, each returning its specified literal. The result should be
+ordinary, compilable, vet-clean Go — plain `return` of an integer literal, no
+globals, no state, no initialisation logic, no build tags and no extra
+dependencies. The file is the whole production surface of this service, so
+there is nothing else to keep in sync.
 
 ## Verification
 
-Run the architecture's suite command from the run-dir root:
+Run the suite command from the architecture document:
 
 ```
 go test -json -count=1 ./tests/suite/...
 ```
 
-Expect `TestA` and `TestB` to both pass with no changes reported under
-`tests/suite/`. Confirm with `git status` / `git diff` that
-`services/calc/calc.go` is the only modified path.
+Expect `TestA` and `TestB` both to pass. Confirm `git status` shows exactly
+one modified file, `services/calc/calc.go`, and that no test file or document
+appears in the diff.
+
+## Constraints restated
+
+- Never change, weaken, skip or delete an assertion; the failing assertions
+  are the specification and the production code is what is wrong.
+- Do not add `t.Skip`, build constraints, or anything that prevents either
+  test from executing.
+- Confine all edits to `services/calc`.

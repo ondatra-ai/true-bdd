@@ -91,7 +91,7 @@ until those tests pass.
 | `us refine <id>` | **Working** — the pipeline's first step: iterates a hand-written story against the `us-refine` checklist; updates in place. When the product document declares a catalogue, every step of every acceptance criterion must match exactly one of its templates (`D: step-phrases`), checked before any model prompt; under `--fix` a step outside it gets a new catalogue entry in the product document, and the Story keeps its words. |
 | `us apply <id>` | **Working** — walks every AC in a refined story, validates against `us-apply`, and merges scenarios into the central `docs/scenarios.yaml` registry. |
 | `build tests` | **Working** — walks every scenario in the registry against the `build-tests` checklist and exits non-zero if any scenario is not executable: every one of its steps must bind to a step definition in the suite that owns it. When the product document declares a catalogue, every registry step, whether a Story claims its scenario or not, must first match exactly one of its templates, as `D: step-phrases` holds them, or the run is refused before it writes a file or spends an AI turn, naming each step outside it; a host with no catalogue walks as before. With `--fix`, failed cells drive a Claude-mediated authoring loop that writes the missing step definition; when the product document declares a catalogue, that loop is handed each unbound step's phrase, the glossary meaning of the words it relies on and their word mapping, so the definition observes what the mapping says. After each definition fix, it runs the bound Scenarios in every changed step package, including Scenarios that already bound every step, through `architecture.testing.commands.replay` with a Go test name filter. A selected Scenario must pass in its owning Go package; a same-named test elsewhere cannot satisfy it. A Scenario that becomes unbound remains a failure. Runtime failures feed the step-authoring loop; a definition still failing at `config.max_apply_attempts` ends non-zero, naming the Scenario and step. `BUILD TESTS COMPLETE` follows successful execution and generated-file verification. The registry itself is never modified. |
-| `build code` | **Working** — runs the architecture's declared replay command and walks the whole failing set as one Item. An engine-owned `D:` verdict needs no validation AI turn. With `--fix`, one plan and one writer repair the set; the writer receives Specification context, service edit roots and codex or Claude whole-suite and selected replay forms. After every completed apply the engine reruns the remaining set in one start; passing members leave and missing results stay failing. A successful writer response missing its confirmation warns once with the result path and follows the same rerun as `applied: false`, keeping files and consuming the same allowance. The terminal apply is rerun but still stops at the existing bound even if it passes. Started codex writers that exit non-zero or answer empty, and Claude writers that exit non-zero, return an error result or answer empty, follow the same recovery without a stall watch. Start failures and engine refusals before spawning remain fatal, as do other roles' failures. The writer ends its final message with the confirmation block; the engine saves the block at the heading's result path, which the writer never writes. Fresh discovery on each outer walk catches regressions. Tests and the Registry remain unchanged. |
+| `build code` | **Working** — runs the architecture's declared replay command and walks the whole failing set as one Item. An engine-owned `D:` verdict needs no validation AI turn. With `--fix`, one plan and one writer repair the set; the writer receives Specification context, service paths and exact `writable` paths, and codex or Claude whole-suite and selected replay forms. After every completed apply the engine reruns the remaining set in one start; passing members leave and missing results stay failing. A successful writer response missing its confirmation warns once with the result path and follows the same rerun as `applied: false`, keeping files and consuming the same allowance. The terminal apply is rerun but still stops at the existing bound even if it passes. Started codex writers that exit non-zero or answer empty, and Claude writers that exit non-zero, return an error result or answer empty, follow the same recovery without a stall watch. Start failures and engine refusals before spawning remain fatal, as do other roles' failures. The writer ends its final message with the confirmation block; the engine saves the block at the heading's result path, which the writer never writes. Fresh discovery on each outer walk catches regressions. Tests and the Registry remain unchanged. |
 | `scen check [id...]` | **Working** — walks registry scenarios against the `scen-check` checklist, one cell per (scenario, prompt): each prompt reads one scenario's own fields — description, service, path, lineage, steps — and rules on that scenario alone, so no prompt can ask a cross-registry question. Exits non-zero when any scenario fails, so it can gate a change. With no argument every scenario is walked; ids narrow the walk to those scenarios, in ascending id order. |
 
 Every command accepts `--fix` for an interactive loop in which
@@ -136,7 +136,21 @@ env -u CLAUDECODE ./bin/true-bdd scen check scen-check-003-unknown-id-refused
 
 ## Configuration
 
-The host project supplies a `true-bdd/` directory at its root:
+Run `true-bdd init` in the host project's root to create its configuration,
+all checklists and all prompt templates in `templates/`. It needs no configuration,
+reports every created or existing file, and never overwrites an existing file,
+even an empty or invalid one. Run it again to add missing files. It creates no
+Specification documents or schemas and detects no test framework.
+
+The binary carries copies only for `init`. Commands read the project's files
+exclusively, with no embedded runtime fallback. Before any test run, Item or AI
+turn, a command loads its configuration and checklist and parses its system and
+user validation templates; `--fix` also checks its fix-generator and fix-applier
+templates. A missing file stops startup, naming the file and `true-bdd init`.
+An invalid file stops startup with its name, parse error and advice to fix the
+file; `init` preserves existing files. `version` and `init` need none of these files.
+
+`true-bdd/` holds the initialized files and optional host-authored schemas:
 
 - `true-bdd.yaml` — the model tiers (below), filesystem paths under
   `paths:` (`stories_dir`, `checklists_dir`, `tmp_dir`,
@@ -153,7 +167,12 @@ The host project supplies a `true-bdd/` directory at its root:
 - `*-schema.yaml` — Yamale schemas pinning the shape of the spec
   documents (`product.yaml`, the scenario registry, `architecture.yaml`);
   the host project validates them in its lint step, outside the engine
-  itself.
+  itself. These schemas are optional host-authored files; `init` does not create them.
+
+The host default configuration omits `scripts:`. This repository keeps that section
+in its own `true-bdd/true-bdd.yaml` for its tooling. The `Init defaults drift` gate
+holds the init copies to the repository checklists and prompt templates byte for
+byte and to the configuration values after removing `scripts`.
 
 ### Deterministic prompts
 
@@ -591,6 +610,37 @@ drifting.
 Pre-1.0 and direction-finding. Open an issue before non-trivial work.
 Lint with `golangci-lint run` against `.golangci.yaml`.
 
+## Release rehearsal (repository tooling)
+
+This repository's `scripts/cmd/release` repeats the installation path against local artifacts; it does not publish a release or a tag. Run from a checkout:
+
+```sh
+go run ./scripts/cmd/release build --version 0.0.0-rehearsal --out ./tmp/release-artifacts
+go run ./scripts/cmd/release rehearse --artifacts ./tmp/release-artifacts
+```
+
+`build` exports HEAD with `git archive`, cross-compiles with `-trimpath` for Darwin/Linux on amd64/arm64, and writes four binary archives, `checksums.txt` and `release.json` (the source commit and archive version). The archives currently carry the engine’s built-in version string. There is no resources archive: `true-bdd init` supplies the host configuration, checklists and templates.
+
+`rehearse` checks every archive, installs the native binary on a private PATH, copies the calculator and (when Node and npm are installed) Jest fixture inputs into a fresh private folder outside the checkout, deletes their service and resource copies, runs `init`, installs test requirements and runs `git init`. By default its fake Claude and Codex CLIs exit 3; success requires the engine's dispatch log, their sentinel and a non-zero engine exit. Earlier failures name the install, configuration, Specification or suite-discovery step. The copied Jest host also gets a service-load test so a missing module is a failing test member rather than only a suite-load error; the fixture tests stay intact. It retains that folder for inspection and writes the step results and evidence paths to `<artifacts>/rehearsal.json`.
+
+The default harness requirement uses a local `file://` module proxy containing the artifact's exported source at its commit-time pseudo-version. Both the host's `go get` and the engine's download use that proxy, with the public Go proxy serving transitive modules. The copied host's `testing.libraries` names the exact installed version, and the writer's read grants name that version in the module cache. No pushed commit is required. To exercise a user's proxy install, add `--harness-revision <proxy-served-revision>`; the host installs through the real proxy and declares the resulting exact version. No release or install guide is published by this tool.
+
+Every rehearsal has separate fresh private module caches for installation and engine execution. The zero-cost calculator pass requires the engine's `Libraries downloaded` record before the first AI turn and retains its module versions and cache paths. Another fresh host declares a nonexistent library; it must stop before any AI turn and name that library. An empty file proxy makes that refusal deterministic.
+
+`rehearse --artifacts ./tmp/release-artifacts --live` runs real AI CLIs with `build code --fix --yes`, requires exit 0 and `BUILD CODE COMPLETE`, then runs each host's declared test command. This costs money. The report includes wall time, Claude spend and per-turn denied-call records with available targets; values the engine does not report, including Codex spend, are `unavailable`. The gate runner builds and runs the default zero-cost rehearsal on every pull request; CI keeps no separate gate list.
+
 ## License
 
 TBD. Not yet released for external use.
+
+## Build-code writable paths
+
+A service may add `writable: [go.mod, go.sum]` beside its `path` in the architecture. Entries are exact paths from the project root, files or folders, with no patterns; existing folders grant their subtree, and a trailing slash declares an absent folder. Missing files remain exact grants. Build code refuses grants outside the host or overlapping protected tests before running tests or models: `tests/`, Registry suite directories, the in-host `testing.config` directory, and in-host Go command package directories (`./dir` or `./dir/...`, relative to the command's working directory). Broad `./...` names no separate test directory. Package directories within a service's own path, including `_test.go` files, remain writable service code; reserved tests, Registry and configuration directories take precedence. Its writer changes only the failing set's service paths, their writable entries and host tmp. Unknown-service failures use all declared services. Only codex fully enforces this boundary; the Claude writer's test command remains unconfined for model trials.
+
+The plan first seeks a permitted solution. If no solution exists, it returns `impossible: [{path, reason}]`; the writer's confirmation carries the same list for a late obstruction. The first nonempty report keeps written files, reruns the failing set once, then returns a distinct impossible-repair error naming the required files, reasons and remaining failures. Change those files by hand, or add them to the service's `writable`. No further attempt or COMPLETE banner follows. An empty list leaves ordinary `applied: false` retries unchanged.
+
+## Unattended fixes
+
+Run `true-bdd build code --fix --yes` to apply every proposed fix without reading stdin. `build tests`, `us refine`, `us apply` and `scen check` accept the same pair of flags. `--yes` requires `--fix`.
+
+A clarifying question under `--yes`, or when stdin has ended, prints its question and suggested answers and stops with an error saying a person must answer. End of stdin at a fix menu without `--yes` stops with guidance to use it. These stops exit non-zero without a COMPLETE banner. Interactive answers and the drill's pipe continue to work as before.

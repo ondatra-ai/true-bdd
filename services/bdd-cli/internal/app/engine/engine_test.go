@@ -30,39 +30,39 @@ type stubUI struct {
 	askQuestionsCnt int
 }
 
-func (s *stubUI) AskQuestions(_ []engine.ClarifyQuestion) map[string]string {
+func (s *stubUI) AskQuestions(_ []engine.ClarifyQuestion) (map[string]string, error) {
 	s.askQuestionsCnt++
 
 	if s.answersIdx >= len(s.answersScript) {
-		return map[string]string{}
+		return map[string]string{}, nil
 	}
 
 	out := s.answersScript[s.answersIdx]
 	s.answersIdx++
 
-	return out
+	return out, nil
 }
 
-func (s *stubUI) AskApplyRefineOrExit() engine.UserAction {
+func (s *stubUI) AskApplyRefineOrExit() (engine.UserAction, error) {
 	if s.actionsIdx >= len(s.actionsScript) {
-		return engine.UserActionExit
+		return engine.UserActionExit, nil
 	}
 
 	out := s.actionsScript[s.actionsIdx]
 	s.actionsIdx++
 
-	return out
+	return out, nil
 }
 
-func (s *stubUI) AskRefinementFeedback() string {
+func (s *stubUI) AskRefinementFeedback() (string, error) {
 	if s.feedbackIdx >= len(s.feedbackScript) {
-		return ""
+		return "", nil
 	}
 
 	out := s.feedbackScript[s.feedbackIdx]
 	s.feedbackIdx++
 
-	return out
+	return out, nil
 }
 
 func (s *stubUI) DisplayFixPrompt(prompt string) {

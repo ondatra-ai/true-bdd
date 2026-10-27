@@ -21,7 +21,7 @@ func isEngineOwned(rel string) bool {
 
 	for _, segment := range strings.Split(rel, string(filepath.Separator)) {
 		if strings.HasSuffix(segment, "-codex-home") || segment == "codex-go-build" ||
-			segment == "codex-shell-home" || segment == "codex-tmp" {
+			segment == "library-download" || segment == "codex-shell-home" || segment == "codex-tmp" {
 			return true
 		}
 	}

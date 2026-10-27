@@ -129,7 +129,7 @@ func assertClaudePolicy(t *testing.T, root string, req ai.Request) {
 		t.Fatal(err)
 	}
 
-	if len(policy.ReadRoots) != 3 || len(policy.ProtectedRoots) != 1 {
+	if len(policy.ReadRoots) != 2 || len(policy.ProtectedRoots) != 2 {
 		t.Fatalf("unexpected roots: %+v", policy)
 	}
 

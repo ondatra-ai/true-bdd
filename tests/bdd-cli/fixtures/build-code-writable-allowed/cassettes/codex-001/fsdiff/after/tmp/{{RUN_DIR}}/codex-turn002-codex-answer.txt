@@ -1,0 +1,6 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.writable.tests.suite-build--iter1-result.yaml ===
+applied: true
+impossible: []
+target: "services/calc"
+summary: "Added go.sum with cached yaml.v3 v3.0.1 checksums and check.v1 module metadata checksum. go.mod and service logic remain unchanged. The entire failing set passed using go test -mod=readonly -count=1 ./tests/suite/... with GOPROXY=off. go mod verify also passed."
+=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.writable.tests.suite-build--iter1-result.yaml ===

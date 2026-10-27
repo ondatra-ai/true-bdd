@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"sort"
 
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/engine"
@@ -61,6 +62,7 @@ func RunBuildCode(
 		BeforeEvaluate: execution.beforeEvaluate,
 		PostFix:        execution.postFix,
 		PostNotApplied: execution.postNotApplied,
+		StopImpossible: execution.stopImpossible,
 		Finalize:       finalizeBuildCode,
 		GetSubject:     buildCodeSubject,
 		Checks:         BuildCodeChecks(),
@@ -104,9 +106,22 @@ func loadFailingTests(
 		// Write roots come from the architecture spec, not a separate config,
 		// so "edits production source, never tests" is enforced by the same
 		// document that defines where production source lives.
-		deps.BuildCodeFixApplier.UseWriteRoots(servicePaths(arch.Services))
+		roots, rootsErr := codeWritableRoots(deps, arch)
+		if rootsErr != nil {
+			return nil, rootsErr
+		}
+
+		host, importErr := checkCodeLibraries(arch)
+		if importErr != nil {
+			return nil, importErr
+		}
 
 		if fix && !configured {
+			err = configureCodeLibraries(ctx, deps, arch, host)
+			if err != nil {
+				return nil, err
+			}
+
 			configureReplayGrant(deps.BuildCodeFixApplier, arch.Testing)
 
 			configured = true
@@ -118,6 +133,7 @@ func loadFailingTests(
 		}
 
 		specifyCodeFailures(deps, arch, architectureFile, failures)
+		configureCodeRoots(deps, codeRootsForSet(roots, arch.Services, failures))
 
 		sort.Slice(failures, func(i, j int) bool {
 			return failures[i].ID < failures[j].ID
@@ -151,20 +167,6 @@ func validateSuites(dispatcher *testrunner.Dispatcher, testing architecture.Test
 // command reaches them yet.
 func replayCommand(testing architecture.Testing) string {
 	return testing.Commands.Replay
-}
-
-// servicePaths collects each declared service's source root, skipping
-// services that declare none.
-func servicePaths(services []architecture.Service) []string {
-	paths := make([]string, 0, len(services))
-
-	for _, svc := range services {
-		if svc.Path != "" {
-			paths = append(paths, svc.Path)
-		}
-	}
-
-	return paths
 }
 
 // walkSuites dispatches every declared suite to its framework runner,
@@ -238,4 +240,26 @@ func finalizeBuildCode(result *engine.Result[*BuildCodeItem]) error {
 	}
 
 	return ErrBuildCodeNotConverged
+}
+
+func configureCodeLibraries(
+	ctx context.Context, deps BuildCodeDeps, arch *architecture.Architecture, host string,
+) error {
+	roots, err := arch.DownloadLibraries(ctx, host)
+	if err != nil {
+		return err
+	}
+
+	deps.BuildCodeFixApplier.UseLibraryReadRoots(roots)
+
+	return nil
+}
+
+func checkCodeLibraries(arch *architecture.Architecture) (string, error) {
+	host, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("locate library host: %w", err)
+	}
+
+	return host, arch.CheckLibraryImports(host)
 }

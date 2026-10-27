@@ -9,6 +9,7 @@ import (
 
 // ClaudeGuardPolicy confines the writer's tools; Replay reuses #193's exact check.
 type ClaudeGuardPolicy struct {
+	LibraryCache   string       `json:"library_cache,omitempty"`
 	ProtectedRoots []string     `json:"protected_roots"`
 	Replay         ReplayPolicy `json:"replay"`
 	ReadRoots      []string     `json:"read_roots"`
@@ -88,7 +89,11 @@ func (p ClaudeGuardPolicy) allowsClaudeTestCommand(command, cwd string) (bool, s
 
 func (p ClaudeGuardPolicy) allowsRead(target string) (bool, string) {
 	resolved := resolveThroughSymlinks(target)
-	// The host always wins, even inside ~/work or a module-cache copy.
+	if p.isLibraryCacheTarget(resolved) {
+		return p.allowsLibraryRead(resolved)
+	}
+
+	// The host remains readable when it is itself inside a module cache.
 	if claudePathWithinRoot(resolved, resolveThroughSymlinks(p.Replay.ReadRoot)) {
 		return true, ""
 	}
@@ -149,6 +154,10 @@ func expandClaudeHome(path string) string {
 
 func (p ClaudeGuardPolicy) allowsWrite(target string) (bool, string) {
 	resolved := resolveThroughSymlinks(target)
+	if p.isLibraryCacheTarget(resolved) {
+		return false, "the module cache is read-only"
+	}
+
 	for _, root := range p.ProtectedRoots {
 		if claudePathWithinRoot(resolved, resolveThroughSymlinks(root)) {
 			return false, "the writer cannot change its generated guard configuration"
@@ -162,4 +171,19 @@ func (p ClaudeGuardPolicy) allowsWrite(target string) (bool, string) {
 	}
 
 	return false, "write target is outside the claude writer roots: " + resolved
+}
+
+func (p ClaudeGuardPolicy) isLibraryCacheTarget(resolved string) bool {
+	return p.LibraryCache != "" && claudePathWithinRoot(resolved, resolveThroughSymlinks(p.LibraryCache)) &&
+		!claudePathWithinRoot(resolveThroughSymlinks(p.Replay.ReadRoot), resolveThroughSymlinks(p.LibraryCache))
+}
+
+func (p ClaudeGuardPolicy) allowsLibraryRead(resolved string) (bool, string) {
+	for _, root := range p.ReadRoots {
+		if claudePathWithinRoot(resolved, resolveThroughSymlinks(root)) {
+			return true, ""
+		}
+	}
+
+	return false, "read target is outside the declared libraries: " + resolved
 }

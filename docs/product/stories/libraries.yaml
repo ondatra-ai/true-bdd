@@ -1,0 +1,37 @@
+story:
+  id: libraries
+  feature: build-code
+  title: Use declared libraries at exact versions
+  as_a: System Architect
+  i_want: refuse test-only production imports and unavailable declared libraries
+  so_that: each writer receives only the libraries the architecture declares
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 003-test-only-import-refused
+    description: Production code importing a library named only for tests is refused before running tests
+    steps:
+    - given:
+      - the "library-test-only" project tree
+    - when:
+      - the System Architect runs "build code"
+    - then:
+      - the command exits with code 1
+      - stdout matches service calc.*services/calc/calc.go.*imports test-only library github.com/google/uuid
+      - the engine spawned no test runners
+      - the engine dispatched no AI turns
+      - stdout does not match BUILD CODE COMPLETE
+  - id: 004-download-fails-before-writer
+    description: A failed named library download stops the run before any writer or test runner
+    steps:
+    - given:
+      - the "library-download-failed" project tree
+      - library downloads use an empty offline proxy
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 1
+      - stdout matches library download failed.*github.com/google/uuid@v1.999.999
+      - stdout matches no such file or directory
+      - the engine spawned no test runners
+      - the engine dispatched no AI turns
+      - stdout does not match BUILD CODE COMPLETE

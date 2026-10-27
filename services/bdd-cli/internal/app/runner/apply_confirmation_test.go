@@ -177,9 +177,9 @@ func (answer applyAnswer) ExecutePromptWithSystem(_ context.Context, role provid
 
 type applyUI struct{}
 
-func (applyUI) AskQuestions(_ []engine.ClarifyQuestion) map[string]string { return nil }
-func (applyUI) AskApplyRefineOrExit() engine.UserAction                   { return engine.UserActionApply }
-func (applyUI) AskRefinementFeedback() string                             { return "" }
+func (applyUI) AskQuestions(_ []engine.ClarifyQuestion) (map[string]string, error) { return map[string]string{}, nil }
+func (applyUI) AskApplyRefineOrExit() (engine.UserAction, error) { return engine.UserActionApply, nil }
+func (applyUI) AskRefinementFeedback() (string, error) { return "", nil }
 func (applyUI) DisplayFixPrompt(_ string)                                 {}
 
 func confirmationSpec(t *testing.T, command string, answer applyAnswer) runner.Spec[bool] {

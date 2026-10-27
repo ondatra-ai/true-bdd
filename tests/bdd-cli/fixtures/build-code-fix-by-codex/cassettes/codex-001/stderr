@@ -7,23 +7,24 @@ approval: never
 sandbox: read-only
 reasoning effort: medium
 reasoning summaries: none
-session id: 01a16faf-98a9-7a12-90c0-39e02004d652
+session id: 01a17a22-9212-74b0-976d-5b2444717df9
 --------
 user
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
 
-You propose one production repair plan for a failing set. Read the Specification, harness and service source. Explain what to build or change, in which files, and which tests each part serves. The person reviews this plan before the writer applies it. Stay read-only. Never propose edits to tests or documents, or weakening assertions. Return a plan or clarification questions using the user prompt's answer contract. Refinement returns a revised plan.
+You propose one production repair plan for a failing set. Read the Specification, harness and service source. Explain what to build or change, in which files, and which tests each part serves. The person reviews this plan before the writer applies it. Stay read-only. Never propose edits to tests or documents, or weakening assertions. First find a solution inside the service paths and exact writable lists (plus host tmp). A preferred undeclared change is not impossible. Only if no such solution exists, report impossible with every needed path and reason; never ask for expanded access as a substitute for investigation. Return a plan, an impossibility verdict or clarification questions using the user prompt's answer contract. Refinement returns a revised plan.
 
 
 **ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END
 and QUESTIONS_START/QUESTIONS_END instructions above.** Your final message
-must be a single JSON object with both keys present:
+must be a single JSON object with all three keys present:
 
+- `impossible`: an array of `{path, reason}` objects naming needed undeclared files only when no permitted solution exists, otherwise `[]`.
 - `fix_prompt`: the fix instructions, or `""` when you need clarification.
 - `questions`: an array of `{id, question, context, options}` objects, or
   `[]` when you are returning a fix prompt.
 
-Exactly one of the two carries content. Do not emit any markers, and do not
+Exactly one of the three carries content. For impossible work, fix_prompt is empty and questions is []. Do not emit any markers, and do not
 wrap the object in markdown fences. Reasoning before the object is ignored.
 
 
@@ -32,7 +33,12 @@ wrap the object in markdown fences. Reasoning before the object is ignored.
 
 # Plan a production repair for the failing set
 
-Read the Specification, the harness and the production source to propose one repair for the whole set. The writer may edit only the architecture's declared service roots, never tests, *_test.go, __tests__, or documents. Tests outside this set are not the repair's subject.
+Read the Specification, the harness and the production source to propose one repair for the whole set. The writer may edit only the relevant services' path and exact writable paths, plus host tmp. Never edit tests or step definitions. First investigate a solution inside those declarations. A preferred undeclared file is not an impossibility; report impossible only if no permitted solution exists, naming the required files and reasons. Tests outside this set are not the repair's subject.
+
+## Declared edit roots
+
+- `services/calc`
+
 
 ## Reference Documentation
 
@@ -96,73 +102,37 @@ If clarification is required, output one QUESTIONS_START/QUESTIONS_END block wit
 
 **ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END
 and QUESTIONS_START/QUESTIONS_END instructions above.** Your final message
-must be a single JSON object with both keys present:
+must be a single JSON object with all three keys present:
 
+- `impossible`: an array of `{path, reason}` objects naming required undeclared files only when no permitted solution exists, otherwise `[]`.
 - `fix_prompt`: the fix instructions, or `""` when you need clarification.
 - `questions`: an array of `{id, question, context, options}` objects, or
   `[]` when you are returning a fix prompt.
 
-Exactly one of the two carries content. Do not emit any markers, and do not
+Exactly one of the three carries content. For impossible work, fix_prompt is empty and questions is []. Do not emit any markers, and do not
 wrap the object in markdown fences. Reasoning before the object is ignored.
 
 
 codex
-I’ll read the architecture, test harness, and calculator source, then return a production-only repair plan.
+I’ll read the specification, test harness, and calculator source to identify a repair within `services/calc`.
 
 exec
-/bin/zsh -lc "pwd; rg --files -g '"'!tmp/**'"' -g '"'!bin/**'"' -g '"'!*cassette*'"' -g '"'!go.sum'"' -g '"'!go.work.sum'"'" in {{CWD}}
+/bin/zsh -lc "pwd; rg --files -g '"'!tmp/**'"' -g '"'!vendor/**'"' -g '"'!*go.sum'"' -g '"'!AGENTS.md'"' -g '.claude/rules/**' -g 'docs/**' -g 'services/**' -g 'tests/**' -g 'go.mod' -g 'go.work'" in {{CWD}}
  succeeded in 0ms:
 {{CWD}}
 services/calc/calc.go
-AGENTS.md
-templates/build-tests.fix-generator.prompt.tpl
-templates/scen-check.checklist.system.prompt.tpl
-templates/us-checklist.system.prompt.tpl
-templates/build-code.fix-generator.system.prompt.tpl
-templates/us.apply-checklist.fix-generator.system.prompt.tpl
-templates/build-tests.checklist.system.prompt.tpl
-templates/build-code.fix-applier.system.prompt.tpl
-templates/us.apply-checklist.fix-generator.prompt.tpl
-templates/scen-check.fix-applier.system.prompt.tpl
-templates/us-checklist.prompt.tpl
-templates/build-code.checklist.prompt.tpl
-templates/us.apply-checklist.fix-applier.prompt.tpl
-templates/build-code.checklist.system.prompt.tpl
-templates/build-tests.checklist.prompt.tpl
-templates/scen-check.fix-applier.prompt.tpl
-templates/us-checklist.fix-applier.prompt.tpl
-templates/us-checklist.fix-generator.system.prompt.tpl
-templates/scen-check.fix-generator.system.prompt.tpl
-templates/build-tests.fix-generator.system.prompt.tpl
-templates/us-checklist.fix-generator.prompt.tpl
-templates/build-code.fix-generator.prompt.tpl
-templates/build-code.fix-applier.prompt.tpl
-templates/us.apply-checklist.fix-applier.system.prompt.tpl
-templates/scen-check.fix-generator.prompt.tpl
-templates/build-tests.fix-applier.prompt.tpl
-templates/build-tests.fix-applier.system.prompt.tpl
-templates/scen-check.checklist.prompt.tpl
-templates/us.apply-checklist.system.prompt.tpl
-templates/us-checklist.fix-applier.system.prompt.tpl
-templates/us.apply-checklist.prompt.tpl
 docs/architecture/architecture.yaml
 tests/suite/canary_test.go
 tests/suite/suite-runs.log
 tests/suite/add_test.go
-true-bdd/scenarios_yaml-schema.yaml
-true-bdd/product-schema.yaml
-true-bdd/true-bdd.yaml
-true-bdd/checklists/us-apply.yaml
-true-bdd/checklists/build-code.yaml
-true-bdd/checklists/us-refine.yaml
-true-bdd/checklists/build-tests.yaml
-true-bdd/checklists/scen-check.yaml
-true-bdd/architecture_yaml-schema.yaml
 go.mod
 
 exec
-/bin/zsh -lc 'cat docs/architecture/architecture.yaml services/calc/calc.go tests/suite/add_test.go tests/suite/canary_test.go go.mod; if [ -f docs/agents/domain.md ]; then cat docs/agents/domain.md; fi; if [ -d .claude/rules ]; then rg --files --hidden .claude/rules; fi' in {{CWD}}
- succeeded in 0ms:
+/bin/zsh -lc 'for p in docs/agents/domain.md docs/architecture/architecture.yaml services/calc/calc.go tests/suite/add_test.go tests/suite/canary_test.go go.mod; do if test -f "$p"; then printf '"'\\n%s\\n' \""'$p"; cat "$p"; fi; done
+rg --files --hidden .claude tests services docs' in {{CWD}}
+ exited 2 in 0ms:
+
+docs/architecture/architecture.yaml
 # One Go service with one e2e suite. All three commands are identical
 # and carry -json, so the suite-command pre-pass passes and the walk
 # actually runs — unlike the build-code-* refusal fixtures, this one is
@@ -183,6 +153,8 @@ architecture:
     - name: calc
       path: services/calc
       language: go
+
+services/calc/calc.go
 // Package calc is the fixture host project's production source. The
 // build-code fix loop is allowed to edit exactly this tree.
 package calc
@@ -196,6 +168,8 @@ package calc
 func Add(a, b int) int {
 	return a - b
 }
+
+tests/suite/add_test.go
 package suite_test
 
 import (
@@ -217,6 +191,8 @@ func TestAddSumsItsArguments(t *testing.T) {
 		t.Fatalf("Add(2, 3) = %d, want 5", got)
 	}
 }
+
+tests/suite/canary_test.go
 package suite_test
 
 import (
@@ -253,6 +229,8 @@ func TestCanaryRecordsEachSuiteRun(t *testing.T) {
 		t.Fatalf("write canary log: %v", err)
 	}
 }
+
+go.mod
 // Sentinel module for this fixture's own Go sources.
 //
 // Run dirs live under tmp/test_run INSIDE the repo module, so without
@@ -262,8 +240,14 @@ func TestCanaryRecordsEachSuiteRun(t *testing.T) {
 module fixture/buildcodefix
 
 go 1.25.0
+rg: .claude: No such file or directory (os error 2)
+docs/architecture/architecture.yaml
+services/calc/calc.go
+tests/suite/canary_test.go
+tests/suite/suite-runs.log
+tests/suite/add_test.go
 
 codex
-{"fix_prompt":"In services/calc/calc.go, repair Add(a, b int) to return a + b instead of a - b, preserving its signature. Its contract is to sum both arguments; this fixes TestAddSumsItsArguments, which requires Add(2, 3) == 5. Update the adjacent production comment so it no longer describes the defect as present.\n\nEdit only services/calc/, the architecture’s declared service root. Do not modify tests, assertions, documents, or configuration.\n\nValidate only the failing test with: go test -json -count=1 ./tests/suite/... -run '^TestAddSumsItsArguments$'. Confirm it passes. Keep the name filter so the unrelated canary test does not run or append to suite-runs.log.","questions":[]}
+{"fix_prompt":"Repair `services/calc/calc.go`: `Add(a, b int)` promises the sum of its arguments but currently returns `a - b`. Change the return expression to `a + b`, preserving the function signature. Remove the stale production comment describing the deliberate defect while retaining the sum contract.\n\nThis repairs the entire failing set: `TestAddSumsItsArguments` calls `Add(2, 3)` and requires 5.\n\nValidate with `go test -json -count=1 ./tests/suite/... -run '^TestAddSumsItsArguments$'`. Keep the exact test filter because the unrelated canary writes to `tests/suite/suite-runs.log` when executed.\n\nRestrict edits to `services/calc`; do not modify tests, assertions, documents, configuration, or logs.","impossible":[],"questions":[]}
 tokens used
-19,324
+19,098

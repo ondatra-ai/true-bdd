@@ -10,6 +10,8 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/testrunner"
 )
 
+const goTestScriptCommand = "sh runner.sh -json"
+
 func TestSetRerunRequiresEachMembersOwnPass(t *testing.T) {
 	t.Parallel()
 	root := t.TempDir()
@@ -29,7 +31,7 @@ printf '%s\n' '{"Action":"pass","Package":"host/tests","Test":"TestA"}'\
 		t.Fatal(err)
 	}
 
-	cfg := testrunner.Config{Command: "sh runner.sh -json", ConfigFile: filepath.Join(root, "go.mod")}
+	cfg := testrunner.Config{Command: goTestScriptCommand, ConfigFile: filepath.Join(root, "go.mod")}
 
 	members := make([]*testrunner.FailingTest, 0, 3)
 	for _, name := range []string{"TestA", "TestB", "TestMissing"} {
@@ -60,7 +62,7 @@ func setExamples() []setExample {
 			"mixed Go build",
 			testrunner.NewGoTestRunner(nil),
 			[]string{"host/broken::<build>", "host/tests::TestB"},
-			"sh runner.sh -json",
+			goTestScriptCommand,
 			"-json",
 			`{"Action":"pass","Package":"host/broken"}
 {"Action":"pass","Package":"host/tests","Test":"TestB"}`,

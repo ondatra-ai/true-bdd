@@ -6,6 +6,8 @@
 //	gates run                    every gate
 //	gates run --changed main     only the gates the diff against main needs
 //	gates run --staged           only the gates the staged change needs
+//	gates release-rehearsal       the zero-cost release rehearsal alone
+//
 //	gates recordings             the Recordings gate alone
 //	gates list                   the gate names, one per line
 package main
@@ -24,7 +26,7 @@ import (
 
 var (
 	errNoCommand = errors.New(
-		"usage: gates run [--changed <base> | --staged] | gates recordings | gates list")
+		"usage: gates run [--changed <base> | --staged] | gates recordings | gates release-rehearsal | gates list")
 	errTwoScopes = errors.New("--changed and --staged are exclusive")
 )
 
@@ -50,6 +52,8 @@ func run(args []string) error {
 		}
 
 		return nil
+	case "release-rehearsal":
+		return gates.ReleaseRehearsal() //nolint:wrapcheck // the gate names the failed install step.
 	case "recordings":
 		return gates.ScanRecordings() //nolint:wrapcheck // the gate's own diagnosis.
 	case "run":

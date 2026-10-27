@@ -21,7 +21,7 @@ func NewViperConfig() (*ViperConfig, error) {
 	if err != nil {
 		slog.Error("Failed to read config file", "error", err)
 
-		return nil, errors.ErrReadConfigFailed(err)
+		return nil, errors.ErrReadConfigFailed(errors.ProjectFile("./true-bdd/true-bdd.yaml", err))
 	}
 
 	return &ViperConfig{viper: viperInstance}, nil

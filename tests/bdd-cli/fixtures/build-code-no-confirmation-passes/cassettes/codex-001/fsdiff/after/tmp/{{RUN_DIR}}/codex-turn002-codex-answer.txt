@@ -1,1 +1,1 @@
-Updated only services/calc/calc.go so A returns 1 and B returns 2. Both tests pass with the requested suite command. Git status verification was unavailable because the directory is not a Git repository.
+Updated only services/calc/calc.go so A returns 1 and B returns 2, preserving both signatures. Both tests passed with go test -json -count=1 ./tests/suite/.... Git status was unavailable because this directory is not a Git repository.
