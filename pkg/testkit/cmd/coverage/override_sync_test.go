@@ -150,6 +150,8 @@ const (
 	// overrideRefused carries a prompt the engine refuses at startup, so
 	// it walks nothing and nothing in it need be shipped.
 	overrideRefused
+ // overridePreserved is an unusable file init must preserve without loading.
+ overridePreserved
 	// overrideChecks adds `D:` prompts no shipped checklist carries yet
 	// (ADR 0015); its `Q:` prompts must still copy shipped ones.
 	overrideChecks
@@ -167,6 +169,8 @@ const (
 // the behaviour under test; every other one declares checklist_prompts.
 func allowedOverrideFixtures() map[string]overridePurpose {
 	return map[string]overridePurpose{
+ "init-existing": overridePreserved,
+ "start-invalid-checklist": overrideRefused,
 		"build-code-claude-replay":                overrideTiers,
 		"build-code-claude-failure":               overrideTiers,
 		"build-code-writer-bound":                 overrideFixLoop,
@@ -216,10 +220,11 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"scen-check-fix-merges-phrases":           overrideChecks,
 		"scen-check-skipped-prompt":               overrideChecks,
 		"us-refine-fix-records-phrase":            overrideChecks,
- "codex-apply-us-refine": overrideChecks,
+		"codex-apply-us-refine":                   overrideChecks,
 		"scen-check-prompt-names-its-tiers":       overrideTiers,
 		"fix-loop-refine-feedback":                overrideFixLoop,
 		"fix-loop-own-words":                      overrideFixLoop,
+		"fix-loop-unanswered-eof":                 overrideFixLoop,
 		"fix-loop-exit-terms":                     overrideFixLoop,
 		"fix-loop-walks-exhausted-terms":          overrideFixLoop,
 		"fix-loop-attempts-exhausted":             overrideFixLoop,
@@ -281,7 +286,7 @@ func TestOverridePromptsMatchShipped(t *testing.T) {
 
 	for _, override := range discoverOverrides(t) {
 		purpose := allowedOverrideFixtures()[override.Fixture]
-		if purpose == overrideRefused {
+		if purpose == overrideRefused || purpose == overridePreserved {
 			continue
 		}
 
@@ -475,7 +480,7 @@ func TestOverrideConfigMatchesShipped(t *testing.T) {
 		// A fix-loop override may bound the loop (#168); no walk reads a refused one, and
 		// scen-check-checklist-not-yaml's is not YAML (#171).
 		purpose := allowedOverrideFixtures()[override.Fixture]
-		if purpose == overrideFixLoop || purpose == overrideRefused {
+		if purpose == overrideFixLoop || purpose == overrideRefused || purpose == overridePreserved {
 			continue
 		}
 

@@ -23,6 +23,10 @@ func (r *GoTestRunner) RunSet(_ context.Context, members []*FailingTest) error {
 
 	events := parseGoTestEvents(stdout.Bytes())
 
+	if runErr != nil && len(events.toFailingTests("", "")) == 0 {
+		return runErr
+	}
+
 	events.recordSet(members)
 
 	return nil
@@ -43,7 +47,7 @@ func (events *goEventStream) recordSet(members []*FailingTest) {
 
 		passed := events.testPassed[pkg+"\x00"+test] && !events.hasFailureFor(pkg, test)
 		if test == goBuildFailureMarker {
-			passed = events.packagePassed[pkg] && !events.packageFailed[pkg]
+			passed = events.buildPassed(pkg)
 		}
 
 		output := events.outputFor(pkg, test)

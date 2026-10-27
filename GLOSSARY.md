@@ -76,13 +76,29 @@ _Avoid_: spec check, term check
 The process a scenario exercises — the `true-bdd` binary for the CLI suite — as distinct from the tests that drive it. Its `third_party` CLI dependencies are the ones the harness shims; a Services caller declaring none has a vacuous mode axis.
 _Avoid_: SUT, subject, system, target
 
+**Fix loop**:
+What a command run with `--fix` does for a failed Prompt: ask any clarifying questions, propose a fix, and read the person's apply, refine or exit choice from stdin at the fix menu. Every apply requires that answer; the engine offers no way to approve fixes in advance. End of input stops the menu or an unanswered clarification with a distinct error.
+_Avoid_: automatic approval, advance approval
+
 **Failing set**:
-All tests failing in one `build code` discovery, walked as one Item with one proposed repair plan. After each completed apply, including a started codex writer that exits non-zero or answers empty, or a started Claude writer that exits non-zero, returns an error result or answers empty, the engine reruns its remaining members once; passing members leave, missing results stay failing. A green discovery yields no Item. Its `D:` Prompt answers the whole set's latest runner verdict without an AI turn.
+All tests failing in one `build code` discovery, walked as one Item with one proposed repair plan. After each completed apply, including a started codex writer that exits non-zero or answers empty, or a started Claude writer that exits non-zero, returns an error result or answers empty, the engine reruns its remaining members once; passing members leave, missing results stay failing. Synthetic members include Go `package::<build>`, Jest `file::<load>` for each file that fails to load (carrying Jest's message), and Playwright `<startup>`. A load member reruns by file path and passes only when that file reports success; a missing file stays failing. A non-zero test command with no named member stops the run with its command, exit code and output tail, before any AI turn or `BUILD CODE COMPLETE`. A green discovery yields no Item; `build code` reports success only after the test command succeeds. Its `D:` Prompt answers the whole set's latest runner verdict without an AI turn.
 _Avoid_: repair batch, failure queue
+
+**Writable paths**:
+The exact files or folders a service declares under `writable` in the architecture document, relative to the Host project root, with no patterns. Together with that service's `path` and the host's tmp they bound its build-code writer. A grant covering tests or step definitions, or lying outside the host, is refused before any test runner or AI turn. Here the tests are `tests/`, the Registry's suite directories, the in-host directory holding `testing.config`, and the in-host package directories named by the Go `testing.commands` (`./dir` or `./dir/...`, relative to the command's working directory). A broad `./...` names no separate test directory. Command package directories inside a service's own `path` remain service code; `_test.go` files there are writable by build code. The filename suffix alone never makes a file protected. The reserved `tests/`, Registry and configuration directories still take precedence. Protected tests and step definitions can only be read and run.
+_Avoid_: extra roots, writable globs, implicit manifest grants
+
+**Impossible repair**:
+A plan or writer verdict that no solution exists within the declared writable paths, listing the required undeclared files and a reason for each under `impossible`. A preferred undeclared change alone is insufficient. The first report keeps edits, reruns the remaining Failing set once, then fails with a distinct error naming the files, reasons, remaining failures and the remedy: change the files by hand or add them to the service's `writable`. No further attempt or COMPLETE banner follows. An empty list preserves ordinary retries, including `applied: false`.
+_Avoid_: retry exhaustion, not-applied repair
 
 **Model override**:
 A repeatable `--model <tier>=<cli>:<model>` command-line flag that replaces one declared `engine.models` binding in memory for one run. Every command running AI turns accepts it. It changes neither project configuration nor spawned processes' environments; each applied change is logged once.
 _Avoid_: model environment variable, model config overlay
+
+**Library**:
+Code supplied apart from a service's own source that the service or its tests build with, named in the architecture document with its exact version; what a named library itself needs to build comes with it. The service entry and `testing` declare `libraries` as lists of `{module, version}`. Before a writer turn, the run downloads every named Go module and its build graph; a download failure stops the run, naming the library and error. Writers read only that graph and its exact version metadata from the module cache. A rebuild may use nothing else, and a service may not use a library named only for its tests. For non-Go hosts the lists remain empty; existing Jest and Playwright paths are unchanged. Only codex enforces the access and network boundary for subprocesses; Claude's file tools obey it, but its replay remains unconfined with network for model trials.
+_Avoid_: dependency (a service's dependencies are the processes and CLIs it talks to while it runs), package, framework
 
 ## Repository vocabulary
 

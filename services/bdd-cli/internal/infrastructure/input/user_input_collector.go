@@ -2,6 +2,8 @@ package input
 
 import (
 	"bufio"
+	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"strconv"
@@ -12,6 +14,9 @@ import (
 )
 
 const separatorWidth = 60
+
+// ErrPersonRequired means a clarification needs a person to answer.
+var ErrPersonRequired = errors.New("a person must answer the clarifying question")
 
 // UserInputCollector handles interactive user input from stdin.
 type UserInputCollector struct {
@@ -33,7 +38,7 @@ func newUserInputCollector(reader io.Reader) *UserInputCollector {
 }
 
 // AskQuestions displays questions to the user and collects answers.
-func (c *UserInputCollector) AskQuestions(questions []checklist.ClarifyQuestion) map[string]string {
+func (c *UserInputCollector) AskQuestions(questions []checklist.ClarifyQuestion) (map[string]string, error) {
 	answers := make(map[string]string)
 
 	c.printHeader()
@@ -41,7 +46,15 @@ func (c *UserInputCollector) AskQuestions(questions []checklist.ClarifyQuestion)
 	for idx, question := range questions {
 		c.printQuestion(idx+1, len(questions), question)
 
-		userInput := c.readUserInput()
+		userInput, err := c.readUserInput()
+		if errors.Is(err, io.EOF) {
+			return nil, ErrPersonRequired
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
 		userInput = c.mapOptionToText(userInput, question.Options)
 
 		slog.Info("User answered clarification question",
@@ -57,7 +70,7 @@ func (c *UserInputCollector) AskQuestions(questions []checklist.ClarifyQuestion)
 
 	console.Println("\n" + strings.Repeat("-", separatorWidth))
 
-	return answers
+	return answers, nil
 }
 
 // ActionChoice represents user's choice for fix prompt action.
@@ -73,7 +86,7 @@ const (
 )
 
 // AskApplyRefineOrExit asks user to choose between apply, refine, or exit.
-func (c *UserInputCollector) AskApplyRefineOrExit() ActionChoice {
+func (c *UserInputCollector) AskApplyRefineOrExit() (ActionChoice, error) {
 	console.Println("\n" + strings.Repeat("=", separatorWidth))
 	console.Println("What would you like to do?")
 	console.Separator("=", separatorWidth)
@@ -83,7 +96,14 @@ func (c *UserInputCollector) AskApplyRefineOrExit() ActionChoice {
 	console.Separator("=", separatorWidth)
 	console.Print("Your choice (1/2/3): ")
 
-	rawInput := c.readUserInput()
+	rawInput, err := c.readUserInput()
+	if errors.Is(err, io.EOF) {
+		return ActionExit, fmt.Errorf("end of input at fix menu; a person must choose whether to apply the fix: %w", err)
+	}
+
+	if err != nil {
+		return ActionExit, err
+	}
 
 	var action ActionChoice
 
@@ -98,11 +118,11 @@ func (c *UserInputCollector) AskApplyRefineOrExit() ActionChoice {
 
 	slog.Info("User chose fix action", "rawInput", rawInput, "action", string(action))
 
-	return action
+	return action, nil
 }
 
 // AskRefinementFeedback asks user for feedback to refine the fix prompt.
-func (c *UserInputCollector) AskRefinementFeedback() string {
+func (c *UserInputCollector) AskRefinementFeedback() (string, error) {
 	console.Println("\n" + strings.Repeat("-", separatorWidth))
 	console.Println("REFINE FIX PROMPT")
 	console.Separator("-", separatorWidth)
@@ -113,7 +133,11 @@ func (c *UserInputCollector) AskRefinementFeedback() string {
 	var lines []string
 
 	for {
-		line := c.readUserInput()
+		line, err := c.readUserInput()
+		if err != nil && !errors.Is(err, io.EOF) {
+			return "", err
+		}
+
 		if line == "" {
 			break
 		}
@@ -125,7 +149,7 @@ func (c *UserInputCollector) AskRefinementFeedback() string {
 
 	slog.Info("User provided refinement feedback", "feedbackLength", len(feedback), "feedback", feedback)
 
-	return feedback
+	return feedback, nil
 }
 
 // Private methods (must come after all exported methods per funcorder lint rule)
@@ -156,10 +180,17 @@ func (c *UserInputCollector) printQuestion(current, total int, question checklis
 	console.Print("\n    Your answer: ")
 }
 
-func (c *UserInputCollector) readUserInput() string {
-	input, _ := c.reader.ReadString('\n')
+func (c *UserInputCollector) readUserInput() (string, error) {
+	input, err := c.reader.ReadString('\n')
+	if errors.Is(err, io.EOF) && len(input) > 0 {
+		err = nil
+	}
 
-	return strings.TrimSpace(input)
+	if err != nil {
+		return "", fmt.Errorf("read user input: %w", err)
+	}
+
+	return strings.TrimSpace(input), nil
 }
 
 func (c *UserInputCollector) mapOptionToText(input string, options []string) string {

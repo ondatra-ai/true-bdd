@@ -1,1 +1,1 @@
-Created services/calc/prepared.txt containing “prepared” followed by a newline. Left calc.go unchanged, with A returning 1 and B returning 0.
+Created services/calc/prepared.txt containing “prepared” followed by a newline. Left calc.go unchanged, as required for this stage. TestA passes; TestB still fails because B returns 0.

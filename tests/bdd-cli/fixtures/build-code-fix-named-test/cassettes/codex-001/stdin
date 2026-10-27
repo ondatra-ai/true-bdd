@@ -2,9 +2,9 @@
 
 You are the production writer repairing a whole failing set. Read the Specification, harness and service source, then implement the proposed plan using your own investigation. Change the service as a whole. After each part, run the tests it serves and fix what fails; run every test of the failing set before reporting. Tests outside the set are not your subject.
 
-Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. If a repair cannot be completed, report applied: false and describe what changed and what remains.
+Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. Find a solution within the declared service path and exact writable paths first. If no solution exists there, report impossible as a list of {path, reason} for the required undeclared files. Keep files already written. A preferred undeclared change is not impossible. For ordinary unfinished work, report applied: false and impossible: [].
 
-Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
+Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, impossible, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
 
 
 ### TASK
@@ -45,70 +45,99 @@ Tests: /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArgument
 ## Proposed repair plan
 # Repair plan for /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
 
-## Summary of the defect
+## Diagnosis
 
-`calc.Add` subtracts instead of adding. The failing assertion is correct and must not be touched; the production source is wrong and is what gets repaired.
+The failing set has exactly one member and exactly one cause. The test asserts
+the contract of the production helper:
 
-Observed failure:
+- `tests/suite/add_test.go` calls `calc.Add(2, 3)` and requires the result to be
+  `5`, failing with `Add(2, 3) = -1, want 5` otherwise.
+- `services/calc/calc.go` declares `func Add(a, b int) int` with the doc comment
+  "Add returns the sum of a and b", but the body returns `a - b`.
 
-```
-add_test.go:19: Add(2, 3) = -1, want 5
-```
+`-1` is exactly `2 - 3`, so the observed failure output is produced entirely by
+that one expression. The doc comment, the function name, and the test all agree
+on the intended contract (sum); only the operator disagrees. This is a defect in
+production source, not in the test, and the test's assertion must stay exactly
+as written.
 
-`Add(2, 3)` evaluates `2 - 3 = -1`, so the guard `got != 5` fires and `t.Fatalf` aborts the test.
+Scope check: `docs/architecture/architecture.yaml` declares service `calc` with
+`path: services/calc`, which is the one writable production tree. The whole
+repair fits inside it — no undeclared file, no test file, and no document needs
+to change.
 
-## Contract
+## Part 1 — Correct the `Add` operator (the only change)
 
-`func Add(a, b int) int` in package `calc` (module path `fixture/buildcodefix/services/calc`) returns the arithmetic **sum** of its two arguments. This is already the documented contract in the function's own doc comment — "Add returns the sum of a and b" — so the implementation, not the documentation and not the test, is the part that disagrees.
+**File:** `services/calc/calc.go`
 
-Required behaviour: for all `int` inputs `a`, `b`, `Add(a, b) == a + b`.
+**Contract to implement:** `Add(a, b int) int` returns the arithmetic sum of its
+two arguments — `Add(2, 3) == 5`, `Add(0, 0) == 0`, `Add(-1, 4) == 3` — matching
+the function's name and its existing "returns the sum of a and b" doc sentence.
 
-## The one change to make
+**Intended implementation:** replace the subtraction in the function body with
+addition, so the single return expression evaluates to `a + b` instead of
+`a - b`. Keep everything else about the declaration stable:
 
-### File: `services/calc/calc.go`
+- same package (`package calc`) and same exported name `Add`;
+- same signature `func Add(a, b int) int` — do not change parameter names,
+  order, types, arity, or the return type, because `tests/suite/add_test.go`
+  imports `fixture/buildcodefix/services/calc` and calls `calc.Add(2, 3)`
+  positionally with untyped int constants;
+- no new imports, no new files, no new exported symbols; the fix is a
+  one-expression change and should stay that way.
 
-This is the only file to edit. It sits under `services/calc`, which `docs/architecture/architecture.yaml` declares as the `calc` service path and therefore the applier's sole write root.
+**Comment hygiene:** the comment block above `Add` currently documents the
+planted defect — the sentences stating that the function "does not" return the
+sum, that "the operator is wrong, deliberately", and that this is "the planted
+defect the fix loop has to correct". Once the operator is right those sentences
+are false, so delete that defect narration and leave a short, accurate doc
+comment for the function (the existing first line, "Add returns the sum of a and
+b", is already correct and sufficient). Do not touch the package-level comment
+at the top of the file that describes the tree as the fixture's production
+source and the fix loop's write root — that remains true.
 
-1. In the body of `Add`, change the returned expression from the subtraction `a - b` to the addition `a + b`. That is the entire functional repair — one binary operator.
+**Tests this part serves:**
+`/go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments` —
+the only member of the failing set. With `a + b`, `calc.Add(2, 3)` returns `5`,
+the `got != 5` guard is not taken, `t.Fatalf` is never reached, and the test
+passes.
 
-2. Clean up the stale doc comment on `Add`. The comment currently carries a fixture note that contradicts the repaired code: it states "It does not: the operator is wrong, deliberately. This is the planted defect the fix loop has to correct, and it is in PRODUCTION source — the test asserting 5 is right, and repairing the code rather than the assertion is the whole contract of `build code`." Once the operator is correct, that paragraph is false and should be removed. Keep the first line, `// Add returns the sum of a and b.`, which is accurate and now matches the implementation. Leave the package-level comment at the top of the file as it is — it describes the tree's role, not the defect, and remains true.
+## Explicitly out of scope
 
-Do not change the function name, its signature, its parameter names, its receiver-less package-level placement, or the `package calc` declaration. The test imports `fixture/buildcodefix/services/calc` and calls `calc.Add` with two untyped integer constants, so any signature drift breaks compilation of the suite.
-
-## Which tests each part serves
-
-- **The operator change in `Add`** serves `/go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments` (`tests/suite/add_test.go`). With `a + b`, `Add(2, 3)` returns `5`, the `got != 5` branch is not taken, `t.Fatalf` is never reached, and the test passes. This is the sole test in the failing set and the only one the repair needs to flip.
-
-- **The doc-comment cleanup** serves no test directly; it is hygiene so the source stops advertising a defect that no longer exists. It is comment-only and cannot affect compilation or behaviour.
-
-## Tests that must stay green
-
-`tests/suite/canary_test.go::TestCanaryRecordsEachSuiteRun` is in the same package (`suite_test`) and currently passes. It opens and appends to `suite-runs.log` and has no dependency on `calc`, so the repair cannot affect its outcome. The only way to break it would be to leave `services/calc/calc.go` non-compiling, since a build failure in an imported package fails the whole test binary. Keep the file compiling — a single operator swap does.
+- **Do not modify `tests/suite/add_test.go`** or any `*_test.go` file. The
+  assertion `got != 5` is the specification; weakening, skipping, relaxing, or
+  deleting it is forbidden, as is renaming the test or adding build tags/skips.
+- **Do not modify `tests/suite/canary_test.go`.** It is not in this failing set;
+  it appends to `tests/suite/suite-runs.log` and passes already. It only needs
+  the package to compile, which the operator change preserves.
+- **Do not modify `tests/suite/suite-runs.log`.** It is harness-owned run
+  evidence written by the canary; leave whatever the runs put there.
+- **Do not modify `docs/architecture/architecture.yaml`, `CLAUDE.md`, `go.mod`,
+  anything under `true-bdd/` or `templates/`, or anything under `tmp/`.** None
+  is required: the module path, the import path, the suite commands, and the
+  Go version all already work — the suite compiles and runs today and reports a
+  genuine assertion failure rather than a build error.
+- **Do not add tests, benchmarks, table cases, or extra helper functions** to
+  the service tree. The set's single test fully covers the corrected contract,
+  and new production surface would be unjustified by any test here.
 
 ## Verification
 
-Run the architecture's declared suite command from the fixture root:
+Run the suite command from the architecture document at the fixture root:
 
-```
-go test -json -count=1 ./tests/suite/...
-```
+    go test -json -count=1 ./tests/suite/...
 
-Expect `TestAddSumsItsArguments` to pass and `TestCanaryRecordsEachSuiteRun` to continue passing, with the package reported as `"Action":"pass"`. If a plain `go test ./tests/suite/...` is used for a quick local check, it should report `ok fixture/buildcodefix/tests/suite`.
-
-Note that `TestCanaryRecordsEachSuiteRun` writes `suite-runs.log` as a side effect of every full-suite run. That file is test-run bookkeeping, not production state — do not add it to the repair, and do not delete or gitignore it as part of this change.
-
-## Constraints restated
-
-- Edit only `services/calc/calc.go`. No other path is in the declared service root.
-- Do not modify `tests/suite/add_test.go`, `tests/suite/canary_test.go`, any `*_test.go`, `go.mod`, or `docs/architecture/architecture.yaml`.
-- Do not weaken, relax, skip, comment out, or delete the `got != 5` assertion or its `t.Fatalf`. The assertion is correct; the production code is what moves.
-- Do not add new files, helper packages, build tags, or configuration. The defect is one operator and the repair should be exactly that size.
+Expect `TestAddSumsItsArguments` to pass and `TestCanaryRecordsEachSuiteRun` to
+keep passing, with no compile diagnostics. An isolated rerun
+(`go test -json -count=1 -run 'TestAddSumsItsArguments' ./tests/suite/...`)
+should also pass. The only file in the diff must be
+`services/calc/calc.go`.
 
 ## Edit roots
 
 - `services/calc`
 
-Never modify tests, *_test.go, __tests__, or documents. Never weaken, skip or remove assertions.
+Never modify tests or step definitions. Never weaken, skip or remove assertions.
 
 
 ## Test commands
@@ -129,6 +158,9 @@ End your final message with the confirmation block below, written in the message
 
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
 applied: true
+impossible: []
 target: "<repo-relative service path>"
 summary: "<what changed and which tests of the set you saw pass>"
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
+
+Only when no solution exists inside the declared edit roots, fill impossible with a list of {path, reason} for required undeclared files. Keep any edits already made and report their outcome. Otherwise leave impossible empty; applied: false by itself permits another attempt.

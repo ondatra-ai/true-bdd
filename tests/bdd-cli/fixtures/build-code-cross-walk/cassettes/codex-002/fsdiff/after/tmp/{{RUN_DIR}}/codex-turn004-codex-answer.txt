@@ -1,5 +1,6 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestBCompatibility-iter2-result.yaml ===
 applied: true
+impossible: []
 target: "services/calc/calc.go"
-summary: "Completed migration stage 2: changed only Compatible() to return true; Version() remains 2. TestBCompatibility passed individually, and the whole suite passed. Formatting is clean."
+summary: "Applied migration stage 2: changed only Compatible() to return true, preserving Version() at 2. TestBCompatibility passed using the granted selection command. No tests or documents changed."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestBCompatibility-iter2-result.yaml ===

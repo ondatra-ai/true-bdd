@@ -1,5 +1,6 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter2-result.yaml ===
 applied: true
+impossible: []
 target: "services/calc"
-summary: "Changed B() to return 2 and preserved A() unchanged. TestB passed with go test -count=1 ./tests/suite/... -run '^TestB$'."
+summary: "Changed B() to return 2; preserved A() returning 1. Ran go test -count=1 ./tests/suite/... successfully, including failing-set TestB and TestA."
 === FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter2-result.yaml ===

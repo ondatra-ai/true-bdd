@@ -1,1 +1,1 @@
-Both TestA and TestB pass. Changed only B in services/calc/calc.go to return 2; A still returns 1, and prepared.txt is unchanged.
+Both tests passed with the specified suite command. Changed only B in services/calc/calc.go to return 2, preserving A and prepared.txt.

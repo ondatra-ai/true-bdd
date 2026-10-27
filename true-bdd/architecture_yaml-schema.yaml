@@ -9,7 +9,7 @@
 #
 #   yamale -s true-bdd/architecture_yaml-schema.yaml docs/architecture/architecture.yaml
 #
-# The engine decodes only `testing:`, `services[].{name,path,language}`
+# The engine decodes only `testing:`, `services[].{name,path,language,writable,libraries}`
 # and, for the `D: term-mappings` check, `terms:`; everything else here is
 # spec a host writes for its own readers and for the checklists' prompts.
 # Which is exactly why it needs a schema: nothing else would notice a typo
@@ -45,6 +45,7 @@ term_mapping:
 # decides what `build tests` renders; `commands` is how each mode is
 # invoked. Declaring neither describes a project nothing can build.
 testing:
+  libraries: list(include('library'), required=False)
   framework: enum('go-test', 'jest', 'playwright')
   # Framework config file. Its containing directory is the working
   # directory every command runs in; without one they run from wherever
@@ -55,9 +56,17 @@ testing:
   commands: include('commands')
 
 ---
+library:
+  module: str()
+  version: str(matches='^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+incompatible)?$')
+
+---
 service:
+  libraries: list(include('library'), required=False)
   name: str()
   path: str()
+  # Exact project-relative files or folders; no patterns or test overlap.
+  writable: list(str(), required=False)
   language: str()
   # Free-form classification (`cli`, `web:frontend`, `service`, …). Not
   # a closed vocabulary: nothing in the engine branches on it.

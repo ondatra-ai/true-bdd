@@ -63,7 +63,7 @@ Tests: {{ join ", " .IDs }}
 {{ range .WriteRoots }}
 - `{{ . }}`
 {{ end }}
-Never modify tests, *_test.go, __tests__, or documents. Never weaken, skip or remove assertions.
+Never modify tests or step definitions. Never weaken, skip or remove assertions.
 
 {{ if .TestCommand }}
 ## Test commands
@@ -86,9 +86,12 @@ End your final message with the confirmation block below, written in the message
 
 === FILE_START: {{ .ResultPath }} ===
 applied: true
+impossible: []
 target: "<repo-relative service path>"
 summary: "<what changed and which tests of the set you saw pass>"
 === FILE_END: {{ .ResultPath }} ===
+
+Only when no solution exists inside the declared edit roots, fill impossible with a list of {path, reason} for required undeclared files. Keep any edits already made and report their outcome. Otherwise leave impossible empty; applied: false by itself permits another attempt.
 
 ## Required fixture lifecycle protocol
 

@@ -49,7 +49,8 @@ type SuiteCommands struct {
 // tests, stated once. There is no per-suite entry: which service a test
 // belongs to and which file it lives in are the scenario's.
 type Testing struct {
-	Framework string `yaml:"framework"`
+	Libraries []Library `yaml:"libraries,omitempty"`
+	Framework string    `yaml:"framework"`
 	// PrebuiltEngineArg is one opt-in argument for build tests verification.
 	PrebuiltEngineArg string `yaml:"prebuilt_engine_arg,omitempty"`
 	// ConfigFile is the framework's config file. Its directory is where
@@ -62,13 +63,13 @@ type Testing struct {
 // Label names the testing block in progress lines and refusals.
 func (t Testing) Label() string { return t.Framework }
 
-// Service is one entry in `architecture.services[]`. Only the three
-// fields the build pipeline reads are decoded — `path` above all, since
-// it is the one root a fix applier is granted.
+// Service declares a production folder and any additional exact writable paths.
 type Service struct {
-	Name     string `yaml:"name"`
-	Path     string `yaml:"path"`
-	Language string `yaml:"language"`
+	Libraries []Library `yaml:"libraries,omitempty"`
+	Name      string    `yaml:"name"`
+	Path      string    `yaml:"path"`
+	Language  string    `yaml:"language"`
+	Writable  []string  `yaml:"writable,omitempty"`
 }
 
 // Architecture is the loaded view of architecture.yaml — only the
@@ -93,6 +94,7 @@ func (a *Architecture) ServicePath(name string) (string, bool) {
 // rawTesting mirrors the `architecture.testing:` block — the single
 // place a repository states how its tests run.
 type rawTesting struct {
+	Libraries         []Library     `yaml:"libraries"`
 	PrebuiltEngineArg yaml.Node     `yaml:"prebuilt_engine_arg"`
 	Framework         string        `yaml:"framework"`
 	ConfigFile        string        `yaml:"config"`
@@ -140,6 +142,7 @@ func Load(path string) (*Architecture, error) {
 	arch := &Architecture{
 		Testing: Testing{
 			Framework:         raw.Architecture.Testing.Framework,
+			Libraries:         raw.Architecture.Testing.Libraries,
 			PrebuiltEngineArg: prebuilt,
 			ConfigFile:        raw.Architecture.Testing.ConfigFile,
 			Commands:          raw.Architecture.Testing.Commands,
@@ -150,6 +153,11 @@ func Load(path string) (*Architecture, error) {
 	sort.Slice(arch.Services, func(i, j int) bool {
 		return arch.Services[i].Name < arch.Services[j].Name
 	})
+
+	err = arch.validateLibraries()
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", path, err)
+	}
 
 	err = arch.Testing.validate(path)
 	if err != nil {

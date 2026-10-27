@@ -58,13 +58,14 @@ func claudeWriterOptions(ctx context.Context, req Request) (*claude.WriterOption
 		return nil, fmt.Errorf("claude writer toolchain: %w", pkgerrors.ErrClaudeStreamNoOutput)
 	}
 
-	moduleCache := roots[1]
 	roots = append(roots, spills)
 	dir := artifactPath(req, "claude-config")
-	policy := ClaudeGuardPolicy{ProtectedRoots: []string{dir}, Replay: NewReplayPolicy(req.Mode, req.WorkDir),
-		ReadRoots: roots,
-		ExcludedRoots: []string{filepath.Join(moduleCache, "github.com", "ondatra-ai"), filepath.Join(moduleCache,
-			"cache", "download", "github.com", "ondatra-ai"), filepath.Join(moduleCache, "cache", "vcs")}}
+	readRoots := append([]string{roots[0]}, req.Mode.LibraryReadRoots...)
+	readRoots = append(readRoots, spills)
+	policy := ClaudeGuardPolicy{LibraryCache: roots[1],
+		ProtectedRoots: []string{dir, filepath.Join(req.WorkDir, "tmp/library-download")},
+		Replay:         NewReplayPolicy(req.Mode, req.WorkDir),
+		ReadRoots:      readRoots, ExcludedRoots: []string{}}
 
 	policyPath := filepath.Join(dir, "policy.json")
 

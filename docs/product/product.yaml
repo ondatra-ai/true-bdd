@@ -150,6 +150,24 @@ glossary:
       after `true-bdd`, such as `scen check --fix`. It is what a role runs,
       and the unit whose exit code, stdout and file changes a Scenario
       observes. Commands that run AI turns accept model overrides.
+      `init` runs without configuration and creates, in the current folder,
+      true-bdd/true-bdd.yaml without scripts, every checklist under
+      true-bdd/checklists/ and every prompt template under templates/.
+      It reports each created or existing file through a log record and never overwrites one,
+      even an empty or invalid one. It creates no Specification document
+      or schema and detects no test framework. `version` also needs none
+      of these files. Other commands use only the project files, with no
+      embedded runtime fallback. Before their first test run, Item or AI
+      turn, they load their configuration and checklist and parse both
+      validation prompt templates, plus both fix-generator and both
+      fix-applier templates under --fix. A missing file refuses startup,
+      naming the file and true-bdd init; an invalid file names the file
+      and parse error and asks to fix it, without init advice.
+      Checklist commands print their existing upper-case command name followed
+      by ` COMPLETE` on stdout only when they succeed, after finalization and
+      any post-run validation. A command returning an error prints no COMPLETE
+      banner. Success means exit 0, including the reported failing-check
+      verdicts of `us refine` and `us apply` described under exit code.
 
   - term: model override
     means: >-
@@ -167,7 +185,7 @@ glossary:
   - term: project tree
     means: >-
       The files of the project a command works on (its specification
-      documents, the engine's configuration and checklists, its code and
+      documents, the engine's configuration, checklists and prompt templates, its code and
       tests) as a Scenario starts from them. Named, so a Scenario says
       exactly which starting point its behaviour depends on.
 
@@ -191,9 +209,9 @@ glossary:
     means: >-
       Everything a command prints on its standard error: the error that
       stopped it, followed by the command's usage when it was given an
-      argument it does not take. A command that cannot read its
-      configuration says so only there, since it never starts the log it
-      would print on stdout.
+      argument it does not take. Startup refusals also name their cause on
+      stdout; a configuration read failure precedes installation of the
+      engine's JSON log.
 
   - term: log record
     means: >-
@@ -241,6 +259,16 @@ glossary:
 
   - term: fix loop
     means: >-
+      Every fix is applied only when a person answers apply at its fix menu.
+      The engine offers no way to approve fixes in advance. Answers are read
+      from stdin with no terminal check, so tests and the drill can supply them
+      through a pipe. A clarifying question at end of stdin prints the question
+      and suggested answers and stops with a distinct error saying a person
+      must answer; no answer is guessed. End of stdin at the fix menu stops
+      with an error saying a person must choose whether to apply the fix,
+      rather than reporting tests still failing. These stops exit non-zero
+      and print no command COMPLETE banner. A final non-empty answer without
+      a newline is accepted, and a blank line retains its interactive meaning.
       What a command run with `--fix` does for each check that fails: it
       may first ask clarifying questions, each with numbered suggested
       answers, then shows the fix it proposes and asks whether to apply it,
@@ -275,8 +303,8 @@ glossary:
       Malformed patterns and grants of the host root, protected generated homes or escaping paths are refused.
       The build-code codex writer receives whole-suite and selected replay
       forms, polling its own process for completion. It reads the host
-      project and runtime/toolchain exceptions only, writes declared service
-      roots and host tmp only, and cannot read its generated credential home.
+      project and runtime/toolchain exceptions only, writes the failing set's declared service
+      paths, their exact writable entries and host tmp only, and cannot read its generated credential home.
       Its commands have no network. User config, MCP servers, web search,
       history and AGENTS.md are not loaded for this writer. Its JSON events
       are saved for audit; its final message still supplies the confirmation.
@@ -291,7 +319,15 @@ glossary:
       failure evidence and matched Specification context. It is one Item;
       discovery with no failures yields no Item. After an apply, members
       leave only on their own passing result. A member with no result stays
-      failing and is reported as not having run.
+      failing and is reported as not having run. A Go build member's own
+      passing result is a package pass or a no-test-files skip with no failure.
+      A Jest file that fails to load is one file::<load> member carrying
+      Jest's message. It passes only when its file loads and reports no failure;
+      a file still failing to load or missing from output stays failing.
+      A test command that exits non-zero with no failing member, synthetic
+      members included, stops the run with the command, exit code and output
+      tail, before any AI turn or BUILD CODE COMPLETE. Playwright's startup
+      member is retained. Build code reports success only when the test command succeeded.
 
   - term: test dependencies
     means: >-
@@ -395,7 +431,8 @@ glossary:
       `npx playwright test`, as the architecture document declares it.
       `build code` starts it to find the failing set and after every completed
       apply to rerun all remaining members in one selection. Go build and
-      Playwright startup members make the rerun unfiltered. A member with
+      Playwright startup members make the rerun unfiltered. Jest load members
+      select the remaining members' files by path rather than test name. A member with
       no passing result of its own stays failing; the next outer walk
       discovers the whole suite afresh.
 
@@ -411,13 +448,9 @@ glossary:
     means: >-
       The Claude Code CLI selected by a model tier. Only build code's apply turn
       has a generated, restricted writer configuration with the engine's hook.
-      Its file tools read the host root, the installed Go toolchain and module
-      cache (excluding ondatra-ai copies outside the host), and its own spill
-      files. Writes stay in scratch and declared service roots, with generated guard configuration protected from modification. The hook grants
+      Its file tools read the host root, the installed Go toolchain, the declared Library graph and its own spill files. Writes stay in scratch and declared service roots, with generated guard configuration protected from modification. The hook grants
       only the canonical foreground replay command; background commands are denied.
-      Searches outside the host cannot start above an excluded module-copy
-      directory, and Glob checks its pattern's fixed root and denies parent
-      traversal. A dependency search chooses a narrower directory instead.
+      Searches outside the host start only inside a granted read root, and Glob checks its pattern's fixed root and denies parent traversal.
       Both Bash timeouts are 600000 milliseconds. No Claude turn gets a router deadline;
       every turn uses the caller's context, and cancellation stops its process group and descendants.
       Other Claude turns retain safe mode. A started writer's non-zero exit, error result
@@ -459,7 +492,23 @@ glossary:
 # The step-phrase catalogue: the shape each Given, When and Then step may
 # take, and what it means. `D: step-phrases` holds every step of a Scenario
 # a Story claims to exactly one entry; the Scenarios no Story claims wait.
+  - term: Library
+    means: >-
+      Code supplied apart from a service's own source, declared by exact module and version in the service's optional libraries list or testing.libraries. Before build-code or build-tests writers run, the engine uses its network to download every named Go module and its complete build graph. A failed download stops the run before any writer turn, naming the library and the error. Writers may read only those module sources and exact version metadata in the module cache, with no organization-specific grant or deny. A service importing a library named only for its tests is refused before discovery and on rerun. Protected tests and step definitions remain read-only as defined under writable paths. Only the default codex writer enforces these rules for every subprocess; Claude's file tools obey them, but its replay and executed code remain unconfined and have network, a known limit retained for model trials. For non-Go hosts these lists are omitted or empty; the existing Jest and Playwright paths use host-local node_modules without a new package-manager download or import check.
+
+  - term: writable paths
+    means: >-
+      A service's optional writable list names exact project-relative files or folders, without patterns, in addition to its path. A writer changes those and host tmp only. Existing folders grant their subtree; an absent entry remains exact unless a trailing slash declares a folder. Build code refuses outside paths or grants overlapping protected tests and step definitions at start, before any runner or AI turn. Protected tests are tests/, Registry suite directories, the in-host directory holding testing.config, and in-host Go package directories named by testing.commands (./dir or ./dir/..., relative to the command working directory). The broad ./... names no separate test directory. Command package directories within a service's path remain service code; _test.go files there stay writable by build code. A filename suffix alone does not protect a file. Reserved tests/, Registry and configuration directories take precedence. Unknown-service failures use all declared services. Protected tests and step definitions are read and run only. Codex enforces this fully; Claude's replay command remains unconfined for model trials.
+
+  - term: impossible repair
+    means: >-
+      The plan or writer concludes no solution exists within the declared files, after seeking one there. A preferred undeclared change alone is insufficient. Both report impossible as a list of path and reason objects. The first nonempty list keeps edits, reruns the remaining failing set once, then fails with a distinct error naming files, reasons, remaining failures and the remedy: change the files by hand or add them to the service's writable. No further plan, writer, attempt or COMPLETE banner follows. An empty list preserves ordinary retries, including applied false.
+
 catalogue:
+  - template: 'library downloads use an empty offline proxy'
+    block: given
+    means: The engine downloads through an absent local Go module proxy, with no network fallback or checksum server; an uncached version fails deterministically.
+    terms: []
   - template: 'the "{tree}" project tree'
     block: given
     means: >-

@@ -1,5 +1,6 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter2-result.yaml ===
 applied: true
+impossible: []
 target: "services/calc/calc.go"
-summary: "Removed the +1 offset from Add and kept prepared.txt. TestAdd passed with go test -json -count=1 ./tests/suite/..., covering the entire failing set."
+summary: "Removed the extra +1 so Add returns a+b. Kept prepared.txt untouched. TestAdd passed with the declared suite command; go build ./services/... passed. Git status was unavailable because the workspace is not a Git repository."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter2-result.yaml ===

@@ -10,6 +10,9 @@
 architecture:
   testing:
     framework: go-test
+    libraries:
+      - module: gopkg.in/yaml.v3
+        version: v3.0.1
     commands:
       record: go test -json -count=1 ./tests/suite/...
       replay: go test -json -count=1 ./tests/suite/...

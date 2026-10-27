@@ -20,8 +20,8 @@ var ErrUnknownFramework = errors.New("unknown test framework")
 
 // Status values shared across runner JSON parsers.
 const (
-	statusPassed = "passed"
- statusFailed   = "failed"
+	statusPassed   = "passed"
+	statusFailed   = "failed"
 	statusTimedOut = "timedOut"
 )
 

@@ -1,1 +1,1 @@
-Updated `services/calc/calc.go`: `A()` returns the deliberately undefined `closureGlossary`, and `B()` returns `0`. This completes the required stage and leaves the intentional build failure.
+Updated only `services/calc/calc.go`: `A()` returns undefined `closureGlossary`, and `B()` returns `0`. The file is gofmt-clean and intentionally retains the required build failure.

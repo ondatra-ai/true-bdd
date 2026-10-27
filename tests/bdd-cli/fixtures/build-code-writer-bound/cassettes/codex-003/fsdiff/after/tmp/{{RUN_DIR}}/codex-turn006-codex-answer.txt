@@ -1,1 +1,1 @@
-Changed only B in services/calc/calc.go to return 2, preserving A and prepared.txt. Both TestA and TestB pass with the requested test command.
+Updated only services/calc/calc.go so B returns 2. A still returns 1, and prepared.txt remains unchanged.

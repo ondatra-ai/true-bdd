@@ -8,6 +8,8 @@ type JestReport struct {
 
 // JestTestResult is one spec file's worth of execution.
 type JestTestResult struct {
+	Status           string                `json:"status"`
+	Message          string                `json:"message"`
 	Name             string                `json:"name"`
 	AssertionResults []JestAssertionResult `json:"assertionResults"`
 }

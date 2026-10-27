@@ -1,5 +1,6 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
 applied: true
-target: "services/calc/calc.go"
-summary: "Changed Add to return a + b and removed the outdated defect comment. TestAddSumsItsArguments passed using the exact name filter; the unrelated canary test was excluded."
+impossible: []
+target: "services/calc"
+summary: "Changed Add to return a + b and removed the stale defect comment while preserving its signature and sum contract. TestAddSumsItsArguments passed using the exact test filter."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===

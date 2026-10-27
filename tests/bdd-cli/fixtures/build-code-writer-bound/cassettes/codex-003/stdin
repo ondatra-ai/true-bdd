@@ -20,71 +20,83 @@ Test: fixture/buildcodefix/tests/suite::TestB
 ## Proposed repair plan
 # Repair plan for failing-set
 
-## Failing set
+## Scope
 
-- `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB` (service `calc`, suite `go-test`)
+Exactly one production file changes: `services/calc/calc.go`. No other
+file is touched. Do not edit `tests/suite/calc_test.go`, `go.mod`,
+`docs/architecture/architecture.yaml`, `true-bdd/**`, `CLAUDE.md`, or
+`services/calc/prepared.txt`.
 
-Failure output:
+## Contract the set demands
 
-```
-=== RUN   TestB
-    calc_test.go:15: B needs two
---- FAIL: TestB (0.00s)
-```
+The architecture (`docs/architecture/architecture.yaml`) declares one Go
+service, `calc`, rooted at `services/calc`, exercised by the suite command
+`go test -json -count=1 ./tests/suite/...`. The executable specification
+lives in `tests/suite/calc_test.go` (package `suite_test`), which imports
+the production package as `fixture/buildcodefix/services/calc` and pins
+two constants of the package's public surface:
 
-## Contract the production code must satisfy
+- `calc.A() == 1` — asserted by `TestA`, currently satisfied.
+- `calc.B() == 2` — asserted by `TestB`, currently violated.
 
-`tests/suite/calc_test.go` is the contract and is read-only for this repair. It pins two exported nullary functions in package `fixture/buildcodefix/services/calc`:
+So the contract for the exported API is: `A()` and `B()` are
+zero-argument functions returning `int`, with `A()` yielding `1` and
+`B()` yielding `2`.
 
-- `TestA` (currently passing) requires `calc.A()` to return exactly `1`.
-- `TestB` (currently failing) requires `calc.B()` to return exactly `2`.
+## Diagnosis
 
-Both are plain `int`-returning functions with no arguments and no error channel, so the contract is purely the returned value. `TestB` uses `t.Fatal`, meaning any value other than `2` fails the test; there is no tolerance or range to satisfy.
+`services/calc/calc.go` today reads:
 
-## Root cause
+    package calc
 
-`services/calc/calc.go` currently reads:
+    func A() int { return 1 }
+    func B() int { return 0 }
 
-```go
-package calc
+`B()` returns `0`. `TestB` fails with `calc_test.go:15: B needs two`
+because the production value disagrees with the specified value of `2`.
+`A()` already matches its assertion and is not implicated — the failure
+output shows `TestB` alone failing.
 
-func A() int { return 1 }
-func B() int { return 0 }
-```
+This is a pure production-value defect, not a harness, module, or wiring
+problem: the module boundary (`module fixture/buildcodefix` in `go.mod`)
+already resolves the test's import path to `services/calc`, and `TestA`
+compiling and passing proves the package builds and links correctly.
 
-`A()` already honours its contract, which is why `TestA` is green. `B()` returns the zero value `0` instead of the contracted `2`, so the comparison `calc.B() != 2` in `calc_test.go:14` is true and line 15 fails the test. The defect is a single wrong constant in production source — not a signature, package, import-path or module problem. The test's import path `fixture/buildcodefix/services/calc` already resolves correctly against `module fixture/buildcodefix` in `go.mod` plus the `services/calc` directory, and `TestA` compiling and passing proves the package wiring is sound.
+## Change to make
 
-## Part 1 — correct the return value of `B()`
+In `services/calc/calc.go`, change the body of the exported function
+`B()` so it returns the value the specification requires, `2`, instead of
+`0`. Keep everything else about the file intact:
 
-**File:** `services/calc/calc.go` (inside the declared service root `services/calc` for service `calc`, per `docs/architecture/architecture.yaml`). This is the only file the repair touches.
+- Keep `package calc` as the package clause.
+- Keep `A()` exactly as it is, returning `1` — it serves `TestA`, which
+  currently passes and must keep passing.
+- Keep the signature `func B() int` unchanged; only the returned value is
+  wrong. Do not rename, add parameters, add receivers, or change the
+  return type — the test calls `calc.B()` with no arguments and compares
+  the result to an untyped integer constant.
+- Do not add new exported identifiers, new files, build tags, or an
+  `init()`; nothing in the set requires them and extra surface is not
+  part of the contract.
+- The file must remain gofmt-clean and compile without unused imports
+  (none are needed).
 
-**Intended behaviour:** `B()` must evaluate to the `int` value `2` for every call. Change the body of the existing `func B() int` so it yields `2` rather than `0`. Keep the declaration exactly as it is otherwise:
+## Which tests each part serves
 
-- same package `calc`;
-- same exported name `B`;
-- same signature `func B() int` — no parameters, single `int` result, no added error return;
-- keep it deterministic and side-effect free, matching the style of the neighbouring `A()`. A direct constant return is the right shape here; do not introduce state, globals, init functions, configuration lookups or indirection to produce the value.
-
-**Leave `A()` untouched.** It already returns `1` and `TestA` depends on that; altering it would break a currently-passing test in the same suite.
-
-**Tests this part serves:**
-
-- `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB` — turns green because `calc.B()` now equals `2`, so the guard at `calc_test.go:14` is false and `t.Fatal("B needs two")` is never reached.
-- `/go-test/go-test:fixture.buildcodefix.tests.suite::TestA` — regression guard; stays green because `A()` is left as `return 1`.
-
-## Out of scope — do not do these
-
-- Do not edit `tests/suite/calc_test.go` or any `*_test.go` file, and do not weaken, skip, retag or delete any assertion. The expectation `calc.B() != 2` must remain exactly as written.
-- Do not edit `docs/architecture/architecture.yaml` or any other document.
-- Do not edit `go.mod`, add dependencies, or add new packages/files — the fixture module boundary and the existing single-file package are already correct.
-- Do not touch anything outside `services/calc`; that is the only write root declared for service `calc`.
+- `B()` returning `2` → serves
+  `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB`, the sole
+  member of the failing set. This is the entirety of the repair.
+- `A()` left untouched at `1` → protects
+  `fixture/buildcodefix/tests/suite::TestA`, which is outside the failing
+  set and must not regress when the suite command re-runs the whole
+  package.
 
 ## Verification
 
-Run the suite command from `architecture.yaml` at the repository root:
+Run the architecture's suite command from the project root:
 
-```
-go test -json -count=1 ./tests/suite/...
-```
+    go test -json -count=1 ./tests/suite/...
 
-Expected result: both `TestA` and `TestB` report `pass`, and the package result is `pass` with no build or vet errors. `-count=1` keeps the Go test cache from masking the change.
+Expect `TestA` and `TestB` both to report `pass`, with no build or vet
+errors. Confirm `git status` shows `services/calc/calc.go` as the only
+modified path.

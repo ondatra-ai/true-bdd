@@ -1,0 +1,6 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply--jest-jest-tests.unit.greeting.test.js-load--iter1-result.yaml ===
+applied: true
+impossible: []
+target: "services/greeter"
+summary: "Added greeting.js with a named CommonJS greet export, a world default, and one greeting template. Ran npx jest --config jest.config.js: greeting.test.js loaded successfully and both greeting tests passed."
+=== FILE_END: tmp/{{RUN_DIR}}/apply--jest-jest-tests.unit.greeting.test.js-load--iter1-result.yaml ===

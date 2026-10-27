@@ -484,6 +484,6 @@ func runSnapshotSkipDirs() []string {
 	return []string{
 		".git", "node_modules", ".next",
 		"test-results", "playwright-report",
-		"tmp/codex-homes", "tmp/codex-shell-home", "tmp/codex-go-build", "tmp/codex-tmp",
+		"tmp/library-download", "tmp/codex-homes", "tmp/codex-shell-home", "tmp/codex-go-build", "tmp/codex-tmp",
 	}
 }

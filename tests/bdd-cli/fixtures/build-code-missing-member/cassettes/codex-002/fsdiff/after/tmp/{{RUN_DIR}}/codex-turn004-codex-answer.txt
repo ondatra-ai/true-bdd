@@ -1,5 +1,6 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter2-result.yaml ===
 applied: true
+impossible: []
 target: "services/calc"
-summary: "Changed Mode() from returning 1 to returning 2. Ran go test -count=1 ./tests/suite/... successfully; TestA and TestB pass."
+summary: "Changed calc.Mode() from returning 1 to unconditionally returning 2. TestA and TestB passed with go test -count=1 ./tests/suite/.... Formatting check passed."
 === FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter2-result.yaml ===

@@ -1,0 +1,81 @@
+story:
+  id: build-code-writable
+  feature: build-code
+  title: Repair within declared writable paths or report impossible work
+  as_a: System Architect
+  i_want: bound repairs to declared source and writable paths while preserving tests
+  so_that: a repair changes only the files the architecture authorizes
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 005-tests-refused
+    description: A writable grant over tests is refused before any runner or AI turn
+    steps:
+    - given:
+      - the "build-code-writable-refused" project tree
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 1
+      - stdout matches Refusing to start
+      - stdout matches overlaps tests or step definitions
+      - the engine spawned no test runners
+      - the engine dispatched no fix AI turns to "claude"
+      - the engine dispatched no apply AI turns to "codex"
+  - id: 001-manifests
+    description: An exact writable go.sum grant lets the writer repair a missing checksum
+    steps:
+    - given:
+      - the "build-code-writable-allowed" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches BUILD CODE COMPLETE
+      - the file "go.sum" is created
+      - the engine dispatched 1 fix AI turn to "claude"
+      - the engine dispatched 1 apply AI turn to "codex"
+      - every file matching "tmp/codex-homes/*/*/config.toml" matches (?m)^"{{CWD}}/go\.sum" = "write"$
+      - every file matching "tmp/codex-homes/*/*/config.toml" matches (?m)^"{{CWD}}/go\.mod" = "write"$
+      - every file matching "tmp/codex-homes/*/*/config.toml" does not match (?m)^"{{CWD}}/tests(?:/[^"\n]*)?" = "write"$
+      - every file matching "tmp/codex-homes/*/*/config.toml" does not match (?m)^"{{CWD}}" = "write"$
+      - the shell command "go test -mod=readonly ./tests/suite/..." run in "." exits with code 0
+  - id: 002-plan-impossible
+    description: A plan that needs undeclared go.sum stops before the writer
+    steps:
+    - given:
+      - the "build-code-writable-plan" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 1
+      - stdout matches repair is impossible within
+      - 'stdout matches repair is impossible within.*go.sum: .+'
+      - stdout matches change these files by hand, or add them to the service
+      - stdout does not match BUILD CODE COMPLETE
+      - the engine dispatched 1 fix AI turn to "claude"
+      - the engine dispatched no apply AI turns to "codex"
+      - the engine spawned exactly 2 test runners
+      - the file "services/calc/calc.go" is unchanged
+  - id: 003-writer-impossible
+    description: A writer impossibility verdict stops at once and keeps its completed edits
+    steps:
+    - given:
+      - the "build-code-writable-writer" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 1
+      - stdout matches repair is impossible within
+      - 'stdout matches go.sum: deployment requires a root checksum repair'
+      - stdout matches change these files by hand, or add them to the service
+      - stdout does not match BUILD CODE COMPLETE
+      - 'stdout matches still failing after rerun: none'
+      - the engine dispatched 1 fix AI turn to "claude"
+      - the engine dispatched 1 apply AI turn to "codex"
+      - the engine spawned exactly 2 test runners
+      - the file "services/calc/prepared.txt" is created
+      - the file "services/calc/calc.go" is modified
+      - the shell command "go test ./tests/suite/..." run in "." exits with code 0

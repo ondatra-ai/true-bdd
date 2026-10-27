@@ -18,3 +18,6 @@ architecture:
     - name: calc
       path: services/calc
       language: go
+      libraries:
+        - module: github.com/google/uuid
+          version: v1.6.0

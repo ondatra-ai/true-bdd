@@ -1,4 +1,4 @@
-// Package calc provides functions returning the constants 1 and 2.
+// Package calc provides constant integer results.
 package calc
 
 // A returns 1.

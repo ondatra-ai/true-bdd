@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "fixture": "build-code-writable-writer",
+  "files": [
+    {
+      "path": "services/calc/calc.go",
+      "kind": "modified",
+      "size": 54,
+      "sha256": "52bdb4c72d9c331b8dd9a795523584a00613e1d42ef305e72dc44cdcdf2700ab",
+      "text": "package calc\n\nfunc Add(a, b int) int { return a + b }\n"
+    },
+    {
+      "path": "services/calc/prepared.txt",
+      "kind": "created",
+      "size": 9,
+      "sha256": "cb064c1339ffa3d7777bcb0459de3dceddb9146156dde58065a4ac826b029aa7",
+      "text": "prepared\n"
+    }
+  ]
+}

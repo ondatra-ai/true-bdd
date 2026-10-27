@@ -1,7 +1,8 @@
-Created `prepared.txt` containing exactly `prepared\n` and changed `Add` to return `a + b + 1`, as required for preparation. Ran the full failing set: `TestAdd` failed with `6, want 5`; no tests passed.
+Created `prepared.txt` and changed `Add` to return `a + b + 1`. Formatting passed. `TestAdd` failed as required: got 6, want 5; no tests passed. `go build ./...` was blocked by denied access to `tmp/codex-homes`.
 
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter1-result.yaml ===
 applied: false
+impossible: []
 target: "services/calc/calc.go"
 summary: "preparation only; test still fails"
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter1-result.yaml ===

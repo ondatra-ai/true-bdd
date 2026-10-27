@@ -1,1 +1,1 @@
-Changed only `services/calc/calc.go`: `A()` now returns `1`, while `B()` remains `0`. Left `prepared.txt` absent, completing only the required first stage.
+Changed only `services/calc/calc.go`: `A()` now returns `1`, while `B()` remains `0`. Verified that `prepared.txt` remains absent, completing only the required stage.

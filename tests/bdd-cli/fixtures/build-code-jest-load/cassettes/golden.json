@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "build-code-jest-load",
+  "files": [
+    {
+      "path": "services/greeter/greeting.js",
+      "kind": "created",
+      "size": 92,
+      "sha256": "75c043966fe63e95423057c5540052a5b850681a1be110841d9a8a93c8698dec",
+      "text": "function greet(name = \"world\") {\n  return `Hello, ${name}!`;\n}\n\nmodule.exports = { greet };\n"
+    }
+  ]
+}

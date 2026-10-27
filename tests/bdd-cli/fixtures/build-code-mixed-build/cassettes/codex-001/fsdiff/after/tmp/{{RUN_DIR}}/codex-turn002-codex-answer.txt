@@ -1,5 +1,6 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
 applied: true
+impossible: []
 target: "services/calc"
-summary: "Updated calc.go so A() returns 1 and added B() returning 2. Ran go test -count=1 ./tests/... successfully: the broken package compiled, TestBuild passed, and TestA passed. No tests or documents were modified."
+summary: "Added B() returning 2 and corrected A() to return 1. go test -count=1 ./tests/... passed: broken package builds, TestBuild passes, and TestA passes. No tests or documents changed."
 === FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
