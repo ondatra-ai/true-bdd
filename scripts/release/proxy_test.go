@@ -21,10 +21,17 @@ func TestProxyHarnessUsesTheNamedRevisionWithoutLocalReplacement(t *testing.T) {
 
 	write(t, tool, `#!/bin/sh
 if test "$1" = mod; then exit 0; fi
-if test "$1" = list; then echo v0.0.0-published; exit 0; fi
+if test "$1" = list; then echo github.com/ondatra-ai/true-bdd/pkg v0.0.0-published; exit 0; fi
+if test "$1" = install; then
+ test "$2" = github.com/ondatra-ai/true-bdd/services/true-bdd@published-commit || exit 13
+ /bin/mkdir -p "$GOBIN"
+ printf '#!/bin/sh\necho "true-bdd version v0.0.0-published commit unknown"\n' > "$GOBIN/true-bdd"
+ /bin/chmod 700 "$GOBIN/true-bdd"
+ exit 0
+fi
 test "$1" = get || exit 11
 test "$2" = github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo@published-commit || exit 12
-echo 'require github.com/ondatra-ai/true-bdd v0.0.0-published' >> go.mod
+echo 'require github.com/ondatra-ai/true-bdd/pkg v0.0.0-published' >> go.mod
 echo proxy-installed > proxy-receipt
 `)
 

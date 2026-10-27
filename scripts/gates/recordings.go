@@ -13,7 +13,7 @@ import (
 )
 
 // recordingsGlob is the RECORDED fixture data — cassettes and goldens.
-const recordingsGlob = "tests/bdd-cli/fixtures/*/cassettes"
+const recordingsGlob = "tests/true-bdd/fixtures/*/cassettes"
 
 // reportLimit is how many offending files a category names, as `head -5` did.
 const reportLimit = 5

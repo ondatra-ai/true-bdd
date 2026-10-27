@@ -103,7 +103,7 @@ func parseFlags(args []string) (*options, error) {
 
 	flagSet.StringVar(&opts.Root, "root", "tmp/test_run", "retained fixture run root")
 	flagSet.StringVar(&opts.ChecklistsDir, "checklists", "true-bdd/checklists", "shipped checklists dir")
-	flagSet.StringVar(&opts.FixturesDir, "fixtures", "tests/bdd-cli/fixtures", "fixture manifests dir")
+	flagSet.StringVar(&opts.FixturesDir, "fixtures", "tests/true-bdd/fixtures", "fixture manifests dir")
 	flagSet.StringVar(&opts.BaselinePath, "baseline", "pkg/testkit/cmd/coverage/baseline.yaml", "baseline file")
 	flagSet.StringVar(&opts.JSONPath, "json", "", "write the machine profile to this path")
 	flagSet.StringVar(&opts.Session, "session", "", "restrict the scan to one session (regression mode)")

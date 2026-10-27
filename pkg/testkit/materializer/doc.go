@@ -10,12 +10,12 @@
 //
 // Materialize a fixture:
 //
-//	go run ./pkg/testkit/materializer \\
+//	go run github.com/ondatra-ai/true-bdd/pkg/testkit/materializer \\
 //	    -fixture <fixture-dir> -target <target-dir> [-repo <repo-root>]
 //
 // Recompute the baseline hash of an already-materialized tree:
 //
-//	go run ./pkg/testkit/materializer -list-baseline -target <target-dir>
+//	go run github.com/ondatra-ai/true-bdd/pkg/testkit/materializer -list-baseline -target <target-dir>
 //
 // Flags:
 //

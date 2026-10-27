@@ -1,0 +1,37 @@
+# Product document for `scen-check-fix-merges-phrases`.
+#
+# Two templates say the service answers, in two words; the suite binds
+# both with one step definition. The fix merges them into one entry.
+
+title: "Fixture host project"
+
+description:
+  summary: >-
+    A single MCP service, used by the true-bdd fixtures as the host
+    project a scenario registry describes.
+
+roles:
+  - name: Operator
+    definition: Runs the MCP service and watches what it answers.
+  - name: Client Developer
+    definition: Writes the clients that send the MCP service its requests.
+
+glossary: []
+
+catalogue:
+  - template: 'the mcp service is running'
+    block: given
+    means: The MCP service has started and accepts requests.
+    terms: []
+  - template: 'the {actor:role} sends "{message}"'
+    block: when
+    means: That role sends the quoted message to the MCP service, once.
+    terms: []
+  - template: 'the service answers "{reply}"'
+    block: then
+    means: The MCP service's reply to the message is exactly the quoted text.
+    terms: []
+  - template: 'the service replies "{reply}"'
+    block: then
+    means: The MCP service's reply to the message is exactly the quoted text.
+    terms: []

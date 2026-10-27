@@ -24,6 +24,7 @@ type Record struct {
 	Digest       string             `json:"digest"`
 	StartedAt    time.Time          `json:"started_at"`
 	AllowedRoots []string           `json:"allowed_roots"`
+	Manifests    ManifestCheck      `json:"manifests"`
 	Cuts         map[string]Cut     `json:"cuts"`
 	Runs         map[string]Attempt `json:"runs"`
 	Audits       map[string][]Audit `json:"audits"`

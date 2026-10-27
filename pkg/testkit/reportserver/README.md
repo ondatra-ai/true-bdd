@@ -1,7 +1,7 @@
 # BDD run report server
 
 ```bash
-go run ./tests/bdd-cli/cmd/report-server        # http://127.0.0.1:7331
+go run github.com/ondatra-ai/true-bdd/pkg/testkit/cmd/report-server        # http://127.0.0.1:7331
 ```
 
 Flags: `-addr` (default `127.0.0.1:7331`), `-runs` (default `tmp/test_run`),
@@ -27,7 +27,7 @@ a fixture *expected* next to what it got. This serves every session from memory 
 
 ## Design
 
-**The seal.** `bdd-cli-logs/harness.json` is the last byte ever written into a fixture
+**The seal.** `true-bdd-logs/harness.json` is the last byte ever written into a fixture
 directory — `HarnessRecorder.Finish` is registered first in the subtest, so `t.Cleanup`'s LIFO
 runs it last. Its presence therefore *proves* the fixture can never change, which is an exact
 cache key rather than an mtime heuristic. Only the fixture currently in flight is re-parsed on

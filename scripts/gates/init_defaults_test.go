@@ -12,7 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const initCopies = "../../services/bdd-cli/internal/infrastructure/initialization/files"
+const initCopies = "../../services/true-bdd/internal/infrastructure/initialization/files"
 
 func TestInitDefaultsMatchProjectFiles(t *testing.T) {
 	t.Parallel()

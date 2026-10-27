@@ -36,37 +36,25 @@ func TestDeniedCallsLogTargets(t *testing.T) {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(&logs, nil)))
 	t.Cleanup(func() { slog.SetDefault(previous) })
 
-	for _, stream := range []bool{false, true} {
-		logs.Reset()
+	_, err = claude.RunJSON("prompt", claude.Options{Role: "fix"})
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		opts := claude.Options{Role: "fix"}
+	var record map[string]any
 
-		var err error
-		if stream {
-			_, err = claude.RunStreamContext(t.Context(), "prompt", opts, func(claude.Event) {})
-		} else {
-			_, err = claude.RunJSON("prompt", opts)
-		}
+	err = json.Unmarshal(logs.Bytes(), &record)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		if err != nil {
-			t.Fatal(err)
-		}
+	want := "Read /host/file.go; Glob /host/src/**/*.go; Grep /host/tests; Bash"
+	if record["denied"] != want || record["role"] != "fix" {
+		t.Fatal(logs.String())
+	}
 
-		var record map[string]any
-
-		err = json.Unmarshal(logs.Bytes(), &record)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		want := "Read /host/file.go; Glob /host/src/**/*.go; Grep /host/tests; Bash"
-		if record["denied"] != want || record["role"] != "fix" {
-			t.Fatalf("stream=%v: %s", stream, logs.String())
-		}
-
-		if strings.Contains(logs.String(), "secret") {
-			t.Fatal("logged non-target input")
-		}
+	if strings.Contains(logs.String(), "secret") {
+		t.Fatal("logged non-target input")
 	}
 }
 

@@ -12,6 +12,8 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/shell"
 )
 
+const modVerb = "mod"
+
 // Module is one downloaded Go module and its exact cache locations.
 type Module struct {
 	Path    string `json:"path"`
@@ -23,10 +25,14 @@ type Module struct {
 	Error   string `json:"error"`
 }
 
-// DownloadModules downloads the complete graph of an isolated manifest, without changing the host's module files.
-func DownloadModules(ctx context.Context, dir string) ([]Module, error) {
-	result, err := shell.Run(ctx, []string{Bin, "mod", "download", "-json", "all"}, shell.Options{
-		Dir: dir, Group: true, Env: git.Environment().Strip("GOFLAGS").Set("GOWORK=off", "GOTOOLCHAIN=local"),
+// DownloadModulesInCache prepares the drill's private cache from its declared library manifest.
+func DownloadModulesInCache(ctx context.Context, dir, cache string) ([]Module, error) {
+	return downloadModules(ctx, dir, git.Environment().Set("GOMODCACHE="+cache))
+}
+
+func downloadModules(ctx context.Context, dir string, env shell.Env) ([]Module, error) {
+	result, err := shell.Run(ctx, []string{Bin, modVerb, "download", "-json", "all"}, shell.Options{
+		Dir: dir, Group: true, Env: env.Strip("GOFLAGS").Set("GOWORK=off", "GOTOOLCHAIN=local"),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("download modules: %w", err)

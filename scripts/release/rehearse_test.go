@@ -8,7 +8,21 @@ import (
 	"testing"
 
 	"github.com/ondatra-ai/true-bdd/scripts/release"
+	"gopkg.in/yaml.v3"
 )
+
+func TestCalculatorFixtureDeclaresItsTestLibrary(t *testing.T) {
+	t.Parallel()
+
+	fixture := "../../tests/true-bdd/fixtures/build-code-spec-scenario/input"
+
+	architecture, err := os.ReadFile(filepath.Join(fixture, "docs/architecture/architecture.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assertTestingLibraryPin(t, architecture, "v0.0.0-20261027174914-58543b8e324b")
+}
 
 func TestMissingArchiveIsAnInstallFailure(t *testing.T) {
 	t.Parallel()
@@ -55,6 +69,8 @@ func TestRehearsalInstallsAHostBeforeItsFirstAITurn(t *testing.T) {
 
 	assertInstallSteps(t, report)
 
+	assertCalculatorFollowedTheGuide(t, report)
+
 	if report.Hosts[1].Skipped == "" {
 		t.Error("missing node/npm must produce an explicit Jest skip")
 	}
@@ -62,7 +78,7 @@ func TestRehearsalInstallsAHostBeforeItsFirstAITurn(t *testing.T) {
 
 const installedEngine = `#!/bin/sh
 case "$1" in
- version) exit 0 ;;
+ version) echo "true-bdd version test commit HEAD"; exit 0 ;;
  init)
   test ! -e true-bdd/true-bdd.yaml || exit 11
   test ! -e templates/poison || exit 12
@@ -72,6 +88,7 @@ case "$1" in
   echo init-created > templates/build-code.prompt.tpl
   exit 0 ;;
 esac
+echo "$*" > first-run-argv
 /bin/mkdir -p tmp
 if /usr/bin/grep -q 'example.invalid/true-bdd-missing' docs/architecture/architecture.yaml; then
  printf '{"msg":"Refusing to start","error":"%s"}\n' \
@@ -83,12 +100,12 @@ test ! -e "$GOMODCACHE" || exit 18
 test -d .git || exit 13
 /usr/bin/grep -q init-created true-bdd/true-bdd.yaml || exit 14
 if /usr/bin/grep -q replace go.mod; then exit 15; fi
-/usr/bin/grep -q 'github.com/ondatra-ai/true-bdd v0.0.0' go.mod || test -f proxy-receipt || exit 17
+/usr/bin/grep -q 'github.com/ondatra-ai/true-bdd/pkg v0.0.0' go.mod || test -f proxy-receipt || exit 17
 test ! -e services/calc || exit 16
 /bin/mkdir -p tmp
-pin=$(/usr/bin/awk '$1 == "github.com/ondatra-ai/true-bdd" {print $2}' go.mod)
+pin=$(/usr/bin/awk '$1 == "github.com/ondatra-ai/true-bdd/pkg" {print $2}' go.mod)
 printf '{"msg":"Libraries downloaded","libraries":["%s"],"read_roots":["%s"]}\n' \
- "github.com/ondatra-ai/true-bdd@$pin" "$GOMODCACHE/github.com/ondatra-ai/true-bdd@$pin" > tmp/true-bdd.log.json
+ "github.com/ondatra-ai/true-bdd/pkg@$pin" "$GOMODCACHE/github.com/ondatra-ai/true-bdd/pkg@$pin" > tmp/true-bdd.log.json
 echo '{"msg":"Dispatching AI turn","cli":"claude","role":"fix_generator"}' >> tmp/true-bdd.log.json
 claude
 exit 1
@@ -97,8 +114,8 @@ exit 1
 func assertInstallSteps(t *testing.T, report release.Report) {
 	t.Helper()
 
-	for _, step := range []string{"install checksums", "binary", "source", "sample host",
-		"configuration", "harness", "git init", aiBoundary} {
+	for _, step := range []string{"install checksums", "binary", "source", "local module proxy", "go install",
+		"sample host", "configuration", "harness", "git init", aiBoundary} {
 		found := false
 
 		for _, result := range report.Steps {
@@ -110,5 +127,44 @@ func assertInstallSteps(t *testing.T, report release.Report) {
 		if !found {
 			t.Errorf("missing successful install step %q: %+v", step, report.Steps)
 		}
+	}
+}
+
+func assertCalculatorFollowedTheGuide(t *testing.T, report release.Report) {
+	t.Helper()
+
+	argv, err := os.ReadFile(filepath.Join(report.Root, "calculator", "first-run-argv"))
+	if err != nil || strings.TrimSpace(string(argv)) != strings.TrimPrefix(release.GuideFirstRun, "true-bdd ") {
+		t.Errorf("first run %q is not the guide's %q: %v", argv, release.GuideFirstRun, err)
+	}
+
+	architecture, err := os.ReadFile(filepath.Join(report.Root, "calculator", "docs/architecture/architecture.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assertTestingLibraryPin(t, architecture, report.HarnessVersion)
+}
+
+func assertTestingLibraryPin(t *testing.T, architecture []byte, version string) {
+	t.Helper()
+
+	var document struct {
+		Architecture struct {
+			Testing struct {
+				Libraries []map[string]string `yaml:"libraries"`
+			} `yaml:"testing"`
+		} `yaml:"architecture"`
+	}
+
+	err := yaml.Unmarshal(architecture, &document)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	libraries := document.Architecture.Testing.Libraries
+	if len(libraries) != 1 || libraries[0]["module"] != "github.com/ondatra-ai/true-bdd/pkg" ||
+		libraries[0]["version"] != version {
+		t.Errorf("testing.libraries = %v, want only github.com/ondatra-ai/true-bdd/pkg@%s", libraries, version)
 	}
 }

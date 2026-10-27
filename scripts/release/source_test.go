@@ -12,8 +12,12 @@ func sourceRepository(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
 	write(t, filepath.Join(root, "go.mod"), "module github.com/ondatra-ai/true-bdd\n\ngo 1.25.0\n")
+	write(t, filepath.Join(root, "pkg/go.mod"), "module github.com/ondatra-ai/true-bdd/pkg\n\ngo 1.25.0\n")
+	write(t, filepath.Join(root, "services/true-bdd/go.mod"),
+		"module github.com/ondatra-ai/true-bdd/services/true-bdd\n\ngo 1.25.0\n")
+	write(t, filepath.Join(root, "services/true-bdd/main.go"), installableEngine)
 	write(t, filepath.Join(root, "pkg/testkit/bddgo/harness.go"), "package bddgo\n")
-	fixture := filepath.Join(root, "tests/bdd-cli/fixtures/build-code-spec-scenario/input")
+	fixture := filepath.Join(root, "tests/true-bdd/fixtures/build-code-spec-scenario/input")
 	write(t, filepath.Join(fixture, "go.mod"), "module fixture/stepsrun\n\ngo 1.25.0\n")
 	write(t, filepath.Join(fixture, "services/calc/calc.go"), "package calc\n")
 	write(t, filepath.Join(fixture, "docs/architecture/architecture.yaml"), `architecture:
@@ -22,7 +26,7 @@ func sourceRepository(t *testing.T) string {
     commands:
       replay: go version
     libraries:
-      - module: github.com/ondatra-ai/true-bdd
+      - module: github.com/ondatra-ai/true-bdd/pkg
         version: v0.0.0
 `)
 
@@ -48,7 +52,7 @@ func sourceRepository(t *testing.T) string {
 
 	toolPath := t.TempDir()
 
-	for _, name := range []string{"go", "git", "bash"} {
+	for _, name := range []string{"go", "git", "bash", "grep", "shasum", "tar", "gzip", "mkdir", "mv"} {
 		target, err := exec.LookPath(name)
 		if err != nil {
 			t.Fatal(err)
@@ -64,3 +68,18 @@ func sourceRepository(t *testing.T) string {
 
 	return root
 }
+
+// installableEngine stands in for the engine module the guide's `go install` builds from the
+// rehearsal's proxy: a module build reports its module version and no commit.
+const installableEngine = `package main
+
+import (
+	"fmt"
+	"runtime/debug"
+)
+
+func main() {
+	info, _ := debug.ReadBuildInfo()
+	fmt.Printf("true-bdd version %s commit unknown\n", info.Main.Version)
+}
+`

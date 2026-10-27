@@ -211,3 +211,34 @@ func TestAuditNamesEngineAndCodexEvidenceWithoutDatabases(t *testing.T) {
 		}
 	}
 }
+
+func TestAuditReportsEngineImportGateOnRebuiltCut(t *testing.T) {
+	runner, record, cut := prepare(t, "#!/bin/sh\nexit 0\n")
+	path := filepath.Join(cut.Directory, "services/true-bdd/rebuilt.go")
+	put(t, path, `package main; import "fmt"; func main() { fmt.Println("rebuilt") }`)
+	audit, err := runner.Audit(t.Context(), record.Directory, "a")
+	must(t, err)
+
+	if audit.EngineImports != "passed" {
+		t.Fatalf("independent engine: %s", audit.EngineImports)
+	}
+
+	put(t, path, `package main; import _ "github.com/ondatra-ai/true-bdd/pkg/disk"`)
+	audit, err = runner.Audit(t.Context(), record.Directory, "a")
+	must(t, err)
+
+	if !strings.HasPrefix(audit.EngineImports, "failed:") {
+		t.Fatalf("bad import passed: %s", audit.EngineImports)
+	}
+
+	if !strings.Contains(audit.EngineImports, "pkg/disk") {
+		t.Fatalf("bad import was not audited: %s", audit.EngineImports)
+	}
+
+	saved, err := drill.Read(record.Directory)
+	must(t, err)
+
+	if saved.Audits["a"][1].EngineImports != audit.EngineImports {
+		t.Fatal("import audit was not persisted")
+	}
+}

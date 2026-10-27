@@ -71,6 +71,7 @@ case "$MODE" in
  expired) echo 'ERROR: Your access token could not be refreshed.'; exit 1;;
  stall) sleep 10;;
  limit) echo "ERROR: You've hit your usage limit."; exit 1;;
+ spend-cap) echo 'ERROR: You hit your spend cap set in your workspace. Increase your spend cap to continue.'; exit 1;;
  fail) exit 1;;
 esac
 if [ "$COMMIT" = yes ]; then
@@ -255,14 +256,14 @@ func TestWritersAndFix(t *testing.T) {
 }
 
 func TestUnavailableReaders(t *testing.T) {
-	for _, mode := range []string{"out", limitStatus, "silent"} {
+	for _, mode := range []string{"out", limitStatus, spendCapStatus, "silent"} {
 		t.Run(mode, func(t *testing.T) {
 			root, opts := fixture(t)
 			runner := codexrun.New(root)
 			runner.Stall = 500 * time.Millisecond
 			runner.Grace = 10 * time.Millisecond
 
-			if mode == limitStatus {
+			if mode == limitStatus || mode == spendCapStatus {
 				t.Setenv("MODE", mode)
 			} else {
 				t.Setenv("LOGIN", mode)

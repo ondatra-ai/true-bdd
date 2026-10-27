@@ -10,7 +10,7 @@ import (
 const firstScenario = "E2E-001"
 
 // suiteName is the one suite specDoc declares.
-const suiteName = "bdd-cli"
+const suiteName = "true-bdd"
 
 // The step texts registryDoc and modelRegistryDoc use, named so the two
 // halves of a cross-check assertion cannot drift apart in a test.
@@ -22,14 +22,14 @@ const (
 )
 
 // specDoc is a one-suite architectural spec: the cli suite, exercising
-// the bdd-cli service.
+// the true-bdd service.
 const specDoc = `
 architecture:
   testing:
     framework: go-test
   services:
-    - name: bdd-cli
-      path: services/bdd-cli
+    - name: true-bdd
+      path: services/true-bdd
       language: go
 `
 
@@ -39,7 +39,7 @@ const registryDoc = `
 scenarios:
   E2E-001:
     description: mine
-    service: bdd-cli
+    service: true-bdd
     user_stories: []
     merged_steps:
       given: [a tree]
@@ -95,12 +95,12 @@ func TestSuiteSelectsByService(t *testing.T) {
 func TestNewRefusesUndeclaredSuite(t *testing.T) {
 	t.Parallel()
 
-	_, err := LoadSuiteSpec(writeDoc(t, "architecture.yaml", specDoc), "bdd-clii")
+	_, err := LoadSuiteSpec(writeDoc(t, "architecture.yaml", specDoc), "true-bddi")
 	if !errors.Is(err, ErrSuiteNotDeclared) {
 		t.Fatalf("want ErrSuiteNotDeclared, got %v", err)
 	}
 
-	if !strings.Contains(err.Error(), "declared: bdd-cli") {
+	if !strings.Contains(err.Error(), "declared: true-bdd") {
 		t.Errorf("the refusal must name what IS declared, got %q", err)
 	}
 }
@@ -230,7 +230,7 @@ const modelRegistryDoc = `
 scenarios:
   E2E-001:
     description: mine
-    service: bdd-cli
+    service: true-bdd
     user_stories: []
     merged_steps:
       when:

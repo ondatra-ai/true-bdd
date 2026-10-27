@@ -241,7 +241,7 @@ func indexIntoValues[T any](items []T, raw string) (T, bool) {
 func fixtureRefs(fixture *reporter.Fixture) []ArtifactRef {
 	refs := []ArtifactRef{}
 
-	// file is the sidecar's name inside bdd-cli-logs, empty for a body
+	// file is the sidecar's name inside true-bdd-logs, empty for a body
 	// that is not a file on disk (the rubric comes from the manifest).
 	candidates := []struct {
 		ref  string
@@ -280,7 +280,7 @@ const (
 	spawnStderrFile = "cli-stderr.txt"
 )
 
-// sidecarRepoPath locates one bdd-cli-logs file from the repo root.
+// sidecarRepoPath locates one true-bdd-logs file from the repo root.
 func sidecarRepoPath(fixture *reporter.Fixture, name string) string {
 	if name == "" || fixture.RelDir == "" {
 		return ""

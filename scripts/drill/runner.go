@@ -61,17 +61,25 @@ func (r Runner) Start(ctx context.Context, base string) (Record, error) {
 		return record, err
 	}
 
+	err = saveIdentity(record)
+	if err != nil {
+		return record, err
+	}
+
+	record.Manifests, err = checkManifests(ctx, record)
+	if err != nil {
+		_ = save(record)
+
+		return record, err
+	}
+
 	record.AllowedRoots, err = gotool.ToolchainRoots(ctx)
 	if err != nil {
 		return record, err
 	}
 
+	record.AllowedRoots = append(record.AllowedRoots, record.Manifests.Cache)
 	record.AllowedRoots = append(record.AllowedRoots, configurationRoots()...)
-
-	err = saveIdentity(record)
-	if err != nil {
-		return record, err
-	}
 
 	err = save(record)
 	if err != nil {
@@ -121,22 +129,11 @@ func within(path, root string) bool {
 }
 
 func buildBase(ctx context.Context, record Record) (string, error) {
-	source, err := privateDirectory(record.Repository)
+	source, err := exportBase(ctx, record)
 	if err != nil {
 		return "", err
 	}
-
 	defer func() { _ = disk.RemoveTree(source) }()
-
-	archive, err := (git.Repository{Dir: record.Repository}).Archive(ctx, record.Base)
-	if err != nil {
-		return "", err
-	}
-
-	err = exportTree(source, archive, "")
-	if err != nil {
-		return "", err
-	}
 
 	err = gotool.BuildTrimmed(ctx, source, record.Binary)
 	if err != nil {
@@ -144,4 +141,24 @@ func buildBase(ctx context.Context, record Record) (string, error) {
 	}
 
 	return fingerprint(record.Binary)
+}
+
+func exportBase(ctx context.Context, record Record) (string, error) {
+	source, err := privateDirectory(record.Repository)
+	if err != nil {
+		return "", err
+	}
+
+	archive, err := (git.Repository{Dir: record.Repository}).Archive(ctx, record.Base)
+	if err == nil {
+		err = exportTree(source, archive, "")
+	}
+
+	if err != nil {
+		_ = disk.RemoveTree(source)
+
+		return "", err
+	}
+
+	return source, nil
 }

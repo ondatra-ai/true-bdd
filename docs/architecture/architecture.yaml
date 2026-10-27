@@ -15,13 +15,33 @@
 # engine still supports `jest` and `playwright` for host projects that
 # want them; this repo declares neither.
 
-# Repository tooling: scripts/cmd/release builds git-archive binary artifacts and
-# rehearses init and sample hosts outside the checkout; scripts/gates runs its
-# zero-cost pass in CI. This is tooling, not an engine command or a published release.
+# Three Go modules: github.com/ondatra-ai/true-bdd (tests/scripts),
+# github.com/ondatra-ai/true-bdd/pkg (shared/test libraries), and
+# github.com/ondatra-ai/true-bdd/services/true-bdd (engine, no repository dependencies).
+# Development uses only the root module's replace to ./pkg; release engine builds
+# run in services/true-bdd with GOWORK=off and no replaces. Gates/lint check all
+# three modules independently, excluding fixture sentinels. Fixtures force GOWORK=off.
+# Only the engine is released: a release is the engine module's tag
+# services/true-bdd/vX.Y.Z, the form Go needs for go install …/services/true-bdd@vX.Y.Z.
+# No pkg/ or root tag is pushed; a Go host takes the test library at the release's
+# commit. No tag is created by the drill or release rehearsal.
+# Before cuts, the drill caches the engine libraries below and their complete graph.
+# A scratch export loses the engine go.mod/go.sum, recreates them from those pins
+# with GOPROXY=off and GOSUMDB=off, then builds with a fresh build cache.
+# record.json records deleted paths, offline result, cache and diagnostic log.
+# Cut A removes services/true-bdd in full, including both manifests.
+#
+# Repository tooling: scripts/cmd/release builds git-archive binary artifacts, each
+# stamped with its version and commit through -ldflags -X, and rehearses the README's
+# install guide, command for command, outside the checkout: the archive and go install
+# channels, init and sample hosts. scripts/gates runs its zero-cost pass in CI, and
+# .github/workflows/release.yml runs build, rehearse and notes on a pushed release tag
+# to open a draft release. This is tooling, not an engine command; a person publishes.
 # That gate covers the init-host-first-AI-turn criterion: an installed binary
 # initializes a fresh host with its own Specification and tests and reaches fake CLIs.
-# The default harness uses a local file module proxy from the artifact export at
-# its commit-time pseudo-version. Both go get and the engine use that proxy, with
+# The default proxy is a local file module proxy serving the test library and the
+# engine from the artifact export at its commit-time pseudo-version, resolving the
+# guide's @<commit> and go install's latest query. go get, go install and the engine use it, with
 # the public Go proxy for transitive modules. The copied testing.libraries is pinned
 # to go get's resolved version. --harness-revision uses the real proxy and records
 # its resolved exact version instead. No source replace is installed.
@@ -585,15 +605,14 @@ architecture:
     # and its build graph for build-code-spec-005-matched-scenario-embedded.
     # Warm that graph first for a fully disconnected replay.
     commands:
-      record: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ -mode=services:record,tests:record"
-      replay: "go test -tags bdd -json -count=1 -timeout=40m ./tests/bdd-cli/ -mode=services:replay,tests:replay"
-      live: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ -mode=services:live,tests:live"
+      record: "go test -tags bdd -json -count=1 -timeout=180m ./tests/true-bdd/ -mode=services:record,tests:record"
+      replay: "go test -tags bdd -json -count=1 -timeout=40m ./tests/true-bdd/ -mode=services:replay,tests:replay"
+      live: "go test -tags bdd -json -count=1 -timeout=180m ./tests/true-bdd/ -mode=services:live,tests:live"
 
   services:
-    - name: bdd-cli
+    - name: true-bdd
       type: "cli"
-      path: services/bdd-cli
-      writable: [go.mod, go.sum]
+      path: services/true-bdd
       language: go
       libraries:
         - module: github.com/Masterminds/goutils
@@ -644,15 +663,98 @@ architecture:
           version: v0.37.0
         - module: gopkg.in/yaml.v3
           version: v3.0.1
+        # Exact dependency-test pins make offline go mod tidy reproducible.
+        - module: github.com/google/go-cmp
+          version: v0.7.0
+        - module: github.com/kr/pretty
+          version: v0.3.1
+        - module: github.com/kr/text
+          version: v0.2.0
+        - module: github.com/rogpeppe/go-internal
+          version: v1.11.0
+        - module: gopkg.in/check.v1
+          version: v1.0.0-20201130134442-10cb98267c6c
+        - module: go.uber.org/atomic
+          version: v1.9.0
+        - module: go.uber.org/multierr
+          version: v1.9.0
+        - module: github.com/inconshreveable/mousetrap
+          version: v1.1.0
       frameworks:
         - cobra
       patterns:
+        owned_io:
+          description: The engine owns all repository code it uses, including its IO layer; a cut-A rebuild deletes and regenerates the whole services/true-bdd folder.
+          rules:
+            - >-
+              No engine Go package, including its tests or files hidden by build constraints,
+              imports this repository outside services/true-bdd. The engine uses only the
+              exact third-party module versions in this service's libraries above; that list
+              includes the complete imported graph, verified with go list -deps. Tests and
+              tooling retain independent pkg implementations and are never engine libraries.
+              The engine-imports gate scans source imports without needing to compile;
+              the drill audit records passed or failed with offending source/import diagnostics
+              in engine_imports, and reports missing source as a failure, never a pass.
+            - >-
+              Under internal/infrastructure, console owns the three standard descriptors
+              and plain answers, prompts, headers, separators and stdin. logging alone
+              constructs slog handlers: text INFO and above on stdout, DEBUG and above
+              as newline-delimited JSON in paths.tmp_dir/true-bdd.log.json. The JSON file
+              is created even with zero records, appended per record, and engine records
+              have no tooling tool/run attributes. enginelog owns the message/key vocabulary
+              stated under terms.log record and the AI-turn invocation contract below.
+              Scenarios keep that contract compatible with the independent test reporter.
+            - >-
+              disk owns explicit filesystem byte access, wrapping errors without losing their identity.
+              Configuration loading retains the declared Viper library's own file reader;
+              the hold Scenarios exercise Registry reading through disk.
+              A read takes a shared advisory flock on the target's parent; a mutation takes
+              an exclusive one, so atomic rename cannot bypass it by changing the target inode.
+              Conflicting holds poll every 5ms for up to 10s, then fail with directory lock
+              not released and the parent path. Handles and holds close before returning.
+              Whole-file writes clear stale .true-bdd.tmp.<basename> staging files without
+              following symlinks, create exclusively, write/close and atomically rename;
+              they do not fsync. Existing file permissions survive replacement; new shared
+              files/directories use 0644/0755 and private ones 0600/0700. Append writes one
+              newline-terminated log record under one hold. Update reads/changes/writes
+              under the same exclusive hold. Copies use the same read/write operations.
+              Directory creation, rooted creation and unique temporary-directory creation
+              take no hold; they need no existing target. Removal holds the target's parent.
+              No handle escapes these operations; rooted writer directory creation refuses
+              symlink escapes. Private module-download temporary
+              directories and credential files are removed on their stated cleanup paths.
+            - >-
+              shell alone imports os/exec. Only cli/cli.go and explicitly named cli wrappers
+              claude, codex, git, gotool, spec and truebdd may import shell. cli aliases its
+              result/options vocabulary; wrappers export typed operations, never an arbitrary
+              spawn entry point except spec for architecture-declared argv. A completed
+              nonzero exit is a result code, distinct from a failure to start. Captures
+              preserve exact bytes, streams stay separate unless combined explicitly, and
+              writers receive stdout/stderr without scanner line limits. Claude and codex
+              turns run in process groups; caller cancellation kills descendants and remains
+              fatal. Individual command handlers bind interrupt/termination to that context.
+              The engine adds no AI-turn deadline. Each spawn/exit JSON record names binary,
+              args and dir; exits include exit_code, signal, elapsed_ms, stdout_bytes and
+              stderr_bytes. Declared suite commands keep their argv and working directory.
+            - >-
+              gotool reads Go runtime/module roots, and downloads the complete graph of an
+              isolated exact manifest with go mod download -json all, GOWORK=off,
+              GOTOOLCHAIN=local and no inherited GOFLAGS. Its Git environment policy strips
+              the repository-local variables git rev-parse --local-env-vars names from
+              inherited or explicit environments; it performs no repository mutation.
+              Download errors name the library and stop before a writer. Claude streaming
+              parses newline-delimited events across arbitrary writes, emits assistant/tool/
+              result events, prefers structured_output, preserves usage/cost, and distinguishes
+              started nonzero, error-result and missing-result failures from start failures.
+              Its child strips CLAUDECODE and prior history role, sets CLAUDE_HISTORY_ROLE
+              and disables the advisor; writer-specific isolation is stated in invocation.
+              Refused Claude and codex calls use the log-record target contract below.
         project_resources:
           description: Configuration, checklists and prompt templates are host files initialized once and checked before work (ADR-0029).
           rules:
             - >-
               The init command uses no bootstrap configuration. It carries copies under
-              services/bdd-cli/internal/infrastructure/initialization/files/, embedded by
+              services/true-bdd/internal/infrastructure/initialization/files/, embedded by
               the initialization package so go:embed stays within its directory and Go
               stays within services/. Only init reads these copies; runtime loaders
               read project files exclusively and never fall back to embedded content.
@@ -1124,6 +1226,31 @@ architecture:
   # words naming no code identifier, so the steps can be rebuilt from it.
   # It maps every word the catalogue declares, one entry per word.
   terms:
+    - term: build identity
+      technical: >-
+        A pure resolver accepts version and commit stamps and optional runtime/debug.BuildInfo.
+        Each nonempty stamp wins independently; otherwise Main.Version supplies version
+        and the vcs.revision setting supplies commit. Empty or absent metadata falls
+        back to (devel) and unknown. Go 1.24+ can supply a VCS pseudo-version as Main.Version;
+        no pseudo-version is synthesized and vcs.modified does not alter either field.
+        Current build metadata is read through runtime/debug.ReadBuildInfo.
+        Linker symbols are github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/buildinfo.version
+        and github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/buildinfo.commit,
+        set using -ldflags '-X <symbol>=<value>'. The version command prints one answer
+        line, true-bdd version <version> commit <commit>, terminated by a newline,
+        without loading configuration, installing logging or creating any file or directory. Every engine log
+        installation emits INFO msg="Engine started" with version and commit before
+        any other record. Configuration-based commands install logging after loading
+        configuration, init installs it directly; version, help, argument refusals,
+        configuration-read failures and the hidden guard do not install logging.
+      observed_by: >-
+        engine-entry-005-version-reports-build checks the whole stdout answer and no file
+        changes, including tmp. build-tests-files-002-stale-test-regenerated reads the
+        engine log, requiring its first record to be the only INFO Engine started record
+        with nonempty, whitespace-free version and commit fields. Pure resolver unit checks cover stamped,
+        module, VCS, archive and mixed-precedence inputs. engine-entry-001 retains
+        configuration-free operation.
+
     - term: Library
       technical: >-
         Optional libraries lists on each service and on testing contain {module, version}, exact Go module versions including pseudo-versions. Omitted lists grant no external module reads. Before a build-code fix walk's first runner and before each build-code writer preparation, or before a build-tests fix walk with unbound steps, the engine downloads all declarations and their complete module build graph through an isolated Go manifest under tmp/library-download, using the engine's network and the normal GOMODCACHE. No host go.mod or go.sum is modified. Each download has a private temporary manifest directory, removed afterward; writers cannot modify the library-download subtree. The manifest scratch is excluded from run snapshots and per-call fs-diffs; downloaded cache contents are never recorded. Conflicting declarations, versions selected away from a declared pin and incomplete downloads fail before the writer. Downloads name the declared libraries and the underlying error on failure. The writer reads exactly the resolved source directories and their .info, .mod, .zip and .ziphash files; other versions, cached modules and VCS repositories remain inaccessible. No rule names the engine's own module. Build code resolves service roots and follows linked source directories with cycle detection, then parses production Go imports (including platform-tagged files, excluding _test.go) before discovery and every rerun and refuses an import named only in testing.libraries for that service. Protected tests and step definitions remain read-only under the writable paths definition. Only codex enforces subprocess and network confinement; Claude's replay and the code it runs remain unconfined, with network, for model trials. For non-Go hosts libraries must be omitted or empty: npm/Jest/Playwright dependencies keep their existing host-local node_modules paths, with no new package-manager downloading or import check.
@@ -1142,14 +1269,24 @@ architecture:
 
     - term: engine
       technical: >-
-        The `true-bdd` binary, built from `services/bdd-cli` once per test
-        session. Every log record it writes goes out twice: as text on stdout,
-        and as one JSON line in `tmp/true-bdd.log.json` under the directory
+        The `true-bdd` binary, built from `services/true-bdd` once per test
+        session. It owns the IO implementation described in patterns.owned_io.
+        INFO and higher log records go out as text on stdout; DEBUG and higher
+        records go out as one JSON line in `tmp/true-bdd.log.json` under the directory
         the command runs in.
       observed_by: >-
-        A step about what the engine did reads that JSON log file after the
-        run, never stdout; a run that left no log file fails the step instead
-        of counting nothing.
+        Steps counting engine events read that JSON log file after the run;
+        a run that left no log file fails instead of counting nothing.
+        IO Scenarios additionally observe exact captured streams, conflicting
+        parent-directory holds and shared readers behind a post-snapshot
+        launch barrier, private file permissions and inode replacement via
+        an old hard link, and process-group cancellation through controlled
+        CLI descendants. The atomic-write probe plants its old hard link and
+        stale staging symlink after the pre-run snapshot; successful replacement
+        removes both links from the rewritten file before the post-run snapshot.
+        Then steps read the sentinel and old content, compare inodes/mode and
+        require the descendant PID to disappear. These probes run in replay
+        too and cannot be satisfied by recorded filesystem effects alone.
 
     - term: command
       technical: >-
@@ -1174,7 +1311,7 @@ architecture:
         could not complete included: its run directory, its stdout and
         stderr files, its file changes, and its exit code once it completed.
         The recorder writes them, when the Scenario ends, to
-        `bdd-cli-logs/harness.json` in the run directory, the record the BDD
+        `true-bdd-logs/harness.json` in the run directory, the record the BDD
         report reads; a When step that does not hand the run over leaves
         that record without a run directory, an exit code or a file change,
         though every step passes. A run that could not complete fails the
@@ -1182,7 +1319,7 @@ architecture:
 
     - term: project tree
       technical: >-
-        A fixture directory `tests/bdd-cli/fixtures/<name>/`. Its `input/` is
+        A fixture directory `tests/true-bdd/fixtures/<name>/`. Its `input/` is
         laid over this repository's `true-bdd/` and `templates/` in a fresh
         run directory `tmp/test_run/<session>/<name>/`, the command's working
         directory. Beside `input/` sit `cassettes/` (the recorded AI turns and
@@ -1190,6 +1327,12 @@ architecture:
         `checklist-prompts.yaml`. An explicit fixture-controlled writer Given also uses
         auth/auth.json (declared dummy bytes only) and cli/claude and cli/codex
         deterministic external CLI stand-ins, all outside the overlaid input tree.
+        IO fixtures can additionally opt into a claude-only launcher before the
+        proxy in every mode. Its deterministic CLI checks the actual spawn
+        environment, including poisoned inherited session flags and writer
+        isolation switches; cassette effects cannot satisfy those checks.
+        It never calls a model or reads real authentication. Cancellation
+        fixtures likewise start controlled CLI descendants directly in every mode.
       observed_by: >-
         Set up by the Given step naming the tree: it loads that fixture, and
         decides per caller where the run's AI turns come from (the fixture's
@@ -1318,7 +1461,8 @@ architecture:
       observed_by: >-
         A step reads the kept diff. A path lies outside a directory unless it
         is that directory or starts with it plus a slash, so `tmp-x.yaml` is
-        outside `tmp`; the step lists every change outside it.
+        outside `tmp`; the step lists every change outside it. The no-file-changed
+        assertion requires an empty diff without excluding tmp.
 
     - term: checklist
       technical: >-

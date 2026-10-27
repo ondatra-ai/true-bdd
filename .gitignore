@@ -5,7 +5,6 @@
 /alint_hook
 /gates
 /linters
-/bdd-cli
 *.exe
 *.test
 *.out

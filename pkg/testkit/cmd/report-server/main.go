@@ -1,6 +1,6 @@
 // Command report-server serves the BDD run report over HTTP.
 //
-//	go run ./pkg/testkit/cmd/report-server
+//	go run github.com/ondatra-ai/true-bdd/pkg/testkit/cmd/report-server
 //
 // It reads every session under tmp/test_run, rescans on an interval, and
 // serves a UI that navigates between runs, compares any two of them, and

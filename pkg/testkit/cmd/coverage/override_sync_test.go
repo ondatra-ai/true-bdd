@@ -17,7 +17,7 @@ import (
 // Paths relative to this package directory (the `go test` cwd).
 const (
 	shippedChecklistsDir = "../../../../true-bdd/checklists"
-	fixturesRootDir      = "../../../../tests/bdd-cli/fixtures"
+	fixturesRootDir      = "../../../../tests/true-bdd/fixtures"
 	usRefineStem         = "us-refine"
 	scenCheckStem        = "scen-check"
 	usApplyStem          = "us-apply"

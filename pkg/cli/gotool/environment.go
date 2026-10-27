@@ -38,8 +38,8 @@ func Environment(ctx context.Context) (map[string]string, error) {
 	return paths, nil
 }
 
-func scrubOptions(opt shell.Options) shell.Options {
-	opt.Env = shell.Inherit().Exact(git.ScrubEnvironment(opt.Env.Entries()))
+func moduleOptions(opt shell.Options) shell.Options {
+	opt.Env = shell.Inherit().Exact(git.ScrubEnvironment(opt.Env.Entries())).Set("GOWORK=off")
 
 	return opt
 }

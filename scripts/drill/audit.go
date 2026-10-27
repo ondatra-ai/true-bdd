@@ -14,16 +14,18 @@ import (
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/pkg/enginelog"
+	"github.com/ondatra-ai/true-bdd/scripts/gates"
 )
 
 const unknownValue = "unknown"
 
 // Audit records references, their location, and gaps in the available evidence.
 type Audit struct {
-	At      time.Time `json:"at"`
-	Entries []Access  `json:"entries"`
-	Files   []string  `json:"files"`
-	Unknown []string  `json:"unknown"`
+	EngineImports string    `json:"engine_imports"`
+	At            time.Time `json:"at"`
+	Entries       []Access  `json:"entries"`
+	Files         []string  `json:"files"`
+	Unknown       []string  `json:"unknown"`
 }
 
 // Access describes a reference; it never infers that a read succeeded.
@@ -52,11 +54,20 @@ func (r Runner) Audit(_ context.Context, directory, name string) (Audit, error) 
 		Entries: []Access{},
 		Files:   []string{},
 		Unknown: []string{"References do not establish successful reads. Missing or unlogged calls cannot be recovered. " +
-			"Network access remains open; this report is not a contamination verdict.",
+			"This report does not establish network isolation or a contamination verdict; Claude replay remains unconfined.",
 			"Unstructured strings and shell commands are retained verbatim; " +
 				"computed, encoded and ambiguous relative paths cannot always be identified.",
-			"Engine denial summaries name tools, not individual calls; " +
-				"they cannot be assigned to a target without an explicit decision."}}
+			"Engine denial summaries can contain truncated targets; " +
+				"without corresponding tool events they cannot reconstruct every individual call."}}
+
+	audit.EngineImports = "passed"
+
+	importErr := gates.CheckEngineImports(cut.Directory)
+	if importErr != nil {
+		audit.EngineImports = "failed: " + importErr.Error()
+	}
+
+	slog.Info("Drill engine import audit", "result", audit.EngineImports)
 	audit.engineLog(filepath.Join(cut.Directory, "tmp/true-bdd.log.json"), cut.Directory, record.AllowedRoots)
 	audit.codexEvents(cut.Directory, record.AllowedRoots)
 	audit.oracleLimitations(record.Runs, name)

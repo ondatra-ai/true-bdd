@@ -4,12 +4,12 @@ TrueBDD (binary `true-bdd`) is a Go CLI that drives Claude-mediated checklists o
 
 ## Layout
 
-Go lives in four roots, and `.alint.yml` (`go-known-roots`) refuses a fifth:
+The repository has three Go modules: the root (tests and scripts), `pkg/` (shared libraries), and `services/true-bdd/` (the engine). The root replaces `github.com/ondatra-ai/true-bdd/pkg` with `./pkg` for development; the engine has no local replacements. Go lives in four roots, and `.alint.yml` (`go-known-roots`) refuses a fifth:
 
-- `services/bdd-cli/`: the engine, the product code.
-- `tests/bdd-cli/`: what exercises it: generated scenario tests, `steps/` definitions, and `fixtures/` with their recorded cassettes.
+- `services/true-bdd/`: the engine, all product code including its own IO channels and typed CLI wrappers under `internal/infrastructure/`. It imports no repository code outside this folder.
+- `tests/true-bdd/`: what exercises it: generated scenario tests, `steps/` definitions, and `fixtures/` with their recorded cassettes.
 - `scripts/`: this repository's own tooling, run as `go run ./scripts/cmd/<name>`.
-- `pkg/`: what the other three share, the IO channels and `pkg/testkit/` (the BDD harness). A new package under it needs an ADR and an entry in `.alint.yml` (`pkg-is-the-declared-channels`). A wrapper only the engine spawns lives in the engine, under `services/bdd-cli/internal/infrastructure/cli/`, so a rebuild regenerates it.
+- `pkg/`: what the tests and tooling share, their IO channels and `pkg/testkit/` (the BDD harness). A new package under it needs an ADR and an entry in `.alint.yml` (`pkg-is-the-declared-channels`). A wrapper only the engine spawns lives in the engine, under `services/true-bdd/internal/infrastructure/cli/`, so a rebuild regenerates it.
 
 Beside them: `docs/` holds the specification documents (`docs/scenarios.yaml` is the Registry the BDD suite is generated from), `true-bdd/` the engine's config, checklists and schemas, `templates/` the prompt templates, and `tmp/` gitignored scratch, BDD run dirs among it. Session-temporary files go in `./tmp/`.
 
@@ -25,8 +25,9 @@ Claude Code lints every file it writes through a hook; any other agent runs the 
 
 - After editing: `go run ./scripts/cmd/alint <path>...` over the files you changed. It applies every fix it has and reports what needs a real edit; a Go finding may sit in a sibling file of the same package. Fix them all.
 - Before you finish: `go run ./scripts/cmd/gates run --changed main` runs the gates your diff needs. CI runs all of them, and the pre-commit hook runs `--staged`.
-- When you touch `services/`, `pkg/testkit/` or `tests/`: `go test -tags bdd ./tests/bdd-cli/ -mode=services:replay,tests:replay` replays every scenario offline in well under a minute. No gate runs it.
-- Build: `go build -o ./bin/true-bdd ./services/bdd-cli`. Give every single-command `go build` an `-o ./bin/<name>`, since without it Go writes the binary into the current directory; to only compile-check, run `go build ./...`, which writes nothing.
+- When you touch `services/`, `pkg/testkit/` or `tests/`: `GOWORK=off go test -tags bdd ./tests/true-bdd/ -mode=services:replay,tests:replay` replays every scenario offline in well under a minute. No gate runs it.
+- Module checks: from each of `.`, `pkg/` and `services/true-bdd/`, run `GOWORK=off go build ./...` and `GOWORK=off go test ./...`; root `./...` excludes nested modules. `go run ./scripts/cmd/gates build` and `go run ./scripts/cmd/gates test` cover all three.
+- Build: `GOWORK=off go -C services/true-bdd build -o ../../bin/true-bdd .`. Give every single-command `go build` an `-o ./bin/<name>`, since without it Go writes the binary into the current directory; to only compile-check, run `go build ./...`, which writes nothing.
 
 ## Hard rules
 
@@ -55,6 +56,6 @@ Codex writes the code and reads Claude's drafts as a second model through [commo
 - **`mpc_implement-spec`'s implementers are code runs.** Claude merges completed branches into the integration branch when authorized. On conflict, abort and start a fix run on the ticket branch to merge the integration branch in, resolve and re-check; then merge again.
 - **Readings run read-only.** `mpc_code-review`'s two reviewers are standards and spec review runs; Claude aggregates. A spec draft gets a plan-read before publication, a diagnosis before its fix, and a delegated decision a second reading before Claude carries it out. Code or public-source research is a research run with a precise question and criterion of done.
 - **Claude keeps** the conversation with the Owner, decisions, specs, tickets, briefs, reading reports and diffs, the Owner's texts, and research through the Owner's connectors, which Codex lacks. Findings are weighed as valid, invalid or needing a test, never obeyed as orders.
-- **When Codex is out.** The command checks sign-in and reports weekly usage before each attempt, warning past 90% without stopping. Tell the Owner before a batch past 90%. Signed out, unavailable sign-in, expired credentials or a usage limit ends a writer or reader `unavailable`; Claude does that writing or reading itself and says so. An `unavailable` run is not resumable, including after partial edits. Other failures get one resume by the recorded session id, or a fresh session with the saved brief when none exists. After the second failure Claude takes the work, naming both logs.
+- **When Codex is out.** The command checks sign-in and reports weekly usage before each attempt, warning past 90% without stopping. Tell the Owner before a batch past 90%. Signed out, unavailable sign-in, expired credentials, a usage limit or the workspace spend cap ends a writer or reader `unavailable`; Claude does that writing or reading itself and says so. An `unavailable` run is not resumable, including after partial edits. Other failures get one resume by the recorded session id, or a fresh session with the saved brief when none exists. After the second failure Claude takes the work, naming both logs.
 
 Run artifacts stay under ignored `tmp/codex/<run>/`; code worktrees under ignored `tmp/codex-worktrees/<run>/`. The command uses typed `pkg/cli/` operations, `pkg/disk`, `pkg/logging` and the process-group watchdog in `pkg/shell`. See the skill for briefs, flags, retry rules, completion checks and how to read the report.

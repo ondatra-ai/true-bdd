@@ -36,8 +36,8 @@ if [ "$1" = build ]; then
   shift
  done
 fi
-[ -f tests/bdd-cli/generated_test.go ] || exit 11
-[ ! -d services/bdd-cli ] || exit 12
+[ -f tests/true-bdd/generated_test.go ] || exit 11
+[ ! -d services/true-bdd ] || exit 12
 cat <<'JSON'
 {"Action":"pass","Test":"TestSamplePass"}
 {"Action":"pass","Test":"TestScenarioCoverage"}
@@ -47,6 +47,8 @@ JSON
 exit 1
 `)
 	t.Setenv("PATH", filepath.Dir(fakeGo)+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	put(t, filepath.Join(nextCut.Directory, "services/true-bdd/main.go"), "package main\nfunc main() {}\n")
 
 	run, err := runner.PrepareOracle(t.Context(), next.Directory, "a")
 	must(t, err)

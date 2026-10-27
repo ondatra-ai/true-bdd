@@ -9,6 +9,8 @@
 //	gates release-rehearsal       the zero-cost release rehearsal alone
 //
 //	gates recordings             the Recordings gate alone
+//	gates engine-imports         enforce engine ownership without compiling
+//	gates build | test | vet     check all three Go modules independently
 //	gates list                   the gate names, one per line
 package main
 
@@ -22,11 +24,13 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
 	"github.com/ondatra-ai/true-bdd/pkg/logging"
 	"github.com/ondatra-ai/true-bdd/scripts/gates"
+	"github.com/ondatra-ai/true-bdd/scripts/gomodules"
 )
 
 var (
 	errNoCommand = errors.New(
-		"usage: gates run [--changed <base> | --staged] | gates recordings | gates release-rehearsal | gates list")
+		"usage: gates run [--changed <base> | --staged] | recordings | release-rehearsal | " +
+			"engine-imports | build | test | vet | list")
 	errTwoScopes = errors.New("--changed and --staged are exclusive")
 )
 
@@ -54,12 +58,14 @@ func run(args []string) error {
 		return nil
 	case "release-rehearsal":
 		return gates.ReleaseRehearsal() //nolint:wrapcheck // the gate names the failed install step.
+	case "engine-imports":
+		return gates.CheckEngineImports(".") //nolint:wrapcheck // the gate names each offending source and import.
 	case "recordings":
 		return gates.ScanRecordings() //nolint:wrapcheck // the gate's own diagnosis.
 	case "run":
 		return runGates(args[1:])
 	default:
-		return errNoCommand
+		return moduleCheck(args[0])
 	}
 }
 
@@ -114,4 +120,17 @@ func selection(base string, staged bool) ([]gates.Gate, error) {
 		"selected", len(selected), "total", len(gates.All), "changed", len(changed))
 
 	return selected, nil
+}
+
+func moduleCheck(name string) error {
+	switch name {
+	case "build":
+		return gomodules.Build() //nolint:wrapcheck // the operation names the failed module.
+	case "test":
+		return gomodules.Test() //nolint:wrapcheck // the operation names the failed module.
+	case "vet":
+		return gomodules.Vet() //nolint:wrapcheck // the operation names the failed module.
+	default:
+		return errNoCommand
+	}
 }

@@ -24,8 +24,8 @@ Run every command in the foreground. No `nohup`, `setsid`, `&` or detached drive
 ## Done when
 
 - {{Criteria for each accepted finding or failed check.}}
-- `go run ./scripts/cmd/alint {{every changed file}}`, `go build ./...`, `go test ./...` and `go run ./scripts/cmd/gates run --changed main` pass. Fix sibling findings too.
-- If touching `services/`, `pkg/testkit/` or `tests/`, `go test -tags bdd ./tests/bdd-cli/ -mode=services:replay,tests:replay` passes.
+- `go run ./scripts/cmd/alint {{every changed file}}`, `GOWORK=off go build ./...` and `GOWORK=off go test ./...` in each of `.`, `pkg/` and `services/true-bdd/` and `go run ./scripts/cmd/gates run --changed main` pass. Fix sibling findings too.
+- If touching `services/`, `pkg/testkit/` or `tests/`, `GOWORK=off go test -tags bdd ./tests/true-bdd/ -mode=services:replay,tests:replay` passes.
 - Run gates by hand, then commit with `git commit --no-verify`. The worktree is clean and your branch has a new commit beyond its starting tip. Single-command builds use `-o ./bin/{{name}}`.
 
 ## Report

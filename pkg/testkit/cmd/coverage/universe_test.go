@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-// repoRoot walks up from the package directory to the module root.
+// repoRoot walks up from the package directory to the repository root.
 func repoRoot(t *testing.T) string {
 	t.Helper()
 
@@ -16,14 +16,14 @@ func repoRoot(t *testing.T) string {
 	}
 
 	for {
-		_, statErr := os.Stat(filepath.Join(dir, "go.mod"))
+		_, statErr := os.Stat(filepath.Join(dir, ".git"))
 		if statErr == nil {
 			return dir
 		}
 
 		parent := filepath.Dir(dir)
 		if parent == dir {
-			t.Fatal("go.mod not found above package dir")
+			t.Fatal(".git not found above package dir")
 		}
 
 		dir = parent

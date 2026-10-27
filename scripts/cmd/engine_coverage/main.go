@@ -1,5 +1,5 @@
 // Command engine_coverage reports the engine's code no Scenario exercises. It
-// builds services/bdd-cli with coverage counters, replays the whole BDD suite
+// builds services/true-bdd with coverage counters, replays the whole BDD suite
 // against that binary (`-engine-bin`), and writes every package's coverage and
 // every block no run reached as Markdown. Run from the repository root:
 //
@@ -60,9 +60,9 @@ func run(args []string) error {
 	}
 
 	report, err := enginecoverage.Measure(enginecoverage.Plan{
-		Root:     root,
-		Main:     "./services/bdd-cli",
-		Packages: "./services/bdd-cli/...",
+		Root:     filepath.Join(root, "services/true-bdd"),
+		Main:     ".",
+		Packages: "./...",
 		Exercise: replaySuite(root),
 	})
 	if err != nil {
@@ -90,7 +90,7 @@ func replaySuite(root string) func(binPath string, env []string) error {
 	return func(binPath string, env []string) error {
 		err := gotool.ReplayBDD(cli.Options{
 			Dir: root, Env: cli.Inherit().Set(env...), Output: cli.Console(), Timeout: suiteTimeout,
-		}, "./tests/bdd-cli/", binPath)
+		}, "./tests/true-bdd/", binPath)
 		if err != nil {
 			return fmt.Errorf("replay the suite: %w", err)
 		}

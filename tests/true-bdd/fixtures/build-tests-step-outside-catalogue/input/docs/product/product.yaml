@@ -1,0 +1,57 @@
+# Product document for `build-tests-step-outside-catalogue`.
+#
+# Its catalogue phrases every step of INT-901 but not every step of the
+# other three scenarios in docs/scenarios.yaml: INT-902 has a Then step
+# no template matches, INT-903 one that two templates match, and INT-904
+# one whose only template is declared for the Given block.
+
+title: "Fixture host project"
+
+description:
+  summary: >-
+    A single MCP server a Claude User's client opens sessions at, used
+    by the true-bdd fixtures as the host project a scenario registry
+    describes.
+
+roles:
+  - name: Claude User
+    definition: Uses Claude, whose client opens sessions at the MCP server.
+
+glossary:
+  - term: MCP server
+    means: >-
+      The service this project builds: it answers Model Context Protocol
+      requests from a Claude User's client.
+  - term: session
+    means: >-
+      One conversation between a Claude User's client and the MCP server.
+  - term: ticket
+    means: >-
+      The credential the MCP server grants a session when it accepts it.
+
+catalogue:
+  - template: 'the MCP server is running'
+    block: given
+    means: >-
+      The MCP server has started and is ready to answer.
+    terms: [MCP server]
+  - template: 'the {actor:role} opens a session'
+    block: when
+    means: >-
+      That role's client asks the MCP server for a new session, once.
+    terms: [MCP server, session]
+  - template: 'the session is granted a ticket'
+    block: then
+    means: >-
+      The MCP server accepted the session and handed back its ticket.
+    terms: [session, ticket]
+  - template: 'the server answers {code:number}'
+    block: then
+    means: >-
+      The MCP server answered the session's opening with that HTTP status.
+    terms: [MCP server, session]
+  - template: 'the server answers 200'
+    block: then
+    means: >-
+      The MCP server accepted the session's opening.
+    terms: [MCP server, session]

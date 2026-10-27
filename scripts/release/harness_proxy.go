@@ -17,19 +17,27 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
-const harnessModule = "github.com/ondatra-ai/true-bdd"
+const (
+	harnessModule = "github.com/ondatra-ai/true-bdd/pkg"
+	engineModule  = "github.com/ondatra-ai/true-bdd/services/true-bdd"
+	// repositoryModules covers both, for GONOSUMDB: neither is published to the checksum database.
+	repositoryModules = "github.com/ondatra-ai/true-bdd"
+)
 
-func localHarnessProxy(ctx context.Context, root, source, folder, ref string) (string, string, error) {
+// localModuleProxy serves the test library and the engine from the exported source at ref's
+// commit-time pseudo-version, so the guide's `go get …@<commit>` and `go install …@<version>`
+// resolve without a pushed commit. It returns that version, the commit and the proxy's URL.
+func localModuleProxy(ctx context.Context, root, source, folder, ref string) (string, string, string, error) {
 	repository := git.Repository{Dir: root}
 
 	commit, err := repository.ResolveCommit(ctx, ref)
 	if err != nil {
-		return "", "", fmt.Errorf("resolve harness commit: %w", err)
+		return "", "", "", fmt.Errorf("resolve module commit: %w", err)
 	}
 
 	stamp, err := repository.CommitTime(ctx, commit)
 	if err != nil {
-		return "", "", fmt.Errorf("resolve harness time: %w", err)
+		return "", "", "", fmt.Errorf("resolve module time: %w", err)
 	}
 
 	const shortHash = 12
@@ -37,34 +45,56 @@ func localHarnessProxy(ctx context.Context, root, source, folder, ref string) (s
 	version := "v0.0.0-" + stamp.Format("20060102150405") + "-" + commit[:shortHash]
 	proxy := filepath.Join(folder, "module-proxy")
 
-	archive, err := zipHarness(source, version)
-	if err != nil {
-		return "", "", err
-	}
-
-	manifest, err := disk.Read(filepath.Join(source, "go.mod"))
-	if err != nil {
-		return "", "", fmt.Errorf("read harness manifest: %w", err)
-	}
-
 	info, err := json.Marshal(map[string]string{"Version": version, "Time": stamp.Format("2006-01-02T15:04:05Z")})
 	if err != nil {
-		return "", "", fmt.Errorf("encode module info: %w", err)
+		return "", "", "", fmt.Errorf("encode module info: %w", err)
 	}
 
-	for extension, data := range map[string][]byte{".mod": manifest, ".info": info, ".zip": archive} {
-		err = disk.Write(filepath.Join(proxy, harnessModule, "@v", version+extension), data, disk.Private)
+	for module, directory := range map[string]string{harnessModule: "pkg", engineModule: "services/true-bdd"} {
+		err = serveModule(proxy, module, filepath.Join(source, directory), version, commit, info)
 		if err != nil {
-			return "", "", fmt.Errorf("write module proxy: %w", err)
+			return "", "", "", err
 		}
 	}
 
 	location := url.URL{Scheme: "file", Path: proxy}
 
-	return version, location.String(), nil
+	return version, commit, location.String(), nil
 }
 
-func zipHarness(source, version string) ([]byte, error) {
+// serveModule writes one module version in the GOPROXY file layout. `latest` and the version
+// list answer `go install`'s deprecation query, and `<commit>.info` resolves a commit query.
+func serveModule(proxy, module, source, version, commit string, info []byte) error {
+	archive, err := zipModule(source, module, version)
+	if err != nil {
+		return err
+	}
+
+	manifest, err := disk.Read(filepath.Join(source, "go.mod"))
+	if err != nil {
+		return fmt.Errorf("read %s manifest: %w", module, err)
+	}
+
+	base := filepath.Join(proxy, module)
+
+	for path, data := range map[string][]byte{
+		filepath.Join("@v", version+".mod"):  manifest,
+		filepath.Join("@v", version+".info"): info,
+		filepath.Join("@v", version+".zip"):  archive,
+		filepath.Join("@v", commit+".info"):  info,
+		filepath.Join("@v", "list"):          []byte(version + "\n"),
+		"@latest":                            info,
+	} {
+		err = disk.Write(filepath.Join(base, path), data, disk.Private)
+		if err != nil {
+			return fmt.Errorf("write module proxy: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func zipModule(source, module, version string) ([]byte, error) {
 	var buffer bytes.Buffer
 
 	archive := zip.NewWriter(&buffer)
@@ -92,7 +122,7 @@ func zipHarness(source, version string) ([]byte, error) {
 			return fmt.Errorf("module source: %w", err)
 		}
 
-		writer, err := archive.Create(harnessModule + "@" + version + "/" + filepath.ToSlash(relative))
+		writer, err := archive.Create(module + "@" + version + "/" + filepath.ToSlash(relative))
 		if err != nil {
 			return fmt.Errorf("module zip entry: %w", err)
 		}
@@ -109,7 +139,7 @@ func zipHarness(source, version string) ([]byte, error) {
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("pack harness module: %w", err)
+		return nil, fmt.Errorf("pack module %s: %w", module, err)
 	}
 
 	return buffer.Bytes(), nil
@@ -126,7 +156,7 @@ func rehearsalOptions(host, binary string, opt Options, install bool) cli.Option
 	command.Env = command.Env.Set("GOMODCACHE=" + cache)
 	if opt.moduleProxy != "" {
 		command.Env = command.Env.Set("GOPROXY="+opt.moduleProxy+",https://proxy.golang.org",
-			"GONOSUMDB="+harnessModule, "GONOPROXY=none")
+			"GONOSUMDB="+repositoryModules, "GONOPROXY=none")
 	}
 
 	return command

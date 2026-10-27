@@ -8,7 +8,7 @@
 # pkg/testkit/bddgo then RUNS it: one Go subtest per scenario, steps
 # bound by regexp to the definitions under that suite's path.
 #
-# Derived once from the tests/bdd-cli fixtures, which already were these
+# Derived once from the tests/true-bdd fixtures, which already were these
 # scenarios in every respect but name. Hand-owned since; `us apply` is
 # the writer for anything new.
 #
@@ -20,12 +20,12 @@ metadata:
   title: Scenario registry
   version: '1.0'
   last_updated: '2026-08-16'
-  description: Every behaviour the TrueBDD engine is held to, one entry per scenario. Derived once from the tests/bdd-cli fixtures; hand-owned since, with `us apply` as the writer for new entries.
+  description: Every behaviour the TrueBDD engine is held to, one entry per scenario. Derived once from the tests/true-bdd fixtures; hand-owned since, with `us apply` as the writer for new entries.
 scenarios:
   build-code-run-002-unstartable-runner-exits-1:
     description: A suite command the architecture declares whose program the machine cannot start must end the run with exit code 1 and name that program on stdout
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
       - story: docs/product/stories/build-code-run-fix-loop.yaml
         scenario_id: build-code-run-002-unstartable-runner-exits-1
@@ -46,8 +46,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   build-code-commands-004-not-machine-readable-refused:
     description: A suite command that runs but never asks for machine-readable output must be refused, naming the flag it is missing
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
       - story: docs/product/stories/build-code-commands-refusals.yaml
         scenario_id: build-code-commands-004-not-machine-readable-refused
@@ -68,8 +68,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   build-code-run-001-runs-declared-replay-command:
     description: '`build code` must run the command its architectural spec declares — and specifically the `replay` one'
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
       - story: docs/product/stories/build-code-run-fix-loop.yaml
         scenario_id: build-code-run-001-runs-declared-replay-command
@@ -92,8 +92,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   build-code-commands-002-empty-program-refused:
     description: A suite command that is present but names no program must be refused
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
       - story: docs/product/stories/build-code-commands-refusals.yaml
         scenario_id: build-code-commands-002-empty-program-refused
@@ -113,8 +113,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   build-code-run-004-fix-reruns-fixed-test:
     description: After a fix is applied, build code reruns the failing set in one selection before fresh outer discovery
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
       - story: docs/product/stories/build-code-run-fix-loop.yaml
         scenario_id: build-code-run-004-fix-reruns-fixed-test
@@ -146,8 +146,8 @@ scenarios:
         - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   build-code-spec-001-malformed-spec-refused:
     description: A spec the loader cannot decode must be refused with the file named
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
       - story: docs/product/stories/build-code-spec-refusals.yaml
         scenario_id: build-code-spec-001-malformed-spec-refused
@@ -168,8 +168,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   build-code-spec-004-no-replay-command-refused:
     description: A test suite that does not say how to run itself must be refused, not run some other way
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
       - story: docs/product/stories/build-code-spec-refusals.yaml
         scenario_id: build-code-spec-004-no-replay-command-refused
@@ -189,8 +189,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   build-code-spec-002-no-services-refused:
     description: An architectural spec that declares no services at all must be refused, not walked to a trivial success
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
       - story: docs/product/stories/build-code-spec-refusals.yaml
         scenario_id: build-code-spec-002-no-services-refused
@@ -209,8 +209,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   build-code-spec-003-no-test-suite-refused:
     description: An architectural spec that never says how its tests run must be refused, not walked to a trivial success
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
       - story: docs/product/stories/build-code-spec-refusals.yaml
         scenario_id: build-code-spec-003-no-test-suite-refused
@@ -229,8 +229,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   build-code-run-003-failing-test-exits-1:
     description: A walk that ends with a test still failing must exit non-zero
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
       - story: docs/product/stories/build-code-run-fix-loop.yaml
         scenario_id: build-code-run-003-failing-test-exits-1
@@ -252,8 +252,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   build-code-run-005-playwright-fix-loop-converges:
     description: A Playwright suite whose app does not exist yet must drive the fix loop until the browser assertion passes
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
       - story: docs/product/stories/build-code-run-fix-loop.yaml
         scenario_id: build-code-run-005-playwright-fix-loop-converges
@@ -284,8 +284,8 @@ scenarios:
         - and: 'judge: services/frontend/Dockerfile defines a runnable Next.js build — it installs the declared dependencies, exposes the port docker-compose.yaml maps, and starts the server'
   build-code-commands-001-unknown-framework-refused:
     description: A test framework the engine cannot run must be refused, naming the framework, before any test runner is spawned
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
       - story: docs/product/stories/build-code-commands-refusals.yaml
         scenario_id: build-code-commands-001-unknown-framework-refused
@@ -305,8 +305,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   build-code-commands-003-unclosed-quote-refused:
     description: A suite command whose quoting never closes must be refused, not guessed
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
       - story: docs/product/stories/build-code-commands-refusals.yaml
         scenario_id: build-code-commands-003-unclosed-quote-refused
@@ -326,8 +326,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   build-code-commands-005-jest-without-json-refused:
     description: A Jest suite command that never asks for machine-readable output must be refused, naming the --json flag it is missing, before any test runner is spawned
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
       - story: docs/product/stories/build-code-commands-refusals.yaml
         scenario_id: build-code-commands-005-jest-without-json-refused
@@ -347,8 +347,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   build-code-frameworks-001-jest-failing-test-exits-1:
     description: A Jest suite with one failing test must end `build code` with exit code 1, counting that one failure and naming the test by its spec file and full name
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
       - story: docs/product/stories/build-code-frameworks-jest-playwright-go.yaml
         scenario_id: build-code-frameworks-001-jest-failing-test-exits-1
@@ -373,8 +373,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   build-code-frameworks-002-jest-fix-reruns-test-by-name:
     description: For a Jest failure with one declared service, `build code --fix` must name that service without Registry content in its fix prompt, re-run the fixed test by its full name through --testNamePattern, and exit with code 0 once it passes
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
       - story: docs/product/stories/build-code-frameworks-jest-playwright-go.yaml
         scenario_id: build-code-frameworks-002-jest-fix-reruns-test-by-name
@@ -406,8 +406,8 @@ scenarios:
         - 'every file matching "tmp/*/*fix-iter*-user.txt" does not match Scenario ID:'
   build-code-frameworks-003-playwright-fix-reruns-test-by-grep:
     description: After a fix is applied to a Playwright suite whose app started and one assertion failed, `build code --fix` must re-run only that test, selected by its title through --grep, and end with exit code 0 once it passes
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
       - story: docs/product/stories/build-code-frameworks-jest-playwright-go.yaml
         scenario_id: build-code-frameworks-003-playwright-fix-reruns-test-by-grep
@@ -435,8 +435,8 @@ scenarios:
         - and: the shell command "npx playwright test --reporter=json --config playwright.config.ts integration" run in "tests" exits with code 0
   build-code-frameworks-004-go-package-not-compiling-rerun-unfiltered:
     description: A Go test package that does not compile must count as one failing test, and after a fix `build code --fix` must re-run that package's tests without a name filter and end with exit code 0 once they pass
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
       - story: docs/product/stories/build-code-frameworks-jest-playwright-go.yaml
         scenario_id: build-code-frameworks-004-go-package-not-compiling-rerun-unfiltered
@@ -465,8 +465,8 @@ scenarios:
         - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   build-tests-refusals-001-empty-registry-refused:
     description: A registry file that declares no scenarios must be refused, never walked to a trivial success
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-refusals-startup.yaml
         scenario_id: build-tests-refusals-001-empty-registry-refused
@@ -485,8 +485,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   build-tests-steps-001-unbound-scenario-gets-test-and-steps:
     description: A registry scenario with no test must get a generated test file and a step definition for every step it declares
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-steps-binding.yaml
         scenario_id: build-tests-steps-001-unbound-scenario-gets-test-and-steps
@@ -510,8 +510,8 @@ scenarios:
         - and: no file outside "tmp" and "tests" changed
   build-tests-refusals-002-misshapen-registry-refused:
     description: A registry that is valid YAML but the wrong SHAPE must be refused with the decoder's own complaint, not a generic parse failure
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-refusals-startup.yaml
         scenario_id: build-tests-refusals-002-misshapen-registry-refused
@@ -531,8 +531,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   build-tests-refusals-003-undeclared-registry-refused:
     description: A host that never declared where its scenario registry lives must be refused, never quietly served the conventional path
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-refusals-startup.yaml
         scenario_id: build-tests-refusals-003-undeclared-registry-refused
@@ -552,8 +552,8 @@ scenarios:
   engine-004-unknown-model-cli-refused:
     description: A command must be refused at startup when an `engine.models` tier names an AI CLI the engine does not drive,
       naming the tier, that CLI and the CLIs it supports on stdout, rather than run the tier on another model
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
     - story: docs/product/stories/engine-configured-commands.yaml
       scenario_id: engine-004-unknown-model-cli-refused
@@ -573,8 +573,8 @@ scenarios:
       - and: the engine dispatched no AI turns
   engine-001-help-prints-command-tree:
     description: --help must print the command tree and change nothing on disk
-    service: bdd-cli
-    path: tests/bdd-cli/cli_test.go
+    service: true-bdd
+    path: tests/true-bdd/cli_test.go
     user_stories:
       - story: docs/product/stories/engine-configured-commands.yaml
         scenario_id: engine-001-help-prints-command-tree
@@ -596,8 +596,8 @@ scenarios:
         - no file outside "tmp" changed
   us-apply-002-duplicates-collapse:
     description: Two registry entries claiming the same acceptance criterion must collapse into one, leaving every other entry untouched
-    service: bdd-cli
-    path: tests/bdd-cli/us_apply_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_apply_test.go
     user_stories:
       - story: docs/product/stories/us-apply-registry-merge.yaml
         scenario_id: us-apply-002-duplicates-collapse
@@ -627,8 +627,8 @@ scenarios:
         - and: 'judge: the scenario from acceptance criterion 90.1-001 — the unrelated home-page welcome banner — still says what the seed registry said it did'
   us-apply-refusals-004-legacy-layout-refused:
     description: A story carried forward from the older `scenarios.test_scenarios[]` layout must be refused, and told what to convert
-    service: bdd-cli
-    path: tests/bdd-cli/us_apply_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_apply_test.go
     user_stories:
       - story: docs/product/stories/us-apply-refusals-startup.yaml
         scenario_id: us-apply-refusals-004-legacy-layout-refused
@@ -650,8 +650,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   us-apply-refusals-001-missing-story-refused:
     description: '`us apply` on a story number that has no file must be refused, and the refusal must say what filename it looked for'
-    service: bdd-cli
-    path: tests/bdd-cli/us_apply_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_apply_test.go
     user_stories:
       - story: docs/product/stories/us-apply-refusals-startup.yaml
         scenario_id: us-apply-refusals-001-missing-story-refused
@@ -672,8 +672,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   engine-003-locations-come-from-config:
     description: Every location a host project uses must come from `true-bdd.yaml` — never a hardcoded path
-    service: bdd-cli
-    path: tests/bdd-cli/us_apply_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_apply_test.go
     user_stories:
       - story: docs/product/stories/engine-configured-commands.yaml
         scenario_id: engine-003-locations-come-from-config
@@ -703,8 +703,8 @@ scenarios:
         - and: 'judge: the scenario from acceptance criterion 90.2-001 — the unrelated settings page — still says what the seed registry said it did'
   us-apply-001-missing-criteria-added:
     description: A story whose acceptance criteria are all missing from the registry must re-walk after the merge and end at a fixpoint
-    service: bdd-cli
-    path: tests/bdd-cli/us_apply_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_apply_test.go
     user_stories:
       - story: docs/product/stories/us-apply-registry-merge.yaml
         scenario_id: us-apply-001-missing-criteria-added
@@ -737,8 +737,8 @@ scenarios:
         - and: 'judge: each scenario added to the registry carries the given, when and then steps of the acceptance criterion it came from in docs/product/stories/99.3-rewalk-fixture.yaml'
   us-apply-refusals-005-unrefined-story-refused:
     description: '`us apply` on a story that was created but never refined must be refused, not walked to a trivial success'
-    service: bdd-cli
-    path: tests/bdd-cli/us_apply_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_apply_test.go
     user_stories:
       - story: docs/product/stories/us-apply-refusals-startup.yaml
         scenario_id: us-apply-refusals-005-unrefined-story-refused
@@ -759,8 +759,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   us-refine-refusals-004-two-files-one-id-refused:
     description: Two files claiming the same story id must be refused, not silently resolved by picking one
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
       - story: docs/product/stories/us-refine-refusals-unwalkable-story.yaml
         scenario_id: us-refine-refusals-004-two-files-one-id-refused
@@ -784,8 +784,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   us-refine-fix-001-vague-description-made-measurable:
     description: A vague qualifier in an acceptance criterion's description must drive the fix loop until the description is measurable
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
       - story: docs/product/stories/us-refine-fix-loop.yaml
         scenario_id: us-refine-fix-001-vague-description-made-measurable
@@ -812,8 +812,8 @@ scenarios:
         - and: 'judge: the four acceptance criteria still cover the substance of the seed — a 150-word summary, the unshared-document message, the timeout message, and the first-10000-words notice — with every exact message and numeric threshold intact'
   us-refine-fix-002-gherkin-description-states-a-rule:
     description: An acceptance criterion described in Given/When/Then prose must drive the fix loop until it states a rule
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
       - story: docs/product/stories/us-refine-fix-loop.yaml
         scenario_id: us-refine-fix-002-gherkin-description-states-a-rule
@@ -841,8 +841,8 @@ scenarios:
         - and: 'judge: the five acceptance criteria still cover the substance of the seed — a 150-word summary, the unshared-document message, the timeout message, the first-10000-words notice, and the section-heading outline — with every exact message and numeric threshold intact'
   us-refine-fix-003-forbidden-verb-made-observable:
     description: A forbidden action verb in a step must drive the fix loop until the step names an observable action
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
       - story: docs/product/stories/us-refine-fix-loop.yaml
         scenario_id: us-refine-fix-003-forbidden-verb-made-observable
@@ -869,8 +869,8 @@ scenarios:
         - and: 'judge: AC-1''s then step now states a concrete observable action in place of the forbidden verb, and keeps the 150-word threshold; the four criteria still cover the substance of the seed with every exact message intact'
   us-refine-fix-004-vague-step-made-measurable:
     description: A vague qualifier in a step must drive the fix loop until the step is measurable
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
       - story: docs/product/stories/us-refine-fix-loop.yaml
         scenario_id: us-refine-fix-004-vague-step-made-measurable
@@ -897,8 +897,8 @@ scenarios:
         - and: 'judge: AC-4''s then step still states the first-10000-words notice as an observable outcome, and the four criteria still cover the substance of the seed with every exact message and numeric threshold intact'
   us-refine-fix-005-missing-steps-written:
     description: An acceptance criterion with no steps must drive the fix loop until it carries Given/When/Then
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
       - story: docs/product/stories/us-refine-fix-loop.yaml
         scenario_id: us-refine-fix-005-missing-steps-written
@@ -924,8 +924,8 @@ scenarios:
         - and: 'judge: AC-2''s new given, when and then steps are derived from its own description, and the five criteria still cover the substance of the seed with every exact message and numeric threshold intact'
   us-refine-verdicts-001-passing-story-saved-in-place:
     description: A story whose acceptance criteria already pass every check must converge on the first walk and be rewritten in place
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
       - story: docs/product/stories/us-refine-verdicts-without-fix.yaml
         scenario_id: us-refine-verdicts-001-passing-story-saved-in-place
@@ -949,8 +949,8 @@ scenarios:
         - and: 'judge: the as_a, i_want and so_that clauses keep their meaning — a Claude User wanting a short summary of a shared Google Doc on request, so as to decide whether it needs attention without reading it in full'
   us-refine-refusals-006-invalid-yaml-refused:
     description: A story file that is not valid YAML must be refused with the parser's own complaint, not a generic failure
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
       - story: docs/product/stories/us-refine-refusals-unwalkable-story.yaml
         scenario_id: us-refine-refusals-006-invalid-yaml-refused
@@ -972,8 +972,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   us-refine-refusals-001-missing-story-refused:
     description: '`us refine` on a story nobody has written must be refused, and the refusal must tell the user to write the Story file first and where it goes'
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
       - story: docs/product/stories/us-refine-refusals-unwalkable-story.yaml
         scenario_id: us-refine-refusals-001-missing-story-refused
@@ -998,8 +998,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   us-refine-verdicts-002-no-happy-path-fails:
     description: A story whose acceptance criteria are all error scenarios must fail the happy-path check and pass the rest
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
       - story: docs/product/stories/us-refine-verdicts-without-fix.yaml
         scenario_id: us-refine-verdicts-002-no-happy-path-fails
@@ -1021,8 +1021,8 @@ scenarios:
         - and: 'stdout does not match msg="Story saved"'
   us-refine-verdicts-003-implementation-and-subjective-fail:
     description: A story with implementation-level and subjective acceptance criteria must report each failure and leave the story unchanged
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
       - story: docs/product/stories/us-refine-verdicts-without-fix.yaml
         scenario_id: us-refine-verdicts-003-implementation-and-subjective-fail
@@ -1043,8 +1043,8 @@ scenarios:
         - and: 'stdout does not match msg="Story saved"'
   us-refine-verdicts-004-step-outside-catalogue-fails:
     description: When the product document declares a catalogue, a Story with a step that matches no catalogue phrase, or only a phrase of another block, must fail the step-phrase check, naming each such step under its acceptance criterion, skip every model check, and leave the Story unchanged without an AI turn
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
       - story: docs/product/stories/us-refine-verdicts-without-fix.yaml
         scenario_id: us-refine-verdicts-004-step-outside-catalogue-fails
@@ -1070,8 +1070,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   us-refine-refusals-002-slug-id-accepted:
     description: A Story id that is a slug rather than a numeric `<N>.<M>` must pass validation, so a story with no file is refused as a missing Story, never as a malformed id
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
       - story: docs/product/stories/us-refine-refusals-unwalkable-story.yaml
         scenario_id: us-refine-refusals-002-slug-id-accepted
@@ -1094,8 +1094,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   us-refine-refusals-003-path-like-id-refused:
     description: A path-like Story id must be refused at startup with a refusal naming the id, so it never reaches the filesystem
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
       - story: docs/product/stories/us-refine-refusals-unwalkable-story.yaml
         scenario_id: us-refine-refusals-003-path-like-id-refused
@@ -1115,8 +1115,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   us-refine-fix-006-feature-label-survives:
     description: A Story's `feature:` label must survive `us refine` rewriting the story, through the fix the applier writes and the final save alike
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
       - story: docs/product/stories/us-refine-fix-loop.yaml
         scenario_id: us-refine-fix-006-feature-label-survives
@@ -1142,8 +1142,8 @@ scenarios:
         - and: stdout does not match Hit max apply attempts
   us-refine-fix-007-step-outside-catalogue-gets-phrase:
     description: '`us refine --fix` must propose a catalogue entry for a Story step that matches no catalogue phrase, record the entry the user applies in the product document and never in the Story, and pass the re-walk'
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
       - story: docs/product/stories/us-refine-fix-loop.yaml
         scenario_id: us-refine-fix-007-step-outside-catalogue-gets-phrase
@@ -1171,8 +1171,8 @@ scenarios:
         - and: the file "docs/product/stories/doc-outline-catalogued.yaml" matches Claude offers to summarise the document instead
   engine-002-us-help-lists-story-commands:
     description: '`us --help` must list the Story commands the pipeline has, which start at `us refine`, and no `us create`'
-    service: bdd-cli
-    path: tests/bdd-cli/cli_test.go
+    service: true-bdd
+    path: tests/true-bdd/cli_test.go
     user_stories:
       - story: docs/product/stories/engine-configured-commands.yaml
         scenario_id: engine-002-us-help-lists-story-commands
@@ -1191,8 +1191,8 @@ scenarios:
         - and: no file outside "tmp" changed
   engine-005-prompt-without-fix-refused:
     description: A `us refine --fix` run must be refused at startup when a prompt it would walk carries no `F:`, naming that prompt, rather than spending a fix turn that has nothing to say
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
       - story: docs/product/stories/engine-configured-commands.yaml
         scenario_id: engine-005-prompt-without-fix-refused
@@ -1214,8 +1214,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   engine-007-missing-document-refused:
     description: A `us refine` run must be refused at startup when a prompt it would walk cites a document the engine cannot hand it, naming the missing document
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
       - story: docs/product/stories/engine-configured-commands.yaml
         scenario_id: engine-007-missing-document-refused
@@ -1236,8 +1236,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   us-refine-refusals-005-other-id-refused:
     description: A Story file whose name starts with the requested id but which declares another Story's id must be refused at startup, naming both ids, so `us refine scen` never walks the Story `scen-check`
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
       - story: docs/product/stories/us-refine-refusals-unwalkable-story.yaml
         scenario_id: us-refine-refusals-005-other-id-refused
@@ -1259,8 +1259,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   build-tests-steps-002-test-named-after-key:
     description: A Scenario keyed by its lower-case lineage must get a CamelCase test name that `go test` runs, while a legacy `E2E-NNN` key keeps the name it always had
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-steps-binding.yaml
         scenario_id: build-tests-steps-002-test-named-after-key
@@ -1280,8 +1280,8 @@ scenarios:
         - but: no file outside "tmp" and "tests" changed
   us-apply-refusals-006-unshaped-criterion-id-refused:
     description: An acceptance criterion whose id is not `<NNN>-<slug>` must be refused before any AI turn, because `us apply` keys the Scenario it becomes by that id
-    service: bdd-cli
-    path: tests/bdd-cli/us_apply_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_apply_test.go
     user_stories:
       - story: docs/product/stories/us-apply-refusals-startup.yaml
         scenario_id: us-apply-refusals-006-unshaped-criterion-id-refused
@@ -1301,8 +1301,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   us-apply-003-reorder-keeps-keys:
     description: Reordering a Story's acceptance criteria and applying it again must leave every Scenario key unchanged, because a key comes from the criterion's id and never from its position
-    service: bdd-cli
-    path: tests/bdd-cli/us_apply_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_apply_test.go
     user_stories:
       - story: docs/product/stories/us-apply-registry-merge.yaml
         scenario_id: us-apply-003-reorder-keeps-keys
@@ -1327,8 +1327,8 @@ scenarios:
         - and: stdout does not match RE-WALK
   us-apply-004-key-apart-from-lineage-refused:
     description: '`us apply` must refuse to write the Registry, exiting 1 and leaving it unchanged, when a Scenario claiming one of the Story''s criteria is keyed apart from that criterion''s lineage id, even though every Prompt passed, naming that Scenario and the lineage it claims'
-    service: bdd-cli
-    path: tests/bdd-cli/us_apply_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_apply_test.go
     user_stories:
       - story: docs/product/stories/us-apply-registry-merge.yaml
         scenario_id: us-apply-004-key-apart-from-lineage-refused
@@ -1349,8 +1349,8 @@ scenarios:
         - and: the engine dispatched 2 AI turns
   checklist-checks-002-check-and-question-refused:
     description: A checklist Prompt carrying both `D:` and `Q:` must be refused at startup, naming the Prompt, because a built-in check or a model answers a Prompt and never both
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/checklist-checks-deterministic-prompts.yaml
         scenario_id: checklist-checks-002-check-and-question-refused
@@ -1369,8 +1369,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   checklist-checks-003-neither-check-nor-question-refused:
     description: A checklist Prompt carrying neither `D:` nor `Q:` must be refused at startup, naming the Prompt, because nothing would answer it
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/checklist-checks-deterministic-prompts.yaml
         scenario_id: checklist-checks-003-neither-check-nor-question-refused
@@ -1389,8 +1389,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   checklist-checks-004-unknown-check-refused:
     description: A `D:` Prompt naming a check the engine does not hold must be refused at startup, naming the Prompt and the checks the command has
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/checklist-checks-deterministic-prompts.yaml
         scenario_id: checklist-checks-004-unknown-check-refused
@@ -1409,8 +1409,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   checklist-checks-005-model-on-check-refused:
     description: A `D:` Prompt carrying `model:` must be refused at startup, naming the Prompt, because no model answers a built-in check
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/checklist-checks-deterministic-prompts.yaml
         scenario_id: checklist-checks-005-model-on-check-refused
@@ -1429,8 +1429,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   checklist-checks-006-unread-parameter-refused:
     description: A `D:` Prompt passing its check a `with:` parameter the check does not read must be refused at startup, naming the parameter, rather than run the check as though it were honoured
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/checklist-checks-deterministic-prompts.yaml
         scenario_id: checklist-checks-006-unread-parameter-refused
@@ -1449,8 +1449,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   engine-006-check-without-fix-refused:
     description: A `--fix` run must be refused at startup when a `D:` Prompt it would walk carries no `F:`, naming that Prompt by its check, as it is for a `Q:` Prompt
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/engine-configured-commands.yaml
         scenario_id: engine-006-check-without-fix-refused
@@ -1470,8 +1470,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   checklist-checks-001-checks-run-before-questions:
     description: Within a Scenario every `D:` Prompt must run before any `Q:` Prompt, whatever the file order, and a Scenario failing one must be reported failed with its `Q:` Prompts skipped and no AI turn spent on it, while a Scenario passing it walks its `Q:` Prompts
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/checklist-checks-deterministic-prompts.yaml
         scenario_id: checklist-checks-001-checks-run-before-questions
@@ -1496,8 +1496,8 @@ scenarios:
         - and: no file outside "tmp" changed
   scen-check-phrases-002-unmatched-step-fails:
     description: A step of a Scenario a Story claims that matches no catalogue phrase must fail that Scenario, naming the step and its block, with the Scenario's `Q:` Prompts skipped and no AI turn spent on them
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-phrases-step-phrase-closure.yaml
         scenario_id: scen-check-phrases-002-unmatched-step-fails
@@ -1519,8 +1519,8 @@ scenarios:
         - and: no file outside "tmp" changed
   scen-check-phrases-003-ambiguous-step-fails:
     description: A step of a Scenario a Story claims that two catalogue templates match must fail that Scenario, naming both templates, because a step means one thing or nothing
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-phrases-step-phrase-closure.yaml
         scenario_id: scen-check-phrases-003-ambiguous-step-fails
@@ -1538,8 +1538,8 @@ scenarios:
         - and: no file outside "tmp" changed
   scen-check-phrases-004-wrong-block-step-fails:
     description: A step of a Scenario a Story claims must fail that Scenario when the one template it matches is declared for another block, naming that block
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-phrases-step-phrase-closure.yaml
         scenario_id: scen-check-phrases-004-wrong-block-step-fails
@@ -1557,8 +1557,8 @@ scenarios:
         - and: no file outside "tmp" changed
   scen-check-phrases-005-malformed-template-fails-every-scenario:
     description: A catalogue template the grammar refuses must fail every Scenario a Story claims, naming the template and the rule it breaks, because no step can be held to it
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-phrases-step-phrase-closure.yaml
         scenario_id: scen-check-phrases-005-malformed-template-fails-every-scenario
@@ -1587,8 +1587,8 @@ scenarios:
         - and: no file outside "tmp" changed
   scen-check-phrases-001-matched-steps-pass:
     description: A Scenario a Story claims must pass the step-phrase check when each of its steps matches exactly one catalogue template declared for its block, whatever slots the templates use, and the `llm:` and `judge:` steps a model runs must be exempt
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-phrases-step-phrase-closure.yaml
         scenario_id: scen-check-phrases-001-matched-steps-pass
@@ -1606,8 +1606,8 @@ scenarios:
         - and: no file outside "tmp" changed
   scen-check-phrases-006-unclaimed-scenario-unchecked:
     description: A Scenario no Story claims must pass the step-phrase check unchecked, saying so, while a Scenario a Story claims is checked beside it
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-phrases-step-phrase-closure.yaml
         scenario_id: scen-check-phrases-006-unclaimed-scenario-unchecked
@@ -1626,8 +1626,8 @@ scenarios:
         - and: no file outside "tmp" changed
   scen-check-phrases-007-no-catalogue-unchecked:
     description: A product document that declares no catalogue must leave every Scenario unchecked by the step-phrase check, saying so, because a host adopts the catalogue by writing one
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-phrases-step-phrase-closure.yaml
         scenario_id: scen-check-phrases-007-no-catalogue-unchecked
@@ -1646,8 +1646,8 @@ scenarios:
   scen-check-fix-001-unmatched-step-gets-phrase:
     description: '`scen check --fix` must propose a catalogue entry for a step that matches none, record the entry the user
       applies in the product document and never in the Scenario, and pass the re-walk'
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
     - story: docs/product/stories/scen-check-fix-clarification-loop.yaml
       scenario_id: scen-check-fix-001-unmatched-step-gets-phrase
@@ -1673,8 +1673,8 @@ scenarios:
       - and: the engine dispatched 3 AI turns
   checklist-checks-007-unlisted-document-refused:
     description: A `D:` Prompt naming a check that reads a document must be refused at startup when its `docs:` does not list that document, because the check would otherwise find no catalogue and pass every Scenario unchecked
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/checklist-checks-deterministic-prompts.yaml
         scenario_id: checklist-checks-007-unlisted-document-refused
@@ -1693,8 +1693,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   scen-check-terms-001-undefined-term-fails:
     description: A term that the catalogue template a step matches declares, and that the product glossary does not define, must fail the Scenario a Story claims, naming the template and the term, while a term only an unmatched template declares is no failure of that Scenario
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-terms-glossary-closure.yaml
         scenario_id: scen-check-terms-001-undefined-term-fails
@@ -1715,8 +1715,8 @@ scenarios:
         - and: no file outside "tmp" changed
   scen-check-terms-002-defined-terms-pass:
     description: A Scenario a Story claims must pass the declared-term check when the glossary defines every term the templates its steps match declare, naming those terms, while a Scenario no Story claims passes unchecked and one whose templates declare no term passes saying so
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-terms-glossary-closure.yaml
         scenario_id: scen-check-terms-002-defined-terms-pass
@@ -1736,8 +1736,8 @@ scenarios:
         - and: no file outside "tmp" changed
   scen-check-terms-003-term-defined-twice-fails:
     description: A term the glossary defines more than once must fail every Scenario a Story claims that relies on it, naming the term and how many times it is defined, because a word with two meanings has none a reader can rely on
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-terms-glossary-closure.yaml
         scenario_id: scen-check-terms-003-term-defined-twice-fails
@@ -1755,8 +1755,8 @@ scenarios:
         - and: no file outside "tmp" changed
   scen-check-terms-004-no-catalogue-unchecked:
     description: A product document that declares no catalogue must leave every Scenario unchecked by the declared-term check, saying so, whatever its glossary holds
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-terms-glossary-closure.yaml
         scenario_id: scen-check-terms-004-no-catalogue-unchecked
@@ -1774,8 +1774,8 @@ scenarios:
         - and: no file outside "tmp" changed
   scen-check-fix-002-undefined-term-gets-definition:
     description: '`scen check --fix` must propose a definition for a declared term the glossary lacks, asking what it means first, record the definition the user applies in the product glossary and never in the Scenario, and pass the re-walk'
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-fix-clarification-loop.yaml
         scenario_id: scen-check-fix-002-undefined-term-gets-definition
@@ -1801,8 +1801,8 @@ scenarios:
         - and: the engine dispatched 3 AI turns
   scen-check-mappings-002-unmapped-term-fails:
     description: A term that the catalogue template a step matches declares, and that the architecture's word mapping does not map, must fail the Scenario a Story claims, naming the term
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-mappings-architecture-closure.yaml
         scenario_id: scen-check-mappings-002-unmapped-term-fails
@@ -1822,8 +1822,8 @@ scenarios:
         - and: no file outside "tmp" changed
   scen-check-mappings-001-mapped-terms-pass:
     description: A Scenario a Story claims must pass the term-mapping check when the architecture maps every term the templates its steps match declare, naming those terms, while a Scenario no Story claims passes unchecked and one whose templates declare no term passes saying so
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-mappings-architecture-closure.yaml
         scenario_id: scen-check-mappings-001-mapped-terms-pass
@@ -1843,8 +1843,8 @@ scenarios:
         - and: no file outside "tmp" changed
   scen-check-mappings-003-term-mapped-twice-fails:
     description: A term the architecture maps more than once must fail every Scenario a Story claims that relies on it, naming the term and how many times it is mapped, because a word built two ways has no one way a step definition can follow
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-mappings-architecture-closure.yaml
         scenario_id: scen-check-mappings-003-term-mapped-twice-fails
@@ -1862,8 +1862,8 @@ scenarios:
         - and: no file outside "tmp" changed
   scen-check-step-definitions-001-template-binds-twice-fails:
     description: A catalogue template whose steps, across every Scenario a Story claims that shares one suite, bind to two different step definitions must fail each of those Scenarios using it, naming the template and both definitions with where each is written, while a Scenario no Story claims neither counts nor is checked
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-step-definitions-correspondence.yaml
         scenario_id: scen-check-step-definitions-001-template-binds-twice-fails
@@ -1883,8 +1883,8 @@ scenarios:
         - and: no file outside "tmp" changed
   scen-check-step-definitions-002-definition-reached-twice-fails:
     description: A step definition that the steps of two catalogue templates bind, across the Scenarios a Story claims that share one suite, must fail each of those Scenarios, naming the definition with where it is written and both templates
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-step-definitions-correspondence.yaml
         scenario_id: scen-check-step-definitions-002-definition-reached-twice-fails
@@ -1903,8 +1903,8 @@ scenarios:
         - and: no file outside "tmp" changed
   scen-check-step-definitions-003-step-binds-twice-fails:
     description: A step of a Scenario a Story claims that two step definitions of its suite bind must fail that Scenario, naming the step and both definitions with where each is written, because which one runs depends on the order they were registered in
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-step-definitions-correspondence.yaml
         scenario_id: scen-check-step-definitions-003-step-binds-twice-fails
@@ -1922,8 +1922,8 @@ scenarios:
         - and: no file outside "tmp" changed
   scen-check-step-definitions-004-one-to-one-passes:
     description: A Scenario a Story claims must pass the step-definition check when each template its steps match binds to one step definition of its suite that no other template reaches, naming the suite, while a step no definition binds yet is reported as a gap rather than a failure, a step a model runs is exempt, and a Scenario no Story claims passes unchecked
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-step-definitions-correspondence.yaml
         scenario_id: scen-check-step-definitions-004-one-to-one-passes
@@ -1943,8 +1943,8 @@ scenarios:
         - and: no file outside "tmp" changed
   scen-check-step-definitions-005-unreadable-pattern-exits-1:
     description: A suite whose step definitions register a pattern that does not fold to a constant must stop the step-definition check at the first Scenario a Story claims, naming the check, the file and line of the pattern, and exit 1, because a definition the check cannot read would leave the steps it binds unchecked
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-step-definitions-correspondence.yaml
         scenario_id: scen-check-step-definitions-005-unreadable-pattern-exits-1
@@ -1964,8 +1964,8 @@ scenarios:
         - and: no file outside "tmp" changed
   scen-check-mappings-004-no-catalogue-unchecked:
     description: A product document that declares no catalogue must leave every Scenario unchecked by the term-mapping and step-definition checks, saying so, whatever the architecture maps
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-mappings-architecture-closure.yaml
         scenario_id: scen-check-mappings-004-no-catalogue-unchecked
@@ -1984,8 +1984,8 @@ scenarios:
         - and: no file outside "tmp" changed
   scen-check-fix-003-unmapped-term-gets-mapping:
     description: '`scen check --fix` must propose a mapping for a declared term the architecture does not map, asking how it is built and observed first, record the mapping the user applies in the architecture document and never in the Scenario or the product document, and pass the re-walk'
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-fix-clarification-loop.yaml
         scenario_id: scen-check-fix-003-unmapped-term-gets-mapping
@@ -2011,8 +2011,8 @@ scenarios:
         - and: the engine dispatched 3 AI turns
   scen-check-quality-fix-001-missing-step-added:
     description: '`scen check --fix` must add the given, when or then step a Scenario lacks to that Scenario''s entry in the Registry, saying what its description pins, and pass the re-walk'
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-quality-fix-scenario-rewrites.yaml
         scenario_id: scen-check-quality-fix-001-missing-step-added
@@ -2037,8 +2037,8 @@ scenarios:
         - and: the engine dispatched 5 AI turns
   scen-check-quality-fix-002-description-qualifier-replaced:
     description: '`scen check --fix` must replace a forbidden qualifier in a Scenario''s description with the measurable criterion its steps state, in that Scenario''s entry in the Registry, and pass the re-walk'
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-quality-fix-scenario-rewrites.yaml
         scenario_id: scen-check-quality-fix-002-description-qualifier-replaced
@@ -2063,8 +2063,8 @@ scenarios:
         - and: the engine dispatched 5 AI turns
   scen-check-quality-fix-003-step-qualifier-replaced:
     description: '`scen check --fix` must replace a forbidden qualifier in a Scenario''s step with the measurable criterion its description states, in that Scenario''s entry in the Registry, and pass the re-walk'
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-quality-fix-scenario-rewrites.yaml
         scenario_id: scen-check-quality-fix-003-step-qualifier-replaced
@@ -2089,8 +2089,8 @@ scenarios:
         - and: the engine dispatched 5 AI turns
   scen-check-quality-fix-004-forbidden-verb-replaced:
     description: '`scen check --fix` must rewrite a Scenario''s step that uses a forbidden action verb with the observable action the product document gives in its place, in that Scenario''s entry in the Registry, and pass the re-walk'
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-quality-fix-scenario-rewrites.yaml
         scenario_id: scen-check-quality-fix-004-forbidden-verb-replaced
@@ -2114,8 +2114,8 @@ scenarios:
         - and: the engine dispatched 5 AI turns
   scen-check-quality-fix-005-implementation-step-rewritten:
     description: '`scen check --fix` must rewrite a Scenario''s step that names an implementation detail as the output a user observes, in that Scenario''s entry in the Registry, and pass the re-walk'
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-quality-fix-scenario-rewrites.yaml
         scenario_id: scen-check-quality-fix-005-implementation-step-rewritten
@@ -2139,8 +2139,8 @@ scenarios:
         - and: the engine dispatched 5 AI turns
   scen-check-quality-fix-006-measurable-criterion-added:
     description: '`scen check --fix` must ask which measurable criterion a Scenario lacking one asserts, add the criterion the user picks to that Scenario''s entry in the Registry, and pass the re-walk'
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-quality-fix-scenario-rewrites.yaml
         scenario_id: scen-check-quality-fix-006-measurable-criterion-added
@@ -2165,8 +2165,8 @@ scenarios:
         - and: the engine dispatched 6 AI turns
   scen-check-quality-fix-007-subjective-outcome-rewritten:
     description: '`scen check --fix` must ask what counts as correct for a Scenario whose outcome is a matter of taste, rewrite the outcome as one a reviewer decides without judgement in that Scenario''s entry in the Registry, and pass the re-walk'
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-quality-fix-scenario-rewrites.yaml
         scenario_id: scen-check-quality-fix-007-subjective-outcome-rewritten
@@ -2191,8 +2191,8 @@ scenarios:
         - and: the engine dispatched 6 AI turns
   scen-check-fix-005-restated-meaning-rewritten:
     description: '`scen check --fix` must rewrite the meaning of a catalogue phrase that only restates its template, a model having judged it, in the product document and never in the Scenario, and pass the re-walk'
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-fix-clarification-loop.yaml
         scenario_id: scen-check-fix-005-restated-meaning-rewritten
@@ -2216,8 +2216,8 @@ scenarios:
         - and: the engine dispatched 5 AI turns
   scen-check-fix-006-misused-phrase-step-rewritten:
     description: '`scen check --fix` must rewrite a Scenario''s step whose pattern a model judged to name no observable output, as the output its description pins, in that Scenario''s entry in the Registry, and pass the re-walk'
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-fix-clarification-loop.yaml
         scenario_id: scen-check-fix-006-misused-phrase-step-rewritten
@@ -2242,8 +2242,8 @@ scenarios:
         - and: the engine dispatched 5 AI turns
   scen-check-fix-004-shared-definition-merges-phrases:
     description: '`scen check --fix` must merge two catalogue entries whose steps one step definition binds into one entry, in the product document and never in a Scenario or a step definition, and pass the re-walk'
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-fix-clarification-loop.yaml
         scenario_id: scen-check-fix-004-shared-definition-merges-phrases
@@ -2269,8 +2269,8 @@ scenarios:
         - and: the engine dispatched 2 AI turns
   build-tests-steps-006-steps-authored-from-spec:
     description: '`build tests --fix` must author an unbound step from the spec: its step-authoring prompt carries the catalogue phrase the step matches, the glossary meaning of each word that phrase relies on and the architecture''s mapping of that word, so the step definition observes what the mapping says'
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-steps-binding.yaml
         scenario_id: build-tests-steps-006-steps-authored-from-spec
@@ -2293,8 +2293,8 @@ scenarios:
         - but: no file outside "tmp" and "tests" changed
   build-tests-steps-007-unreadable-catalogue-refused:
     description: '`build tests --fix` must refuse a product document whose catalogue it cannot read, before it writes a generated test and before any AI turn, rather than author steps blind to the spec the host declared'
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-steps-binding.yaml
         scenario_id: build-tests-steps-007-unreadable-catalogue-refused
@@ -2312,8 +2312,8 @@ scenarios:
         - but: no file outside "tmp" changed
   us-refine-refusals-007-shared-prefix-reads-own-file:
     description: When the requested id is a prefix of another Story's id, so that both Story files start with it, `us refine` must read the file whose own id is the requested one, so a fault in that file is what the refusal names and the other Story is never mentioned
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
       - story: docs/product/stories/us-refine-refusals-unwalkable-story.yaml
         scenario_id: us-refine-refusals-007-shared-prefix-reads-own-file
@@ -2337,8 +2337,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   us-apply-refusals-002-shared-prefix-reads-own-story:
     description: When the requested id is a prefix of another Story's id, so that both Story files start with it, `us apply` must read the file whose own id is the requested one, so a fault in that file is what the refusal names and the other Story is never mentioned
-    service: bdd-cli
-    path: tests/bdd-cli/us_apply_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_apply_test.go
     user_stories:
       - story: docs/product/stories/us-apply-refusals-startup.yaml
         scenario_id: us-apply-refusals-002-shared-prefix-reads-own-story
@@ -2362,8 +2362,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   us-apply-refusals-003-mismatched-id-refused:
     description: When every Story file starting with the requested id declares another Story's id, `us apply` must be refused at startup, naming each file and the id it declares, so `us apply scen` never applies the Story `scen-check`
-    service: bdd-cli
-    path: tests/bdd-cli/us_apply_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_apply_test.go
     user_stories:
       - story: docs/product/stories/us-apply-refusals-startup.yaml
         scenario_id: us-apply-refusals-003-mismatched-id-refused
@@ -2387,8 +2387,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   scen-check-001-claimed-scenario-passes:
     description: A registry scenario a Story claims that satisfies every prompt of the shipped checklist, its closure checks and its model questions alike, must pass the walk and report success
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-verifier.yaml
         scenario_id: scen-check-001-claimed-scenario-passes
@@ -2414,8 +2414,8 @@ scenarios:
 
   scen-check-002-failed-scenario-exits-1:
     description: A registry scenario that fails a walked prompt of the shipped checklist, a model question or a closure check, must be reported as failed and make the command exit 1, so a bare `scen check` can gate a change
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-verifier.yaml
         scenario_id: scen-check-002-failed-scenario-exits-1
@@ -2440,8 +2440,8 @@ scenarios:
 
   scen-check-fix-007-whole-checklist-fixes-description:
     description: '`scen check --fix` over the shipped checklist, every prompt of which carries a fix, must rewrite a description that states no rule in that Scenario''s entry in the Registry, and pass the re-walk of every prompt about the Scenario as it now reads'
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-fix-clarification-loop.yaml
         scenario_id: scen-check-fix-007-whole-checklist-fixes-description
@@ -2470,8 +2470,8 @@ scenarios:
 
   scen-check-003-unknown-id-refused:
     description: An id naming no scenario in the registry must be refused before the first prompt, never walked as an empty selection
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-verifier.yaml
         scenario_id: scen-check-003-unknown-id-refused
@@ -2490,8 +2490,8 @@ scenarios:
 
   scen-check-004-empty-registry-refused:
     description: A registry file that declares no scenarios must be refused, so the walk never reports success over nothing
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-verifier.yaml
         scenario_id: scen-check-004-empty-registry-refused
@@ -2510,8 +2510,8 @@ scenarios:
 
   scen-check-005-ids-narrow-the-walk:
     description: Ids given on the command line must narrow the walk to exactly those scenarios, in ascending id order whatever order they were typed
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-verifier.yaml
         scenario_id: scen-check-005-ids-narrow-the-walk
@@ -2533,8 +2533,8 @@ scenarios:
 
   build-tests-refusals-004-empty-checklist-refused:
     description: A checklist file that declares no prompts must be refused before the walk, never converge on an item nothing checked
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-refusals-startup.yaml
         scenario_id: build-tests-refusals-004-empty-checklist-refused
@@ -2553,8 +2553,8 @@ scenarios:
 
   build-tests-refusals-005-step-outside-catalogue-refused:
     description: When the product document declares a catalogue, a Registry step that does not match exactly one catalogue template of its own block must refuse `build tests` at startup, naming each such Scenario and step whether or not a Story claims that Scenario, before a generated test is written or an AI turn is spent
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-refusals-startup.yaml
         scenario_id: build-tests-refusals-005-step-outside-catalogue-refused
@@ -2577,8 +2577,8 @@ scenarios:
 
   build-tests-refusals-006-no-catalogue-walks-unrefused:
     description: When the product document declares no catalogue, `build tests` must say that it checks no step phrase and must walk the Registry without refusing any step for its wording, so a host adopts the catalogue only by writing one
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-refusals-startup.yaml
         scenario_id: build-tests-refusals-006-no-catalogue-walks-unrefused
@@ -2600,8 +2600,8 @@ scenarios:
 
   build-tests-files-001-stale-test-refused:
     description: Without `--fix`, a generated test file that is missing or differs from what the Registry renders must refuse `build tests`, naming each such file and the command that regenerates it, and must leave every file as it was
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-files-suite-on-disk.yaml
         scenario_id: build-tests-files-001-stale-test-refused
@@ -2622,8 +2622,8 @@ scenarios:
 
   build-tests-files-002-stale-test-regenerated:
     description: Under `--fix`, a generated test file that differs from what the Registry renders must be rewritten to match it, while a generated test file that already matches must be left untouched
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-files-suite-on-disk.yaml
         scenario_id: build-tests-files-002-stale-test-regenerated
@@ -2640,13 +2640,14 @@ scenarios:
         - and: the file "tests/mcp/ticket_test.go" matches the session is granted a ticket within 5 seconds
         - but: the file "tests/mcp/session_test.go" is unchanged
         - and: stdout matches BUILD TESTS COMPLETE
+        - and: the engine logged its build identity once at start
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" and "tests" changed
 
   build-tests-files-003-hand-written-test-kept:
     description: Under `--fix`, a Registry `path:` naming a hand-written test file, one without the `// Code generated` header, must refuse `build tests`, naming that file, before any generated test file is rewritten
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-files-suite-on-disk.yaml
         scenario_id: build-tests-files-003-hand-written-test-kept
@@ -2667,8 +2668,8 @@ scenarios:
 
   build-tests-files-004-foreign-package-refused:
     description: A hand-written test file in a generated test's directory that declares a package other than the one the directory's name derives must refuse `build tests`, naming the file and both package names
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-files-suite-on-disk.yaml
         scenario_id: build-tests-files-004-foreign-package-refused
@@ -2688,8 +2689,8 @@ scenarios:
 
   build-tests-files-005-invalid-step-pattern-refused:
     description: A step definition whose pattern is not a valid regular expression must refuse `build tests`, naming its file, line and column, before any generated test file is compared with the Registry
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-files-suite-on-disk.yaml
         scenario_id: build-tests-files-005-invalid-step-pattern-refused
@@ -2710,8 +2711,8 @@ scenarios:
 
   build-tests-files-006-step-file-not-go-refused:
     description: A step definition file that is not valid Go must refuse `build tests`, naming the file, line and column where Go stops reading it, before any generated test file is compared with the Registry
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-files-suite-on-disk.yaml
         scenario_id: build-tests-files-006-step-file-not-go-refused
@@ -2732,8 +2733,8 @@ scenarios:
 
   build-tests-paths-001-missing-path-refused:
     description: A Scenario that declares no `path:` must refuse `build tests`, naming that Scenario by its Registry key, rather than write its generated test to a file it guessed
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-paths-generated-test-file.yaml
         scenario_id: build-tests-paths-001-missing-path-refused
@@ -2752,8 +2753,8 @@ scenarios:
 
   build-tests-paths-002-path-with-whitespace-refused:
     description: A `path:` with whitespace around it must refuse `build tests`, quoting the path as written, rather than write the test to a file the Registry does not name
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-paths-generated-test-file.yaml
         scenario_id: build-tests-paths-002-path-with-whitespace-refused
@@ -2772,8 +2773,8 @@ scenarios:
 
   build-tests-paths-003-path-outside-project-refused:
     description: A `path:` that is absolute or climbs out of the project tree with `..` must refuse `build tests`, naming the Scenario and the path, so no generated test is written outside the project
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-paths-generated-test-file.yaml
         scenario_id: build-tests-paths-003-path-outside-project-refused
@@ -2792,8 +2793,8 @@ scenarios:
 
   build-tests-paths-004-path-not-test-file-refused:
     description: A `path:` that does not end in `_test.go` must refuse `build tests`, naming the Scenario and the path, since Go never runs such a file as a test
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-paths-generated-test-file.yaml
         scenario_id: build-tests-paths-004-path-not-test-file-refused
@@ -2812,8 +2813,8 @@ scenarios:
 
   build-tests-paths-005-path-in-steps-dir-refused:
     description: A `path:` inside the suite's `steps/` directory must refuse `build tests`, naming the Scenario and the path, so a generated test never takes the place of a step definition
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-paths-generated-test-file.yaml
         scenario_id: build-tests-paths-005-path-in-steps-dir-refused
@@ -2832,8 +2833,8 @@ scenarios:
 
   build-tests-paths-006-service-in-two-dirs-refused:
     description: Two Scenarios of one service whose `path:` values lie in two directories must refuse `build tests`, naming the second Scenario, its path and the directory the first one already set
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-paths-generated-test-file.yaml
         scenario_id: build-tests-paths-006-service-in-two-dirs-refused
@@ -2853,8 +2854,8 @@ scenarios:
 
   build-tests-paths-007-path-derives-no-package-refused:
     description: A `path:` whose suite directory has a name that derives no valid Go package name must refuse `build tests`, naming the path, that suite and the package name it derives
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-paths-generated-test-file.yaml
         scenario_id: build-tests-paths-007-path-derives-no-package-refused
@@ -2873,8 +2874,8 @@ scenarios:
 
   build-tests-renderable-001-undeclared-service-refused:
     description: A Scenario whose `service:` the architecture document does not declare must refuse `build tests`, naming the Scenario and the service
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-renderable-runnable-test.yaml
         scenario_id: build-tests-renderable-001-undeclared-service-refused
@@ -2893,8 +2894,8 @@ scenarios:
 
   build-tests-renderable-002-framework-without-renderer-refused:
     description: An architecture whose testing framework `build tests` cannot generate tests for must refuse `build tests`, naming the framework, rather than leave its Scenarios without a test
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-renderable-runnable-test.yaml
         scenario_id: build-tests-renderable-002-framework-without-renderer-refused
@@ -2913,8 +2914,8 @@ scenarios:
 
   build-tests-renderable-003-colliding-test-names-refused:
     description: Two Scenario keys that render the same Go test name must refuse `build tests`, naming both keys and that name
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-renderable-runnable-test.yaml
         scenario_id: build-tests-renderable-003-colliding-test-names-refused
@@ -2933,8 +2934,8 @@ scenarios:
 
   build-tests-renderable-004-unrunnable-test-name-refused:
     description: A Scenario key whose Go test name `go test` would compile but never run must refuse `build tests`, naming the key and the test name it renders
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-renderable-runnable-test.yaml
         scenario_id: build-tests-renderable-004-unrunnable-test-name-refused
@@ -2953,8 +2954,8 @@ scenarios:
 
   build-tests-renderable-005-scenario-without-steps-refused:
     description: A Scenario with no steps must refuse `build tests`, naming that Scenario by its Registry key, rather than render a test that passes without checking anything
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-renderable-runnable-test.yaml
         scenario_id: build-tests-renderable-005-scenario-without-steps-refused
@@ -2973,8 +2974,8 @@ scenarios:
 
   build-tests-renderable-006-suite-without-module-refused:
     description: A suite whose nearest `go.mod` declares no module must refuse `build tests`, naming the Scenario's path and that `go.mod`, rather than write a generated test that cannot compile
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-renderable-runnable-test.yaml
         scenario_id: build-tests-renderable-006-suite-without-module-refused
@@ -2993,8 +2994,8 @@ scenarios:
 
   build-tests-step-shapes-001-two-key-modifier-refused:
     description: An `and:` or `but:` step written as one mapping with two keys must refuse `build tests`, naming the Registry line, rather than keep one of the two steps and drop the other
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-step-shapes-registry-steps.yaml
         scenario_id: build-tests-step-shapes-001-two-key-modifier-refused
@@ -3013,8 +3014,8 @@ scenarios:
 
   build-tests-step-shapes-002-list-modifier-refused:
     description: An `and:` or `but:` step holding a list instead of one step's text must refuse `build tests`, naming the keyword and the Registry line
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-step-shapes-registry-steps.yaml
         scenario_id: build-tests-step-shapes-002-list-modifier-refused
@@ -3034,8 +3035,8 @@ scenarios:
 
   build-tests-step-shapes-003-unknown-modifier-refused:
     description: A step mapping keyed by a word other than `and` or `but` must refuse `build tests`, naming that key and the Registry line
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-step-shapes-registry-steps.yaml
         scenario_id: build-tests-step-shapes-003-unknown-modifier-refused
@@ -3054,8 +3055,8 @@ scenarios:
 
   build-tests-step-shapes-004-llm-step-in-then-refused:
     description: A Then step that opens with `llm:` must refuse `build tests`, naming the Scenario and the step and pointing to `judge:`, since a Then step rules on the run rather than acting in it
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-step-shapes-registry-steps.yaml
         scenario_id: build-tests-step-shapes-004-llm-step-in-then-refused
@@ -3075,8 +3076,8 @@ scenarios:
 
   build-tests-step-shapes-005-judge-step-outside-then-refused:
     description: A Given or When step that opens with `judge:` must refuse `build tests`, naming the Scenario and the step and pointing to `llm:`, since only a Then step rules on the run
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-step-shapes-registry-steps.yaml
         scenario_id: build-tests-step-shapes-005-judge-step-outside-then-refused
@@ -3096,8 +3097,8 @@ scenarios:
 
   build-tests-step-shapes-006-empty-model-step-refused:
     description: A step that is `llm:` or `judge:` with no text after it must refuse `build tests`, naming the Scenario and the step, rather than hand a model an empty instruction
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-step-shapes-registry-steps.yaml
         scenario_id: build-tests-step-shapes-006-empty-model-step-refused
@@ -3116,8 +3117,8 @@ scenarios:
 
   build-tests-steps-003-only-unbound-scenarios-walked:
     description: A host that declares no coverage command must still walk only the scenarios with an unbound step, because the engine resolves step coverage itself
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-steps-binding.yaml
         scenario_id: build-tests-steps-003-only-unbound-scenarios-walked
@@ -3137,8 +3138,8 @@ scenarios:
 
   build-tests-steps-004-unfoldable-pattern-refused:
     description: A step pattern the engine cannot resolve to a constant must be refused by name, never skipped, because a skipped pattern reports a bound step as unbound
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-steps-binding.yaml
         scenario_id: build-tests-steps-004-unfoldable-pattern-refused
@@ -3158,8 +3159,8 @@ scenarios:
 
   build-tests-steps-005-double-bound-step-refused:
     description: A step matched by two definitions must be refused rather than reported as a gap, because which one runs depends on registration order and a third would paper over it
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/build-tests-steps-binding.yaml
         scenario_id: build-tests-steps-005-double-bound-step-refused
@@ -3178,8 +3179,8 @@ scenarios:
 
   checklist-skip-001-skipped-prompt-not-walked:
     description: 'A checklist Prompt carrying `skip: true` must not be walked and must cost no AI turn, while the checklist''s other Prompts, with `skip: false` or no `skip:`, are walked as before'
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/checklist-skip-parked-prompts.yaml
         scenario_id: checklist-skip-001-skipped-prompt-not-walked
@@ -3202,8 +3203,8 @@ scenarios:
 
   checklist-skip-002-non-boolean-skip-refused:
     description: A checklist Prompt whose `skip:` is not a boolean, such as the string "false", must be refused at startup, naming the Prompt, with no AI turn, rather than skipped or walked on a guess at what it meant
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/checklist-skip-parked-prompts.yaml
         scenario_id: checklist-skip-002-non-boolean-skip-refused
@@ -3223,8 +3224,8 @@ scenarios:
 
   checklist-skip-003-every-prompt-skipped-refused:
     description: 'A checklist whose every Prompt carries `skip: true` must be refused at startup as one with no Prompts, with no AI turn, never walked to a trivial success'
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/checklist-skip-parked-prompts.yaml
         scenario_id: checklist-skip-003-every-prompt-skipped-refused
@@ -3243,9 +3244,9 @@ scenarios:
         - and: the engine dispatched no AI turns
 
   engine-entry-001-version-runs-without-config:
-    description: The `version` command must print `true-bdd version` followed by the engine's version number and exit 0 in a project tree that holds no `true-bdd/true-bdd.yaml`, because it reads no configuration
-    service: bdd-cli
-    path: tests/bdd-cli/cli_test.go
+    description: The `version` command must print `true-bdd version` followed by the engine's build version and commit and exit 0 in a project tree that holds no `true-bdd/true-bdd.yaml`, because it reads no configuration
+    service: true-bdd
+    path: tests/true-bdd/cli_test.go
     user_stories:
       - story: docs/product/stories/engine-entry-command-line.yaml
         scenario_id: engine-entry-001-version-runs-without-config
@@ -3258,13 +3259,32 @@ scenarios:
         - the System Architect runs "version"
       then:
         - the command exits with code 0
-        - stdout matches (?m)^true-bdd version \d+\.\d+\.\d+$
-        - and: no file outside "tmp" changed
+        - stdout matches \Atrue-bdd version \S+ commit \S+\n\z
+        - and: no file changed
+
+  engine-entry-005-version-reports-build:
+    description: The version command prints only the build version and commit answer, without reading configuration, installing a log or changing any file
+    service: true-bdd
+    path: tests/true-bdd/cli_test.go
+    user_stories:
+      - story: docs/product/stories/engine-entry-command-line.yaml
+        scenario_id: engine-entry-005-version-reports-build
+        merge_date: '2026-10-27'
+    merged_steps:
+      given:
+        - the "version-reports-build" project tree
+        - and: the project tree has no "true-bdd/true-bdd.yaml"
+      when:
+        - the System Architect runs "version"
+      then:
+        - the command exits with code 0
+        - stdout matches \Atrue-bdd version \S+ commit \S+\n\z
+        - and: no file changed
 
   engine-entry-002-stray-argument-prints-usage:
     description: A command given an argument it does not take must exit 1 before it starts its walk, printing an error that names the argument followed by that command's usage, and must change no file
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/engine-entry-command-line.yaml
         scenario_id: engine-entry-002-stray-argument-prints-usage
@@ -3284,8 +3304,8 @@ scenarios:
 
   engine-documents-001-absolute-requirements-overrides-config:
     description: '`build tests --requirements` given an absolute path must read the Registry at that path instead of the one `true-bdd.yaml` names, and must quote it in a generated test''s header by its path relative to the project, so a test rendered from that relative path is reported unchanged and the run exits 0'
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/engine-documents-flags-and-declarations.yaml
         scenario_id: engine-documents-001-absolute-requirements-overrides-config
@@ -3307,8 +3327,8 @@ scenarios:
 
   engine-entry-003-missing-config-refused:
     description: A command run in a project tree with no `true-bdd/true-bdd.yaml` must exit 1 before it reads any document, saying on stderr that it could not open that file, and must change no file
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/engine-entry-command-line.yaml
         scenario_id: engine-entry-003-missing-config-refused
@@ -3328,8 +3348,8 @@ scenarios:
 
   engine-entry-004-failed-us-command-prints-no-usage:
     description: A `us` command that fails once it has started must exit 1 printing its error on stderr once, after the command's name alone, and not its usage, as the `build` and `scen` commands do, and must change no file
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
       - story: docs/product/stories/engine-entry-command-line.yaml
         scenario_id: engine-entry-004-failed-us-command-prints-no-usage
@@ -3348,8 +3368,8 @@ scenarios:
 
   engine-documents-002-missing-architecture-flag-refused:
     description: '`build code --architecture` naming a file that does not exist must be refused before it starts a test runner, naming that file, even where the architectural spec `true-bdd.yaml` names exists'
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
       - story: docs/product/stories/engine-documents-flags-and-declarations.yaml
         scenario_id: engine-documents-002-missing-architecture-flag-refused
@@ -3369,8 +3389,8 @@ scenarios:
 
   engine-documents-003-undeclared-architecture-refused:
     description: A host whose `true-bdd.yaml` declares no architectural spec must have `build tests` refused before it walks, naming the missing `documents.architecture_yaml` key, never served the spec at its conventional path
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/engine-documents-flags-and-declarations.yaml
         scenario_id: engine-documents-003-undeclared-architecture-refused
@@ -3390,8 +3410,8 @@ scenarios:
 
   engine-documents-004-undeclared-registry-refused-by-us-apply:
     description: A host whose `true-bdd.yaml` declares no scenario registry must have `us apply` refused before it walks the Story, naming the missing `documents.scenarios_yaml` key, and must leave the Story and the registry at the conventional path unchanged
-    service: bdd-cli
-    path: tests/bdd-cli/us_apply_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_apply_test.go
     user_stories:
       - story: docs/product/stories/engine-documents-flags-and-declarations.yaml
         scenario_id: engine-documents-004-undeclared-registry-refused-by-us-apply
@@ -3413,8 +3433,8 @@ scenarios:
 
   engine-documents-005-undeclared-registry-refused-by-scen-check:
     description: A host whose `true-bdd.yaml` declares no scenario registry must have `scen check` refused before it walks, naming the missing `documents.scenarios_yaml` key, never served the registry at its conventional path
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/engine-documents-flags-and-declarations.yaml
         scenario_id: engine-documents-005-undeclared-registry-refused-by-scen-check
@@ -3434,8 +3454,8 @@ scenarios:
 
   engine-documents-006-directory-document-refused:
     description: A document path declared in `true-bdd.yaml` that names a directory must be refused at startup, naming the path, rather than read as the file inside it
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
       - story: docs/product/stories/engine-documents-flags-and-declarations.yaml
         scenario_id: engine-documents-006-directory-document-refused
@@ -3456,8 +3476,8 @@ scenarios:
 
   scen-check-006-duplicate-id-refused:
     description: An id given twice on the command line must be refused before the first prompt, naming the id, never walked once or twice as though asked
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/scen-check-verifier.yaml
         scenario_id: scen-check-006-duplicate-id-refused
@@ -3477,8 +3497,8 @@ scenarios:
 
   fix-loop-choices-001-refine-reshapes-fix:
     description: Choosing to refine a proposed fix must read the person's feedback up to an empty line, propose the fix again shaped by that feedback, and apply the refined fix once the person picks apply
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/fix-loop-choices-apply-refine-exit.yaml
         scenario_id: fix-loop-choices-001-refine-reshapes-fix
@@ -3504,8 +3524,8 @@ scenarios:
 
   fix-loop-choices-002-own-words-answer-kept:
     description: A clarifying question answered in the person's own words rather than by an option's number must reach the fix as typed, so the fix applied carries those words
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/fix-loop-choices-apply-refine-exit.yaml
         scenario_id: fix-loop-choices-002-own-words-answer-kept
@@ -3530,8 +3550,8 @@ scenarios:
 
   fix-loop-choices-003-exit-keeps-story:
     description: Choosing to exit a `us refine --fix` run's fix loop must leave the Story file exactly as it was, saying where the latest version of the Story was kept
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
       - story: docs/product/stories/fix-loop-choices-apply-refine-exit.yaml
         scenario_id: fix-loop-choices-003-exit-keeps-story
@@ -3556,8 +3576,8 @@ scenarios:
 
   fix-loop-choices-004-exit-keeps-registry:
     description: Choosing to exit a `us apply --fix` run's fix loop must leave the Registry exactly as it was and walk no further acceptance criterion, reporting the failed Prompt with the fix it carries
-    service: bdd-cli
-    path: tests/bdd-cli/us_apply_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_apply_test.go
     user_stories:
       - story: docs/product/stories/fix-loop-choices-apply-refine-exit.yaml
         scenario_id: fix-loop-choices-004-exit-keeps-registry
@@ -3584,8 +3604,8 @@ scenarios:
 
   fix-loop-choices-005-exit-keeps-term-documents:
     description: Choosing to exit a `scen check --fix` run's fix loop must leave the term documents and the Registry exactly as they were, report the failed Prompt with its fix, and exit 1
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/fix-loop-choices-apply-refine-exit.yaml
         scenario_id: fix-loop-choices-005-exit-keeps-term-documents
@@ -3609,8 +3629,8 @@ scenarios:
 
   fix-loop-choices-006-exit-fails-build-tests:
     description: Choosing to exit a `build tests --fix` run's fix loop must write no step definition, leave the Registry as it was, exit 1 and never report BUILD TESTS COMPLETE, since the Scenario's steps still bind to nothing
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/fix-loop-choices-apply-refine-exit.yaml
         scenario_id: fix-loop-choices-006-exit-fails-build-tests
@@ -3635,8 +3655,8 @@ scenarios:
 
   fix-loop-bounds-004-walks-exhausted-keep-term-documents:
     description: 'A `scen check --fix` run whose checklist allows one walk must stop after the walk that applied a fix, before the re-walk that would confirm it, saying it hit max apply attempts, and must put the term document that fix wrote back as it was, exiting 1'
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/fix-loop-bounds-max-apply-attempts.yaml
         scenario_id: fix-loop-bounds-004-walks-exhausted-keep-term-documents
@@ -3660,8 +3680,8 @@ scenarios:
         - and: the engine dispatched 2 AI turns
   fix-loop-bounds-001-one-walk-keeps-story:
     description: A `us refine --fix` run whose checklist allows one walk must stop after the walk that applied a fix, before the re-walk that would confirm it, saying it hit max apply attempts and leaving the Story file as it was
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
       - story: docs/product/stories/fix-loop-bounds-max-apply-attempts.yaml
         scenario_id: fix-loop-bounds-001-one-walk-keeps-story
@@ -3687,8 +3707,8 @@ scenarios:
 
   fix-loop-bounds-002-refixed-prompt-stops-walk:
     description: A `us refine --fix` run whose checklist allows one fix per Prompt must stop with exit code 1 when the same Prompt still fails after its fix and needs a second, leaving the Story file as it was
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
       - story: docs/product/stories/fix-loop-bounds-max-apply-attempts.yaml
         scenario_id: fix-loop-bounds-002-refixed-prompt-stops-walk
@@ -3712,8 +3732,8 @@ scenarios:
 
   fix-loop-bounds-003-unsettled-questions-keep-story:
     description: A `us refine --fix` run whose clarifying questions the person never settles must give up after five rounds of questions with no fix proposed, saying no fix was applied, and leave the Story file as it was
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
       - story: docs/product/stories/fix-loop-bounds-max-apply-attempts.yaml
         scenario_id: fix-loop-bounds-003-unsettled-questions-keep-story
@@ -3740,8 +3760,8 @@ scenarios:
 
   engine-routes-001-codex-sandbox-per-turn:
     description: '`build code --fix` with every tier naming codex sends the plan turn to its read-only sandbox and the writer to its confined profile with replay forms, without a validation turn'
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
       - story: docs/product/stories/engine-routes-agent-clis.yaml
         scenario_id: engine-routes-001-codex-sandbox-per-turn
@@ -3770,8 +3790,8 @@ scenarios:
   engine-routes-003-prompt-tiers-win:
     description: A Prompt naming its own `model:`, `fix_model:` and `apply_model:` tiers must send its validation, fix and apply
       turns to the AI CLIs those tiers name, and none to the AI CLI its checklist's tier names for that kind of turn
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
     - story: docs/product/stories/engine-routes-agent-clis.yaml
       scenario_id: engine-routes-003-prompt-tiers-win
@@ -3796,8 +3816,8 @@ scenarios:
       - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
   engine-routes-004-failed-claude-turn-stops-run:
     description: A validation turn whose claude CLI exits non-zero, here on a model id the CLI does not know, must stop `scen check` with exit code 1, a log record naming the turn, its AI CLI and its model, and the error on stderr after the command's name alone, before any verdict is reported
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/engine-routes-agent-clis.yaml
         scenario_id: engine-routes-004-failed-claude-turn-stops-run
@@ -3821,8 +3841,8 @@ scenarios:
   engine-routes-005-failed-codex-turn-stops-run:
     description: A validation turn whose codex CLI exits non-zero, here on a model id the CLI does not know, must stop `scen
       check` with exit code 1 and a log record naming the turn, its AI CLI and its model, before any verdict is reported
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
     - story: docs/product/stories/engine-routes-agent-clis.yaml
       scenario_id: engine-routes-005-failed-codex-turn-stops-run
@@ -3842,8 +3862,8 @@ scenarios:
       - and: no file outside "tmp" changed
   engine-config-001-empty-model-table-refused:
     description: A command must be refused at startup when `engine.models` in true-bdd.yaml binds no tier, saying that at least one tier must be configured, before its walk starts or any AI turn
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/engine-config-models-and-roots.yaml
         scenario_id: engine-config-001-empty-model-table-refused
@@ -3864,8 +3884,8 @@ scenarios:
     description: A command must be refused at startup when `engine.models` holds entries it cannot parse, naming in one run
       every such entry and why, a tier name the engine does not know, a model reference with no colon, one with an empty CLI
       and one with an empty model, and none of the sound entries
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
     - story: docs/product/stories/engine-config-models-and-roots.yaml
       scenario_id: engine-config-002-malformed-model-entries-refused
@@ -3888,8 +3908,8 @@ scenarios:
       - and: the engine dispatched no AI turns
   engine-config-003-unresolvable-default-tiers-refused:
     description: A command must be refused at startup when the `default_<role>_model` keys of true-bdd.yaml name a tier the engine does not know or a tier that `engine.models` does not configure, naming in one run each such key and the tier it names, and not a sound default
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/engine-config-models-and-roots.yaml
         scenario_id: engine-config-003-unresolvable-default-tiers-refused
@@ -3910,8 +3930,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   engine-config-004-prompt-tier-unconfigured-refused:
     description: A command must be refused at startup, before it asks any Prompt, when a Prompt's own `model:` names a tier that `engine.models` does not configure, naming that Prompt, the tier and the tiers the table does configure, even when the Prompt is not the first the walk would ask
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/engine-config-models-and-roots.yaml
         scenario_id: engine-config-004-prompt-tier-unconfigured-refused
@@ -3931,8 +3951,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   engine-config-005-checklist-tiers-unconfigured-refused:
     description: A `--fix` run must be refused at startup, before it runs the suite or any AI turn, when the tiers its checklist's `engine:` block names for the fix and apply turns are not configured under `engine.models`, naming each turn, its tier and the tiers the table does configure
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
       - story: docs/product/stories/engine-config-models-and-roots.yaml
         scenario_id: engine-config-005-checklist-tiers-unconfigured-refused
@@ -3952,8 +3972,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   engine-config-006-default-write-roots:
     description: When true-bdd.yaml names no `paths.test_write_globs`, `build tests --fix` must grant its apply turn the default write roots `./tests/**` and `./services/**`, so the step definitions a Scenario lacks are authored under the suite that owns it and nothing outside `tests` changes
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/engine-config-models-and-roots.yaml
         scenario_id: engine-config-006-default-write-roots
@@ -3972,8 +3992,8 @@ scenarios:
         - but: no file outside "tmp" and "tests" changed
   engine-checklists-001-missing-checklist-refused:
     description: A command must be refused at startup when the directory `paths.checklists_dir` names holds no checklist for it, naming the checklist file it looked for, before its walk starts or any AI turn
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/engine-checklists-unreadable-checklist.yaml
         scenario_id: engine-checklists-001-missing-checklist-refused
@@ -3992,8 +4012,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   engine-checklists-002-checklist-not-yaml-refused:
     description: A command must be refused at startup when its checklist is not valid YAML, naming the checklist file and the line its reader stopped at, before its walk starts or any AI turn
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/engine-checklists-unreadable-checklist.yaml
         scenario_id: engine-checklists-002-checklist-not-yaml-refused
@@ -4012,8 +4032,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   engine-checklists-003-check-with-not-a-mapping-refused:
     description: A command must be refused at startup when a `D:` Prompt of its checklist passes its check a `with:` that is not a mapping, naming the checklist file, the Prompt, what its `with:` is and that `with:` takes a mapping, rather than run the check without the parameters it was given
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/engine-checklists-unreadable-checklist.yaml
         scenario_id: engine-checklists-003-check-with-not-a-mapping-refused
@@ -4033,8 +4053,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   engine-term-documents-001-glossary-not-a-list-stops-scen-check:
     description: '`scen check` must stop at its declared-term check when the product document''s `glossary:` is not a list, naming the document and that the glossary must hold a list of terms, before any later check or AI turn'
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/engine-term-documents-unreadable.yaml
         scenario_id: engine-term-documents-001-glossary-not-a-list-stops-scen-check
@@ -4053,8 +4073,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   engine-term-documents-002-mapping-not-a-list-stops-scen-check:
     description: '`scen check` must stop at its term-mapping check when the architecture document''s `architecture.terms:` is not a list, naming the document and that the word mapping must hold a list of mappings, before any later check or AI turn'
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/engine-term-documents-unreadable.yaml
         scenario_id: engine-term-documents-002-mapping-not-a-list-stops-scen-check
@@ -4073,8 +4093,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   engine-term-documents-003-product-not-yaml-stops-scen-check:
     description: '`scen check` must stop at its first check that reads the product document when that document is not valid YAML, naming the document and the line its reader stopped at, before any later check or AI turn'
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/engine-term-documents-unreadable.yaml
         scenario_id: engine-term-documents-003-product-not-yaml-stops-scen-check
@@ -4093,8 +4113,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   engine-term-documents-004-architecture-not-yaml-stops-scen-check:
     description: '`scen check` must stop at its term-mapping check when the architecture document is not valid YAML, naming the document and the line its reader stopped at, before any later check or AI turn'
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
       - story: docs/product/stories/engine-term-documents-unreadable.yaml
         scenario_id: engine-term-documents-004-architecture-not-yaml-stops-scen-check
@@ -4113,8 +4133,8 @@ scenarios:
         - and: the engine dispatched no AI turns
   engine-term-documents-005-glossary-not-a-list-refuses-build-tests-fix:
     description: '`build tests --fix` must be refused before it writes a generated test or dispatches any AI turn when the product document''s `glossary:` is not a list, naming the document, rather than author step definitions without the meaning of the words they observe'
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/engine-term-documents-unreadable.yaml
         scenario_id: engine-term-documents-005-glossary-not-a-list-refuses-build-tests-fix
@@ -4132,8 +4152,8 @@ scenarios:
         - but: no file outside "tmp" changed
   engine-term-documents-006-mapping-not-a-list-refuses-build-tests-fix:
     description: '`build tests --fix` must be refused before it writes a generated test or dispatches any AI turn when the architecture document''s `architecture.terms:` is not a list, naming the document, rather than author step definitions without how each word they observe is built'
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
       - story: docs/product/stories/engine-term-documents-unreadable.yaml
         scenario_id: engine-term-documents-006-mapping-not-a-list-refuses-build-tests-fix
@@ -4151,8 +4171,8 @@ scenarios:
         - but: no file outside "tmp" changed
   engine-routes-006-host-memory-excluded:
     description: 'A host CLAUDE.md instructing every validation to fail must not reach an engine claude turn: a Scenario satisfying the selected Prompt still passes'
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
     user_stories:
     - story: docs/product/stories/engine-routes-agent-clis.yaml
       scenario_id: engine-routes-006-host-memory-excluded
@@ -4173,8 +4193,8 @@ scenarios:
       - and: no file outside "tmp" changed
   build-tests-run-001-failed-definition-repaired:
     description: After writing a step definition, build tests --fix must run its Scenarios through the declared replay command and repair a definition that fails before reporting COMPLETE
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_run_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_run_test.go
     timeout: 20m
     user_stories:
     - story: docs/product/stories/build-tests-run-authored-definitions.yaml
@@ -4195,8 +4215,8 @@ scenarios:
       - and: the shell command "go test -tags bdd ./tests/calc/" run in "." exits with code 0
   build-tests-run-002-attempt-bound-reports-failing-step:
     description: A definition still failing after the configured fix attempt bound must end build tests --fix with a nonzero exit naming the Scenario and its failing step
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_run_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_run_test.go
     timeout: 20m
     user_stories:
     - story: docs/product/stories/build-tests-run-authored-definitions.yaml
@@ -4217,8 +4237,8 @@ scenarios:
       - and: the engine spawned exactly 1 test runner
   build-tests-run-003-shared-definition-scenarios-run:
     description: A changed step definition must also run a Scenario that already bound every step, using the declared suite with a name filter
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_run_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_run_test.go
     timeout: 20m
     user_stories:
     - story: docs/product/stories/build-tests-run-authored-definitions.yaml
@@ -4238,8 +4258,8 @@ scenarios:
       - and: the shell command "go test -tags bdd ./tests/calc/" run in "." exits with code 0
   build-tests-run-004-selected-package-must-pass:
     description: A selected Scenario skipped in its owning package must fail build tests --fix even when a same-named test passes in another package
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_run_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_run_test.go
     timeout: 20m
     user_stories:
     - story: docs/product/stories/build-tests-run-authored-definitions.yaml
@@ -4259,8 +4279,8 @@ scenarios:
       - and: the engine spawned exactly 1 test runner
   build-code-run-006-shared-fix-skips-green-peer:
     description: Two failing tests receive one plan and one writer for both, with one selected rerun and no validation turn
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
     - story: docs/product/stories/build-code-run-fix-loop.yaml
       scenario_id: build-code-run-006-shared-fix-skips-green-peer
@@ -4293,8 +4313,8 @@ scenarios:
   build-code-run-007-next-walk-finds-regression:
     description: A repair that breaks a test passing at discovery must cause the next suite run to discover and repair that
       regression before the command exits successfully
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
     - story: docs/product/stories/build-code-run-fix-loop.yaml
       scenario_id: build-code-run-007-next-walk-finds-regression
@@ -4321,8 +4341,8 @@ scenarios:
   build-code-frameworks-005-not-applied-revalidated:
     description: A completed apply turn reporting applied false while its Go test still fails must keep its files and revalidate
       that test before another repair completes the walk
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
     - story: docs/product/stories/build-code-frameworks-jest-playwright-go.yaml
       scenario_id: build-code-frameworks-005-not-applied-revalidated
@@ -4350,8 +4370,8 @@ scenarios:
   build-code-frameworks-006-not-applied-hits-fix-bound:
     description: Not-applied turns in build code --fix must consume the configured per-set fix allowance and stop at the unchanged
       non-converging fix bound
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
     - story: docs/product/stories/build-code-frameworks-jest-playwright-go.yaml
       scenario_id: build-code-frameworks-006-not-applied-hits-fix-bound
@@ -4378,8 +4398,8 @@ scenarios:
       - but: the file "tests/suite/calc_test.go" is unchanged
   build-tests-run-005-prebuilt-engine-without-source:
     description: With a prebuilt engine argument declared and service source absent, build tests --fix must verify its authored definition against the running engine and pass its absolute symlink-resolved path as one runner argument
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_run_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_run_test.go
     timeout: 15m
     user_stories:
     - story: docs/product/stories/build-tests-run-authored-definitions.yaml
@@ -4401,8 +4421,8 @@ scenarios:
       - and: the shell command "test ! -f tmp/service-build-attempted" run in "." exits with code 0
   build-tests-prebuilt-001-placeholder-required:
     description: A prebuilt engine argument without the placeholder must be refused at startup, naming the field and its required placeholder, before any runner or AI turn
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_run_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_run_test.go
     user_stories:
     - story: docs/product/stories/build-tests-prebuilt-argument-validation.yaml
       scenario_id: build-tests-prebuilt-001-placeholder-required
@@ -4420,8 +4440,8 @@ scenarios:
       - but: stdout does not match BUILD TESTS COMPLETE
   build-tests-prebuilt-002-placeholder-exactly-once:
     description: A prebuilt engine argument with the placeholder twice must be refused at startup, naming the field and its required placeholder, before any runner or AI turn
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_run_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_run_test.go
     user_stories:
     - story: docs/product/stories/build-tests-prebuilt-argument-validation.yaml
       scenario_id: build-tests-prebuilt-002-placeholder-exactly-once
@@ -4439,8 +4459,8 @@ scenarios:
       - but: stdout does not match BUILD TESTS COMPLETE
   build-tests-prebuilt-003-empty-declaration-refused:
     description: An empty prebuilt engine argument must be refused at startup, naming the field and its required placeholder, before any runner or AI turn
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_run_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_run_test.go
     user_stories:
     - story: docs/product/stories/build-tests-prebuilt-argument-validation.yaml
       scenario_id: build-tests-prebuilt-003-empty-declaration-refused
@@ -4458,8 +4478,8 @@ scenarios:
       - but: stdout does not match BUILD TESTS COMPLETE
   build-code-spec-005-matched-scenario-embedded:
     description: A failing generated Go test must hand both fix turns its Scenario and the catalogue meanings of its steps
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
     - story: docs/product/stories/build-code-spec-refusals.yaml
       scenario_id: build-code-spec-005-matched-scenario-embedded
@@ -4496,8 +4516,8 @@ scenarios:
       - the engine spawned exactly 3 test runners
   build-code-spec-006-unreadable-product-warned:
     description: A declared product document that cannot be read must be warned about while the fix still repairs the failing test
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
     - story: docs/product/stories/build-code-spec-refusals.yaml
       scenario_id: build-code-spec-006-unreadable-product-warned
@@ -4521,8 +4541,8 @@ scenarios:
       - the engine spawned exactly 3 test runners
   build-code-spec-007-unreadable-registry-warned:
     description: A declared Registry that cannot be read must be warned about while the fix uses the only declared service
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
     user_stories:
     - story: docs/product/stories/build-code-spec-refusals.yaml
       scenario_id: build-code-spec-007-unreadable-registry-warned
@@ -4546,8 +4566,8 @@ scenarios:
       - the engine spawned exactly 3 test runners
   build-tests-run-006-identical-failures-grouped:
     description: Two bound Scenarios failing with the same runtime output must give one whole failure block naming both in the next fix prompt and one selection list
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_run_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_run_test.go
     timeout: 20m
     user_stories:
     - story: docs/product/stories/build-tests-run-authored-definitions.yaml
@@ -4571,8 +4591,8 @@ scenarios:
       - and: the shell command "go test -tags bdd ./tests/calc/" run in "." exits with code 0
   build-tests-run-007-distinct-failures-whole:
     description: Two different runtime failures in one selection must give two whole failure blocks in the next fix prompt, each naming only the Scenario it hit
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_run_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_run_test.go
     timeout: 20m
     user_stories:
     - story: docs/product/stories/build-tests-run-authored-definitions.yaml
@@ -4598,8 +4618,8 @@ scenarios:
       - and: the shell command "go test -tags bdd ./tests/calc/" run in "." exits with code 0
   build-code-set-001-partial-repair:
     description: A partial repair removes the passing member from the next plan
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_set_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_set_test.go
     user_stories:
     - story: docs/product/stories/build-code-failing-set.yaml
       scenario_id: build-code-set-001-partial-repair
@@ -4623,8 +4643,8 @@ scenarios:
       - the engine spawned a test runner with arguments matching -run \^TestA\$\|\^TestB\$
   build-code-set-002-shared-evidence:
     description: Shared failure output is shown once with both ids in the set request
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_set_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_set_test.go
     user_stories:
     - story: docs/product/stories/build-code-failing-set.yaml
       scenario_id: build-code-set-002-shared-evidence
@@ -4647,8 +4667,8 @@ scenarios:
       - 'every file matching "tmp/*/apply-*-user.txt" matches Selection:'
   build-code-set-003-mixed-synthetic:
     description: A build failure and a named test form one set whose rerun is unfiltered
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_set_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_set_test.go
     user_stories:
     - story: docs/product/stories/build-code-failing-set.yaml
       scenario_id: build-code-set-003-mixed-synthetic
@@ -4670,8 +4690,8 @@ scenarios:
       - the shell command "go test -json -count=1 ./tests/suite/... ./tests/broken/..." run in "." exits with code 0
   build-code-set-004-missing-result:
     description: A skipped selected member stays failing until its own passing result
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_set_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_set_test.go
     user_stories:
     - story: docs/product/stories/build-code-failing-set.yaml
       scenario_id: build-code-set-004-missing-result
@@ -4692,8 +4712,8 @@ scenarios:
       - every file matching "tmp/*/*fix-iter1-user.txt" matches TestA
   build-code-set-005-shrinking-counter:
     description: Shrinking the set does not reset its existing attempt counter and the last apply is rerun
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_set_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_set_test.go
     user_stories:
     - story: docs/product/stories/build-code-failing-set.yaml
       scenario_id: build-code-set-005-shrinking-counter
@@ -4715,8 +4735,8 @@ scenarios:
       - every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA
   build-code-confirmation-001-passes:
     description: A completed writer response without confirmation preserves its repair, warns once and reruns the set to convergence
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_confirmation_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_confirmation_test.go
     user_stories:
     - story: docs/product/stories/build-code-missing-confirmation.yaml
       scenario_id: build-code-confirmation-001-passes
@@ -4743,8 +4763,8 @@ scenarios:
       - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   build-code-confirmation-002-retries:
     description: A missing confirmation with failures remaining replans only the remaining tests
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_confirmation_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_confirmation_test.go
     user_stories:
     - story: docs/product/stories/build-code-missing-confirmation.yaml
       scenario_id: build-code-confirmation-002-retries
@@ -4774,8 +4794,8 @@ scenarios:
   build-code-confirmation-003-bound:
     description: Missing confirmations consume the same allowance and rerun the terminal repair before the non-converging bound
       even when it passes
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_confirmation_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_confirmation_test.go
     user_stories:
     - story: docs/product/stories/build-code-missing-confirmation.yaml
       scenario_id: build-code-confirmation-003-bound
@@ -4804,8 +4824,8 @@ scenarios:
       - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   build-code-writer-001-nonzero:
     description: A non-zero writer preserves its files, reruns a build failure and replans from the new evidence to convergence
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_writer_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_writer_test.go
     user_stories:
     - story: docs/product/stories/build-code-writer-failures.yaml
       scenario_id: build-code-writer-001-nonzero
@@ -4834,8 +4854,8 @@ scenarios:
       - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   build-code-writer-002-empty:
     description: An empty writer answer preserves its repair, warns once and reruns the set to convergence
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_writer_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_writer_test.go
     user_stories:
     - story: docs/product/stories/build-code-writer-failures.yaml
       scenario_id: build-code-writer-002-empty
@@ -4862,8 +4882,8 @@ scenarios:
       - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   build-code-writer-003-bound:
     description: Failed writers consume the existing allowance and rerun the terminal repair before the bound even when it passes
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_writer_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_writer_test.go
     user_stories:
     - story: docs/product/stories/build-code-writer-failures.yaml
       scenario_id: build-code-writer-003-bound
@@ -4892,8 +4912,8 @@ scenarios:
       - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   build-code-claude-001-selection:
     description: Claude hook allows selection
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_claude_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_claude_test.go
     user_stories:
     - story: docs/product/stories/build-code-claude-writer.yaml
       scenario_id: build-code-claude-001-selection
@@ -4911,8 +4931,8 @@ scenarios:
       - the guard allows the tool call
   build-code-claude-002-noncanonical:
     description: Claude hook denies noncanonical
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_claude_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_claude_test.go
     user_stories:
     - story: docs/product/stories/build-code-claude-writer.yaml
       scenario_id: build-code-claude-002-noncanonical
@@ -4931,8 +4951,8 @@ scenarios:
       - 'the guard''s reason matches allowed forms:'
   build-code-claude-003-background:
     description: Claude hook denies background
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_claude_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_claude_test.go
     user_stories:
     - story: docs/product/stories/build-code-claude-writer.yaml
       scenario_id: build-code-claude-003-background
@@ -4950,8 +4970,8 @@ scenarios:
       - the guard's reason matches background commands are denied
   build-code-claude-004-directory:
     description: Claude hook denies directory
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_claude_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_claude_test.go
     user_stories:
     - story: docs/product/stories/build-code-claude-writer.yaml
       scenario_id: build-code-claude-004-directory
@@ -4971,8 +4991,8 @@ scenarios:
   build-code-claude-005-replay:
     description: A Claude writer runs a granted selection and the engine reruns the
       set to convergence
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_claude_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_claude_test.go
     user_stories:
     - story: docs/product/stories/build-code-claude-writer.yaml
       scenario_id: build-code-claude-005-replay
@@ -5000,8 +5020,8 @@ scenarios:
   build-code-claude-006-failure:
     description: A Claude writer keeps its repair after a started failure and the engine
       reruns the set to convergence
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_claude_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_claude_test.go
     user_stories:
     - story: docs/product/stories/build-code-claude-writer.yaml
       scenario_id: build-code-claude-006-failure
@@ -5031,8 +5051,8 @@ scenarios:
     timeout: 15m
   build-code-codex-001-selection:
     description: A confined codex writer runs a granted selection and converges the failing set
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_codex_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_codex_test.go
     user_stories:
     - story: docs/product/stories/build-code-codex.yaml
       scenario_id: build-code-codex-001-selection
@@ -5061,8 +5081,8 @@ scenarios:
 
   build-code-codex-002-nonzero:
     description: A started codex writer exiting non-zero preserves edits and converges after one warning
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_codex_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_codex_test.go
     user_stories:
     - story: docs/product/stories/build-code-codex.yaml
       scenario_id: build-code-codex-002-nonzero
@@ -5091,8 +5111,8 @@ scenarios:
       - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   build-code-codex-003-missing-root:
     description: A confined codex writer creates a service from an absent edit root and converges the failing set
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_codex_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_codex_test.go
     user_stories:
     - story: docs/product/stories/build-code-codex.yaml
       scenario_id: build-code-codex-003-missing-root
@@ -5124,8 +5144,8 @@ scenarios:
 
   engine-model-001-dispatch:
     description: A run overriding its validation tier dispatches the turn to that model and logs the change once
-    service: bdd-cli
-    path: tests/bdd-cli/model_override_test.go
+    service: true-bdd
+    path: tests/true-bdd/model_override_test.go
     user_stories:
     - story: docs/product/stories/engine-model-override.yaml
       scenario_id: engine-model-001-dispatch
@@ -5148,8 +5168,8 @@ scenarios:
       - the file "true-bdd/true-bdd.yaml" is unchanged
   engine-model-002-undeclared:
     description: An override of a tier absent from the loaded configuration is refused before any AI turn
-    service: bdd-cli
-    path: tests/bdd-cli/model_override_test.go
+    service: true-bdd
+    path: tests/true-bdd/model_override_test.go
     user_stories:
     - story: docs/product/stories/engine-model-override.yaml
       scenario_id: engine-model-002-undeclared
@@ -5169,8 +5189,8 @@ scenarios:
       - the file "true-bdd/true-bdd.yaml" is unchanged
   engine-model-003-no-colon:
     description: An override whose reference has no colon is refused before any AI turn
-    service: bdd-cli
-    path: tests/bdd-cli/model_override_test.go
+    service: true-bdd
+    path: tests/true-bdd/model_override_test.go
     user_stories:
     - story: docs/product/stories/engine-model-override.yaml
       scenario_id: engine-model-003-no-colon
@@ -5190,8 +5210,8 @@ scenarios:
       - the file "true-bdd/true-bdd.yaml" is unchanged
   engine-model-004-empty-model:
     description: An override whose model is empty is refused before any AI turn
-    service: bdd-cli
-    path: tests/bdd-cli/model_override_test.go
+    service: true-bdd
+    path: tests/true-bdd/model_override_test.go
     user_stories:
     - story: docs/product/stories/engine-model-override.yaml
       scenario_id: engine-model-004-empty-model
@@ -5211,8 +5231,8 @@ scenarios:
       - the file "true-bdd/true-bdd.yaml" is unchanged
   engine-model-005-unknown-cli:
     description: An override naming an unknown AI CLI is refused before any AI turn
-    service: bdd-cli
-    path: tests/bdd-cli/model_override_test.go
+    service: true-bdd
+    path: tests/true-bdd/model_override_test.go
     user_stories:
     - story: docs/product/stories/engine-model-override.yaml
       scenario_id: engine-model-005-unknown-cli
@@ -5233,8 +5253,8 @@ scenarios:
   claude-guard-001-read-only-tool-allowed:
     description: A tool call to a tool that only reads must be allowed for any file inside the project, inside the turn's write
       roots or not
-    service: bdd-cli
-    path: tests/bdd-cli/claude_guard_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_guard_test.go
     user_stories:
     - story: docs/product/stories/claude-guard-preserved-invariants.yaml
       scenario_id: claude-guard-001-read-only-tool-allowed
@@ -5252,8 +5272,8 @@ scenarios:
   claude-guard-002-shell-denied-without-grant:
     description: A tool call to the shell must be denied when the turn's write policy does not let the turn run it, since a
       shell command can write anywhere
-    service: bdd-cli
-    path: tests/bdd-cli/claude_guard_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_guard_test.go
     user_stories:
     - story: docs/product/stories/claude-guard-preserved-invariants.yaml
       scenario_id: claude-guard-002-shell-denied-without-grant
@@ -5271,8 +5291,8 @@ scenarios:
   claude-guard-004-unknown-tool-denied:
     description: A tool call to a tool the guard does not know must be denied as a writer, even when it targets a file inside
       a write root
-    service: bdd-cli
-    path: tests/bdd-cli/claude_guard_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_guard_test.go
     user_stories:
     - story: docs/product/stories/claude-guard-preserved-invariants.yaml
       scenario_id: claude-guard-004-unknown-tool-denied
@@ -5290,8 +5310,8 @@ scenarios:
       - and: the guard's reason matches tool is not on the claude writer allowlist
   claude-guard-005-missing-policy-denied:
     description: A tool call must be denied when claude hands the guard no write policy, even one to a tool that only reads
-    service: bdd-cli
-    path: tests/bdd-cli/claude_guard_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_guard_test.go
     user_stories:
     - story: docs/product/stories/claude-guard-preserved-invariants.yaml
       scenario_id: claude-guard-005-missing-policy-denied
@@ -5310,8 +5330,8 @@ scenarios:
   claude-guard-006-unreadable-policy-denied:
     description: A tool call must be denied when the guard cannot read the write policy claude hands it, even one to a tool
       that only reads
-    service: bdd-cli
-    path: tests/bdd-cli/claude_guard_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_guard_test.go
     user_stories:
     - story: docs/product/stories/claude-guard-preserved-invariants.yaml
       scenario_id: claude-guard-006-unreadable-policy-denied
@@ -5330,8 +5350,8 @@ scenarios:
   claude-guard-007-payload-names-the-call:
     description: When claude names neither the tool nor its file but in the hook payload, the guard must judge the tool call
       the payload names
-    service: bdd-cli
-    path: tests/bdd-cli/claude_guard_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_guard_test.go
     user_stories:
     - story: docs/product/stories/claude-guard-preserved-invariants.yaml
       scenario_id: claude-guard-007-payload-names-the-call
@@ -5347,8 +5367,8 @@ scenarios:
       - the guard allows the tool call
   claude-guard-writes-001-write-inside-root-allowed:
     description: A write to a file inside one of the turn's write roots must be allowed, even when the file does not exist yet
-    service: bdd-cli
-    path: tests/bdd-cli/claude_guard_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_guard_test.go
     user_stories:
     - story: docs/product/stories/claude-guard-writes-preserved-invariants.yaml
       scenario_id: claude-guard-writes-001-write-inside-root-allowed
@@ -5365,8 +5385,8 @@ scenarios:
       - the guard allows the tool call
   claude-guard-writes-002-write-outside-roots-denied:
     description: A write to a file outside every one of the turn's write roots must be denied, naming the file and the roots
-    service: bdd-cli
-    path: tests/bdd-cli/claude_guard_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_guard_test.go
     user_stories:
     - story: docs/product/stories/claude-guard-writes-preserved-invariants.yaml
       scenario_id: claude-guard-writes-002-write-outside-roots-denied
@@ -5386,8 +5406,8 @@ scenarios:
   claude-guard-writes-003-symlink-escape-denied:
     description: A write through a symbolic link inside a write root that points out of it must be denied, judged by where the
       link leads rather than by the path claude names
-    service: bdd-cli
-    path: tests/bdd-cli/claude_guard_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_guard_test.go
     user_stories:
     - story: docs/product/stories/claude-guard-writes-preserved-invariants.yaml
       scenario_id: claude-guard-writes-003-symlink-escape-denied
@@ -5406,8 +5426,8 @@ scenarios:
       - and: the guard's reason matches write target is outside the claude writer roots
   claude-guard-writes-004-shared-prefix-denied:
     description: A write to a sibling directory whose name starts with a write root's name must be denied
-    service: bdd-cli
-    path: tests/bdd-cli/claude_guard_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_guard_test.go
     user_stories:
     - story: docs/product/stories/claude-guard-writes-preserved-invariants.yaml
       scenario_id: claude-guard-writes-004-shared-prefix-denied
@@ -5425,8 +5445,8 @@ scenarios:
       - and: the guard's reason matches write target is outside the claude writer roots
   claude-guard-writes-006-unnamed-path-denied:
     description: A Write naming no target defaults to the working directory, which is denied outside its write roots
-    service: bdd-cli
-    path: tests/bdd-cli/claude_guard_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_guard_test.go
     user_stories:
     - story: docs/product/stories/claude-guard-writes-preserved-invariants.yaml
       scenario_id: claude-guard-writes-006-unnamed-path-denied
@@ -5443,8 +5463,8 @@ scenarios:
       - and: the guard's reason matches write target is outside the claude writer roots
   claude-guard-reads-001-outside-project-denied:
     description: A Read of an absolute path outside the project must be denied, naming the path and the read root
-    service: bdd-cli
-    path: tests/bdd-cli/claude_guard_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_guard_test.go
     user_stories:
     - story: docs/product/stories/claude-guard-reads-preserved-invariants.yaml
       scenario_id: claude-guard-reads-001-outside-project-denied
@@ -5462,8 +5482,8 @@ scenarios:
       - and: the guard's reason matches (read target is outside the claude writer roots|search target is outside|glob)
   claude-guard-reads-002-relative-escape-denied:
     description: A glob whose path leaves the project through ../ must be denied
-    service: bdd-cli
-    path: tests/bdd-cli/claude_guard_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_guard_test.go
     user_stories:
     - story: docs/product/stories/claude-guard-reads-preserved-invariants.yaml
       scenario_id: claude-guard-reads-002-relative-escape-denied
@@ -5480,8 +5500,8 @@ scenarios:
       - and: the guard's reason matches (read target is outside the claude writer roots|search target is outside|glob)
   claude-guard-reads-003-symlink-escape-denied:
     description: A read through a symbolic link inside the project pointing outside it must be denied
-    service: bdd-cli
-    path: tests/bdd-cli/claude_guard_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_guard_test.go
     user_stories:
     - story: docs/product/stories/claude-guard-reads-preserved-invariants.yaml
       scenario_id: claude-guard-reads-003-symlink-escape-denied
@@ -5500,8 +5520,8 @@ scenarios:
       - and: the guard's reason matches (read target is outside the claude writer roots|search target is outside|glob)
   claude-guard-reads-004-unnamed-path-allowed:
     description: A Read call naming no path must be allowed to read the project
-    service: bdd-cli
-    path: tests/bdd-cli/claude_guard_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_guard_test.go
     user_stories:
     - story: docs/product/stories/claude-guard-reads-preserved-invariants.yaml
       scenario_id: claude-guard-reads-004-unnamed-path-allowed
@@ -5517,8 +5537,8 @@ scenarios:
       - the guard allows the tool call
   claude-guard-reads-005-missing-read-root-denied:
     description: A tool call must be denied when claude hands the guard a write policy with no read root, naming what is missing
-    service: bdd-cli
-    path: tests/bdd-cli/claude_guard_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_guard_test.go
     user_stories:
     - story: docs/product/stories/claude-guard-reads-preserved-invariants.yaml
       scenario_id: claude-guard-reads-005-missing-read-root-denied
@@ -5537,8 +5557,8 @@ scenarios:
       - and: the guard's reason matches invalid claude guard
   claude-guard-reads-006-relative-path-allowed:
     description: A relative read path inside the project must be allowed outside every write root
-    service: bdd-cli
-    path: tests/bdd-cli/claude_guard_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_guard_test.go
     user_stories:
     - story: docs/product/stories/claude-guard-reads-preserved-invariants.yaml
       scenario_id: claude-guard-reads-006-relative-path-allowed
@@ -5555,8 +5575,8 @@ scenarios:
       - the guard allows the tool call
   claude-replay-001-whole-command:
     description: The write guard allows whole command
-    service: bdd-cli
-    path: tests/bdd-cli/claude_replay_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_replay_test.go
     user_stories:
     - story: docs/product/stories/claude-replay-preserved-invariants.yaml
       scenario_id: claude-replay-001-whole-command
@@ -5572,8 +5592,8 @@ scenarios:
       - the guard allows the tool call
   claude-replay-002-selected-command:
     description: The write guard allows selected command
-    service: bdd-cli
-    path: tests/bdd-cli/claude_replay_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_replay_test.go
     user_stories:
     - story: docs/product/stories/claude-replay-preserved-invariants.yaml
       scenario_id: claude-replay-002-selected-command
@@ -5589,8 +5609,8 @@ scenarios:
       - the guard allows the tool call
   claude-replay-003-shell-operator:
     description: The write guard denies shell operator
-    service: bdd-cli
-    path: tests/bdd-cli/claude_replay_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_replay_test.go
     user_stories:
     - story: docs/product/stories/claude-replay-preserved-invariants.yaml
       scenario_id: claude-replay-003-shell-operator
@@ -5607,8 +5627,8 @@ scenarios:
       - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
   claude-replay-004-assignment:
     description: The write guard denies assignment
-    service: bdd-cli
-    path: tests/bdd-cli/claude_replay_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_replay_test.go
     user_stories:
     - story: docs/product/stories/claude-replay-preserved-invariants.yaml
       scenario_id: claude-replay-004-assignment
@@ -5625,8 +5645,8 @@ scenarios:
       - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
   claude-replay-005-another-program:
     description: The write guard denies another program
-    service: bdd-cli
-    path: tests/bdd-cli/claude_replay_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_replay_test.go
     user_stories:
     - story: docs/product/stories/claude-replay-preserved-invariants.yaml
       scenario_id: claude-replay-005-another-program
@@ -5643,8 +5663,8 @@ scenarios:
       - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
   claude-replay-006-extra-flag:
     description: The write guard denies extra flag
-    service: bdd-cli
-    path: tests/bdd-cli/claude_replay_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_replay_test.go
     user_stories:
     - story: docs/product/stories/claude-replay-preserved-invariants.yaml
       scenario_id: claude-replay-006-extra-flag
@@ -5661,8 +5681,8 @@ scenarios:
       - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
   claude-replay-007-double-quotes:
     description: The write guard denies double quotes
-    service: bdd-cli
-    path: tests/bdd-cli/claude_replay_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_replay_test.go
     user_stories:
     - story: docs/product/stories/claude-replay-preserved-invariants.yaml
       scenario_id: claude-replay-007-double-quotes
@@ -5679,8 +5699,8 @@ scenarios:
       - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
   claude-replay-008-wrong-directory:
     description: The write guard denies wrong directory
-    service: bdd-cli
-    path: tests/bdd-cli/claude_replay_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_replay_test.go
     user_stories:
     - story: docs/product/stories/claude-replay-preserved-invariants.yaml
       scenario_id: claude-replay-008-wrong-directory
@@ -5697,8 +5717,8 @@ scenarios:
       - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
   claude-replay-009-no-command:
     description: The write guard denies no command
-    service: bdd-cli
-    path: tests/bdd-cli/claude_replay_test.go
+    service: true-bdd
+    path: tests/true-bdd/claude_replay_test.go
     user_stories:
     - story: docs/product/stories/claude-replay-preserved-invariants.yaml
       scenario_id: claude-replay-009-no-command
@@ -5714,8 +5734,8 @@ scenarios:
       - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
   build-code-claude-007-unrepresentable:
     description: A replay argument containing a single quote withholds the writer grant with one warning
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_claude_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_claude_test.go
     user_stories:
     - story: docs/product/stories/build-code-claude-writer.yaml
       scenario_id: build-code-claude-007-unrepresentable
@@ -5737,8 +5757,8 @@ scenarios:
   codex-apply-001-us-refine-writes-scratch:
     description: A codex apply turn of us refine writes its scratch product document through the confined profile and the engine
       commits the converged change
-    service: bdd-cli
-    path: tests/bdd-cli/us_refine_test.go
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
     user_stories:
     - story: docs/product/stories/codex-apply-confinement.yaml
       scenario_id: codex-apply-001-us-refine-writes-scratch
@@ -5769,8 +5789,8 @@ scenarios:
   codex-apply-002-build-tests-writes-configured-root:
     description: A codex apply turn of build tests writes missing step definitions in a configured recursive test root through
       the confined profile
-    service: bdd-cli
-    path: tests/bdd-cli/build_tests_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
     user_stories:
     - story: docs/product/stories/codex-apply-confinement.yaml
       scenario_id: codex-apply-002-build-tests-writes-configured-root
@@ -5795,8 +5815,8 @@ scenarios:
       - and: no file outside "tmp" and "tests" changed
   writer-config-001-codex:
     description: The codex writer generates the complete configuration with restricted filesystem entries, network table and isolated shell environment
-    service: bdd-cli
-    path: tests/bdd-cli/writer_config_test.go
+    service: true-bdd
+    path: tests/true-bdd/writer_config_test.go
     user_stories:
     - story: docs/product/stories/writer-config.yaml
       scenario_id: writer-config-001-codex
@@ -5816,8 +5836,8 @@ scenarios:
       - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   writer-config-002-claude:
     description: The Claude writer generates the complete settings with the guard hook, permissions and disabled discovery
-    service: bdd-cli
-    path: tests/bdd-cli/writer_config_test.go
+    service: true-bdd
+    path: tests/true-bdd/writer_config_test.go
     user_stories:
     - story: docs/product/stories/writer-config.yaml
       scenario_id: writer-config-002-claude
@@ -5839,8 +5859,8 @@ scenarios:
 
   writer-lifecycle-001-success:
     description: A successful codex writer provisions private fixture authentication and missing edit roots at spawn and removes authentication afterward
-    service: bdd-cli
-    path: tests/bdd-cli/writer_lifecycle_test.go
+    service: true-bdd
+    path: tests/true-bdd/writer_lifecycle_test.go
     user_stories:
     - story: docs/product/stories/writer-lifecycle.yaml
       scenario_id: writer-lifecycle-001-success
@@ -5864,8 +5884,8 @@ scenarios:
 
   writer-lifecycle-002-failure:
     description: A failed codex writer removes its private fixture authentication after preserving edits and archiving events
-    service: bdd-cli
-    path: tests/bdd-cli/writer_lifecycle_test.go
+    service: true-bdd
+    path: tests/true-bdd/writer_lifecycle_test.go
     user_stories:
     - story: docs/product/stories/writer-lifecycle.yaml
       scenario_id: writer-lifecycle-002-failure
@@ -5891,8 +5911,8 @@ scenarios:
 
   init-001-empty-folder:
     description: Init creates the host configuration without scripts, every checklist and every prompt template without needing configuration or Specification documents
-    service: bdd-cli
-    path: tests/bdd-cli/init_test.go
+    service: true-bdd
+    path: tests/true-bdd/init_test.go
     user_stories:
     - story: docs/product/stories/init.yaml
       scenario_id: init-001-empty-folder
@@ -5915,8 +5935,8 @@ scenarios:
 
   init-002-existing-files:
     description: Init preserves and reports existing configuration, checklist and template files even when empty or invalid, while creating missing files
-    service: bdd-cli
-    path: tests/bdd-cli/init_test.go
+    service: true-bdd
+    path: tests/true-bdd/init_test.go
     user_stories:
     - story: docs/product/stories/init.yaml
       scenario_id: init-002-existing-files
@@ -5940,8 +5960,8 @@ scenarios:
 
   start-001-missing-template:
     description: Build code with fix refuses a missing fix template before running any tests or AI turns and names the file and init
-    service: bdd-cli
-    path: tests/bdd-cli/init_test.go
+    service: true-bdd
+    path: tests/true-bdd/init_test.go
     user_stories:
     - story: docs/product/stories/start.yaml
       scenario_id: start-001-missing-template
@@ -5962,8 +5982,8 @@ scenarios:
 
   start-002-missing-checklist:
     description: Build code refuses a missing checklist before work and names the file with init advice
-    service: bdd-cli
-    path: tests/bdd-cli/init_test.go
+    service: true-bdd
+    path: tests/true-bdd/init_test.go
     user_stories:
     - story: docs/product/stories/start.yaml
       scenario_id: start-002-missing-checklist
@@ -5984,8 +6004,8 @@ scenarios:
 
   start-003-missing-config:
     description: Build code refuses a missing config before work and names the file with init advice
-    service: bdd-cli
-    path: tests/bdd-cli/init_test.go
+    service: true-bdd
+    path: tests/true-bdd/init_test.go
     user_stories:
     - story: docs/product/stories/start.yaml
       scenario_id: start-003-missing-config
@@ -6005,8 +6025,8 @@ scenarios:
 
   start-004-invalid-config:
     description: Build code refuses a invalid config before work and names the file with its parse error and repair advice without init advice
-    service: bdd-cli
-    path: tests/bdd-cli/init_test.go
+    service: true-bdd
+    path: tests/true-bdd/init_test.go
     user_stories:
     - story: docs/product/stories/start.yaml
       scenario_id: start-004-invalid-config
@@ -6027,8 +6047,8 @@ scenarios:
 
   start-005-invalid-checklist:
     description: Build code refuses a invalid checklist before work and names the file with its parse error and repair advice without init advice
-    service: bdd-cli
-    path: tests/bdd-cli/init_test.go
+    service: true-bdd
+    path: tests/true-bdd/init_test.go
     user_stories:
     - story: docs/product/stories/start.yaml
       scenario_id: start-005-invalid-checklist
@@ -6050,8 +6070,8 @@ scenarios:
 
   start-006-invalid-template:
     description: Build code refuses a invalid template before work and names the file with its parse error and repair advice without init advice
-    service: bdd-cli
-    path: tests/bdd-cli/init_test.go
+    service: true-bdd
+    path: tests/true-bdd/init_test.go
     user_stories:
     - story: docs/product/stories/start.yaml
       scenario_id: start-006-invalid-template
@@ -6073,8 +6093,8 @@ scenarios:
 
   build-code-set-006-no-test-files:
     description: A missing service is repaired once for a test package and a helper package without tests
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_set_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_set_test.go
     user_stories:
     - story: docs/product/stories/build-code-failing-set.yaml
       scenario_id: build-code-set-006-no-test-files
@@ -6099,8 +6119,8 @@ scenarios:
       - the shell command "go test -json -count=1 ./tests/..." run in "." exits with code 0
   fix-loop-input-007-clarification-eof-stops:
     description: A clarifying question with stdin at end of input prints the question and suggestions, requires a person and stops without guessing
-    service: bdd-cli
-    path: tests/bdd-cli/fix_loop_input_test.go
+    service: true-bdd
+    path: tests/true-bdd/fix_loop_input_test.go
     user_stories:
     - story: docs/product/stories/fix-loop-input.yaml
       scenario_id: fix-loop-input-007-clarification-eof-stops
@@ -6124,8 +6144,8 @@ scenarios:
       - no file outside "tmp" changed
   fix-loop-input-008-menu-eof-stops:
     description: End of input at the fix menu stops because a person must choose, without a tests-still-failing error or completion banner
-    service: bdd-cli
-    path: tests/bdd-cli/fix_loop_input_test.go
+    service: true-bdd
+    path: tests/true-bdd/fix_loop_input_test.go
     user_stories:
     - story: docs/product/stories/fix-loop-input.yaml
       scenario_id: fix-loop-input-008-menu-eof-stops
@@ -6148,8 +6168,8 @@ scenarios:
       - no file outside "tmp" changed
   build-code-writable-005-tests-refused:
     description: A writable grant over tests is refused before any runner or AI turn
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_writable_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_writable_test.go
     user_stories:
     - story: docs/product/stories/build-code-writable.yaml
       scenario_id: build-code-writable-005-tests-refused
@@ -6168,8 +6188,8 @@ scenarios:
       - the engine dispatched no apply AI turns to "codex"
   build-code-writable-001-manifests:
     description: An exact writable go.sum grant lets the writer repair a missing checksum
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_writable_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_writable_test.go
     timeout: 15m
     user_stories:
     - story: docs/product/stories/build-code-writable.yaml
@@ -6194,8 +6214,8 @@ scenarios:
       - "the shell command \"go test -mod=readonly ./tests/suite/...\" run in \".\" exits with code 0"
   build-code-writable-002-plan-impossible:
     description: A plan that needs undeclared go.sum stops before the writer
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_writable_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_writable_test.go
     timeout: 15m
     user_stories:
     - story: docs/product/stories/build-code-writable.yaml
@@ -6219,8 +6239,8 @@ scenarios:
       - "the file \"services/calc/calc.go\" is unchanged"
   build-code-writable-003-writer-impossible:
     description: A writer impossibility verdict stops at once and keeps its completed edits
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_writable_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_writable_test.go
     timeout: 15m
     user_stories:
     - story: docs/product/stories/build-code-writable.yaml
@@ -6247,8 +6267,8 @@ scenarios:
       - "the shell command \"go test ./tests/suite/...\" run in \".\" exits with code 0"
   libraries-003-test-only-import-refused:
     description: Production code importing a library named only for tests is refused before running tests
-    service: bdd-cli
-    path: tests/bdd-cli/libraries_test.go
+    service: true-bdd
+    path: tests/true-bdd/libraries_test.go
     user_stories:
     - story: docs/product/stories/libraries.yaml
       scenario_id: libraries-003-test-only-import-refused
@@ -6266,8 +6286,8 @@ scenarios:
       - stdout does not match BUILD CODE COMPLETE
   libraries-004-download-fails-before-writer:
     description: A failed named library download stops the run before any writer or test runner
-    service: bdd-cli
-    path: tests/bdd-cli/libraries_test.go
+    service: true-bdd
+    path: tests/true-bdd/libraries_test.go
     user_stories:
     - story: docs/product/stories/libraries.yaml
       scenario_id: libraries-004-download-fails-before-writer
@@ -6290,8 +6310,8 @@ scenarios:
     description: A Jest file that cannot load its missing service is one load member; build code plans and applies a repair, reruns the file by path and ends green
     user_stories: []
     requirement: "#231"
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_load_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_load_test.go
     timeout: 10m
     merged_steps:
       given:
@@ -6317,8 +6337,8 @@ scenarios:
     description: A failing Jest command with no tests to name stops build code before any AI turn, naming the command and exit code without a completion banner
     user_stories: []
     requirement: "#231"
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_load_test.go
+    service: true-bdd
+    path: tests/true-bdd/build_code_load_test.go
     merged_steps:
       given:
         - the "build-code-jest-no-tests" project tree
@@ -6333,3 +6353,210 @@ scenarios:
         - stdout does not match BUILD CODE COMPLETE
         - and: the engine dispatched no AI turns
         - but: no file outside "tmp" changed
+
+  engine-io-001-read-hold:
+    description: The engine waits for a conflicting exclusive parent-directory hold before accessing a file, then completes after release
+    service: true-bdd
+    path: tests/true-bdd/engine_io_test.go
+    user_stories:
+    - story: docs/product/stories/engine-io.yaml
+      scenario_id: engine-io-001-read-hold
+      merge_date: '2026-10-27'
+    merged_steps:
+      given:
+      - the "engine-io-read-hold" project tree
+      when:
+      - the System Architect runs "build tests" while a "exclusive" hold blocks "docs"
+      then:
+      - the command exits with code 1
+      - stdout matches no scenarios
+      - no file outside "tmp" changed
+
+  engine-io-002-write-hold:
+    description: The engine waits for a conflicting shared parent-directory hold before accessing a file, then completes after release
+    service: true-bdd
+    path: tests/true-bdd/engine_io_test.go
+    user_stories:
+    - story: docs/product/stories/engine-io.yaml
+      scenario_id: engine-io-002-write-hold
+      merge_date: '2026-10-27'
+    merged_steps:
+      given:
+      - the "engine-io-write-hold" project tree
+      - the project tree has no "true-bdd/true-bdd.yaml"
+      when:
+      - the System Architect runs "init" while a "shared" hold blocks "true-bdd"
+      then:
+      - the command exits with code 0
+      - the file "true-bdd/true-bdd.yaml" is created
+
+  engine-io-003-events:
+    description: Engine IO preserves stream events, usage and refusal targets with stable log keys and scrubs Git hook variables for Go tools
+    service: true-bdd
+    path: tests/true-bdd/engine_io_test.go
+    user_stories:
+    - story: docs/product/stories/engine-io.yaml
+      scenario_id: engine-io-003-events
+      merge_date: '2026-10-27'
+    merged_steps:
+      given:
+      - the "engine-io-events" project tree
+      - the codex writer uses fixture-controlled authentication and CLIs
+      - the engine uses an observed fixture Claude CLI
+      - Git hook variables point outside the project
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build code --fix"
+      then:
+      - the command exits with code 0
+      - the codex writer provisioned and removed its fixture authentication
+      - 'the file matching "tmp/true-bdd.log.json" has exactly 2 matches for "msg":"AssistantMessage received"'
+      - 'every file matching "tmp/true-bdd.log.json" matches "msg":"AssistantMessage received","content_blocks":1'
+      - 'every file matching "tmp/true-bdd.log.json" matches "msg":"ToolUseBlock details","content":"\{\\"name\\":\\"Read\\",\\"input\\":\{\\"file_path\\":\\"docs/sentinel.yaml\\"\}\}"'
+      - 'every file matching "tmp/true-bdd.log.json" matches "msg":"ResultMessage received"'
+      - 'every file matching "tmp/true-bdd.log.json" matches "msg":"AI turn usage","cli":"claude","cost_usd":0,"input_tokens":17,"output_tokens":9,"cache_read_input_tokens":3,"cache_creation_input_tokens":2'
+      - 'stdout matches role=fix denied="Read /outside/secret.txt; Glob /outside/\*.go; Grep /outside/search; Read /outside/я{191}…"'
+      - 'stdout matches role=apply denied="command_execution /outside/command.txt; file_change /outside/edit.go; Read /outside/mcp.txt"'
+      - stdout does not match query-must-stay-private|ordinary/failure.txt
+      - 'every file matching "tmp/true-bdd.log.json" does not match "tool":|"run":'
+      - every file matching "tmp/*/*codex.log" matches fixture writer stderr sentinel
+      - every file matching "tmp/*/*codex-events.jsonl" does not match fixture writer stderr sentinel
+      - 'every file matching "tmp/true-bdd.log.json" matches "msg":"Dispatching AI turn","turn":1,"label":"claude-turn001","role":"fix","cli":"claude","model":"claude-opus-5","system_length":[0-9]+,"user_length":[0-9]+'
+      - 'every file matching "tmp/true-bdd.log.json" matches "msg":"AI turn returned","turn":1,"label":"claude-turn001","role":"fix","cli":"claude","model":"claude-opus-5","duration_ms":[0-9]+,"length":125'
+      - 'every file matching "tmp/true-bdd.log.json" matches "msg":"CLI transcript saved","file":"tmp/[^"\n]+/codex-turn002-codex-events.jsonl"'
+      - the file "services/calc/calc.go" is created
+
+  engine-io-004-cancellation:
+    description: Cancelling the engine stops an active Claude turn and its descendants and ends the run as a failure
+    service: true-bdd
+    path: tests/true-bdd/engine_io_test.go
+    user_stories:
+    - story: docs/product/stories/engine-io.yaml
+      scenario_id: engine-io-004-cancellation
+      merge_date: '2026-10-27'
+    merged_steps:
+      given:
+      - the "engine-io-cancel" project tree
+      when:
+      - the System Architect cancels "build code --fix" after a CLI descendant starts
+      then:
+      - the command exits with code 1
+      - the CLI descendant has stopped
+      - stdout matches context canceled
+
+  engine-io-005-stream-bytes:
+    description: The engine captures the declared suite's stdout and stderr byte for byte, retaining whitespace and an absent final newline
+    service: true-bdd
+    path: tests/true-bdd/engine_io_test.go
+    user_stories:
+    - story: docs/product/stories/engine-io.yaml
+      scenario_id: engine-io-005-stream-bytes
+      merge_date: '2026-10-27'
+    merged_steps:
+      given:
+      - the "engine-io-streams" project tree
+      when:
+      - the System Architect runs "build code"
+      then:
+      - the command exits with code 0
+      - 'every file matching "tmp/*/testrun-*-stdout.jsonl" matches ^\{"Action":"run","Package":"fixture/tests/suite","Test":"TestBytes"\}\n\{"Action":"pass","Package":"fixture/tests/suite","Test":"TestBytes"\}$'
+      - 'every file matching "tmp/*/testrun-*-stderr.txt" matches ^  stderr\tbytes  $'
+      - 'every file matching "tmp/true-bdd.log.json" matches "msg":"Subprocess returned","binary":"sh","args":\["tests/suite/run.sh","-json"\],"exit_code":0,"signal":"signal 0","elapsed_ms":[0-9]+,"stdout_bytes":136,"stderr_bytes":16'
+      - the engine dispatched no AI turns
+
+  engine-io-006-codex-cancellation:
+    description: Cancelling the engine stops an active codex turn and its descendants and ends the run as a failure
+    service: true-bdd
+    path: tests/true-bdd/engine_io_test.go
+    user_stories:
+    - story: docs/product/stories/engine-io.yaml
+      scenario_id: engine-io-006-codex-cancellation
+      merge_date: '2026-10-27'
+    merged_steps:
+      given:
+      - the "engine-io-cancel-codex" project tree
+      when:
+      - the System Architect cancels "build code --fix" after a CLI descendant starts
+      then:
+      - the command exits with code 1
+      - the CLI descendant has stopped
+      - stdout matches context canceled
+
+  engine-io-007-atomic-write:
+    description: Rewriting a generated file replaces its inode atomically, preserves existing permissions and does not follow a stale staging symlink
+    service: true-bdd
+    path: tests/true-bdd/engine_io_test.go
+    user_stories:
+    - story: docs/product/stories/engine-io.yaml
+      scenario_id: engine-io-007-atomic-write
+      merge_date: '2026-10-27'
+    merged_steps:
+      given:
+      - the "engine-io-atomic" project tree
+      - the project prepares atomic replacement probes
+      when:
+      - the System Architect runs "build tests --fix" after planting a stale staging symlink
+      then:
+      - the command exits with code 0
+      - the rewritten file "tests/mcp/ticket_test.go" keeps private permissions and replaces its old hard link "tmp/original.go"
+      - the file "tests/mcp/ticket_test.go" matches the session is granted a ticket within 5 seconds
+      - the file "tmp/staging-target.txt" matches ^sentinel\n$
+      - the engine dispatched no AI turns
+
+  engine-io-008-shared-read:
+    description: Reading the Registry document coexists with another shared parent-directory hold
+    service: true-bdd
+    path: tests/true-bdd/engine_io_test.go
+    user_stories:
+    - story: docs/product/stories/engine-io.yaml
+      scenario_id: engine-io-008-shared-read
+      merge_date: '2026-10-27'
+    merged_steps:
+      given:
+      - the "engine-io-shared-read" project tree
+      when:
+      - the System Architect runs "build tests" while a "shared" hold permits "docs"
+      then:
+      - the command exits with code 1
+      - stdout matches no scenarios
+
+  engine-io-009-claude-writer-environment:
+    description: The Claude CLI receives its role and isolation environment at spawn in every mode, including replay
+    service: true-bdd
+    path: tests/true-bdd/engine_io_test.go
+    user_stories:
+    - story: docs/product/stories/engine-io.yaml
+      scenario_id: engine-io-009-claude-writer-environment
+      merge_date: '2026-10-27'
+    merged_steps:
+      given:
+      - the "engine-io-claude-writer" project tree
+      - the engine uses an observed fixture Claude CLI
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build code --fix"
+      then:
+      - the command exits with code 0
+      - the file "tmp/claude-environment.txt" matches ^writer environment verified at spawn\n$
+      - the engine dispatched 1 apply AI turn to "claude"
+      - the file "services/calc/calc.go" is created
+      - the file "tests/suite/calc_test.go" is unchanged
+
+  engine-io-010-hold-timeout:
+    description: An unreleased parent-directory hold stops Registry reading after its ten-second wait, naming the held parent
+    service: true-bdd
+    path: tests/true-bdd/engine_io_test.go
+    user_stories:
+    - story: docs/product/stories/engine-io.yaml
+      scenario_id: engine-io-010-hold-timeout
+      merge_date: '2026-10-27'
+    merged_steps:
+      given:
+      - the "engine-io-hold-timeout" project tree
+      when:
+      - the System Architect runs "build tests" while a "exclusive" hold blocks "docs" beyond its wait limit
+      then:
+      - the command exits with code 1
+      - stderr matches directory lock not released
+      - stderr matches docs held for 10s
+      - no file outside "tmp" changed
