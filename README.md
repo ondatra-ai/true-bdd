@@ -111,7 +111,64 @@ and `documents.architecture_yaml` in `true-bdd.yaml`).
 
 ## Install
 
-Requires Go 1.25 and the `claude` CLI on `$PATH`.
+<!-- install-guide:begin -->
+### Install TrueBDD
+
+A release is the tag `services/true-bdd/vX.Y.Z`. Its release notes repeat this guide with the version and the release's commit `<commit>` filled in.
+
+**Machine requirements.** Go 1.25 or later, `git`, `bash`, and a signed-in `claude` and `codex` on `PATH`. A Jest host also needs Node and npm, a Playwright host Chromium as well, and a host whose tests start containers Docker as well.
+
+**From a release archive.** Download `true-bdd_vX.Y.Z_<os>_<arch>.tar.gz` for your platform (`<os>` is `darwin` or `linux`, `<arch>` is `amd64` or `arm64`) and `checksums.txt` from the release. Check the archive, unpack it and put `true-bdd` on your `PATH`:
+
+```sh
+grep " true-bdd_vX.Y.Z_<os>_<arch>.tar.gz$" checksums.txt | shasum -a 256 -c -
+tar -xzf true-bdd_vX.Y.Z_<os>_<arch>.tar.gz true-bdd
+mkdir -p "$HOME/.local/bin" && mv true-bdd "$HOME/.local/bin/"
+true-bdd version
+```
+
+`$HOME/.local/bin` must be on your `PATH`. `true-bdd version` prints `true-bdd version vX.Y.Z commit <commit>`.
+
+**Or with `go install`.** It installs a binary named `true-bdd` into `GOBIN`, or `$(go env GOPATH)/bin`. A module build carries no commit, so its `true-bdd version` reports `vX.Y.Z` and `commit unknown`:
+
+```sh
+go install github.com/ondatra-ai/true-bdd/services/true-bdd@vX.Y.Z
+```
+
+### Set up the project
+
+In the project's root, write the configuration, the checklists and the templates. `init` never overwrites a file that exists:
+
+```sh
+true-bdd init
+```
+
+Then name, in the architecture document, the libraries the code may use: each service's `libraries`, and `testing.libraries` for the tests, each a `module` with an exact `version`. The engine downloads them before a writer turn, and writers read only those.
+
+**A Go host on TrueBDD's test harness.** The test library is not released on its own. Take it at the release's commit, read the version Go resolved, and name that module and version in `testing.libraries`:
+
+```sh
+go get github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo@<commit>
+go list -m github.com/ondatra-ai/true-bdd/pkg
+```
+
+A Jest or Playwright host installs its own test dependencies as usual.
+
+### A first run
+
+The project must be a Git repository:
+
+```sh
+git init
+true-bdd build code --fix
+```
+
+`build code --fix` runs the tests, proposes a fix for what fails and stops at each proposed fix for you to answer. Nothing is applied before you choose to apply it, and there is no way to approve fixes in advance.
+<!-- install-guide:end -->
+
+### Build from source
+
+In a checkout of this repository, with Go 1.25 or later:
 
 ```bash
 mkdir -p ./bin && GOWORK=off go -C services/true-bdd build -o ../../bin/true-bdd .
@@ -612,7 +669,9 @@ Lint all three modules with `go run ./scripts/cmd/alint`, using the root `.golan
 
 ## Release rehearsal (repository tooling)
 
-The repository has three Go modules: the root (tests and scripts), `pkg/` (shared libraries and the test library), and `services/true-bdd/` (the engine). Local development uses the root module's `replace` for `pkg/`; release engine builds use `GOWORK=off` and no replacements. The release and test library move together: `vX.Y.Z` and `pkg/vX.Y.Z` always name the same commit.
+The repository has three Go modules: the root (tests and scripts), `pkg/` (shared libraries and the test library), and `services/true-bdd/` (the engine). Local development uses the root module's `replace` for `pkg/`; release engine builds use `GOWORK=off` and no replacements. Only the engine is released: a release is the engine module's tag `services/true-bdd/vX.Y.Z`, the only form under which Go resolves `go install …/services/true-bdd@vX.Y.Z`. No `pkg/` or root tag is pushed; a Go host takes the test library at the release's commit.
+
+A person pushes the tag. `.github/workflows/release.yml` then runs `release build --tag <tag>`, which refuses any other tag form or a tag that does not name the checked-out commit, the zero-cost rehearsal, and `release notes --tag <tag>`, which writes the install guide above with the version and commit filled in. It creates a draft GitHub release with the four archives and `checksums.txt`, and never publishes it.
 
 This repository's `scripts/cmd/release` repeats the installation path against local artifacts; it does not publish a release or a tag. Run from a checkout:
 
@@ -621,11 +680,11 @@ go run ./scripts/cmd/release build --version 0.0.0-rehearsal --out ./tmp/release
 go run ./scripts/cmd/release rehearse --artifacts ./tmp/release-artifacts
 ```
 
-`build` exports HEAD with `git archive`, cross-compiles with `-trimpath` for Darwin/Linux on amd64/arm64, and writes four binary archives, `checksums.txt` and `release.json` (the source commit and archive version). The archives currently carry the engine’s built-in version string. There is no resources archive: `true-bdd init` supplies the host configuration, checklists and templates.
+`build` exports HEAD with `git archive`, cross-compiles with `-trimpath` for Darwin/Linux on amd64/arm64, stamps each binary with the version and the commit through `-ldflags -X` (#220), and writes four binary archives, `checksums.txt` and `release.json` (the source commit and archive version). There is no resources archive: `true-bdd init` supplies the host configuration, checklists and templates.
 
-`rehearse` checks every archive, installs the native binary on a private PATH, copies the calculator and (when Node and npm are installed) Jest fixture inputs into a fresh private folder outside the checkout, deletes their service and resource copies, runs `init`, installs test requirements and runs `git init`. By default its fake Claude and Codex CLIs exit 3; success requires the engine's dispatch log, their sentinel and a non-zero engine exit. Earlier failures name the install, configuration, Specification or suite-discovery step. The copied Jest host also gets a service-load test so a missing module is a failing test member rather than only a suite-load error; the fixture tests stay intact. It retains that folder for inspection and writes the step results and evidence paths to `<artifacts>/rehearsal.json`.
+`rehearse` checks every archive, then follows the install guide above one command for one, each run as written with its placeholders filled: it checks, unpacks and installs the native archive on a private `PATH` (a private `HOME`), holds `true-bdd version` to the stamped version and commit, and installs the engine with `go install` from its module proxy, which must yield a `true-bdd` reporting that version. It copies the calculator and (when Node and npm are installed) Jest fixture inputs into a fresh private folder outside the checkout, deletes their service and resource copies, runs `true-bdd init`, installs test requirements (for the calculator, the guide's `go get` and `go list -m`) and runs `git init`; its first run is the guide's `true-bdd build code --fix`. Unit checks hold the guide's commands in this README to the ones the rehearsal runs. By default its fake Claude and Codex CLIs exit 3; success requires the engine's dispatch log, their sentinel and a non-zero engine exit. Earlier failures name the install, configuration, Specification or suite-discovery step. The copied Jest host also gets a service-load test so a missing module is a failing test member rather than only a suite-load error; the fixture tests stay intact. It retains that folder for inspection and writes the step results and evidence paths to `<artifacts>/rehearsal.json`.
 
-The default harness requirement uses a local `file://` module proxy containing the artifact's exported source at its commit-time pseudo-version. Both the host's `go get` and the engine's download use that proxy, with the public Go proxy serving transitive modules. The copied host's `testing.libraries` names the exact installed version, and the writer's read grants name that version in the module cache. No pushed commit is required. To exercise a user's proxy install, add `--harness-revision <proxy-served-revision>`; the host installs through the real proxy and declares the resulting exact version. No release or install guide is published by this tool.
+The default harness requirement uses a local `file://` module proxy containing the artifact's exported source, the test library and the engine, at its commit-time pseudo-version, resolving the guide's `@<commit>` and answering `go install`'s `latest` query. The host's `go get`, the engine's download and the `go install` channel use that proxy, with the public Go proxy serving transitive modules. The copied host's `testing.libraries` names the exact installed version, and the writer's read grants name that version in the module cache. No pushed commit is required. To exercise a user's proxy install, add `--harness-revision <proxy-served-revision>`; the host installs through the real proxy and declares the resulting exact version. No release or install guide is published by this tool.
 
 Every rehearsal has separate fresh private module caches for installation and engine execution. The zero-cost calculator pass requires the engine's `Libraries downloaded` record before the first AI turn and retains its module versions and cache paths. Another fresh host declares a nonexistent library; it must stop before any AI turn and name that library. An empty file proxy makes that refusal deterministic.
 

@@ -1,25 +1,26 @@
 package release
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
+	"regexp"
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
 	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
-	"github.com/ondatra-ai/true-bdd/pkg/cli/truebdd"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
-// Options selects the live pass and an optional proxy-served harness revision.
+// Options selects the live pass and an optional proxy-served revision of the engine and harness.
 type Options struct {
 	Live            bool
 	HarnessRevision string
-	harnessVersion  string
+	harnessRef      string
+	engineVersion   string
 	moduleProxy     string
 	moduleCache     string
 }
@@ -52,7 +53,7 @@ func rehearse(ctx context.Context, root, artifacts string, opt Options, report *
 		return err
 	}
 
-	binary, err := installBinary(ctx, report.Root, artifacts, metadata)
+	binary, err := installBinary(report.Root, artifacts, metadata)
 
 	err = report.step("", "binary", err)
 	if err != nil {
@@ -73,6 +74,11 @@ func rehearse(ctx context.Context, root, artifacts string, opt Options, report *
 		return err
 	}
 
+	err = report.step("", "go install", rehearseGoInstall(report.Root, opt))
+	if err != nil {
+		return err
+	}
+
 	if !opt.Live {
 		err = fakeAgents(filepath.Dir(binary))
 
@@ -82,7 +88,7 @@ func rehearse(ctx context.Context, root, artifacts string, opt Options, report *
 		}
 	}
 
-return runRehearsalHosts(ctx, binary, source, opt, report)
+	return runRehearsalHosts(ctx, binary, source, opt, report)
 }
 
 func runRehearsalHosts(ctx context.Context, binary, source string, opt Options, report *Report) error {
@@ -99,24 +105,31 @@ func runRehearsalHosts(ctx context.Context, binary, source string, opt Options, 
 	return err
 }
 
-func installBinary(ctx context.Context, folder, artifacts string, metadata Metadata) (string, error) {
-	binDir := filepath.Join(folder, "bin")
-	name := "true-bdd_" + metadata.Version + "_" + runtime.GOOS + "_" + runtime.GOARCH + ".tar.gz"
+// installBinary follows the guide's archive channel: the native archive and checksums.txt,
+// copied where a person would download them, checked, unpacked and put on a private PATH.
+func installBinary(folder, artifacts string, metadata Metadata) (string, error) {
+	download := filepath.Join(folder, "download")
+	archive := fillGuide("true-bdd_vX.Y.Z_<os>_<arch>.tar.gz", metadata.Version, metadata.Commit)
 
-	data, err := disk.Read(filepath.Join(artifacts, name))
-	if err == nil {
-		err = unpack(binDir, data, true)
+	for _, name := range []string{archive, "checksums.txt"} {
+		data, err := disk.Read(filepath.Join(artifacts, name))
+		if err == nil {
+			err = disk.Write(filepath.Join(download, name), data, disk.Private)
+		}
+
+		if err != nil {
+			return "", fmt.Errorf("install binary: download %s: %w", name, err)
+		}
 	}
 
-	if err != nil {
-		return "", fmt.Errorf("install binary: %w", err)
-	}
+	home := filepath.Join(folder, "home")
+	binary := filepath.Join(home, ".local", "bin", "true-bdd")
+	env := hostOptions(folder, binary).Env.Set("HOME=" + home)
 
-	binary := filepath.Join(binDir, "true-bdd")
-
-	result, err := truebdd.ReleaseVersion(ctx, binary, hostOptions(folder, binary))
+	err := runGuide(download, env, nil, fillGuide(guideVerify, metadata.Version, metadata.Commit),
+		fillGuide(guideUnpack, metadata.Version, metadata.Commit), guideOnPath)
 	if err == nil {
-		err = result.Err()
+		err = checkVersion(folder, env, metadata.Version, metadata.Commit)
 	}
 
 	if err != nil {
@@ -124,6 +137,48 @@ func installBinary(ctx context.Context, folder, artifacts string, metadata Metad
 	}
 
 	return binary, nil
+}
+
+// rehearseGoInstall follows the guide's `go install` channel from the rehearsal's module proxy.
+// A module build carries no VCS metadata, so it reports its version and an unknown commit.
+func rehearseGoInstall(folder string, opt Options) error {
+	gobin := filepath.Join(folder, "gobin")
+	env := rehearsalOptions(folder, filepath.Join(gobin, "true-bdd"), opt, true).Env.Set("GOBIN=" + gobin)
+
+	err := runGuide(folder, env, nil, fillGuide(guideGoInstall, opt.engineVersion, ""))
+	if err != nil {
+		return err
+	}
+
+	version := opt.engineVersion
+	if opt.HarnessRevision != "" {
+		version = ""
+	}
+
+	return checkVersion(folder, env, version, "unknown")
+}
+
+// checkVersion runs the guide's `true-bdd version` and holds its answer to the build identity;
+// an empty version accepts any.
+func checkVersion(dir string, env cli.Env, version, commit string) error {
+	var answer bytes.Buffer
+
+	err := runGuide(dir, env, &answer, guideVersion)
+	if err != nil {
+		return err
+	}
+
+	pattern := `^true-bdd version ` + regexp.QuoteMeta(version) + ` commit ` + regexp.QuoteMeta(commit) + "\n$"
+	if version == "" {
+		pattern = `^true-bdd version \S+ commit ` + regexp.QuoteMeta(commit) + "\n$"
+	}
+
+	if !regexp.MustCompile(pattern).Match(answer.Bytes()) {
+		return fmt.Errorf("%w: true-bdd version answered %q, want version %q and commit %q",
+			errRefused, answer.String(), version, commit)
+	}
+
+	return nil
 }
 
 func exportSource(ctx context.Context, root, commit, directory string) error {
@@ -168,21 +223,22 @@ func prepareRehearsalLibraries(ctx context.Context, root, source string,
 	opt.moduleCache = filepath.Join(report.Root, "module-cache")
 	report.ModuleCache = opt.moduleCache
 
-	opt.harnessVersion = opt.HarnessRevision
-	if opt.HarnessRevision == "" {
-		var err error
-
-		opt.harnessVersion, opt.moduleProxy, err = localHarnessProxy(ctx, root, source, report.Root, metadata.Commit)
-
-		err = report.step("", "local module proxy", err)
-		if err != nil {
-			return opt, err
-		}
-
-		report.Harness = "local file module proxy at " + opt.harnessVersion + " (no pushed commit required)"
-	} else {
+	if opt.HarnessRevision != "" {
+		opt.harnessRef, opt.engineVersion = opt.HarnessRevision, opt.HarnessRevision
 		report.Harness = "module proxy at " + opt.HarnessRevision
+
+		return opt, nil
 	}
+
+	version, commit, proxy, err := localModuleProxy(ctx, root, source, report.Root, metadata.Commit)
+
+	err = report.step("", "local module proxy", err)
+	if err != nil {
+		return opt, err
+	}
+
+	opt.harnessRef, opt.engineVersion, opt.moduleProxy = commit, version, proxy
+	report.Harness = "local file module proxy at " + version + " (no pushed commit required)"
 
 	return opt, nil
 }

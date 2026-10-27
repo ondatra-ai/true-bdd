@@ -1,17 +1,17 @@
 package release
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
-	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
 	"github.com/ondatra-ai/true-bdd/pkg/cli/gotool"
 	"github.com/ondatra-ai/true-bdd/pkg/cli/npm"
-	"github.com/ondatra-ai/true-bdd/pkg/cli/truebdd"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
@@ -77,10 +77,7 @@ func rehearseHost(ctx context.Context, binary, source string, sample sampleHost,
 
 	commandOptions := rehearsalOptions(host, binary, opt, false)
 
-	result, err := truebdd.InitHost(ctx, binary, commandOptions)
-	if err == nil {
-		err = result.Err()
-	}
+	err = runGuide(host, commandOptions.Env, nil, guideInit)
 
 	err = report.step(sample.name, configurationStage, err)
 	if err != nil {
@@ -102,9 +99,7 @@ func rehearseHost(ctx context.Context, binary, source string, sample sampleHost,
 		return err
 	}
 
-	repository := git.Repository{Dir: host}
-
-	err = repository.InitHost(ctx)
+	err = runGuide(host, commandOptions.Env, nil, guideGitInit)
 
 	err = report.step(sample.name, "git init", err)
 	if err != nil {
@@ -167,6 +162,8 @@ func prepareSample(source, host string, sample sampleHost) error {
 	return nil
 }
 
+// installHostRequirements installs a host's test dependencies: a Jest host its own npm packages,
+// a Go host the test library by the guide, at the release's commit, pinned in testing.libraries.
 func installHostRequirements(ctx context.Context, sample sampleHost,
 	commandOptions cli.Options, opt Options,
 ) (string, error) {
@@ -179,12 +176,40 @@ func installHostRequirements(ctx context.Context, sample sampleHost,
 		return "", nil
 	}
 
-	version, err := gotool.RequireHarness(ctx, commandOptions, opt.harnessVersion)
+	err := gotool.DropHarness(ctx, commandOptions)
+	if err == nil {
+		err = runGuide(commandOptions.Dir, commandOptions.Env, nil,
+			fillGuide(guideHarness, "", opt.harnessRef))
+	}
+
+	var listed bytes.Buffer
+
+	if err == nil {
+		err = runGuide(commandOptions.Dir, commandOptions.Env, &listed, guideHarnessVersion)
+	}
+
 	if err != nil {
 		return "", fmt.Errorf("install harness: %w", err)
+	}
+
+	version, err := listedVersion(listed.String(), harnessModule)
+	if err != nil {
+		return "", err
 	}
 
 	err = declareTestingLibrary(commandOptions.Dir, harnessModule, version)
 
 	return version, err
+}
+
+// listedVersion reads a module's version from `go list -m <module>` output.
+func listedVersion(listed, module string) (string, error) {
+	for line := range strings.SplitSeq(listed, "\n") {
+		fields := strings.Fields(line)
+		if len(fields) == 2 && fields[0] == module {
+			return fields[1], nil
+		}
+	}
+
+	return "", fmt.Errorf("%w: go list -m %s printed no version: %q", errRefused, module, listed)
 }

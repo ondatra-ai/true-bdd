@@ -1,0 +1,49 @@
+name: Release
+
+# A person pushes the engine module's tag services/true-bdd/vX.Y.Z (#222). This builds the
+# stamped artifacts, rehearses them at zero cost and opens a DRAFT release; a person publishes.
+on:
+  push:
+    tags:
+      - 'services/true-bdd/v*'
+
+permissions:
+  contents: write
+
+jobs:
+  draft:
+    name: draft release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            pkg/go.sum
+            services/true-bdd/go.sum
+
+      # Refuses any other tag form, and a tag that does not name the checked-out commit.
+      - name: Build the stamped artifacts
+        run: go run ./scripts/cmd/release build --tag "$GITHUB_REF_NAME" --out dist
+
+      - name: Rehearse them at zero cost
+        run: go run ./scripts/cmd/release rehearse --artifacts dist
+
+      - name: Write the release notes
+        run: go run ./scripts/cmd/release notes --tag "$GITHUB_REF_NAME" --out dist/notes.md
+
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --draft --verify-tag \
+            --title "true-bdd ${GITHUB_REF_NAME#services/true-bdd/}" \
+            --notes-file dist/notes.md \
+            dist/true-bdd_*.tar.gz dist/checksums.txt

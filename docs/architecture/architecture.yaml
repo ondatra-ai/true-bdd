@@ -21,21 +21,27 @@
 # Development uses only the root module's replace to ./pkg; release engine builds
 # run in services/true-bdd with GOWORK=off and no replaces. Gates/lint check all
 # three modules independently, excluding fixture sentinels. Fixtures force GOWORK=off.
-# Release and test-library tags always move together: vX.Y.Z and pkg/vX.Y.Z
-# sit at the same commit. No tag is created by the drill or release rehearsal.
+# Only the engine is released: a release is the engine module's tag
+# services/true-bdd/vX.Y.Z, the form Go needs for go install …/services/true-bdd@vX.Y.Z.
+# No pkg/ or root tag is pushed; a Go host takes the test library at the release's
+# commit. No tag is created by the drill or release rehearsal.
 # Before cuts, the drill caches the engine libraries below and their complete graph.
 # A scratch export loses the engine go.mod/go.sum, recreates them from those pins
 # with GOPROXY=off and GOSUMDB=off, then builds with a fresh build cache.
 # record.json records deleted paths, offline result, cache and diagnostic log.
 # Cut A removes services/true-bdd in full, including both manifests.
 #
-# Repository tooling: scripts/cmd/release builds git-archive binary artifacts and
-# rehearses init and sample hosts outside the checkout; scripts/gates runs its
-# zero-cost pass in CI. This is tooling, not an engine command or a published release.
+# Repository tooling: scripts/cmd/release builds git-archive binary artifacts, each
+# stamped with its version and commit through -ldflags -X, and rehearses the README's
+# install guide, command for command, outside the checkout: the archive and go install
+# channels, init and sample hosts. scripts/gates runs its zero-cost pass in CI, and
+# .github/workflows/release.yml runs build, rehearse and notes on a pushed release tag
+# to open a draft release. This is tooling, not an engine command; a person publishes.
 # That gate covers the init-host-first-AI-turn criterion: an installed binary
 # initializes a fresh host with its own Specification and tests and reaches fake CLIs.
-# The default harness uses a local file module proxy from the artifact export at
-# its commit-time pseudo-version. Both go get and the engine use that proxy, with
+# The default proxy is a local file module proxy serving the test library and the
+# engine from the artifact export at its commit-time pseudo-version, resolving the
+# guide's @<commit> and go install's latest query. go get, go install and the engine use it, with
 # the public Go proxy for transitive modules. The copied testing.libraries is pinned
 # to go get's resolved version. --harness-revision uses the real proxy and records
 # its resolved exact version instead. No source replace is installed.

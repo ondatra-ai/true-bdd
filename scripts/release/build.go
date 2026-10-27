@@ -15,7 +15,35 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
-// Build publishes four archives and checksums from HEAD, never the worktree's files.
+// BuildTag builds a release tag's artifacts, stamped with the tag's version, from HEAD,
+// refusing a tag of another form or one that names another commit.
+func BuildTag(ctx context.Context, root, tag, out string) error {
+	version, err := TagVersion(tag)
+	if err != nil {
+		return err
+	}
+
+	repository := git.Repository{Dir: root}
+
+	tagged, err := repository.ResolveCommit(ctx, tag)
+	if err != nil {
+		return fmt.Errorf("resolving release tag: %w", err)
+	}
+
+	head, err := repository.ResolveCommit(ctx, "HEAD")
+	if err != nil {
+		return fmt.Errorf("resolving build commit: %w", err)
+	}
+
+	if tagged != head {
+		return fmt.Errorf("%w: tag %s names %s, not HEAD %s", errRefused, tag, tagged, head)
+	}
+
+	return Build(ctx, root, version, out)
+}
+
+// Build publishes four archives and checksums from HEAD, never the worktree's files,
+// each binary stamped with the version and that commit (#220).
 func Build(ctx context.Context, root, version, out string) error {
 	if !regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9.+_-]*$`).MatchString(version) {
 		return fmt.Errorf("%w: --version must be an artifact-safe name", errRefused)
@@ -52,7 +80,7 @@ func Build(ctx context.Context, root, version, out string) error {
 		return fmt.Errorf("creating artifacts: %w", err)
 	}
 
-	checksums, err := buildPlatforms(ctx, source, scratch, version, out)
+	checksums, err := buildPlatforms(ctx, source, scratch, gotool.Stamp{Version: version, Commit: commit}, out)
 	if err != nil {
 		return err
 	}
@@ -62,16 +90,15 @@ func Build(ctx context.Context, root, version, out string) error {
 		return err
 	}
 
-	slog.Info("Release artifacts built", "commit", commit, "version", version,
-		"artifacts", out, "stamping", "unavailable until #220")
+	slog.Info("Release artifacts built", "commit", commit, "version", version, "artifacts", out)
 
 	return nil
 }
 
-func buildPlatforms(ctx context.Context, source, scratch, version, out string) (string, error) {
+func buildPlatforms(ctx context.Context, source, scratch string, stamp gotool.Stamp, out string) (string, error) {
 	var checksums strings.Builder
 
-	for _, name := range archiveNames(version) {
+	for _, name := range archiveNames(stamp.Version) {
 		parts := strings.Split(strings.TrimSuffix(name, ".tar.gz"), "_")
 
 		const osFromEnd = 2
@@ -85,7 +112,7 @@ func buildPlatforms(ctx context.Context, source, scratch, version, out string) (
 			return "", fmt.Errorf("preparing binary: %w", err)
 		}
 
-		err = gotool.BuildRelease(ctx, source, binary, parts[targetOSIndex], parts[targetArchIndex])
+		err = gotool.BuildRelease(ctx, source, binary, parts[targetOSIndex], parts[targetArchIndex], stamp)
 		if err != nil {
 			return "", fmt.Errorf("building archive: %w", err)
 		}

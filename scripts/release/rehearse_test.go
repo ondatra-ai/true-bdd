@@ -55,6 +55,11 @@ func TestRehearsalInstallsAHostBeforeItsFirstAITurn(t *testing.T) {
 
 	assertInstallSteps(t, report)
 
+	argv, err := os.ReadFile(filepath.Join(report.Root, "calculator", "first-run-argv"))
+	if err != nil || strings.TrimSpace(string(argv)) != strings.TrimPrefix(release.GuideFirstRun, "true-bdd ") {
+		t.Errorf("first run %q is not the guide's %q: %v", argv, release.GuideFirstRun, err)
+	}
+
 	if report.Hosts[1].Skipped == "" {
 		t.Error("missing node/npm must produce an explicit Jest skip")
 	}
@@ -62,7 +67,7 @@ func TestRehearsalInstallsAHostBeforeItsFirstAITurn(t *testing.T) {
 
 const installedEngine = `#!/bin/sh
 case "$1" in
- version) exit 0 ;;
+ version) echo "true-bdd version test commit HEAD"; exit 0 ;;
  init)
   test ! -e true-bdd/true-bdd.yaml || exit 11
   test ! -e templates/poison || exit 12
@@ -72,6 +77,7 @@ case "$1" in
   echo init-created > templates/build-code.prompt.tpl
   exit 0 ;;
 esac
+echo "$*" > first-run-argv
 /bin/mkdir -p tmp
 if /usr/bin/grep -q 'example.invalid/true-bdd-missing' docs/architecture/architecture.yaml; then
  printf '{"msg":"Refusing to start","error":"%s"}\n' \
@@ -97,8 +103,8 @@ exit 1
 func assertInstallSteps(t *testing.T, report release.Report) {
 	t.Helper()
 
-	for _, step := range []string{"install checksums", "binary", "source", "sample host",
-		"configuration", "harness", "git init", aiBoundary} {
+	for _, step := range []string{"install checksums", "binary", "source", "local module proxy", "go install",
+		"sample host", "configuration", "harness", "git init", aiBoundary} {
 		found := false
 
 		for _, result := range report.Steps {
