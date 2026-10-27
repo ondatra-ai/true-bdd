@@ -26,6 +26,8 @@ func sourceRepository(t *testing.T) string {
     commands:
       replay: go version
     libraries:
+      - module: github.com/ondatra-ai/true-bdd
+        version: v0.0.0-20261026072958-954797a04424
       - module: github.com/ondatra-ai/true-bdd/pkg
         version: v0.0.0
 `)

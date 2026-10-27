@@ -55,10 +55,7 @@ func TestRehearsalInstallsAHostBeforeItsFirstAITurn(t *testing.T) {
 
 	assertInstallSteps(t, report)
 
-	argv, err := os.ReadFile(filepath.Join(report.Root, "calculator", "first-run-argv"))
-	if err != nil || strings.TrimSpace(string(argv)) != strings.TrimPrefix(release.GuideFirstRun, "true-bdd ") {
-		t.Errorf("first run %q is not the guide's %q: %v", argv, release.GuideFirstRun, err)
-	}
+	assertCalculatorFollowedTheGuide(t, report)
 
 	if report.Hosts[1].Skipped == "" {
 		t.Error("missing node/npm must produce an explicit Jest skip")
@@ -116,5 +113,19 @@ func assertInstallSteps(t *testing.T, report release.Report) {
 		if !found {
 			t.Errorf("missing successful install step %q: %+v", step, report.Steps)
 		}
+	}
+}
+
+func assertCalculatorFollowedTheGuide(t *testing.T, report release.Report) {
+	t.Helper()
+
+	argv, err := os.ReadFile(filepath.Join(report.Root, "calculator", "first-run-argv"))
+	if err != nil || strings.TrimSpace(string(argv)) != strings.TrimPrefix(release.GuideFirstRun, "true-bdd ") {
+		t.Errorf("first run %q is not the guide's %q: %v", argv, release.GuideFirstRun, err)
+	}
+
+	architecture, err := os.ReadFile(filepath.Join(report.Root, "calculator", "docs/architecture/architecture.yaml"))
+	if err != nil || strings.Contains(string(architecture), "module: github.com/ondatra-ai/true-bdd\n") {
+		t.Errorf("the fixture's root-module pin survived the guide's harness step: %s %v", architecture, err)
 	}
 }

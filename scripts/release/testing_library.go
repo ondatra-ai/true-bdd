@@ -49,6 +49,46 @@ func declareTestingLibrary(host, module, version string) error {
 	return writeHostArchitecture(path, &document)
 }
 
+// dropTestingLibrary removes a copied fixture's pin of module from testing.libraries, as
+// DropHarness removes its local requirement: the fixture pins this repository's root module.
+func dropTestingLibrary(host, module string) error {
+	path := filepath.Join(host, "docs/architecture/architecture.yaml")
+
+	data, err := disk.Read(path)
+	if err != nil {
+		return fmt.Errorf("read host architecture: %w", err)
+	}
+
+	var document yaml.Node
+
+	err = yaml.Unmarshal(data, &document)
+	if err != nil {
+		return fmt.Errorf("decode host architecture: %w", err)
+	}
+
+	libraries := mappingValue(mappingValue(mappingValue(document.Content[0], "architecture"), "testing"), "libraries")
+	if libraries == nil || libraries.Kind != yaml.SequenceNode {
+		return nil
+	}
+
+	kept := libraries.Content[:0]
+
+	for _, library := range libraries.Content {
+		name := mappingValue(library, "module")
+		if name == nil || name.Value != module {
+			kept = append(kept, library)
+		}
+	}
+
+	if len(kept) == len(libraries.Content) {
+		return nil
+	}
+
+	libraries.Content = kept
+
+	return writeHostArchitecture(path, &document)
+}
+
 func mappingValue(node *yaml.Node, key string) *yaml.Node {
 	if node == nil || node.Kind != yaml.MappingNode {
 		return nil
