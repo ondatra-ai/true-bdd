@@ -1,5 +1,0 @@
-# Which prompts of the shipped checklist this fixture's run walks.
-# The Scenario in input/ carries exactly one designed defect; narrowing
-# the checklist walks only the prompt it trips, and that prompt's fix.
-scen-check:
-- whether this scenario uses each catalogue phrase

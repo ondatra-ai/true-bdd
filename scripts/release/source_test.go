@@ -19,6 +19,8 @@ func sourceRepository(t *testing.T) string {
 	write(t, filepath.Join(fixture, "docs/architecture/architecture.yaml"), `architecture:
   testing:
     framework: go-test
+    commands:
+      replay: go version
     libraries:
       - module: github.com/ondatra-ai/true-bdd
         version: v0.0.0
@@ -46,7 +48,7 @@ func sourceRepository(t *testing.T) string {
 
 	toolPath := t.TempDir()
 
-	for _, name := range []string{"go", "git"} {
+	for _, name := range []string{"go", "git", "bash"} {
 		target, err := exec.LookPath(name)
 		if err != nil {
 			t.Fatal(err)

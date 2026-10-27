@@ -20,11 +20,6 @@ func containerFor(cmd *cobra.Command, provide containerProvider) (*bootstrap.Con
 		return nil, runner.RefuseStartup(commandName(cmd), fmt.Errorf("initialize container: %w", err))
 	}
 
-	yes, _ := cmd.Flags().GetBool("yes")
-	if container.UserInputCollector != nil {
-		container.UserInputCollector.SetAssumeYes(yes)
-	}
-
 	return container, nil
 }
 

@@ -115,7 +115,7 @@ architecture:
         Subject.Title: &subject-title >-
           Subject Story title scalar from the selected file's story block, YAML-decoded unchanged (no trim); empty prints blank.
         UserAnswers: &useranswers >-
-          Run map of question id to answer, initially empty; later answers overwrite matching ids across clarification rounds. UI trims each answer, substitutes a valid positive numbered option (option text is not trimmed), and free text or an out-of-range number is retained after trimming; an interactive blank line stays empty; EOF or --yes at a clarification stops before another AI request. Refinement stores feedback lines (each trimmed, joined by newline) at _user_refinement. Map range is lexical by id, excludes that reserved key from bullets, and prints it separately as feedback; empty values are false in template conditionals.
+          Run map of question id to answer, initially empty; later answers overwrite matching ids across clarification rounds. UI trims each answer, substitutes a valid positive numbered option (option text is not trimmed), and free text or an out-of-range number is retained after trimming; an interactive blank line stays empty; EOF at a clarification stops before another AI request. Refinement stores feedback lines (each trimmed, joined by newline) at _user_refinement. Map range is lexical by id, excludes that reserved key from bullets, and prints it separately as feedback; empty values are false in template conditionals.
     fix_generator_system:
       rendering: *prompt-rendering
       fields: &fix-generator-system-fields
@@ -1418,16 +1418,12 @@ architecture:
         an interactive blank line. The input collector retains read errors:
         empty EOF is end of input, a final non-empty line without a newline
         is an answer, and a blank newline is an empty answer.
-        All five --fix commands (build code, build tests, us refine, us apply,
-        scen check) accept --yes. Cobra rejects --yes without --fix as a usage
-        error before constructing the container. The run configures its input
-        collector to apply every proposed fix without printing the menu or
-        reading stdin under --yes; AI requests are unchanged.
-        Clarifying questions under --yes are printed with their suggested
-        answers and stop with ErrPersonRequired (a person must answer), without
-        reading stdin. Empty EOF at a clarifying question stops with the same
-        error. Empty EOF at a menu without --yes stops with a message naming
-        --yes with --fix, never the tests-still-failing error. Other read
+        Every apply requires an answer at the fix menu; no command can
+        approve fixes in advance. Empty EOF at a clarifying question stops
+        with ErrPersonRequired (a person must answer), after printing the
+        question and suggestions. Empty EOF at a menu stops with an error
+        saying a person must choose whether to apply the fix, never the
+        tests-still-failing error. Other read
         failures propagate. The FixLoopUI and its adapter return input errors
         through the cell handler and walker to runner.Run, which logs Walk
         stopped and returns the error before finalization or COMPLETE.

@@ -76,6 +76,10 @@ _Avoid_: spec check, term check
 The process a scenario exercises — the `true-bdd` binary for the CLI suite — as distinct from the tests that drive it. Its `third_party` CLI dependencies are the ones the harness shims; a Services caller declaring none has a vacuous mode axis.
 _Avoid_: SUT, subject, system, target
 
+**Fix loop**:
+What a command run with `--fix` does for a failed Prompt: ask any clarifying questions, propose a fix, and read the person's apply, refine or exit choice from stdin at the fix menu. Every apply requires that answer; the engine offers no way to approve fixes in advance. End of input stops the menu or an unanswered clarification with a distinct error.
+_Avoid_: automatic approval, advance approval
+
 **Failing set**:
 All tests failing in one `build code` discovery, walked as one Item with one proposed repair plan. After each completed apply, including a started codex writer that exits non-zero or answers empty, or a started Claude writer that exits non-zero, returns an error result or answers empty, the engine reruns its remaining members once; passing members leave, missing results stay failing. A green discovery yields no Item. Its `D:` Prompt answers the whole set's latest runner verdict without an AI turn.
 _Avoid_: repair batch, failure queue

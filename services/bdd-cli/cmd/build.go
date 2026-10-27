@@ -95,7 +95,6 @@ func buildSpecCmd(use, short, long string, flag specFlag, provide containerProvi
 
 	cmd.Flags().String(flag.name, "", flag.usage)
 	cmd.Flags().Bool("fix", false, fixFlagDescription)
-	cmd.Flags().Bool("yes", false, yesFlagDescription)
 	cmd.Flags().StringArray("model", nil,
 		"Override a configured model tier for this run: <tier>=<cli>:<model> (repeatable)")
 

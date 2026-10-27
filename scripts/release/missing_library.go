@@ -22,7 +22,7 @@ func rehearseMissingLibrary(ctx context.Context, binary, source string, opt Opti
 		return report.step(name, "configuration", err)
 	}
 
-	result, err := truebdd.RehearseCode(ctx, binary, false, command)
+	result, err := truebdd.RehearseCode(ctx, binary, command)
 	if err != nil {
 		return report.step(name, "missing library", err)
 	}
