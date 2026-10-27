@@ -122,7 +122,7 @@ func runSample(ctx context.Context, binary, host string, sample sampleHost, opt 
 	}
 
 	started := time.Now()
-	result, err := truebdd.RehearseCode(ctx, binary, opt.Live, commandOptions)
+	result, err := rehearseCode(ctx, binary, opt.Live, commandOptions)
 	outcome, evidenceErr := evaluateHost(host, sample.name, result, opt.Live)
 	outcome.WallTime = time.Since(started).String()
 	report.Hosts = append(report.Hosts, outcome)
