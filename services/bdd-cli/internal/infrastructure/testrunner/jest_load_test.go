@@ -153,3 +153,30 @@ func TestJestMixedLoadSetSelectsFilesAndKeepsOwnVerdicts(t *testing.T) {
 		t.Fatalf("wrong mixed-set verdicts: %+v", members)
 	}
 }
+
+func TestJestLoadMemberAggregatesTheSameFileAcrossProjects(t *testing.T) {
+	t.Parallel()
+
+	report := `{"testResults":[
+ {"name":"tests/unit/greeting.test.js","status":"failed","message":"Cannot find greeting","assertionResults":[]},
+ {"name":"tests/unit/greeting.test.js","status":"failed","message":"Cannot find greeting","assertionResults":[]},
+ {"name":"tests/unit/greeting.test.js","status":"passed",
+ "assertionResults":[{"fullName":"greets","status":"passed"}]}]}`
+	cfg := jestCommand(t, report, "--json")
+
+	failures, err := testrunner.NewJestRunner(nil).Discover(context.Background(), cfg, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(failures) != 1 {
+		t.Fatalf("one file yielded %d load members", len(failures))
+	}
+
+	for _, single := range []bool{true, false} {
+		passed, output := jestLoadVerdict(t, report, single)
+		if passed || !strings.Contains(output, "Cannot find greeting") {
+			t.Fatalf("a failing file passed: %v %s", passed, output)
+		}
+	}
+}

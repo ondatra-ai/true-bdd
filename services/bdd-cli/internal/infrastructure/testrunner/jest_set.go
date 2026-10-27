@@ -62,7 +62,8 @@ func jestSetOutcomes(report *dto.JestReport) map[string]dtoOutcome {
 	for _, result := range report.TestResults {
 		file := jestRepoRelative(workingDir(), result.Name)
 
-		outcomes[file+jestNameSeparator+jestLoadMarker] = jestLoadOutcome(result)
+		recordJestLoadOutcome(outcomes, file, result)
+
 		for _, assertion := range result.AssertionResults {
 			name := jestRepoRelative(workingDir(), result.Name) + jestNameSeparator + assertion.FullName
 			outcomes[name] = dtoOutcome{
@@ -137,4 +138,17 @@ func jestSetArgv(members []*FailingTest) ([]string, error) {
 	}
 
 	return argv, nil
+}
+
+// Jest projects can report the same file more than once; every result must pass.
+func recordJestLoadOutcome(outcomes map[string]dtoOutcome, file string, result dto.JestTestResult) {
+	name := file + jestNameSeparator + jestLoadMarker
+
+	outcome := jestLoadOutcome(result)
+	if previous, exists := outcomes[name]; exists {
+		outcome.passed = outcome.passed && previous.passed
+		outcome.output = strings.TrimSpace(previous.output + "\n" + outcome.output)
+	}
+
+	outcomes[name] = outcome
 }

@@ -203,12 +203,14 @@ func jestReportToFailingTests(
 	service, suite string,
 ) []*FailingTest {
 	out := make([]*FailingTest, 0)
+	loadFiles := make(map[string]bool)
 	root := workingDir()
 
 	for _, testResult := range report.TestResults {
 		filePath := jestRepoRelative(root, testResult.Name)
 
-		if testResult.Status == statusFailed && len(testResult.AssertionResults) == 0 {
+		if testResult.Status == statusFailed && len(testResult.AssertionResults) == 0 && !loadFiles[filePath] {
+			loadFiles[filePath] = true
 			name := filePath + jestNameSeparator + jestLoadMarker
 			out = append(out, &FailingTest{
 				ID:      BuildID(service, suite, FrameworkJest, name),
