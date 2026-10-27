@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/disk"
 )
 
 // codexRuntimeLibraries names Mach-O dependencies exactly, without opening an installation prefix.
@@ -117,8 +117,8 @@ func codexLibraryPath(candidates []string) (string, string, error) {
 }
 
 func codexNonMachImage(data []byte, parseErr error) ([]string, error) {
-	const magicLength=4
- if len(data) < magicLength {
+	const magicLength = 4
+	if len(data) < magicLength {
 		return nil, nil
 	}
 

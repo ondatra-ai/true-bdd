@@ -3,7 +3,7 @@ package codex
 import (
 	"path/filepath"
 
-	"github.com/ondatra-ai/true-bdd/pkg/shell"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/shell"
 )
 
 // RuntimeExecutables locates the optional installed command runtimes, never a whole user PATH grant.

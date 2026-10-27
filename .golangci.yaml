@@ -147,7 +147,7 @@ linters:
       require-specific: true
     depguard:
       rules:
-        # pkg/ is the floor: every root imports it, it imports none. The
+        # pkg/ is the tests/tooling floor; the engine owns its IO. The
         # negations: `**/pkg/**` also matches internal/pkg/, not the floor;
         # pkg/testkit/ is the harness, which exists to reach roots.
         root-pkg-floor:
@@ -168,6 +168,8 @@ linters:
           files:
             - "**/services/**"
           deny:
+            - pkg: "github.com/ondatra-ai/true-bdd/pkg"
+              desc: 'the engine owns all repository code it uses, including IO'
             - pkg: "github.com/ondatra-ai/true-bdd/scripts"
               desc: 'product code never imports this repo tooling or its tests'
             - pkg: "github.com/ondatra-ai/true-bdd/tests"
@@ -201,12 +203,13 @@ linters:
           files:
             - "$all"
             - "!**/pkg/shell/**"
+            - "!**/services/bdd-cli/internal/infrastructure/shell/**"
             - "!**/*_test.go"
           deny:
             - pkg: "os/exec$"
-              desc: 'spawn: subprocesses go through pkg/shell — need one? add a pkg/cli wrapper and call that'
+              desc: 'spawn: subprocesses go through the owning shell channel — need one? add a typed CLI wrapper and call that'
             - pkg: "golang.org/x/sys/execabs"
-              desc: 'spawn: subprocesses go through pkg/shell — need one? add a pkg/cli wrapper and call that'
+              desc: 'spawn: subprocesses go through the owning shell channel — need one? add a typed CLI wrapper and call that'
         # pkg/cli is exempt from THIS list only, so it still cannot import
         # os/exec: the layering is proved rather than trusted.
         spawn-shell:
@@ -214,14 +217,20 @@ linters:
             - "$all"
             - "!**/pkg/cli/**"
             - "!**/pkg/shell/**"
-            # Inside the engine ONLY these two wrappers may reach pkg/shell:
-            # codex and the engine's own binary, named one by one
-            # so any other engine package stays refused (docs/qna Q19, Q33).
+            # Engine shell access is confined to explicitly named wrappers.
+            - "!**/services/bdd-cli/internal/infrastructure/shell/**"
+            - "!**/services/bdd-cli/internal/infrastructure/cli/cli.go"
+            - "!**/services/bdd-cli/internal/infrastructure/cli/claude/*.go"
             - "!**/services/bdd-cli/internal/infrastructure/cli/codex/*.go"
+            - "!**/services/bdd-cli/internal/infrastructure/cli/git/*.go"
+            - "!**/services/bdd-cli/internal/infrastructure/cli/gotool/*.go"
+            - "!**/services/bdd-cli/internal/infrastructure/cli/spec/*.go"
             - "!**/services/bdd-cli/internal/infrastructure/cli/truebdd/*.go"
           deny:
             - pkg: "github.com/ondatra-ai/true-bdd/pkg/shell"
               desc: 'spawn: reach a binary through its pkg/cli wrapper — add one if it is missing'
+            - pkg: "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/shell"
+              desc: 'spawn: reach a binary through its owning typed CLI wrapper'
         logging:
           # depguard matches by PREFIX, so a bare `log` would deny log/slog
           # with it; the trailing $ makes it exact. Globs run against ABSOLUTE
@@ -229,21 +238,22 @@ linters:
           files:
             - "$all"
             - "!**/pkg/logging/**"
+            - "!**/services/bdd-cli/internal/infrastructure/logging/**"
           deny:
             - pkg: "log$"
-              desc: 'log/slog only, and only through pkg/logging'
+              desc: 'log/slog only, and only through the owning logging channel'
             - pkg: "github.com/sirupsen/logrus"
-              desc: 'log/slog only, and only through pkg/logging'
+              desc: 'log/slog only, and only through the owning logging channel'
             - pkg: "go.uber.org/zap"
-              desc: 'log/slog only, and only through pkg/logging'
+              desc: 'log/slog only, and only through the owning logging channel'
             - pkg: "github.com/rs/zerolog"
-              desc: 'log/slog only, and only through pkg/logging'
+              desc: 'log/slog only, and only through the owning logging channel'
             - pkg: "github.com/go-kit/log"
-              desc: 'log/slog only, and only through pkg/logging'
+              desc: 'log/slog only, and only through the owning logging channel'
             - pkg: "k8s.io/klog"
-              desc: 'log/slog only, and only through pkg/logging'
+              desc: 'log/slog only, and only through the owning logging channel'
             - pkg: "github.com/hashicorp/go-hclog"
-              desc: 'log/slog only, and only through pkg/logging'
+              desc: 'log/slog only, and only through the owning logging channel'
         # scripts/ answers a caller or narrates; narration is a log. Each of
         # the four exemptions holds a DESCRIPTOR, never a print — the hook's
         # stdin and verdict moved to pkg/claude/hooks, which owns both.
@@ -270,23 +280,23 @@ linters:
         # unnecessary, so the 48 `fmt.Fprintf(&buf, ...)` string-building sites
         # stay untouched — and it is what catches `cmd.Stdout = os.Stdout`.
         - pattern: '^os\.Std(out|err|in)$'
-          msg: 'three channels: reach a terminal through pkg/console'
+          msg: 'three channels: reach a terminal through the owning console channel'
         # os.Stat/os.Lstat/os.ReadDir/os.Symlink are deliberately absent: they
         # move no bytes, so they cannot observe a half-written file.
         - pattern: '^os\.(Chmod|Create|CreateTemp|Mkdir|MkdirAll|MkdirTemp|Open|OpenFile|ReadFile|Remove|RemoveAll|Rename|Truncate|WriteFile)$'
-          msg: 'three channels: read and write files through pkg/disk'
+          msg: 'three channels: read and write files through the owning disk channel'
         # Carries no `three channels:` marker, so the migration entries below
         # do not switch it off: the tree already satisfies it everywhere.
         - pattern: '^(fmt\.Print(|f|ln)|print|println)$'
-          msg: 'use pkg/console for terminal output, pkg/logging for logs'
+          msg: 'use the owning console channel for answers, logging channel for logs'
         # forbidigo can ban SetDefault outright but can never ban "SetDefault
         # with a foreign handler" — it never sees an argument.
         - pattern: '^slog\.(New|NewTextHandler|NewJSONHandler|NewLogLogger|SetDefault)$'
-          msg: 'log construction: build and install handlers through pkg/logging'
+          msg: 'log construction: build and install handlers through the owning logging channel'
         # The spawn paths depguard cannot see, being identifiers and not
         # imports. Zero first-party hits today; this keeps it that way.
         - pattern: '^(os\.StartProcess|syscall\.(Exec|ForkExec))$'
-          msg: 'spawn: subprocesses go through pkg/shell — need one? add a pkg/cli wrapper and call that'
+          msg: 'spawn: subprocesses go through the owning shell channel — need one? add a typed CLI wrapper and call that'
     wrapcheck:
       # Don't require wrapping for errors from internal packages
       # Our internal/pkg/errors package provides properly wrapped errors
@@ -337,27 +347,27 @@ linters:
       # Permanent. Each channel is exempt from its OWN pattern only; pkg/
       # logging gets no entry, since it reaches stdout and its file through the
       # other two — so the linter proves that layering instead of ignoring it.
-      - path: ^pkg/console/
+      - path: ^(pkg|services/bdd-cli/internal/infrastructure)/console/
         linters:
           - forbidigo
         text: 'three channels: reach a terminal'
-      - path: ^pkg/disk/
+      - path: ^(pkg|services/bdd-cli/internal/infrastructure)/disk/
         linters:
           - forbidigo
         text: 'three channels: read and write files'
-      - path: ^pkg/shell/
+      - path: ^(pkg|services/bdd-cli/internal/infrastructure)/shell/
         linters:
           - forbidigo
-        text: 'spawn: subprocesses go through pkg/shell'
+        text: 'spawn: subprocesses go through the owning shell channel'
       # A test writes fixtures a lock would only slow down, and writes ones
       # deliberately malformed. The terminal patterns still apply here.
       - path: _test\.go
         linters:
           - forbidigo
         text: 'three channels: read and write files'
-      # pkg/logging IS the constructor; the harness wraps its handler to tap
+      # Each logging package IS its constructor; the harness wraps its handler to tap
       # usage records; a test swaps the default around a capture and restores.
-      - path: ^pkg/logging/
+      - path: ^(pkg|services/bdd-cli/internal/infrastructure)/logging/
         linters:
           - forbidigo
         text: 'log construction:'

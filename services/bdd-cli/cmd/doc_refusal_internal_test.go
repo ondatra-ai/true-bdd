@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ondatra-ai/true-bdd/pkg/logging"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/logging"
 )
 
 // errResolve mimics ErrDocPathNotConfigured's real text — the config-key

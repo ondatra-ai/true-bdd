@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/architecture"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/disk"
 )
 
 // specWith renders a one-service architecture document, splicing the given

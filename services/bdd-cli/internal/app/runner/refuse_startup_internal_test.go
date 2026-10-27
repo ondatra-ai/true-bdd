@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ondatra-ai/true-bdd/pkg/logging"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/logging"
 )
 
 // errLoadItems is the error `us apply 95.4` actually produces, copied
@@ -67,7 +67,7 @@ func TestRefuseStartupStaysSilentForAnAlreadyReportedError(t *testing.T) {
 }
 
 // captureRunnerStdout points the process's slog at a buffer — the seam
-// pkg/logging exists to provide, and why this never touches os.Stdout.
+// internal/infrastructure/logging exists to provide, and why this never touches os.Stdout.
 func captureRunnerStdout(t *testing.T, body func()) string {
 	t.Helper()
 

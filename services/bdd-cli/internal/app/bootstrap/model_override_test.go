@@ -8,11 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/adapters/ai"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/bootstrap"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/provider"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/config"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/disk"
 )
 
 func TestModelOverridesResolveOnlyTheirDeclaredTier(t *testing.T) {

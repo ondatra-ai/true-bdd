@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ondatra-ai/true-bdd/pkg/logging"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/engine"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/runner"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/logging"
 )
 
 func TestCompletionFollowsSuccessfulFinalize(t *testing.T) {

@@ -210,7 +210,7 @@ func containsScrubber(expression ast.Expr, tree *ast.File) bool {
 
 		selector, matched := call.Fun.(*ast.SelectorExpr)
 		if matched && selector.Sel.Name == "ScrubEnvironment" &&
-			importPath(selector.X, tree) == "github.com/ondatra-ai/true-bdd/pkg/cli/git" {
+			isGitScrubber(importPath(selector.X, tree)) {
 			scrubbed = true
 		}
 
@@ -243,4 +243,9 @@ func importPath(expression ast.Expr, tree *ast.File) string {
 	}
 
 	return ""
+}
+
+func isGitScrubber(path string) bool {
+	return path == "github.com/ondatra-ai/true-bdd/pkg/cli/git" ||
+		path == "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/cli/git"
 }

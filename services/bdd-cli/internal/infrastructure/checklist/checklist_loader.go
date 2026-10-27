@@ -7,9 +7,9 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/config"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/disk"
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 )
 

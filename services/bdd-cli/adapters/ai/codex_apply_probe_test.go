@@ -12,8 +12,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ondatra-ai/true-bdd/pkg/cli/gotool"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/adapters/ai"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/cli/gotool"
 )
 
 const probeBuildCode = "build code"

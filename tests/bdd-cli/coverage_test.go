@@ -37,7 +37,49 @@ func TestFixtureTreesArePaired(t *testing.T) {
 // Every fixture template overlay declares whether it extends the shipped
 // template byte for byte or deliberately replaces it.
 func TestFixtureTemplateOverlays(t *testing.T) {
-	declarations := map[string]string{
+	declarations := fixtureTemplateDeclarations()
+
+	roots, err := filepath.Glob("fixtures/*/input/templates")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, root := range roots {
+		err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
+			if walkErr != nil {
+				return walkErr
+			}
+
+			if entry.IsDir() {
+				return nil
+			}
+
+			assertTemplateOverlay(t, root, path, declarations)
+
+			return nil
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	for key := range declarations {
+		t.Errorf("declared fixture template overlay is missing: %s", key)
+	}
+}
+
+func fixtureTemplateDeclarations() map[string]string {
+	return map[string]string{
+		"engine-io-claude-writer/input/templates/build-code.fix-applier.prompt.tpl":        templateReplacement,
+		"engine-io-claude-writer/input/templates/build-code.fix-applier.system.prompt.tpl": templateReplacement,
+
+		"engine-io-events/input/templates/build-code.fix-applier.prompt.tpl":              templateReplacement,
+		"engine-io-events/input/templates/build-code.fix-applier.system.prompt.tpl":       templateReplacement,
+		"engine-io-cancel/input/templates/build-code.fix-applier.prompt.tpl":              templateReplacement,
+		"engine-io-cancel/input/templates/build-code.fix-applier.system.prompt.tpl":       templateReplacement,
+		"engine-io-cancel-codex/input/templates/build-code.fix-applier.prompt.tpl":        templateReplacement,
+		"engine-io-cancel-codex/input/templates/build-code.fix-applier.system.prompt.tpl": templateReplacement,
+
 		"build-code-no-test-files/input/templates/build-code.fix-applier.prompt.tpl":         templateExtension,
 		"build-code-writable-writer/input/templates/build-code.fix-generator.prompt.tpl":     templateExtension,
 		"build-code-writable-writer/input/templates/build-code.fix-applier.prompt.tpl":       templateExtension,
@@ -86,34 +128,6 @@ func TestFixtureTemplateOverlays(t *testing.T) {
 		"build-code-shrinking-bound/input/templates/build-code.fix-applier.prompt.tpl":                templateExtension,
 		"build-code-missing-member/input/templates/build-code.fix-applier.prompt.tpl":                 templateExtension,
 		"build-code-partial/input/templates/build-code.fix-applier.prompt.tpl":                        templateExtension,
-	}
-
-	roots, err := filepath.Glob("fixtures/*/input/templates")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for _, root := range roots {
-		err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
-			if walkErr != nil {
-				return walkErr
-			}
-
-			if entry.IsDir() {
-				return nil
-			}
-
-			assertTemplateOverlay(t, root, path, declarations)
-
-			return nil
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	for key := range declarations {
-		t.Errorf("declared fixture template overlay is missing: %s", key)
 	}
 }
 

@@ -8,12 +8,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/generators/scenariogen"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/architecture"
 	checklistloader "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/checklist"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/config"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/registry"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/testrunner"
 )

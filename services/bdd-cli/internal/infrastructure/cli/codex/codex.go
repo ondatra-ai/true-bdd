@@ -1,17 +1,6 @@
-// Package codex is the `codex` command line, one of the two engine wrappers
-// that alone may reach pkg/shell from inside the engine. Only the engine spawns
-// codex, so the wrapper is engine code and a rebuild regenerates it; the argv
-// it builds is stated in docs/architecture/architecture.yaml.
-//
-// Headless execution facts verified against codex-cli 0.162.1:
-//
-//	permissions         plan/validation select -s; every apply
-//	                    selects its generated named profile with no approval.
-//	the answer is a file stdout carries only a trace; the final message is
-//	                    written to the path given to -o.
-//	a trailing `-`      is what makes codex read the prompt from stdin.
-//	not a git repo      BDD fixture tmpdirs are not, and codex refuses to run
-//	                    outside one unless told not to care.
+// Package codex runs the engine's headless codex turns through its shell
+// channel. The Specification states its argv, stdin, confinement and archived
+// stdout-only JSON events separately from the combined transcript.
 package codex
 
 import (
@@ -20,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ondatra-ai/true-bdd/pkg/shell"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/shell"
 )
 
 // Bin is the binary this package spawns.

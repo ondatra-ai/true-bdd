@@ -10,9 +10,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/ondatra-ai/true-bdd/pkg/cli/claude"
-	"github.com/ondatra-ai/true-bdd/pkg/cli/gotool"
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/cli/claude"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/cli/gotool"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/disk"
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 )
 

@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/disk"
 )
 
 // ErrTestOnlyLibrary prevents production code from depending on the tests' libraries.
@@ -148,5 +148,5 @@ func linkedSourceDirectory(path string, entry fs.DirEntry) (bool, error) {
 }
 
 func productionGoSource(path string, entry fs.DirEntry) bool {
- return !entry.IsDir() && strings.HasSuffix(path, ".go") && !strings.HasSuffix(path, "_test.go")
+	return !entry.IsDir() && strings.HasSuffix(path, ".go") && !strings.HasSuffix(path, "_test.go")
 }

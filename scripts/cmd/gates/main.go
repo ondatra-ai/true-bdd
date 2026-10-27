@@ -9,6 +9,7 @@
 //	gates release-rehearsal       the zero-cost release rehearsal alone
 //
 //	gates recordings             the Recordings gate alone
+//	gates engine-imports         enforce engine ownership without compiling
 //	gates list                   the gate names, one per line
 package main
 
@@ -26,7 +27,7 @@ import (
 
 var (
 	errNoCommand = errors.New(
-		"usage: gates run [--changed <base> | --staged] | gates recordings | gates release-rehearsal | gates list")
+		"usage: gates run [--changed <base> | --staged] | recordings | release-rehearsal | engine-imports | list")
 	errTwoScopes = errors.New("--changed and --staged are exclusive")
 )
 
@@ -54,6 +55,8 @@ func run(args []string) error {
 		return nil
 	case "release-rehearsal":
 		return gates.ReleaseRehearsal() //nolint:wrapcheck // the gate names the failed install step.
+	case "engine-imports":
+		return gates.CheckEngineImports(".") //nolint:wrapcheck // the gate names each offending source and import.
 	case "recordings":
 		return gates.ScanRecordings() //nolint:wrapcheck // the gate's own diagnosis.
 	case "run":

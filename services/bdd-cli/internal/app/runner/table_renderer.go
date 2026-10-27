@@ -6,8 +6,8 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/ondatra-ai/true-bdd/pkg/console"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/checklist"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/console"
 )
 
 const (

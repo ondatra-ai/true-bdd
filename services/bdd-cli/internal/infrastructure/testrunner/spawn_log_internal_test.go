@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ondatra-ai/true-bdd/pkg/cli"
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/cli"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/disk"
 )
 
 // TestRunLoggedCapturesBothStreams pins that runLogged doesn't swap or drop

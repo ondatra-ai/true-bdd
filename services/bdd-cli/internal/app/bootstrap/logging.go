@@ -4,8 +4,8 @@ import (
 	"log/slog"
 	"path/filepath"
 
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
-	"github.com/ondatra-ai/true-bdd/pkg/logging"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/disk"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/logging"
 )
 
 // engineLogFile is the JSON log pkg/testkit/reporter reads back.

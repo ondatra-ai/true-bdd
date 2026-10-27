@@ -3,8 +3,8 @@ package cmd
 import (
 	"log/slog"
 
- "github.com/ondatra-ai/true-bdd/pkg/logging"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/initialization"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/logging"
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +17,7 @@ func newInitCmd() *cobra.Command {
 		RunE: func(_ *cobra.Command, _ []string) error {
 			logging.Install(logging.Stdout, "tmp/true-bdd.log.json", "")
 
- files, err := initialization.WriteMissing()
+			files, err := initialization.WriteMissing()
 			for _, file := range files {
 				action := "Left existing"
 				if file.Created {

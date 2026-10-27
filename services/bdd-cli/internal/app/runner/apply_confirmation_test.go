@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/checks"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/engine"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/generators/validate"
@@ -15,6 +14,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/provider"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/checklist"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/config"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/docs"
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 )
@@ -177,10 +177,12 @@ func (answer applyAnswer) ExecutePromptWithSystem(_ context.Context, role provid
 
 type applyUI struct{}
 
-func (applyUI) AskQuestions(_ []engine.ClarifyQuestion) (map[string]string, error) { return map[string]string{}, nil }
+func (applyUI) AskQuestions(_ []engine.ClarifyQuestion) (map[string]string, error) {
+	return map[string]string{}, nil
+}
 func (applyUI) AskApplyRefineOrExit() (engine.UserAction, error) { return engine.UserActionApply, nil }
-func (applyUI) AskRefinementFeedback() (string, error) { return "", nil }
-func (applyUI) DisplayFixPrompt(_ string)                                 {}
+func (applyUI) AskRefinementFeedback() (string, error)           { return "", nil }
+func (applyUI) DisplayFixPrompt(_ string)                        {}
 
 func confirmationSpec(t *testing.T, command string, answer applyAnswer) runner.Spec[bool] {
 	t.Helper()

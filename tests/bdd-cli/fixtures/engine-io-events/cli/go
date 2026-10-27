@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+case "$1" in
+  env|mod)
+    test -z "${GIT_DIR+x}"
+    test -z "${GIT_INDEX_FILE+x}"
+    :
+    ;;
+esac
+exec "$TRUE_BDD_REAL_GO" "$@"

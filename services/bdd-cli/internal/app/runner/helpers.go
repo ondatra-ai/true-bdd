@@ -10,12 +10,12 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/ondatra-ai/true-bdd/pkg/console"
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/engine"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/generators/validate"
 	checklistmodels "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/story"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/console"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/fs"
 	storyinfra "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/story"

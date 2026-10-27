@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/checks"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/checklist"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/disk"
 )
 
 // checkAnswer is a check's verdict as a schema-bearing model turn writes

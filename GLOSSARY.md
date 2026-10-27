@@ -105,11 +105,11 @@ _Avoid_: dependency (a service's dependencies are the processes and CLIs it talk
 Words for how this repository plans and executes its own work. Not the engine's domain — nothing here reaches a host project.
 
 **Console**:
-A program's ANSWER — bytes a caller reads verbatim in a shape it fixed, plus the engine's prompts and the reader they are answered on. Not narration: what a program did while it worked is a Log. Byte-plain forever, because the lint hook's stdout is parsed as JSON. `pkg/console` is the only implementation, and owns the three standard descriptors; `depguard` denies it to `scripts/` outright, which narrates and never answers.
+A program's ANSWER — bytes a caller reads verbatim in a shape it fixed, plus the engine's prompts and the reader they are answered on. Not narration: what a program did while it worked is a Log. Byte-plain forever, because the lint hook's stdout is parsed as JSON. `services/bdd-cli/internal/infrastructure/console` implements the engine's Console; `pkg/console` implements it independently for tests and tooling. Each owns its program's three standard descriptors; `depguard` denies it to `scripts/` outright, which narrates and never answers.
 _Avoid_: output, print, terminal, UI
 
 **Log**:
-One `log/slog` record: everything a program says ABOUT its own run. Severity is a level, never a choice of stream — the stream is bound once per program in `main()`, and every `scripts/` program stamps each record with its writer in `tool` and its process in `run`. `pkg/logging` is the only implementation; the engine's message strings and attribute keys are a wire contract `pkg/testkit/reporter` reads.
+One `log/slog` record: everything a program says ABOUT its own run. Severity is a level, never a choice of stream — the stream is bound once per program in `main()`, and every `scripts/` program stamps each record with its writer in `tool` and its process in `run`. `services/bdd-cli/internal/infrastructure/logging` implements the engine's Log; `pkg/logging` implements it independently for tests and tooling; the engine's message strings and attribute keys are a wire contract `pkg/testkit/reporter` reads.
 _Avoid_: trace, diagnostic, stderr
 
 **Run**:
@@ -117,7 +117,7 @@ One process of a `scripts/` program, from its first record to its last, named by
 _Avoid_: invocation, execution, session
 
 **Disk access**:
-One filesystem read or write, taken through `pkg/disk` under a Hold and returning before any handle escapes.
+One filesystem read or write, taken through the engine's `services/bdd-cli/internal/infrastructure/disk`, or tests/tooling's independent `pkg/disk`, under a Hold and returning before any handle escapes.
 _Avoid_: save, dump, persist, IO
 
 **Hold**:
