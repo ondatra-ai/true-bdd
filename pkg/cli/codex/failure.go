@@ -30,5 +30,9 @@ func TerminalStatus(output string) string {
 		return "limit"
 	}
 
+	if regexp.MustCompile(`(?m)^ERROR:\s*You hit your spend cap set in your workspace(?:\.|$)`).MatchString(output) {
+		return "spend-cap"
+	}
+
 	return ""
 }

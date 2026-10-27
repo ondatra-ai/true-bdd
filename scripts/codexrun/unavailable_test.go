@@ -1,6 +1,7 @@
 package codexrun_test
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -15,6 +16,7 @@ const (
 	unavailableStatus = "unavailable"
 	signedOutStatus   = "signed-out"
 	limitStatus       = "limit"
+	spendCapStatus    = "spend-cap"
 )
 
 func TestCodexOutEndsWriterUnavailable(t *testing.T) {
@@ -25,6 +27,7 @@ func TestCodexOutEndsWriterUnavailable(t *testing.T) {
 		{name: "broken-login", login: "broken", reason: unavailableStatus},
 		{name: "expired-token", mode: "expired", reason: signedOutStatus},
 		{name: "usage-limit", mode: limitStatus, reason: limitStatus},
+		{name: "workspace-spend-cap", mode: spendCapStatus, reason: spendCapStatus},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			root, opts := fixture(t)
@@ -48,30 +51,55 @@ func TestCodexOutEndsWriterUnavailable(t *testing.T) {
 			record, err := runner.Start(t.Context(), opts)
 			assertStatus(t, record, err, unavailableStatus)
 
-			if record.Agent != "codex" || record.CodexStatus != test.reason ||
-				!strings.Contains(record.Summary(), "reason: Codex") ||
-				!strings.Contains(record.Summary(), test.reason) ||
-				!strings.Contains(record.Summary(), "Claude") {
-				t.Fatal(record.Summary())
-			}
+			assertUnavailableRecord(t, root, record, test.reason)
 		})
 	}
 }
 
+func assertUnavailableRecord(t *testing.T, root string, record codexrun.Record, reason string) {
+	t.Helper()
+
+	if record.Agent != "codex" || record.CodexStatus != reason ||
+		!strings.Contains(record.Summary(), "reason: Codex") ||
+		!strings.Contains(record.Summary(), "status: unavailable\n") ||
+		!strings.Contains(record.Summary(), "codex status: "+reason+"\n") ||
+		!strings.Contains(record.Summary(), "Claude") {
+		t.Fatal(record.Summary())
+	}
+
+	var saved codexrun.Record
+
+	data := read(t, filepath.Join(root, "tmp/codex", record.Name, "run.json"))
+
+	err := json.Unmarshal([]byte(data), &saved)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if saved.Status != unavailableStatus || saved.CodexStatus != reason {
+		t.Fatalf("saved record: %+v", saved)
+	}
+}
+
 func TestResumeRefusesUnavailableWriterWithoutConsumingAttempt(t *testing.T) {
-	for _, partial := range []string{"", "yes"} {
-		t.Run("partial="+partial, func(t *testing.T) {
+	const partialEdit = "yes"
+
+	for _, test := range []struct{ mode, partial string }{
+		{mode: limitStatus}, {mode: limitStatus, partial: partialEdit},
+		{mode: spendCapStatus}, {mode: spendCapStatus, partial: partialEdit},
+	} {
+		t.Run(test.mode+"/partial="+test.partial, func(t *testing.T) {
 			root, opts := fixture(t)
 			opts.Name, opts.Kind, opts.Branch, opts.Base = unavailableStatus, codeKind, "impl/unavailable", mainBranch
 
-			t.Setenv("MODE", limitStatus)
-			t.Setenv("PARTIAL", partial)
+			t.Setenv("MODE", test.mode)
+			t.Setenv("PARTIAL", test.partial)
 
 			runner := codexrun.New(root)
 			record, err := runner.Start(t.Context(), opts)
 			assertStatus(t, record, err, unavailableStatus)
 
-			if partial != "" && read(t, filepath.Join(record.Worktree, "partial.go")) != "partial edit" {
+			if test.partial != "" && read(t, filepath.Join(record.Worktree, "partial.go")) != "partial edit" {
 				t.Fatal("missing partial edit")
 			}
 
