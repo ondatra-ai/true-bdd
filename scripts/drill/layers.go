@@ -13,6 +13,11 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
+const (
+	goModFile = "go.mod"
+	goSumFile = "go.sum"
+)
+
 func kept(path string) bool {
 	for _, root := range []string{"docs/product/", "true-bdd/", "templates/", "pkg/", "scripts/", "tests/true-bdd/"} {
 		if strings.HasPrefix(path, root) {
@@ -22,8 +27,8 @@ func kept(path string) bool {
 
 	for _, file := range []string{"docs/architecture/architecture.yaml",
 		"docs/scenarios.yaml",
-		"go.mod",
-		"go.sum",
+		goModFile,
+		goSumFile,
 		".gitignore"} {
 		if path == file {
 			return true

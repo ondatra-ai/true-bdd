@@ -16,7 +16,7 @@ func TestOracleBuildGitDropsRepositoryEnvironment(t *testing.T) {
 	preserveCheckout(t)
 	root := scratchDirectory(t)
 	seedRepository(t, root)
-	write(t, root, "go.mod", "module example.com/oracle\n\ngo 1.25\n")
+	write(t, root, "services/true-bdd/go.mod", "module example.com/oracle\n\ngo 1.25\n")
 	write(t, root, "services/true-bdd/main.go", "package main\nfunc main() {}\n")
 	local := strings.Fields(gitOutput(t, root, "rev-parse", "--local-env-vars"))
 	capture := captureIndirectGit(t, root, local)
@@ -49,7 +49,14 @@ func TestOracleBuildGitDropsRepositoryEnvironment(t *testing.T) {
 
 func TestGoSubprocessesDropRepositoryEnvironment(t *testing.T) {
 	preserveCheckout(t)
+
 	root := scratchDirectory(t)
+
+	err := os.MkdirAll(filepath.Join(root, "services/true-bdd"), 0o700)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	local := strings.Fields(gitOutput(t, root, "rev-parse", "--local-env-vars"))
 	capture := filepath.Join(root, "go-environment")
 	bin := filepath.Join(root, "bin")
@@ -58,7 +65,7 @@ env > "$GO_ENV_CAPTURE"
 printf '{"GOROOT":"root","GOMODCACHE":"cache","GOCACHE":"build"}'
 `)
 
-	err := os.Chmod(filepath.Join(bin, "go"), 0o700)
+	err = os.Chmod(filepath.Join(bin, "go"), 0o700)
 	if err != nil {
 		t.Fatal(err)
 	}

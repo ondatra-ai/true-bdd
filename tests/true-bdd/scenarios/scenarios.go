@@ -334,7 +334,7 @@ func installShims(modes runner.Modes) (runner.ShimDirs, error) {
 
 	proxyPath := filepath.Join(base, "aiproxy")
 
-	err = goBuild(proxyPath, "./pkg/testkit/aiproxy")
+	err = goBuild(proxyPath, "pkg", "./testkit/aiproxy")
 	if err != nil {
 		return runner.ShimDirs{}, err
 	}
@@ -397,7 +397,7 @@ func buildTrueBDD() (string, error) {
 
 	binPath := filepath.Join(dir, "true-bdd")
 
-	err = goBuild(binPath, "./services/true-bdd")
+	err = goBuild(binPath, "services/true-bdd", ".")
 	if err != nil {
 		return "", err
 	}
@@ -420,12 +420,12 @@ func prebuiltEngine(path string) (string, error) {
 	return path, nil
 }
 
-// goBuild builds one package of the repository module into binPath. Captured
+// goBuild builds one package from its module directory into binPath. Captured
 // rather than streamed: a failed build's error then carries the compiler's own
 // message instead of the bare exit status the streamed form returned.
-func goBuild(binPath, pkg string) error {
+func goBuild(binPath, module, pkg string) error {
 	return gotool.Build(cli.Options{Timeout: buildTimeout},
-		repoRoot, binPath, pkg)
+		filepath.Join(repoRoot, module), binPath, pkg)
 }
 
 // flagValue reads one of `go test`'s own flags. Absent reads as empty:

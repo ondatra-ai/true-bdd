@@ -3,6 +3,7 @@ package gotool
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
@@ -15,7 +16,7 @@ func BuildRelease(ctx context.Context, dir, binary, targetOS, targetArch string)
 		"GOOS="+targetOS, "GOARCH="+targetArch, "CGO_ENABLED=0", "GOWORK=off")
 
 	result, err := shell.Run(ctx, []string{Bin, buildVerb, trimPathFlag, "-o", binary, enginePackage},
-		shell.Options{Dir: dir, Env: env, Group: true})
+		shell.Options{Dir: filepath.Join(dir, engineDirectory), Env: env, Group: true})
 	if err == nil {
 		err = result.Err()
 	}
@@ -27,13 +28,13 @@ func BuildRelease(ctx context.Context, dir, binary, targetOS, targetArch string)
 	return nil
 }
 
-const harnessModule = "github.com/ondatra-ai/true-bdd"
+const harnessModule = "github.com/ondatra-ai/true-bdd/pkg"
 
 // RequireHarness installs the proxy-served package and returns its resolved exact version.
 func RequireHarness(ctx context.Context, opt shell.Options, revision string) (string, error) {
 	for _, args := range [][]string{
-		{Bin, "mod", "edit", "-droprequire=" + harnessModule, "-dropreplace=" + harnessModule},
-		{Bin, "get", harnessModule + "/pkg/testkit/bddgo@" + revision},
+		{Bin, modVerb, "edit", "-droprequire=" + harnessModule, "-dropreplace=" + harnessModule},
+		{Bin, "get", harnessModule + "/testkit/bddgo@" + revision},
 	} {
 		result, err := shell.Run(ctx, args, opt)
 		if err == nil {

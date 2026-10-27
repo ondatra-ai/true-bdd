@@ -1,6 +1,8 @@
 version: "2"
 
 run:
+  # Paths and exclusions stay repository-relative when invoked in nested modules.
+  relative-path-mode: cfg
   timeout: 5m
   tests: true
   # Without this the whole bdd-tagged tree is never analysed at all. No !bdd
@@ -297,6 +299,11 @@ linters:
         # imports. Zero first-party hits today; this keeps it that way.
         - pattern: '^(os\.StartProcess|syscall\.(Exec|ForkExec))$'
           msg: 'spawn: subprocesses go through the owning shell channel — need one? add a typed CLI wrapper and call that'
+    gomoddirectives:
+      # Root development resolves only the sibling pkg module locally.
+      replace-local: true
+      replace-allow-list:
+        - github.com/ondatra-ai/true-bdd/pkg
     wrapcheck:
       # Don't require wrapping for errors from internal packages
       # Our internal/pkg/errors package provides properly wrapped errors

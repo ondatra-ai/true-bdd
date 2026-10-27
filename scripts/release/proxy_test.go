@@ -24,7 +24,7 @@ if test "$1" = mod; then exit 0; fi
 if test "$1" = list; then echo v0.0.0-published; exit 0; fi
 test "$1" = get || exit 11
 test "$2" = github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo@published-commit || exit 12
-echo 'require github.com/ondatra-ai/true-bdd v0.0.0-published' >> go.mod
+echo 'require github.com/ondatra-ai/true-bdd/pkg v0.0.0-published' >> go.mod
 echo proxy-installed > proxy-receipt
 `)
 

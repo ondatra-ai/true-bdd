@@ -46,7 +46,7 @@ func assertCommandExitCode(state *State, args []string) error {
 	// re-run host suite may itself launch an agent CLI.
 	finished, err := spec.Run(argv, cli.Options{
 		Dir:     dir,
-		Env:     cli.Inherit().Strip("CLAUDECODE"),
+		Env:     cli.Inherit().Strip("CLAUDECODE").Set("GOWORK=off"),
 		Timeout: hostCommandTimeout,
 	})
 	if err != nil {

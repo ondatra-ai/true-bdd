@@ -22,6 +22,10 @@ func (r Runner) Cut(ctx context.Context, directory, name string) (Cut, error) {
 		return Cut{}, err
 	}
 
+	if !record.Manifests.Passed {
+		return Cut{}, fmt.Errorf("%w: offline manifest check has not passed", errRefused)
+	}
+
 	if _, exists := record.Cuts[name]; exists {
 		return Cut{}, fmt.Errorf("%w: cut already exists", errRefused)
 	}

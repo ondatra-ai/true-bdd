@@ -12,6 +12,9 @@ func sourceRepository(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
 	write(t, filepath.Join(root, "go.mod"), "module github.com/ondatra-ai/true-bdd\n\ngo 1.25.0\n")
+	write(t, filepath.Join(root, "pkg/go.mod"), "module github.com/ondatra-ai/true-bdd/pkg\n\ngo 1.25.0\n")
+	write(t, filepath.Join(root, "services/true-bdd/go.mod"),
+		"module github.com/ondatra-ai/true-bdd/services/true-bdd\n\ngo 1.25.0\n")
 	write(t, filepath.Join(root, "pkg/testkit/bddgo/harness.go"), "package bddgo\n")
 	fixture := filepath.Join(root, "tests/true-bdd/fixtures/build-code-spec-scenario/input")
 	write(t, filepath.Join(fixture, "go.mod"), "module fixture/stepsrun\n\ngo 1.25.0\n")
@@ -22,7 +25,7 @@ func sourceRepository(t *testing.T) string {
     commands:
       replay: go version
     libraries:
-      - module: github.com/ondatra-ai/true-bdd
+      - module: github.com/ondatra-ai/true-bdd/pkg
         version: v0.0.0
 `)
 

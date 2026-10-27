@@ -24,7 +24,7 @@ const Bin = "go"
 // -C rather than a working directory so the caller's own cwd is untouched.
 func Build(opt shell.Options, dir, binPath, pkg string) error {
 	result, err := shell.Run(context.Background(),
-		[]string{Bin, buildVerb, "-C", dir, "-o", binPath, pkg}, scrubOptions(opt))
+		[]string{Bin, buildVerb, "-C", dir, "-o", binPath, pkg}, moduleOptions(opt))
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,7 @@ func Build(opt shell.Options, dir, binPath, pkg string) error {
 func BuildCovered(opt shell.Options, dir, binPath, pkg, coverPkg string) error {
 	result, err := shell.Run(context.Background(), []string{
 		Bin, buildVerb, "-C", dir, "-buildvcs=false", "-cover", "-coverpkg=" + coverPkg, "-o", binPath, pkg,
-	}, scrubOptions(opt))
+	}, moduleOptions(opt))
 	if err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func BuildCovered(opt shell.Options, dir, binPath, pkg, coverPkg string) error {
 func CoverProfile(opt shell.Options, dataDir, profilePath string) error {
 	result, err := shell.Run(context.Background(), []string{
 		Bin, "tool", "covdata", "textfmt", "-i=" + dataDir, "-o=" + profilePath,
-	}, scrubOptions(opt))
+	}, moduleOptions(opt))
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func ReplayBDD(opt shell.Options, pkg, engineBin string) error {
 	result, err := shell.Run(context.Background(), []string{
 		Bin, "test", "-count=1", "-tags", "bdd", pkg,
 		"-mode=services:replay,tests:replay", "-engine-bin=" + engineBin,
-	}, scrubOptions(opt))
+	}, moduleOptions(opt))
 	if err != nil {
 		return err
 	}

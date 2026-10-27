@@ -21,6 +21,7 @@ type ModelOverride string
 type Options struct {
 	ModelOverrides []ModelOverride
 	Directory      string
+	ModuleCache    string
 	Marker         string
 	Input          io.ReadCloser
 	Output         io.Writer
@@ -44,14 +45,15 @@ func rebuild(ctx context.Context, binary string, args []string, opt Options) (in
 		args = append(args, "--model", string(override))
 	}
 
+	env := shell.Inherit().Strip("CLAUDECODE", "TRUE_BDD_DRILL_WORKER", "OLDPWD", "GIT_DIR", "GIT_WORK_TREE").Set(
+		"PWD="+opt.Directory, "TRUE_BDD_DRILL_RUN="+opt.Marker, "GOWORK=off")
+	if opt.ModuleCache != "" {
+		env = env.Set("GOMODCACHE=" + opt.ModuleCache)
+	}
+
 	process, err := shell.Start(context.WithoutCancel(ctx), append([]string{binary}, args...), shell.Options{
 		Dir: opt.Directory,
-		Env: shell.Inherit().Strip("CLAUDECODE",
-			"TRUE_BDD_DRILL_WORKER",
-			"OLDPWD",
-			"GIT_DIR",
-			"GIT_WORK_TREE").Set("PWD="+opt.Directory,
-			"TRUE_BDD_DRILL_RUN="+opt.Marker),
+		Env: env,
 
 		Output: shell.To(opt.Output), Session: true, WaitDelay: opt.Grace,
 	})

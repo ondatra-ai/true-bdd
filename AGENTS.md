@@ -4,7 +4,7 @@ TrueBDD (binary `true-bdd`) is a Go CLI that drives Claude-mediated checklists o
 
 ## Layout
 
-Go lives in four roots, and `.alint.yml` (`go-known-roots`) refuses a fifth:
+The repository has three Go modules: the root (tests and scripts), `pkg/` (shared libraries), and `services/true-bdd/` (the engine). The root replaces `github.com/ondatra-ai/true-bdd/pkg` with `./pkg` for development; the engine has no local replacements. Go lives in four roots, and `.alint.yml` (`go-known-roots`) refuses a fifth:
 
 - `services/true-bdd/`: the engine, all product code including its own IO channels and typed CLI wrappers under `internal/infrastructure/`. It imports no repository code outside this folder.
 - `tests/true-bdd/`: what exercises it: generated scenario tests, `steps/` definitions, and `fixtures/` with their recorded cassettes.
@@ -25,8 +25,9 @@ Claude Code lints every file it writes through a hook; any other agent runs the 
 
 - After editing: `go run ./scripts/cmd/alint <path>...` over the files you changed. It applies every fix it has and reports what needs a real edit; a Go finding may sit in a sibling file of the same package. Fix them all.
 - Before you finish: `go run ./scripts/cmd/gates run --changed main` runs the gates your diff needs. CI runs all of them, and the pre-commit hook runs `--staged`.
-- When you touch `services/`, `pkg/testkit/` or `tests/`: `go test -tags bdd ./tests/true-bdd/ -mode=services:replay,tests:replay` replays every scenario offline in well under a minute. No gate runs it.
-- Build: `go build -o ./bin/true-bdd ./services/true-bdd`. Give every single-command `go build` an `-o ./bin/<name>`, since without it Go writes the binary into the current directory; to only compile-check, run `go build ./...`, which writes nothing.
+- When you touch `services/`, `pkg/testkit/` or `tests/`: `GOWORK=off go test -tags bdd ./tests/true-bdd/ -mode=services:replay,tests:replay` replays every scenario offline in well under a minute. No gate runs it.
+- Module checks: from each of `.`, `pkg/` and `services/true-bdd/`, run `GOWORK=off go build ./...` and `GOWORK=off go test ./...`; root `./...` excludes nested modules. `go run ./scripts/cmd/gates build` and `go run ./scripts/cmd/gates test` cover all three.
+- Build: `GOWORK=off go -C services/true-bdd build -o ../../bin/true-bdd .`. Give every single-command `go build` an `-o ./bin/<name>`, since without it Go writes the binary into the current directory; to only compile-check, run `go build ./...`, which writes nothing.
 
 ## Hard rules
 

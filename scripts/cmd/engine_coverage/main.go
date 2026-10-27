@@ -60,9 +60,9 @@ func run(args []string) error {
 	}
 
 	report, err := enginecoverage.Measure(enginecoverage.Plan{
-		Root:     root,
-		Main:     "./services/true-bdd",
-		Packages: "./services/true-bdd/...",
+		Root:     filepath.Join(root, "services/true-bdd"),
+		Main:     ".",
+		Packages: "./...",
 		Exercise: replaySuite(root),
 	})
 	if err != nil {

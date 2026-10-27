@@ -7,7 +7,10 @@ import (
 	"github.com/ondatra-ai/true-bdd/scripts/gates"
 )
 
-const registry = "docs/scenarios.yaml"
+const (
+	registry           = "docs/scenarios.yaml"
+	nestedManifestGlob = "**/go.mod"
+)
 
 func names(selected []gates.Gate) []string {
 	out := make([]string, 0, len(selected))
@@ -88,6 +91,9 @@ func TestMatchGlob(t *testing.T) {
 	}{
 		{"**/*.go", "scripts/gates/table.go", true},
 		{"**/*.go", "scripts/gates/table.yaml", false},
+		{nestedManifestGlob, "services/true-bdd/go.mod", true},
+		{nestedManifestGlob, "go.mod", true},
+		{nestedManifestGlob, "services/true-bdd/notgo.mod", false},
 		{"true-bdd/**", "true-bdd/checklists/us-refine.yaml", true},
 		{"true-bdd/**", "true-bdd.yaml", false},
 		{registry, registry, true},

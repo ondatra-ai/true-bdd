@@ -20,6 +20,10 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            pkg/go.sum
+            services/true-bdd/go.sum
 
       - uses: actions/setup-python@v6
         with:

@@ -4,15 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
 	"github.com/ondatra-ai/true-bdd/pkg/shell"
 )
 
 const (
-	buildVerb     = "build"
-	trimPathFlag  = "-trimpath"
-	enginePackage = "./services/true-bdd"
+	buildVerb       = "build"
+	trimPathFlag    = "-trimpath"
+	enginePackage   = "."
+	engineDirectory = "services/true-bdd"
 )
 
 // BuildTrimmed builds an engine without embedding its source directory.
@@ -25,8 +27,8 @@ func BuildTrimmed(ctx context.Context, dir, binary string) error {
 			"-o",
 			binary,
 			enginePackage},
-		shell.Options{Dir: dir,
-			Env:   git.Environment(),
+		shell.Options{Dir: filepath.Join(dir, engineDirectory),
+			Env:   git.Environment().Set("GOWORK=off"),
 			Group: true})
 	if err != nil {
 		return err

@@ -225,11 +225,12 @@ func (r Runner) execute(ctx context.Context, record Record, run Attempt) (int, e
 	code, err := operation(ctx,
 		record.Binary,
 		truebdd.Options{Directory: cut.Directory,
-			Marker: run.Marker,
-			Input:  input,
-			Output: writer,
-			Limit:  r.Limit,
-			Grace:  r.Grace})
+			ModuleCache: record.Manifests.Cache,
+			Marker:      run.Marker,
+			Input:       input,
+			Output:      writer,
+			Limit:       r.Limit,
+			Grace:       r.Grace})
 
 	cancel()
 	closePipes()

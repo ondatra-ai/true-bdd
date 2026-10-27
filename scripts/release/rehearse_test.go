@@ -83,12 +83,12 @@ test ! -e "$GOMODCACHE" || exit 18
 test -d .git || exit 13
 /usr/bin/grep -q init-created true-bdd/true-bdd.yaml || exit 14
 if /usr/bin/grep -q replace go.mod; then exit 15; fi
-/usr/bin/grep -q 'github.com/ondatra-ai/true-bdd v0.0.0' go.mod || test -f proxy-receipt || exit 17
+/usr/bin/grep -q 'github.com/ondatra-ai/true-bdd/pkg v0.0.0' go.mod || test -f proxy-receipt || exit 17
 test ! -e services/calc || exit 16
 /bin/mkdir -p tmp
-pin=$(/usr/bin/awk '$1 == "github.com/ondatra-ai/true-bdd" {print $2}' go.mod)
+pin=$(/usr/bin/awk '$1 == "github.com/ondatra-ai/true-bdd/pkg" {print $2}' go.mod)
 printf '{"msg":"Libraries downloaded","libraries":["%s"],"read_roots":["%s"]}\n' \
- "github.com/ondatra-ai/true-bdd@$pin" "$GOMODCACHE/github.com/ondatra-ai/true-bdd@$pin" > tmp/true-bdd.log.json
+ "github.com/ondatra-ai/true-bdd/pkg@$pin" "$GOMODCACHE/github.com/ondatra-ai/true-bdd/pkg@$pin" > tmp/true-bdd.log.json
 echo '{"msg":"Dispatching AI turn","cli":"claude","role":"fix_generator"}' >> tmp/true-bdd.log.json
 claude
 exit 1
