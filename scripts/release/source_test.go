@@ -54,7 +54,7 @@ func sourceRepository(t *testing.T) string {
 
 	toolPath := t.TempDir()
 
-	for _, name := range []string{"go", "git", "bash", "grep", "shasum", "tar", "mkdir", "mv"} {
+	for _, name := range []string{"go", "git", "bash", "grep", "shasum", "tar", "gzip", "mkdir", "mv"} {
 		target, err := exec.LookPath(name)
 		if err != nil {
 			t.Fatal(err)
