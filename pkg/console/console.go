@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 )
 
 // Console writes one program's stdout. The descriptor is bound in main() and
@@ -59,36 +58,9 @@ func (c *Console) Writer() io.Writer {
 	return c.out
 }
 
-// Print writes without a newline.
-func (c *Console) Print(a ...any) {
-	_, _ = fmt.Fprint(c.out, a...)
-}
-
 // Println writes with a newline.
 func (c *Console) Println(a ...any) {
 	_, _ = fmt.Fprintln(c.out, a...)
-}
-
-// Printf writes formatted output.
-func (c *Console) Printf(format string, a ...any) {
-	_, _ = fmt.Fprintf(c.out, format, a...)
-}
-
-// Separator writes a line of repeated characters.
-func (c *Console) Separator(char string, width int) {
-	c.Println(strings.Repeat(char, width))
-}
-
-// Header writes a title between two separators.
-func (c *Console) Header(title string, width int) {
-	c.Separator("=", width)
-	c.Println(title)
-	c.Separator("=", width)
-}
-
-// BlankLine writes an empty line.
-func (c *Console) BlankLine() {
-	c.Println()
 }
 
 // std is the process's Console, package-level for log/slog's reason.
@@ -102,20 +74,5 @@ func SetDefault(c *Console) { std = c }
 // Default returns the process's Console.
 func Default() *Console { return std }
 
-// Print writes without a newline to the process's Console.
-func Print(a ...any) { std.Print(a...) }
-
 // Println writes with a newline to the process's Console.
 func Println(a ...any) { std.Println(a...) }
-
-// Printf writes formatted output to the process's Console.
-func Printf(format string, a ...any) { std.Printf(format, a...) }
-
-// Separator writes a line of repeated characters.
-func Separator(char string, width int) { std.Separator(char, width) }
-
-// Header writes a title between two separators.
-func Header(title string, width int) { std.Header(title, width) }
-
-// BlankLine writes an empty line.
-func BlankLine() { std.BlankLine() }

@@ -39,13 +39,13 @@ var (
 	ErrFailed = errors.New("claude -p failed")
 	// ErrUnparseable reports that --output-format json did not produce JSON.
 	ErrUnparseable = errors.New("unparseable JSON output")
+	// ErrResult reports an API error result, including rate and usage limits.
+	ErrResult = errors.New("claude error result")
 )
 
 // Options are the flags of one headless turn. The zero value runs `claude -p`
 // with no allowlist, which is only ever right for a turn that touches nothing.
 type Options struct {
-	// Writer supplies the isolated, hooked build-code writer configuration.
-	Writer *WriterOptions
 	// Minimal excludes settings, discovered memory and customizations while keeping auth and built-in tools.
 	Minimal bool
 	// AllowedTools is passed to --allowedTools, ahead of -p.
@@ -75,10 +75,6 @@ type Options struct {
 	// Schema, so one that answers in prose still reports what it cost.
 	// RunJSON sets it; a caller reading Run's raw stdout leaves it off.
 	Envelope bool
-	// Stream switches the turn to stream-json so its records arrive as they
-	// happen. RunStream sets it — the answer is the same either way, but only
-	// this form can say WHEN a turn first spoke or which tools it called.
-	Stream bool
 	// Timeout bounds the turn.
 	Timeout time.Duration
 }
@@ -109,7 +105,7 @@ const AdvisorOff = "CLAUDE_CODE_DISABLE_ADVISOR_TOOL=1"
 // Args is the argv this turn spawns, exported so a caller can assert on it.
 func (o Options) Args(prompt string) []string {
 	args := make([]string, 0, 18) //nolint:mnd // the longest form: isolation, 7 flag pairs and -p.
-	args = append(args, o.isolationArgs()...)
+	args = append(args, isolation(o.Minimal)...)
 
 	if o.AllowedTools != "" {
 		args = append(args, "--allowedTools", o.AllowedTools)
@@ -132,12 +128,6 @@ func (o Options) Args(prompt string) []string {
 	}
 
 	switch {
-	case o.Stream:
-		args = append(args, "--output-format", "stream-json", "--verbose")
-
-		if o.Schema != "" {
-			args = append(args, "--json-schema", o.Schema)
-		}
 	case o.Schema != "":
 		args = append(args, "--output-format", "json", "--json-schema", o.Schema)
 	case o.Envelope:
@@ -153,12 +143,7 @@ func (o Options) Args(prompt string) []string {
 // blanked as the other wrappers do, because a nested `claude -p` must look
 // entirely unlaunched-from-a-session.
 func (o Options) Env() shell.Env {
-	env := shell.Inherit().Strip("CLAUDECODE", roleKey).Set(roleKey+"="+o.Role, AdvisorOff)
-	if o.Writer != nil {
-		return writerEnv(env)
-	}
-
-	return env
+	return shell.Inherit().Strip("CLAUDECODE", roleKey).Set(roleKey+"="+o.Role, AdvisorOff)
 }
 
 // diagnosticLimit is how much of a failed turn's output is quoted back.
