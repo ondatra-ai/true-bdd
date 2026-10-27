@@ -63,7 +63,7 @@ func setExamples() []setExample {
 			testrunner.NewGoTestRunner(nil),
 			[]string{"host/broken::<build>", "host/tests::TestB"},
 			goTestScriptCommand,
-			"-json",
+			goMachineFlag,
 			`{"Action":"pass","Package":"host/broken"}
 {"Action":"pass","Package":"host/tests","Test":"TestB"}`,
 			[]bool{true, true},
@@ -97,7 +97,7 @@ func setExamples() []setExample {
 			testrunner.NewPlaywrightRunner(nil),
 			[]string{"<startup>", "spec.ts::spec.ts > first"},
 			"sh runner.sh --reporter=json",
-			`--reporter=json`,
+			playwrightMachineFlag,
 			`{"stats":{"expected":1},"suites":[
 {"title":"spec.ts","file":"spec.ts","specs":[
 {"title":"first","tests":[{"results":[{"status":"passed"}]}]}]}]}`,

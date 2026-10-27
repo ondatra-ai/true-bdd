@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -19,6 +18,8 @@ import (
 // fullName inside FailingTest.TestName so the (file, fullName) pair
 // survives round-tripping through RunOne.
 const jestNameSeparator = "::"
+
+const jestLoadMarker = "<load>"
 
 // ErrInvalidJestName signals that a FailingTest.TestName intended for
 // the Jest runner is not in the expected "<file>::<fullName>" shape.
@@ -63,10 +64,13 @@ func (r *JestRunner) Discover(
 
 	report, parseErr := parseJestReport(stdout.Bytes())
 	if parseErr != nil {
-		return nil, fmt.Errorf("jest report parse failed: %w", parseErr)
+		return nil, fmt.Errorf("jest report parse failed: %w", errors.Join(parseErr, runErr))
 	}
 
 	failures := jestReportToFailingTests(report, service, suite)
+	if runErr != nil && len(failures) == 0 {
+		return nil, runErr
+	}
 
 	for _, failure := range failures {
 		failure.RunnerConfig = cfg
@@ -89,6 +93,10 @@ func (r *JestRunner) RunOne(
 		return false, "", err
 	}
 
+	if fullName == jestLoadMarker {
+		return r.runOneLoad(ctx, failingTest)
+	}
+
 	argv, err := commandArgv(failingTest)
 	if err != nil {
 		return false, "", err
@@ -98,17 +106,15 @@ func (r *JestRunner) RunOne(
 	pattern := "^" + jestRegexMeta.ReplaceAllString(fullName, `\$0`) + "$"
 	argv = append(argv, "--testNamePattern", pattern)
 
-	stdout, stderr, runErr := r.exec(cwd, PhaseRerun, argv)
-	if runErr != nil && stdout.Len() == 0 {
-		return false, stderr.String(), fmt.Errorf("jest rerun of %s failed: %w",
-			failingTest.TestName, runErr)
-	}
+	stdout, _, runErr := r.exec(cwd, PhaseRerun, argv)
 
 	report, parseErr := parseJestReport(stdout.Bytes())
 	if parseErr != nil {
-		slog.Warn("jest rerun report parse failed", "error", parseErr)
+		return false, stdout.String(), errors.Join(parseErr, runErr)
+	}
 
-		return false, stdout.String(), nil
+	if runErr != nil && len(jestReportToFailingTests(report, "", "")) == 0 {
+		return false, stdout.String(), runErr
 	}
 
 	if jestRanNothing(report) {
@@ -201,6 +207,15 @@ func jestReportToFailingTests(
 
 	for _, testResult := range report.TestResults {
 		filePath := jestRepoRelative(root, testResult.Name)
+
+		if testResult.Status == statusFailed && len(testResult.AssertionResults) == 0 {
+			name := filePath + jestNameSeparator + jestLoadMarker
+			out = append(out, &FailingTest{
+				ID:      BuildID(service, suite, FrameworkJest, name),
+				Service: service, Suite: suite, Framework: FrameworkJest,
+				TestName: name, FilePath: filePath, FailureOutput: testResult.Message,
+			})
+		}
 
 		for _, assertion := range testResult.AssertionResults {
 			if assertion.Status != statusFailed {

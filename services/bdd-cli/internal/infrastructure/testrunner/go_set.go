@@ -23,6 +23,10 @@ func (r *GoTestRunner) RunSet(_ context.Context, members []*FailingTest) error {
 
 	events := parseGoTestEvents(stdout.Bytes())
 
+	if runErr != nil && len(events.toFailingTests("", "")) == 0 {
+		return runErr
+	}
+
 	events.recordSet(members)
 
 	return nil

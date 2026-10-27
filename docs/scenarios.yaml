@@ -6557,3 +6557,51 @@ scenarios:
       - the engine spawned no test runners
       - the engine dispatched no AI turns
       - stdout does not match BUILD CODE COMPLETE
+
+  build-code-frameworks-010-jest-load-fixed:
+    description: A Jest file that cannot load its missing service is one load member; build code plans and applies a repair, reruns the file by path and ends green
+    user_stories: []
+    requirement: "#231"
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_load_test.go
+    timeout: 10m
+    merged_steps:
+      given:
+        - the "build-code-jest-load" project tree
+        - and: the project's test dependencies are installed
+        - the System Architect answers "1" to every question
+      when:
+        - the System Architect runs "build code --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches msg="Suite failures" failures=1 framework=jest
+        - stdout matches tests\.unit\.greeting\.test\.js::<load>
+        - stdout matches msg="Fix applied; re-running the failing set"
+        - stdout matches BUILD CODE COMPLETE
+        - and: the file "services/greeter/greeting.js" is created
+        - and: the engine spawned a test runner with arguments matching --runTestsByPath .*/tests/unit/greeting\.test\.js
+        - and: the engine dispatched 1 fix AI turn to "claude"
+        - and: the engine dispatched 1 apply AI turn to "codex"
+        - but: the file "tests/unit/greeting.test.js" is unchanged
+        - and: the file "docs/architecture/architecture.yaml" is unchanged
+        - and: the shell command "npx jest --json --config jest.config.js" run in "tests" exits with code 0
+  build-code-frameworks-011-command-fails-without-member:
+    description: A failing Jest command with no tests to name stops build code before any AI turn, naming the command and exit code without a completion banner
+    user_stories: []
+    requirement: "#231"
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_load_test.go
+    merged_steps:
+      given:
+        - the "build-code-jest-no-tests" project tree
+        - and: the project's test dependencies are installed
+      when:
+        - the System Architect runs "build code --fix"
+      then:
+        - the command exits with code 1
+        - stdout matches npx jest --json --config jest.config.js
+        - stdout matches exited with code 1
+        - stdout matches No tests found
+        - stdout does not match BUILD CODE COMPLETE
+        - and: the engine dispatched no AI turns
+        - but: no file outside "tmp" changed

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
@@ -82,11 +83,12 @@ func runLogged(
 	logExit(meta, where, elapsed, result, runErr, &stdout, &stderr, stdoutPath, stderrPath)
 
 	if runErr != nil {
-		return stdout, stderr, fmt.Errorf("%s exec: %w", meta.framework, runErr)
+		return stdout, stderr, fmt.Errorf("test command %q: %w", strings.Join(argv, " "), runErr)
 	}
 
 	if result.Code != 0 {
-		return stdout, stderr, fmt.Errorf("%s exec: %w", meta.framework, result.Err())
+		return stdout, stderr, fmt.Errorf("%w: test command %q exited with code %d; output tail:\n%s",
+			cli.ErrExit, strings.Join(argv, " "), result.Code, commandOutputTail(result))
 	}
 
 	return stdout, stderr, nil
@@ -147,4 +149,19 @@ func logExit(
 	}
 
 	slog.Debug("Test runner returned", fields...)
+}
+
+// Keep diagnostics bounded while retaining the end of each captured stream.
+func commandOutputTail(result cli.Result) string {
+	const tailBytes = 2048
+
+	tail := func(output string) string {
+		if len(output) > tailBytes {
+			return output[len(output)-tailBytes:]
+		}
+
+		return output
+	}
+
+	return tail(result.Stdout) + "\n" + tail(result.Stderr)
 }

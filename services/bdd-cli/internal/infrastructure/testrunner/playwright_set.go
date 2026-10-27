@@ -2,6 +2,7 @@ package testrunner
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -26,7 +27,11 @@ func (r *PlaywrightRunner) RunSet(_ context.Context, members []*FailingTest) err
 
 	report, err := parsePlaywrightReport(stdout.Bytes())
 	if err != nil {
-		return fmt.Errorf("playwright set report: %w", err)
+		return fmt.Errorf("playwright set report: %w", errors.Join(err, runErr))
+	}
+
+	if runErr != nil && !playwrightHasStartup(members) && len(playwrightReportToFailingTests(report, "", "")) == 0 {
+		return runErr
 	}
 
 	outcomes := make(map[string]dtoOutcome)
@@ -103,4 +108,14 @@ func playwrightSpecRan(spec dto.PlaywrightSpec) bool {
 	}
 
 	return len(spec.Tests) > 0
+}
+
+func playwrightHasStartup(members []*FailingTest) bool {
+	for _, member := range members {
+		if member.TestName == playwrightStartupMarker {
+			return true
+		}
+	}
+
+	return false
 }

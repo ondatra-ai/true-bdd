@@ -71,7 +71,7 @@ func (r *PlaywrightRunner) Discover(
 
 	report, err := parsePlaywrightReport(stdout.Bytes())
 	if err != nil {
-		return nil, fmt.Errorf("playwright report parse failed: %w", err)
+		return nil, fmt.Errorf("playwright report parse failed: %w", errors.Join(err, runErr))
 	}
 
 	failures := playwrightReportToFailingTests(report, service, suite)
@@ -134,22 +134,20 @@ func (r *PlaywrightRunner) RunOne(
 	grep := playwrightGrep(title)
 	argv = append(argv, "--grep", grep)
 
-	stdout, stderr, runErr := r.exec(CommandDir(failingTest.RunnerConfig), PhaseRerun, argv)
-	if runErr != nil && stdout.Len() == 0 {
-		return false, stderr.String(), fmt.Errorf("playwright rerun of %s failed: %w",
-			failingTest.TestName, runErr)
-	}
+	stdout, _, runErr := r.exec(CommandDir(failingTest.RunnerConfig), PhaseRerun, argv)
 
 	report, parseErr := parsePlaywrightReport(stdout.Bytes())
 	if parseErr != nil {
-		slog.Warn("playwright rerun report parse failed", "error", parseErr)
-
-		return false, stdout.String(), nil
+		return false, stdout.String(), errors.Join(parseErr, runErr)
 	}
 
 	rerunFailures := playwrightReportToFailingTests(report, "", "")
 
 	logPlaywrightReport(PhaseRerun, report, len(rerunFailures))
+
+	if runErr != nil && len(rerunFailures) == 0 {
+		return false, stdout.String(), runErr
+	}
 
 	if playwrightRanNothing(report) {
 		return false, stdout.String(), fmt.Errorf("%w: playwright --grep %q matched no test for %s",

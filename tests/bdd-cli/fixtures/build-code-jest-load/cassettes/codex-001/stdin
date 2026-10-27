@@ -1,0 +1,150 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are the production writer repairing a whole failing set. Read the Specification, harness and service source, then implement the proposed plan using your own investigation. Change the service as a whole. After each part, run the tests it serves and fix what fails; run every test of the failing set before reporting. Tests outside the set are not your subject.
+
+Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. Find a solution within the declared service path and exact writable paths first. If no solution exists there, report impossible as a list of {path, reason} for the required undeclared files. Keep files already written. A preferred undeclared change is not impossible. For ordinary unfinished work, report applied: false and impossible: [].
+
+Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, impossible, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
+
+
+### TASK
+
+## Subject — Failing Set
+
+
+**Test ID:** /jest/jest:tests.unit.greeting.test.js::<load>
+**Service:** greeter
+**Suite:** jest
+**Framework:** jest
+**Test Name:** tests/unit/greeting.test.js::<load>
+**Source File:** tests/unit/greeting.test.js
+
+
+### Failure groups
+
+Tests: /jest/jest:tests.unit.greeting.test.js::<load>
+```
+  ● Test suite failed to run
+
+    Cannot find module '../../services/greeter/greeting' from 'unit/greeting.test.js'
+
+    > 1 | const { greet } = require('../../services/greeter/greeting');
+        |                   ^
+      2 |
+      3 | // Two tests, one failing on the planted defect in greet(): the run counts
+      4 | // one failure, not one per test.
+
+      at Resolver._throwModNotFoundError (node_modules/jest-resolve/build/index.js:1031:11)
+      at Object.<anonymous> (unit/greeting.test.js:1:19)
+
+```
+
+
+### Specification documents
+
+- Read(`./docs/architecture/architecture.yaml`) — architecture_yaml
+
+
+
+
+
+
+
+
+## Proposed repair plan
+# Repair plan for /jest/jest:tests.unit.greeting.test.js::<load>
+
+## Diagnosis
+
+The suite does not fail on an assertion — it fails to load. `tests/unit/greeting.test.js` line 1 does:
+
+    const { greet } = require('../../services/greeter/greeting');
+
+The test file lives at `tests/unit/greeting.test.js`, so `../../` resolves to the repository root and the require target is `<repo root>/services/greeter/greeting`. That module does not exist. In fact the whole `services/` tree is absent from the repository: there is no `services/`, no `services/greeter/`, and no `greeting.js` anywhere. Jest's resolver therefore throws `Cannot find module '../../services/greeter/greeting' from 'unit/greeting.test.js'` before any `describe`/`test` body runs, which is why the harness reports a single `<load>` failure for the file rather than per-test failures.
+
+The repair is purely additive production code inside the declared edit root `services/greeter`. Nothing in `tests/` needs to change, and no file outside the declared root is required.
+
+## What to build
+
+Create exactly one new file:
+
+**`services/greeter/greeting.js`** — the greeter service's greeting module.
+
+It must be a CommonJS module that exports a named function `greet`, because the test destructures it: `const { greet } = require(...)`. A default/single-function export (`module.exports = greet`) would make `greet` `undefined` and produce a `TypeError` instead of a pass, so export an object with a `greet` property (e.g. `module.exports = { greet }`, or `exports.greet = greet`).
+
+### Contract for `greet`
+
+`greet(name)` returns a greeting string:
+
+- When called with a non-empty name, it returns `Hello, <name>!` — e.g. `greet('Ada')` → `'Hello, Ada!'`.
+- When called with no argument, it returns `Hello, world!` — i.e. the name parameter defaults to the literal `world` when the caller supplies nothing.
+
+Both cases must be produced by the same single template so the two forms cannot drift: build the result as the fixed prefix `Hello, `, then the resolved name, then the fixed suffix `!`. The simplest correct implementation is a default parameter value of `'world'` plus one template string — do not special-case the two outcomes with separate return statements, and do not hardcode `'Hello, Ada!'` or otherwise branch on specific input values; the function must be general.
+
+Note the exact expected punctuation and casing the test asserts: a capital `H`, a comma and a single space after `Hello`, a lowercase `world` for the default, and a trailing exclamation mark with no trailing whitespace or newline. Any deviation (`Hello <name>!`, `Hello, World!`, `Hi, Ada!`) fails the assertions.
+
+### Environment constraints the implementation must respect
+
+- `tests/jest.config.js` sets `transform: {}`, so there is **no** Babel/TypeScript transform. Write plain CommonJS JavaScript — `require`/`module.exports`, no `import`/`export` syntax, no JSX, no TypeScript annotations.
+- There is no `package.json` at the repository root, so `.js` is treated as CommonJS by Node and by Jest's resolver. Do **not** add a root `package.json`, and do not add a `"type": "module"` anywhere — that would break the `require` in the test.
+- The require path has no extension, so name the file exactly `greeting.js` (not `greeting/index.js`, not `greeting.mjs`, not `greeting.cjs`). A directory named `services/greeter/greeting/` with an `index.js` would also resolve, but prefer the plain file — it matches the architecture's single-service, single-module shape.
+- No new dependencies. The function needs nothing beyond core JavaScript; do not add a `services/greeter/package.json` with dependencies or install anything, and do not rely on anything from `tests/node_modules`.
+- Keep the module side-effect free: define and export the function only. No logging, no reading `process.env`, no top-level work. The test requires the module at load time and the harness captures stdout as JSON (`--json`), so stray output could corrupt the run's report.
+
+## Which tests each part serves
+
+The single new file `services/greeter/greeting.js` serves the entire failing set:
+
+- **`/jest/jest:tests.unit.greeting.test.js::<load>`** — the reported failure. Creating `services/greeter/greeting.js` at the exact path the test requires makes module resolution succeed, so the suite loads and the `describe('greet')` block registers its tests. This is the whole of the failing set; the `<load>` entry resolves as soon as the module exists and exports `greet` as a named CommonJS export.
+
+Once the file loads, the two tests inside it run and are covered by the contract above:
+
+- **`greet > greets a person by name`** — served by the `Hello, <name>!` template branch; `greet('Ada')` must equal `'Hello, Ada!'`.
+- **`greet > greets the world when no name is given`** — served by the `'world'` default for the name parameter; `greet()` must equal `'Hello, world!'`.
+
+## Verification
+
+Run the suite the way the architecture declares it, from the directory holding the config so `npx` finds the local Jest install:
+
+    cd tests && npx jest --json --config jest.config.js
+
+Expect the `unit/greeting.test.js` suite to load (no resolver error) and both tests to pass. The comment in the test file mentions a "planted defect in greet()" — that is fixture narrative describing the scenario this repository exercises; do **not** deliberately introduce a failing branch. The repair's goal is a correct, general `greet` that satisfies both assertions.
+
+## Out of scope — do not do these
+
+- Do not modify `tests/unit/greeting.test.js`, `tests/jest.config.js`, `tests/package.json`, or `tests/stack-frames.js`. In particular, do not add `moduleNameMapper`, `roots`, or `moduleDirectories` entries to the Jest config to redirect the require — the require path is the contract, and the production module must live where it points.
+- Do not weaken, skip, rename, or delete any assertion or test, and do not mark anything `test.skip`/`test.todo`.
+- Do not edit `docs/architecture/architecture.yaml` or any other document; the architecture already declares `services/greeter` at the path this plan writes to.
+- Do not create files outside `services/greeter`.
+
+## Edit roots
+
+- `services/greeter`
+
+Never modify tests or step definitions. Never weaken, skip or remove assertions.
+
+
+## Test commands
+Run in `{{CWD}}/tests` using exactly one of these forms:
+- Whole suite: `npx jest --config jest.config.js`
+- Selection: `npx jest --config jest.config.js --testNamePattern '<selection>'`
+The selection is a nonempty framework regular expression. Keep the command in the foreground; if the tool returns a process/session id, poll that process with your native process tool until it completes.
+
+
+## How to work
+1. Read the Specification and the harness first to understand the service's contract.
+2. Change the service as a whole, using the plan and your investigation.
+3. After each part, run the tests that part serves and fix what fails.
+4. Run every test of the failing set before reporting. Tests outside the failing set are not your subject.
+5. Make all changes during this turn, then report what changed and which tests of the set you saw pass.
+
+End your final message with the confirmation block below, written in the message itself. The result path in its heading names where the engine saves it; never write that path yourself.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply--jest-jest-tests.unit.greeting.test.js-load--iter1-result.yaml ===
+applied: true
+impossible: []
+target: "<repo-relative service path>"
+summary: "<what changed and which tests of the set you saw pass>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--jest-jest-tests.unit.greeting.test.js-load--iter1-result.yaml ===
+
+Only when no solution exists inside the declared edit roots, fill impossible with a list of {path, reason} for required undeclared files. Keep any edits already made and report their outcome. Otherwise leave impossible empty; applied: false by itself permits another attempt.

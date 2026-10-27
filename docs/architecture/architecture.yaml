@@ -348,7 +348,7 @@ architecture:
         Subject.Tests[].Framework: >-
           Architecture testing.framework: go-test, jest or playwright.
         Subject.Tests[].TestName: >-
-          Native id: Go package::function or package::<build>; Jest repository-relative file::fullName; Playwright file::title chain joined by > with surrounding spaces, or <startup>.
+          Native id: Go package::function or package::<build>; Jest repository-relative file::fullName or file::<load>; Playwright file::title chain joined by > with surrounding spaces, or <startup>.
         Subject.Tests[].FilePath: >-
           Go package import path; Jest file rebased against process cwd when absolute; Playwright deepest nonempty suite/spec file, or startup config Path.
         Subject.Groups: >-
@@ -429,7 +429,7 @@ architecture:
         Subject.Tests[].Framework: >-
           Architecture testing.framework: go-test, jest or playwright.
         Subject.Tests[].TestName: >-
-          Native id: Go package::function or package::<build>; Jest repository-relative file::fullName; Playwright file::title chain joined by > with surrounding spaces, or <startup>.
+          Native id: Go package::function or package::<build>; Jest repository-relative file::fullName or file::<load>; Playwright file::title chain joined by > with surrounding spaces, or <startup>.
         Subject.Tests[].FilePath: >-
           Go package import path; Jest file rebased against process cwd when absolute; Playwright deepest nonempty suite/spec file, or startup config Path.
         Subject.Groups: >-
@@ -1393,7 +1393,12 @@ architecture:
         runner evidence and matched Specification context. Discovery sorts
         members by id and yields zero or one Item. After each apply a single
         set rerun replaces verdicts, passing members leave and evidence is
-        grouped afresh. A new outer walk always discovers the full suite.
+        grouped afresh. Jest file::<load> members carry the message of each file
+        that failed to load. A test command exiting non-zero without any named
+        failing member, synthetic members included, stops with its command,
+        exit code and output tail before any AI turn or BUILD CODE COMPLETE.
+        Build code reports success only when the test command succeeded.
+        A new outer walk always discovers the full suite.
       observed_by: >-
         Read Suite failures and Loaded prompts items in the engine log,
         grouped fix requests, tests-pass Check answered records and the
@@ -1631,13 +1636,23 @@ architecture:
         not applied, including the terminal attempt. The remaining failing
         set is selected by joining member selectors with alternation: Go
         -run, Jest --testNamePattern, Playwright --grep. A Go <build> or
-        Playwright <startup> member makes the rerun unfiltered. Every
-        ordinary member needs its own passing result; missing or skipped
+        Playwright <startup> member makes the rerun unfiltered. A Jest <load>
+        member selects every remaining member's file by absolute path through
+        --runTestsByPath, with no test-name filter, in the same single start.
+        Every ordinary member needs its own passing result; missing or skipped
         members remain failing with a did-not-run finding. Synthetic members
-        require their package or startup success. A Go <build> member passes
+        require their package, file or startup success. A Go <build> member passes
         in both a single-member rerun and a set rerun only when its own package
         reports a package-level pass or skip (no test files), with no package,
         build or test failure. A package missing from the output stays failing.
+        A Jest file that fails to load yields one repository-relative file::<load>
+        member carrying Jest's message. In discovery, RunOne and RunSet the file
+        must load and report no failure to pass; a failed or missing file stays
+        failing. The test command's non-zero exit with no named failing member,
+        synthetic members included, is an error carrying command, exit code and
+        output tail; no AI turn or BUILD CODE COMPLETE follows. Playwright's
+        existing <startup> member remains. Build code succeeds only when the
+        test command succeeds.
         A new outer walk discovers
         the full suite afresh, catching regressions outside the previous set. Before each start it writes one log record, msg="Spawning
         test runner", with the program in `binary` and its arguments in
