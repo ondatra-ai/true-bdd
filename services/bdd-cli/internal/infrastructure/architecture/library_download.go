@@ -9,8 +9,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/ondatra-ai/true-bdd/pkg/cli/gotool"
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/cli/gotool"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/disk"
 )
 
 // ErrLibraryDownload stops work before a writer receives an incomplete library graph.

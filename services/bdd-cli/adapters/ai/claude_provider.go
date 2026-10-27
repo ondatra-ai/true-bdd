@@ -8,12 +8,12 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/ondatra-ai/true-bdd/pkg/cli/claude"
-	"github.com/ondatra-ai/true-bdd/pkg/enginelog"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/cli/claude"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/enginelog"
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 )
 
-// ClaudeProvider runs a turn through the `claude` CLI via pkg/cli/claude. It
+// ClaudeProvider runs a turn through the `claude` CLI via internal/infrastructure/cli/claude. It
 // is the only provider with native system-prompt and per-tool allowlist
 // support, so ExecutionMode permissions apply directly, unprojected.
 type ClaudeProvider struct{}

@@ -104,6 +104,7 @@ func Register(suite *bddgo.Suite[State]) {
 	registerGuardSteps(suite)
 	registerClaudeGuardSteps(suite)
 	registerWriterLifecycleSteps(suite)
+	registerIOSteps(suite)
 }
 
 // registerEngineLogSteps binds the assertions that read the CLI's own

@@ -1,0 +1,4 @@
+{"type":"item.completed","item":{"type":"command_execution","status":"failed","command":"/bin/sh -c cat /outside/command.txt","aggregated_output":"Permission denied"}}
+{"type":"item.completed","item":{"type":"file_change","status":"declined","changes":[{"path":"/outside/edit.go"}]}}
+{"type":"item.completed","item":{"type":"mcp_tool_call","status":"declined","tool":"Read","arguments":{"file_path":"/outside/mcp.txt"}}}
+{"type":"item.completed","item":{"type":"command_execution","status":"failed","command":"cat /ordinary/failure.txt","aggregated_output":"file missing"}}

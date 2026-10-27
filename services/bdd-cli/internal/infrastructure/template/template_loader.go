@@ -8,7 +8,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 
 	"github.com/Masterminds/sprig/v3"
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/disk"
 	"gopkg.in/yaml.v3"
 )
 

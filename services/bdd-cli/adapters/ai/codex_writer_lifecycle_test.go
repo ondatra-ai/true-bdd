@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ondatra-ai/true-bdd/pkg/cli/gotool"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/adapters/ai"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/cli/gotool"
 )
 
 // Set TRUE_BDD_CODEX_SANDBOX_PROBE to a real codex binary to exercise its OS sandbox without a model turn.

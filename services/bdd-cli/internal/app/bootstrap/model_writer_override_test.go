@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/cmd"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/bootstrap"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/commands"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/generators/validate"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/disk"
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 )
 

@@ -8,7 +8,7 @@ import (
 	"io/fs"
 	"os"
 
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/disk"
 )
 
 //go:embed files

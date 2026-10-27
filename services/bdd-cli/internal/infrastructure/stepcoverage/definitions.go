@@ -14,7 +14,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/disk"
 )
 
 // stepMethod is the method a suite registers a definition through, and

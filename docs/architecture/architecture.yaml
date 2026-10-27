@@ -647,6 +647,72 @@ architecture:
       frameworks:
         - cobra
       patterns:
+        owned_io:
+          description: The engine owns all repository code it uses, including its IO layer; a cut-A rebuild deletes and regenerates the whole services/bdd-cli folder.
+          rules:
+            - >-
+              No engine Go package, including its tests or files hidden by build constraints,
+              imports this repository outside services/bdd-cli. The engine uses only the
+              exact third-party module versions in this service's libraries above; that list
+              includes the complete imported graph, verified with go list -deps. Tests and
+              tooling retain independent pkg implementations and are never engine libraries.
+              The engine-imports gate scans source imports without needing to compile;
+              the drill audit records passed or failed with offending source/import diagnostics
+              in engine_imports, and reports missing source as a failure, never a pass.
+            - >-
+              Under internal/infrastructure, console owns the three standard descriptors
+              and plain answers, prompts, headers, separators and stdin. logging alone
+              constructs slog handlers: text INFO and above on stdout, DEBUG and above
+              as newline-delimited JSON in paths.tmp_dir/true-bdd.log.json. The JSON file
+              is created even with zero records, appended per record, and engine records
+              have no tooling tool/run attributes. enginelog owns the message/key vocabulary
+              stated under terms.log record and the AI-turn invocation contract below.
+              Scenarios keep that contract compatible with the independent test reporter.
+            - >-
+              disk owns explicit filesystem byte access, wrapping errors without losing their identity.
+              Configuration loading retains the declared Viper library's own file reader;
+              the hold Scenarios exercise Registry reading through disk.
+              A read takes a shared advisory flock on the target's parent; a mutation takes
+              an exclusive one, so atomic rename cannot bypass it by changing the target inode.
+              Conflicting holds poll every 5ms for up to 10s, then fail with directory lock
+              not released and the parent path. Handles and holds close before returning.
+              Whole-file writes clear stale .true-bdd.tmp.<basename> staging files without
+              following symlinks, create exclusively, write/close and atomically rename;
+              they do not fsync. Existing file permissions survive replacement; new shared
+              files/directories use 0644/0755 and private ones 0600/0700. Append writes one
+              newline-terminated log record under one hold. Update reads/changes/writes
+              under the same exclusive hold. Copies use the same read/write operations.
+              Directory creation, rooted creation and unique temporary-directory creation
+              take no hold; they need no existing target. Removal holds the target's parent.
+              No handle escapes these operations; rooted writer directory creation refuses
+              symlink escapes. Private module-download temporary
+              directories and credential files are removed on their stated cleanup paths.
+            - >-
+              shell alone imports os/exec. Only cli/cli.go and explicitly named cli wrappers
+              claude, codex, git, gotool, spec and truebdd may import shell. cli aliases its
+              result/options vocabulary; wrappers export typed operations, never an arbitrary
+              spawn entry point except spec for architecture-declared argv. A completed
+              nonzero exit is a result code, distinct from a failure to start. Captures
+              preserve exact bytes, streams stay separate unless combined explicitly, and
+              writers receive stdout/stderr without scanner line limits. Claude and codex
+              turns run in process groups; caller cancellation kills descendants and remains
+              fatal. Individual command handlers bind interrupt/termination to that context.
+              The engine adds no AI-turn deadline. Each spawn/exit JSON record names binary,
+              args and dir; exits include exit_code, signal, elapsed_ms, stdout_bytes and
+              stderr_bytes. Declared suite commands keep their argv and working directory.
+            - >-
+              gotool reads Go runtime/module roots, and downloads the complete graph of an
+              isolated exact manifest with go mod download -json all, GOWORK=off,
+              GOTOOLCHAIN=local and no inherited GOFLAGS. Its Git environment policy strips
+              the repository-local variables git rev-parse --local-env-vars names from
+              inherited or explicit environments; it performs no repository mutation.
+              Download errors name the library and stop before a writer. Claude streaming
+              parses newline-delimited events across arbitrary writes, emits assistant/tool/
+              result events, prefers structured_output, preserves usage/cost, and distinguishes
+              started nonzero, error-result and missing-result failures from start failures.
+              Its child strips CLAUDECODE and prior history role, sets CLAUDE_HISTORY_ROLE
+              and disables the advisor; writer-specific isolation is stated in invocation.
+              Refused Claude and codex calls use the log-record target contract below.
         project_resources:
           description: Configuration, checklists and prompt templates are host files initialized once and checked before work (ADR-0029).
           rules:
@@ -1143,13 +1209,23 @@ architecture:
     - term: engine
       technical: >-
         The `true-bdd` binary, built from `services/bdd-cli` once per test
-        session. Every log record it writes goes out twice: as text on stdout,
-        and as one JSON line in `tmp/true-bdd.log.json` under the directory
+        session. It owns the IO implementation described in patterns.owned_io.
+        INFO and higher log records go out as text on stdout; DEBUG and higher
+        records go out as one JSON line in `tmp/true-bdd.log.json` under the directory
         the command runs in.
       observed_by: >-
-        A step about what the engine did reads that JSON log file after the
-        run, never stdout; a run that left no log file fails the step instead
-        of counting nothing.
+        Steps counting engine events read that JSON log file after the run;
+        a run that left no log file fails instead of counting nothing.
+        IO Scenarios additionally observe exact captured streams, conflicting
+        parent-directory holds and shared readers behind a post-snapshot
+        launch barrier, private file permissions and inode replacement via
+        an old hard link, and process-group cancellation through controlled
+        CLI descendants. The atomic-write probe plants its old hard link and
+        stale staging symlink after the pre-run snapshot; successful replacement
+        removes both links from the rewritten file before the post-run snapshot.
+        Then steps read the sentinel and old content, compare inodes/mode and
+        require the descendant PID to disappear. These probes run in replay
+        too and cannot be satisfied by recorded filesystem effects alone.
 
     - term: command
       technical: >-
@@ -1190,6 +1266,12 @@ architecture:
         `checklist-prompts.yaml`. An explicit fixture-controlled writer Given also uses
         auth/auth.json (declared dummy bytes only) and cli/claude and cli/codex
         deterministic external CLI stand-ins, all outside the overlaid input tree.
+        IO fixtures can additionally opt into a claude-only launcher before the
+        proxy in every mode. Its deterministic CLI checks the actual spawn
+        environment, including poisoned inherited session flags and writer
+        isolation switches; cassette effects cannot satisfy those checks.
+        It never calls a model or reads real authentication. Cancellation
+        fixtures likewise start controlled CLI descendants directly in every mode.
       observed_by: >-
         Set up by the Given step naming the tree: it loads that fixture, and
         decides per caller where the run's AI turns come from (the fixture's

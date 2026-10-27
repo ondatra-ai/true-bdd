@@ -3,7 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/ondatra-ai/true-bdd/pkg/console"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/console"
 )
 
 // Version is the true-bdd build version string, surfaced by `true-bdd version`.

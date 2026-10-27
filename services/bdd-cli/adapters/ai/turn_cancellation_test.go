@@ -37,8 +37,9 @@ func cancelRouterTurn(t *testing.T, cli provider.CLI, role provider.Role, writer
 
 	root := t.TempDir()
 	bin := filepath.Join(root, "bin")
+	// The ready descendant execs sleep, avoiding a fork racing with the cancellation signal.
 	putCodexFile(t, filepath.Join(bin, string(cli)), `#!/bin/sh
-/bin/sh -c 'printf ready > started; /bin/sleep 2; exit 0'
+/bin/sh -c 'printf ready > started; exec /bin/sleep 30'
 exit 0
 `)
 	putCodexFile(t, filepath.Join(root, "auth/auth.json"), "{}")

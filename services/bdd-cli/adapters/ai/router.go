@@ -3,7 +3,7 @@ package ai
 import (
 	"context"
 	"fmt"
-	"github.com/ondatra-ai/true-bdd/pkg/enginelog"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/enginelog"
 	"log/slog"
 	"sync/atomic"
 	"time"

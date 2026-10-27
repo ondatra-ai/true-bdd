@@ -10,7 +10,7 @@ import (
 	"text/template"
 	"text/template/parse"
 
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/disk"
 	"gopkg.in/yaml.v3"
 )
 

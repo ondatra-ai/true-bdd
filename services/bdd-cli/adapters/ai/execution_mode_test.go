@@ -6,9 +6,9 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/adapters/ai"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/config"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/disk"
 )
 
 // Tool specs and globs reused across the ai_test package.

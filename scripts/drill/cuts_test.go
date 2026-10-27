@@ -92,6 +92,8 @@ done
 		"docs/adr/secret.md",
 		"docs/qna/secret.yaml",
 		"services/bdd-cli/main.go",
+		"services/bdd-cli/internal/infrastructure/disk/disk.go",
+		"services/bdd-cli/internal/infrastructure/shell/shell.go",
 		"other.txt"} {
 		put(t, filepath.Join(root, path), "seed\n")
 	}

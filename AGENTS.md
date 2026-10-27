@@ -6,10 +6,10 @@ TrueBDD (binary `true-bdd`) is a Go CLI that drives Claude-mediated checklists o
 
 Go lives in four roots, and `.alint.yml` (`go-known-roots`) refuses a fifth:
 
-- `services/bdd-cli/`: the engine, the product code.
+- `services/bdd-cli/`: the engine, all product code including its own IO channels and typed CLI wrappers under `internal/infrastructure/`. It imports no repository code outside this folder.
 - `tests/bdd-cli/`: what exercises it: generated scenario tests, `steps/` definitions, and `fixtures/` with their recorded cassettes.
 - `scripts/`: this repository's own tooling, run as `go run ./scripts/cmd/<name>`.
-- `pkg/`: what the other three share, the IO channels and `pkg/testkit/` (the BDD harness). A new package under it needs an ADR and an entry in `.alint.yml` (`pkg-is-the-declared-channels`). A wrapper only the engine spawns lives in the engine, under `services/bdd-cli/internal/infrastructure/cli/`, so a rebuild regenerates it.
+- `pkg/`: what the tests and tooling share, their IO channels and `pkg/testkit/` (the BDD harness). A new package under it needs an ADR and an entry in `.alint.yml` (`pkg-is-the-declared-channels`). A wrapper only the engine spawns lives in the engine, under `services/bdd-cli/internal/infrastructure/cli/`, so a rebuild regenerates it.
 
 Beside them: `docs/` holds the specification documents (`docs/scenarios.yaml` is the Registry the BDD suite is generated from), `true-bdd/` the engine's config, checklists and schemas, `templates/` the prompt templates, and `tmp/` gitignored scratch, BDD run dirs among it. Session-temporary files go in `./tmp/`.
 

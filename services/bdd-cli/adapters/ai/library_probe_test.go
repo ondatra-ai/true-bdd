@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
- "github.com/ondatra-ai/true-bdd/pkg/cli/git"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/adapters/ai"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/architecture"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/cli/git"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/disk"
 )
 
 func TestCodexDeclaredLibrariesCalculatorProbe(t *testing.T) {
@@ -77,7 +77,7 @@ func prepareCalculatorModules(t *testing.T, root string) {
 	} {
 		command := exec.CommandContext(t.Context(), "go", args...)
 		command.Dir = root
- command.Env = git.ScrubEnvironment(os.Environ())
+		command.Env = git.ScrubEnvironment(os.Environ())
 
 		output, err := command.CombinedOutput()
 		if err != nil {

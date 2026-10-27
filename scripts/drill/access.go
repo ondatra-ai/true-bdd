@@ -146,7 +146,8 @@ func resolvePath(path string) string {
 }
 
 func (a *Audit) String() string {
-	return fmt.Sprintf("%d references, %d evidence files, %d limitations", len(a.Entries), len(a.Files), len(a.Unknown))
+	return fmt.Sprintf("engine imports: %s; %d references, %d evidence files, %d limitations",
+		a.EngineImports, len(a.Entries), len(a.Files), len(a.Unknown))
 }
 
 func (a *Audit) textReferences(value, evidence, tree string, roots []string, verdict string) {

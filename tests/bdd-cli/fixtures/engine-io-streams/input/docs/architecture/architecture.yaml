@@ -1,0 +1,11 @@
+architecture:
+  testing:
+    framework: go-test
+    commands:
+      record: sh tests/suite/run.sh -json
+      replay: sh tests/suite/run.sh -json
+      live: sh tests/suite/run.sh -json
+  services:
+  - name: calc
+    path: services/calc
+    language: go

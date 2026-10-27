@@ -45,6 +45,7 @@ const (
 	goSum     = "go.sum"
 	lintCmd   = "./scripts/cmd/linters"
 	runVerb   = "run"
+	gatesCmd  = "./scripts/cmd/gates"
 )
 
 // Cheapest first, so a doomed run dies in under a second.
@@ -65,6 +66,7 @@ var (
 
 	// All is the pipeline. Every entry must also be a step of CI's gates job.
 	All = []Gate{
+
 		{
 			// The WHOLE lint pipeline. .alint.yml is the one map from a file to
 			// the checks it selects, and every leaf it names is
@@ -78,8 +80,14 @@ var (
 			Globs: lintInputs,
 		},
 		{
+			Name:    "Engine owns repository code",
+			Command: []string{goBin, runVerb, gatesCmd, "engine-imports"},
+			Run:     engineImports,
+			Globs:   []string{"services/**", "scripts/gates/**", "scripts/cmd/gates/**", goMod, goSum},
+		},
+		{
 			Name:    "Release rehearsal",
-			Command: []string{goBin, runVerb, "./scripts/cmd/gates", "release-rehearsal"},
+			Command: []string{goBin, runVerb, gatesCmd, "release-rehearsal"},
 			Run:     ReleaseRehearsal,
 			Globs:   []string{"services/**", "pkg/**", "scripts/**", "tests/**", "true-bdd/**", templatesGlob, goMod, goSum},
 		},
@@ -122,7 +130,7 @@ var (
 		{
 			// Committed recordings must not carry the recording machine's identity.
 			Name:    "Recordings",
-			Command: []string{goBin, runVerb, "./scripts/cmd/gates", "recordings"},
+			Command: []string{goBin, runVerb, gatesCmd, "recordings"},
 			Run:     ScanRecordings,
 			Globs:   []string{"tests/bdd-cli/fixtures/**"},
 		},

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ondatra-ai/true-bdd/pkg/cli"
-	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/cli"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/cli/spec"
 )
 
 // Phase names for the runner invocations a walk makes, carried on every

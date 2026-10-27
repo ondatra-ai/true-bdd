@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/engine"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/generators/validate"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/runner"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/checklist"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/fs"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/input"

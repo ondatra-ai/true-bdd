@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+import json
+import os
+import pathlib
+import sys
+
+def emit(value):
+    print(json.dumps(value))
+
+assert "CLAUDECODE" not in os.environ
+assert os.environ["CLAUDE_CODE_DISABLE_ADVISOR_TOOL"] == "1"
+role = os.environ["CLAUDE_HISTORY_ROLE"]
+if role == "fix":
+    emit({"type": "result", "subtype": "success", "is_error": False,
+          "structured_output": {"fix_prompt": "Implement calc.A returning 1 and calc.B returning 2 in services/calc/calc.go. Preserve tests.", "questions": []}})
+else:
+    assert role == "apply"
+    for key in ["CLAUDE_CODE_SAFE_MODE", "CLAUDE_CODE_SIMPLE", "CLAUDE_RELAUNCH_SESSION_ADD_DIRS"]:
+        assert key not in os.environ, key
+    for key in ["BASH_DEFAULT_TIMEOUT_MS", "BASH_MAX_TIMEOUT_MS"]:
+        assert os.environ[key] == "600000", key
+    for suffix in ["CLAUDE_MDS", "AUTO_MEMORY", "BUNDLED_SKILLS", "WORKFLOWS",
+                   "OFFICIAL_MARKETPLACE_AUTOINSTALL", "PLUGIN_FORWARDING", "BACKGROUND_TASKS"]:
+        key = "CLAUDE_CODE_DISABLE_" + suffix
+        assert os.environ[key] == "1", key
+    settings = pathlib.Path(sys.argv[sys.argv.index("--settings") + 1])
+    answer = settings.parent.parent / "apply-failing-set-iter1-result.yaml"
+    pathlib.Path("services/calc").mkdir(parents=True, exist_ok=True)
+    pathlib.Path("services/calc/calc.go").write_text("package calc\n\nfunc A() int { return 1 }\nfunc B() int { return 2 }\n")
+    pathlib.Path("tmp/claude-environment.txt").write_text("writer environment verified at spawn\n")
+    text = f"=== FILE_START: {answer} ===\napplied: true\ntarget: services/calc/calc.go\nsummary: Controlled Claude writer repaired calc.\n=== FILE_END: {answer} ===\n"
+    emit({"type": "result", "subtype": "success", "is_error": False, "result": text})
