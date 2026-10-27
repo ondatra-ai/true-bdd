@@ -16,12 +16,7 @@ func InitHost(ctx context.Context, binary string, opt shell.Options) (shell.Resu
 	return shell.Run(ctx, []string{binary, "init"}, opt)
 }
 
-// RehearseCode reaches the first AI turn, or completes an unattended live repair.
-func RehearseCode(ctx context.Context, binary string, live bool, opt shell.Options) (shell.Result, error) {
-	args := []string{binary, buildVerb, "code", fixFlag}
-	if live {
-		args = append(args, "--yes")
-	}
-
-	return shell.Run(ctx, args, opt)
+// RehearseCode runs the release's build-code fix loop with the caller's stdin.
+func RehearseCode(ctx context.Context, binary string, opt shell.Options) (shell.Result, error) {
+ return shell.Run(ctx, []string{binary, buildVerb, "code", fixFlag}, opt)
 }

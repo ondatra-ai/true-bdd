@@ -15,13 +15,12 @@ import (
 
 const separatorWidth = 60
 
-// ErrPersonRequired means a clarification cannot be answered unattended.
+// ErrPersonRequired means a clarification needs a person to answer.
 var ErrPersonRequired = errors.New("a person must answer the clarifying question")
 
 // UserInputCollector handles interactive user input from stdin.
 type UserInputCollector struct {
-	reader    *bufio.Reader
-	assumeYes bool
+	reader *bufio.Reader
 }
 
 // NewUserInputCollector creates a new UserInputCollector reading console.In().
@@ -38,9 +37,6 @@ func newUserInputCollector(reader io.Reader) *UserInputCollector {
 	}
 }
 
-// SetAssumeYes answers fix menus with apply without reading stdin.
-func (c *UserInputCollector) SetAssumeYes(yes bool) { c.assumeYes = yes }
-
 // AskQuestions displays questions to the user and collects answers.
 func (c *UserInputCollector) AskQuestions(questions []checklist.ClarifyQuestion) (map[string]string, error) {
 	answers := make(map[string]string)
@@ -49,14 +45,6 @@ func (c *UserInputCollector) AskQuestions(questions []checklist.ClarifyQuestion)
 
 	for idx, question := range questions {
 		c.printQuestion(idx+1, len(questions), question)
-
-		if c.assumeYes {
-			for next := idx + 1; next < len(questions); next++ {
-				c.printQuestion(next+1, len(questions), questions[next])
-			}
-
-			return nil, ErrPersonRequired
-		}
 
 		userInput, err := c.readUserInput()
 		if errors.Is(err, io.EOF) {
@@ -99,12 +87,6 @@ const (
 
 // AskApplyRefineOrExit asks user to choose between apply, refine, or exit.
 func (c *UserInputCollector) AskApplyRefineOrExit() (ActionChoice, error) {
-	if c.assumeYes {
-		slog.Info("Automatically applying fix", "flag", "--yes")
-
-		return ActionApply, nil
-	}
-
 	console.Println("\n" + strings.Repeat("=", separatorWidth))
 	console.Println("What would you like to do?")
 	console.Separator("=", separatorWidth)
@@ -116,7 +98,7 @@ func (c *UserInputCollector) AskApplyRefineOrExit() (ActionChoice, error) {
 
 	rawInput, err := c.readUserInput()
 	if errors.Is(err, io.EOF) {
-		return ActionExit, fmt.Errorf("end of input at fix menu; use --yes with --fix to apply unattended: %w", err)
+		return ActionExit, fmt.Errorf("end of input at fix menu; a person must choose whether to apply the fix: %w", err)
 	}
 
 	if err != nil {

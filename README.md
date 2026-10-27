@@ -627,7 +627,7 @@ The default harness requirement uses a local `file://` module proxy containing t
 
 Every rehearsal has separate fresh private module caches for installation and engine execution. The zero-cost calculator pass requires the engine's `Libraries downloaded` record before the first AI turn and retains its module versions and cache paths. Another fresh host declares a nonexistent library; it must stop before any AI turn and name that library. An empty file proxy makes that refusal deterministic.
 
-`rehearse --artifacts ./tmp/release-artifacts --live` runs real AI CLIs with `build code --fix --yes`, requires exit 0 and `BUILD CODE COMPLETE`, then runs each host's declared test command. This costs money. The report includes wall time, Claude spend and per-turn denied-call records with available targets; values the engine does not report, including Codex spend, are `unavailable`. The gate runner builds and runs the default zero-cost rehearsal on every pull request; CI keeps no separate gate list.
+`rehearse --artifacts ./tmp/release-artifacts --live` runs real AI CLIs with `build code --fix`, answering `1` at each fix menu through stdin. It requires exit 0 and `BUILD CODE COMPLETE`, then runs each host's declared test command. This costs money. The report includes wall time, Claude spend and per-turn denied-call records with available targets; values the engine does not report, including Codex spend, are `unavailable`. The gate runner builds and runs the default zero-cost rehearsal on every pull request; CI keeps no separate gate list.
 
 ## License
 
@@ -639,8 +639,8 @@ A service may add `writable: [go.mod, go.sum]` beside its `path` in the architec
 
 The plan first seeks a permitted solution. If no solution exists, it returns `impossible: [{path, reason}]`; the writer's confirmation carries the same list for a late obstruction. The first nonempty report keeps written files, reruns the failing set once, then returns a distinct impossible-repair error naming the required files, reasons and remaining failures. Change those files by hand, or add them to the service's `writable`. No further attempt or COMPLETE banner follows. An empty list leaves ordinary `applied: false` retries unchanged.
 
-## Unattended fixes
+## Fix approval
 
-Run `true-bdd build code --fix --yes` to apply every proposed fix without reading stdin. `build tests`, `us refine`, `us apply` and `scen check` accept the same pair of flags. `--yes` requires `--fix`.
+Run `true-bdd build code --fix` to review proposed fixes. Every fix is applied only after a person answers apply at its fix menu. `build tests`, `us refine`, `us apply` and `scen check` use the same menu. The engine offers no way to approve fixes in advance.
 
-A clarifying question under `--yes`, or when stdin has ended, prints its question and suggested answers and stops with an error saying a person must answer. End of stdin at a fix menu without `--yes` stops with guidance to use it. These stops exit non-zero without a COMPLETE banner. Interactive answers and the drill's pipe continue to work as before.
+A clarifying question at end of stdin prints its question and suggested answers and stops with an error saying a person must answer. End of stdin at a fix menu stops with an error saying a person must choose whether to apply the fix. These stops exit non-zero without a COMPLETE banner. Answers are read from stdin, including pipes used by tests and the drill, with no terminal check. A final non-empty answer without a newline is accepted; a blank line keeps its interactive meaning.

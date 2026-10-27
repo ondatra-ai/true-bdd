@@ -38,7 +38,6 @@ func TestFixtureTreesArePaired(t *testing.T) {
 // template byte for byte or deliberately replaces it.
 func TestFixtureTemplateOverlays(t *testing.T) {
 	declarations := map[string]string{
-		"fix-loop-yes-build-code/input/templates/build-code.fix-applier.prompt.tpl":          templateExtension,
 		"build-code-no-test-files/input/templates/build-code.fix-applier.prompt.tpl":         templateExtension,
 		"build-code-writable-writer/input/templates/build-code.fix-generator.prompt.tpl":     templateExtension,
 		"build-code-writable-writer/input/templates/build-code.fix-applier.prompt.tpl":       templateExtension,
