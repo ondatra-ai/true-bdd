@@ -94,6 +94,7 @@ var (
 			Run:     ReleaseRehearsal,
 			Globs: append([]string{
 				"services/**", "pkg/**", "scripts/**", "tests/**", "true-bdd/**", templatesGlob,
+				".github/workflows/release.yml",
 			}, goSources...),
 		},
 		{
