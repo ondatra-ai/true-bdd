@@ -33,6 +33,7 @@ func Register(suite *bddgo.Suite[State]) {
 	// usage, a missing true-bdd.yaml. Undelimited, as stdout is.
 	suite.Step(`^stderr matches (.+)$`, assertStderr)
 	suite.Step(`^stderr does not match (.+)$`, assertStderrNoMatch)
+	suite.Step(`^no file changed$`, assertNoChanges)
 	suite.Step(`^no file outside "([^"]+)" changed$`, assertNoChangesOutside)
 	// The two-directory twin of the read-only check: proves nothing moved
 	// outside either of two named scratch prefixes, e.g. a `build tests
@@ -111,6 +112,7 @@ func Register(suite *bddgo.Suite[State]) {
 // structured log rather than its stdout: which test runners it spawned, how
 // many AI turns it dispatched, and to which AI CLI. See engine_log_steps.go.
 func registerEngineLogSteps(suite *bddgo.Suite[State]) {
+	suite.Step(`^the engine logged its build identity once at start$`, assertBuildIdentityLogged)
 	suite.Step(`^the engine spawned the test runner "([^"]+)"$`, assertTestRunnerSpawned)
 	suite.Step(`^the engine spawned a test runner with arguments matching (.+)$`, assertTestRunnerArgs)
 	suite.Step(`^the engine spawned a test runner with its own prebuilt engine path$`, assertPrebuiltEnginePath)

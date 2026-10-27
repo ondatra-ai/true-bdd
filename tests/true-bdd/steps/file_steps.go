@@ -259,3 +259,16 @@ func countLines(content []byte) int {
 
 	return strings.Count(text, "\n") + 1
 }
+
+func assertNoChanges(state *State, _ []string) error {
+	if state.Result == nil {
+		return state.fail("%w", ErrNoRun)
+	}
+
+	_, changes := changesOutside(state)
+	if len(changes) > 0 {
+		return state.fail("expected no file changed, got: %v", changes)
+	}
+
+	return nil
+}

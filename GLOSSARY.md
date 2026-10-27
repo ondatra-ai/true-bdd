@@ -12,6 +12,10 @@ _Avoid_: host application, host product, target project
 The three documents a Host project's system is built from, and the only source of how it is built: the product document, the architecture document and the Registry. The tests and the code are recovered from it; a rebuild preserves the system's behaviour, not its code.
 _Avoid_: spec files, sources, the docs
 
+**Build identity**:
+The engine's build version and source commit, printed by `true-bdd version` as `true-bdd version <version> commit <commit>`. Each uses its link-time stamp (`-ldflags -X`) first, Go's main-module version or `vcs.revision` next, then `(devel)` or `unknown`. A VCS build may have a pseudo-version; an archive has no VCS metadata. Commands installing the engine Log record it once at start as `Engine started` with `version` and `commit` fields, including `init`; `version` prints only the newline-terminated answer and creates no file or directory. `version`, help, the hidden guard and refusals before logging have no start record.
+_Avoid_: release number, build number
+
 **Registry**:
 The single YAML file holding every Scenario, resolved from `documents.scenarios_yaml` (conventionally `docs/scenarios.yaml`).
 _Avoid_: requirements file, scenarios file, spec file

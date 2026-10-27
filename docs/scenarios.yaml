@@ -2640,6 +2640,7 @@ scenarios:
         - and: the file "tests/mcp/ticket_test.go" matches the session is granted a ticket within 5 seconds
         - but: the file "tests/mcp/session_test.go" is unchanged
         - and: stdout matches BUILD TESTS COMPLETE
+        - and: the engine logged its build identity once at start
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" and "tests" changed
 
@@ -3243,7 +3244,7 @@ scenarios:
         - and: the engine dispatched no AI turns
 
   engine-entry-001-version-runs-without-config:
-    description: The `version` command must print `true-bdd version` followed by the engine's version number and exit 0 in a project tree that holds no `true-bdd/true-bdd.yaml`, because it reads no configuration
+    description: The `version` command must print `true-bdd version` followed by the engine's build version and commit and exit 0 in a project tree that holds no `true-bdd/true-bdd.yaml`, because it reads no configuration
     service: true-bdd
     path: tests/true-bdd/cli_test.go
     user_stories:
@@ -3258,8 +3259,27 @@ scenarios:
         - the System Architect runs "version"
       then:
         - the command exits with code 0
-        - stdout matches (?m)^true-bdd version \d+\.\d+\.\d+$
-        - and: no file outside "tmp" changed
+        - stdout matches \Atrue-bdd version \S+ commit \S+\n\z
+        - and: no file changed
+
+  engine-entry-005-version-reports-build:
+    description: The version command prints only the build version and commit answer, without reading configuration, installing a log or changing any file
+    service: true-bdd
+    path: tests/true-bdd/cli_test.go
+    user_stories:
+      - story: docs/product/stories/engine-entry-command-line.yaml
+        scenario_id: engine-entry-005-version-reports-build
+        merge_date: '2026-10-27'
+    merged_steps:
+      given:
+        - the "version-reports-build" project tree
+        - and: the project tree has no "true-bdd/true-bdd.yaml"
+      when:
+        - the System Architect runs "version"
+      then:
+        - the command exits with code 0
+        - stdout matches \Atrue-bdd version \S+ commit \S+\n\z
+        - and: no file changed
 
   engine-entry-002-stray-argument-prints-usage:
     description: A command given an argument it does not take must exit 1 before it starts its walk, printing an error that names the argument followed by that command's usage, and must change no file

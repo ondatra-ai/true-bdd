@@ -48,6 +48,7 @@ func TestBuildTestsFiles002StaleTestRegenerated(t *testing.T) {
 	s.And(`the file "tests/mcp/ticket_test.go" matches the session is granted a ticket within 5 seconds`)
 	s.But(`the file "tests/mcp/session_test.go" is unchanged`)
 	s.And(`stdout matches BUILD TESTS COMPLETE`)
+	s.And(`the engine logged its build identity once at start`)
 	s.And(`the engine dispatched no AI turns`)
 	s.And(`no file outside "tmp" and "tests" changed`)
 	s.Done()
