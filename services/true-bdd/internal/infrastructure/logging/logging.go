@@ -9,6 +9,7 @@ import (
 	"io"
 	"log/slog"
 
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/buildinfo"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/console"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/disk"
 )
@@ -32,9 +33,8 @@ func (s Stream) writer() io.Writer {
 	return console.Out()
 }
 
-// Install points this process's default slog at Handler's result. The file is
-// created up front: engine-004 reads an engine log with zero records, so a
-// missing one is not an empty one.
+// Install points this process's default slog at Handler's result and records
+// the engine build identity before any other event.
 func Install(text Stream, jsonPath, tool string) {
 	if jsonPath != "" {
 		_ = disk.Ensure(jsonPath, disk.Shared)
@@ -52,6 +52,11 @@ func Install(text Stream, jsonPath, tool string) {
 	}
 
 	slog.SetDefault(slog.New(handler))
+
+	if tool == "" {
+		info := buildinfo.Current()
+		slog.Info("Engine started", "version", info.Version, "commit", info.Commit)
+	}
 }
 
 // runIDBytes is the width of the per-process run id.

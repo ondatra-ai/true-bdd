@@ -154,6 +154,17 @@ glossary:
       are retained. Logs are narration, terminal answers stay plain, and
       subprocess captures retain the exact stdout and stderr bytes.
 
+  - term: build identity
+    means: >-
+      The engine's build version and source commit. Each independently uses a nonempty
+      build stamp first, otherwise Go build metadata (the main module version and
+      VCS revision), otherwise (devel) for version and unknown for commit.
+      A stamp is a string supplied at link time with -ldflags -X.
+      A VCS build may carry a pseudo-version; an archive export carries no VCS metadata.
+      On installing its log, including for version and init, the engine emits one
+      INFO record with message "Engine started" and version and commit fields before
+      other records. Commands refused before logging, help and the hidden guard do not install a log.
+
   - term: command
     means: >-
       One `true-bdd` subcommand with its arguments, as a person types it
@@ -166,7 +177,7 @@ glossary:
       It reports each created or existing file through a log record and never overwrites one,
       even an empty or invalid one. It creates no Specification document
       or schema and detects no test framework. `version` also needs none
-      of these files. Other commands use only the project files, with no
+      of these files. It prints `true-bdd version <version> commit <commit>` using the build identity. Other commands use only the project files, with no
       embedded runtime fallback. Before their first test run, Item or AI
       turn, they load their configuration and checklist and parse both
       validation prompt templates, plus both fix-generator and both
@@ -1105,3 +1116,8 @@ catalogue:
       hook payload on stdin. No AI turn runs. Exit 0 grants the call and exit 2
       denies it with the guard's reason on stderr.
     terms: [claude, write guard, write policy, tool call, hook payload, project tree, AI turn]
+
+  - template: 'the engine logged its build identity once at start'
+    block: then
+    means: The first engine log record is the single Engine started record, with version and commit fields equal to the version command's answer.
+    terms: [engine, build identity, log record, command, stdout]

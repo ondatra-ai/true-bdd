@@ -16,12 +16,12 @@ story:
     feature: engine
     title: Start any command from the command line, and have it refuse there what it cannot start with
     as_a: System Architect
-    i_want: true-bdd version to print the engine's version wherever I run it, a command given an argument it does not take to print what went wrong and its usage, a command that fails once started to print its error alone, and every other command to refuse to start where there is no true-bdd/true-bdd.yaml
+    i_want: true-bdd version to print the engine's build version and commit wherever I run it, a command given an argument it does not take to print what went wrong and its usage, a command that fails once started to print its error alone, and every other command to refuse to start where there is no true-bdd/true-bdd.yaml
     so_that: I can tell which engine a project runs and correct a mistyped command from the terminal alone, and a project that was never configured is left as it was
     status: IMPLEMENTED
     acceptance_criteria:
         - id: 001-version-runs-without-config
-          description: The `version` command must print `true-bdd version` followed by the engine's version number and exit 0 in a project tree that holds no `true-bdd/true-bdd.yaml`, because it reads no configuration
+          description: The `version` command must print `true-bdd version` followed by the engine's build version and commit and exit 0 in a project tree that holds no `true-bdd/true-bdd.yaml`, because it reads no configuration
           steps:
             - given:
                 - the "version-without-config" project tree
@@ -30,7 +30,7 @@ story:
                 - the System Architect runs "version"
             - then:
                 - the command exits with code 0
-                - stdout matches (?m)^true-bdd version \d+\.\d+\.\d+$
+                - stdout matches (?m)^true-bdd version \S+ commit \S+$
                 - and: no file outside "tmp" changed
         - id: 002-stray-argument-prints-usage
           description: A command given an argument it does not take must exit 1 before it starts its walk, printing an error that names the argument followed by that command's usage, and must change no file
@@ -73,3 +73,17 @@ story:
                 - but: 'stderr does not match Usage:'
                 - and: stderr does not match command failed
                 - and: no file outside "tmp" changed
+        - id: 005-version-reports-build
+          description: The version command prints the build version and commit and logs the same build identity once at start, without reading configuration
+          steps:
+            - given:
+                - the "version-reports-build" project tree
+                - and: the project tree has no "true-bdd/true-bdd.yaml"
+            - when:
+                - the System Architect runs "version"
+            - then:
+                - the command exits with code 0
+                - stdout matches (?m)^true-bdd version \S+ commit \S+$
+                - and: the engine logged its build identity once at start
+                - and: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns

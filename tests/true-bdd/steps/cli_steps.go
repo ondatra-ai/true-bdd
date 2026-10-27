@@ -111,6 +111,7 @@ func Register(suite *bddgo.Suite[State]) {
 // structured log rather than its stdout: which test runners it spawned, how
 // many AI turns it dispatched, and to which AI CLI. See engine_log_steps.go.
 func registerEngineLogSteps(suite *bddgo.Suite[State]) {
+	suite.Step(`^the engine logged its build identity once at start$`, assertBuildIdentityLogged)
 	suite.Step(`^the engine spawned the test runner "([^"]+)"$`, assertTestRunnerSpawned)
 	suite.Step(`^the engine spawned a test runner with arguments matching (.+)$`, assertTestRunnerArgs)
 	suite.Step(`^the engine spawned a test runner with its own prebuilt engine path$`, assertPrebuiltEnginePath)
