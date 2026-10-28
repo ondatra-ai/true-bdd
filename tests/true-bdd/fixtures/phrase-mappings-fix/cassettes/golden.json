@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "phrase-mappings-fix",
+  "files": [
+    {
+      "path": "docs/architecture/architecture.yaml",
+      "kind": "modified",
+      "size": 859,
+      "sha256": "f044c273de7f43b9205d0855fdf8f727531c568739f50a3bc46a6568b9ba32f4",
+      "text": "# Proposed operation for the missing when phrase: greet. Ask the System Architect to confirm.\narchitecture:\n  services:\n  - name: greeter\n    path: services/greeter\n    language: go\n    public_interface:\n      kind: cli\n      document: docs/greeter-cli.yaml\n  phrases:\n  - template: the greeting is configured\n    service: greeter\n    references:\n    - file: greeting-config\n    does: Write the expected greeting to the configuration file before running greet.\n  - template: the greeting is requested\n    service: greeter\n    references:\n    - command: greet\n    does: Run the declared greet command once with the scenario's person argument\n      and no loud flag.\n  - template: the greeting is logged\n    service: greeter\n    references:\n    - log_record: greeted\n    does: Observe the greeted log record and compare its greeting to the expected\n      text.\n"
+    }
+  ]
+}

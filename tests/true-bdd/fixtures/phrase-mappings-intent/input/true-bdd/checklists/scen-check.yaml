@@ -1,0 +1,15 @@
+version: '1.0'
+sections:
+- id: term_closure
+  validation_prompts:
+  - D: phrase-mappings
+    rationale: A phrase without a Public interface operation leaves its step definition
+      to invent what to do.
+    docs:
+    - product
+    - architecture_yaml
+    F: 'Ask the System Architect what a step of this shape does through the service''s
+      Public interface, by block: a when calls an operation, a given sets up state,
+      a then observes and compares. Propose one architecture.phrases entry with the
+      verbatim template, service, references and does sentence, or intent for a UI
+      service. Write the architecture document only after apply, never the Scenario.'

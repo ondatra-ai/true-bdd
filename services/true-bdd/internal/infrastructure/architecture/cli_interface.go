@@ -61,7 +61,7 @@ type cliCall struct {
 	Arguments []string `yaml:"arguments"`
 }
 
-func parseCLI(data []byte) error {
+func parseCLI(declaration *PublicInterface, data []byte) error {
 	var document cliInterface
 
 	err := yaml.Unmarshal(data, &document)
@@ -80,7 +80,35 @@ func parseCLI(data []byte) error {
 		}
 	}
 
-	return document.Extensions.validate()
+	err = document.Extensions.validate()
+	if err != nil {
+		return err
+	}
+
+	declaration.references = document.references()
+
+	return nil
+}
+
+func (document cliInterface) references() map[string]bool {
+	references := make(map[string]bool)
+	for name := range document.Commands {
+		references[(InterfaceReference{Command: name}).String()] = true
+	}
+
+	for name := range document.Extensions.Files {
+		references[(InterfaceReference{File: name}).String()] = true
+	}
+
+	for name := range document.Extensions.LogRecords {
+		references[(InterfaceReference{LogRecord: name}).String()] = true
+	}
+
+	for name := range document.Extensions.OutgoingCalls {
+		references[(InterfaceReference{OutgoingCall: name}).String()] = true
+	}
+
+	return references
 }
 
 func (c cliCommand) validate(name string) error {
@@ -91,7 +119,7 @@ func (c cliCommand) validate(name string) error {
 	for _, parameter := range c.Parameters {
 		if !parameter.valid() {
 			return fmt.Errorf("%w: CLI command %q parameter requires name and in (argument, flag or option)",
- ErrInterfaceDocument, name)
+				ErrInterfaceDocument, name)
 		}
 	}
 

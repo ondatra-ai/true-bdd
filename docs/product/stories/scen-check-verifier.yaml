@@ -32,7 +32,7 @@ story:
                 - and: stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=2 answer=pass
                 - and: stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=3 answer=pass
                 - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=4 answer=pass
-                - and: 'stdout matches PASS: 15 '
+                - and: 'stdout matches PASS: 16 '
                 - and: stdout matches ALL CHECKS PASSED!
                 - and: stdout matches SCEN CHECK COMPLETE
                 - and: the engine dispatched 10 AI turns

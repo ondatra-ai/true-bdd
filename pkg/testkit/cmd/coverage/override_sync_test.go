@@ -45,14 +45,14 @@ func declaredSelections() map[string]declaredSelection {
 	return map[string]declaredSelection{
 		"engine-claude-minimal":                  {Stem: scenCheckStem, QShort: "30469152", RequireF: false},
 		"engine-model-dispatch":                  {Stem: scenCheckStem, QShort: "30469152", RequireF: false},
-		"us-refine-fix-count": {Stem: usRefineStem, QShort: "895981ea", RequireF: true},
-		"us-refine-fix-failure-mode": {Stem: usRefineStem, QShort: "bff23596", RequireF: true},
-		"us-refine-shipped-no-failure": {Stem: usRefineStem, QShort: "bff23596", RequireF: true},
-		"us-refine-fix-implementation": {Stem: usRefineStem, QShort: "0372c4be", RequireF: true},
-		"us-refine-fix-happy-path": {Stem: usRefineStem, QShort: "5b2f20ef", RequireF: true},
-		"us-refine-fix-measurable": {Stem: usRefineStem, QShort: "9f77fac8", RequireF: true},
-		"us-refine-fix-binary": {Stem: usRefineStem, QShort: "8ed91a7d", RequireF: true},
-		"us-refine-fix-sketch": {Stem: usRefineStem, QShort: "1fa8ce2c", RequireF: true},
+		"us-refine-fix-count":                    {Stem: usRefineStem, QShort: "895981ea", RequireF: true},
+		"us-refine-fix-failure-mode":             {Stem: usRefineStem, QShort: "bff23596", RequireF: true},
+		"us-refine-shipped-no-failure":           {Stem: usRefineStem, QShort: "bff23596", RequireF: true},
+		"us-refine-fix-implementation":           {Stem: usRefineStem, QShort: "0372c4be", RequireF: true},
+		"us-refine-fix-happy-path":               {Stem: usRefineStem, QShort: "5b2f20ef", RequireF: true},
+		"us-refine-fix-measurable":               {Stem: usRefineStem, QShort: "9f77fac8", RequireF: true},
+		"us-refine-fix-binary":                   {Stem: usRefineStem, QShort: "8ed91a7d", RequireF: true},
+		"us-refine-fix-sketch":                   {Stem: usRefineStem, QShort: "1fa8ce2c", RequireF: true},
 		"us-refine-fix-descriptions":             {Stem: usRefineStem, QShort: "800eb66b", RequireF: true},
 		"us-refine-fix-steps":                    {Stem: usRefineStem, QShort: "fa3f00d3", RequireF: true},
 		"us-refine-fix-desc-qualifier":           {Stem: usRefineStem, QShort: vagueDescriptionQ, RequireF: true},
@@ -157,8 +157,8 @@ const (
 	// overrideRefused carries a prompt the engine refuses at startup, so
 	// it walks nothing and nothing in it need be shipped.
 	overrideRefused
- // overridePreserved is an unusable file init must preserve without loading.
- overridePreserved
+	// overridePreserved is an unusable file init must preserve without loading.
+	overridePreserved
 	// overrideChecks adds `D:` prompts no shipped checklist carries yet
 	// (ADR 0015); its `Q:` prompts must still copy shipped ones.
 	overrideChecks
@@ -176,15 +176,22 @@ const (
 // the behaviour under test; every other one declares checklist_prompts.
 func allowedOverrideFixtures() map[string]overridePurpose {
 	return map[string]overridePurpose{
-  "public-interface-missing": overrideChecks,
-  "public-interface-missing-document": overrideChecks,
-  "public-interface-malformed-document": overrideChecks,
-  "public-interface-valid": overrideChecks,
-  "public-interface-unsupported": overrideChecks,
-  "public-interface-fix": overrideChecks,
+		"phrase-mappings-missing":             overrideChecks,
+		"phrase-mappings-undeclared":          overrideChecks,
+		"phrase-mappings-valid":               overrideChecks,
+		"phrase-mappings-duplicate":           overrideChecks,
+		"phrase-mappings-intent":              overrideChecks,
+		"phrase-mappings-fix":                 overrideChecks,
+		"phrase-mappings-exit":                overrideChecks,
+		"public-interface-missing":            overrideChecks,
+		"public-interface-missing-document":   overrideChecks,
+		"public-interface-malformed-document": overrideChecks,
+		"public-interface-valid":              overrideChecks,
+		"public-interface-unsupported":        overrideChecks,
+		"public-interface-fix":                overrideChecks,
 
- "init-existing": overridePreserved,
- "start-invalid-checklist": overrideRefused,
+		"init-existing":                           overridePreserved,
+		"start-invalid-checklist":                 overrideRefused,
 		"build-code-claude-replay":                overrideTiers,
 		"build-code-claude-failure":               overrideTiers,
 		"build-code-writer-bound":                 overrideFixLoop,

@@ -6,15 +6,16 @@ import (
 )
 
 const (
- kindCLI = "cli"
- kindHTTP = "http"
+	kindCLI  = "cli"
+	kindHTTP = "http"
 )
 
 // PublicInterface declares what a service offers across its process boundary.
 type PublicInterface struct {
-	Kind     string      `yaml:"kind"`
-	Document string      `yaml:"document,omitempty"`
-	Elements []UIElement `yaml:"elements,omitempty"`
+	references map[string]bool
+	Kind       string      `yaml:"kind"`
+	Document   string      `yaml:"document,omitempty"`
+	Elements   []UIElement `yaml:"elements,omitempty"`
 }
 
 // UIElement identifies an element by role and accessible name within a page or region.

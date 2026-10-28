@@ -349,11 +349,11 @@ func finalizeScenCheck(result *engine.Result[*template.ScenarioCheckData]) error
 }
 
 func scenCheckPostCheckFix(
- deps ScenCheckDeps,
- requirementsFile string,
+	deps ScenCheckDeps,
+	requirementsFile string,
 ) func(context.Context, *template.ScenarioCheckData, string) (*template.ScenarioCheckData, error) {
 	return func(ctx context.Context, item *template.ScenarioCheckData, check string) (*template.ScenarioCheckData, error) {
-		if check != checks.CheckPublicInterface {
+		if check != checks.CheckPublicInterface && check != checks.CheckPhraseMappings {
 			return scenCheckPostFix(deps, requirementsFile)(ctx, item, "")
 		}
 
@@ -363,12 +363,17 @@ func scenCheckPostCheckFix(
 			}
 
 			_, err := architecture.LoadInterfaces(document.Scratch, ".")
- if err != nil {
+			if err != nil {
 				return nil, fmt.Errorf("validate Public interface fix: %w", err)
 			}
 
+			_, err = architecture.LoadPhraseMappings(document.Scratch)
+			if err != nil {
+				return nil, fmt.Errorf("validate Phrase mapping fix: %w", err)
+			}
+
 			_, err = commitFixDocument(document, nil)
- if err != nil {
+			if err != nil {
 				return nil, err
 			}
 		}

@@ -52,41 +52,47 @@ Then:
 # Fix Prompt for Scenario E2E-001: Greeting a name prints the configured greeting followed by that name, and the greeter exits with code 0
 
 ## Target
-The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry). No other document and no other entry changes. Do not touch the catalogue or glossary of the `product` document, the generated test `tests/greeter/greet_test.go`, or any step definition.
+The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry: `tmp/{{RUN_DIR}}/scenarios_yaml.yaml`). Only its `description:` field changes. Do not touch the product document, any step, any other Scenario, the generated test `tests/greeter/greet_test.go`, or any step definition.
 
-## Why
-The scen-check/scenario_quality prompt failed with:
-- `E2E-001: missing must/should — "Greeting a name prints the configured greeting followed by that name, and the greeter exits with code 0"`
+## Finding being fixed
+`scen-check/scenario_quality` reported:
+- `E2E-001: missing rule keyword (no "must" or "should") — "Greeting a name prints the configured greeting followed by that name, and the greeter exits with code 0"`
 
-The description narrates what happens instead of stating the rule the Scenario pins: it carries neither `must` nor `should`. The replacement below states the same behaviour — the configured greeting printed before the given name, and exit code 0 — as one rule sentence, with `must`, with no Given/When/Then text, no forbidden qualifier from `vocabulary.forbidden_qualifiers` (properly, correctly, appropriate, appropriately, user-friendly, fast, quickly, helpful) and no forbidden action verb from `vocabulary.forbidden_actions` (handle, process, parse). It keeps the measurable criterion (exit code 0) that the quality prompts look for.
+The description states what happens but pins no rule. It must become one sentence carrying `must`, with no Gherkin Given/When/Then text.
 
 ## Required Changes
-### Change #1: State the description as one rule sentence using "must"
+
+### Change #1: State the description as a rule with "must"
 **Document:** scenarios_yaml
-**Field:** scenarios.E2E-001.description
+**Field:** `scenarios.E2E-001.description`
 **Current text:**
 ```
 Greeting a name prints the configured greeting followed by that name, and the greeter exits with code 0
 ```
 **New text:**
 ```
-The greeter must print the configured greeting followed by the name it is given and exit with code 0
+The greeter must print the configured greeting followed by the name it is run with, and must exit with code 0
 ```
 
-Replace that one line in place. In YAML the value stays an unquoted plain scalar on the same line as `description:`, exactly as it is now:
+Write it as the same plain (unquoted) YAML scalar on one line, exactly as the current value is written:
 ```yaml
   E2E-001:
-    description: The greeter must print the configured greeting followed by the name it is given and exit with code 0
+    description: The greeter must print the configured greeting followed by the name it is run with, and must exit with code 0
 ```
 
-## Must Not Change
-- `scenarios.E2E-001.service` (`greeter`), `path` (`tests/greeter/greet_test.go`) and the whole `user_stories:` block (story `docs/product/stories/greet-by-name.yaml`, scenario_id `greet-by-name-001-prints-greeting`, merge_date `2026-10-21`).
-- Every step under `merged_steps:` — the given `the greeting is configured as "Hello"`, the when `the Operator runs "greet Ada"`, and the then steps `the command exits with code 0` and `and: stdout matches ^Hello Ada$` — stays byte-for-byte as it is; each already matches exactly one catalogue template.
-- The `metadata:` block, the file's comments, and any other scenario entry.
-- The `product` document, the `architecture_yaml` document, the generated test, and all step definitions.
+## Why this replacement satisfies the check
+- Carries the rule keyword `must` (twice, both clauses bound by it).
+- One sentence, no semicolons and no second independent statement beyond the single coordinated clause.
+- Contains no Gherkin text: the words `given`, `when` and `then` do not appear (the name is referred to as "the name it is run with", never "the given name", and the two outcomes are joined with `and`, never `then`).
+- Keeps every bit of behaviour the Scenario specifies: the greeting comes from configuration (the `given` step's `the greeting is configured as "Hello"`), it is printed followed by the name the command was run with (the `then` step's `stdout matches ^Hello Ada$`), and the exit code is 0 (the `then` step's `the command exits with code 0`). Nothing is added and no assertion is dropped.
+- Stays inside the product vocabulary: it uses the glossary terms `greeting` and `exit code`, names observable actions (`print`, `exit`), and uses none of the forbidden qualifiers (properly, correctly, appropriate, appropriately, user-friendly, fast, quickly, helpful) or forbidden action verbs (handle, process, parse).
 
-## Done When
-`scenarios.E2E-001.description` reads as the single sentence above — one sentence, containing `must`, with no `Given`/`When`/`Then` wording — and `git diff` on the registry shows exactly one changed line.
+## Must not change
+- `scenarios.E2E-001.service` (`greeter`), `path` (`tests/greeter/greet_test.go`) and `user_stories:` (the `docs/product/stories/greet-by-name.yaml` / `greet-by-name-001-prints-greeting` lineage with its `merge_date`) stay exactly as they are.
+- `merged_steps.given`, `merged_steps.when` and `merged_steps.then` stay byte-for-byte as they are, including the `and:` form of the last `then` step.
+- `metadata:` and every other entry of the registry stay as they are.
+- The product document's `catalogue:`, `glossary:`, `roles:` and `vocabulary:` are not edited by this fix; no catalogue `means` is named in the findings.
+- Do not run or edit anything else; `true-bdd build tests --fix` re-renders the generated test from the registry afterwards.
 
 ---
 
