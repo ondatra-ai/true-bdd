@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "us-refine-fix-binary",
+  "files": [
+    {
+      "path": "docs/product/stories/halve-negative-cases.yaml",
+      "kind": "modified",
+      "size": 1247,
+      "sha256": "efb3a2f73d8d0af513916439cbcc8659f294638c10e8ad33043fd8db9ca42ac6",
+      "text": "story:\n    id: halve-negative\n    feature: calculator\n    title: Halve negative integers\n    as_a: Calculator User\n    i_want: to halve an already validated negative integer, rounding toward zero\n    so_that: I can calculate half its value\n    status: PLANNED\n    acceptance_criteria:\n        - id: 001-even\n          description: The calculator must return -3 when the Calculator User halves -6.\n          steps:\n            - given:\n                - the number is \"-6\"\n            - when:\n                - the Calculator User halves the number\n            - then:\n                - the result is \"-3\"\n        - id: 002-odd\n          description: The calculator must return -3 when the Calculator User halves -7.\n          steps:\n            - given:\n                - the number is \"-7\"\n            - when:\n                - the Calculator User halves the number\n            - then:\n                - the result is \"-3\"\n        - id: 003-near-zero\n          description: The calculator must return 0 when the Calculator User halves -1.\n          steps:\n            - given:\n                - the number is \"-1\"\n            - when:\n                - the Calculator User halves the number\n            - then:\n                - the result is \"0\"\n"
+    }
+  ]
+}

@@ -1,0 +1,187 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Technical Scrum Master applying fixes to a user story.
+
+**Your Task:**
+1. Read the current story and the fix prompt instructions.
+2. Apply the changes EXACTLY as specified in the fix prompt — they may
+   target any field of the story (`title`, `as_a`, `i_want`, `so_that`,
+   `status`, `acceptance_criteria`, …), not only acceptance criteria.
+3. Output the COMPLETE updated story body in YAML form.
+
+**Output Requirements:**
+- Output every field of the current story, with the fix prompt's
+  changes applied. Fields not mentioned by the fix prompt MUST be
+  preserved verbatim — do not invent, drop, or reorder unrelated
+  fields.
+- The `acceptance_criteria` array MUST always be present, even when
+  the fix only touches a top-level field; preserve all ACs unless the
+  fix prompt explicitly modifies them.
+- Each acceptance criterion must have an `id`, `description`, and
+  `steps` field. The `description` is a one-line rule-based statement
+  using must/should (NO Gherkin in `description`). The `steps` field
+  holds the Gherkin scenario as a structured given/when/then list.
+- Wrap the output with FILE_START/FILE_END markers.
+
+**Output Format:**
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply-halve-negative-iter1-result.yaml ===
+id: "<story id>"
+title: "<story title>"
+as_a: "<role>"
+i_want: "<desire>"
+so_that: "<benefit>"
+status: "<status>"
+acceptance_criteria:
+  - id: "AC-1"
+    description: "One-line rule-based statement with must/should"
+    steps:
+      - given:
+          - "precondition"
+      - when:
+          - "action"
+      - then:
+          - "outcome"
+          - and: "additional outcome"
+  - id: "AC-2"
+    description: "Another one-line rule-based statement"
+    steps:
+      - given:
+          - "precondition"
+      - when:
+          - "action"
+      - then:
+          - "outcome"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-halve-negative-iter1-result.yaml ===
+```
+
+**CRITICAL:**
+- Apply changes EXACTLY as described in the fix prompt.
+- Output the WHOLE story body — top-level fields AND
+  `acceptance_criteria`. Never output just one section.
+- Do NOT add, remove, or rename fields beyond what the fix prompt
+  specifies.
+- Preserve the exact wording from the fix prompt's "After" sections.
+- The `description` must NEVER contain Given/When/Then — those belong
+  in `steps`.
+
+
+### TASK
+
+## Current Story
+
+**ID:** halve-negative
+**Title:** Halve negative integers
+**As a:** Calculator User
+**I want:** to halve an already validated negative integer, rounding toward zero
+**So that:** I can calculate half its value
+**Status:** PLANNED
+
+### Current Acceptance Criteria
+
+**001-even:**
+The calculator must persist -3 in its internal SQL result table after dividing -6 by two.
+
+**002-odd:**
+The calculator must return -3 when the Calculator User halves -7.
+
+**003-near-zero:**
+The calculator must return 0 when the Calculator User halves -1.
+
+
+---
+
+## Fix Prompt to Apply
+
+=== FILE_START: tmp/{{RUN_DIR}}/01-halve-negative-fix-prompts.md ===
+# Fix Prompt for Story halve-negative: Halve negative integers
+
+## Instructions
+Apply the following changes to the acceptance criteria for this story.
+
+## Original Acceptance Criteria
+1. 001-even: The calculator must persist -3 in its internal SQL result table after dividing -6 by two. [has steps]
+2. 002-odd: The calculator must return -3 when the Calculator User halves -7. [has steps]
+3. 003-near-zero: The calculator must return 0 when the Calculator User halves -1. [has steps]
+
+## Required Changes
+
+Only AC 001-even is faulted by the failed check, and only its **description** is at fault. Its existing Given/When/Then steps are already correct catalogue phrases and must be reproduced byte for byte. ACs 002-odd and 003-near-zero are untouched — same descriptions, same steps, word for word. No ACs are added, merged or removed, and no Story fields change.
+
+### Change #1: 001-even
+**Before:** The calculator must persist -3 in its internal SQL result table after dividing -6 by two.
+**Issue:** The description states implementation, not behaviour observable by the Calculator User. Per `docs/product/product.yaml`, a Calculator User is "A person using the calculator CLI", and per `docs/architecture/architecture.yaml` that user sees only the printed integer result on stdout and the exit code. An "internal SQL result table" is a storage detail the user can never observe (and the architecture declares no database at all), and "dividing -6 by two" names the internal operation rather than the user-visible outcome. The catalogue phrase `the result is "{value}"` means "The command succeeds and prints exactly that integer, rounded toward zero" — that is the observable behaviour the description must state. The behaviour itself (halving -6 yields -3) is preserved; only the wording changes, bringing 001-even into line with the already-passing 002-odd and 003-near-zero.
+**After (description):** The calculator must return -3 when the Calculator User halves -6.
+**After (steps):** unchanged from the original — reproduced exactly:
+```yaml
+- given:
+    - "the number is \"-6\""
+- when:
+    - "the Calculator User halves the number"
+- then:
+    - "the result is \"-3\""
+```
+
+No new ACs are needed: the product document's negative-input coverage (-6, -7, -1 → -3, -3, 0) is already fully covered by the three existing criteria, and the Story declares no failure mode of its own (missing and non-integer inputs belong to the separate calculator-input Story).
+
+## Complete Fixed Acceptance Criteria
+
+```yaml
+- ac_id: 001-even
+  description: "The calculator must return -3 when the Calculator User halves -6."
+  steps:
+    - given:
+        - "the number is \"-6\""
+    - when:
+        - "the Calculator User halves the number"
+    - then:
+        - "the result is \"-3\""
+
+- ac_id: 002-odd
+  description: "The calculator must return -3 when the Calculator User halves -7."
+  steps:
+    - given:
+        - "the number is \"-7\""
+    - when:
+        - "the Calculator User halves the number"
+    - then:
+        - "the result is \"-3\""
+
+- ac_id: 003-near-zero
+  description: "The calculator must return 0 when the Calculator User halves -1."
+  steps:
+    - given:
+        - "the number is \"-1\""
+    - when:
+        - "the Calculator User halves the number"
+    - then:
+        - "the result is \"0\""
+```
+
+## Catalogue Compliance
+Every step above uses only phrases declared in the product document's catalogue, in their declared blocks, with slots filled:
+- `the number is "{value}"` (given)
+- `the Calculator User halves the number` (when)
+- `the result is "{value}"` (then)
+
+No new phrase is introduced. No forbidden qualifier (properly, correctly, appropriate, fast) appears in any description or step.
+
+=== FILE_END: tmp/{{RUN_DIR}}/01-halve-negative-fix-prompts.md ===
+
+---
+
+## Instructions
+
+Apply the changes described in the "Fix Prompt to Apply" section above.
+The fix may target any field of the story — top-level (`title`,
+`as_a`, `i_want`, `so_that`, `status`) or `acceptance_criteria` —
+so output the COMPLETE updated story body. Preserve every field that
+the fix prompt does not touch.
+
+Output the complete updated story body using FILE_START/FILE_END
+markers:
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-halve-negative-iter1-result.yaml ===
+(Complete story body YAML here — every top-level field plus
+`acceptance_criteria`)
+=== FILE_END: tmp/{{RUN_DIR}}/apply-halve-negative-iter1-result.yaml ===

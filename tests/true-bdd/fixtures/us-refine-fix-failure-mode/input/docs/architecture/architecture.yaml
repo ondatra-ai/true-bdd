@@ -1,0 +1,16 @@
+architecture:
+  services:
+  - name: calculator
+    path: services/calculator
+    language: go
+    description: 'A CLI: calculator divide <dividend> <divisor>; exit 0 with the result on stdout, or exit 1 and stderr "Cannot divide by zero" for a zero divisor. Other input errors belong to calculator-input.'
+  testing:
+    framework: go-test
+    config: go.mod
+    helpers:
+    - name: os/exec.CommandContext
+      description: Run the calculator CLI with explicit arguments and capture stdout and exit code.
+    commands:
+      record: go test ./tests/calculator/
+      replay: go test ./tests/calculator/
+      live: go test ./tests/calculator/

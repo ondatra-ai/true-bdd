@@ -257,6 +257,19 @@ glossary:
       The ordered Prompts a command asks about each Story or Scenario it
       walks, one checklist per command, read from the project tree. It
       decides which questions a run asks.
+      The shipped us-refine checklist gives every Prompt an F: so --fix can
+      propose added or rewritten Acceptance Criteria or a Catalogue phrase;
+      each apply requires the Product Owner's answer at the menu. A custom
+      checklist with any Prompt lacking F: still refuses --fix at startup.
+      A Story needs 3 to 7 criteria. Every failure mode its behaviour meets
+      needs its own criterion; a Story with no failure mode of its own passes
+      the error-scenario Prompt with a context line saying why, for example
+      that its input errors belong to another Story. The rule adds no Story
+      field, and fixes propose error criteria only for real failure modes.
+      With a Catalogue, each step must match exactly one phrase in its
+      declared block, including phrases the step-phrases fix adds.
+      That built-in check runs before model Prompts, and its fix records a
+      missing phrase in the product document while the Story keeps its words.
 
   - term: Prompt
     means: >-
