@@ -5,6 +5,7 @@ Fix {{accepted findings, failed checks or conflict}} for {{issue #N}} in TrueBDD
 ## Read first
 
 - Ticket and spec: {{paths or issue numbers, saved through `--issue`}}.
+- The Owner's decisions: {{the `docs/qna/` log and its `Q<n>` this run carries out, or none}}. Read `docs/qna/` as `docs/agents/domain.md` says: oldest to newest, a newer entry overriding an older one.
 - Branch history and diff: `git log --oneline {{base}}..HEAD`, `git diff {{base}}...HEAD`.
 - `CLAUDE.md`, `docs/agents/domain.md`, `GLOSSARY.md`, relevant `docs/adr/`, and the matching `.claude/rules/*.md`.
 - `.claude/skills/mpc_tdd/SKILL.md` for behavior changes.

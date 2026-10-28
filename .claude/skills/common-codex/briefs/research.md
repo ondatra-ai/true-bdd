@@ -14,6 +14,8 @@ Research one question for Claude in TrueBDD. Change nothing; your final message 
 
 {{Files, folders, read-only commands or sites; facts already known. Issues must be supplied with `--issue` and read from their saved paths.}}
 
+- The Owner's decisions: {{the `docs/qna/` log and its `Q<n>` this run carries out, or none}}. Read `docs/qna/` as `docs/agents/domain.md` says: oldest to newest, a newer entry overriding an older one.
+
 Read `CLAUDE.md`, `docs/agents/domain.md`, `GLOSSARY.md` and relevant `docs/adr/` before exploring code. The sandbox is read-only without network; public-source research uses the explicitly enabled web search tool.
 
 ## Done when

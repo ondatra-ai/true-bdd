@@ -7,6 +7,7 @@ How the engineering skills should consume this repo's domain documentation when 
 - **`GLOSSARY.md`** at the repo root, or
 - **`GLOSSARY-MAP.md`** at the repo root if it exists: it points at one `GLOSSARY.md` per context. Read each one relevant to the topic.
 - **`docs/adr/`**: read ADRs that touch the area you're about to work in. In multi-context repos, also check `src/<context>/docs/adr/` for context-scoped decisions.
+- **`docs/qna/`**: the Owner's decisions, one YAML log per grilling session. Read the logs oldest to newest by file name: a newer entry overrides an older one. In each entry the `answer` quotes the Owner verbatim and outranks Claude's `settled` summary; an answer starting `Claude, no question asked` or `Claude, delegated` is Claude's own. The log a ticket or brief names, with its `Q<n>`, is the one the work carries out.
 
 If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The `/mpc_domain-modeling` skill (reached via `/mpc_grill-with-docs` and `/mpc_improve-codebase-architecture`) creates them lazily when terms or decisions actually get resolved.
 

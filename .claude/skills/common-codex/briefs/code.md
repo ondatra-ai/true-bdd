@@ -5,6 +5,7 @@ Implement {{issue #N or described change}} in TrueBDD, alone and to the end. Nob
 ## Read first
 
 - The ticket, spec and prior work: {{paths, issue numbers, commits}}. Issues supplied through `--issue` are saved at the paths in `## This run`.
+- The Owner's decisions: {{the `docs/qna/` log and its `Q<n>` this run carries out, or none}}. Read `docs/qna/` as `docs/agents/domain.md` says: oldest to newest, a newer entry overriding an older one.
 - `CLAUDE.md`, `docs/agents/domain.md`, `GLOSSARY.md`, relevant `docs/adr/` and every `.claude/rules/*.md` matching a file you touch.
 - `.claude/skills/mpc_tdd/SKILL.md`: build behavior test-first at the seams this task names.
 

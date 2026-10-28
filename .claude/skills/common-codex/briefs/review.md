@@ -6,6 +6,7 @@ Review one TrueBDD change along one axis. Change nothing; your final message is 
 
 - Diff: `git diff {{fixed point}}...HEAD {{path filters}}`, from {{checkout or worktree path}}.
 - Commits: `git log --oneline {{fixed point}}..HEAD`.
+- The Owner's decisions: {{the `docs/qna/` log and its `Q<n>` this run carries out, or none}}. Read `docs/qna/` as `docs/agents/domain.md` says: oldest to newest, a newer entry overriding an older one.
 
 ## Axis
 
