@@ -1,0 +1,10 @@
+architecture:
+  services:
+  - name: greeter
+    path: services/greeter
+    language: go
+    public_interface:
+      kind: grpc
+  - name: library
+    public_interface:
+      kind: library

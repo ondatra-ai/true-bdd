@@ -137,6 +137,25 @@ vocabulary:
 # why it matters. `D: declared-terms` holds every term a claimed Scenario's
 # phrases declare to exactly one entry here.
 glossary:
+  - term: Public interface
+    means: >-
+      What a service offers across its process boundary, declared under that service's
+      public_interface in the architecture. The supported kind is cli, naming an
+      OpenCLI-like YAML or JSON document, http, naming an OpenAPI 3 document, or ui,
+      listing elements by role and accessible name within a page or region.
+      CLI documents name commands, arguments, options and exit codes; extensions name
+      files read or written with formats, log records and outgoing process calls.
+      Documents are relative to the Host project root and are part of the Specification.
+      HTTP local references load under the same root; network references and references
+      outside the Host project are refused.
+      Commands reading the architecture load these documents before any test run, Item
+      or AI turn; a missing or invalid one refuses startup with its filename and error.
+      The declaration is optional for loading older architectures, but scen check's
+      public-interface built-in check fails every Scenario whose service lacks a valid
+      declaration, naming the service without an AI turn. A library kind is excluded;
+      another kind is named as not supported yet. Its fix first asks the System Architect
+      what the service offers and writes the architecture document, never the Scenario.
+
   - term: engine
     means: >-
       TrueBDD's own program, `true-bdd`. It walks a project's documents

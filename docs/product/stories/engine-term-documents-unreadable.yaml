@@ -64,7 +64,7 @@ story:
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns
         - id: 004-architecture-not-yaml-stops-scen-check
-          description: '`scen check` must stop at its term-mapping check when the architecture document is not valid YAML, naming the document and the line its reader stopped at, before any later check or AI turn'
+          description: '`scen check` must refuse startup when the architecture document is not valid YAML, naming the document and the line its reader stopped at, before any later check or AI turn'
           steps:
             - given:
                 - the "scen-check-architecture-not-yaml" project tree
@@ -72,8 +72,8 @@ story:
                 - the Quality Engineer runs "scen check"
             - then:
                 - the command exits with code 1
-                - stdout matches level=ERROR msg="Check could not answer" check=term-mappings subjectID=E2E-001
-                - and: 'stdout matches read the word mapping: .*architecture document \./docs/architecture/architecture\.yaml: yaml: line \d+: did not find expected'
+                - 'stdout matches level=ERROR msg="Refusing to start: checklist documents unsatisfiable"'
+                - and: 'stdout matches failed to parse architecture file \./docs/architecture/architecture\.yaml: yaml: line \d+: did not find expected'
                 - but: stdout does not match check=step-definitions
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns

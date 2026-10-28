@@ -151,7 +151,7 @@ story:
                 - and: stdout matches FIX PROMPT GENERATED
                 - and: stdout matches msg="Fix recorded in the document" document=scenarios_yaml
                 - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=4 answer=pass
-                - and: 'stdout matches PASS: 14 '
+                - and: 'stdout matches PASS: 15 '
                 - and: stdout matches ALL CHECKS PASSED
                 - but: stdout does not match Hit max apply attempts
                 - and: the only file changed outside "tmp" is "docs/scenarios.yaml"

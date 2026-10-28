@@ -255,10 +255,10 @@ model's shape (pass or fail plus context lines), and under `--fix` its
 carrying both `D:` and `Q:` or neither, a `D:` naming a check the
 command does not hold, a `with:` parameter the check does not read, and
 `model:` on a `D:` prompt, since no model answers it, and a `D:` whose
-`docs:` does not list a document its check reads. `scen check` holds five
+`docs:` does not list a document its check reads. `scen check` holds six
 checks, `given-when-then`, `step-phrases`, `declared-terms`,
-`term-mappings` and `step-definitions` (below); the shipped `scen-check`
-checklist walks the last four.
+`term-mappings`, `public-interface` and `step-definitions` (below); the shipped `scen-check`
+checklist walks the last five.
 
 ### Parking a prompt
 
@@ -373,7 +373,7 @@ parses: the Scenario, the Story and the step definitions are never
 edited.
 
 What no check can settle, a model answers. The shipped `scen-check`
-checklist follows the four closure checks with two `Q:` prompts that
+checklist follows the five closure checks with two `Q:` prompts that
 read the product and the architecture document: whether the meaning of
 each phrase a Scenario's steps use says what is set up or observed (a
 pattern slot's phrase must say which output its pattern is held
@@ -559,6 +559,40 @@ architecture:
       path: services/true-bdd
       language: go
 ```
+
+Each service may declare `public_interface`. It is optional in the schema so an older architecture loads, but `scen check`'s `D: public-interface` (`docs: [architecture_yaml]`) fails every Scenario whose service has no valid declaration, naming the service without an AI turn. This check runs even without a Catalogue or Story. Its `F:` asks the System Architect what the service offers, then writes the architecture document, never the Scenario.
+
+```yaml
+public_interface:
+  kind: cli
+  document: docs/greeter-cli.yaml
+```
+
+`document` is relative to the Host project root. CLI documents use this supported OpenCLI-like draft shape (YAML or JSON): `opencli` and `info: {title, version}` identify the document; `commands` maps command names to `parameters` (with `name` and optional `in: argument|flag|option`, `schema: {type: ...}`, `description` and `required`) and `responses` (exit-code keys mapped to objects with optional `description` and `content`). This follows the [OpenCLI reference](https://github.com/nrranjithnr/open-cli-specification/blob/main/opencli.spec.json); the referenced project currently advertises `opencli: "1.0.0"`. Every command declares responses for its exit codes. Optional `extensions` holds maps keyed by stable names a later Phrase mapping can reference:
+
+```yaml
+opencli: "1.0.0"
+info: {title: Greeter, version: "1.0.0"}
+commands:
+  greet:
+    parameters:
+      - {name: person, in: argument, required: true, schema: {type: string}}
+      - {name: loud, in: flag, schema: {type: boolean}}
+    responses:
+      '0': {description: Greeting printed}
+      '1': {description: Invalid input}
+extensions:
+  files:
+    greeting-config: {path: greeter.yaml, format: YAML mapping, access: read}
+  log_records:
+    greeted: {message: Greeting printed, format: logfmt with person field}
+  outgoing_calls:
+    notify: {command: notifier, arguments: [--person, "{person}"]}
+```
+
+File `access` is `read`, `write` or `read-write`; each file has a path and format, each log record a message and format, and each outgoing call a command and optional argument list. `kind: http` names an OpenAPI 3 document instead. `kind: ui` has inline `elements`, each with `role`, accessible `name` and a `page` or `region` (both may be present); the same role and name must be unique within that scope. CLI/HTTP declarations have no elements; UI declarations have no document. There is no library kind; another process-boundary kind is reported by name as not supported yet.
+
+Named documents are part of the Specification. Commands reading the architecture load and parse them at start, refusing a missing or invalid document with its filename and error before any test run, Item or AI turn. HTTP documents and their local `$ref` documents are validated with the architecture's exact-version OpenAPI library; references outside the Host project or to network URLs are refused. TrueBDD's own declaration is tracked separately in #243.
 
 The rules, all enforced at startup rather than discovered mid-run:
 

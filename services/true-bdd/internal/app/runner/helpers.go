@@ -15,6 +15,7 @@ import (
 	checklistmodels "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/story"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/console"
+ "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/architecture"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/disk"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/fs"
@@ -122,10 +123,15 @@ func validateRequiredDocs(
 		return nil
 	}
 
-	_, err := resolver.ResolveAll(keys)
+	paths, err := resolver.ResolveAll(keys)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errUnsatisfiableChecklistDocs, err)
 	}
+
+ if path := paths[docs.KeyArchitectureYAML]; path != "" {
+  _, err = architecture.LoadInterfaces(path, ".")
+ if err != nil { return fmt.Errorf("%w: %w", errUnsatisfiableChecklistDocs, err) }
+ }
 
 	return nil
 }

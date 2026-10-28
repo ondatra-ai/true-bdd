@@ -1,0 +1,37 @@
+scenarios:
+  host-001:
+    description: Observe the declared service
+    service: greeter
+    path: tests/greeter/scenario_test.go
+    user_stories: []
+    merged_steps:
+      given:
+      - a host
+      when:
+      - a command runs
+      then:
+      - it returns
+  host-002:
+    description: Observe the declared service
+    service: api
+    path: tests/api/scenario_test.go
+    user_stories: []
+    merged_steps:
+      given:
+      - a host
+      when:
+      - a command runs
+      then:
+      - it returns
+  host-003:
+    description: Observe the declared service
+    service: web
+    path: tests/web/scenario_test.go
+    user_stories: []
+    merged_steps:
+      given:
+      - a host
+      when:
+      - a command runs
+      then:
+      - it returns

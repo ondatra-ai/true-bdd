@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "public-interface-fix",
+  "files": [
+    {
+      "path": "docs/architecture/architecture.yaml",
+      "kind": "modified",
+      "size": 260,
+      "sha256": "1a568382677b6c981d0ee978d18bdf6d0ba12086458822843daea9539027de7b",
+      "text": "# Proposed Public interface: CLI at docs/greeter-cli.yaml; ask the System Architect to confirm.\narchitecture:\n  services:\n  - name: greeter\n    path: services/greeter\n    language: go\n    public_interface:\n      kind: cli\n      document: docs/greeter-cli.yaml\n"
+    }
+  ]
+}

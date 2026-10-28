@@ -15,6 +15,9 @@ architecture:
     - name: greeter
       path: services/greeter
       language: go
+      public_interface:
+        kind: cli
+        document: docs/greeter-cli.yaml
   terms:
     - term: greeting
       technical: >-

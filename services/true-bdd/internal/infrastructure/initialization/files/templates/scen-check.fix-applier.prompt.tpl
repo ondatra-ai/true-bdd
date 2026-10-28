@@ -1,3 +1,18 @@
+{{ if eq .Check "public-interface" -}}
+Service: {{.Subject.Service}}
+Approved fix:
+{{.FixPrompt}}
+Architecture working copy:
+{{ range .Subject.TermDocuments }}{{ if eq .Key "architecture_yaml" }}
+Edit `{{.Scratch}}`, the working copy of `{{.Path}}`.
+{{ end }}{{ end }}
+After editing, return:
+=== FILE_START: {{.ResultPath}} ===
+applied: true
+target: "<architecture working copy>"
+summary: "Declared the service's Public interface"
+=== FILE_END: {{.ResultPath}} ===
+{{ else -}}
 {{ if eq .Check "" -}}
 ## Subject — Registry Scenario
 
@@ -106,4 +121,5 @@ applied: true
 target: "<path of the working copy you edited>"
 summary: "<one-line summary of what changed>"
 === FILE_END: {{.ResultPath}} ===
+{{ end -}}
 {{ end -}}
