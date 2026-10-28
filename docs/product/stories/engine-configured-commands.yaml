@@ -89,7 +89,6 @@ story:
     steps:
     - given:
       - the "us-refine-fix-unfixable-checklist" project tree
-      - and: the "us-refine" checklist is narrowed to its "Count the total number of acceptance criteria" prompt
     - when:
       - the Product Owner runs "us refine 96.1 --fix"
     - then:

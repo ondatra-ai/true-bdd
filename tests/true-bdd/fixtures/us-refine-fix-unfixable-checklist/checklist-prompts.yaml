@@ -1,7 +1,0 @@
-# Which prompts of the shipped checklist this fixture's run walks.
-# The one selected prompt carries no `F:`, so a `--fix` run must be
-# refused at startup naming it, before any AI turn: the walk would have
-# nothing to say for that prompt. The story is well-formed on purpose,
-# so the only defect is the missing fix template.
-us-refine:
-- Count the total number of acceptance criteria

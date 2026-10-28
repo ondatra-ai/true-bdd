@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-halve-negative-iter1-result.yaml ===
+applied: true
+target: "tmp/{{RUN_DIR}}/product.yaml"
+summary: "Appended the exact role-based halving when entry to the catalogue."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-halve-negative-iter1-result.yaml ===

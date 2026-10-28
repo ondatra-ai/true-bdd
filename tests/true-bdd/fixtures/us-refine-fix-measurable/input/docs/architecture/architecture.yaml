@@ -1,0 +1,16 @@
+architecture:
+  services:
+  - name: calculator
+    path: services/calculator
+    language: go
+    description: 'The summary viewer CLI: viewer summary --view <brief|overview|preview> <document>; stdout contains the summary, which must be at most 150 words.'
+  testing:
+    framework: go-test
+    config: go.mod
+    helpers:
+    - name: os/exec.CommandContext
+      description: Run the calculator CLI with explicit arguments and capture stdout and exit code.
+    commands:
+      record: go test ./tests/calculator/
+      replay: go test ./tests/calculator/
+      live: go test ./tests/calculator/

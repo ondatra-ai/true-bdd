@@ -1,0 +1,27 @@
+title: Summary viewer
+description:
+  summary: Three independent summary views show at most 150 words of the selected shared document. No other thresholds are specified. The brief, overview and preview views all enforce this limit.
+roles:
+- name: Calculator User
+  definition: A person requesting a summary view
+vocabulary:
+  forbidden_qualifiers: []
+  forbidden_actions: []
+glossary: []
+catalogue:
+- template: a shared document is selected
+  block: given
+  means: Select an accessible document.
+  terms: []
+- template: the Calculator User requests the "{view}" view
+  block: when
+  means: Request the named summary view.
+  terms: []
+- template: the summary is concise
+  block: then
+  means: The summary length has no measurable threshold in this wording.
+  terms: []
+- template: the summary has at most {count:number} words
+  block: then
+  means: The displayed summary contains at most the stated word count.
+  terms: []
