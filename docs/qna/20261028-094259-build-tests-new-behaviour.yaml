@@ -1,0 +1,997 @@
+# Q&A log of one grilling session (mpc_grilling).
+
+intent: |
+  Grill epic #212 (`build tests`: recover the tests from the Specification) in the light of
+  the live pipeline run of 28 October (#192): the new behaviour of Story `halve` was lost in
+  `build tests --fix` before any `Then`, because the step definition called the not-yet-built
+  `calc.Halve`, the package did not compile, and the Fix loop rewrote the definition to halve
+  the number itself. Then triage #212 and #192 and file tickets, including the `us refine --fix`
+  and error-AC findings.
+
+log:
+  - decision_trace:
+      research:
+        - |
+          In the live run's host, the word mapping says `number` is "The integer argument to
+          services/calc.Double"; no Specification document names an API for halving. The fix plan
+          gave that as its reason to bend the definition: "The spec names no production function
+          for halving, so `halve` performs the operation ... directly"
+          (/tmp/true-bdd-live-192/host/tmp/2026-10-28-10-14-45-4012/01-halve-001-even-number-halved-fix-iter1-response.txt).
+        - |
+          GLOSSARY.md defines the Word mapping as mapping terms "without naming code", yet the
+          host's mapping names services/calc.Double and TrueBDD's own mapping names linker symbols.
+        - |
+          The product document's System Architect "Fixes the contracts that must survive
+          regeneration and leaves the rest free to change".
+        - |
+          Prior art: in classic TDD the first test may not compile, because the test defines the
+          interface (https://cavac.at/cavacopedia/Test-driven_development); whether a compile
+          error counts as red is disputed (https://llm-coding.github.io/Semantic-Anchors/anchor/red-green-tdd).
+          A test that computes what it asserts is a named reward-hacking class, the tautological
+          test (https://dev.to/jangwook_kim_e31e7291ad98/reward-hacking-in-llm-agents-what-the-rhb-benchmark-reveals-54la).
+      recommendation: |
+        (a): the Specification names the API before the code exists (for example
+        `services/calc.Halve(value int) int`); build tests binds to it, build code implements it.
+        Then a compile error on a declared but absent symbol means "not built" deterministically,
+        no Registry marker is needed, and a definition can be checked to call the API its phrase
+        maps to.
+      settled: |
+        The Owner answered with a rule by kind of interface, not by one option:
+        - a public interface is declared in the Specification, with its criteria and format,
+          something like Swagger (not implemented today);
+        - an internal interface whose data persists between builds (a database's data model,
+          SQL or Mongo) is kept between builds and declared in the architecture;
+        - an internal, non-persistent interface is left to the AI: build code decides it.
+        For the calc case the Owner sees two possibilities: the API is declared in the
+        Specification, or left wholly to the implementation, depending on how the API is
+        classified. Opened: whether step definitions may reach anything but the public
+        interface; the declaration format of a public interface; where the persistent data model
+        lives in the architecture.
+    question: |
+      Q1 - Who sets the API of a behaviour not built yet: what the step reaches the behaviour
+      through, and what build code builds. (a) The Specification, before the code: the
+      architecture names the operation in code terms (`services/calc.Halve(value int) int`);
+      build tests binds to it, build code implements it; a compile error on a declared but
+      absent symbol means "not built", no Registry marker, a definition can be checked to call
+      its phrase's API, and the glossary's "without naming code" changes. (b) build tests chooses
+      it and the step definition is the contract (classic TDD); the contract is not in the
+      Specification, a rebuild may choose another API, "not built" is a heuristic over compile
+      errors. (c) The order changes: build code first chooses the API from the Story, then build
+      tests binds strictly; build code has no failing test to drive it.
+    answer: |
+      Смотри, зависит от того, является ли этот API публичным или приватным. Если приватным, то решает сам build code. Да? То есть, если этот API публичный, то он должен быть определен в спецификации. Как бы, какие к нему есть критерии, скорее всего, какой формат. Что-то типа, я думаю, свагера должно быть. Это сейчас не имплементировано, но вот все, что внутреннее, должно переходить на под управление AI, все, что внешнее, под управление спецификацией. Здесь есть еще один, опять же, артефакт, который меняется, ну, не меняется между билдами, да, это формат текущих данных. Ну, условно говоря, если при предыдущем билде мы построили SQL там определенным образом базу данных, ну, или Mongo, да, и там уже есть какой-то какая-то модель данных, то она должна оставаться. И вот эта модель, она остается тоже между билдами и тоже должна храниться между ними. Вот, то есть смотри, API нового поведения, которое еще никогда не было построено, да, это вот задается вот этими тремя вопросами. Публичный, не публичный. Если публичный, то должно быть описано прямо в спецификации. Если не публичный, то он persistent или не persistent. Если persistent, то где-то в архитектуре. Если не persistent, то отдается на уровень AI. Проверь, пожалуйста, я ответил на твой вопрос, потому что, по-моему, я его не очень хорошо понял. Я действительно не очень хорошо понял вопрос. Вот. Вот, конкретно к этому случаю выглядит так, как будто API должен был бы быть определен в спецификации или полностью оставлен на имплементацию TrueBDD в любом возможном для него виде, поскольку там нету всей этой штуки. Но это зависит от того, как мы подходим к API. Вот.
+  - decision_trace:
+      research:
+        - |
+          TrueBDD's own suite already reaches the engine only from outside: tests/true-bdd/steps/
+          imports no engine package; the steps run the `true-bdd` binary and read its stdout,
+          files and log, whose message names GLOSSARY.md calls a wire contract.
+        - |
+          The product document's System Architect: "every scenario must be observable through a
+          declared service".
+        - |
+          In the calc host the definitions call services/calc.Double directly from Go: the service
+          is a library, and its exported functions are what it offers outside.
+      recommendation: |
+        (a): a step definition sets up and observes the system only through the Public interface,
+        plus the Persistent data model where a Scenario sets up or checks stored data; never
+        through Internal code. For calc, calc.Halve is then public and must be declared in the
+        Specification before build tests.
+      settled: |
+        (a). A step definition reaches the system through its Public interface, and, as a
+        specific case, through the Persistent data model: where that model is defined in code,
+        that code is fixed between builds and checked as it is (likely by another approach,
+        to be worked out). Internal code that neither holds nor defines data kept on disk is
+        never reached by a step definition. Consequence for the live run: calc.Halve is called by
+        the tests, so it is the Public interface and had to be declared in the Specification
+        before build tests.
+    question: |
+      Q2 - What may a step definition set up and observe the system through: (a) only the Public
+      interface, plus the Persistent data model when a Scenario sets up or checks stored data,
+      never Internal code; for calc, calc.Halve is then public and must be declared in the
+      Specification before build tests; (b) Internal code as well, so a test binds to what build
+      code chooses and may change on every rebuild, and cannot be written before the code.
+    answer: |
+      Да, по логике это A, но B гипотетически тоже может быть возможен, если мы будем проверять вот эти persistent модели. То есть это специфические кейсы, которые относятся исключительно вот к хранимым на диске моделям, и если они описываются в коде, то этот код тоже надо проверять, ну, то есть фиксировать и проверять как есть. Ну, то есть вот как это. Скорее всего, там будет какой-то другой подход, да, но вот B — это очень специфический. А internal code никогда. То есть вот то, что действительно internal и не лежит на и не определяет данные, которые лежат на диске, да, и никак с ними не связан. Вот тут никогда.
+  - decision_trace:
+      research:
+        - |
+          Today calc declares no Public interface: only the word mapping of `number` mentions
+          services/calc.Double. TrueBDD's own is scattered: commands, exit code and stdout in the
+          product glossary; template inputs in architecture.prompt_data ("a byte contract beside
+          the CLI invocation contract"); calls to Claude and codex under the service's
+          dependencies' invocation.
+        - |
+          Standards: OpenAPI for HTTP; for CLIs a draft OpenCLI ("like OpenAPI Spec, but for your
+          CLIs", v0.1 draft, https://standards.apievangelist.com/store/opencli-specification/);
+          for a Go library no standard, the exported signatures are the contract.
+        - |
+          GLOSSARY.md counts the Specification as exactly three documents.
+      recommendation: |
+        (a): in the architecture document, per service, in the standard format of the service's
+        kind: an OpenAPI file for HTTP, an OpenCLI-like file for a CLI, signatures inline for a
+        library; the files it names become part of the Specification.
+      settled: |
+        (a). Each service in the architecture document declares its Public interface in the
+        standard format of its kind: it names an OpenAPI file for HTTP and an OpenCLI-like file
+        for a CLI, and states a library's signatures inline. The files it names are part of the
+        Specification. Gathering TrueBDD's own scattered interface into this form is a branch for
+        later.
+    question: |
+      Q3 - Where and in what form does the Specification declare a service's Public interface:
+      (a) in the architecture, per service, in the standard of its kind (an OpenAPI file for
+      HTTP, an OpenCLI-like file for a CLI, signatures inline for a library), the named files
+      becoming part of the Specification; (b) in the architecture, in one format of TrueBDD's
+      own for every kind; (c) in the product document, since the interface is what outsiders
+      see and the Product Owner owns it.
+    answer: |
+      a)
+  - decision_trace:
+      research:
+        - |
+          The live run: in Go one absent function fails the whole steps package; the built
+          calc-001-double failed with it, and build tests could verify nothing in that suite.
+        - |
+          build code already handles a package that does not build: Go's synthetic
+          `package::<build>` member makes its rerun unfiltered (ADR-0019).
+        - |
+          Prior art: OpenAPI generators such as oapi-codegen emit a server stub that answers
+          501 Not Implemented for every declared operation; in Cucumber/godog a step may return
+          ErrPending, "not implemented yet", and the build stays red
+          (https://pkg.go.dev/github.com/cucumber/godog).
+      recommendation: |
+        (b): the engine generates a stub of the declared interface (Go: a function that panics
+        "not built: calc.Halve"; HTTP: 501), so everything compiles, built neighbours stay
+        strict, and a new Scenario fails on a marker the engine itself placed.
+      settled: |
+        (a), with the Owner's reason: the point is to build the test first; it may not work yet,
+        but it declares how the system must behave seen from outside. A BDD test does not look
+        inside: it says, for example, that a REST call must return a JSON object. Step
+        definitions look at the system from outside; if they generate a stub, it is only for
+        themselves, inside their own code. A BDD test and its target must not share a codebase,
+        nor even packages. Rejected (b): the engine's stub would put generated code into the
+        target. Opened: this contradicts Q3's inline signatures for a library, whose interface
+        is reached only by importing its package; and how build tests tells a red test whose
+        behaviour is not built from a wrong definition.
+    question: |
+      Q4 - What does build tests do with an operation declared in the Public interface but not
+      built yet: (a) leave the suite red or not compiling; failures caused by a declared but
+      absent operation are accepted as awaiting behaviour, build tests ends COMPLETE and build
+      code gets `package::<build>`; in a compiled language nothing in the suite can be verified
+      until build code runs; (b) the engine generates a stub of the interface from the
+      declaration (Go: panic "not built: calc.Halve"; HTTP: 501), so everything compiles, built
+      neighbours stay strict, a new Scenario fails on the not-built marker, #192's options are
+      not needed, and build code replaces the stub; (c) build tests writes the definition and
+      does not run it until the operation is built, checking statically that it calls the
+      declared operation.
+    answer: |
+      А) в том же и суть чтоб сперва построить тест. Который пусть и не работать но декларирует как должна вести система извне. Смотри мы же пишем BDD тест? соотвественно ны не проверяем что там внутири. Ты ж понимаешь в чем разница? тест пишет что REST CALL должен вернуть объект json или еще что-то такое. Т. е. steps должен посмотреть на ситуацию со стороны и если и сгенерить зоаглушку то исключительно для себя внутри своего когда. потому что это не есть хорошая пракика когда бдд тест и таргет используют общую кодовую базу или даже пекеджи
+  - decision_trace:
+      research:
+        - |
+          Q3 accepted "signatures inline for a library", but a library's Public interface is
+          reached only by importing its package: the live run's tests/calc/steps/register.go
+          imports fixture/stepsrun/services/calc.
+        - |
+          The Jest fixtures have the same shape: greeting.test.js does
+          require('../../services/greeter/greeting'), which is how #213 found a false success
+          when the service did not exist yet.
+        - |
+          TrueBDD's own suite and the Playwright hosts reach their target across a process or
+          network boundary: the binary, HTTP.
+      recommendation: |
+        (a): a library is not a BDD target; every service the Registry tests offers its Public
+        interface across a process boundary. Q4's principle holds without exceptions, and the
+        live run's failure mode (steps that do not compile, then a bent definition) cannot
+        arise.
+      settled: |
+        (a). A library is not a BDD target: every service the Registry tests offers its Public
+        interface across a process boundary (a CLI, HTTP and the like). This overrides Q3 for
+        libraries: the inline-signature form is dropped. Step definitions never compile against
+        the target, so a steps package that does not compile is always the definition's fault,
+        and a behaviour not built yet shows only at run time. The calc fixture and the Jest
+        fixtures must change shape.
+    question: |
+      Q5 - How to treat a library service when the test and the target share no code or
+      packages: (a) a library is not a BDD target; every service the Registry tests offers its
+      Public interface across a process boundary; Q3's inline signatures are dropped; the calc
+      fixture becomes a CLI and the Jest fixtures change shape; steps never compile against the
+      target; (b) a library stays an exception: steps import only its declared public package,
+      and a compile error on a declared but absent symbol means awaiting behaviour; (c) a
+      library is tested through a driver the tests own, a small process of their own that alone
+      imports the package.
+    answer: |
+      Да. похоже  (а) Библиотека не может быть целью BDD.
+  - decision_trace:
+      research:
+        - |
+          Q2 lets a step definition set up or check stored data through the Persistent data
+          model, and noted that where the model is defined in code that code is fixed and
+          checked as it is. Q4 and Q5 forbid the tests and the target sharing code or packages.
+        - |
+          TrueBDD's own suite already checks stored data from outside: it reads the files the
+          engine writes (the Registry, Stories, the engine log), never the engine's code.
+      recommendation: |
+        Forced consequence, no question.
+      settled: |
+        A step definition reaches stored data from outside, through the store itself (a query,
+        a file read), never by importing the code that defines the model. Forced by Q4 (no
+        shared code or packages) together with Q2.
+    question: |
+      How does a step definition reach the Persistent data model, given Q4 and Q5?
+    answer: |
+      Claude, no question asked: through the store itself, from outside, never by importing the
+      service's model code; forced by Q4 and Q2.
+  - decision_trace:
+      research:
+        - |
+          After Q5 a behaviour not built yet shows only at run time (an unknown command, then a
+          failing Then), so #192's verdict rule (red only at a Then; bring-up, Given and When
+          strict) applies again; what remains is how build tests knows a Scenario is not built.
+        - |
+          Every Story already has a `status` field: IMPLEMENTED on TrueBDD's 54 Stories, DRAFT on
+          `halve`. The engine never reads it (story.go has the field and nothing uses it).
+        - |
+          An explicit marker would also allow the inverse check: a Scenario marked not built that
+          passes in build tests is a signal, which is exactly the live run's outcome.
+      recommendation: |
+        (c): the Story's status; a Scenario awaits behaviour while any of its user_stories is not
+        IMPLEMENTED; a Scenario with no Story is strict; cut B is strict by construction.
+      settled: |
+        None of the markers. By default no Scenario is built until proven otherwise. The verdict
+        must be idempotent: it depends on no additional parameter (no Story status, no Registry
+        field, no build's VCS stamp). Hints such as a Scenario's `path`, its Story's `merge_date`
+        and when the test file last changed are possible optimisations, not the rule. #192's
+        options (b) and (c), and Claude's Story-status option, are dropped. Opened: what
+        "proven" means within one run, which decides whether #192's baseline (a) survives.
+    question: |
+      Q6 - How does build tests know a Scenario's behaviour is not built yet, so it may accept
+      it red at a Then: (a) a baseline run (#192 a): what passes at the start or at any
+      verification of the run is strict; in cut B every Scenario starts unbound, so every wrong
+      definition is accepted red; (b) a new field on the Registry entry (#192 b), written by us
+      apply and removed by the Owner after build code; (c) the Story's status: a Scenario awaits
+      behaviour while any of its user_stories is not IMPLEMENTED, one with no Story is strict,
+      cut B strict by construction; (d) the Registry the running engine was built from (#192 c),
+      only for a host testing TrueBDD itself, proposed to drop.
+    answer: |
+      Стой. смори в чем дело. По умолчанию мы считаем что ни один мсценарий еще не построен если не доказано обратное:) но в целом у нас есть  path: tests/true-bdd/build_code_test.go . Ну если апдейт то  merge_date: '2026-10-21'.. там еще надо как-то смотреть когда был апдейт когда был файл и так далее...
+
+      но в целом єто оптимизации, нам надо сделать idepotence. т. е. чтобы мы не зависили от дополнительных параметров.
+  - decision_trace:
+      research:
+        - |
+          build tests walks only Scenarios with an unbound step (scenariosWithGaps); after every
+          fix apply it runs every Scenario of the changed suite, bound peers included, because a
+          shared steps package can affect any definition (build_tests_execution.go). There is no
+          run before the first edit.
+        - |
+          Green tests in build tests come only from old Scenarios whose definitions and code
+          already exist (calc-001-double in the live run), or from cut B, where the old engine is
+          the target.
+      recommendation: |
+        (a): a Scenario green before build tests' first edit of its suite is a regression when
+        it turns red, even at a Then, and goes to the Fix loop.
+      settled: |
+        The question does not apply. Tests turn green only in build code, which tries to build
+        the code from scratch so that it satisfies every test and nothing more. In this model
+        build tests produces red tests only and never meets built target code. The first
+        wording mixed new Scenarios with old built peers; Claude re-pitched it. Opened: today's
+        build code does not start from scratch (it repairs the Failing set over existing code,
+        ADR-0019; in the live run it found 0 failing tests and did nothing).
+    question: |
+      Q7 (re-pitched) - A build tests edit turns an old Scenario red that was green before the
+      edit (a shared helper in the steps package changed). What does build tests do: (a) treat
+      it as a regression and send it to the Fix loop, after one run of the suite before its first
+      edit; (b) never change existing code in steps, only add definitions and call old helpers;
+      (c) accept the red like any other Scenario.
+    answer: |
+      я не понял как это получается? смотри тест по умолчанию всегда красный потому что такргетового кода нет. по умолчанию build tests генерит только красные тесты. зеленых - нет/. посмотри внимательно как это работает сейчас. Я честно не понимаю смысла этого вопроса. он не отвечает тому как это работает.
+
+      зелеными тесты становятся на build code. build code - пытается построить код с нуля чтоб он покрыл все тесты и не более того
+  - decision_trace:
+      research:
+        - |
+          Today build code does not start from scratch: it runs the tests, takes the Failing set
+          and repairs it over existing code; a green discovery yields no Item (ADR-0019). In the
+          live run it found 0 failing tests, ran 0 AI turns and printed BUILD CODE COMPLETE.
+        - |
+          build code built from scratch only in the drill: cut A deleted the engine, 1 h 50 min and
+          $14.18 for TrueBDD.
+        - |
+          In the calc host Double was built and Halve was not, so a build tests run on the working
+          tree sees built code unless it takes the target out of its check.
+      recommendation: |
+        (b): "from scratch" is a rule for the result; build code may start from existing code,
+        and build tests checks its tests with the target absent, so its result is the same on an
+        empty and on a built tree.
+      settled: |
+        (b). "From scratch" is a rule for the result, not the order of work: build code may start
+        from existing code, but must end where a from-scratch build would accept it, every test
+        green and nothing beyond the tests. When code is present, build code repairs only the
+        failing tests, however they appeared. build tests must not rely on code: its result is
+        the same on an empty tree and on a built one. The goal is that the code is not kept in
+        the repository (gitignored); even where it is kept today, no build may count on finding
+        it at the next build or on working incrementally. build tests' purpose is only to make
+        tests, 100% of them red, and to check that they appear in the test list and that every
+        Scenario is covered by a test.
+    question: |
+      Q8 - What does "build code builds from scratch" mean: (a) literally, on every run: build
+      code deletes each service's Internal code, keeps the Public interface and the Persistent
+      data model, and builds until every test passes, so build tests never sees target code, at
+      the cost of rebuilding the whole system per feature; (b) "from scratch" is a rule for the
+      result, not the order of work: build code may start from existing code as now, but must
+      end where a from-scratch build would accept it, and build tests checks its tests with the
+      target absent, so its result is the same on an empty and a built tree; (c) incremental as
+      now, "from scratch" only in the drill, so build tests sees built code and Q7 returns.
+    answer: |
+      (б) «С нуля» — это правило результата, а не порядок работы. build code может начать с существующего кода, как сейчас, но результат должен быть таким, какой принял бы сбор с нуля: все тесты зелёные, ничего сверх тестов. А build tests не должен зависеть от того, есть код или нет. Он проверяет свои тесты при отсутствующей цели, поэтому его результат одинаков на пустом и на построенном дереве.
+
+      код не хранится в репозитории он в гитигноре. Даже если сейчас жто не так, то наша цель сейчас достичь этого результата. Поэтому даже если он есть сейчас расчитывать что он будет на след диьле и оно будет инкрементально - смысла нет.  Но если код присутствует то фискятся только те тесты которые не проходят (там абсолютно не важно как тесты появились). Соотсветственно когда тесты билдятся - то делать ставку на код нельзя. тут суть чисто сделать тесты 100% которых - красные. и просто проверяем что они появились в списке и все сценарии покрыты тестами.
+  - decision_trace:
+      research:
+        - |
+          docs/qna/20261022-201524-rebuild-from-spec-drill.yaml, Q2: in the ideal setup only the
+          three documents exist, the tests and the code are always fully recovered from them, and
+          neither tests nor code are kept. Q3: recovery means the behaviour, not the codebase.
+        - |
+          GLOSSARY.md, Specification: "the only source of how it is built ... The tests and the
+          code are recovered from it; a rebuild preserves the system's behaviour, not its code."
+        - |
+          docs/qna/20261026-175738-triage-215-216-221.yaml, Q11: the Owner asked Claude to check
+          every question against TrueBDD's goals and settle without asking whatever they answer
+          unambiguously.
+      recommendation: |
+        Correction, no question.
+      settled: |
+        Q7 and Q8 were already answered before this session: build tests never meets target code
+        because the target state keeps no code, and "from scratch" is the rule for the result.
+        The Owner pointed this out ("И еще эти ответы уже есть"). Claude should have settled both
+        as forced by the drill's Q2 and Q3 and the Specification entry, and asked neither.
+    question: |
+      Were Q7 and Q8 already answered by earlier decisions?
+    answer: |
+      Claude, no question asked: yes, by docs/qna/20261022-201524-rebuild-from-spec-drill.yaml Q2
+      and Q3 and GLOSSARY.md's Specification; the Owner said so: «И еще эти ответы уже есть».
+  - decision_trace:
+      research:
+        - |
+          #173 (closed) made build tests --fix run every definition it writes against the target
+          before it calls a Scenario bound; #155's drill had shown that only a run caught a wrong
+          assertion. #189 (closed) added testing.prebuilt_engine_arg so that run could use the
+          running engine as the target; README says only build tests --fix verification appends
+          it. No ADR records either.
+      recommendation: |
+        Forced consequence, no question.
+      settled: |
+        build tests no longer runs its definitions against the target's code: #173's run-based
+        verification and #192's verdict rule for a red at a Then are replaced by Q8's checks
+        (each Scenario's test appears in the runner's list, and every Scenario is covered), and
+        testing.prebuilt_engine_arg (#189), which only that verification used, loses its purpose.
+        Forced by Q8. #173's reason, a wrong assertion that only a run against the target
+        catches, is no longer covered by build tests; what covers it is the next question.
+    question: |
+      What happens to #173's run-based verification and #189's running-engine argument after Q8?
+    answer: |
+      Claude, no question asked: build tests stops running definitions against the target and
+      prebuilt_engine_arg loses its only user; forced by Q8.
+  - decision_trace:
+      research:
+        - |
+          #173 exists because #155's drill caught a wrong assertion only by running it; after Q8
+          build tests no longer runs definitions against the target.
+        - |
+          By Q2 and Q4 a definition that computes what it asserts already breaks the rule (it
+          never reaches the system); the question is what notices it. In the live run nothing
+          did, and build code found nothing to build.
+        - |
+          CLAUDE.md: an AI turn that must happen gets everything it needs, critique passes
+          included.
+      recommendation: |
+        (c), both: one run with the target absent, where every Scenario must be red (a green one
+        means its definition does the product's work and goes to the Fix loop); and a critique
+        pass, an AI turn that reads each new definition against the declared Public interface,
+        the catalogue phrase's meaning and the word mapping.
+      settled: |
+        (c), both. build tests runs its suite once with the target absent and requires every
+        Scenario to be red: a Scenario green without its target has a definition that does the
+        product's work, and goes to the Fix loop. And a critique pass, a separate AI turn, reads
+        each new definition against the declared Public interface, the catalogue phrase's
+        meaning and the word mapping: does it reach the service from outside through the
+        declared interface, and does it assert what the phrase means. The Owner asked again to
+        read the old logs before asking.
+    question: |
+      Q9 - What in build tests catches a definition that does not reach the system, or checks
+      something other than what its phrase means: (a) one run with the target absent, every
+      Scenario must be red, a green one goes to the Fix loop; (b) a critique pass, an AI turn
+      reading each new definition against the declared Public interface, the phrase's meaning
+      and the word mapping; (c) both; (d) nothing beyond the list and coverage, build code or
+      the drill's oracle finds it.
+    answer: |
+      старайся перед тем как задавать вопросы читать старые логи. предыдущий вопрос я уже отвечал.
+
+      на q9 - (в) Оба.
+  - decision_trace:
+      research:
+        - |
+          Today build tests' write roots come from the configuration's paths.test_write_globs,
+          default ["./tests/**", "./services/**"] (bootstrap/container.go testWriteGlobs), while
+          its fix-generator template tells the model only `<suite path>/steps/` may be written.
+          In the live run the applier could have written services/calc.
+        - |
+          docs/qna/20261026-175738-triage-215-216-221.yaml, Q14: tests and step definitions are
+          generated content that build tests reads and writes, and build code only reads and
+          runs. ADR-0028: access comes from the architecture; GLOSSARY's Writable paths derives
+          the protected tests from it (tests/, the Registry's suite directories, the directory
+          of testing.config, the Go testing.commands package directories).
+      recommendation: |
+        Forced consequence, no question.
+      settled: |
+        build tests writes only the tests, the same paths the architecture makes protected from
+        build code, and never a service's code: paths.test_write_globs goes, and the grant
+        comes from the architecture. Forced by Q4 (nothing generated into the target), the
+        triage's Q14 and ADR-0028.
+    question: |
+      Where may build tests write?
+    answer: |
+      Claude, no question asked: only the tests the architecture declares, never services/;
+      forced by Q4, the triage log's Q14 and ADR-0028.
+  - decision_trace:
+      research:
+        - |
+          docs/qna/20261026-175738-triage-215-216-221.yaml, Q2: "the architecture must be enough
+          to build the system"; when the work is impossible within it, the run fails at once
+          with an error naming what it would need.
+        - |
+          docs/qna/20261021-112516-self-spec-and-doc-validation-chain.yaml, Q3 and Q25: the
+          System Architect owns the architecture and adds what it needs after the Registry and
+          before the build; build tests already refuses before any AI turn when a step matches
+          no catalogue phrase.
+      recommendation: |
+        Forced consequence, no question.
+      settled: |
+        build tests never edits the Specification. When the declared Public interface offers no
+        way to set up or observe what a phrase means, build tests stops with an error naming
+        the phrase and what the interface lacks; the System Architect declares it. Forced by
+        Q1, the triage's Q2 and the self-spec log's Q3 and Q25.
+    question: |
+      What does build tests do when the declared Public interface cannot serve a phrase?
+    answer: |
+      Claude, no question asked: it stops, naming the phrase and what the interface lacks, and
+      never edits the Specification; forced by Q1, the triage log's Q2 and the self-spec log's
+      Q3 and Q25.
+  - decision_trace:
+      research:
+        - |
+          Today the model writes the whole definition, the pattern included (build-tests.yaml F:
+          "Register one definition ... `^<anchored regexp>$` ... Put a capture group where the
+          step's text varies").
+        - |
+          The engine already compiles every catalogue template into a regexp
+          (services/true-bdd/internal/domain/models/catalogue/template.go, compileTemplate; the
+          grammar of the self-spec log's Q34) and uses it to check that phrases and definitions
+          correspond.
+        - |
+          By Q4 a stub belongs only to the tests' own code. OpenAPI has deterministic client
+          generators; an OpenCLI-like file has none yet.
+        - |
+          The Owner, before this question: the generated test cannot be wrong when the Scenario
+          and the steps are right; the hard part is writing the step definitions, which carry
+          the Scenario's main logic.
+      recommendation: |
+        (b): the engine derives each definition's skeleton from its catalogue phrase (the
+        pattern, by compileTemplate, and the function's signature from the slots); the AI writes
+        only the body. A test-side client generated from the interface documents (c) later.
+      settled: |
+        Not answered as asked. The Owner's direction: a new command, working name `build steps`,
+        does all the hard work of writing step definitions. How much of a definition is derived
+        deterministically stays open, as part of that command's design. Opened: the boundary
+        between build tests and build steps, and the pipeline's order.
+    question: |
+      Q10 - How much of a step definition does the engine derive from the Specification
+      deterministically, and how much does the AI write: (a) the AI writes all of it, as now,
+      also given the interface documents, and Q9's checks judge it; (b) the engine derives each
+      definition's skeleton from its catalogue phrase (the pattern by compileTemplate and the
+      signature from the slots), and the AI writes only the body; (c) (b) plus a test-side
+      client of the Public interface the engine generates from the interface document.
+    answer: |
+      так что нам еще надо что-то типа build steps команда которая и должна делать всю сложную работу
+  - decision_trace:
+      research:
+        - |
+          Today build tests --fix does everything in one run (build_tests.go): renders the test
+          files from the Registry with no model, finds unbound steps through Step coverage,
+          has the model write definitions, then verifies them; without --fix it only refuses
+          stale generated files.
+        - |
+          Q9's run without the target runs the generated tests, so the test files must exist
+          before it.
+        - |
+          The self-spec log's Q25: the System Architect runs build tests and build code, the
+          regeneration loop.
+      recommendation: |
+        (a): split by AI. build tests becomes deterministic only (renders the test files and
+        checks every Scenario's test appears in the runner's list, no AI turn); build steps
+        does all the step-definition work (writing, the run without the target, the critique
+        pass, the stop on a gap in the Public interface). Order: us refine, us apply, build
+        tests, build steps, build code; the System Architect runs it.
+      settled: |
+        (a). build tests is deterministic: it renders the test files from the Registry and
+        checks that every Scenario's test appears in the test runner's list, with no AI turn.
+        build steps owns everything about step definitions: writing them, the run without the
+        target where every Scenario must be red, the critique pass, Step coverage, and the stop
+        when the Public interface cannot serve a phrase. The pipeline is us refine, us apply,
+        build tests, build steps, build code; the System Architect runs build tests, build steps
+        and build code.
+    question: |
+      Q11 - Where is the boundary between build tests and build steps, and in what order do they
+      run: (a) split by AI: build tests renders the test files and checks the runner's list
+      with no AI turn; build steps does all the step-definition work; order us refine, us
+      apply, build tests, build steps, build code, run by the System Architect; (b) build steps
+      is today's build tests renamed, and rendering moves to where tests run; (c) build steps is
+      a stage inside build tests, not a command.
+    answer: |
+      A)
+  - decision_trace:
+      research:
+        - |
+          The product document's step definition "carries out one shape of step", and a step
+          runs through the one definition whose pattern matches it; the Closure check requires
+          the catalogue's phrases and a suite's definitions to correspond one to one.
+        - |
+          Today build tests walks Scenarios with a gap, and its F: asks the model to bind about
+          ten neighbours' steps too: "every such step you leave unbound buys another whole
+          validate-fix-apply cycle".
+        - |
+          In the live run one phrase, `the number is halved`, was the gap in four Scenarios; the
+          walk took halve-001 and the fix bound all four.
+        - |
+          build code walks its whole Failing set as one Item (ADR-0019).
+      recommendation: |
+        (a): an Item is a catalogue phrase a suite has no definition for; the AI writes that
+        definition once, given the phrase's meaning, its terms' glossary and mapping, the
+        service's Public interface and every Scenario using it; the run without the target and
+        the critique run over those Scenarios.
+      settled: |
+        (a). An Item of build steps is a catalogue phrase that a suite has no step definition
+        for. The AI writes that phrase's definition once, given the phrase's meaning, its terms'
+        glossary entries and word mappings, the service's Public interface, and every Scenario
+        of the suite that uses the phrase; the run without the target and the critique pass are
+        judged over those Scenarios.
+    question: |
+      Q12 - What is one Item for build steps: (a) a catalogue phrase a suite has no definition
+      for (phrase x suite), its definition written once from the phrase's meaning, its terms'
+      glossary and mapping, the Public interface and every Scenario using it; (b) a Scenario
+      with an unbound step, as now; (c) a whole suite, one plan for all its missing definitions,
+      like build code's Failing set.
+    answer: |
+      Что-нибудь другое. Да, давай, Вей.
+      [Request interrupted by user]
+      здесь должно быть A.
+  - decision_trace:
+      research:
+        - |
+          A phrase's regexp is fully set by its template; the engine already compiles it
+          (catalogue/template.go, compileTemplate) and matches definitions with it.
+        - |
+          Rendering tests from the Registry supports only go-test (bddgo); build tests refuses a
+          Jest or Playwright suite by name (scenariogen/plan.go, hasRenderer), so a skeleton is
+          needed for Go only for now.
+      recommendation: |
+        (a): the engine derives the skeleton from the phrase (`suite.Step(` with the regexp from
+        compileTemplate, and a function whose arguments follow the `{name}` slots); the AI
+        writes only the body.
+      settled: |
+        (a). The engine writes each definition's skeleton, the pattern and the function's
+        signature; the AI writes only the body. The Owner added: Scenarios do not define the
+        steps; the steps are a designed set of operations the system can perform and of
+        validations of it, defined in the product or architecture document. A Scenario that
+        fits no existing step must fail, and then either a step is added or the Scenario is
+        corrected, going one step back to us apply.
+    question: |
+      Q13 - Who writes a definition's skeleton, its pattern and function signature: (a) the
+      engine derives it from the phrase deterministically (`suite.Step(` with the regexp from
+      compileTemplate, a function with arguments by the `{name}` slots), and the AI writes only
+      the body; (b) the AI writes the whole definition, as now, and the Closure check verifies
+      the pattern against the phrase.
+    answer: |
+      вещь, что не сценарии определяют шаги, а шаги на самом деле определяют, должны определяться где-то в architecture или product файле. Не могу точно сказать, где наиболее лучшим. То есть, по идее, шаги – это продизайненный набор операций, которые можно делать системой. И валидаций, то есть, как можно эту систему валидировать. Поэтому в случае, если... То есть, процесс должен быть такой, в случае, если какой-нибудь сценарий не подходит под один из существующих степов, то система должна падать, и мы должны править, либо добавлять степ, либо править сценарий. То есть дальше это как будто нужно вернуть на один шаг назад и пытаться сделать с UI play. Если говорить про Q13, кто пишет сигнатуру функции? Конечно, движок. То есть это A однозначно.
+      [Request interrupted by user]
+      Там ты работаешь?
+  - decision_trace:
+      research:
+        - |
+          docs/qna/20261021-112516-self-spec-and-doc-validation-chain.yaml, Q35: the catalogue
+          of step phrases and the glossary are top-level lists of product.yaml; the architecture
+          only maps each product word to its implementation. Q37: us refine always checks its
+          Story against the catalogue.
+        - |
+          Today a step outside the catalogue fails us refine's `D: step-phrases` and makes
+          build tests refuse before any AI turn; TrueBDD's catalogue holds 76 phrases (23 given,
+          7 when, 46 then).
+      recommendation: |
+        Already answered, no question.
+      settled: |
+        The designed set of steps the Owner describes is the Catalogue in the product document
+        (the self-spec log's Q35). A Scenario that fits no phrase already fails (us refine's
+        `D: step-phrases`, build tests' refusal); the remedy is to add a phrase or correct the
+        Story, then run us refine and us apply again.
+    question: |
+      Where are the steps, the designed set of operations and validations, defined?
+    answer: |
+      Claude, no question asked: in the product document's Catalogue, decided in
+      docs/qna/20261021-112516-self-spec-and-doc-validation-chain.yaml Q35.
+  - decision_trace:
+      research:
+        - |
+          A catalogue phrase says what a step means (`means`); the Word mapping says how each
+          term is built and how a step sets it up or observes it. Nothing records which Public
+          interface operation a phrase performs: `the number is halved` has the term `number`,
+          and halving is no term, so the live run had to invent the operation.
+        - |
+          The self-spec log's Q35 forbids the architecture to name a Go identifier or to store a
+          link from a catalogue entry to a step definition; a link from a phrase to an interface
+          operation (a CLI command, an endpoint) is neither.
+      recommendation: |
+        (a): the architecture holds one entry per catalogue phrase: for a when phrase the
+        interface operation it calls, for a given how it sets up state, for a then what it
+        observes and compares; build steps writes the body from it, the critique checks against
+        it, and a phrase without an entry fails a `D:` check before build steps.
+      settled: |
+        (a), to be tried. The architecture document holds one entry per catalogue phrase, saying
+        which Public interface operation a step of that shape performs: for a when phrase the
+        operation it calls, for a given how it sets up state, for a then what it observes and
+        compares with. build steps writes the definition's body from that entry, and the
+        critique pass checks the body against it. A phrase without an entry fails a `D:` check
+        before build steps, and the System Architect adds the entry. The Word mapping stays for
+        terms.
+    question: |
+      Q14 - Where is it recorded which Public interface operation each catalogue phrase
+      performs: (a) in the architecture, one entry per phrase (when: the operation it calls;
+      given: how it sets up state; then: what it observes and compares), build steps writing the
+      body from it, the critique checking against it, a phrase without an entry failing a `D:`
+      check before build steps; (b) as now, the AI chooses the operation from the meaning and
+      the term mapping, the critique checks; (c) through the term mapping, each term's
+      observed_by naming the interface operation, operations such as halving becoming terms.
+    answer: |
+      давай попробуем a
+  - decision_trace:
+      research:
+        - |
+          The engine refuses --fix when any Prompt of a checklist has no F:, a decision of #83
+          that named its cost: "at the cost of `us create --fix` and `us refine --fix` now
+          refusing against the shipped checklists"; engine-005 and engine-006 pin it.
+        - |
+          7 of us-refine's 13 Prompts have no F:, all about Acceptance Criteria (their count,
+          implementation, happy path, error scenarios, measurability, binary outcome, a test
+          sketch). The README shows `us refine ... --fix` as the first step and promises a new
+          catalogue entry under --fix; `D: step-phrases` has that F:, but the refusal blocks it.
+        - |
+          In the live run `us refine halve --fix` was refused at start; without --fix, Prompt 1
+          failed ("Total ACs: 2") and the model still proposed ACs 003-005, which the Owner
+          copied by hand (003 and 004). Claude re-pitched the question with these examples at
+          the Owner's request.
+      recommendation: |
+        (a): write an F: for all seven Prompts; each fix proposes a Story change at the menu,
+        and #83's refusal stays as a guard for other checklists.
+      settled: |
+        (a). Each of the seven us-refine Prompts gets an F:, so `us refine --fix` runs with the
+        checklist true-bdd init ships: each fix proposes a change to the Story (adding or
+        rewriting ACs) or a new catalogue phrase, applied only after the Product Owner answers
+        apply at the menu. #83's refusal stays for checklists that lack an F:. The F: of the
+        error-scenario Prompt waits on the decision about that rule.
+    question: |
+      Q15 (re-pitched with examples) - How does `us refine --fix` start working with the
+      checklist true-bdd init ships: (a) write an F: for all seven Prompts, so the menu offers
+      the proposal (for Prompt 1, ACs 003-005) and apply writes it into the Story; (b) allow
+      --fix although some Prompts lack an F:, reporting their failures without a fix and
+      dropping #83's refusal; (c) keep the refusal, run us refine without --fix, edit by hand,
+      and correct the README.
+    answer: |
+      a)
+  - decision_trace:
+      research:
+        - |
+          docs/qna/20261021-112516-self-spec-and-doc-validation-chain.yaml, Q30: the Owner chose
+          stories of 3-7 ACs and rejected the option that relaxed the 3-7 rule.
+      recommendation: |
+        Already answered, no question.
+      settled: |
+        The rule of 3 to 7 ACs per Story stays. A Story outside it is split or completed through
+        the Prompt's new F:.
+    question: |
+      Does us-refine's rule of 3 to 7 Acceptance Criteria per Story stay?
+    answer: |
+      Claude, no question asked: yes, the self-spec log's Q30 kept it and rejected relaxing it.
+  - decision_trace:
+      research:
+        - |
+          us-refine Prompt 9: "Pass when at least 2 ACs describe error scenarios", rationale
+          "Missing error handling leads to production issues". No grilling decided the number;
+          the self-spec log only mentions it.
+        - |
+          In the live run Prompt 9 failed ("Total error scenario ACs: 0 (need >=2)") and the
+          model invented errors and catalogue phrases (`the number is "abc"`, `no number is
+          supplied`), noting a typed Go function makes them "impossible by construction".
+        - |
+          After Q5 the calculator is a CLI, so `calc halve abc` and `calc halve` are real failure
+          modes; a Story such as `halve-negative` has none of its own, its input errors belonging
+          to `halve`. The product's Quality Engineer "Asks what could go wrong". Claude
+          re-pitched the question with these two Stories at the Owner's request.
+      recommendation: |
+        (a): coverage, not a count: every failure mode the Story's behaviour meets has its own
+        AC; a Story with none passes with a context line saying why; the F: proposes ACs only
+        for real failure modes.
+      settled: |
+        (a). Prompt 9 requires coverage, not a count: every failure mode the Story's behaviour
+        meets has its own AC. A Story with no failure mode of its own passes, with a context line
+        saying why (for example, its input errors belong to another Story). Its F: proposes ACs
+        only for real failure modes. No new Story field.
+    question: |
+      Q16 (re-pitched with examples) - What does us-refine's Prompt 9 require about error
+      scenarios: (a) coverage, not a count: each failure mode the Story's behaviour meets has
+      its own AC (halve gets 005-non-integer-refused and 006-missing-number-refused;
+      halve-negative passes with "no failure mode of its own"); (b) keep "at least 2" but let a
+      Story state `failure_modes: none` with a reason; (c) drop the rule from us refine and let
+      the Quality Engineer find missing failure cases in scen check; (d) keep "at least 2" as it
+      is, so halve-negative copies halve's errors.
+    answer: |
+      а
+  - decision_trace:
+      research:
+        - |
+          The Jest and Playwright fixtures (build-code-jest-*, build-code-playwright-*) hold no
+          Registry and no product document: their tests are written by hand for build code, and
+          build tests renders only go-test suites. Only the Go fixtures (build-code-spec-scenario,
+          build-tests-run-*) are rendered from a Registry, and their steps import the service.
+      recommendation: |
+        Correction, no question.
+      settled: |
+        Q5 binds only services the Registry tests. Claude's Q5 option said the Jest fixtures must
+        change shape; they need not, since their hand-written tests are not BDD tests, and by Q8
+        build code repairs failing tests however they appeared. The calculator fixtures whose
+        steps import the service (build-code-spec-scenario and the build-tests-run-* family)
+        are the ones that change. ADR-0030 is corrected to match.
+    question: |
+      Must the Jest fixtures change shape after Q5?
+    answer: |
+      Claude, no question asked: no; they hold no Registry, their tests are hand-written for
+      build code, and Q8 has build code repair failing tests however they appeared.
+  - decision_trace:
+      research:
+        - |
+          #212's body files every fix as a sub-issue of #212, implemented through /mpc_implement
+          outside the drill, then reruns the drill; no iteration has run yet.
+        - |
+          The session's decisions need engine work (the Public interface format, the Phrase
+          mapping and its D: check, a deterministic build tests, the new build steps command,
+          write roots from the architecture, removing prebuilt_engine_arg, seven F: and a new
+          Prompt 9, the calculator fixtures as a CLI) and TrueBDD's own Specification (its
+          Public interface, scattered today, and a Phrase mapping for 76 phrases).
+        - |
+          The live run of 28 October cost $5.19 of Claude.
+      recommendation: |
+        (a): build first under #212, accept on `halve` on the CLI calculator host through the
+        whole new pipeline, then write TrueBDD's own Public interface and Phrase mapping, then
+        run the drill's iteration 1.
+      settled: |
+        Delegated to Claude; see the next entry.
+    question: |
+      Q17 - In what order does the work go and where do its tickets live: (a) build first
+      under #212, accept on `halve` through the new pipeline, then TrueBDD's own Public
+      interface and Phrase mapping, then the drill's iteration 1; (b) run the drill's iteration
+      1 now on today's main, in parallel; (c) a separate spec epic for the pipeline change,
+      #212 waiting for it.
+    answer: |
+      это я точно хоче не решать/ реши сам
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        (a), as recommended in Q17.
+      settled: |
+        (a). The tickets are sub-issues of #212. First the engine work the decisions need; its
+        first acceptance is `halve` on the CLI calculator host, taken through us refine --fix,
+        us apply, build tests, build steps and build code, ending with Halve built by build code
+        and not by a step. Then TrueBDD's own Public interface and Phrase mapping are written.
+        Then the drill's iteration 1 runs cuts B, C and D on the new pipeline. The Persistent
+        data model's declaration is left until a host with stored data needs it; TrueBDD keeps
+        no database.
+    question: |
+      In what order does the work go, and where do its tickets live?
+    answer: |
+      Claude, delegated in Q17 («это я точно хоче не решать/ реши сам»): build under #212
+      first, accept on `halve`, then TrueBDD's own Public interface and Phrase mapping, then
+      the drill's iteration 1; the Persistent data model's declaration waits for a host that
+      needs it.
+  - decision_trace:
+      research:
+        - |
+          In cut B the whole tests/true-bdd/steps/ is deleted, state.go (State) and cli_steps.go
+          (Register) with it; the generated tests call steps.Register and steps.State, and
+          `go test -list` compiles the package first, so a list check cannot run on an empty tree
+          before step definitions exist.
+      recommendation: |
+        (a): build tests also generates the steps skeleton (Register lines, signatures, bodies
+        failing "step not written yet", an empty State), so the suite compiles before any AI
+        turn.
+      settled: |
+        (b), which the Owner says Q11 already implied. build tests renders only the test files;
+        build steps builds every step definition (the engine's skeleton, the AI's body) and
+        verifies that every step of every Scenario is implemented, the list check included. If
+        any Scenario lacks any step, the run fails. The Owner added a new branch: a step such as
+        "click the button" cannot know, before the code exists, how to find the button (which
+        class, which locator); the Owner recalls saying in older records that steps should be
+        both deterministic and run by an LLM, the LLM part of the prompt finding the button
+        whatever the code does. Claude is to find that dialog and research how others write a
+        step when there is no DOM model yet.
+    question: |
+      Q18 - Who creates the steps package's skeleton, so build tests can check the test list on
+      an empty tree: (a) build tests generates it with the tests (Register lines, signatures,
+      bodies failing "step not written yet", an empty State); (b) build tests renders only the
+      tests, and the list check moves to the end of build steps, where the engine generates
+      the skeleton and the AI writes the bodies.
+    answer: |
+      мы ж обсуждали это. Это б вариант. Почему это не ясно с предыдущего ответа? ну и надо смотреть из доступности контекста. без степсов тесты не напишенш. поэтому если хотя бы для одного сценария не хватает хотя бы одного steps то систему надо просто падать. билде степс билдит и верифицирует что все степсы реализованы.  И кстати есть есть еще контекст. например е проекта может быть степ "Нажатие на кнопку" правильно? но если нет кода то как узнать как нажать на кнопку? какой класс? как найти ее и так далее. Так вот! я по этому где-то говорил но не сейчас а в старых записая поиши что степсы должны быть детерминистичными и ллмными где ллм - это часть промпта чтоб найти кнопку не зависимо от того как код ее реализует. Тут скоее всего где-то начнуться проблемы и я не уверен что такой подхд полностью решит все проблемы но пока давай ты найдешь этот мой диалог в истории и посмотришь что там и попробуем такое тоже реализовать. И надо поресерчить интернет как вобще решают проблему когда желательно написать степ а дом модели нет?
+  - decision_trace:
+      research:
+        - |
+          The Owner's older dialog was not found: the Claude transcripts for this path start on
+          21 October, the sibling repositories and docs/history hold nothing on it, the deleted
+          ADRs 0001-0012 do not mention it, and the old ClickUp tracker (task 86cb6fjwy) answers
+          "Team not authorized". The closest record is the harness's `llm:` and `judge:` steps
+          (pkg/testkit/bddgo/model_steps.go, since #70 in August): `llm:` is a Given or When step a
+          model performs, "for an operation stated by intent rather than mechanism — e.g. close
+          whatever dialog is covering the list"; `judge:` is a Then clause a model rules on; the
+          `Actor` interface `llm:` needs is not implemented ("forward work"). #70's port plan
+          expected about ten `llm:` steps and found none needed.
+        - |
+          Codex research run research-steps-without-dom (tmp/codex/research-steps-without-dom/final.md):
+          user-facing locators chosen from a specification (Playwright getByRole, Testing
+          Library, ARIA snapshots, https://playwright.dev/docs/locators) can be written before the
+          UI exists, run deterministically at no model cost and stay red until it exists;
+          natural-language runners (ZeroStep, auto-playwright, Shortest) pay per run and have no
+          replay; resolve-once caches (Stagehand, Midscene) go stale or poisoned and act wrongly
+          in silence, and Midscene never caches its AI assertions; Playwright's healer agent may
+          skip broken functionality. An LLM cannot find a button that does not exist yet.
+        - |
+          No current host has a UI: services/bdd-web was deleted in #123, and the Playwright
+          fixtures are build-code-only.
+      recommendation: |
+        (c), a hybrid: deterministic by default from the role and accessible name the Public
+        interface declares; a phrase whose Phrase mapping entry is stated by intent becomes an
+        `llm:` step with a recorded decision; `judge:` stays for assertions about meaning; a
+        separate ticket after the `halve` acceptance, with its own UI host.
+      settled: |
+        (c). A UI service's Public interface declares the roles and accessible names of its
+        elements, and a step acts on the UI deterministically through them by default. A phrase
+        whose Phrase mapping entry is stated by intent rather than by element becomes an `llm:`
+        step: a model performs it through the harness's Actor, its decision is recorded, replay
+        uses the recording, and a missing recording fails offline. `judge:` stays for Then
+        clauses about meaning. It is a separate ticket after the `halve` acceptance, with a UI
+        host of its own.
+    question: |
+      Q19 - How does a step act on a UI whose code does not exist yet (example: the phrase
+      `the user clicks "{button}"`): (a) only deterministically: the UI service's Public
+      interface declares its elements' roles and accessible names, the Phrase mapping says
+      "press the button with this name", and the body is getByRole('button', {name}); (b) a model
+      performs the step through `llm:` and Actor, its decision recorded and replayed in CI,
+      failing offline without a recording; (c) a hybrid: (a) by default, and a phrase whose
+      Phrase mapping entry is stated by intent becomes an `llm:` step with a recorded decision,
+      `judge:` staying for assertions about meaning.
+    answer: |
+      В
+  - decision_trace:
+      research:
+        - |
+          #212's body: cut B deletes the engine, the step definitions and the generated tests and
+          runs `build tests --fix` then `build code --fix`; the old engine built at the base
+          drives every command; the kept set is docs/product/, the architecture, the Registry,
+          true-bdd/, templates/, pkg/, scripts/ and the Go manifests; "Known open tickets" names
+          #192.
+      recommendation: |
+        Forced consequence, no question.
+      settled: |
+        The drill keeps its cuts and rules, with these changes forced by Q8, Q11, Q14 and the
+        forced entry after Q8: each cut runs build tests, then build steps --fix, then build code
+        --fix; the old engine still drives every command but is no longer a test target
+        (prebuilt_engine_arg goes); the kept set includes the interface documents the
+        architecture names; #192's section is replaced by the session's decisions.
+    question: |
+      What changes in #212's drill after this session's decisions?
+    answer: |
+      Claude, no question asked: build tests, build steps --fix and build code --fix per cut;
+      the old engine drives commands but is no test target; the kept set gains the interface
+      documents; forced by Q8, Q11 and Q14.
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        The frontier is empty; triage #212 and #192 and file the tickets as sub-issues of #212.
+      settled: |
+        The Owner confirmed the shared understanding and asked for the triage.
+    question: |
+      The frontier is empty. Have we reached a shared understanding, so the triage can start
+      (Claude's summary of Q1-Q19, the entries it settled itself, and the ticket plan)?
+    answer: |
+      Ну, если еще надо делать триаж, то давай делать триаж.
+  - decision_trace:
+      research:
+        - |
+          Codex plan-reads of the triage drafts (tmp/codex/plan-read-212-triage/final.md and
+          tmp/codex/plan-read-212-fidelity/final.md), the second against the Owner's messages
+          verbatim (tmp/triage-212/owner-messages.md).
+        - |
+          The Owner, Q2: where persistent models are defined in code, "этот код тоже надо
+          проверять, ну, то есть фиксировать и проверять как есть ... Скорее всего, там будет
+          какой-то другой подход".
+        - |
+          The Owner, Q18: "Это б вариант ... билде степс билдит и верифицирует что все степсы
+          реализованы", which moves the list check from build tests (Q11) to build steps.
+      recommendation: |
+        Corrections, no question.
+      settled: |
+        (1) The forced entry after Q5 is withdrawn: Q4 and Q5 do not unambiguously settle the
+        Owner's Q2 exception for code that defines a Persistent data model. How a step reaches
+        stored data is open and waits for a host with stored data; ADR-0030 and GLOSSARY.md say
+        so. (2) Q18 overrides Q11's placement of the list check: build tests renders only and
+        starts no test runner; build steps checks the list. ADR-0031 is corrected. (3) The
+        Public interface kinds cli, http and ui are the first ticket's scope, not a closed list
+        the Owner decided; only the library kind is excluded (Q5). (4) The critique checks a
+        definition against its Phrase mapping entry by block (a when calls its operation, a
+        given sets up, a then observes and compares); it does not require every definition to
+        call a command.
+    question: |
+      Which of Claude's own settlements and records do the plan-reads of the triage drafts
+      overturn?
+    answer: |
+      Claude, no question asked: the four corrections above, from the two Codex plan-reads.
+  - decision_trace:
+      research:
+        - |
+          Messages the Owner sent while Claude was working reached the session between turns
+          and were folded into the decisions above, but not quoted. They are quoted here,
+          verbatim, with their timestamps (UTC).
+      recommendation: |
+        Record, no question.
+      settled: |
+        The Owner's messages sent while Claude was working, quoted for the record. The first
+        two shaped Q10 and Q11 (steps are the hard part; a rendered test cannot be wrong when
+        the Scenario and the steps are right); the third led to the usage rules and research in
+        ADR-0033; the fourth and fifth led to the fidelity plan-read and to Q20.
+    question: |
+      What did the Owner say while Claude was working that no answer above quotes?
+    answer: |
+      2026-10-28T14:34:07Z: Еще там вопрос про steps. потому что если ты посмотришь то скорее прблема не в написанни сценария - он то генерится детерминистически. проблема написать степсы которые как раз и делают основную логику сценария
+
+      2026-10-28T14:34:45Z: Если сценарий и степры написаны правильно то тест просто не может быть сгенерен неправильно
+
+      2026-10-28T18:46:23Z: добавт правила как пользоваться в ADR чтоб не забыть Исследование (Codex, источники в tmp/codex/research-steps-without-dom/final.md). Пример — шаг «пользователь нажимает Save»: 1. Локаторы со стороны пользователя, взятые из спецификации. `getByRole('button', {name: 'Save'}).click()` ([Playwright](https://playwright.dev/docs/locators), принцип [Testing Library](https://testing-library.com/docs/guiding-principles/)). Такой шаг пишется до того, как UI существует, работает детерминированно и без AI. Пока кнопки нет, он красный.
+
+      2026-10-28T18:55:01Z: А ты передаешь кожедсу скрипт нашего диалога чтоб он понимал с чем валидировать?
+
+      2026-10-28T18:59:35Z: что если еще и проапдетить скилы так чтоб наши даиллоги попадали codex в виде даже просто "смотри информацию в этой папке от старых к новым новые перекрывают старые". думаю он тогда разбереться. Особенно если еще и сказать что сейчас тикеты именно про самый новый файл. Мне кажеться это важно
+  - decision_trace:
+      research:
+        - |
+          Codex briefs (.claude/skills/common-codex/briefs/) point Codex at CLAUDE.md,
+          docs/agents/domain.md, GLOSSARY.md and docs/adr/, never at docs/qna/; the triage's first
+          plan-read saw the log only because its brief named it, and the Owner's messages sent
+          while Claude worked were missing from the log.
+        - |
+          mpc_grilling is vendored and stays unchanged (CLAUDE.md); docs/agents/domain.md is the
+          repository's own and every brief already sends Codex to it.
+      recommendation: |
+        (1) docs/agents/domain.md states how to read docs/qna/ (oldest to newest by file name, a
+        newer entry overriding an older one, the Owner's verbatim answer outranking Claude's
+        summary), and every brief template names the log and Q<n> its run carries out; (2)
+        AGENTS.md has a grilling log quote every message of the Owner verbatim, one sent while
+        Claude works included; commit both with the session's documents on a branch with a PR.
+      settled: |
+        Both changes, committed with the session's documents and merged to main. The Owner also
+        asked for the command to run after /clear that takes the tickets one after another.
+    question: |
+      Q20 - Make both changes (the reading rule for docs/qna/ with each Codex brief naming its
+      log, and the rule that a grilling log quotes every message of the Owner verbatim) and
+      commit them with the session's documents on a branch with a PR?
+    answer: |
+      В общем, закоммить, смерч, все пожалуйста. Main и напиши мне команду, которую я должен выполнить после clear для того, чтобы все тикеты пошли вот один за другим, как они должны быть.

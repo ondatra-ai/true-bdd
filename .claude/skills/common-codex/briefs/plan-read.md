@@ -6,6 +6,7 @@ Claude wrote {{a spec draft, diagnosis or plan}} in TrueBDD and will {{publish i
 
 - Document: {{path or issue #N saved through `--issue`}}.
 - Evidence: {{files, logs, issues and commands the document rests on}}.
+- The Owner's decisions: {{the `docs/qna/` log and its `Q<n>` this run carries out, or none}}. Read `docs/qna/` as `docs/agents/domain.md` says: oldest to newest, a newer entry overriding an older one.
 - Rules: `CLAUDE.md`, `docs/agents/domain.md`, `GLOSSARY.md`, relevant `docs/adr/` and matching `.claude/rules/*.md`.
 
 ## Question

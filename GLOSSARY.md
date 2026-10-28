@@ -9,8 +9,20 @@ The project whose specification documents the engine walks and whose code it bui
 _Avoid_: host application, host product, target project
 
 **Specification**:
-The three documents a Host project's system is built from, and the only source of how it is built: the product document, the architecture document and the Registry. The tests and the code are recovered from it; a rebuild preserves the system's behaviour, not its code.
+The three documents a Host project's system is built from, and the only source of how it is built: the product document, the architecture document (with the interface documents it names) and the Registry. The tests and the code are recovered from it; a rebuild preserves the system's behaviour, not its code.
 _Avoid_: spec files, sources, the docs
+
+**Public interface**:
+What a service offers to anything outside it, with its formats and the criteria it meets. The architecture document declares it for each service, in the standard form of the service's kind, and every rebuild keeps it; a build never chooses it. A step definition sets up and observes a service through it from outside, across a process boundary, sharing no code or package with the service; so a library alone is never a service the Registry tests.
+_Avoid_: external API, contract, surface
+
+**Persistent data model**:
+The shape of the data a service keeps between its runs, such as a database's schema, and any code that defines that shape. It is not public, but data written by one build must be read by the next, so the architecture document declares it and every rebuild keeps it. A step definition may set up or check stored data through it; how, when code defines the model, is not decided yet.
+_Avoid_: storage format, schema (alone)
+
+**Internal code**:
+Everything in a service that is neither its Public interface nor its Persistent data model. A build chooses it freely, a rebuild need not keep it, and no step definition reaches it.
+_Avoid_: private API, implementation details
 
 **Build identity**:
 The engine's build version and source commit, printed by `true-bdd version` as `true-bdd version <version> commit <commit>`. Each uses its link-time stamp (`-ldflags -X`) first, Go's main-module version or `vcs.revision` next, then `(devel)` or `unknown`. A VCS build may have a pseudo-version; an archive has no VCS metadata. Commands installing the engine Log record it once at start as `Engine started` with `version` and `commit` fields, including `init`; `version` prints only the newline-terminated answer and creates no file or directory. `version`, help, the hidden guard and refusals before logging have no start record.
@@ -37,12 +49,16 @@ One testable condition inside a refined user story, before it is merged into the
 _Avoid_: AC (in prose), criterion, condition
 
 **Item**:
-Whatever a single command walks one of at a time — a Story for `us refine`, an Acceptance Criterion for `us apply`, a Scenario for `scen check`.
+Whatever a single command walks one of at a time — a Story for `us refine`, an Acceptance Criterion for `us apply`, a Scenario for `scen check`, a Catalogue phrase a suite has no step definition for, for `build steps`.
 _Avoid_: subject, entity, record
 
 **Prompt**:
 One validation question in a Checklist, with its rationale, its declared reference documents and its optional `F:` fix template. A model answers a `Q:` Prompt; the engine's own code answers a `D:` Prompt, which names one of the engine's built-in checks, and an Item's `D:` Prompts are answered before any of its `Q:` Prompts. Never the rendered text sent to a model; that is the rendered prompt for a Cell.
 _Avoid_: check, question, validation item
+
+**Model-run step**:
+A step a model carries out in place of a step definition. An `llm:` step performs, in a Given or When, an operation the Phrase mapping states by intent rather than by element; a `judge:` clause rules, in a Then, on meaning no comparison can settle. Every other step runs through a step definition.
+_Avoid_: AI step, LLM step, smart step
 
 **Built-in check**:
 Code of the engine that a `D:` Prompt names, answering that Prompt for an Item without a model: pass or fail, with one line per finding. "Check" alone stays avoided: a Prompt is what a checklist asks, and a built-in check is one way to answer it.
@@ -68,8 +84,12 @@ _Avoid_: vocabulary (the words a Story must not use), phrase book, step library
 The architecture document's list of terms, each saying what the term is in the implementation and how a step definition sets it up or observes it, without naming code. Every term a catalogue phrase declares is mapped exactly once.
 _Avoid_: architecture glossary, dictionary
 
+**Phrase mapping**:
+The architecture document's list of Catalogue phrases, each saying which operation of the Public interface a step of that shape performs: the operation a `when` phrase calls, how a `given` phrase sets up state, or what a `then` phrase observes and compares with. Every phrase is mapped exactly once; the Word mapping still covers the terms.
+_Avoid_: step mapping, operation map
+
 **Term document**:
-A specification document that holds the words the Catalogue relies on: the product document, with the Catalogue and the glossary, and the architecture document, with the Word mapping. A fix for a failed Closure check edits a term document, never the Scenario.
+A specification document that holds the words the Catalogue relies on: the product document, with the Catalogue and the glossary, and the architecture document, with the Word mapping and the Phrase mapping. A fix for a failed Closure check edits a term document, never the Scenario.
 _Avoid_: vocabulary file, dictionary
 
 **Closure check**:
