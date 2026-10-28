@@ -1,0 +1,20 @@
+# Fixture-owned Prompt deliberately has no F: to pin the startup refusal.
+version: "1.0"
+sections:
+  - id: acceptance_criteria
+    name: "Acceptance Criteria Quality"
+    description: "Testable conditions that define 'done' (incorporates Ron Jeffries' Confirmation)"
+    source: "https://www.altexsoft.com/blog/acceptance-criteria-purposes-formats-and-best-practices/"
+    validation_prompts:
+      - Q: |
+          Count the total number of acceptance criteria in the story.
+
+          Pass when the count is between 3 and 7 inclusive.
+          Fail when the count is outside that range.
+
+          Context: emit a single line stating the count.
+            - "Total ACs: <N>"
+        rationale: "<3: underspecified. >7: likely an epic that should be split."
+        docs:
+          - product
+          - architecture_yaml

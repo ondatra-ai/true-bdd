@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "us-refine-fix-failure-mode",
+  "files": [
+    {
+      "path": "docs/product/stories/divide-integers-cases.yaml",
+      "kind": "modified",
+      "size": 1710,
+      "sha256": "53c9861185c2335020a049324e1e6779f35d52d074d6f3d08d069d9c5aa23804",
+      "text": "story:\n    id: divide-integers\n    feature: calculator\n    title: Divide integers\n    as_a: Calculator User\n    i_want: to divide two validated integers\n    so_that: I can obtain their quotient or a zero-divisor error\n    status: PLANNED\n    acceptance_criteria:\n        - id: 001-division\n          description: The calculator must return 3 when dividing 6 by 2.\n          steps:\n            - given:\n                - the dividend is \"6\"\n                - the divisor is \"2\"\n            - when:\n                - the Calculator User divides the numbers\n            - then:\n                - the result is \"3\"\n        - id: 002-division\n          description: The calculator must return 3 when dividing 9 by 3.\n          steps:\n            - given:\n                - the dividend is \"9\"\n                - the divisor is \"3\"\n            - when:\n                - the Calculator User divides the numbers\n            - then:\n                - the result is \"3\"\n        - id: 003-division\n          description: The calculator must return 0 when dividing 0 by 2.\n          steps:\n            - given:\n                - the dividend is \"0\"\n                - the divisor is \"2\"\n            - when:\n                - the Calculator User divides the numbers\n            - then:\n                - the result is \"0\"\n        - id: 004-division\n          description: The calculator must report the error \"Cannot divide by zero\" when the divisor is zero.\n          steps:\n            - given:\n                - the dividend is \"6\"\n                - the divisor is \"0\"\n            - when:\n                - the Calculator User divides the numbers\n            - then:\n                - the error is \"Cannot divide by zero\"\n"
+    }
+  ]
+}

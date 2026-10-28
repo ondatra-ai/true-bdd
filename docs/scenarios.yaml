@@ -1200,7 +1200,6 @@ scenarios:
     merged_steps:
       given:
         - the "us-refine-fix-unfixable-checklist" project tree
-        - and: the "us-refine" checklist is narrowed to its "Count the total number of acceptance criteria" prompt
       when:
         - the Product Owner runs "us refine 96.1 --fix"
       then:
@@ -6663,3 +6662,256 @@ scenarios:
       - stdout matches service greeter declares a valid Public interface
       - the only file changed outside "tmp" is "docs/architecture/architecture.yaml"
       - the file "docs/scenarios.yaml" is unchanged
+  us-refine-quality-fix-001-count-proposes-criteria:
+    description: A Story with two criteria must get a count-fix proposal at the menu, and apply must save a third criterion using Catalogue phrases
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
+    user_stories:
+    - story: docs/product/stories/us-refine-quality-fix-prompts.yaml
+      scenario_id: us-refine-quality-fix-001-count-proposes-criteria
+      merge_date: '2026-10-28'
+    timeout: 25m
+    merged_steps:
+      given:
+      - the "us-refine-fix-count" project tree
+      - and: the "us-refine" checklist is narrowed to its "Count the total number of acceptance criteria" prompt
+      - the Product Owner answers "1" to every question
+      when:
+      - the Product Owner runs "us refine halve-negative --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches FIX PROMPT GENERATED
+      - stdout matches msg="User chose fix action" rawInput=1 action=apply
+      - stdout matches ALL CHECKS PASSED!
+      - and: the story "docs/product/stories/halve-negative-cases.yaml" has 3 acceptance criteria
+      - and: every acceptance criterion in the story "docs/product/stories/halve-negative-cases.yaml" has given, when and then steps
+      - and: the only file changed outside "tmp" is "docs/product/stories/halve-negative-cases.yaml"
+      - and: 'judge: The count proposal adds the missing -1 to 0 boundary criterion, retains both original criteria and uses only the three Catalogue phrases with filled slots.'
+  us-refine-quality-fix-002-implementation-rewritten:
+    description: Implementation details must be rewritten as observable behaviour through the menu
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
+    user_stories:
+    - story: docs/product/stories/us-refine-quality-fix-prompts.yaml
+      scenario_id: us-refine-quality-fix-002-implementation-rewritten
+      merge_date: '2026-10-28'
+    timeout: 25m
+    merged_steps:
+      given:
+      - the "us-refine-fix-implementation" project tree
+      - and: the "us-refine" checklist is narrowed to its "whether it describes implementation" prompt
+      - the Product Owner answers "1" to every question
+      when:
+      - the Product Owner runs "us refine halve-negative --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches FIX PROMPT GENERATED
+      - stdout matches msg="User chose fix action" rawInput=1 action=apply
+      - stdout matches ALL CHECKS PASSED!
+      - and: the story "docs/product/stories/halve-negative-cases.yaml" has 3 acceptance criteria
+      - and: every acceptance criterion in the story "docs/product/stories/halve-negative-cases.yaml" has given, when and then steps
+      - and: the only file changed outside "tmp" is "docs/product/stories/halve-negative-cases.yaml"
+      - and: 'judge: The first criterion now describes the observable -6 to -3 result instead of SQL persistence; all three original inputs and results survive and every step uses a Catalogue phrase.'
+  us-refine-quality-fix-003-happy-path-added:
+    description: A Story containing only failures must get a success criterion through the menu
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
+    user_stories:
+    - story: docs/product/stories/us-refine-quality-fix-prompts.yaml
+      scenario_id: us-refine-quality-fix-003-happy-path-added
+      merge_date: '2026-10-28'
+    timeout: 25m
+    merged_steps:
+      given:
+      - the "us-refine-fix-happy-path" project tree
+      - and: the "us-refine" checklist is narrowed to its "whether it describes the happy path" prompt
+      - the Product Owner answers "1" to every question
+      when:
+      - the Product Owner runs "us refine divide-integers --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches FIX PROMPT GENERATED
+      - stdout matches msg="User chose fix action" rawInput=1 action=apply
+      - stdout matches ALL CHECKS PASSED!
+      - and: the story "docs/product/stories/divide-integers-cases.yaml" has 4 acceptance criteria
+      - and: every acceptance criterion in the story "docs/product/stories/divide-integers-cases.yaml" has given, when and then steps
+      - and: the only file changed outside "tmp" is "docs/product/stories/divide-integers-cases.yaml"
+      - and: 'judge: A new success criterion divides 6 by 2 and observes 3 while retaining the three zero-divisor criteria. Every step uses only Catalogue phrases.'
+  us-refine-shipped-003-no-own-failure-passes:
+    description: A Story with no failure mode of its own must pass the error-scenario Prompt with a context line saying why
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
+    user_stories:
+    - story: docs/product/stories/us-refine-shipped-checklist.yaml
+      scenario_id: us-refine-shipped-003-no-own-failure-passes
+      merge_date: '2026-10-28'
+    timeout: 35m
+    merged_steps:
+      given:
+      - the "us-refine-shipped-no-failure" project tree
+      - and: the "us-refine" checklist is narrowed to its "Identify every failure mode" prompt
+      when:
+      - the Product Owner runs "us refine halve-negative"
+      then:
+      - the command exits with code 0
+      - stdout matches ALL CHECKS PASSED!
+      - and: 'every file matching "tmp/*/*-checklist-*-result.yaml" matches No failure mode of its own:'
+      - and: every file matching "tmp/*/*-checklist-*-result.yaml" matches calculator-input
+      - and: the story "docs/product/stories/halve-negative-cases.yaml" has 3 acceptance criteria
+      - and: the file "docs/product/product.yaml" is unchanged
+      - and: 'judge: The error-scenario Prompt passes because input validation belongs to calculator-input, with a context line explaining that reason. The three success criteria are retained without invented
+          error criteria or a new Story field.'
+  us-refine-quality-fix-004-uncovered-failure-added:
+    description: An uncovered real failure mode must fail the error-scenario Prompt and get its own criterion through the menu
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
+    user_stories:
+    - story: docs/product/stories/us-refine-quality-fix-prompts.yaml
+      scenario_id: us-refine-quality-fix-004-uncovered-failure-added
+      merge_date: '2026-10-28'
+    timeout: 25m
+    merged_steps:
+      given:
+      - the "us-refine-fix-failure-mode" project tree
+      - and: the "us-refine" checklist is narrowed to its "Identify every failure mode" prompt
+      - the Product Owner answers "1" to every question
+      when:
+      - the Product Owner runs "us refine divide-integers --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches FIX PROMPT GENERATED
+      - stdout matches msg="User chose fix action" rawInput=1 action=apply
+      - stdout matches ALL CHECKS PASSED!
+      - and: the story "docs/product/stories/divide-integers-cases.yaml" has 4 acceptance criteria
+      - and: every acceptance criterion in the story "docs/product/stories/divide-integers-cases.yaml" has given, when and then steps
+      - and: the only file changed outside "tmp" is "docs/product/stories/divide-integers-cases.yaml"
+      - and: 'judge: The proposal and saved Story add exactly one criterion for the real zero-divisor failure, asserting the declared error; all three original successful divisions remain. No invented failure
+          or new Story field is added. Every step uses only Catalogue phrases.'
+  us-refine-quality-fix-005-criteria-made-measurable:
+    description: Unmeasurable criteria must get concrete thresholds from the product through the menu
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
+    user_stories:
+    - story: docs/product/stories/us-refine-quality-fix-prompts.yaml
+      scenario_id: us-refine-quality-fix-005-criteria-made-measurable
+      merge_date: '2026-10-28'
+    timeout: 25m
+    merged_steps:
+      given:
+      - the "us-refine-fix-measurable" project tree
+      - and: the "us-refine" checklist is narrowed to its "whether it includes specific measurable criteria" prompt
+      - the Product Owner answers "1" to every question
+      when:
+      - the Product Owner runs "us refine summary-views --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches FIX PROMPT GENERATED
+      - stdout matches msg="User chose fix action" rawInput=1 action=apply
+      - stdout matches ALL CHECKS PASSED!
+      - and: the story "docs/product/stories/summary-views-cases.yaml" has 3 acceptance criteria
+      - and: every acceptance criterion in the story "docs/product/stories/summary-views-cases.yaml" has given, when and then steps
+      - and: the only file changed outside "tmp" is "docs/product/stories/summary-views-cases.yaml"
+      - and: 'judge: At least two criteria replace an unmeasurable concise summary with the declared limit of at most 150 words. All three views remain and every step uses only Catalogue phrases.'
+  us-refine-quality-fix-006-outcome-made-binary:
+    description: A subjective outcome must become a binary observation through the menu
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
+    user_stories:
+    - story: docs/product/stories/us-refine-quality-fix-prompts.yaml
+      scenario_id: us-refine-quality-fix-006-outcome-made-binary
+      merge_date: '2026-10-28'
+    timeout: 25m
+    merged_steps:
+      given:
+      - the "us-refine-fix-binary" project tree
+      - and: the "us-refine" checklist is narrowed to its "whether it has a binary pass/fail outcome" prompt
+      - the Product Owner answers "1" to every question
+      when:
+      - the Product Owner runs "us refine halve-negative --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches FIX PROMPT GENERATED
+      - stdout matches msg="User chose fix action" rawInput=1 action=apply
+      - stdout matches ALL CHECKS PASSED!
+      - and: the story "docs/product/stories/halve-negative-cases.yaml" has 3 acceptance criteria
+      - and: every acceptance criterion in the story "docs/product/stories/halve-negative-cases.yaml" has given, when and then steps
+      - and: the only file changed outside "tmp" is "docs/product/stories/halve-negative-cases.yaml"
+      - and: 'judge: The first criterion now asserts the objective -6 to -3 result with a runnable CLI observation, retaining the other two criteria and using only Catalogue phrases.'
+  us-refine-quality-fix-007-test-sketch-made-runnable:
+    description: A criterion without an objective runnable sketch must be rewritten using the declared interface and test helpers through the menu
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
+    user_stories:
+    - story: docs/product/stories/us-refine-quality-fix-prompts.yaml
+      scenario_id: us-refine-quality-fix-007-test-sketch-made-runnable
+      merge_date: '2026-10-28'
+    timeout: 25m
+    merged_steps:
+      given:
+      - the "us-refine-fix-sketch" project tree
+      - and: the "us-refine" checklist is narrowed to its "attempt to draft a runnable test sketch" prompt
+      - the Product Owner answers "1" to every question
+      when:
+      - the Product Owner runs "us refine halve-negative --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches FIX PROMPT GENERATED
+      - stdout matches msg="User chose fix action" rawInput=1 action=apply
+      - stdout matches ALL CHECKS PASSED!
+      - and: the story "docs/product/stories/halve-negative-cases.yaml" has 3 acceptance criteria
+      - and: every acceptance criterion in the story "docs/product/stories/halve-negative-cases.yaml" has given, when and then steps
+      - and: the only file changed outside "tmp" is "docs/product/stories/halve-negative-cases.yaml"
+      - and: 'judge: The first criterion now asserts the objective -6 to -3 result with a runnable CLI observation, retaining the other two criteria and using only Catalogue phrases.'
+  us-refine-shipped-001-shipped-checklist-reaches-menu:
+    description: The full shipped checklist must reach a fix proposal, and exit at the menu must leave the Story and Catalogue unchanged
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
+    user_stories:
+    - story: docs/product/stories/us-refine-shipped-checklist.yaml
+      scenario_id: us-refine-shipped-001-shipped-checklist-reaches-menu
+      merge_date: '2026-10-28'
+    timeout: 35m
+    merged_steps:
+      given:
+      - the "us-refine-shipped-menu-exit" project tree
+      - the Product Owner answers "3" to every question
+      when:
+      - the Product Owner runs "us refine halve-negative --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches US REFINE
+      - stdout matches FIX PROMPT GENERATED
+      - but: stdout does not match checklist has prompts with no F fix template
+      - stdout matches msg="User chose fix action" rawInput=3 action=exit
+      - and: no file outside "tmp" changed
+      - and: the file "docs/product/stories/halve-negative-cases.yaml" is unchanged
+      - and: the file "docs/product/product.yaml" is unchanged
+  us-refine-shipped-002-shipped-checklist-adds-phrase:
+    description: The full shipped checklist must add a missing Catalogue phrase only after apply and retain the Story words
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
+    user_stories:
+    - story: docs/product/stories/us-refine-shipped-checklist.yaml
+      scenario_id: us-refine-shipped-002-shipped-checklist-adds-phrase
+      merge_date: '2026-10-28'
+    timeout: 35m
+    merged_steps:
+      given:
+      - the "us-refine-shipped-catalogue" project tree
+      - the Product Owner answers "1" to every question
+      when:
+      - the Product Owner runs "us refine halve-negative --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches US REFINE
+      - stdout matches FIX PROMPT GENERATED
+      - but: stdout does not match checklist has prompts with no F fix template
+      - stdout matches msg="User chose fix action" rawInput=1 action=apply
+      - stdout matches msg="Fix recorded in the document" document=product
+      - stdout matches ALL CHECKS PASSED!
+      - and: the story "docs/product/stories/halve-negative-cases.yaml" has 3 acceptance criteria
+      - and: the file "docs/product/product.yaml" is modified
+      - and: the file "docs/product/stories/halve-negative-cases.yaml" matches the Calculator User halves the number
+      - and: no file outside "tmp" and "docs/product" changed
+      - and: 'judge: The menu proposal adds a Catalogue entry for the existing halving action. The Story keeps all of its original descriptions and step words; no substitute action, error criterion or new
+          Story field is introduced.'

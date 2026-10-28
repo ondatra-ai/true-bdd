@@ -1,0 +1,32 @@
+title: Integer calculator
+description:
+  summary: 'The halve-negative Story halves an already validated negative integer and rounds toward zero. It has no failure mode of its own: missing and non-integer inputs belong to the separate calculator-input
+    Story. Negative inputs -6, -7 and -1 produce -3, -3 and 0 respectively.'
+roles:
+- name: Calculator User
+  definition: A person using the calculator CLI
+vocabulary:
+  forbidden_qualifiers:
+  - properly
+  - correctly
+  - appropriate
+  - fast
+  forbidden_actions: []
+glossary: []
+catalogue:
+- template: the number is "{value}"
+  block: given
+  means: The calculator is supplied that already validated integer.
+  terms: []
+- template: the Calculator User halves the number
+  block: when
+  means: The user runs the calculator CLI halve command with the supplied integer.
+  terms: []
+- template: the result is "{value}"
+  block: then
+  means: The command succeeds and prints exactly that integer, rounded toward zero.
+  terms: []
+- template: the result is satisfying
+  block: then
+  means: A subjective judgement with no objective pass/fail oracle.
+  terms: []

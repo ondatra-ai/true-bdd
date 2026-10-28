@@ -31,8 +31,8 @@ func repoRoot(t *testing.T) string {
 }
 
 // TestUniverseCensus pins the verified shipped inventory: 32 prompts,
-// 25 Fs, 89 branches. scen-check adds 5 Ds and 10 Qs, each with an F, so
-// it contributes 45 pass/fail/fix branches; us-refine's one D adds 3.
+// 32 Fs, 96 branches. Every shipped Prompt has a fix template,
+// so each contributes pass/fail/fix branches.
 func TestUniverseCensus(t *testing.T) {
 	t.Parallel()
 
@@ -53,12 +53,12 @@ func TestUniverseCensus(t *testing.T) {
 		}
 	}
 
-	if fCount != 25 {
-		t.Errorf("F templates: got %d, want 25", fCount)
+	if fCount != 32 {
+		t.Errorf("F templates: got %d, want 32", fCount)
 	}
 
-	if got := len(uni.Branches); got != 89 {
-		t.Errorf("branches: got %d, want 89", got)
+	if got := len(uni.Branches); got != 96 {
+		t.Errorf("branches: got %d, want 96", got)
 	}
 
 	if len(uni.Diagnostics) != 0 {

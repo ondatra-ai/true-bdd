@@ -1,0 +1,259 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Technical Scrum Master applying fixes to a user story.
+
+**Your Task:**
+1. Read the current story and the fix prompt instructions.
+2. Apply the changes EXACTLY as specified in the fix prompt — they may
+   target any field of the story (`title`, `as_a`, `i_want`, `so_that`,
+   `status`, `acceptance_criteria`, …), not only acceptance criteria.
+3. Output the COMPLETE updated story body in YAML form.
+
+**Output Requirements:**
+- Output every field of the current story, with the fix prompt's
+  changes applied. Fields not mentioned by the fix prompt MUST be
+  preserved verbatim — do not invent, drop, or reorder unrelated
+  fields.
+- The `acceptance_criteria` array MUST always be present, even when
+  the fix only touches a top-level field; preserve all ACs unless the
+  fix prompt explicitly modifies them.
+- Each acceptance criterion must have an `id`, `description`, and
+  `steps` field. The `description` is a one-line rule-based statement
+  using must/should (NO Gherkin in `description`). The `steps` field
+  holds the Gherkin scenario as a structured given/when/then list.
+- Wrap the output with FILE_START/FILE_END markers.
+
+**Output Format:**
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply-divide-integers-iter1-result.yaml ===
+id: "<story id>"
+title: "<story title>"
+as_a: "<role>"
+i_want: "<desire>"
+so_that: "<benefit>"
+status: "<status>"
+acceptance_criteria:
+  - id: "AC-1"
+    description: "One-line rule-based statement with must/should"
+    steps:
+      - given:
+          - "precondition"
+      - when:
+          - "action"
+      - then:
+          - "outcome"
+          - and: "additional outcome"
+  - id: "AC-2"
+    description: "Another one-line rule-based statement"
+    steps:
+      - given:
+          - "precondition"
+      - when:
+          - "action"
+      - then:
+          - "outcome"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-divide-integers-iter1-result.yaml ===
+```
+
+**CRITICAL:**
+- Apply changes EXACTLY as described in the fix prompt.
+- Output the WHOLE story body — top-level fields AND
+  `acceptance_criteria`. Never output just one section.
+- Do NOT add, remove, or rename fields beyond what the fix prompt
+  specifies.
+- Preserve the exact wording from the fix prompt's "After" sections.
+- The `description` must NEVER contain Given/When/Then — those belong
+  in `steps`.
+
+
+### TASK
+
+## Current Story
+
+**ID:** divide-integers
+**Title:** Divide integers
+**As a:** Calculator User
+**I want:** to divide two validated integers
+**So that:** I can obtain their quotient or a zero-divisor error
+**Status:** PLANNED
+
+### Current Acceptance Criteria
+
+**001-division:**
+The calculator must report "Cannot divide by zero" when dividing 6 by zero.
+
+**002-division:**
+The calculator must report "Cannot divide by zero" when dividing 9 by zero.
+
+**003-division:**
+The calculator must report "Cannot divide by zero" when dividing 0 by zero.
+
+
+---
+
+## Fix Prompt to Apply
+
+=== FILE_START: tmp/{{RUN_DIR}}/01-divide-integers-fix-prompts.md ===
+# Fix Prompt for Story divide-integers: Divide integers
+
+## Instructions
+Apply the following changes to the acceptance criteria for this story in `docs/product/stories/divide-integers-cases.yaml`.
+
+The failed check (`us-refine/acceptance_criteria`) reports that no AC describes the happy path. All three existing ACs assert the zero-divisor error, and all three are real, valid failure cases. The fix is therefore **additive only**: add one new AC for the primary success path and leave 001-division, 002-division and 003-division byte-for-byte unchanged.
+
+Per the Product Owner's clarifications:
+- Add exactly one AC: 004-division — dividing 6 by 2 yields the result "3".
+- Keep all three existing ACs unchanged; they are distinct data points and the failed check does not fault them.
+
+## Original Acceptance Criteria
+1. 001-division: The calculator must report "Cannot divide by zero" when dividing 6 by zero. [has steps]
+2. 002-division: The calculator must report "Cannot divide by zero" when dividing 9 by zero. [has steps]
+3. 003-division: The calculator must report "Cannot divide by zero" when dividing 0 by zero. [has steps]
+
+## Required Changes
+
+Change ONLY what the failed check requires. No existing criterion is modified — descriptions and steps for 001-division, 002-division and 003-division are reproduced word for word.
+
+### Change #1: 001-division — NO CHANGE
+**Before:** The calculator must report "Cannot divide by zero" when dividing 6 by zero.
+**Issue:** None. The failed check does not fault this criterion; it is a valid zero-divisor failure case. Reproduce exactly as it stands.
+**After (description):** The calculator must report "Cannot divide by zero" when dividing 6 by zero.
+**After (steps):**
+```yaml
+- given:
+    - "the dividend is \"6\""
+    - "the divisor is \"0\""
+- when:
+    - "the Calculator User divides the numbers"
+- then:
+    - "the error is \"Cannot divide by zero\""
+```
+
+### Change #2: 002-division — NO CHANGE
+**Before:** The calculator must report "Cannot divide by zero" when dividing 9 by zero.
+**Issue:** None. Valid zero-divisor failure case, not faulted by the check. Reproduce exactly as it stands.
+**After (description):** The calculator must report "Cannot divide by zero" when dividing 9 by zero.
+**After (steps):**
+```yaml
+- given:
+    - "the dividend is \"9\""
+    - "the divisor is \"0\""
+- when:
+    - "the Calculator User divides the numbers"
+- then:
+    - "the error is \"Cannot divide by zero\""
+```
+
+### Change #3: 003-division — NO CHANGE
+**Before:** The calculator must report "Cannot divide by zero" when dividing 0 by zero.
+**Issue:** None. Valid zero-divisor failure case, not faulted by the check. Reproduce exactly as it stands.
+**After (description):** The calculator must report "Cannot divide by zero" when dividing 0 by zero.
+**After (steps):**
+```yaml
+- given:
+    - "the dividend is \"0\""
+    - "the divisor is \"0\""
+- when:
+    - "the Calculator User divides the numbers"
+- then:
+    - "the error is \"Cannot divide by zero\""
+```
+
+### Change #4: 004-division — NEW AC (happy path)
+**Before:** (did not exist)
+**Issue:** No AC documented the Story's primary success path — dividing two validated integers exactly and obtaining the quotient. This is what made `us-refine/acceptance_criteria` fail ("Total happy path ACs: 0 (need ≥1)").
+**After (description):** The calculator must report the result "3" when dividing 6 by 2.
+**After (steps):**
+```yaml
+- given:
+    - "the dividend is \"6\""
+    - "the divisor is \"2\""
+- when:
+    - "the Calculator User divides the numbers"
+- then:
+    - "the result is \"3\""
+```
+
+**Why these values and phrases:**
+- `6 / 2 = 3` is listed as a documented success in `docs/product/product.yaml` ("Successes: 6 / 2 = 3; 9 / 3 = 3; 0 / 2 = 0").
+- All four step phrases already exist in the Catalogue in `docs/product/product.yaml`, used in their declared blocks: `the dividend is "{value}"` (given), `the divisor is "{value}"` (given), `the Calculator User divides the numbers` (when), `the result is "{value}"` (then). No new phrase is invented. If any further phrase were ever required, it must be proposed through the step-phrases fix, never invented inside a Story step.
+- `the result is "3"` means exit 0 printing exactly `3` on stdout, per the Catalogue definition and the `calculator` CLI contract in `docs/architecture/architecture.yaml`.
+- The `when` step uses the exact role "Calculator User" from the Story's `as_a` clause.
+- None of the forbidden qualifiers (properly, correctly, appropriate, fast) appear.
+
+## Complete Fixed Acceptance Criteria
+
+This block replaces the entire `acceptance_criteria` list. All Story fields (id, feature, title, as_a, i_want, so_that, status) are preserved unchanged.
+
+```yaml
+- id: 001-division
+  description: The calculator must report "Cannot divide by zero" when dividing 6 by zero.
+  steps:
+  - given:
+    - the dividend is "6"
+    - the divisor is "0"
+  - when:
+    - the Calculator User divides the numbers
+  - then:
+    - the error is "Cannot divide by zero"
+- id: 002-division
+  description: The calculator must report "Cannot divide by zero" when dividing 9 by zero.
+  steps:
+  - given:
+    - the dividend is "9"
+    - the divisor is "0"
+  - when:
+    - the Calculator User divides the numbers
+  - then:
+    - the error is "Cannot divide by zero"
+- id: 003-division
+  description: The calculator must report "Cannot divide by zero" when dividing 0 by zero.
+  steps:
+  - given:
+    - the dividend is "0"
+    - the divisor is "0"
+  - when:
+    - the Calculator User divides the numbers
+  - then:
+    - the error is "Cannot divide by zero"
+- id: 004-division
+  description: The calculator must report the result "3" when dividing 6 by 2.
+  steps:
+  - given:
+    - the dividend is "6"
+    - the divisor is "2"
+  - when:
+    - the Calculator User divides the numbers
+  - then:
+    - the result is "3"
+```
+
+## Expected Check Result After Fix
+
+- 001-division: not happy path
+- 002-division: not happy path
+- 003-division: not happy path
+- 004-division: happy path — 'dividing 6 by 2 returns the result "3"'
+- Total happy path ACs: 1 (need ≥1) → pass
+
+Present this proposal at the fix menu; apply it only after the Product Owner answers apply.
+
+=== FILE_END: tmp/{{RUN_DIR}}/01-divide-integers-fix-prompts.md ===
+
+---
+
+## Instructions
+
+Apply the changes described in the "Fix Prompt to Apply" section above.
+The fix may target any field of the story — top-level (`title`,
+`as_a`, `i_want`, `so_that`, `status`) or `acceptance_criteria` —
+so output the COMPLETE updated story body. Preserve every field that
+the fix prompt does not touch.
+
+Output the complete updated story body using FILE_START/FILE_END
+markers:
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-divide-integers-iter1-result.yaml ===
+(Complete story body YAML here — every top-level field plus
+`acceptance_criteria`)
+=== FILE_END: tmp/{{RUN_DIR}}/apply-divide-integers-iter1-result.yaml ===
