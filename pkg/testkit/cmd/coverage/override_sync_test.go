@@ -176,6 +176,13 @@ const (
 // the behaviour under test; every other one declares checklist_prompts.
 func allowedOverrideFixtures() map[string]overridePurpose {
 	return map[string]overridePurpose{
+  "public-interface-missing": overrideChecks,
+  "public-interface-missing-document": overrideChecks,
+  "public-interface-malformed-document": overrideChecks,
+  "public-interface-valid": overrideChecks,
+  "public-interface-unsupported": overrideChecks,
+  "public-interface-fix": overrideChecks,
+
  "init-existing": overridePreserved,
  "start-invalid-checklist": overrideRefused,
 		"build-code-claude-replay":                overrideTiers,

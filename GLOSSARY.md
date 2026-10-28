@@ -13,7 +13,7 @@ The three documents a Host project's system is built from, and the only source o
 _Avoid_: spec files, sources, the docs
 
 **Public interface**:
-What a service offers to anything outside it, with its formats and the criteria it meets. The architecture document declares it for each service, in the standard form of the service's kind, and every rebuild keeps it; a build never chooses it. A step definition sets up and observes a service through it from outside, across a process boundary, sharing no code or package with the service; so a library alone is never a service the Registry tests.
+What a service offers to anything outside it, with its formats and the criteria it meets. The architecture document declares it for each service, in the standard form of the service's kind, and every rebuild keeps it; a build never chooses it. The supported kinds are `cli` (an OpenCLI-like document with named file, log-record and outgoing-call extensions), `http` (an OpenAPI 3 document), and `ui` (elements by role and accessible name within a page or region); other process-boundary kinds await support. Named documents are relative to the Host project root and load at command start; missing or invalid documents refuse startup before any test run, Item or AI turn. The declaration is optional for loading, but `scen check` fails every Scenario whose service has no valid declaration, without an AI turn for that check. Its fix asks the System Architect what the service offers and writes the architecture document, never the Scenario. A step definition sets up and observes a service through it from outside, across a process boundary, sharing no code or package with the service; so a library alone is never a service the Registry tests.
 _Avoid_: external API, contract, surface
 
 **Persistent data model**:
@@ -93,7 +93,7 @@ A specification document that holds the words the Catalogue relies on: the produ
 _Avoid_: vocabulary file, dictionary
 
 **Closure check**:
-One of the four Built-in checks that hold a Scenario's steps to its Term documents: every step matches one Catalogue phrase, the glossary defines and the Word mapping maps every term those phrases declare, and the phrases and the suite's step definitions correspond one to one. A Scenario no Story claims, or a Host project with no Catalogue, passes them unchecked.
+One of the five Built-in checks that hold a Scenario to its Term documents: its service declares a valid Public interface, every step matches one Catalogue phrase, the glossary defines and the Word mapping maps every term those phrases declare, and the phrases and the suite's step definitions correspond one to one. The four checks about phrases and terms pass a Scenario no Story claims, or a Host project with no Catalogue, unchecked; the Public interface check always runs.
 _Avoid_: spec check, term check
 
 **Services**:

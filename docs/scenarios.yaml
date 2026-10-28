@@ -1402,7 +1402,7 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches level=ERROR msg="Refusing to start" command="scen check"
-        - 'stdout matches scen-check/scenario_quality #1 D: steps-are-present names no built-in check of scen check, which has declared-terms, given-when-then, step-definitions, step-phrases, term-mappings'
+        - 'stdout matches scen-check/scenario_quality #1 D: steps-are-present names no built-in check of scen check, which has declared-terms, given-when-then, public-interface, step-definitions, step-phrases, term-mappings'
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
@@ -2405,7 +2405,7 @@ scenarios:
         - and: stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=2 answer=pass
         - and: stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=3 answer=pass
         - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=4 answer=pass
-        - and: 'stdout matches PASS: 14 '
+        - and: 'stdout matches PASS: 15 '
         - and: stdout matches ALL CHECKS PASSED!
         - and: stdout matches SCEN CHECK COMPLETE
         - and: the engine dispatched 10 AI turns
@@ -2430,7 +2430,7 @@ scenarios:
         - stdout matches SCEN CHECK
         - and: stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass
         - and: 'stdout matches msg="Check answered" check=step-phrases subjectID=E2E-002 promptIndex=1 answer=fail context="\[E2E-002: then step \\"the greeter prints \\"Hello Ada\\" on one line\\" matches no template\]"'
-        - and: stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=14
+        - and: stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=15
         - and: 'stdout matches SKIP: 10\n'
         - and: stdout matches Validation failed
         - but: stdout does not match ALL CHECKS PASSED
@@ -2460,7 +2460,7 @@ scenarios:
         - and: stdout matches FIX PROMPT GENERATED
         - and: stdout matches msg="Fix recorded in the document" document=scenarios_yaml
         - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=4 answer=pass
-        - and: 'stdout matches PASS: 14 '
+        - and: 'stdout matches PASS: 15 '
         - and: stdout matches ALL CHECKS PASSED
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
@@ -4111,7 +4111,7 @@ scenarios:
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
   engine-term-documents-004-architecture-not-yaml-stops-scen-check:
-    description: '`scen check` must stop at its term-mapping check when the architecture document is not valid YAML, naming the document and the line its reader stopped at, before any later check or AI turn'
+    description: '`scen check` must refuse startup when the architecture document is not valid YAML, naming the document and the line its reader stopped at, before any later check or AI turn'
     service: true-bdd
     path: tests/true-bdd/scen_check_test.go
     user_stories:
@@ -4125,8 +4125,8 @@ scenarios:
         - the Quality Engineer runs "scen check"
       then:
         - the command exits with code 1
-        - stdout matches level=ERROR msg="Check could not answer" check=term-mappings subjectID=E2E-001
-        - and: 'stdout matches read the word mapping: .*architecture document \./docs/architecture/architecture\.yaml: yaml: line \d+: did not find expected'
+        - 'stdout matches level=ERROR msg="Refusing to start: checklist documents unsatisfiable"'
+        - and: 'stdout matches failed to parse architecture file \./docs/architecture/architecture\.yaml: yaml: line \d+: did not find expected'
         - but: stdout does not match check=step-definitions
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
@@ -6559,6 +6559,109 @@ scenarios:
       - stderr matches directory lock not released
       - stderr matches docs held for 10s
       - no file outside "tmp" changed
+  public-interface-001-missing:
+    description: scen check fails a service without a Public interface, naming it without an AI turn
+    service: true-bdd
+    path: tests/true-bdd/public_interface_test.go
+    user_stories: []
+    merged_steps:
+      given:
+      - the "public-interface-missing" project tree
+      when:
+      - the System Architect runs "scen check"
+      then:
+      - the command exits with code 1
+      - stdout matches service greeter declares no Public interface
+      - stdout matches check=public-interface.*answer=fail
+      - the engine dispatched 0 AI turns
+      - no file outside "tmp" changed
+  public-interface-002-missing-document:
+    description: A missing CLI interface document refuses startup before any Scenario or AI turn
+    service: true-bdd
+    path: tests/true-bdd/public_interface_test.go
+    user_stories: []
+    merged_steps:
+      given:
+      - the "public-interface-missing-document" project tree
+      when:
+      - the System Architect runs "scen check"
+      then:
+      - the command exits with code 1
+      - stdout matches Refusing to start
+      - stdout matches docs/greeter-cli.yaml
+      - stdout does not match msg="Scenario"
+      - the engine dispatched 0 AI turns
+      - no file outside "tmp" changed
+  public-interface-003-malformed-document:
+    description: An unparseable CLI interface document refuses startup with its filename and parse error
+    service: true-bdd
+    path: tests/true-bdd/public_interface_test.go
+    user_stories: []
+    merged_steps:
+      given:
+      - the "public-interface-malformed-document" project tree
+      when:
+      - the System Architect runs "scen check"
+      then:
+      - the command exits with code 1
+      - stdout matches Refusing to start
+      - stdout matches docs/greeter-cli.yaml
+      - stdout does not match msg="Scenario"
+      - stdout matches parse Public interface document
+      - 'stdout matches yaml:'
+      - the engine dispatched 0 AI turns
+      - no file outside "tmp" changed
+  public-interface-004-valid:
+    description: CLI with named file, log and outgoing call extensions, HTTP and scoped UI declarations pass without AI
+    service: true-bdd
+    path: tests/true-bdd/public_interface_test.go
+    user_stories: []
+    merged_steps:
+      given:
+      - the "public-interface-valid" project tree
+      when:
+      - the System Architect runs "scen check"
+      then:
+      - the command exits with code 0
+      - stdout matches service greeter declares a valid Public interface
+      - stdout matches service api declares a valid Public interface
+      - stdout matches service web declares a valid Public interface
+      - the engine dispatched 0 AI turns
+      - no file outside "tmp" changed
+  public-interface-005-unsupported:
+    description: Unsupported process kinds are named as not supported yet, and a library is excluded
+    service: true-bdd
+    path: tests/true-bdd/public_interface_test.go
+    user_stories: []
+    merged_steps:
+      given:
+      - the "public-interface-unsupported" project tree
+      when:
+      - the System Architect runs "scen check"
+      then:
+      - the command exits with code 1
+      - stdout matches grpc.*not supported yet
+      - stdout matches library is excluded
+      - the engine dispatched 0 AI turns
+      - no file outside "tmp" changed
+  public-interface-006-fix:
+    description: The Public interface fix asks the System Architect and writes only the architecture, preserving the Scenario
+    service: true-bdd
+    path: tests/true-bdd/public_interface_test.go
+    user_stories: []
+    merged_steps:
+      given:
+      - the "public-interface-fix" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "scen check --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches msg="AI needs clarification"
+      - stdout matches msg="Fix recorded in the document" document=architecture_yaml
+      - stdout matches service greeter declares a valid Public interface
+      - the only file changed outside "tmp" is "docs/architecture/architecture.yaml"
+      - the file "docs/scenarios.yaml" is unchanged
   us-refine-quality-fix-001-count-proposes-criteria:
     description: A Story with two criteria must get a count-fix proposal at the menu, and apply must save a third criterion using Catalogue phrases
     service: true-bdd

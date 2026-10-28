@@ -65,6 +65,7 @@ func (t Testing) Label() string { return t.Framework }
 
 // Service declares a production folder and any additional exact writable paths.
 type Service struct {
+ PublicInterface *PublicInterface `yaml:"public_interface,omitempty"`
 	Libraries []Library `yaml:"libraries,omitempty"`
 	Name      string    `yaml:"name"`
 	Path      string    `yaml:"path"`
@@ -153,6 +154,9 @@ func Load(path string) (*Architecture, error) {
 	sort.Slice(arch.Services, func(i, j int) bool {
 		return arch.Services[i].Name < arch.Services[j].Name
 	})
+
+	_, err = LoadInterfaces(path, ".")
+	if err != nil { return nil, err }
 
 	err = arch.validateLibraries()
 	if err != nil {

@@ -10,6 +10,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/engine"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/validate"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/runner"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/architecture"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/checklist"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/fs"
@@ -64,11 +65,12 @@ func RunScenCheck(
 		StoryID: "",
 		Fix:     fix,
 
-		LoadItems:   loadCheckScenarios(deps, requirementsFile, ids, fix, ledger),
-		PostFix:     scenCheckPostFix(deps, requirementsFile),
-		Finalize:    finalizeScenCheck,
-		GetSubject:  scenCheckSubject,
-		OnItemStart: scenCheckOnItemStart,
+		LoadItems:    loadCheckScenarios(deps, requirementsFile, ids, fix, ledger),
+		PostFix:      scenCheckPostFix(deps, requirementsFile),
+		PostCheckFix: scenCheckPostCheckFix(deps, requirementsFile),
+		Finalize:     finalizeScenCheck,
+		GetSubject:   scenCheckSubject,
+		OnItemStart:  scenCheckOnItemStart,
 
 		Checks:       checks.ForScenarios(),
 		Evaluator:    deps.ScenCheckEvaluator,
@@ -344,4 +346,33 @@ func finalizeScenCheck(result *engine.Result[*template.ScenarioCheckData]) error
 	}
 
 	return ErrScenariosFailedCheck
+}
+
+func scenCheckPostCheckFix(
+ deps ScenCheckDeps,
+ requirementsFile string,
+) func(context.Context, *template.ScenarioCheckData, string) (*template.ScenarioCheckData, error) {
+	return func(ctx context.Context, item *template.ScenarioCheckData, check string) (*template.ScenarioCheckData, error) {
+		if check != checks.CheckPublicInterface {
+			return scenCheckPostFix(deps, requirementsFile)(ctx, item, "")
+		}
+
+		for _, document := range item.TermDocuments {
+			if document.Key != docs.KeyArchitectureYAML {
+				continue
+			}
+
+			_, err := architecture.LoadInterfaces(document.Scratch, ".")
+ if err != nil {
+				return nil, fmt.Errorf("validate Public interface fix: %w", err)
+			}
+
+			_, err = commitFixDocument(document, nil)
+ if err != nil {
+				return nil, err
+			}
+		}
+
+		return item, nil
+	}
 }

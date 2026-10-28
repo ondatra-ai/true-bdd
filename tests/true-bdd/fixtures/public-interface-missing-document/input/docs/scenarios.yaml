@@ -1,0 +1,13 @@
+scenarios:
+  host-001:
+    description: Observe the declared service
+    service: greeter
+    path: tests/greeter/scenario_test.go
+    user_stories: []
+    merged_steps:
+      given:
+      - a host
+      when:
+      - a command runs
+      then:
+      - it returns

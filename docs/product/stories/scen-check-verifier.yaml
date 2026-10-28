@@ -32,7 +32,7 @@ story:
                 - and: stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=2 answer=pass
                 - and: stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=3 answer=pass
                 - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=4 answer=pass
-                - and: 'stdout matches PASS: 14 '
+                - and: 'stdout matches PASS: 15 '
                 - and: stdout matches ALL CHECKS PASSED!
                 - and: stdout matches SCEN CHECK COMPLETE
                 - and: the engine dispatched 10 AI turns
@@ -49,7 +49,7 @@ story:
                 - stdout matches SCEN CHECK
                 - and: stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass
                 - and: 'stdout matches msg="Check answered" check=step-phrases subjectID=E2E-002 promptIndex=1 answer=fail context="\[E2E-002: then step \\"the greeter prints \\"Hello Ada\\" on one line\\" matches no template\]"'
-                - and: stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=14
+                - and: stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=15
                 - and: 'stdout matches SKIP: 10\n'
                 - and: stdout matches Validation failed
                 - but: stdout does not match ALL CHECKS PASSED

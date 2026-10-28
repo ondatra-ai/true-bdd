@@ -557,10 +557,14 @@ architecture:
         UserAnswers: *useranswers
     scen_check_fix_generator_system:
       rendering: *prompt-rendering
-      fields: *fix-generator-system-fields
+      fields:
+        <<: *fix-generator-system-fields
+        Subject.Service: *registry-service
+        ResultPath: *generation-result-path
     scen_check_fix_applier:
       rendering: *prompt-rendering
       fields:
+        Subject.Service: *registry-service
         Check: *check
         FixPrompt: *fixprompt
         ResultPath: *application-result-path
@@ -615,6 +619,26 @@ architecture:
       path: services/true-bdd
       language: go
       libraries:
+        - module: github.com/woodsbury/decimal128
+          version: v1.3.0
+        - module: github.com/perimeterx/marshmallow
+          version: v1.1.5
+        - module: github.com/oasdiff/yaml3
+          version: v0.0.0-20250309153720-d2182401db90
+        - module: github.com/oasdiff/yaml
+          version: v0.0.0-20250309154309-f31be36b4037
+        - module: github.com/mohae/deepcopy
+          version: v0.0.0-20170929034955-c48cc78d4826
+        - module: github.com/mailru/easyjson
+          version: v0.7.7
+        - module: github.com/josharian/intern
+          version: v1.0.0
+        - module: github.com/go-openapi/swag
+          version: v0.23.0
+        - module: github.com/go-openapi/jsonpointer
+          version: v0.21.0
+        - module: github.com/getkin/kin-openapi
+          version: v0.133.0
         - module: github.com/Masterminds/goutils
           version: v1.1.1
         - module: github.com/Masterminds/semver/v3
@@ -671,7 +695,7 @@ architecture:
         - module: github.com/kr/text
           version: v0.2.0
         - module: github.com/rogpeppe/go-internal
-          version: v1.11.0
+          version: v1.12.0
         - module: gopkg.in/check.v1
           version: v1.0.0-20201130134442-10cb98267c6c
         - module: go.uber.org/atomic
@@ -1226,6 +1250,20 @@ architecture:
   # words naming no code identifier, so the steps can be rebuilt from it.
   # It maps every word the catalogue declares, one entry per word.
   terms:
+    - term: Public interface
+      technical: >-
+        Each architecture.services entry optionally carries public_interface with kind,
+        document for cli or http, or inline elements for ui. The loader reads named
+        YAML/JSON documents relative to the Host project root at startup. CLI uses
+        opencli, info, commands with parameters and responses, and named extensions;
+        HTTP uses kin-openapi v0.133.0
+        with local references loaded through the file channel under the Host project root;
+        UI uses page or region, role and name. The public-interface built-in check
+        reports absent, invalid, library or unsupported declarations for every Scenario.
+      observed_by: >-
+        Run scen check against host declarations, compare its named service findings,
+        exit code and zero AI turns, and verify missing or invalid documents refuse
+        before any Scenario, runner or AI turn. A fix edits only the architecture.
     - term: build identity
       technical: >-
         A pure resolver accepts version and commit stamps and optional runtime/debug.BuildInfo.

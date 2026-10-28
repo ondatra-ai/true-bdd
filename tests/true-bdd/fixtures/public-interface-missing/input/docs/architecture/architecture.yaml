@@ -1,0 +1,5 @@
+architecture:
+  services:
+  - name: greeter
+    path: services/greeter
+    language: go

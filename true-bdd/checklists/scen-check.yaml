@@ -6,14 +6,15 @@
 # prompt carries an `F:`, so `--fix` walks the whole checklist.
 #
 # term_closure holds a scenario's words to the documents that define
-# them. Its four `D:` prompts are answered by the engine's own checks,
+# them. Its five `D:` prompts are answered by the engine's own checks,
 # with no AI turn, before any `Q:`; a scenario failing one skips its
 # `Q:` prompts until it is fixed. Their fixes write the product or the
 # architecture document, never the scenario. Its two `Q:` prompts ask a
 # model what no check can settle: whether a phrase's meaning says
 # something, and whether the scenario uses the phrase in that meaning.
-# Every closure prompt passes a scenario no Story claims, or a host
-# whose product document declares no catalogue, as "not checked".
+# The four phrase/term checks pass a scenario no Story claims, or a host
+# whose product document declares no catalogue, as "not checked". The
+# public-interface check holds every Scenario to its service declaration.
 #
 # scenario_quality holds the eight questions of the `us-refine`
 # acceptance-criteria checklist that still mean something applied to a
@@ -130,6 +131,13 @@ sections:
           - product
           - architecture_yaml
         F: "Rewrite each step the findings name, in this Scenario's registry entry, so it uses a catalogue phrase in that phrase's meaning and still matches exactly one template: change its slot value, or reword it into the shape of the entry whose meaning fits. Keep what the Scenario specifies; change nothing else."
+
+      - D: public-interface
+        rationale: "A Scenario must observe what its service offers across a process boundary, declared before the code is built."
+        docs:
+          - architecture_yaml
+        F: "Ask the System Architect what this service offers across its process boundary, then propose its public_interface declaration in the architecture document: cli names an OpenCLI-like document with named extensions, http names an OpenAPI 3 document, ui lists elements by role and accessible name within a page or region. Write the architecture document, never the Scenario."
+
 
   - id: scenario_quality
     name: "Scenario Quality"
