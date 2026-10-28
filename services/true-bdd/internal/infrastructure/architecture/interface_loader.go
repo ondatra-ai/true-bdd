@@ -49,7 +49,9 @@ func loadInterfaceDocument(declaration *PublicInterface, root string) error {
 		return nil
 	}
 
- if declaration.Kind != kindCLI && declaration.Kind != kindHTTP { return nil }
+	if declaration.Kind != kindCLI && declaration.Kind != kindHTTP {
+		return nil
+	}
 
 	path := declaration.Document
 
@@ -63,7 +65,7 @@ func loadInterfaceDocument(declaration *PublicInterface, root string) error {
 		return fmt.Errorf("read Public interface document %s: %w", path, err)
 	}
 
-	err = parseInterfaceDocument(declaration.Kind, data, filepath.Join(root, path), root)
+	err = parseInterfaceDocument(declaration, data, filepath.Join(root, path), root)
 	if err != nil {
 		return fmt.Errorf("parse Public interface document %s: %w", path, err)
 	}
@@ -71,15 +73,17 @@ func loadInterfaceDocument(declaration *PublicInterface, root string) error {
 	return nil
 }
 
-func parseInterfaceDocument(kind string, data []byte, path, root string) error {
+func parseInterfaceDocument(declaration *PublicInterface, data []byte, path, root string) error {
 	err := validateInterfaceYAML(data)
 	if err != nil {
 		return err
 	}
 
-	if kind == kindHTTP { return parseHTTP(data, path, root) }
+	if declaration.Kind == kindHTTP {
+		return parseHTTP(declaration, data, path, root)
+	}
 
- return parseCLI(data)
+	return parseCLI(declaration, data)
 }
 
 func validateInterfaceYAML(data []byte) error {

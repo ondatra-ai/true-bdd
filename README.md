@@ -257,8 +257,8 @@ command does not hold, a `with:` parameter the check does not read, and
 `model:` on a `D:` prompt, since no model answers it, and a `D:` whose
 `docs:` does not list a document its check reads. `scen check` holds six
 checks, `given-when-then`, `step-phrases`, `declared-terms`,
-`term-mappings`, `public-interface` and `step-definitions` (below); the shipped `scen-check`
-checklist walks the last five.
+`term-mappings`, `phrase-mappings`, `public-interface` and `step-definitions` (below); the shipped `scen-check`
+checklist walks the last six.
 
 ### Parking a prompt
 
@@ -347,6 +347,20 @@ Every term must be mapped exactly once: an unmapped term fails the
 Scenario naming the term, and a term mapped twice fails it naming the
 count.
 
+`D: phrase-mappings` (`docs: [product, architecture_yaml]`) holds each matched phrase to `architecture.phrases`, one entry per verbatim Catalogue template and service. An operation entry has `references` and a `does` sentence saying what the step does by block: a `when` calls an operation, a `given` sets up state, and a `then` observes and compares. Each reference has exactly one selector: `command` is the CLI command path (the exact `commands` key), `file`, `log_record` and `outgoing_call` name keys under the CLI document's `extensions.files`, `extensions.log_records` and `extensions.outgoing_calls`; `operation_id` names an HTTP `operationId`; `element` names a UI element by page or region, role and accessible `name`.
+
+```yaml
+architecture:
+  phrases:
+    - template: 'the number is halved'
+      service: calculator
+      references:
+        - command: number halve
+      does: Call number halve once and keep its exit code and standard output.
+```
+
+An entry can instead carry `intent`, a sentence replacing `does` and `references`. The check accepts intent only for UI services until `llm:` support lands. Missing or duplicate entries, empty operation entries and references absent from the service's Public interface fail the claimed Scenario, naming its phrase and reference, without an AI turn. The check uses the same Catalogue and Story exemptions as the term checks. Its `F:` first asks the System Architect what the step does, proposes the entry at the fix menu, and writes only the architecture document after apply. The architecture stores no Go identifier or link to a step definition. The Word mapping continues to map terms; `build steps` reading Phrase mappings is separate work.
+
 `D: step-definitions` (`docs: [product]`) holds the catalogue to the
 suite's step definitions, the `steps/` package beside the Scenario's test
 file, read without running it as `build tests` reads it. Over the steps
@@ -373,7 +387,7 @@ parses: the Scenario, the Story and the step definitions are never
 edited.
 
 What no check can settle, a model answers. The shipped `scen-check`
-checklist follows the five closure checks with two `Q:` prompts that
+checklist follows the six closure checks with two `Q:` prompts that
 read the product and the architecture document: whether the meaning of
 each phrase a Scenario's steps use says what is set up or observed (a
 pattern slot's phrase must say which output its pattern is held
@@ -568,7 +582,7 @@ public_interface:
   document: docs/greeter-cli.yaml
 ```
 
-`document` is relative to the Host project root. CLI documents use this supported OpenCLI-like draft shape (YAML or JSON): `opencli` and `info: {title, version}` identify the document; `commands` maps command names to `parameters` (with `name` and optional `in: argument|flag|option`, `schema: {type: ...}`, `description` and `required`) and `responses` (exit-code keys mapped to objects with optional `description` and `content`). This follows the [OpenCLI reference](https://github.com/nrranjithnr/open-cli-specification/blob/main/opencli.spec.json); the referenced project currently advertises `opencli: "1.0.0"`. Every command declares responses for its exit codes. Optional `extensions` holds maps keyed by stable names a later Phrase mapping can reference:
+`document` is relative to the Host project root. CLI documents use this supported OpenCLI-like draft shape (YAML or JSON): `opencli` and `info: {title, version}` identify the document; `commands` maps command names to `parameters` (with `name` and optional `in: argument|flag|option`, `schema: {type: ...}`, `description` and `required`) and `responses` (exit-code keys mapped to objects with optional `description` and `content`). This follows the [OpenCLI reference](https://github.com/nrranjithnr/open-cli-specification/blob/main/opencli.spec.json); the referenced project currently advertises `opencli: "1.0.0"`. Every command declares responses for its exit codes. Optional `extensions` holds maps keyed by stable names the Phrase mapping can reference:
 
 ```yaml
 opencli: "1.0.0"

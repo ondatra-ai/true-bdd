@@ -85,15 +85,15 @@ The architecture document's list of terms, each saying what the term is in the i
 _Avoid_: architecture glossary, dictionary
 
 **Phrase mapping**:
-The architecture document's list of Catalogue phrases, each saying which operation of the Public interface a step of that shape performs: the operation a `when` phrase calls, how a `given` phrase sets up state, or what a `then` phrase observes and compares with. Every phrase is mapped exactly once; the Word mapping still covers the terms.
+The architecture document's list of Catalogue phrases, each saying which operation of the Public interface a step of that shape performs: the operation a `when` phrase calls, how a `given` phrase sets up state, or what a `then` phrase observes and compares with. Each verbatim template is mapped once per service in `architecture.phrases`, with declared interface references and a `does` sentence, or an `intent` sentence replacing both. The `phrase-mappings` check holds phrases used by a claimed Scenario to this list; intent is accepted only for UI services until `llm:` support lands. References name CLI command paths or named file, log record and outgoing call extensions, HTTP operation IDs, or scoped UI roles and accessible names; no Go identifier or link to a step definition is stored. The Word mapping still covers the terms.
 _Avoid_: step mapping, operation map
 
 **Term document**:
-A specification document that holds the words the Catalogue relies on: the product document, with the Catalogue and the glossary, and the architecture document, with the Word mapping and the Phrase mapping. A fix for a failed Closure check edits a term document, never the Scenario.
+A specification document that holds the words the Catalogue relies on: the product document, with the Catalogue and the glossary, and the architecture document, with the Word mapping (`architecture.terms`) and the Phrase mapping (`architecture.phrases`). A fix for a failed Closure check edits a term document, never the Scenario.
 _Avoid_: vocabulary file, dictionary
 
 **Closure check**:
-One of the five Built-in checks that hold a Scenario to its Term documents: its service declares a valid Public interface, every step matches one Catalogue phrase, the glossary defines and the Word mapping maps every term those phrases declare, and the phrases and the suite's step definitions correspond one to one. The four checks about phrases and terms pass a Scenario no Story claims, or a Host project with no Catalogue, unchecked; the Public interface check always runs.
+One of the six Built-in checks that hold a Scenario to its Term documents: its service declares a valid Public interface, every step matches one Catalogue phrase, every matched phrase has one valid Phrase mapping for its service, the glossary defines and the Word mapping maps every term those phrases declare, and the phrases and the suite's step definitions correspond one to one. The five checks about phrases and terms pass a Scenario no Story claims, or a Host project with no Catalogue, unchecked; the Public interface check always runs.
 _Avoid_: spec check, term check
 
 **Services**:

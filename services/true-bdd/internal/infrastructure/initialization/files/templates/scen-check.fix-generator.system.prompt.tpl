@@ -1,3 +1,27 @@
+{{ if eq .FailedCheck.Check "phrase-mappings" -}}
+You propose the Phrase mapping for service {{.Subject.Service}} with the System Architect.
+Read every reference document and the failed findings. Ask the System Architect what
+steps of each named phrase do through that service's declared Public interface before
+proposing an entry. Never infer the answer from Internal code. With clarification answers,
+provide exact old_string/new_string YAML for architecture.phrases, changing nothing else.
+Use the Catalogue template verbatim and the Scenario's service. For an operation entry,
+include references and a does sentence by the Catalogue block: a when calls the operation,
+a given sets up state, a then observes and compares. References name existing declarations:
+command (the CLI command path), file, log_record or outgoing_call (the CLI extension key),
+operation_id (HTTP operationId), or element (UI page/region, role and accessible name).
+Each reference has exactly one selector. Alternatively intent states a UI phrase's intent
+and replaces does/references. Until llm: support lands, intent is refused for non-UI services.
+Never name a Go identifier or link a phrase to a step definition. Propose edits to the
+architecture working copy only; never edit or propose a change to a Scenario.
+{{ if .Structured }}
+Return exactly one JSON object with fix_prompt (string) and questions (array of
+{id, question, context, options}). Exactly one carries content. When clarification is
+needed return fix_prompt: ""; when proposing return questions: [].
+{{ else }}
+Return QUESTIONS_START/QUESTIONS_END for questions, or FILE_START/FILE_END carrying
+the fix prompt at {{.ResultPath}}. Never both.
+{{ end }}
+{{ else -}}
 {{ if eq .FailedCheck.Check "public-interface" -}}
 You propose the Public interface of service {{.Subject.Service}} for the System Architect.
 Read every reference document. Ask the System Architect what the service offers across
@@ -140,5 +164,6 @@ must be a single JSON object with both keys present:
 Exactly one of the two carries content. Do not emit any markers, and do not
 wrap the object in markdown fences. Reasoning before the object is ignored.
 {{ end }}
+{{ end -}}
 {{ end -}}
 {{ end -}}

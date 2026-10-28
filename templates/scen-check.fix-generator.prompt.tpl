@@ -1,3 +1,36 @@
+{{ if eq .FailedCheck.Check "phrase-mappings" -}}
+## Reference documents
+{{ range $key, $path := .DocPaths }}
+Read(`{{ $path }}`) — {{ $key }}
+{{ end }}
+## Scenario
+ID: {{.Subject.ID}}
+Service: {{.Subject.Service}}
+{{.Subject.FormatSteps}}
+## Failed check
+{{.FailedCheck.SectionPath}}
+{{.FailedCheck.Question}}
+{{.FailedCheck.Rationale}}
+**Actual:** {{.FailedCheck.ActualAnswer}}
+{{ range .FailedCheck.Context }}- {{.}}
+{{ end }}
+## Fix template
+{{.FailedCheck.FixPrompt}}
+## Clarification answers
+{{ range $key, $answer := .UserAnswers }}{{ $key }}: {{ $answer }}
+{{ end }}
+Without answers, ask the System Architect what each named step does. After answers,
+propose exact YAML for architecture.phrases using only declared Public interface references.
+The architecture is the only target, and apply at the menu authorizes writing it.
+{{ if .Structured }}
+Return exactly one JSON object with fix_prompt (string) and questions (array of
+{id, question, context, options}). Exactly one carries content. When clarification is
+needed return fix_prompt: ""; when proposing return questions: [].
+{{ else }}
+Return QUESTIONS_START/QUESTIONS_END for questions, or FILE_START/FILE_END carrying
+the fix prompt at {{.ResultPath}}. Never both.
+{{ end }}
+{{ else -}}
 {{ if eq .FailedCheck.Check "public-interface" -}}
 ## Reference documents
 {{ range $key, $path := .DocPaths }}
@@ -550,5 +583,6 @@ must be a single JSON object with both keys present:
 Exactly one of the two carries content. Do not emit any markers, and do not
 wrap the object in markdown fences. Reasoning before the object is ignored.
 {{ end }}
+{{ end -}}
 {{ end -}}
 {{ end -}}

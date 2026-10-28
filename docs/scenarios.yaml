@@ -1402,7 +1402,7 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches level=ERROR msg="Refusing to start" command="scen check"
-        - 'stdout matches scen-check/scenario_quality #1 D: steps-are-present names no built-in check of scen check, which has declared-terms, given-when-then, public-interface, step-definitions, step-phrases, term-mappings'
+        - 'stdout matches scen-check/scenario_quality #1 D: steps-are-present names no built-in check of scen check, which has declared-terms, given-when-then, phrase-mappings, public-interface, step-definitions, step-phrases, term-mappings'
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
@@ -2405,7 +2405,7 @@ scenarios:
         - and: stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=2 answer=pass
         - and: stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=3 answer=pass
         - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=4 answer=pass
-        - and: 'stdout matches PASS: 15 '
+        - and: 'stdout matches PASS: 16 '
         - and: stdout matches ALL CHECKS PASSED!
         - and: stdout matches SCEN CHECK COMPLETE
         - and: the engine dispatched 10 AI turns
@@ -2460,7 +2460,7 @@ scenarios:
         - and: stdout matches FIX PROMPT GENERATED
         - and: stdout matches msg="Fix recorded in the document" document=scenarios_yaml
         - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=4 answer=pass
-        - and: 'stdout matches PASS: 15 '
+        - and: 'stdout matches PASS: 16 '
         - and: stdout matches ALL CHECKS PASSED
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
@@ -6915,3 +6915,121 @@ scenarios:
       - and: no file outside "tmp" and "docs/product" changed
       - and: 'judge: The menu proposal adds a Catalogue entry for the existing halving action. The Story keeps all of its original descriptions and step words; no substitute action, error criterion or new
           Story field is introduced.'
+  phrase-mappings-001-missing:
+    description: A claimed Scenario with a missing Phrase mapping must fail naming its phrase without an AI turn
+    service: true-bdd
+    path: tests/true-bdd/phrase_mappings_test.go
+    user_stories: []
+    merged_steps:
+      given:
+      - the "phrase-mappings-missing" project tree
+      when:
+      - the System Architect runs "scen check"
+      then:
+      - the command exits with code 1
+      - the engine dispatched 0 AI turns
+      - stdout matches phrase.*the greeting is requested
+      - no file outside "tmp" changed
+  phrase-mappings-002-undeclared:
+    description: A Phrase mapping referencing an undeclared operation must fail naming the phrase and reference without AI
+    service: true-bdd
+    path: tests/true-bdd/phrase_mappings_test.go
+    user_stories: []
+    merged_steps:
+      given:
+      - the "phrase-mappings-undeclared" project tree
+      when:
+      - the System Architect runs "scen check"
+      then:
+      - the command exits with code 1
+      - the engine dispatched 0 AI turns
+      - stdout matches phrase.*the greeting is requested
+      - stdout matches invented-halve
+      - no file outside "tmp" changed
+  phrase-mappings-003-valid:
+    description: A fully mapped Scenario must pass with declared file and log references as well as a command
+    service: true-bdd
+    path: tests/true-bdd/phrase_mappings_test.go
+    user_stories: []
+    merged_steps:
+      given:
+      - the "phrase-mappings-valid" project tree
+      when:
+      - the System Architect runs "scen check"
+      then:
+      - the command exits with code 0
+      - the engine dispatched 0 AI turns
+      - stdout matches every matched phrase has one valid Phrase mapping
+      - no file outside "tmp" changed
+  phrase-mappings-004-duplicate:
+    description: Two Phrase mapping entries for one phrase and service must fail naming the phrase and count
+    service: true-bdd
+    path: tests/true-bdd/phrase_mappings_test.go
+    user_stories: []
+    merged_steps:
+      given:
+      - the "phrase-mappings-duplicate" project tree
+      when:
+      - the System Architect runs "scen check"
+      then:
+      - the command exits with code 1
+      - the engine dispatched 0 AI turns
+      - stdout matches phrase.*the greeting is requested
+      - stdout matches has 2 Phrase mapping entries
+      - no file outside "tmp" changed
+  phrase-mappings-005-intent:
+    description: A non-UI phrase stated by intent must fail until llm steps are supported
+    service: true-bdd
+    path: tests/true-bdd/phrase_mappings_test.go
+    user_stories: []
+    merged_steps:
+      given:
+      - the "phrase-mappings-intent" project tree
+      when:
+      - the System Architect runs "scen check"
+      then:
+      - the command exits with code 1
+      - the engine dispatched 0 AI turns
+      - stdout matches phrase.*the greeting is requested
+      - stdout matches intent is not supported for a non-UI service
+      - no file outside "tmp" changed
+  phrase-mappings-006-fix:
+    description: A missing Phrase mapping fix must ask the System Architect and propose at the menu before apply changes only the architecture
+    service: true-bdd
+    path: tests/true-bdd/phrase_mappings_test.go
+    user_stories: []
+    timeout: 25m
+    merged_steps:
+      given:
+      - the "phrase-mappings-fix" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "scen check --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches msg="AI needs clarification"
+      - stdout matches FIX PROMPT GENERATED
+      - stdout matches msg="User chose fix action".*action=apply
+      - stdout matches every matched phrase has one valid Phrase mapping
+      - the only file changed outside "tmp" is "docs/architecture/architecture.yaml"
+      - the file "docs/scenarios.yaml" is unchanged
+  phrase-mappings-007-exit:
+    description: Exiting the Phrase mapping fix menu must leave the architecture and Scenario unchanged
+    service: true-bdd
+    path: tests/true-bdd/phrase_mappings_test.go
+    user_stories: []
+    timeout: 25m
+    merged_steps:
+      given:
+      - the "phrase-mappings-exit" project tree
+      - the System Architect answers "Call greet once with the literal person Ada, without the loud flag or any outgoing call." to every question
+      when:
+      - the System Architect runs "scen check --fix"
+      then:
+      - the command exits with code 1
+      - stdout matches msg="AI needs clarification"
+      - stdout matches FIX PROMPT GENERATED
+      - stdout matches msg="User chose fix action".*action=exit
+      - stdout matches Exiting.
+      - no file outside "tmp" changed
+      - the file "docs/scenarios.yaml" is unchanged

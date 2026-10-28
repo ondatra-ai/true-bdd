@@ -65,17 +65,18 @@ func (t Testing) Label() string { return t.Framework }
 
 // Service declares a production folder and any additional exact writable paths.
 type Service struct {
- PublicInterface *PublicInterface `yaml:"public_interface,omitempty"`
-	Libraries []Library `yaml:"libraries,omitempty"`
-	Name      string    `yaml:"name"`
-	Path      string    `yaml:"path"`
-	Language  string    `yaml:"language"`
-	Writable  []string  `yaml:"writable,omitempty"`
+	PublicInterface *PublicInterface `yaml:"public_interface,omitempty"`
+	Libraries       []Library        `yaml:"libraries,omitempty"`
+	Name            string           `yaml:"name"`
+	Path            string           `yaml:"path"`
+	Language        string           `yaml:"language"`
+	Writable        []string         `yaml:"writable,omitempty"`
 }
 
 // Architecture is the loaded view of architecture.yaml — only the
 // fields the build pipeline needs are decoded.
 type Architecture struct {
+	Phrases  []PhraseMapping
 	Testing  Testing
 	Services []Service
 }
@@ -106,8 +107,9 @@ type rawTesting struct {
 // host writes under it — dependencies, patterns, design systems — is
 // spec for its own readers and stays undecoded.
 type rawDef struct {
-	Testing  rawTesting `yaml:"testing"`
-	Services []Service  `yaml:"services"`
+	Testing  rawTesting      `yaml:"testing"`
+	Services []Service       `yaml:"services"`
+	Phrases  []PhraseMapping `yaml:"phrases"`
 }
 
 // rawArchitecture mirrors the top-level shape of architecture.yaml.
@@ -140,7 +142,13 @@ func Load(path string) (*Architecture, error) {
 		return nil, err
 	}
 
+	services, err := LoadInterfaces(path, ".")
+	if err != nil {
+		return nil, err
+	}
+
 	arch := &Architecture{
+		Phrases: raw.Architecture.Phrases,
 		Testing: Testing{
 			Framework:         raw.Architecture.Testing.Framework,
 			Libraries:         raw.Architecture.Testing.Libraries,
@@ -148,15 +156,12 @@ func Load(path string) (*Architecture, error) {
 			ConfigFile:        raw.Architecture.Testing.ConfigFile,
 			Commands:          raw.Architecture.Testing.Commands,
 		},
-		Services: append([]Service(nil), raw.Architecture.Services...),
+		Services: services,
 	}
 
 	sort.Slice(arch.Services, func(i, j int) bool {
 		return arch.Services[i].Name < arch.Services[j].Name
 	})
-
-	_, err = LoadInterfaces(path, ".")
-	if err != nil { return nil, err }
 
 	err = arch.validateLibraries()
 	if err != nil {

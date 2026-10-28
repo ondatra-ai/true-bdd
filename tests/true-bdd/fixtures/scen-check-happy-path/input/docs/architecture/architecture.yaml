@@ -46,3 +46,25 @@ architecture:
       observed_by: >-
         Hold the kept standard output, line by line, against the step's
         regular expression; any matching line passes.
+
+  phrases:
+    - template: the greeting is configured as "{greeting}"
+      service: greeter
+      references:
+      - file: greeting-config
+      does: Write the quoted greeting to the declared configuration file.
+    - template: the {actor:role} runs "{command}"
+      service: greeter
+      references:
+      - command: greet
+      does: Call the declared greet command with the quoted arguments and keep the result.
+    - template: the command exits with code {code:number}
+      service: greeter
+      references:
+      - command: greet
+      does: Compare the kept greet exit code with the expected number.
+    - template: stdout matches {expected:pattern}
+      service: greeter
+      references:
+      - command: greet
+      does: Compare the kept greet standard output lines with the expected pattern.

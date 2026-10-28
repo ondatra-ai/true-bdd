@@ -88,7 +88,7 @@ architecture:
         FailedCheck.ActualAnswer: &failedcheck-actualanswer >-
           Model JSON answer is copied unchanged; YAML scalar answer is TrimSpace, YAML mapping or sequence is yaml.Marshal with trailing newline bytes removed. Status classification alone lowercases and trims. Built-in or build-tests runtime failures supply literal fail.
         FailedCheck.Check: &failedcheck-check >-
-          TrimSpace of the checklist D name; empty for a model Q. Selects model-fix versus closure-fix wording, and the declared-terms, term-mappings and step-definitions branches.
+          TrimSpace of the checklist D name; empty for a model Q. Selects model-fix versus closure-fix wording, including the declared-terms, term-mappings, step-definitions, public-interface and phrase-mappings branches.
         FailedCheck.Context: &failedcheck-context >-
           Failed result observation strings in original list order, without trimming or joining; built-in checks supply their finding lines. Template prefixes each with "- "; an empty list produces no findings.
         FailedCheck.FixPrompt: &failedcheck-fixprompt >-
@@ -145,7 +145,7 @@ architecture:
       rendering: *prompt-rendering
       fields:
         Check: &check >-
-          Failed result D name carried unchanged into the applier; empty for a model Q. Selects Story/Scenario rewrite versus term-document fix.
+          Failed result D name carried unchanged into the applier; empty for a model Q. Selects Story/Scenario rewrite versus term-document fix; public-interface and phrase-mappings select architecture-only application.
         FixPrompt: &fixprompt >-
           Run-selected generated fix, unchanged at applier construction. JSON generation TrimSpace; marker generation extracts between matching FILE markers, TrimSpace, strips a whole wrapping backtick/tilde code fence and TrimSpace again. Clarification/refinement replaces the fix only when a nonempty new fix is returned; no further applier trim.
         ResultPath: &application-result-path >-
@@ -1250,6 +1250,25 @@ architecture:
   # words naming no code identifier, so the steps can be rebuilt from it.
   # It maps every word the catalogue declares, one entry per word.
   terms:
+    - term: Phrase mapping
+      technical: >-
+        architecture.phrases is an optional list of template and service pairs. Operation
+        entries carry references and does; intent replaces both, currently accepted only
+        for UI services. Each reference has exactly one selector: command is an exact CLI
+        commands key, file/log_record/outgoing_call is a key under the corresponding
+        files/log_records/outgoing_calls extension, operation_id is an OpenAPI operationId,
+        or element is a declared UI page/region, role and accessible name. The same Public
+        interface loader retains the declarations used for membership checks. The built-in
+        phrase-mappings check reads the Catalogue and architecture afresh, checks matched
+        phrases of claimed Scenarios by service, and reports missing, duplicate, incomplete
+        or undeclared mappings without AI. No Catalogue or Story claim passes unchecked;
+        model-run steps and steps not matched in their block are left to their own checks.
+      observed_by: >-
+        Run scen check and compare named phrase and reference findings, exit code and
+        zero AI turns. Under --fix the System Architect answers what the step does; the
+        proposal reaches the menu before apply, and only the architecture changes. Exit
+        leaves documents unchanged. The Word mapping still maps terms and stores no
+        link from a phrase to a step definition.
     - term: Public interface
       technical: >-
         Each architecture.services entry optionally carries public_interface with kind,

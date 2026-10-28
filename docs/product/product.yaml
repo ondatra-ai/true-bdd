@@ -156,6 +156,23 @@ glossary:
       another kind is named as not supported yet. Its fix first asks the System Architect
       what the service offers and writes the architecture document, never the Scenario.
 
+  - term: Phrase mapping
+    means: >-
+      The architecture's phrases list: one entry per verbatim Catalogue template and
+      service, stating what a step does through its declared Public interface by block.
+      A when calls an operation, a given sets up state, a then observes and compares.
+      An operation entry carries references and a does sentence. References name CLI
+      command paths or named file, log record and outgoing call extensions, HTTP
+      operation IDs, or scoped UI roles and accessible names. An intent sentence can
+      replace does and references, accepted only for UI services until llm support lands.
+      The phrase-mappings built-in check fails a claimed Scenario for missing or duplicate
+      entries, incomplete operation entries or undeclared references, naming the phrase
+      and reference without an AI turn. With no Catalogue or Story claim it passes unchecked.
+      Its fix asks the System Architect what the step does and proposes the entry at the
+      menu; only apply writes the architecture document, never the Scenario. It names no
+      Go identifier and stores no link to a step definition. Word mappings still cover terms;
+      build steps reading these entries is separate work.
+
   - term: engine
     means: >-
       TrueBDD's own program, `true-bdd`. It walks a project's documents

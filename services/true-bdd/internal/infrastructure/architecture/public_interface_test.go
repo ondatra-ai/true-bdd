@@ -26,7 +26,7 @@ func TestLoadRefusesMissingPublicInterfaceDocument(t *testing.T) {
 func TestLoadPublicInterfaceKinds(t *testing.T) {
 	t.Parallel()
 	root := t.TempDir()
-	path := filepath.Join(root, "architecture.yaml")
+	path := filepath.Join(root, architectureName)
 
 	body := `architecture:
   services:
@@ -82,7 +82,7 @@ func TestPublicInterfaceDeclarationFindings(t *testing.T) {
 			{Role: buttonRole, Name: saveButton},
 		}}, "page or region"},
 		{"repeated UI", &architecture.PublicInterface{Kind: "ui", Elements: []architecture.UIElement{
-			{Page: "Order", Role: buttonRole, Name: saveButton}, {Page: "Order", Role: buttonRole, Name: saveButton},
+			{Page: orderPage, Role: buttonRole, Name: saveButton}, {Page: orderPage, Role: buttonRole, Name: saveButton},
 		}}, "repeat a role"},
 	}
 	for _, testCase := range cases {
@@ -113,7 +113,7 @@ func TestInterfaceDocumentsMustParseInTheirKind(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			root := t.TempDir()
-			path := filepath.Join(root, "architecture.yaml")
+			path := filepath.Join(root, architectureName)
 			body := "architecture:\n  services:\n    - name: greeter\n      public_interface:\n        kind: " +
 				testCase.kind + "\n        document: interface.yaml\n"
 
@@ -140,7 +140,7 @@ func TestHTTPInterfaceLoadsReferencedLocalDocuments(t *testing.T) {
 	root := t.TempDir()
 
 	files := map[string]string{
-		"architecture.yaml": `architecture:
+		architectureName: `architecture:
   services:
     - name: greeter
       public_interface:
@@ -164,7 +164,7 @@ paths:
 		}
 	}
 
-	_, err := architecture.LoadInterfaces(filepath.Join(root, "architecture.yaml"), root)
+	_, err := architecture.LoadInterfaces(filepath.Join(root, architectureName), root)
 	if err != nil {
 		t.Fatalf("valid local OpenAPI reference must load: %v", err)
 	}
@@ -191,7 +191,7 @@ func TestUnsupportedInterfaceKindIsLeftForTheCheck(t *testing.T) {
 func TestCLIInterfaceUsesOpenCLIParametersAndResponses(t *testing.T) {
 	t.Parallel()
 	root := t.TempDir()
-	path := filepath.Join(root, "architecture.yaml")
+	path := filepath.Join(root, architectureName)
 
 	err := disk.Write(path, []byte(specWith(allThreeCommands)+`      public_interface:
         kind: cli
