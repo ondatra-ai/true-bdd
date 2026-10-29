@@ -441,9 +441,10 @@ true-bdd build code --fix --model coder=claude:claude-sonnet-5-5
 ```
 
 The drill accepts repeated `--model <tier>=<cli>:<model>` pairs after
-`build code --fix` or `build tests --fix`, records them in the run's
+`build tests --fix`, `build steps --fix` or `build code --fix`, records them in the run's
 arguments and forwards their values unchanged through typed options.
 It still refuses other extra arguments; the engine validates the values.
+Deterministic `build tests` does not support model overrides.
 
 A checklist picks a tier per role, and any single prompt overrides it:
 

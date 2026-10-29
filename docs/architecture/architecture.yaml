@@ -1545,7 +1545,7 @@ architecture:
         No config or override file is written and no override environment
         variable is exported; the resolved model reaches its CLI's argv.
         The drill permits only repeated --model value pairs after its exact
-        build tests --fix or build code --fix prefix, stores the original
+        build tests --fix, build steps --fix or build code --fix prefix, stores the original
         arguments in its run record, and forwards the values unchanged through
         typed model-override options in its engine wrapper. Semantic validation
         stays with the spawned engine; all other extra arguments are refused.
