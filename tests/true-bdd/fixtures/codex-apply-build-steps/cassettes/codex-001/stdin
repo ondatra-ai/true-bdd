@@ -101,19 +101,23 @@ scenarios:
           - the result is 6
 
 
+# Fix Prompt for Item phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df: the number is doubled
+
 ## Target
-Suite `tests/calc/steps` — phrase `the number is doubled` (block: when)
+tests/calc/steps
 
-Edit exactly one file: `tests/calc/steps/phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df.go`
+## Required Changes
 
-Do NOT touch `tests/calc/steps/register.go`, `tests/calc/steps/state.go`, `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, the Specification, or `services/calc`.
+### 1. `tests/calc/steps/phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df.go` — replace the whole file
 
-## Shared state
-No change needed. `State{Value int}` already carries the operand (set by the `number` Given) and is the field the `result` Then observes, so the When overwrites `state.Value` with the integer stdout of the declared `double` command.
+Only this file changes. Keep the function name and signature exactly as the engine generated them (`func phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df(state *State, args []string) error`). Do not touch `register.go`, `state.go`, `scenarios/scenarios.go`, `calc_test.go`, the Specification or any service code. No new package-level constants, variables, helpers or types — everything below lives inside the function body plus this file's import block.
 
-## Required change
+Why this shape:
+- Phrase mapping says: run the declared `double` command as a process and keep its integer stdout. The body therefore only shells out and parses; it never computes `2*n` itself.
+- The declared CLI document says the invocation is `go run ./services/calc double VALUE` executed from the host root. The test binary's working directory is the scenario package `tests/calc` (confirmed by `scenarios.New` loading `"../../docs/scenarios.yaml"`), so the host root is `../..` and is set as `cmd.Dir`.
+- The argument comes from `state.Value`, which the Given phrase `the number is (\d+)` already stored; the parsed stdout is written back to `state.Value`, which the Then phrase `the result is (\d+)` already compares. No shared-State field needs to be added, so `state.go` stays as it is.
 
-Replace the whole contents of `tests/calc/steps/phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df.go` with the code below. The function name, signature and the `package steps` clause are unchanged — only the body and the import block change.
+Paste exactly:
 
 ```go
 package steps
@@ -127,27 +131,29 @@ import (
 )
 
 func phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df(state *State, args []string) error {
-	const (
-		hostRoot    = "../.."
-		packagePath = "./services/calc"
-		command     = "double"
-	)
+	const hostRoot = "../.."
+	const servicePackage = "./services/calc"
 
-	value := strconv.Itoa(state.Value)
-	cmd := exec.Command("go", "run", packagePath, command, value)
-	cmd.Dir = hostRoot
+	argument := strconv.Itoa(state.Value)
+
+	command := exec.Command("go", "run", servicePackage, "double", argument)
+	command.Dir = hostRoot
 
 	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+	command.Stdout = &stdout
+	command.Stderr = &stderr
 
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("run %s %s: %w: %s", command, value, err, strings.TrimSpace(stderr.String()))
+	if err := command.Run(); err != nil {
+		detail := strings.TrimSpace(stderr.String())
+		if detail == "" {
+			return fmt.Errorf("double %s: %w", argument, err)
+		}
+		return fmt.Errorf("double %s: %w: %s", argument, err, detail)
 	}
 
 	doubled, err := strconv.Atoi(strings.TrimSpace(stdout.String()))
 	if err != nil {
-		return fmt.Errorf("parse %s stdout %q: %w", command, stdout.String(), err)
+		return fmt.Errorf("double %s: unexpected stdout %q: %w", argument, stdout.String(), err)
 	}
 
 	state.Value = doubled
@@ -155,15 +161,12 @@ func phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df(stat
 }
 ```
 
-## Why this is the body
+### 2. Nothing else
 
-- The Phrase mapping says `references: [command: double]` and `does: Run the declared double command as a process and keep its integer stdout.` The body therefore only launches the process and records what it printed; the doubling itself is never computed in the step.
-- The declared Public interface (`docs/architecture/calc-cli.yaml`, command `double`) states: *"Run `go run ./services/calc double VALUE` from the host root; stdout is the doubled integer and a newline."* The argv and `cmd.Dir` follow that sentence literally.
-- `cmd.Dir = "../.."` is the host root as seen by the running test: `tests/calc/scenarios/scenarios.go` resolves the registry as `../../docs/scenarios.yaml`, so the test's working directory is `tests/calc` and the root with `go.mod`, `docs/` and `services/` is two levels up.
-- `strings.TrimSpace` strips the declared trailing newline before `strconv.Atoi`, per the `number` Word mapping ("The integer argument and stdout of the calculator double command").
-- A non-zero exit (interface response `'1': Invalid arguments`) surfaces as a step error carrying stderr, instead of being mistaken for a value.
-- `exec.Command` is left with the inherited environment — no `cmd.Env` assignment — so the ambient `GOCACHE`/`TMPDIR` the engine provides are preserved and no separate build cache is created.
-- All new constants (`hostRoot`, `packagePath`, `command`) live inside the function body; no package-level constants, variables, types or helpers are added.
+- `tests/calc/steps/register.go` keeps `suite.Step("\\Athe number is doubled\\z", phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df)` unchanged.
+- `tests/calc/steps/state.go` keeps `type State struct{ Value int }` unchanged — the When reuses the existing field for both the command argument and the observed stdout, matching the glossary term `number` ("the integer argument and stdout of the calculator double command").
+- The `args` parameter stays in the signature and is intentionally unused: the engine's pattern `\Athe number is doubled\z` captures nothing.
+- Do not run the scenario or try to make it green; the engine owns compilation and the whole-suite checks.
 
 Read existing state and helpers first. Write only this phrase's body and shared
 state. Preserve the engine's pattern, registration and signature. Reach the
