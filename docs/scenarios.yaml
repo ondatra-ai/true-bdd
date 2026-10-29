@@ -6564,6 +6564,31 @@ scenarios:
       - stdout matches Exiting.
       - no file outside "tmp" changed
       - the file "docs/scenarios.yaml" is unchanged
+  phrase-mappings-008-adds-operation:
+    description: A Phrase mapping fix whose operation the CLI document does not declare yet must add the command to that document and the entry to the architecture, only after apply
+    service: true-bdd
+    path: tests/true-bdd/phrase_mappings_test.go
+    user_stories:
+    - story: docs/product/stories/phrase-mappings-checked.yaml
+      scenario_id: phrase-mappings-008-adds-operation
+      merge_date: '2026-10-29'
+    timeout: 25m
+    merged_steps:
+      given:
+      - the "phrase-mappings-fix-operation" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "scen check --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches msg="AI needs clarification"
+      - stdout matches msg="User chose fix action".*action=apply
+      - stdout matches msg="Fix recorded in the document" document=docs/greeter-cli.yaml
+      - stdout matches every matched phrase has one valid Phrase mapping
+      - no file outside "tmp" and "docs" changed
+      - 'the file "docs/greeter-cli.yaml" matches (?m)^  translate:'
+      - 'the file "docs/architecture/architecture.yaml" matches command: translate'
+      - the file "docs/scenarios.yaml" is unchanged
   build-tests-render-001-renders-only:
     description: build tests --fix renders the Registry tests without definitions, AI turns or test runs
     service: true-bdd

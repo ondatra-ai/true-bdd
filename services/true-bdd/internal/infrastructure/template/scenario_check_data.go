@@ -30,6 +30,10 @@ type ScenarioCheckData struct {
 	// TermDocuments are the documents a closure fix may write; empty
 	// without --fix. A fix defines a term there, never in the Scenario.
 	TermDocuments []FixDocument
+	// InterfaceDocuments are the working copies of the Public interface
+	// documents the architecture names, which a public-interface or
+	// phrase-mappings fix may extend; empty without --fix.
+	InterfaceDocuments []FixDocument
 	// RegistryDocument is the Registry's working copy under --fix, where
 	// a model Prompt's fix rewrites the Scenario; nil without --fix.
 	RegistryDocument *FixDocument

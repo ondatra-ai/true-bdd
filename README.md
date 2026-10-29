@@ -352,7 +352,7 @@ architecture:
       does: Call number halve once and keep its exit code and standard output.
 ```
 
-An entry can instead carry `intent`, a sentence replacing `does` and `references`. The check accepts intent only for UI services until `llm:` support lands. Missing or duplicate entries, empty operation entries and references absent from the service's Public interface fail the claimed Scenario, naming its phrase and reference, without an AI turn. The check uses the same Catalogue and Story exemptions as the term checks. Its `F:` first asks the System Architect what the step does, proposes the entry at the fix menu, and writes only the architecture document after apply. The architecture stores no Go identifier or link to a step definition. The Word mapping continues to map terms; `build steps --fix` embeds Phrase mappings in each Item’s body-writing context.
+An entry can instead carry `intent`, a sentence replacing `does` and `references`. The check accepts intent only for UI services until `llm:` support lands. Missing or duplicate entries, empty operation entries and references absent from the service's Public interface fail the claimed Scenario, naming its phrase and reference, without an AI turn. The check uses the same Catalogue and Story exemptions as the term checks. Its `F:` first asks the System Architect what the step does, proposes the entry at the fix menu, with any declaration the answers name that the service's Public interface document lacks, and after apply writes the architecture document and that document. Each fix to one of these two checks works on run working copies of the architecture and of every cli or http document it names; a changed document must still parse in the form of its kind, and is committed before the architecture. The architecture stores no Go identifier or link to a step definition. The Word mapping continues to map terms; `build steps --fix` embeds Phrase mappings in each Item’s body-writing context.
 
 `D: step-definitions` (`docs: [product]`) holds the catalogue to the
 suite's step definitions, the `steps/` package beside the Scenario's test
@@ -568,7 +568,7 @@ architecture:
       language: go
 ```
 
-Each service may declare `public_interface`. It is optional in the schema so an older architecture loads, but `scen check`'s `D: public-interface` (`docs: [architecture_yaml]`) fails every Scenario whose service has no valid declaration, naming the service without an AI turn. This check runs even without a Catalogue or Story. Its `F:` asks the System Architect what the service offers, then writes the architecture document, never the Scenario.
+Each service may declare `public_interface`. It is optional in the schema so an older architecture loads, but `scen check`'s `D: public-interface` (`docs: [architecture_yaml]`) fails every Scenario whose service has no valid declaration, naming the service without an AI turn. This check runs even without a Catalogue or Story. Its `F:` asks the System Architect what the service offers, then writes the architecture document, and an existing document it names where the answers say that document lacks what the service offers, never the Scenario.
 
 ```yaml
 public_interface:
