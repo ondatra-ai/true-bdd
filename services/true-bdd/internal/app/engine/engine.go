@@ -14,6 +14,8 @@ type Engine[I, P, Q any] struct {
 	opts      Options
 	// ReloadItems, when set, discovers the next walk after a fix.
 	ReloadItems func(context.Context) ([]I, error)
+	// CheckConvergence may return findings to the same bounded walk.
+	CheckConvergence func(context.Context, []I) (bool, error)
 }
 
 // New constructs an Engine.
@@ -46,10 +48,7 @@ func (e *Engine[I, P, Q]) Run(
 		queries[i] = e.generateQ(i+1, prompt)
 	}
 
-	maxAttempts := e.opts.MaxApplyAttempts
-	if maxAttempts <= 0 {
-		maxAttempts = defaultMaxApplyAttempts
-	}
+	maxAttempts := e.attemptLimit()
 
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		if e.opts.OnAttemptStart != nil {
@@ -70,8 +69,13 @@ func (e *Engine[I, P, Q]) Run(
 			return nil, err
 		}
 
-		if done := terminalResult(summary, items); done != nil {
-			return done, nil
+		done, finished, err := e.completedWalk(ctx, summary, items)
+		if err != nil {
+			return nil, err
+		}
+
+		if finished {
+			return &done, nil
 		}
 	}
 
@@ -149,4 +153,27 @@ func (e *Engine[I, P, Q]) walkAllItems(
 	}
 
 	return summary, nil
+}
+
+func (e *Engine[I, P, Q]) completedWalk(ctx context.Context, summary walkSummary, items []I) (Result[I], bool, error) {
+	if summary.allPassed && !summary.exit && e.CheckConvergence != nil {
+		passed, err := e.CheckConvergence(ctx, items)
+
+		return Result[I]{Items: items, AllPassed: passed, Reason: Converged}, passed, err
+	}
+
+	done := terminalResult(summary, items)
+	if done == nil {
+		return Result[I]{}, false, nil
+	}
+
+	return *done, true, nil
+}
+
+func (e *Engine[I, P, Q]) attemptLimit() int {
+	if e.opts.MaxApplyAttempts > 0 {
+		return e.opts.MaxApplyAttempts
+	}
+
+	return defaultMaxApplyAttempts
 }

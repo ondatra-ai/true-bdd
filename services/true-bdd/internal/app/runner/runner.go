@@ -52,6 +52,8 @@ type Spec[I any] struct {
 	LoadItems func(ctx context.Context) ([]I, error)
 	// ReloadItems refreshes discovery at each subsequent outer walk.
 	ReloadItems func(ctx context.Context) ([]I, error)
+	// CheckConvergence returns whole-suite findings to the current bounded run.
+	CheckConvergence func(context.Context, []I) (bool, error)
 	// BeforeEvaluate refreshes execution evidence; true skips a passing Cell.
 	BeforeEvaluate func(ctx context.Context, item I) (bool, error)
 	// PostNotApplied counts a completed not-applied turn for code commands.
@@ -295,6 +297,8 @@ func buildSpecEngine[I any](
 			},
 		},
 	)
+
+	eng.CheckConvergence = spec.CheckConvergence
 	if spec.ReloadItems != nil {
 		eng.ReloadItems = func(ctx context.Context) ([]I, error) {
 			var err error

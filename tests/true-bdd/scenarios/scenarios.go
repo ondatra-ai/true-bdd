@@ -175,7 +175,7 @@ func ensureHarness(t *testing.T) {
 	}
 }
 
-// bootHarness assembles the binary, the session root, the shim, the
+// bootHarness assembles the lazy service build, session root, shim, the
 // judge and this process's log sink. A non-empty first result is a
 // reason to skip; a non-nil second is a failure.
 func bootHarness(t *testing.T) (string, error) {
@@ -223,13 +223,8 @@ func bootHarness(t *testing.T) (string, error) {
 
 	teardowns = append(teardowns, closeLog)
 
-	binPath, err := buildTrueBDD()
-	if err != nil {
-		return "", err
-	}
-
 	harness = &steps.Harness{
-		BinPath:      binPath,
+		Binary:       runner.NewLazyBinary(buildTrueBDD),
 		SessionRoot:  sessionRoot,
 		Shims:        shims,
 		Modes:        runModes,
@@ -406,7 +401,7 @@ func buildTrueBDD() (string, error) {
 }
 
 // prebuiltEngine checks the binary -engine-bin names before any scenario
-// spawns it, so a wrong path fails the boot rather than every When step.
+// spawns it; resolution happens at the first step needing the oracle.
 func prebuiltEngine(path string) (string, error) {
 	if !filepath.IsAbs(path) {
 		return "", fmt.Errorf("%w: %s", errEngineBinRelative, path)

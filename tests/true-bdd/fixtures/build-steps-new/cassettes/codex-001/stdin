@@ -115,27 +115,34 @@ scenarios:
           - the number is doubled
         Then:
           - the result is 6
+    - id: calc-002-double
+      description: Another Scenario reaches the shared command definition
+      service: calc
+      path: tests/calc/calc_test.go
+      steps: |
+        Given:
+          - the number is 4
+        When:
+          - the number is doubled
+        Then:
+          - the result is 8
 
-
-# Fix Prompt for Item phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df: the number is doubled
 
 ## Target
-tests/calc/steps
+`tests/calc/steps` (suite for service `calc`)
 
 ## Required Changes
 
-Edit only `tests/calc/steps/phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df.go`.
-Keep the function name and signature exactly as generated; replace the import block and the function body only. Do not touch `register.go`, `state.go`, the generated tests, the Specification or any service code.
+### 1. Replace only the body of the generated When step file
 
-No shared `State` change is needed: the suite's `State.Value` already carries the number, and the existing `result` Then step observes `State.Value`, so this When writes the command's integer stdout back into that field (the Word mapping declares `number` as "the integer argument and stdout of the calculator double command").
+File: `tests/calc/steps/phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df.go`
 
-Replace the whole file with:
+Keep the package, the function name and the signature exactly as the engine generated them. Replace the whole file with the content below (this changes only the function body plus that file's import list):
 
 ```go
 package steps
 
 import (
-	"bytes"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -143,44 +150,53 @@ import (
 )
 
 func phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df(state *State, args []string) error {
-	const (
-		hostRoot    = "../.."
-		servicePath = "./services/calc"
-		command     = "double"
-	)
+	// The declared CLI runs `go run ./services/calc double VALUE` from the
+	// host root; the suite's tests execute inside tests/calc, so the host
+	// root is two levels up (same relative base the suite uses for
+	// ../../docs/scenarios.yaml).
+	const hostRoot = "../.."
 
-	value := strconv.Itoa(state.Value)
+	operand := state.Value
 
-	cmd := exec.Command("go", "run", servicePath, command, value)
+	cmd := exec.Command("go", "run", "./services/calc", "double", strconv.Itoa(operand))
 	cmd.Dir = hostRoot
 
-	var stdout, stderr bytes.Buffer
+	var stdout, stderr strings.Builder
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("run %s %s %s: %w: %s", servicePath, command, value, err, stderr.String())
+		return fmt.Errorf("run double %d: %w: %s", operand, err, strings.TrimSpace(stderr.String()))
 	}
 
-	doubled, err := strconv.Atoi(strings.TrimSpace(stdout.String()))
-	if err != nil {
-		return fmt.Errorf("parse %s stdout %q: %w", command, stdout.String(), err)
+	doubled, convErr := strconv.Atoi(strings.TrimSpace(stdout.String()))
+	if convErr != nil {
+		return fmt.Errorf("double %d stdout %q: %w", operand, stdout.String(), convErr)
 	}
 
 	state.Value = doubled
-
 	return nil
 }
 ```
 
-## Why this body
+Notes for the applier:
+- `args` is intentionally unused: the phrase template `the number is doubled` captures no terms, and the engine owns the signature — do not rename or drop the parameter.
+- The step performs no arithmetic. It only invokes the declared `double` command as a process and parses the integer it printed on stdout, so the product's result is never computed in the suite.
+- Use `cmd.Stdout`/`cmd.Stderr` with `cmd.Run()` rather than `cmd.Output()`, because `Output()` rejects a pre-set `Stderr`.
+- Every constant (`hostRoot`) and helper value stays inside the function body; add no package-level declarations.
 
-- The Phrase mapping references `command: double`, and the declared Public interface (`docs/architecture/calc-cli.yaml`) states the invocation literally: `go run ./services/calc double VALUE` run "from the host root", with the doubled integer plus a newline on stdout, response `'0'` on success and `'1'` on invalid arguments.
-- `cmd.Dir = "../.."` is the host root as seen from the suite's working directory: the generated suite already resolves `../../docs/scenarios.yaml` in `tests/calc/scenarios/scenarios.go`, and the declared `calc_calls` file `tmp/calc-calls.log` is read as `../../tmp/calc-calls.log` from `tests/calc`.
-- The step performs no arithmetic: it passes `state.Value` to the declared command as the argument and parses the command's own stdout. Doubling stays entirely inside the service, and the declared per-invocation `double VALUE` call-log line is produced by running the real command rather than written by the step.
-- `strings.TrimSpace` removes the single declared trailing newline before `strconv.Atoi`.
-- A non-zero exit (the declared `'1'` response) is surfaced as a step error with the command's stderr attached, rather than being compared or swallowed.
-- All constants are local to the function body; no package-level constants, variables, helper functions or types are added. Only this file's imports change outside the body.
+### 2. Shared state
+
+No change required. `State.Value` (declared in `tests/calc/steps/state.go`) already carries the integer: the Given `the number is N` writes the operand into it, this When overwrites it with the integer stdout of the `double` command, and the existing Then `the result is N` compares it against the expected value.
+
+### 3. Do not touch
+
+- `tests/calc/steps/register.go` (registration and pattern are engine-owned and already correct).
+- `tests/calc/steps/state.go`, `tests/calc/scenarios/scenarios.go`, `tests/calc/calc_test.go`, `tests/calc/z_command_boundary_test.go`, `docs/scenarios.yaml`, `docs/architecture/*`, and any service source.
+
+### 4. Verification
+
+Do not run the Scenarios. The engine owns compilation and the whole-suite checks; the `double` target may not be built yet. If the steps package is compiled while editing, reuse the inherited `GOCACHE`/`TMPDIR` environment — do not create a separate build cache.
 
 Read existing state and helpers first. Write only this phrase's body and shared
 state. Preserve the engine's pattern, registration and signature. Reach the

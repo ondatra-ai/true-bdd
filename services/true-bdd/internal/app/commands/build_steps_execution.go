@@ -27,6 +27,11 @@ type buildStepsExecution struct {
 	shape            string
 	active           *BuildStepsItem
 	plan             *scenariogen.Plan
+	items            []*BuildStepsItem
+	attempts         map[*BuildStepsItem]int
+	maxAttempts      int
+	redChecked       bool
+	green            []string
 }
 
 func runBuildStepsFix(ctx context.Context, deps BuildStepsDeps, registryFile, architectureFile string) error {
@@ -37,7 +42,7 @@ func runBuildStepsFix(ctx context.Context, deps BuildStepsDeps, registryFile, ar
 		Name: "build steps", ChecklistName: "build-steps", Fix: true,
 		LoadItems: execution.prepare, BeforeEvaluate: execution.beforeEvaluate,
 		PostFix: execution.postFix, PostNotApplied: execution.postNotApplied,
-		Finalize:   execution.finalize,
+		Finalize: execution.finalize, CheckConvergence: execution.checkConvergence,
 		GetSubject: func(item *BuildStepsItem) (string, string) { return item.subjectID, item.Phrase.Template },
 		Checks:     checks.Set[*BuildStepsItem]{"step-coverage": {Run: stepBodyVerdict}},
 
@@ -61,6 +66,8 @@ func (e *buildStepsExecution) beforeEvaluate(_ context.Context, item *BuildSteps
 }
 
 func (e *buildStepsExecution) postFix(_ context.Context, item *BuildStepsItem, _ string) (*BuildStepsItem, error) {
+	e.redChecked = false
+	e.attempts[item]++
 	item.Findings = nil
 
 	findings := []error{
@@ -75,6 +82,15 @@ func (e *buildStepsExecution) postFix(_ context.Context, item *BuildStepsItem, _
 		if finding != nil {
 			item.Findings = append(item.Findings, finding.Error())
 		}
+	}
+
+	if e.attempts[item] > e.maxAttempts {
+		failure := ErrBuildStepsNotConverged
+		if len(e.green) > 0 {
+			failure = ErrScenarioGreen
+		}
+
+		return item, fmt.Errorf("%w: phrase %s", failure, item.Phrase.Template)
 	}
 
 	slog.Info("Step body checked", "phrase", item.Phrase.Template, "findings", item.Findings)
@@ -122,41 +138,16 @@ func (e *buildStepsExecution) finalize(result *engine.Result[*BuildStepsItem]) e
 	if result.Reason != engine.Converged || !result.AllPassed {
 		slog.Error("Step definition walk did not converge", "reason", result.Reason)
 
+		if len(e.green) > 0 {
+			return fmt.Errorf("%w: %v", ErrScenarioGreen, e.green)
+		}
+
 		return ErrBuildStepsNotConverged
 	}
 
-	scenarios, err := e.deps.RegistryLoader.Load(e.registryFile)
-	if err != nil {
-		return fmt.Errorf("reload Registry: %w", err)
+	if !e.redChecked {
+		return ErrBuildStepsNotConverged
 	}
-
-	answer, err := stepcoverage.Scan(scenarios, ".")
-	if err != nil {
-		return err
-	}
-
-	if findings := stepCoverageFindings(answer); len(findings) > 0 {
-		return fmt.Errorf("%w: %v", ErrMissingStepDefinitions, findings)
-	}
-
-	slog.Info("Step coverage passed", "examined", len(answer.Examined))
-
-	identities := make([]string, 0, len(scenarios))
-	for _, scenario := range scenarios {
-		identity, err := scenariogen.TestIdentity(".", scenario)
-		if err != nil {
-			return err
-		}
-
-		identities = append(identities, identity)
-	}
-
-	err = e.compiler.ListScenarios(e.command, identities)
-	if err != nil {
-		return err
-	}
-
-	slog.Info("Scenario list passed", "scenarios", len(identities))
 
 	return nil
 }

@@ -63,6 +63,11 @@ func (e *buildStepsExecution) prepare(ctx context.Context) ([]*BuildStepsItem, e
 		return nil, err
 	}
 
+	err = e.initializeItems(items)
+	if err != nil {
+		return nil, err
+	}
+
 	return items, nil
 }
 
@@ -184,4 +189,23 @@ func nameStepItems(items []*BuildStepsItem) {
 			item.subjectID = item.Suite + "-" + item.subjectID
 		}
 	}
+}
+
+func (e *buildStepsExecution) initializeItems(items []*BuildStepsItem) error {
+	const defaultAttempts = 5
+
+	e.items = items
+	e.attempts = make(map[*BuildStepsItem]int)
+	e.maxAttempts = defaultAttempts
+
+	checklist, err := e.deps.ChecklistLoader.LoadFull("build-steps")
+	if err != nil {
+		return err
+	}
+
+	if checklist.Config != nil && checklist.Config.MaxApplyAttempts > 0 {
+		e.maxAttempts = checklist.Config.MaxApplyAttempts
+	}
+
+	return nil
 }
