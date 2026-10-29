@@ -7430,7 +7430,7 @@ scenarios:
       then:
       - the command exits with code 0
       - stdout matches action=apply
-      - the file "docs/product/product.yaml" matches pointer or keyboard
+      - the file "docs/product/product.yaml" matches means.*(pointer.*keyboard|keyboard.*pointer)
       - the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "msg":"Cell validation started","subjectID":"alpha","promptIndex":1
       - the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "msg":"Cell validation started","subjectID":"beta","promptIndex":1
   concept-link-009-threshold-nine:

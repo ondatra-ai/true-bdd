@@ -35,6 +35,6 @@
   },
   "glossary": [],
   "description": {
-    "summary": "The calculator offers separate Halve and Square operations on the entered number. Halve displays half the number; Square displays its square."
+    "summary": "The calculator offers separate Halve and Square controls. Halve divides the entered number by two; Square multiplies the entered number by itself."
   }
 }

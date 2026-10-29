@@ -1,7 +1,7 @@
 {
   "scenarios": {
     "alpha": {
-      "description": "The number must be halved",
+      "description": "Keyboard activation of Halve must halve the entered number",
       "service": "calc",
       "path": "tests/calc/number_test.go",
       "user_stories": [],
@@ -10,7 +10,7 @@
           "six is entered"
         ],
         "when": [
-          "halve six with keyboard"
+          "activate the Halve button once with the keyboard to halve six"
         ],
         "then": [
           "three is displayed"
@@ -18,7 +18,7 @@
       }
     },
     "beta": {
-      "description": "The number must be halved",
+      "description": "Keyboard activation of Halve must halve the entered number",
       "service": "calc",
       "path": "tests/calc/number_test.go",
       "user_stories": [],
@@ -27,7 +27,7 @@
           "six is entered"
         ],
         "when": [
-          "halve six with keyboard"
+          "activate the Halve button once with the keyboard to halve six"
         ],
         "then": [
           "three is displayed"

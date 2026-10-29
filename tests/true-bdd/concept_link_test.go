@@ -116,7 +116,7 @@ func TestConceptLink008SharedFix(t *testing.T) {
 	s.When(`the Product Owner runs "scen check --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches action=apply`)
-	s.And(`the file "docs/product/product.yaml" matches pointer or keyboard`)
+	s.And(`the file "docs/product/product.yaml" matches means.*(pointer.*keyboard|keyboard.*pointer)`)
 	s.And(`the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "msg":"Cell validation started","subjectID":"alpha","promptIndex":1`)
 	s.And(`the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "msg":"Cell validation started","subjectID":"beta","promptIndex":1`)
 	s.Done()
