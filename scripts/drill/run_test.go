@@ -18,6 +18,7 @@ const (
 	doneStatus    = "done"
 	fixArgument   = "--fix"
 	testsArgument = "tests"
+	stepsArgument = "steps"
 	modelArgument = "--model"
 	helpArgument  = "--help"
 )
@@ -49,7 +50,7 @@ read answer
 `)
 
 	run, err := runner.Prepare(t.Context(), record.Directory, "a", "menu",
-		[]string{buildCommand, codeArgument, fixArgument})
+		[]string{buildCommand, stepsArgument, fixArgument})
 	must(t, err)
 
 	ended := make(chan error, 1)
@@ -103,7 +104,7 @@ func TestEveryTerminalPathCleansMarkedProcesses(t *testing.T) {
 			}
 
 			run, err := runner.Prepare(t.Context(), record.Directory, "a", mode,
-				[]string{buildCommand, codeArgument, fixArgument})
+				[]string{buildCommand, stepsArgument, fixArgument})
 			must(t, err)
 
 			if mode == launchMode {
@@ -175,6 +176,8 @@ func TestRebuildCommandsAreExplicit(t *testing.T) {
 		allowed bool
 	}{
 		{[]string{buildCommand, testsArgument, fixArgument}, true},
+		{[]string{buildCommand, stepsArgument, fixArgument}, true},
+		{[]string{buildCommand, stepsArgument, fixArgument, modelArgument, "coder=claude:one"}, true},
 		{[]string{buildCommand, codeArgument, fixArgument}, true},
 		{[]string{buildCommand, codeArgument, fixArgument,
 			modelArgument, "coder=claude:one", modelArgument, "quick=codex:two:three"}, true},
@@ -184,6 +187,8 @@ func TestRebuildCommandsAreExplicit(t *testing.T) {
 		{[]string{buildCommand, codeArgument, fixArgument, modelArgument, helpArgument}, false},
 		{[]string{buildCommand}, false},
 		{[]string{buildCommand, codeArgument}, false},
+		{[]string{buildCommand, stepsArgument}, false},
+		{[]string{buildCommand, stepsArgument, fixArgument, helpArgument}, false},
 		{[]string{"scen", "check", fixArgument}, false},
 		{[]string{buildCommand, testsArgument, fixArgument, helpArgument}, false},
 		{[]string{"oracle"}, false},

@@ -29,9 +29,14 @@ type Options struct {
 	Grace          time.Duration
 }
 
-// BuildTests authors and verifies step definitions with the iteration's engine.
+// BuildTests renders test files with the iteration's engine.
 func BuildTests(ctx context.Context, binary string, opt Options) (int, error) {
 	return rebuild(ctx, binary, []string{buildVerb, "tests", fixFlag}, opt)
+}
+
+// BuildSteps authors and verifies step definitions with the iteration's engine.
+func BuildSteps(ctx context.Context, binary string, opt Options) (int, error) {
+	return rebuild(ctx, binary, []string{buildVerb, "steps", fixFlag}, opt)
 }
 
 // BuildCode repairs production code with the iteration's engine.
