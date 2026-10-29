@@ -6,8 +6,10 @@ import (
 )
 
 const (
-	kindCLI  = "cli"
-	kindHTTP = "http"
+	kindCLI     = "cli"
+	kindHTTP    = "http"
+	kindUI      = "ui"
+	kindLibrary = "library"
 )
 
 // PublicInterface declares what a service offers across its process boundary.
@@ -41,9 +43,9 @@ func (p *PublicInterface) Finding() string {
 		if len(p.Elements) != 0 {
 			return "Public interface elements belong to the ui kind"
 		}
-	case "ui":
+	case kindUI:
 		return p.uiFinding()
-	case "library":
+	case kindLibrary:
 		return "Public interface kind library is excluded: a service must cross a process boundary"
 	default:
 		return fmt.Sprintf("Public interface kind %q is not supported yet", p.Kind)

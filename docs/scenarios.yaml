@@ -4696,7 +4696,7 @@ scenarios:
       given:
       - the "engine-model-undeclared" project tree
       when:
-      - the System Architect runs "build tests --model coder=claude:claude-sonnet-5-5"
+      - the System Architect runs "build steps --model coder=claude:claude-sonnet-5-5"
       then:
       - the command exits with code 1
       - stdout matches level=ERROR msg="Refusing to start"
@@ -6055,7 +6055,10 @@ scenarios:
     description: scen check fails a service without a Public interface, naming it without an AI turn
     service: true-bdd
     path: tests/true-bdd/public_interface_test.go
-    user_stories: []
+    user_stories:
+    - story: docs/product/stories/public-interface-declared.yaml
+      scenario_id: public-interface-001-missing
+      merge_date: '2026-10-29'
     merged_steps:
       given:
       - the "public-interface-missing" project tree
@@ -6071,7 +6074,10 @@ scenarios:
     description: A missing CLI interface document refuses startup before any Scenario or AI turn
     service: true-bdd
     path: tests/true-bdd/public_interface_test.go
-    user_stories: []
+    user_stories:
+    - story: docs/product/stories/public-interface-declared.yaml
+      scenario_id: public-interface-002-missing-document
+      merge_date: '2026-10-29'
     merged_steps:
       given:
       - the "public-interface-missing-document" project tree
@@ -6088,7 +6094,10 @@ scenarios:
     description: An unparseable CLI interface document refuses startup with its filename and parse error
     service: true-bdd
     path: tests/true-bdd/public_interface_test.go
-    user_stories: []
+    user_stories:
+    - story: docs/product/stories/public-interface-declared.yaml
+      scenario_id: public-interface-003-malformed-document
+      merge_date: '2026-10-29'
     merged_steps:
       given:
       - the "public-interface-malformed-document" project tree
@@ -6107,7 +6116,10 @@ scenarios:
     description: CLI with named file, log and outgoing call extensions, HTTP and scoped UI declarations pass without AI
     service: true-bdd
     path: tests/true-bdd/public_interface_test.go
-    user_stories: []
+    user_stories:
+    - story: docs/product/stories/public-interface-declared.yaml
+      scenario_id: public-interface-004-valid
+      merge_date: '2026-10-29'
     merged_steps:
       given:
       - the "public-interface-valid" project tree
@@ -6124,7 +6136,10 @@ scenarios:
     description: Unsupported process kinds are named as not supported yet, and a library is excluded
     service: true-bdd
     path: tests/true-bdd/public_interface_test.go
-    user_stories: []
+    user_stories:
+    - story: docs/product/stories/public-interface-declared.yaml
+      scenario_id: public-interface-005-unsupported
+      merge_date: '2026-10-29'
     merged_steps:
       given:
       - the "public-interface-unsupported" project tree
@@ -6140,7 +6155,10 @@ scenarios:
     description: The Public interface fix asks the System Architect and writes only the architecture, preserving the Scenario
     service: true-bdd
     path: tests/true-bdd/public_interface_test.go
-    user_stories: []
+    user_stories:
+    - story: docs/product/stories/public-interface-declared.yaml
+      scenario_id: public-interface-006-fix
+      merge_date: '2026-10-29'
     merged_steps:
       given:
       - the "public-interface-fix" project tree
@@ -6411,7 +6429,10 @@ scenarios:
     description: A claimed Scenario with a missing Phrase mapping must fail naming its phrase without an AI turn
     service: true-bdd
     path: tests/true-bdd/phrase_mappings_test.go
-    user_stories: []
+    user_stories:
+    - story: docs/product/stories/phrase-mappings-checked.yaml
+      scenario_id: phrase-mappings-001-missing
+      merge_date: '2026-10-29'
     merged_steps:
       given:
       - the "phrase-mappings-missing" project tree
@@ -6426,7 +6447,10 @@ scenarios:
     description: A Phrase mapping referencing an undeclared operation must fail naming the phrase and reference without AI
     service: true-bdd
     path: tests/true-bdd/phrase_mappings_test.go
-    user_stories: []
+    user_stories:
+    - story: docs/product/stories/phrase-mappings-checked.yaml
+      scenario_id: phrase-mappings-002-undeclared
+      merge_date: '2026-10-29'
     merged_steps:
       given:
       - the "phrase-mappings-undeclared" project tree
@@ -6442,7 +6466,10 @@ scenarios:
     description: A fully mapped Scenario must pass with declared file and log references as well as a command
     service: true-bdd
     path: tests/true-bdd/phrase_mappings_test.go
-    user_stories: []
+    user_stories:
+    - story: docs/product/stories/phrase-mappings-checked.yaml
+      scenario_id: phrase-mappings-003-valid
+      merge_date: '2026-10-29'
     merged_steps:
       given:
       - the "phrase-mappings-valid" project tree
@@ -6457,7 +6484,10 @@ scenarios:
     description: Two Phrase mapping entries for one phrase and service must fail naming the phrase and count
     service: true-bdd
     path: tests/true-bdd/phrase_mappings_test.go
-    user_stories: []
+    user_stories:
+    - story: docs/product/stories/phrase-mappings-checked.yaml
+      scenario_id: phrase-mappings-004-duplicate
+      merge_date: '2026-10-29'
     merged_steps:
       given:
       - the "phrase-mappings-duplicate" project tree
@@ -6473,7 +6503,10 @@ scenarios:
     description: A non-UI phrase stated by intent must fail until llm steps are supported
     service: true-bdd
     path: tests/true-bdd/phrase_mappings_test.go
-    user_stories: []
+    user_stories:
+    - story: docs/product/stories/phrase-mappings-checked.yaml
+      scenario_id: phrase-mappings-005-intent
+      merge_date: '2026-10-29'
     merged_steps:
       given:
       - the "phrase-mappings-intent" project tree
@@ -6489,7 +6522,10 @@ scenarios:
     description: A missing Phrase mapping fix must ask the System Architect and propose at the menu before apply changes only the architecture
     service: true-bdd
     path: tests/true-bdd/phrase_mappings_test.go
-    user_stories: []
+    user_stories:
+    - story: docs/product/stories/phrase-mappings-checked.yaml
+      scenario_id: phrase-mappings-006-fix
+      merge_date: '2026-10-29'
     timeout: 25m
     merged_steps:
       given:
@@ -6509,7 +6545,10 @@ scenarios:
     description: Exiting the Phrase mapping fix menu must leave the architecture and Scenario unchanged
     service: true-bdd
     path: tests/true-bdd/phrase_mappings_test.go
-    user_stories: []
+    user_stories:
+    - story: docs/product/stories/phrase-mappings-checked.yaml
+      scenario_id: phrase-mappings-007-exit
+      merge_date: '2026-10-29'
     timeout: 25m
     merged_steps:
       given:
@@ -6748,6 +6787,7 @@ scenarios:
       - stdout matches All step skeletons written.*items=3
       - the engine dispatched no validation AI turns to "claude"
       - the engine spawned exactly 1 test runner with arguments matching -list \.
+      - the engine spawned exactly 1 test runner with arguments matching -run \^\(Test
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   build-steps-writing-003-slot-order:
     description: The quoted operation and numeric value are passed to the written definition in template slot order

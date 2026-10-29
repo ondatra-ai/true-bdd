@@ -181,7 +181,7 @@ func TestRebuildCommandsAreExplicit(t *testing.T) {
 		{[]string{buildCommand, codeArgument, fixArgument}, true},
 		{[]string{buildCommand, codeArgument, fixArgument,
 			modelArgument, "coder=claude:one", modelArgument, "quick=codex:two:three"}, true},
-		{[]string{buildCommand, testsArgument, fixArgument, modelArgument, "high=claude:one"}, true},
+		{[]string{buildCommand, testsArgument, fixArgument, modelArgument, "high=claude:one"}, false},
 		{[]string{buildCommand, testsArgument, fixArgument, modelArgument}, false},
 		{[]string{buildCommand, testsArgument, fixArgument, modelArgument, "high=claude:one", helpArgument}, false},
 		{[]string{buildCommand, codeArgument, fixArgument, modelArgument, helpArgument}, false},

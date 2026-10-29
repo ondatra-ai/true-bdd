@@ -29,6 +29,10 @@ func rebuildOperation(args []string) (func(context.Context, string, truebdd.Opti
 
 	switch {
 	case slices.Equal(args[:baseArgs], []string{buildVerb, "tests", fixFlag}):
+		if len(models) > 0 {
+			return nil, fmt.Errorf("%w: deterministic build tests takes no --model", errRefused)
+		}
+
 		operation = truebdd.BuildTests
 	case slices.Equal(args[:baseArgs], []string{buildVerb, "steps", fixFlag}):
 		operation = truebdd.BuildSteps

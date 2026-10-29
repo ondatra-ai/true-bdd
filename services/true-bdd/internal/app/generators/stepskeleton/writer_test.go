@@ -2,14 +2,14 @@ package stepskeleton_test
 
 import (
 	"os"
- "os/exec"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/stepskeleton"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/cli/git"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/disk"
- "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/cli/git"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/stepcoverage"
 )
 
@@ -61,7 +61,7 @@ func TestPending(t *testing.T) {
 	cmd := exec.CommandContext(t.Context(), "go", "test", "./steps")
 
 	cmd.Dir = dir
- cmd.Env = git.ScrubEnvironment(os.Environ())
+	cmd.Env = git.ScrubEnvironment(os.Environ())
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {

@@ -116,7 +116,7 @@ func writeStepSkeletons(items []*BuildStepsItem, compiled *catalogue.Catalogue) 
 func (e *buildStepsExecution) configure(ctx context.Context, arch *architecture.Architecture,
 	scenarios []*registry.RegistryScenario) error {
 	if arch.Testing.Framework != testrunner.FrameworkGoTest {
-		return ErrBuildStepsChecklist
+		return fmt.Errorf("%w: the architecture declares %q", ErrBuildStepsFramework, arch.Testing.Framework)
 	}
 
 	err := testrunner.ValidateCommand(arch.Testing.Framework, arch.Testing.Commands.Replay)

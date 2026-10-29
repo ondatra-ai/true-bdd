@@ -31,7 +31,7 @@ story:
     - given:
       - the "engine-model-undeclared" project tree
     - when:
-      - the System Architect runs "build tests --model coder=claude:claude-sonnet-5-5"
+      - the System Architect runs "build steps --model coder=claude:claude-sonnet-5-5"
     - then:
       - the command exits with code 1
       - stdout matches level=ERROR msg="Refusing to start"

@@ -23,7 +23,7 @@ func (p *PublicInterface) Declares(reference InterfaceReference) bool {
 		return false
 	}
 
-	if p.Kind == "ui" && reference.Element != nil {
+	if p.Kind == kindUI && reference.Element != nil {
 		for _, element := range p.Elements {
 			if element == *reference.Element {
 				return true
