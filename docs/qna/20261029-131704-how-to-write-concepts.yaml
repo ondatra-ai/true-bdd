@@ -1,0 +1,446 @@
+# Q&A log of one grilling session (mpc_grilling).
+
+intent: |
+  Triage and grill #254: how to write the product concepts that replace the
+  Catalogue's templates (ADR-0034, ADR-0035), so that the link pass, the
+  grouping pass and build steps can go on using them deterministically: how
+  broad a concept is, how it is worded, how concepts stay disjoint, how many a
+  product needs and what keeps the number down, and TrueBDD's own concepts.
+  Inputs: spike #255's measurements on TrueBDD's Registry, and a public-source
+  research run on standard practice.
+
+log:
+  - decision_trace:
+      research:
+        - |
+          Triage of #254 (enhancement, needs-triage): nothing in README,
+          GLOSSARY, the product or architecture document, the checklists or the
+          prompt templates says how a concept is written; ADR-0034 fixes only
+          its shape. No .out-of-scope/ exists. #254 has no blocker and blocks
+          #259.
+        - |
+          Spike #255 (report on #255, comments 6497580601 and 6497581326): 19
+          provisional concepts (6 Given, 3 When, 10 Then) fold all 76
+          templates; the link pass links 3,104 of 3,108 Registry steps at 9;
+          its systematic errors come from one overlap (engine activity and file
+          content both reach steps that read tmp/true-bdd.log.json as a file);
+          15 Givens are worded as actions; 57 to 59 proposed patterns against
+          77 hand-written registrations.
+      recommendation: |
+        Research standard practice first (a Codex research run with web
+        search), then grill one question at a time, starting with the boundary
+        between concepts.
+      settled: |
+        The session starts: a public-source research run on standard practice
+        (breadth, disjointness, Given as state, what keeps a step vocabulary
+        small) goes first, and the grilling follows on its findings and the
+        spike's. The spike #255 is not that research: it measured TrueBDD's own
+        Registry. The Owner also asked to file the spike's recommendations in
+        #254, #256, #257 and #258, and to close #255.
+    question: |
+      Run the research and start the grilling?
+    answer: |
+      И да, заведи рекомендации в 254, 256, 257 и 258. Ну и закрой сам тикет 255
+
+      research, и запускай грилинг, только смотри, ты же только что получил результаты предыдущего ресерча, это оно или нет?
+  - decision_trace:
+      research:
+        - |
+          Cucumber groups step definitions by domain concept, one group holding
+          several operations across Given, When and Then
+          (https://cucumber.io/docs/gherkin/step-organization/, updated
+          2026-10-27); a step binds by its text and two matching definitions
+          are an ambiguity error (https://cucumber.io/docs/cucumber/api/#ambiguous).
+        - |
+          Reqnroll replaces generic wording with explicit context in the step
+          (https://docs.reqnroll.net/latest/automation/scoped-bindings.html).
+          No reviewed source sets a concept count or a rule that semantic
+          categories never overlap (research run research-254-concepts,
+          tmp/codex/research-254-concepts/final.md).
+        - |
+          Spike #255: every systematic error came from one overlap, engine
+          activity ("what the engine log records") and file content both
+          reaching steps that read tmp/true-bdd.log.json as a file; the
+          proposed patterns had no collision after the engine check (57 to 59
+          patterns).
+      recommendation: |
+        (b): a concept is one way a step definition puts state in place, calls
+        or observes through the Public interface, as the step's wording fixes
+        it; an argument's value does not change it. It matches what build steps
+        does next (patterns bind by text, a binding names one operation), and
+        the pattern collision check then guards the boundaries. About 19
+        concepts.
+      settled: |
+        (b). A step's concept is decided by what its step definition does, as
+        the step's wording fixes it: one concept is one way of putting state
+        in place (Given), calling (When) or observing and comparing (Then)
+        through the Public interface. The target an argument names never
+        changes the concept.
+    question: |
+      Q1 - Что решает, к какому концепту относится шаг: (a) смысл для роли, вид
+      состояния, действия или исхода, как писал спайк; (b) что делает step
+      definition, как это задаёт формулировка шага: один концепт — один способ
+      поставить состояние, вызвать или наблюдать через Public interface, а
+      цель в аргументе концепт не меняет; (c) объект, о котором шаг (лог
+      движка, Story, Registry, project tree), как группирует Cucumber. Примеры:
+      then `every file matching "tmp/true-bdd.log.json" matches
+      "msg":"Dispatching AI turn",…` (a: engine activity; b: file content; c:
+      концепт лога); when `the System Architect runs "build code"` и `… runs
+      "build tests" while a "shared" hold blocks "docs"` (b: разные концепты);
+      given `the project's browser test dependencies are installed` (b:
+      machine environment; c: project tree).
+    answer: |
+      (b)
+
+  - decision_trace:
+      research:
+        - |
+          Spike #255's engine activity said "as its engine log records it",
+          which reaches every step that reads tmp/true-bdd.log.json; the
+          Registry holds such steps in the file content shape (every file
+          matching … matches …, the file matching … has exactly N matches for …).
+      recommendation: |
+        Forced by Q1.
+      settled: |
+        Forced by Q1 (b): a step that reads the engine log through a file shape
+        belongs to the concept of that shape (file content), and no concept's
+        means may claim steps by the target they name ("anything the engine
+        log records"). Engine activity covers only steps worded as the engine's
+        own activity (spawned, dispatched, logged).
+    question: |
+      Which concept owns a step that observes the engine log through a generic
+      file shape?
+    answer: |
+      Claude, no question asked: forced by Q1 (b). The step's wording decides,
+      so `every file matching "tmp/true-bdd.log.json" matches …` is file
+      content, and engine activity's means names the engine's own activity,
+      not everything its log records.
+
+  - decision_trace:
+      research:
+        - |
+          GLOSSARY.md, Given: "The state the system is in before the behaviour
+          starts, put in place without the role acting. It is never an action of
+          the role." docs/qna/20261029-092034-meaningful-bracket-alternatives.yaml,
+          Q6 and Q9's last point: a Given is a state. Cucumber: a Given is
+          established context and avoids user interaction
+          (https://cucumber.io/docs/gherkin/reference/).
+        - |
+          Spike #255: 15 TrueBDD Givens are worded "claude pipes …"; the link
+          pass rejects one in every run (score 4) and holds another at 8.
+      recommendation: |
+        Forced by GLOSSARY's Given and #248's Q6.
+      settled: |
+        A Given concept's means states a state, never an action; a Given step
+        worded as an action is reworded as the state it puts in place (for
+        example "the hook payload names the tool "Write" and the file …"),
+        and TrueBDD's 15 such steps are reworded in #259.
+    question: |
+      Is a Given concept worded as a state, and what happens to Givens worded
+      as actions?
+    answer: |
+      Claude, no question asked: forced by GLOSSARY's Given and Q6 of
+      docs/qna/20261029-092034-meaningful-bracket-alternatives.yaml. A Given
+      concept states a state; TrueBDD's action-worded Givens are reworded as
+      states in #259.
+
+  - decision_trace:
+      research:
+        - |
+          Cucumber keeps several operations on one domain concept in one group
+          of definitions, a variation inside it usually a parameter
+          (https://cucumber.io/docs/gherkin/step-organization/,
+          https://cucumber.io/docs/cucumber/cucumber-expressions/).
+        - |
+          Spike #255: engine activity folded 8 templates into one concept with
+          5 to 7 patterns; its bodies passed the critique's first round and the
+          validation-to-fix mutations failed at the mutated step; 19 concepts
+          linked 3,104 of 3,108 Registry steps. Merging only templates that
+          differ by polarity, stream or kind leaves about 50 to 55 of the 76.
+      recommendation: |
+        (i): about 19 concepts, measured by the spike; (ii) brings the count
+        back toward the templates' (the Owner's Q2 of #248), and sibling
+        concepts on one interface item differing by a pattern detail raise
+        the link pass's ambiguity.
+      settled: |
+        (i). One concept per Public interface item and kind of use: a Given per
+        way of putting that item's state in place, a When per way of calling,
+        a Then per way of observing and comparing it. The variations of that
+        use (the steps' different shapes, alternatives and values) are the
+        concept's patterns and captures, not concepts of their own.
+    question: |
+      Q2 - Насколько велик «один способ» из Q1: (i) один концепт на элемент
+      Public interface и вид обращения к нему, а варианты операции становятся
+      паттернами и захватами (given `project tree` покрывает свежее дерево,
+      удалённый файл, symlink и сужённый checklist; then `engine activity`
+      покрывает test runners, AI turns и build identity; около 19 концептов,
+      у концепта 1–7 паттернов); (ii) один концепт на отдельную операцию
+      (then `test runners started`, `AI turns dispatched`, `build identity
+      logged`; given `fixture tree`, `file absent`, `symbolic link`,
+      `checklist narrowed`; около 50–55 концептов, по одному пункту `does` и
+      обычно одному паттерну).
+    answer: |
+      (i)
+
+  - decision_trace:
+      research:
+        - |
+          #257's fix for a step that links to no concept offers a rewritten
+          step, or a new or wider concept, applied by the Product Owner at the
+          menu.
+      recommendation: |
+        Forced by Q2.
+      settled: |
+        Forced by Q2 (i): a new concept is right only when a step needs a
+        Public interface item, or a kind of use of one, that no concept covers.
+        A step that needs a new variation of a covered use widens that
+        concept (and its binding), never adds a sibling. What keeps the count
+        down is therefore the number of (interface item, kind of use) pairs a
+        product's steps reach.
+    question: |
+      When does a failed link justify a new concept rather than a wider one?
+    answer: |
+      Claude, no question asked: forced by Q2 (i). Only a new Public interface
+      item or a new kind of use of one justifies a new concept; any other new
+      variation widens the concept that already covers that item and use.
+
+  - decision_trace:
+      research:
+        - |
+          Cucumber's enumerated parameter type is a closed set: a value outside
+          it does not bind (https://cucumber.io/docs/cucumber/cucumber-expressions/).
+          Botrytis matches openly by meaning ("gently caresses the Buy Now
+          button" binds the click definition,
+          https://github.com/sublayerapp/botrytis).
+        - |
+          Spike #255 read means as closed (its Prompt: a concept means what its
+          text states, not everything in its area): at 9, all 15 near misses
+          rejected, all 13 new wordings of covered meanings linked, no near miss
+          above 8 ("the network is unavailable" at most 7 against machine
+          environment).
+        - |
+          ADR-0034 and Q6 of #248's log: people validate concepts before any
+          step is written; when the LLM writes a step it is too late to involve
+          a person.
+      recommendation: |
+        (a): open means would let a new variation reach the step definitions'
+        code without the Product Owner or the System Architect seeing it; the
+        closed reading still links new wordings of a covered meaning.
+      settled: |
+        (a). A concept's means is closed: it names the interface item, the kind
+        of use and every variation the concept admits. A step whose variation
+        it does not state does not link, and its fix widens the concept, and
+        then its binding, at the menu.
+    question: |
+      Q3 - Чем является `means`: (a) закрытым перечнем: называет элемент
+      интерфейса, вид обращения и все вариации, которые концепт допускает;
+      шаг с вариацией, которой там нет, не связывается, и фикс расширяет
+      концепт и привязку в меню (given `the network is unavailable` против
+      `machine environment`, when `the operating system sends the engine
+      SIGTERM` против `a command runs under interference`, then `the engine
+      dispatched at least 2 AI turns` против `engine activity` не связываются);
+      (b) описанием с примерами: все три связываются, и `build steps`
+      предлагает паттерн и тело для вариации, которую никто не утверждал.
+    answer: |
+      (a)
+
+  - decision_trace:
+      research:
+        - |
+          ADR-0034 and #256 (ready-for-agent) fix a concept's shape: concept,
+          means, terms. Spike #255 listed each concept's variations in prose
+          inside means and measured the link pass on that prose (3,104 of 3,108
+          Registry steps, no near miss accepted).
+        - |
+          No deterministic check could read a list of variations: #256's checks
+          hold terms, and pattern captures carry free values.
+      recommendation: |
+        (a): keep ADR-0034's shape; the link pass was measured on prose; a list
+        field buys no deterministic check; a widening shows as a one-sentence
+        diff of means at the menu.
+      settled: |
+        (a). The variations a concept admits are written in prose inside its
+        means; the shape stays concept, means and terms. Widening a concept
+        rewrites its means, shown as a diff at the menu.
+    question: |
+      Q4 - Где записан перечень допустимых вариаций: (a) прозой внутри `means`,
+      как в спайке, форма ADR-0034 не меняется, расширение — новый текст
+      `means` как diff; (b) отдельным полем-списком (например `admits:`),
+      расширение — добавленный пункт; поле добавляется в схему, загрузчик и
+      README (#256).
+    answer: |
+      Я не знаю. давай (a).
+
+  - decision_trace:
+      research:
+        - |
+          Spike #255: every term its concepts declare is defined in the product
+          glossary and mapped in architecture.terms, but their means rely on
+          six words the glossary does not define (fixture, stand-in, proxy,
+          read root, staging file, hold), all already used by today's Catalogue
+          means. #256's checks hold declared terms only.
+        - |
+          Some of those words belong to the test harness, not the product: the
+          product word for a fixture stand-in is AI CLI (terms AI CLI, claude).
+      recommendation: |
+        (a): a means relies only on its declared terms and plain English, any
+        other domain word declared or reworded; no new check, since telling a
+        domain word from a plain one is not deterministic and the Product Owner
+        sees the means at the menu.
+      settled: |
+        (b). A means relies only on its declared terms and plain English; any
+        other domain word is declared (glossary and Word mapping) or reworded
+        in product words. Besides #256's deterministic term checks, a model
+        Prompt in scen check judges the means of each concept a Scenario links
+        to for domain words it neither declares nor could be read as plain
+        English, every time, as scen check trusts no earlier result.
+    question: |
+      Q5 - На какие слова может опираться `means`: (a) только на свои
+      объявленные `terms` и обычный английский; любое другое доменное слово
+      объявляется (глоссарий и Word mapping) или переписывается словами
+      продукта; новых проверок нет; (b) как (a), плюс LLM-проверка в `scen
+      check`: промпт судит `means` каждого связанного концепта на
+      необъявленные доменные слова, платно и в каждом сценарии; (c) правила
+      нет. Примеры: given `AI CLI stand-ins` («fixture stand-ins» → «the AI
+      CLIs the engine reaches are ones the Scenario controls»); when `a command
+      runs under interference` («hold», «staging file» объявляются, это
+      IO-контракт движка); then `file content` («keeps its permissions» на
+      `file change` и `project tree`).
+    answer: |
+      B
+
+  - decision_trace:
+      research:
+        - |
+          true-bdd/checklists/scen-check.yaml asks 10 Q: and 6 D: Prompts per
+          Scenario today; #257 adds the link and the binding-unambiguity
+          Prompts, so Q5's check is the 13th Q: Prompt, about 1/12 more turns,
+          covered by #257's concurrent validation turns.
+        - |
+          A Prompt has one fix template (F:), for one role. A new or wider
+          concept is applied by the Product Owner at the us refine or scen
+          check menu (#257); us refine links steps to product concepts but no
+          Prompt there judges a means's words today.
+      recommendation: |
+        (ii): the Product Owner validates a concept at us refine's menu
+        (ADR-0034), so judging its words there catches a vague word as it is
+        accepted, for one turn per Story; (iii) would mix two roles' work in
+        one fix.
+      settled: |
+        (ii). A Q: Prompt of its own judges the means of every concept the Item
+        links to for undeclared domain words, in scen check per Scenario and
+        in us refine per Story. Its fix offers the Product Owner a declared
+        term (glossary entry and terms) or a reworded means, and the System
+        Architect a Word mapping entry, each applied at the menu; scen check
+        judges again, trusting no earlier result.
+    question: |
+      Q6 - Как запускается проверка слов из Q5: (i) свой `Q:`-промпт только в
+      `scen check`, один ход на сценарий по всем связанным концептам; фикс
+      предлагает Product Owner объявить термин или переписать `means`, а
+      System Architect — запись Word mapping; (ii) как (i), и тот же промпт в
+      `us refine` по концептам Story, чтобы слова нового концепта
+      проверялись там, где Product Owner его создаёт; (iii) внутри промпта
+      однозначности привязки из #257: без лишнего хода, но один вердикт и
+      фикс для двух ролей.
+    answer: |
+      (ii).
+
+  - decision_trace:
+      research:
+        - |
+          A concept's name is the key of the link answer's schema (#257), the
+          model sees it, and a binding refers to the concept by it (#256);
+          #256 asks only that it be unique within its block. Spike #255's
+          "engine activity" read wider than its means, matching the overlap Q1
+          closes.
+      recommendation: |
+        (a): the name states the interface item and kind of use in product
+        words (engine log records, stdout and stderr, the AI CLIs the engine
+        reaches).
+      settled: |
+        Not decided, by the Owner's rule for the rest of this session: a
+        decision that is cheap to change later (a field's name, what a
+        concept's name is, which concepts TrueBDD declares, the wording of a
+        binding) is not taken now. It gets a provisional default, is seen
+        working, and is decided from that. Concept names stay provisional:
+        the spike's, changed only where Q1 forces it.
+    question: |
+      Q7 - Как называется концепт: (a) именем называется то, что ставится,
+      вызывается или наблюдается, словами продукта (then `engine activity` →
+      `engine log records`, `console output` → `stdout and stderr`, `nothing
+      left behind` → `AI CLI cleanup`; given `AI CLI stand-ins` → `the AI CLIs
+      the engine reaches`; when `a role runs a command` остаётся); (b)
+      свободное короткое имя, уникальное в блоке.
+    answer: |
+      Слушай, смотри, мне тяжело отвечать на такие вопросы. Мне хотелось бы переходить больше к действию. То есть сейчас это чересчур низкий уровень детализации, на который я не могу точно сказать. Поэтому мне тяжело сказать. То есть мне надо посмотреть, как это будет в реальности работать, и уже от этого принимать решение. И я бы хотел сделать, ну, так, то есть смотри, если мы легко можем поменять потом, наверное, название поля или там что становится концептом, мы, в принципе, потом поменять можем, и за один присест можем, например, информацию из одного варианта переварить в информацию с другим вариантом, то мне хотелось бы сейчас не принимать такие решения.
+
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        Yes: Q1 to Q6 close the costly branches; the rest is provisional by
+        Q7's rule and is seen working from #259 on the real Registry.
+      settled: |
+        Shared understanding confirmed. Claude writes ADR-0036 from Q1 to Q6
+        and the entries they force, commits it with this log on its own branch
+        with a PR, amends #256, #257, #258 and #259 after a Codex plan-read,
+        closes #254, leaves main clean, and tells the Owner which command
+        starts the implementation (#256, #257, #258, #259 through
+        /mpc_implement-spec #212). Concept names, TrueBDD's concept list and
+        the bindings' wording stay provisional (Q7).
+    question: |
+      Q8 - Пришли ли мы к общему пониманию, чтобы перейти к действию: решено
+      Q1–Q6 и следствия; Claude пишет ADR-0036 и коммитит его с логом на своей
+      ветке с PR, правит #256, #257 и #259 после plan-read от Codex,
+      закрывает #254, а затем реализует #256 → #257 → #258 → #259 через
+      `/mpc_implement-spec #212`, когда скажет Owner.
+    answer: |
+      Да, хорошо, поехали, так как ты предлагаешь. Все правь, и я наоборот. То есть, сейчас, подожди, я вот только не понял про пишу ADR, правлю тикеты, и здесь мне не очень понятно, какие шаги прямо сейчас требуются от меня. Можешь написать мне, какую команду мне запустить дальше, чтобы мы начали, например, со следующего, с клира и со следующего репозитория, ну, с чистой main branch'и. Вот, подготовь все для начала работы и напиши, что запустить.
+
+  - decision_trace:
+      research:
+        - |
+          A Prompt has one fix template (F:) for one role. ADR-0034: us refine
+          links against product concepts only and never waits for the
+          architecture. scen check already holds every declared term to a Word
+          mapping with D: term-mappings, whose fix the System Architect applies
+          (true-bdd/checklists/scen-check.yaml). Codex plan-read of ADR-0036's
+          draft (tmp/codex/plan-read-254-adr-tickets/final.md), objection 2.
+      recommendation: |
+        Forced by Q6 with these facts.
+      settled: |
+        Forced by Q6 (ii), the one-fix-per-Prompt rule and ADR-0034: the word
+        check's fix is the Product Owner's (a declared term or a reworded
+        means). The Word mapping a newly declared term needs is the System
+        Architect's, through scen check's existing D: term-mappings on the walk
+        after the fix, so us refine never waits for the architecture.
+    question: |
+      How does the word check's fix reach both roles, given one fix per Prompt?
+    answer: |
+      Claude, no question asked: forced by Q6 (ii), the one-fix-per-Prompt rule
+      and ADR-0034. The Prompt's fix is the Product Owner's; the System
+      Architect's Word mapping comes through D: term-mappings in scen check.
+
+  - decision_trace:
+      research:
+        - |
+          Q2's examples group under one concept steps that reach several
+          declared references: the project tree's Given covers the fixture
+          tree, a removed file, a symbolic link and a narrowed checklist
+          (project-tree, configuration and checklists in true-bdd-cli.yaml);
+          a role runs a command covers every command. ADR-0035 allows plural
+          references. Codex plan-read, objection 3.
+      recommendation: |
+        Forced by Q2's own examples.
+      settled: |
+        Forced by Q2 (i) and its examples: the item of "one Public interface
+        item and kind of use" is what the use is about (the project tree, the
+        engine's commands, the engine log), and a binding may reach it through
+        several declared references.
+    question: |
+      Is a concept's "Public interface item" one declared reference, or what
+      the use is about?
+    answer: |
+      Claude, no question asked: forced by Q2 (i) and the examples it accepted.
+      The item is what the use is about, reached through one or more declared
+      references.
