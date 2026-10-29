@@ -160,29 +160,23 @@ func TestParseLogSpineEdgeCases(t *testing.T) {
 	}
 }
 
-func TestBuildCodeCleanWalkRequiresFreshGreenDiscovery(t *testing.T) {
-	t.Parallel()
+// cleanWalkExample is one tail after an apply and whether it proves a clean walk.
+type cleanWalkExample struct {
+	name, tail string
+	want       bool
+}
 
-	for _, example := range []struct {
-		name, tail string
-		want       bool
-	}{
-		{"green after apply", `{"msg":"Total failing tests across architecture","failures":0}
-{"msg":"BUILD CODE COMPLETE"}`, true},
-		{"completion with failures", `{"msg":"Total failing tests across architecture","failures":1}
-{"msg":"BUILD CODE COMPLETE"}`, false},
-		{"completion without discovery", `{"msg":"BUILD CODE COMPLETE"}`, false},
-		{"green without completion", `{"msg":"Total failing tests across architecture","failures":0}`, false},
-	} {
+// assertCleanWalks scans each example's log, a command's apply followed by
+// its tail, and compares cleanWalkProven with the expected verdict.
+func assertCleanWalks(t *testing.T, head string, examples []cleanWalkExample) {
+	t.Helper()
+
+	for _, example := range examples {
 		t.Run(example.name, func(t *testing.T) {
 			t.Parallel()
 			path := filepath.Join(t.TempDir(), "log.json")
-			content := `{"msg":"Loaded prompts","command":"build code","items":1,"prompts":1}
-{"msg":"Fix applied successfully","subjectID":"failing-set"}
-{"msg":"Result file saved","file":"tmp/2026-01-01-00-00/01-failing-set-checklist-build-code-test-passes-result.yaml"}
-` + example.tail + "\n"
 
-			err := os.WriteFile(path, []byte(content), 0o644)
+			err := os.WriteFile(path, []byte(head+example.tail+"\n"), 0o644)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -197,4 +191,36 @@ func TestBuildCodeCleanWalkRequiresFreshGreenDiscovery(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestBuildCodeCleanWalkRequiresFreshGreenDiscovery(t *testing.T) {
+	t.Parallel()
+
+	assertCleanWalks(t, `{"msg":"Loaded prompts","command":"build code","items":1,"prompts":1}
+{"msg":"Fix applied successfully","subjectID":"failing-set"}
+{"msg":"Result file saved","file":"tmp/2026-01-01-00-00/01-failing-set-checklist-build-code-test-passes-result.yaml"}
+`, []cleanWalkExample{
+		{"green after apply", `{"msg":"Total failing tests across architecture","failures":0}
+{"msg":"BUILD CODE COMPLETE"}`, true},
+		{"completion with failures", `{"msg":"Total failing tests across architecture","failures":1}
+{"msg":"BUILD CODE COMPLETE"}`, false},
+		{"completion without discovery", `{"msg":"BUILD CODE COMPLETE"}`, false},
+		{"green without completion", `{"msg":"Total failing tests across architecture","failures":0}`, false},
+	})
+}
+
+func TestBuildStepsCleanWalkRequiresSaveAndCompletion(t *testing.T) {
+	t.Parallel()
+
+	const saved = `{"msg":"Result file saved","file":"tmp/r/01-p-checklist-build-steps-step-coverage-result.yaml"}`
+
+	assertCleanWalks(t, `{"msg":"Loaded prompts","command":"build steps","items":1,"prompts":1}
+{"msg":"Fix applied successfully","subjectID":"p"}
+`, []cleanWalkExample{
+		{"saved and complete", saved + "\n" + `{"msg":"BUILD STEPS COMPLETE"}`, true},
+		{"complete without a save", `{"msg":"BUILD STEPS COMPLETE"}`, false},
+		{"saved without completion", saved, false},
+		{"another fix after the apply", saved + "\n" +
+			`{"msg":"Generating fix prompt","subjectID":"p","promptIndex":1}` + "\n" + `{"msg":"BUILD STEPS COMPLETE"}`, false},
+	})
 }

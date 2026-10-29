@@ -43,6 +43,9 @@ type Spec[I any] struct {
 	DeferCompletion bool
 	// RecoverWriterFailures lets build code rerun files left by a failed writer.
 	RecoverWriterFailures bool
+	// ConfineClaudeWriter runs a Claude applier as the guarded writer, held to
+	// the applier's write roots; build steps' writer may write only the tests.
+	ConfineClaudeWriter bool
 	// StopImpossible reruns the remaining set before returning an architectural obstruction.
 	StopImpossible func(context.Context, I, error) error
 
@@ -423,6 +426,9 @@ func buildGenFixClosure[I any](
 	}
 }
 
+// claudeWriter reports whether a Claude applier runs as the guarded writer.
+func (s Spec[I]) claudeWriter() bool { return s.RecoverWriterFailures || s.ConfineClaudeWriter }
+
 // buildFixClosure produces the engine.FixFn: the captured fixCount
 // keeps FixApplier tmp files uniquely named per run, and the shared
 // *latestResult slot also carries the apply-model tier for this cell.
@@ -448,7 +454,7 @@ func buildFixClosure[I any](
 			TmpDir:       spec.TmpDir,
 			Iteration:    fixCount,
 			ModelTier:    latestResult.ApplyModelTier,
-			ClaudeWriter: spec.RecoverWriterFailures,
+			ClaudeWriter: spec.claudeWriter(),
 			CodexWriter:  spec.RecoverWriterFailures,
 		})
 		if err != nil {

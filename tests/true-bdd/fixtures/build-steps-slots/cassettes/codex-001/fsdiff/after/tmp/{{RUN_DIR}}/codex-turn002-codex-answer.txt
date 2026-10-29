@@ -1,5 +1,0 @@
-=== FILE_START: tmp/{{RUN_DIR}}/apply-phraseea05442478437a9ebf104cd94361efb2d093e818ac43814680607d44d8456069-iter1-result.yaml ===
-applied: true
-target: "tests/calc/steps/phraseea05442478437a9ebf104cd94361efb2d093e818ac43814680607d44d8456069.go"
-summary: "Applied the exact supplied body and imports to run the CLI and store its integer stdout in State.Value."
-=== FILE_END: tmp/{{RUN_DIR}}/apply-phraseea05442478437a9ebf104cd94361efb2d093e818ac43814680607d44d8456069-iter1-result.yaml ===

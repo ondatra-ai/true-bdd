@@ -1,9 +1,15 @@
-version: "1.0"
+version: '1.0'
 sections:
-  - id: term_closure
-    validation_prompts:
-      - D: public-interface
-        rationale: "A Scenario must observe what its service offers across a process boundary, declared before the code is built."
-        docs:
-          - architecture_yaml
-        F: "Ask the System Architect what this service offers across its process boundary, then propose its public_interface declaration in the architecture document: cli names an OpenCLI-like document with named extensions, http names an OpenAPI 3 document, ui lists elements by role and accessible name within a page or region. Write the architecture document, never the Scenario."
+- id: term_closure
+  validation_prompts:
+  - D: public-interface
+    rationale: A Scenario must observe what its service offers across a process boundary,
+      declared before the code is built.
+    docs:
+    - architecture_yaml
+    F: 'Ask the System Architect what this service offers across its process boundary,
+      then propose its public_interface declaration in the architecture document:
+      cli names an OpenCLI-like document with named extensions, http names an OpenAPI
+      3 document, ui lists elements by role and accessible name within a page or region.
+      Write the architecture document, and a document it names where the answers say
+      it lacks what the service offers, never the Scenario.'

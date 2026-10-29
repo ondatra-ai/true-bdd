@@ -30,6 +30,7 @@ type buildStepsExecution struct {
 	items            []*BuildStepsItem
 	attempts         map[*BuildStepsItem]int
 	maxAttempts      int
+	critiqueTier     string
 	redChecked       bool
 	green            []string
 }
@@ -38,8 +39,13 @@ func runBuildStepsFix(ctx context.Context, deps BuildStepsDeps, registryFile, ar
 	execution := &buildStepsExecution{deps: deps, registryFile: registryFile, architectureFile: architectureFile,
 		compiler: testrunner.NewGoTestRunner(testrunner.NewArtifacts(deps.TmpDir))}
 
+	err := execution.prepareCritique()
+	if err != nil {
+		return runner.RefuseStartup("build steps", err)
+	}
+
 	return runner.Run(ctx, runner.Spec[*BuildStepsItem]{
-		Name: "build steps", ChecklistName: "build-steps", Fix: true,
+		Name: "build steps", ChecklistName: "build-steps", Fix: true, ConfineClaudeWriter: true,
 		LoadItems: execution.prepare, BeforeEvaluate: execution.beforeEvaluate,
 		PostFix: execution.postFix, PostNotApplied: execution.postNotApplied,
 		Finalize: execution.finalize, CheckConvergence: execution.checkConvergence,
@@ -67,7 +73,7 @@ func (e *buildStepsExecution) beforeEvaluate(_ context.Context, item *BuildSteps
 	return false, nil
 }
 
-func (e *buildStepsExecution) postFix(_ context.Context, item *BuildStepsItem, _ string) (*BuildStepsItem, error) {
+func (e *buildStepsExecution) postFix(ctx context.Context, item *BuildStepsItem, _ string) (*BuildStepsItem, error) {
 	e.redChecked = false
 	e.attempts[item]++
 	item.Findings = nil
@@ -83,6 +89,15 @@ func (e *buildStepsExecution) postFix(_ context.Context, item *BuildStepsItem, _
 	for _, finding := range findings {
 		if finding != nil {
 			item.Findings = append(item.Findings, finding.Error())
+		}
+	}
+
+	// The critique reads only a body that compiles, binds and is written:
+	// one that fails those checks already returns to the Fix loop.
+	if len(item.Findings) == 0 {
+		err := e.critique(ctx, item)
+		if err != nil {
+			return item, err
 		}
 	}
 

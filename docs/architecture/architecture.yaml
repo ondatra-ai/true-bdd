@@ -259,7 +259,7 @@ architecture:
         Build steps uses the shared Fix loop. Phrase and suite are loaded from the Catalogue and Registry; all skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
       fields:
         Subject.Context: Whole YAML context with phrase, service Phrase mapping, term glossary entries and Word mappings, Public interface declaration and complete named document, and every suite Scenario using the phrase. No truncation.
-        FailedCheck.Context: Every finding from the last per-Item compile, binding and body check.
+        FailedCheck.Context: Every finding from the last per-Item compile, binding, body and critique check.
         DocPaths: Configured document paths.
         FailedCheck.ActualAnswer: Latest answer.
         FailedCheck.FixPrompt: Failed Prompt fix guidance.
@@ -296,6 +296,18 @@ architecture:
       fields:
         ResultPath: Confirmation artifact path.
         Subject.Phrase.Template: The phrase an interface_cannot_serve verdict names.
+    build_steps_critique:
+      rendering: >-
+        After a completed apply whose compilation, binding and body checks pass, before the Item can pass, a separate read-only prompt-role turn reads the selected definition; an apply those checks fail goes back to the Fix loop without it. Claude's file and shell tools are disabled; Codex uses the standard read-only validation sandbox. Only that definition, imports and shared State may change; the existing suite shape check rejects other definition edits. All suite steps-package Go files are embedded in lexical path order, whole, with path headings, so shared State and helper context are visible even when compilation fails. The complete phrase context is identical to the writer's. Findings append to the Item's existing compile, binding and body findings and return through D: step-coverage to the same bounded Fix loop. A malformed verdict stops the walk. The build-steps checklist engine.critique_model tier overrides engine.default_prompt_model; templates and tier validate before any skeleton or runner. No prompt budget is stated. Each apply saves critique-<Item id>-<apply count>-{system,user,response}.txt under the run directory.
+      fields:
+        Definition: >-
+          Engine definition file path joined with :: and its function name.
+        Context: Whole YAML phrase meaning, Phrase mapping, term glossary entries and Word mappings, Public interface declaration and complete document, and every suite Scenario using the phrase. No summarising or truncation.
+        Sources: Whole suite steps-package Go files in lexical path order with path headings, including the definition, imports, registrations and shared State.
+    build_steps_critique_system:
+      rendering: >-
+        Static semantic review policy and JSON verdict contract. Answer pass with no findings, or fail with at least one finding. Each finding requires a nonempty definition, category (phrase_mapping, phrase_meaning or computes_assertion) and finding. The mapping criterion follows the phrase block: when calls its operation, given sets up state, then observes and compares; not every definition must itself call a command. Assertion meaning and computing the asserted result are the other two criteria. The registration, pattern and signature are the engine's, derived from the template (a number slot also accepts no), and are never judged. Unusable replies are errors, never passes.
+      fields: {}
     build_code_checklist:
       rendering: *prompt-rendering
       fields: {}
@@ -1344,7 +1356,7 @@ architecture:
 
     - term: command
       technical: >-
-        The pipeline is us refine, us apply, build tests, build steps, build code. build tests only renders Registry test files: --fix writes stale files; without it stale files refuse startup. It never reads definitions, starts a test runner or dispatches an AI turn. build steps loads its build-steps checklist; without --fix it lists missing phrases and checks coverage without AI or a runner. With --fix it writes all skeletons first, compiles, then writes each body through the shared Fix loop. Per-apply compilation, exact binding and pending-body checks precede whole-suite coverage, generated-test listing and a run without every service path. A red result requires each named Scenario to fail at an executed definition; compilation, harness bring-up, skipped or missing results fail the check. Green Scenarios send their written phrase Items back together, retaining apply counts and the bounded walk. The writer receives the complete phrase context, writes only protected tests and shared state, and reports interface_cannot_serve with phrase and lacks to stop immediately when the declared interface cannot serve the meaning. The quoted text, split into arguments at whitespace (no quoting, so
+        The pipeline is us refine, us apply, build tests, build steps, build code. build tests only renders Registry test files: --fix writes stale files; without it stale files refuse startup. It never reads definitions, starts a test runner or dispatches an AI turn. build steps loads its build-steps checklist; without --fix it lists missing phrases and checks coverage without AI or a runner. With --fix it writes all skeletons first, compiles, then writes each body through the shared Fix loop. Per-apply compilation, exact binding and pending-body checks and then a separate semantic critique of the body precede whole-suite coverage, generated-test listing and a run without every service path. A red result requires each named Scenario to fail at an executed definition; compilation, harness bring-up, skipped or missing results fail the check. Green Scenarios send their written phrase Items back together, retaining apply counts and the bounded walk. Once those checks pass, a separate AI critique turn reads the applied definition's body with the whole phrase meaning, Phrase mapping entry, term glossary entries and Word mappings, Public interface declaration and document, and every suite Scenario using the phrase. It checks the mapping by block (when calls its named operation, given sets up the stated state, then observes and compares as stated), assertions against the phrase meaning, and that the definition does not compute what it asserts. Failures name the definition and discrepancy and return to the same Fix loop within its configured attempts. The turn uses build-steps checklist engine.critique_model, falling back to engine.default_prompt_model, and states no time, turn, token or cost budget. The writer receives the complete phrase context, writes only protected tests and shared state, and reports interface_cannot_serve with phrase and lacks to stop immediately when the declared interface cannot serve the meaning. The quoted text, split into arguments at whitespace (no quoting, so
         an argument cannot hold a space) and run as the engine binary's
         arguments in a subprocess; `{{CWD}}` in an argument stands for the
         run directory's absolute path, so a command can name a file of the
@@ -1877,8 +1889,8 @@ architecture:
 
     - term: claude
       technical: >-
-        Claude Code 2.1.285. The build-code applier alone explicitly requests
-        an isolated unbounded writer. Generated --settings declares a PreToolUse
+        Claude Code 2.1.285. The build-code and build-steps appliers alone
+        explicitly request an isolated unbounded writer, held to their write roots. Generated --settings declares a PreToolUse
         hook for every exposed tool, invoking this binary's claude-guard with
         --policy pointing to generated JSON. It emits an explicit allow decision
         or exits 2 with a reason; Bash is never permission-pattern granted.

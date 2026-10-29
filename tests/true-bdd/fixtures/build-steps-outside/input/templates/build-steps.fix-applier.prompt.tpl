@@ -30,10 +30,10 @@ interface_cannot_serve:
   lacks: "<what the interface offers no way to set up or observe>"
 ```
 
-Fixture access probe: before writing the body, use your shell to attempt the
-following writes from the Host root, each separately. They MUST fail with a
-permission error. If either succeeds, report applied: false. Preserve the denied
-paths and continue with the approved body only after both are refused:
-  printf forbidden > services/calc/forbidden.txt
-  printf forbidden > docs/forbidden.txt
-Record the denial in your response, and do not request broader permissions.
+Fixture access probe: before writing the body, use the file-writing tool you
+have to attempt each of these writes from the Host root, separately, with the
+content `forbidden`. They MUST be refused. If either succeeds, report applied:
+false. Continue with the approved body once both are refused:
+  services/calc/forbidden.txt
+  docs/forbidden.txt
+Record the refusals in your response, and do not request broader permissions.

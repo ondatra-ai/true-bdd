@@ -2,7 +2,7 @@ engine:
   models:
     xhigh: claude:claude-fable-5
     high: claude:claude-opus-5
-    coder: codex:gpt-6.1-sol
+    coder: claude:claude-sonnet-5-5
     quick: claude:claude-sonnet-5
   default_prompt_model: high
   default_fix_model: high
@@ -21,6 +21,8 @@ templates:
     apply_fix_generator_system: ./templates/us.apply-checklist.fix-generator.system.prompt.tpl
     apply_fix_applier: ./templates/us.apply-checklist.fix-applier.prompt.tpl
     apply_fix_applier_system: ./templates/us.apply-checklist.fix-applier.system.prompt.tpl
+    build_steps_critique: "./templates/build-steps.critique.prompt.tpl"
+    build_steps_critique_system: "./templates/build-steps.critique.system.prompt.tpl"
     build_steps_checklist: ./templates/build-steps.checklist.prompt.tpl
     build_steps_checklist_system: ./templates/build-steps.checklist.system.prompt.tpl
     build_steps_fix_generator: ./templates/build-steps.fix-generator.prompt.tpl

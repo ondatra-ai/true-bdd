@@ -32,6 +32,7 @@ var ErrBuildStepsFramework = errors.New("build steps writes go-test suites only"
 
 // BuildStepsDeps contains the dependencies of the step inventory and body writer.
 type BuildStepsDeps struct {
+	Critic             *validate.StepCritic
 	Evaluator          *validate.ChecklistEvaluator
 	FixGenerator       *validate.FixPromptGenerator
 	FixApplier         *validate.FixApplier

@@ -5420,7 +5420,7 @@ scenarios:
         - every file matching "tmp/true-bdd.log.json" matches "msg":"Created","path":"true-bdd/true-bdd.yaml"
         - and: exactly 1 file matching "true-bdd/true-bdd.yaml" is created
         - and: exactly 5 files matching "true-bdd/checklists/*.yaml" are created
-        - and: exactly 30 files matching "templates/*.tpl" are created
+        - and: exactly 32 files matching "templates/*.tpl" are created
         - and: 'every file matching "true-bdd/true-bdd.yaml" does not match (?m)^scripts:'
         - and: no file matching "docs/**" is created
 
@@ -6782,7 +6782,7 @@ scenarios:
       - stdout matches Red without target passed.*scenarios=2
       - the engine spawned exactly 1 test runner with arguments matching -count=1$
       - no file outside "tmp" and "tests" changed
-      - the engine dispatched no validation AI turns to "claude"
+      - the engine dispatched 1 validation AI turn to "claude"
       - the engine spawned exactly 1 test runner with arguments matching -list \.
       - 'every file matching "tmp/*/*fix-iter*-user.txt" matches phrase_mapping:'
       - 'every file matching "tmp/*/apply-*-user.txt" matches interface_document:'
@@ -6810,7 +6810,7 @@ scenarios:
       - stdout matches Scenario list passed
       - no file outside "tmp" and "tests" changed
       - stdout matches All step skeletons written.*items=3
-      - the engine dispatched no validation AI turns to "claude"
+      - the engine dispatched 3 validation AI turns to "claude"
       - the engine spawned exactly 1 test runner with arguments matching -list \.
       - the engine spawned exactly 1 test runner with arguments matching -run \^\(Test
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
@@ -6835,7 +6835,7 @@ scenarios:
       - stdout matches Step coverage passed
       - stdout matches Scenario list passed
       - no file outside "tmp" and "tests" changed
-      - the engine dispatched no validation AI turns to "claude"
+      - the engine dispatched 1 validation AI turn to "claude"
       - the engine spawned exactly 1 test runner with arguments matching -list \.
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   build-steps-writing-004-interface-cannot-serve:
@@ -6945,7 +6945,7 @@ scenarios:
       - the engine spawned exactly 1 test runner with arguments matching -list \.
       - no file outside "tmp" and "tests" changed
       - stdout matches msg="Codex turn sandboxed" label=codex-turn[0-9]+ sandbox=writer
-      - the engine dispatched no validation AI turns to "claude"
+      - the engine dispatched 1 validation AI turn to "claude"
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   build-steps-writing-005-outside-tests-refused:
     description: The confined body writer refuses writes to the service and Specification while completing the test body
@@ -6969,9 +6969,8 @@ scenarios:
       - stdout matches Scenario list passed
       - the engine spawned exactly 1 test runner with arguments matching -list \.
       - no file outside "tmp" and "tests" changed
-      - stdout matches sandbox=writer
-      - every file matching "tmp/*/codex-turn*-codex-events.jsonl" matches (?i)permission denied|operation not permitted|read.only
-      - the engine dispatched no validation AI turns to "claude"
+      - stdout matches msg="Tool calls were denied; this turn did less than it was asked to".*role=apply
+      - the engine dispatched 1 validation AI turn to "claude"
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   build-steps-writing-006-bringup-is-not-red:
     description: Harness bring-up failure without the target fails the red check and names the Scenario
@@ -7014,6 +7013,88 @@ scenarios:
       - stdout matches Scenario green without target.*TestCalc001Double
       - stdout matches Red without target passed
       - stdout matches BUILD STEPS COMPLETE
-      - the engine dispatched 4 AI turns
+      - the engine dispatched 6 AI turns
       - no file outside "tmp" and "tests" changed
+      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+
+  build-steps-critique-001-operation:
+    description: A when omitting its mapped operation fails critique and returns to the Fix loop
+    service: true-bdd
+    path: tests/true-bdd/build_steps_critique_test.go
+    user_stories:
+    - story: docs/product/stories/build-steps-critique.yaml
+      scenario_id: build-steps-critique-001-operation
+      merge_date: '2026-10-29'
+    timeout: 25m
+    merged_steps:
+      given:
+      - the "build-steps-critique-operation" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches BUILD STEPS COMPLETE
+      - stdout matches Step definition critiqued
+      - stdout matches phrase_mapping.*does not call the mapped double operation
+      - the engine dispatched 6 AI turns
+      - the engine dispatched 2 validation AI turns to "claude"
+      - no file outside "tmp" and "tests" changed
+      - 'every file matching "tmp/*/critique-*-user.txt" matches phrase_mapping:'
+      - 'every file matching "tmp/*/critique-*-user.txt" matches interface_document:'
+      - every file matching "tmp/*/critique-*-user.txt" matches calc-002-double
+      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+  build-steps-critique-002-assertion:
+    description: An assertion contradicting the phrase fails critique and returns to the Fix loop
+    service: true-bdd
+    path: tests/true-bdd/build_steps_critique_test.go
+    user_stories:
+    - story: docs/product/stories/build-steps-critique.yaml
+      scenario_id: build-steps-critique-002-assertion
+      merge_date: '2026-10-29'
+    timeout: 25m
+    merged_steps:
+      given:
+      - the "build-steps-critique-assertion" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches BUILD STEPS COMPLETE
+      - stdout matches Step definition critiqued
+      - stdout matches phrase_meaning.*assertion contradicts the phrase
+      - the engine dispatched 6 AI turns
+      - the engine dispatched 2 validation AI turns to "claude"
+      - no file outside "tmp" and "tests" changed
+      - 'every file matching "tmp/*/critique-*-user.txt" matches phrase_mapping:'
+      - 'every file matching "tmp/*/critique-*-user.txt" matches interface_document:'
+      - every file matching "tmp/*/critique-*-user.txt" matches calc-002-double
+      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+  build-steps-critique-003-correct:
+    description: A correct given that stores its input passes critique and completes
+    service: true-bdd
+    path: tests/true-bdd/build_steps_critique_test.go
+    user_stories:
+    - story: docs/product/stories/build-steps-critique.yaml
+      scenario_id: build-steps-critique-003-correct
+      merge_date: '2026-10-29'
+    timeout: 25m
+    merged_steps:
+      given:
+      - the "build-steps-critique-correct" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches BUILD STEPS COMPLETE
+      - stdout matches Step definition critiqued
+      - the engine dispatched 3 AI turns
+      - the engine dispatched 1 validation AI turn to "claude"
+      - stdout matches role=prompt cli=claude model=claude-sonnet-5
+      - no file outside "tmp" and "tests" changed
+      - 'every file matching "tmp/*/critique-*-user.txt" matches phrase_mapping:'
+      - 'every file matching "tmp/*/critique-*-user.txt" matches interface_document:'
+      - every file matching "tmp/*/critique-*-user.txt" matches calc-002-double
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0

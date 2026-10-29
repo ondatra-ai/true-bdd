@@ -5,9 +5,9 @@
     {
       "path": "docs/architecture/architecture.yaml",
       "kind": "modified",
-      "size": 894,
-      "sha256": "04bfffa3e7ef7626542e61c359076da3eb79a540c8d40ec8299006ab91923d7d",
-      "text": "# Proposed operation for the missing when phrase: greet. Ask the System Architect to confirm.\narchitecture:\n  services:\n  - name: greeter\n    path: services/greeter\n    language: go\n    public_interface:\n      kind: cli\n      document: docs/greeter-cli.yaml\n  phrases:\n  - template: the greeting is configured\n    service: greeter\n    references:\n    - file: greeting-config\n    does: Write the expected greeting to the configuration file before running greet.\n  - template: the greeting is requested\n    service: greeter\n    references:\n    - command: greet\n    does: Call the greet command once, passing the person named by the scenario as\n      the 'person' argument and omitting the 'loud' flag.\n  - template: the greeting is logged\n    service: greeter\n    references:\n    - log_record: greeted\n    does: Observe the greeted log record and compare its greeting to the expected\n      text.\n"
+      "size": 849,
+      "sha256": "a9fedb769a8004b795d5faec737f3387e6bc3583ab5338f4985826b2e43da3fa",
+      "text": "# Proposed operation for the missing when phrase: greet. Ask the System Architect to confirm.\narchitecture:\n  services:\n  - name: greeter\n    path: services/greeter\n    language: go\n    public_interface:\n      kind: cli\n      document: docs/greeter-cli.yaml\n  phrases:\n  - template: the greeting is configured\n    service: greeter\n    references:\n    - file: greeting-config\n    does: Write the expected greeting to the configuration file before running greet.\n  - template: the greeting is requested\n    service: greeter\n    references:\n    - command: greet\n    does: Run the declared greet command once with a fixed person value and no loud\n      flag.\n  - template: the greeting is logged\n    service: greeter\n    references:\n    - log_record: greeted\n    does: Observe the greeted log record and compare its greeting to the expected\n      text.\n"
     }
   ]
 }

@@ -90,6 +90,7 @@ type Container struct {
 	ApplyFixPromptGenerator      *validate.FixPromptGenerator
 	ApplyFixApplier              *validate.FixApplier
 	RegistryLoader               *registry.RegistryLoader
+	BuildStepsCritic             *validate.StepCritic
 	BuildStepsEvaluator          *validate.ChecklistEvaluator
 	BuildStepsFixPromptGenerator *validate.FixPromptGenerator
 	BuildStepsFixApplier         *validate.FixApplier
@@ -136,22 +137,25 @@ func NewContainer(overrides ...string) (*Container, error) {
 	refineFixApplier.UseEditMode()
 
 	return &Container{
-		Config:                       cfg,
-		RunDir:                       runDir,
-		StoriesDir:                   cfg.GetString("paths.stories_dir"),
-		StoryLoader:                  story.NewStoryLoader(cfg),
-		StoryScenarioParser:          story.NewStoryScenarioParser(cfg),
-		ChecklistLoader:              checklist.NewChecklistLoader(cfg),
-		DocResolver:                  docs.NewResolver(cfg),
-		UserInputCollector:           input.NewUserInputCollector(),
-		TableRenderer:                runner.NewTableRenderer(),
-		RefineEvaluator:              validate.NewChecklistEvaluator(aiClient, cfg, models),
-		RefineFixPromptGenerator:     validate.NewFixPromptGenerator(aiClient, cfg, models),
-		RefineFixApplier:             refineFixApplier,
-		ApplyEvaluator:               trips.apply.evaluator,
-		ApplyFixPromptGenerator:      trips.apply.fixGenerator,
-		ApplyFixApplier:              trips.apply.fixApplier,
-		RegistryLoader:               registry.NewRegistryLoader(),
+		Config:                   cfg,
+		RunDir:                   runDir,
+		StoriesDir:               cfg.GetString("paths.stories_dir"),
+		StoryLoader:              story.NewStoryLoader(cfg),
+		StoryScenarioParser:      story.NewStoryScenarioParser(cfg),
+		ChecklistLoader:          checklist.NewChecklistLoader(cfg),
+		DocResolver:              docs.NewResolver(cfg),
+		UserInputCollector:       input.NewUserInputCollector(),
+		TableRenderer:            runner.NewTableRenderer(),
+		RefineEvaluator:          validate.NewChecklistEvaluator(aiClient, cfg, models),
+		RefineFixPromptGenerator: validate.NewFixPromptGenerator(aiClient, cfg, models),
+		RefineFixApplier:         refineFixApplier,
+		ApplyEvaluator:           trips.apply.evaluator,
+		ApplyFixPromptGenerator:  trips.apply.fixGenerator,
+		ApplyFixApplier:          trips.apply.fixApplier,
+		RegistryLoader:           registry.NewRegistryLoader(),
+		BuildStepsCritic: validate.NewStepCritic(aiClient, models,
+			cfg.GetString("templates.prompts.build_steps_critique_system"),
+			cfg.GetString("templates.prompts.build_steps_critique")),
 		BuildStepsEvaluator:          trips.buildSteps.evaluator,
 		BuildStepsFixPromptGenerator: trips.buildSteps.fixGenerator,
 		BuildStepsFixApplier:         trips.buildSteps.fixApplier,

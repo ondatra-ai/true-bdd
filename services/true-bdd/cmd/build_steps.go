@@ -31,6 +31,7 @@ func newBuildStepsCmd(provide containerProvider) *cobra.Command {
 			}
 
 			return commands.RunBuildSteps(ctx, commands.BuildStepsDeps{
+				Critic:             container.BuildStepsCritic,
 				TmpDir:             container.RunDir.GetTmpOutPath(),
 				Evaluator:          container.BuildStepsEvaluator,
 				FixGenerator:       container.BuildStepsFixPromptGenerator,
