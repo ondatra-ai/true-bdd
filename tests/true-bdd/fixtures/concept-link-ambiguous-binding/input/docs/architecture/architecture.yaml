@@ -36,22 +36,13 @@
             }
           }
         ],
-        "does": "Enter the given number into the Number field."
+        "does": "Parse the Given step’s numeral as a decimal number, replace the entire Number textbox value with its decimal representation, and leave it set before the action."
       },
       {
         "concept": "halve",
         "block": "when",
         "service": "calc",
-        "references": [
-          {
-            "element": {
-              "page": "Calc",
-              "role": "button",
-              "name": "Halve"
-            }
-          }
-        ],
-        "does": "Perform the operation."
+        "intent": "Do whatever is appropriate with the entered number."
       },
       {
         "concept": "number result",
@@ -66,7 +57,7 @@
             }
           }
         ],
-        "does": "Compare the displayed Number text with the expected result."
+        "does": "Read the Number textbox value, parse it as a decimal number and assert numeric equality with the expected numeral supplied by the Then step."
       }
     ],
     "terms": []

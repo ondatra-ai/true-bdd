@@ -16,7 +16,7 @@
     "when": [
       {
         "concept": "halve",
-        "means": "Invoke the Halve control once, replacing the entered number with its half. The activation is one of exactly two variations: activating its button with a pointer, or activating its button with the keyboard. Both variations invoke the same single halving operation.",
+        "means": "Invoke the Halve control once by activating its button, with a pointer or from the keyboard, replacing the entered number with its half.",
         "terms": []
       }
     ],

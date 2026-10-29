@@ -16,7 +16,7 @@
     "when": [
       {
         "concept": "halve",
-        "means": "Halve the entered number, either once or twice in succession.",
+        "means": "Halve the entered number. Variations: halve once, giving half the entered number; halve twice, halving the result of the first halving, giving a quarter of the entered number. Halving three or more times is not part of this concept.",
         "terms": []
       }
     ],
@@ -30,6 +30,6 @@
   },
   "glossary": [],
   "description": {
-    "summary": "The calculator lets a person press Halve once to display half the entered number, or twice to display its quarter."
+    "summary": "The calculator supports exactly one or two Halve presses per request: one displays half the entered number; two displays its quarter. Three or more presses are not supported."
   }
 }

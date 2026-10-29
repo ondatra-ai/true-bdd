@@ -45,6 +45,24 @@
           "F": "Ask the System Architect what a step of this shape does through the service's Public interface, by block: a when calls an operation, a given sets up state, a then observes and compares. For a template host propose one architecture.phrases entry with the verbatim template; for a concept host propose architecture.concepts with the declared concept name and block. Include service, references and does, or intent for a UI service, and add to the Public interface document what the answers name that it does not declare yet. Write the architecture and that document only after apply, never the Scenario."
         }
       ]
+    },
+    {
+      "id": "concept_words",
+      "name": "Concept Words",
+      "description": "Linked meanings rely only on declared terms and plain English.",
+      "validation_prompts": [
+        {
+          "Q": "Judge the means of EVERY supplied linked concept, using the product\ndocument's glossary for its declared terms. Name every domain word\nor expression its means relies on that is neither declared in THAT\nconcept's terms nor readable as plain English in that means's context.\nA glossary entry alone does not declare a term for a concept.\nPlain English that already defines the word in this context passes;\ndo not demand glossary entries for ordinary words or infer a special\ndomain meaning without evidence. Judge means, not the concept's name,\nsteps, bindings or unrelated concepts. Trust no earlier judgement.\nJudge each concept independently. Every word in undeclared_words\nmust occur in THAT concept's means; never carry a word from another\nverdict. Keep the list consistent with the reason: if none is\nundeclared, return exactly an empty array.\nFor every supplied concept key return undeclared_words (the exact\nwords, or an empty array when none) and a nonempty reason explaining\nthe verdict. Omit no concept. Change nothing.\n",
+          "with": {
+            "concepts": "words"
+          },
+          "rationale": "An undeclared domain word leaves a linked meaning open to interpretation.",
+          "docs": [
+            "product"
+          ],
+          "F": "Offer the Product Owner a declared term (a glossary entry with term and\nmeans fields, and the word as a string in the affected concept's terms),\nor reword that concept's means in product words and plain English without\na new term. Use the product document's schema, never a meaning field.\nPreserve the meaning and unrelated concepts. Propose exact YAML for\nthe product document only. Show the change at the menu and apply only\nafter apply. Do not edit the Story, Scenario or architecture. A newly\ndeclared term's Word mapping is the System Architect's later work\nthrough scen check's D: term-mappings; refinement never waits for it.\n"
+        }
+      ]
     }
   ]
 }

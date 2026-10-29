@@ -164,8 +164,9 @@ func TestConceptLink012Widen(t *testing.T) {
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches no concept of when`)
 	s.And(`stdout matches action=apply`)
-	s.And(`the file "docs/product/product.yaml" matches once or twice`)
+	s.And(`the file "docs/product/product.yaml" is modified`)
 	s.And(`the file "docs/product/stories/host-story.yaml" is unchanged`)
+	s.And(`judge: the product document widens the existing halve concept to admit exactly one or two halvings and preserves the other concept meanings`)
 	s.Done()
 }
 

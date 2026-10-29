@@ -5,9 +5,9 @@
     {
       "path": "docs/product/product.yaml",
       "kind": "modified",
-      "size": 1019,
-      "sha256": "1f4bef68ca934040e42ef86e8a22a57771f033dabad1cd1b9a1c4502d4d7f90e",
-      "text": "{\n  \"roles\": [\n    {\n      \"name\": \"Product Owner\",\n      \"description\": \"Owns meanings.\"\n    }\n  ],\n  \"concepts\": {\n    \"given\": [\n      {\n        \"concept\": \"number ready\",\n        \"means\": \"A number is entered before the action.\",\n        \"terms\": []\n      }\n    ],\n    \"when\": [\n      {\n        \"concept\": \"halve\",\n        \"means\": \"Invoke the Halve control once, replacing the entered number with its half. The activation is one of exactly two variations: activating its button with a pointer, or activating its button with the keyboard. Both variations invoke the same single halving operation.\",\n        \"terms\": []\n      }\n    ],\n    \"then\": [\n      {\n        \"concept\": \"number result\",\n        \"means\": \"Compare the displayed number with an expected value.\",\n        \"terms\": []\n      }\n    ]\n  },\n  \"glossary\": [],\n  \"description\": {\n    \"summary\": \"The calculator has a single Halve control. A pointer click and a keyboard activation of this same control must invoke the same halving operation once.\"\n  }\n}\n"
+      "size": 892,
+      "sha256": "af213160415d00660234023d1a22674b06f1dbca71f080f81ccfcaeb9b375555",
+      "text": "{\n  \"roles\": [\n    {\n      \"name\": \"Product Owner\",\n      \"description\": \"Owns meanings.\"\n    }\n  ],\n  \"concepts\": {\n    \"given\": [\n      {\n        \"concept\": \"number ready\",\n        \"means\": \"A number is entered before the action.\",\n        \"terms\": []\n      }\n    ],\n    \"when\": [\n      {\n        \"concept\": \"halve\",\n        \"means\": \"Invoke the Halve control once by activating its button, with a pointer or from the keyboard, replacing the entered number with its half.\",\n        \"terms\": []\n      }\n    ],\n    \"then\": [\n      {\n        \"concept\": \"number result\",\n        \"means\": \"Compare the displayed number with an expected value.\",\n        \"terms\": []\n      }\n    ]\n  },\n  \"glossary\": [],\n  \"description\": {\n    \"summary\": \"The calculator has a single Halve control. A pointer click and a keyboard activation of this same control must invoke the same halving operation once.\"\n  }\n}\n"
     }
   ]
 }

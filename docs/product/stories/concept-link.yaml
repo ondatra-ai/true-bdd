@@ -108,7 +108,7 @@ story:
       - the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "msg":"Cell validation started","subjectID":"alpha","promptIndex":1
       - the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "msg":"Cell validation started","subjectID":"beta","promptIndex":1
   - id: 009-threshold-nine
-    description: A borderline score of eight must fail at threshold nine
+    description: A near miss must fail at threshold nine
     steps:
     - given:
       - the "concept-link-threshold-nine" project tree
@@ -152,8 +152,9 @@ story:
       - the command exits with code 0
       - stdout matches no concept of when
       - stdout matches action=apply
-      - the file "docs/product/product.yaml" matches once or twice
+      - the file "docs/product/product.yaml" is modified
       - the file "docs/product/stories/host-story.yaml" is unchanged
+      - 'judge: the product document widens the existing halve concept to admit exactly one or two halvings and preserves the other concept meanings'
   - id: 013-rewrite
     description: A rewritten step must change the Story and preserve the concepts
     steps:

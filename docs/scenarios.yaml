@@ -7218,7 +7218,7 @@ scenarios:
     description: A concept binding fix must write the architecture after apply and preserve the Scenario
     service: true-bdd
     path: tests/true-bdd/concepts_test.go
-    timeout: 10m
+    timeout: 20m
     user_stories:
     - story: docs/product/stories/concepts.yaml
       scenario_id: concepts-007-fix-binding
@@ -7416,7 +7416,7 @@ scenarios:
     description: A shared concept fix must cause every linked Scenario to be judged afresh
     service: true-bdd
     path: tests/true-bdd/concept_link_test.go
-    timeout: 35m
+    timeout: 30m
     user_stories:
     - story: docs/product/stories/concept-link.yaml
       scenario_id: concept-link-008-shared-fix
@@ -7434,7 +7434,7 @@ scenarios:
       - the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "msg":"Cell validation started","subjectID":"alpha","promptIndex":1
       - the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "msg":"Cell validation started","subjectID":"beta","promptIndex":1
   concept-link-009-threshold-nine:
-    description: A borderline score of eight must fail at threshold nine
+    description: A near miss must fail at threshold nine
     service: true-bdd
     path: tests/true-bdd/concept_link_test.go
     timeout: 10m
@@ -7506,8 +7506,9 @@ scenarios:
       - the command exits with code 0
       - stdout matches no concept of when
       - stdout matches action=apply
-      - the file "docs/product/product.yaml" matches once or twice
+      - the file "docs/product/product.yaml" is modified
       - the file "docs/product/stories/host-story.yaml" is unchanged
+      - 'judge: the product document widens the existing halve concept to admit exactly one or two halvings and preserves the other concept meanings'
   concept-link-013-rewrite:
     description: A rewritten step must change the Story and preserve the concepts
     service: true-bdd

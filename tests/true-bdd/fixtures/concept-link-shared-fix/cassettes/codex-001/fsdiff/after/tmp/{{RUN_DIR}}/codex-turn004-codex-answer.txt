@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-alpha-iter1-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/product.yaml"
-summary: "Applied the exact approved concepts.when[0].means wording admitting pointer and keyboard activation. All unrelated content preserved; architecture and scenarios unchanged."
+summary: "Updated only the halve concept's means to admit pointer or keyboard activation. All other content, architecture bindings, and scenario steps remain unchanged."
 === FILE_END: tmp/{{RUN_DIR}}/apply-alpha-iter1-result.yaml ===
