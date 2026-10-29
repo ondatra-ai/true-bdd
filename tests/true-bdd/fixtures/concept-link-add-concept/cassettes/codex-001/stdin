@@ -1,0 +1,95 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+Apply only the exact concept, binding or step repair approved at the menu.
+Edit only the listed working copies. Preserve every unaffected entry.
+For a Story step rewrite, return the complete Story YAML instead of editing
+a document. For document edits return the requested confirmation markers.
+
+
+### TASK
+
+The Product Owner chose apply at the menu for Story host.
+Approved fix:
+REPAIR PROPOSAL — Item `host`, AC-1 when step "square six" (NOT APPLIED; awaiting menu decision)
+
+## Failed judgement
+Only the when step "square six" failed: no `when` concept reaches the threshold of 9 (best score: "halve" = 2). The given step ("six is entered" → "number ready", 10) and the then step ("thirty-six is displayed" → "number result", 10) both pass and are left untouched.
+
+## Diagnosis and choice of repair
+Three repairs were considered:
+
+1. Rewrite the step in the Story — rejected. The Story is correct as written: the product description states "The calculator offers separate Halve and Square operations on the entered number. Halve displays half the number; Square displays its square." Squaring six and reading thirty-six is intended product behaviour, so the wording is not the defect.
+2. Widen the existing `when` concept "halve" with a variation — rejected. A variation may only widen a concept of the *same* public interface item and the *same* kind of use. Square is a separate operation from Halve (per the product description), so it is a new use, not a wider reading of "Halve the entered number once." Folding squaring into "halve" would make the concept mean two different operations.
+3. Add a new `when` concept for the new use — chosen. Square is a new operation with no concept of its own; the gap is a missing concept, not wrong wording.
+
+## Exact change — `docs/product/product.yaml` only
+Append one entry to `concepts.when`, after the existing "halve" entry. Nothing else in the file changes: `concepts.given`, `concepts.then`, the existing "halve" concept, `roles`, `glossary` and `description` are all preserved exactly as they are.
+
+Before:
+
+```json
+    "when": [
+      {
+        "concept": "halve",
+        "means": "Halve the entered number once.",
+        "terms": []
+      }
+    ],
+```
+
+After:
+
+```json
+    "when": [
+      {
+        "concept": "halve",
+        "means": "Halve the entered number once.",
+        "terms": []
+      },
+      {
+        "concept": "square",
+        "means": "Square the entered number once.",
+        "terms": []
+      }
+    ],
+```
+
+## Story / Scenario change
+None. The Story `host` is unchanged — title, as_a, i_want, so_that, status and all three AC-1 steps ("six is entered", "square six", "thirty-six is displayed") stay exactly as written.
+
+## Expected effect after apply
+AC-1 when step "square six" links to the new `when` concept "square" (a plain instance: squaring the entered number once), clearing the failed judgement. The given and then links are unaffected.
+
+## Ownership
+- `docs/product/product.yaml` concept addition — System Architect territory is the binding; the concept, means and terms wording is the Product Owner's to confirm. No Item wording change is requested, so no Story edit is needed from the Product Owner.
+
+Apply only on an explicit menu decision.
+Product working copy:
+
+- `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
+
+If the approved fix changes a concept, edit only that product working copy;
+return applied: true, target and summary inside the markers below.
+If it rewrites a step, return the COMPLETE updated Story body inside those
+markers, preserving every other field and criterion. Do not edit concepts
+for a step rewrite. Current Story:
+id: host
+title: Square a number
+as_a: Product Owner
+i_want: to square a number
+so_that: I can read its square
+status: DRAFT
+acceptance_criteria:
+    - id: AC-1
+      description: The number must be squared
+      steps:
+        - given:
+            - six is entered
+        - when:
+            - square six
+        - then:
+            - thirty-six is displayed
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
+<confirmation YAML or complete Story body YAML>
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===

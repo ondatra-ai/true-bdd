@@ -1,17 +1,17 @@
 story:
     id: host
-    title: Halve a number
+    title: Square a number
     as_a: Product Owner
-    i_want: to halve a number
-    so_that: I can read its half
+    i_want: to square a number
+    so_that: I can read its square
     status: DRAFT
     acceptance_criteria:
         - id: AC-1
-          description: The number must be halved
+          description: The number must be squared
           steps:
             - given:
                 - six is entered
             - when:
                 - square six
             - then:
-                - three is displayed
+                - thirty-six is displayed

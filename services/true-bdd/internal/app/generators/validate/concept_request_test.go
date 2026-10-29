@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"path/filepath"
-	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -147,12 +147,17 @@ func assertRequiredBlockScores(t *testing.T, schema string) {
 	}
 
 	steps := contract.Properties.Steps
-	if !reflect.DeepEqual(steps.Required, []string{"1", "2"}) || len(steps.Properties) != 2 {
+	slices.Sort(steps.Required)
+
+	if !slices.Equal(steps.Required, []string{"1", "2"}) || len(steps.Properties) != 2 {
 		t.Fatalf("judge clause must be unlinked: %s", schema)
 	}
 
 	for key, required := range map[string][]string{"1": {"halve", "square"}, "2": {"result"}} {
-		if !reflect.DeepEqual(steps.Properties[key].Properties.Scores.Required, required) {
+		scores := steps.Properties[key].Properties.Scores.Required
+		slices.Sort(scores)
+
+		if !slices.Equal(scores, required) {
 			t.Errorf("step %s must require precisely its block's concepts: %s", key, schema)
 		}
 	}
@@ -203,6 +208,7 @@ func TestConceptAppliersCarryApprovedMenuChoice(t *testing.T) {
 		{"us-checklist", &template.StoryRefineData{}},
 		{"scen-check", &template.ScenarioCheckData{}},
 	} {
+		reply.user = ""
 		applier := validate.NewFixApplierWithPaths(reply, cfg, models,
 			filepath.Join(repository, "templates", testCase.stem+".fix-applier.system.prompt.tpl"),
 			filepath.Join(repository, "templates", testCase.stem+".fix-applier.prompt.tpl"))

@@ -28,5 +28,8 @@
       }
     ]
   },
-  "glossary": []
+  "glossary": [],
+  "description": {
+    "summary": "The calculator lets a person press Halve once to display half the entered number, or twice to display its quarter."
+  }
 }
