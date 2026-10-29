@@ -48,6 +48,7 @@ story:
       - stdout matches All step skeletons written.*items=3
       - the engine dispatched 3 validation AI turns to "claude"
       - the engine spawned exactly 1 test runner with arguments matching -list \.
+      - the engine spawned exactly 1 test runner with arguments matching -run \^\(Test
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   - id: 003-slot-order
     description: The quoted operation and numeric value are passed to the written definition in template slot order

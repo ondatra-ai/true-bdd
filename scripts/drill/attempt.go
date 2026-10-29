@@ -39,7 +39,7 @@ type Attempt struct {
 	Oracle          *Oracle    `json:"oracle,omitempty"`
 }
 
-// Prepare reserves a tag for one of the drill's two rebuild operations.
+// Prepare reserves a tag for one of the drill's rebuild operations.
 func (r Runner) Prepare(ctx context.Context, directory, cut, tag string, args []string) (Attempt, error) {
 	_, err := rebuildOperation(args)
 	if err != nil {

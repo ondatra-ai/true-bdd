@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
- "regexp"
+	"regexp"
 )
 
 // initBallastFields are the `system`/`init` frame's inventories of the
@@ -38,7 +38,7 @@ func sanitizeStream(stdout []byte) []byte {
 	}
 
 	return privateGoTelemetry.ReplaceAll(bytes.Join(lines, []byte("\n")),
- []byte("${1}{{GO_TELEMETRY_FILE}}"))
+		[]byte("${1}{{GO_TELEMETRY_FILE}}"))
 }
 
 // sanitizeLine reports whether it rewrote the line, so an unparseable or

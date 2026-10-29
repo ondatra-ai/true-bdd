@@ -19,7 +19,7 @@ func TestGoDurationNormalizationPreservesLegacyRequestsAndFailureEvidence(t *tes
 	}
 
 	changed := "failure\n--- FAIL: TestDouble (0.63s)\nexpected 6, got 4\n"
- changedArgs, changedInput := canonicalGoRequest([]string{"-p", first}, []byte(changed), true)
+	changedArgs, changedInput := canonicalGoRequest([]string{"-p", first}, []byte(changed), true)
 
 	originalArgs, originalInput := canonicalGoRequest([]string{"-p", first}, []byte(first), true)
 	if requestHash(changedArgs, changedInput, "/host") == requestHash(originalArgs, originalInput, "/host") {

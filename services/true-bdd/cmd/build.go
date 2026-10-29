@@ -23,7 +23,7 @@ func NewBuildCommand(provide containerProvider) *cobra.Command {
 	}
 
 	buildCmd.AddCommand(newBuildTestsCmd(provide))
- buildCmd.AddCommand(newBuildStepsCmd(provide))
+	buildCmd.AddCommand(newBuildStepsCmd(provide))
 	buildCmd.AddCommand(newBuildCodeCmd(provide))
 
 	return buildCmd
@@ -52,10 +52,12 @@ type specFlag struct {
 	label string
 }
 
-// buildSpecCmd builds the cobra shell shared by every `build` subcommand: a
+// buildSpecCmd builds the cobra shell every `build` subcommand shares: a
 // spec-path flag deferring to host config, plus --fix. The container is
-// resolved at RunE time only (see containerProvider), never at construction.
-func buildSpecCmd(use, short, long string, flag specFlag, provide containerProvider, run buildRunE) *cobra.Command {
+// resolved at RunE time only (see containerProvider).
+func buildSpecCmd(
+	use, short, long, fixUsage string, flag specFlag, provide containerProvider, run buildRunE,
+) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   use,
 		Short: short,
@@ -95,19 +97,25 @@ func buildSpecCmd(use, short, long string, flag specFlag, provide containerProvi
 	}
 
 	cmd.Flags().String(flag.name, "", flag.usage)
-	cmd.Flags().Bool("fix", false, fixFlagDescription)
-	cmd.Flags().StringArray("model", nil,
-		"Override a configured model tier for this run: <tier>=<cli>:<model> (repeatable)")
+	cmd.Flags().Bool("fix", false, fixUsage)
 
 	return cmd
+}
+
+// addModelFlag gives a command that dispatches AI turns its run-only model
+// tier overrides; build tests dispatches none and takes no --model.
+func addModelFlag(cmd *cobra.Command) {
+	cmd.Flags().StringArray("model", nil,
+		"Override a configured model tier for this run: <tier>=<cli>:<model> (repeatable)")
 }
 
 func newBuildTestsCmd(provide containerProvider) *cobra.Command {
 	cmd := buildSpecCmd(
 		"tests",
-  "Render or verify Registry test files",
-  `Render tests deterministically from the Registry. Without --fix, refuse stale
+		"Render or verify Registry test files",
+		`Render tests deterministically from the Registry. Without --fix, refuse stale
 files; with --fix, write them. No AI turn or test runner is started.`,
+		"Write stale generated test files instead of refusing them",
 		specFlag{
 			name: "requirements",
 			usage: "Path to the requirements registry YAML " +
@@ -132,10 +140,10 @@ files; with --fix, write them. No AI turn or test runner is started.`,
 				return err
 			}
 
-   return commands.RunBuildTests(ctx, commands.BuildTestsDeps{
-    RegistryLoader: container.RegistryLoader,
-    DocResolver: container.DocResolver,
-   }, requirementsFile, architectureFile, fix)
+			return commands.RunBuildTests(ctx, commands.BuildTestsDeps{
+				RegistryLoader: container.RegistryLoader,
+				DocResolver:    container.DocResolver,
+			}, requirementsFile, architectureFile, fix)
 		},
 	)
 
@@ -168,7 +176,7 @@ func resolveSpec(
 }
 
 func newBuildCodeCmd(provide containerProvider) *cobra.Command {
-	return buildSpecCmd(
+	cmd := buildSpecCmd(
 		"code",
 		"Discover failing tests via architecture.yaml and (optionally) drive Claude to fix the production code",
 		`Walk every (service, layer) pair declared in the configured
@@ -184,6 +192,7 @@ Example:
   true-bdd build code
   true-bdd build code --fix
   true-bdd build code --architecture docs/architecture/architecture.yaml`,
+		fixFlagDescription,
 		specFlag{
 			name: "architecture",
 			usage: "Path to the architecture.yaml file driving the test scope " +
@@ -212,4 +221,7 @@ Example:
 			}, architectureFile, fix)
 		},
 	)
+	addModelFlag(cmd)
+
+	return cmd
 }

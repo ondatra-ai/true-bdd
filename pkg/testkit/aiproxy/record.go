@@ -59,17 +59,17 @@ func record(cfg config, name string, argv []string) (int, error) {
 		return 0, fmt.Errorf("snapshot after call: %w", err)
 	}
 
- normalizeDurations := hasGoDuration(argv, result.Stdin)
- requestArgs, requestInput := canonicalGoRequest(argv, result.Stdin, normalizeDurations)
- manifest := &meta{
- NormalizeGoDurations: normalizeDurations,
-		Schema:      metaSchemaVersion,
-		Binary:      name,
-		Argv:        normalizeArgv(requestArgs, cwd),
-		ExitCode:    result.ExitCode,
-		DurationMS:  result.Duration.Milliseconds(),
-		RequestHash: requestHash(requestArgs, requestInput, cwd),
-		RecordedAt:  time.Now().UTC().Format(time.RFC3339),
+	normalizeDurations := hasGoDuration(argv, result.Stdin)
+	requestArgs, requestInput := canonicalGoRequest(argv, result.Stdin, normalizeDurations)
+	manifest := &meta{
+		NormalizeGoDurations: normalizeDurations,
+		Schema:               metaSchemaVersion,
+		Binary:               name,
+		Argv:                 normalizeArgv(requestArgs, cwd),
+		ExitCode:             result.ExitCode,
+		DurationMS:           result.Duration.Milliseconds(),
+		RequestHash:          requestHash(requestArgs, requestInput, cwd),
+		RecordedAt:           time.Now().UTC().Format(time.RFC3339),
 	}
 
 	dir := filepath.Join(cfg.Cassettes, cassetteName(name, idx))

@@ -50,6 +50,76 @@ read answer
 	}
 }
 
+func TestClarificationCitesOnlyKeptInterfacePassages(t *testing.T) {
+	for _, citation := range []struct {
+		name     string
+		document string
+		passage  string
+		allowed  bool
+		reason   string
+	}{
+		{"declared", cliDocument, interfacePassage, true, ""},
+		{"absent-passage", cliDocument, "The service deletes all numbers.", false, "cited passage does not occur"},
+		{"kept-non-specification", testChannel, "seed", false, "outside Specification"},
+	} {
+		t.Run(citation.name, func(t *testing.T) {
+			runner, record := interfaceFixture(t, `#!/bin/sh
+printf '\nCLARIFICATION NEEDED\n[1/1] What does the interface accept?\n1) A number\n0) Other\n\n    Your answer: '
+read answer
+[ "$answer" = 'A number' ]
+`)
+			cut, err := runner.Cut(t.Context(), record.Directory, "d")
+			must(t, err)
+			t.Cleanup(func() { _ = os.RemoveAll(cut.Directory) })
+
+			runner.Poll = 10 * time.Millisecond
+			runner.Grace = 20 * time.Millisecond
+			run, err := runner.Prepare(t.Context(), record.Directory, "d", "interface-answer",
+				[]string{buildCommand, stepsArgument, fixArgument})
+			must(t, err)
+
+			ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+			defer cancel()
+
+			ended := make(chan error, 1)
+			go func() { ended <- runner.Supervise(ctx, record.Directory, run.Tag) }()
+
+			paused := waitRun(t, record.Directory, run.Tag, func(run drill.Attempt) bool { return run.Status == pausedStatus })
+			data, err := json.Marshal(drill.Answer{Answer: "A number", Document: citation.document, Passage: citation.passage})
+			must(t, err)
+			put(t, paused.Questions[0].AnswerFile, string(data))
+
+			err = <-ended
+			if (err == nil) != citation.allowed {
+				t.Fatalf("citation accepted=%t: %v", citation.allowed, err)
+			}
+
+			if err != nil && !strings.Contains(err.Error(), citation.reason) {
+				t.Fatalf("citation failed for wrong reason: %v", err)
+			}
+
+			final, err := drill.Read(record.Directory)
+			must(t, err)
+
+			saved := final.Runs[run.Tag]
+			if citation.allowed {
+				assertInterfaceAnswer(t, saved, citation.document, citation.passage)
+			} else if saved.Status != "failed" || saved.Questions[0].Answer != "" {
+				t.Fatalf("invalid citation answered: %+v", saved)
+			}
+		})
+	}
+}
+
+func assertInterfaceAnswer(t *testing.T, saved drill.Attempt, document, passage string) {
+	t.Helper()
+
+	if saved.ExitCode == nil || *saved.ExitCode != 0 || saved.Questions[0].Document != document ||
+		saved.Questions[0].Passage != passage || saved.Questions[0].Answer != "A number" {
+		t.Fatalf("answer or citation lost: %+v", saved)
+	}
+}
+
 func TestLimitClosesBlockedAnswerPipe(t *testing.T) {
 	runner, record, _ := prepare(t, `#!/bin/sh
 exec 0<&-
@@ -60,7 +130,7 @@ sleep 30
 `)
 	runner.Limit = 200 * time.Millisecond
 	run, err := runner.Prepare(t.Context(), record.Directory, "a", "closed-input",
-		[]string{buildCommand, codeArgument, fixArgument})
+		[]string{buildCommand, stepsArgument, fixArgument})
 	must(t, err)
 
 	err = runner.Supervise(t.Context(), record.Directory, run.Tag)

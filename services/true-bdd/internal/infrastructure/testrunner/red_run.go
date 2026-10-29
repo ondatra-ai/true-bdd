@@ -36,9 +36,9 @@ func AssessRedRun(payload []byte, identities []string) RedRun {
 		case events.testPassed[key] && !events.testFailed[key]:
 			verdict.Green = append(verdict.Green, identity)
 		default:
-			reason:=": not red at an executed step (compilation, bring-up, skipped or missing result)\n"
-   evidence:=events.outputFor(pkg,name)+events.outputFor(pkg,goBuildFailureMarker)
-   verdict.Invalid=append(verdict.Invalid,identity+reason+evidence)
+			reason := ": not red at an executed step (compilation, bring-up, skipped or missing result)\n"
+			evidence := events.outputFor(pkg, name) + events.outputFor(pkg, goBuildFailureMarker)
+			verdict.Invalid = append(verdict.Invalid, identity+reason+evidence)
 		}
 	}
 

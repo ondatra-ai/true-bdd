@@ -12,7 +12,7 @@ import (
 )
 
 func buildStepsPrompts(
- loader *checklist.ChecklistLoader, resolver *docs.Resolver,
+	loader *checklist.ChecklistLoader, resolver *docs.Resolver,
 ) ([]checklistmodels.PromptWithContext, error) {
 	doc, err := loader.LoadFull("build-steps")
 	if err != nil {

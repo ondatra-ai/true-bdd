@@ -175,3 +175,26 @@ func TestCheckFixAppliedRejectsFencedFalse(t *testing.T) {
 		t.Fatalf("checkFixApplied() error = %v, want ErrFixNotApplied", err)
 	}
 }
+
+// Only a named phrase or lack is build steps' architectural stop: an empty
+// `interface_cannot_serve:` key must leave an ordinary confirmation alone.
+func TestCheckFixAppliedStopsOnlyOnANonemptyInterfaceVerdict(t *testing.T) {
+	t.Parallel()
+
+	named := "interface_cannot_serve:\n  phrase: \"the number is halved\"\n  lacks: \"no halve command\"\n"
+
+	err := checkFixApplied(named)
+	if !errors.Is(err, pkgerrors.ErrInterfaceCannotServe) {
+		t.Fatalf("checkFixApplied(named) error = %v, want ErrInterfaceCannotServe", err)
+	}
+
+	for _, content := range []string{
+		"interface_cannot_serve:\napplied: true\n",
+		"interface_cannot_serve:\n  phrase: \"\"\n  lacks: \" \"\napplied: true\n",
+	} {
+		err = checkFixApplied(content)
+		if err != nil {
+			t.Errorf("checkFixApplied(%q) error = %v, want none", content, err)
+		}
+	}
+}

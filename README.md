@@ -254,10 +254,10 @@ model's shape (pass or fail plus context lines), and under `--fix` its
 carrying both `D:` and `Q:` or neither, a `D:` naming a check the
 command does not hold, a `with:` parameter the check does not read, and
 `model:` on a `D:` prompt, since no model answers it, and a `D:` whose
-`docs:` does not list a document its check reads. `scen check` holds six
+`docs:` does not list a document its check reads. `scen check` holds seven
 checks, `given-when-then`, `step-phrases`, `declared-terms`,
 `term-mappings`, `phrase-mappings`, `public-interface` and `step-definitions` (below); the shipped `scen-check`
-checklist walks the last six.
+checklist walks the last six, its six Closure checks.
 
 ### Parking a prompt
 
@@ -441,9 +441,10 @@ true-bdd build code --fix --model coder=claude:claude-sonnet-5-5
 ```
 
 The drill accepts repeated `--model <tier>=<cli>:<model>` pairs after
-`build code --fix` or `build tests --fix`, records them in the run's
+`build steps --fix` or `build code --fix`, records them in the run's
 arguments and forwards their values unchanged through typed options.
-It still refuses other extra arguments; the engine validates the values.
+It refuses other extra arguments, and any after `build tests --fix`; the engine validates the values.
+Deterministic `build tests` dispatches no AI turn and has no `--model` flag.
 
 A checklist picks a tier per role, and any single prompt overrides it:
 
@@ -599,7 +600,9 @@ extensions:
 
 File `access` is `read`, `write` or `read-write`; each file has a path and format, each log record a message and format, and each outgoing call a command and optional argument list. `kind: http` names an OpenAPI 3 document instead. `kind: ui` has inline `elements`, each with `role`, accessible `name` and a `page` or `region` (both may be present); the same role and name must be unique within that scope. CLI/HTTP declarations have no elements; UI declarations have no document. There is no library kind; another process-boundary kind is reported by name as not supported yet.
 
-Named documents are part of the Specification. Commands reading the architecture load and parse them at start, refusing a missing or invalid document with its filename and error before any test run, Item or AI turn. HTTP documents and their local `$ref` documents are validated with the architecture's exact-version OpenAPI library; references outside the Host project or to network URLs are refused. TrueBDD's own declaration is tracked separately in #243.
+TrueBDD declares its own Public interface the same way: the `true-bdd` service names `docs/architecture/true-bdd-cli.yaml` (`kind: cli`), and `architecture.phrases` maps every phrase of its Catalogue that a Scenario uses to that document. The document lists every command with its arguments, options and exit codes, the hidden `claude-guard` hook, and, under `extensions`, the files the engine reads and writes in a Host project, the log records its Scenarios observe and its outgoing calls to `claude`, `codex`, the declared suite command and the Go toolchain. A statement the architecture already holds keeps that home, and the document points to it: the log vocabulary under `architecture.terms`, the IO contract under `patterns.owned_io`, the AI CLIs' invocation contracts under the service's `dependencies`, and the templates' inputs under `prompt_data`. The drill keeps the document in every cut because the declaration names it.
+
+Named documents are part of the Specification. Commands reading the architecture load and parse them at start, refusing a missing or invalid document with its filename and error before any test run, Item or AI turn. HTTP documents and their local `$ref` documents are validated with the architecture's exact-version OpenAPI library; references outside the Host project or to network URLs are refused. TrueBDD's own declaration names `docs/architecture/true-bdd-cli.yaml`, described above.
 
 The rules, all enforced at startup rather than discovered mid-run:
 
@@ -742,6 +745,6 @@ The plan first seeks a permitted solution. If no solution exists, it returns `im
 
 ## Fix approval
 
-Run `true-bdd build code --fix` to review proposed fixes. Every fix is applied only after a person answers apply at its fix menu. `us refine`, `us apply` and `scen check` use the same menu. The engine offers no way to approve fixes in advance.
+Run `true-bdd build code --fix` to review proposed fixes. Every fix is applied only after a person answers apply at its fix menu. `us refine`, `us apply`, `scen check` and `build steps` use the same menu. The engine offers no way to approve fixes in advance.
 
 A clarifying question at end of stdin prints its question and suggested answers and stops with an error saying a person must answer. End of stdin at a fix menu stops with an error saying a person must choose whether to apply the fix. These stops exit non-zero without a COMPLETE banner. Answers are read from stdin, including pipes used by tests and the drill, with no terminal check. A final non-empty answer without a newline is accepted; a blank line keeps its interactive meaning.

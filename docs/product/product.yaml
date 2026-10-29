@@ -251,7 +251,8 @@ glossary:
   - term: model override
     means: >-
       A repeatable `--model <tier>=<cli>:<model>` flag on `us refine`,
-      `us apply`, `scen check`, `build tests`, `build steps` and `build code`. It replaces
+      `us apply`, `scen check`, `build steps` and `build code`, the commands
+      that dispatch AI turns. It replaces
       only that tier's configured binding for one run. The tier must already
       be declared under engine.models; references use the config's first-colon
       split and validation, with claude and codex as the known CLIs.
@@ -1182,14 +1183,6 @@ catalogue:
     - claude
     - pattern
     - template
-
-  - template: 'the engine spawned a test runner with its own prebuilt engine path'
-    block: then
-    means: >-
-      A test runner argument is -engine-bin= followed by the absolute path
-      of the engine running the command, with symbolic links resolved.
-      The complete argument arrives as one element.
-    terms: [engine, test runner, symbolic link, template]
 
   - template: 'the file matching "{glob}" has exactly {count:number} match[es] for {expected:pattern}'
     block: then

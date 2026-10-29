@@ -64,9 +64,11 @@ func (e *buildStepsExecution) beforeEvaluate(_ context.Context, item *BuildSteps
 	}
 
 	shape, err := stepskeleton.Shape(item.Suite, item.Definition.Function)
-	if err == nil {
-		e.active, e.shape = item, shape
+	if err != nil {
+		return false, fmt.Errorf("read the shape of %s before its apply: %w", item.Definition.Function, err)
 	}
+
+	e.active, e.shape = item, shape
 
 	return false, nil
 }

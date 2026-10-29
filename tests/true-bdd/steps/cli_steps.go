@@ -115,7 +115,6 @@ func registerEngineLogSteps(suite *bddgo.Suite[State]) {
 	suite.Step(`^the engine logged its build identity once at start$`, assertBuildIdentityLogged)
 	suite.Step(`^the engine spawned the test runner "([^"]+)"$`, assertTestRunnerSpawned)
 	suite.Step(`^the engine spawned a test runner with arguments matching (.+)$`, assertTestRunnerArgs)
-	suite.Step(`^the engine spawned a test runner with its own prebuilt engine path$`, assertPrebuiltEnginePath)
 	suite.Step(`^the engine spawned exactly (\d+|no) test runners?$`, assertTestRunnerCount)
 	suite.Step(`^the engine spawned exactly (\d+|no) test runners? with arguments matching (.+)$`,
 		assertTestRunnerMatchingCount)

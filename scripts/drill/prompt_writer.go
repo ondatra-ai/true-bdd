@@ -292,14 +292,20 @@ func (p *promptWriter) validateAnswer(answer Answer) error {
 	}
 
 	document := filepath.ToSlash(filepath.Clean(answer.Document))
-	if !specificationDocument(document) {
+
+	documents, err := readInterfaceDocuments(p.tree)
+	if err != nil {
+		return err
+	}
+
+	if !specificationDocument(document, documents) {
 		return fmt.Errorf("%w: answer source is outside Specification", errRefused)
 	}
 
 	resolved := resolvePath(filepath.Join(p.tree, document))
 
 	relative, err := filepath.Rel(resolvePath(p.tree), resolved)
-	if err != nil || !specificationDocument(filepath.ToSlash(relative)) {
+	if err != nil || !specificationDocument(filepath.ToSlash(relative), documents) {
 		return fmt.Errorf("%w: answer source resolves outside Specification",
 			errRefused)
 	}
@@ -316,7 +322,7 @@ func (p *promptWriter) validateAnswer(answer Answer) error {
 	return nil
 }
 
-func specificationDocument(path string) bool {
-	return strings.HasPrefix(path,
+func specificationDocument(path string, documents map[string]bool) bool {
+	return documents[path] || strings.HasPrefix(path,
 		"docs/product/") || path == "docs/architecture/architecture.yaml" || path == "docs/scenarios.yaml"
 }

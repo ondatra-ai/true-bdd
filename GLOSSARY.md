@@ -13,7 +13,7 @@ The three documents a Host project's system is built from, and the only source o
 _Avoid_: spec files, sources, the docs
 
 **Public interface**:
-What a service offers to anything outside it, with its formats and the criteria it meets. The architecture document declares it for each service, in the standard form of the service's kind, and every rebuild keeps it; a build never chooses it. The supported kinds are `cli` (an OpenCLI-like document with named file, log-record and outgoing-call extensions), `http` (an OpenAPI 3 document), and `ui` (elements by role and accessible name within a page or region); other process-boundary kinds await support. Named documents are relative to the Host project root and load at command start; missing or invalid documents refuse startup before any test run, Item or AI turn. The declaration is optional for loading, but `scen check` fails every Scenario whose service has no valid declaration, without an AI turn for that check. Its fix asks the System Architect what the service offers and writes the architecture document, never the Scenario. A step definition sets up and observes a service through it from outside, across a process boundary, sharing no code or package with the service; so a library alone is never a service the Registry tests.
+What a service offers to anything outside it, with its formats and the criteria it meets. The architecture document declares it for each service, in the standard form of the service's kind (`cli`, `http` or `ui`), and every rebuild keeps it; a build never chooses it. A step definition sets up and observes a service through it from outside, across a process boundary, sharing no code or package with the service; so a library alone is never a service the Registry tests.
 _Avoid_: external API, contract, surface
 
 **Persistent data model**:
@@ -49,7 +49,7 @@ One testable condition inside a refined user story, before it is merged into the
 _Avoid_: AC (in prose), criterion, condition
 
 **Item**:
-Whatever a single command walks one of at a time — a Story for `us refine`, an Acceptance Criterion for `us apply`, a Scenario for `scen check`, a Catalogue phrase a go-test suite has no completed step definition for, for `build steps` (phrase × suite: a phrase mapped to the suite's service or used by one of its Scenarios, including mapped unused phrases; a pending engine skeleton resumes as an Item). `build tests` renders files and walks no Items.
+Whatever a single command walks one of at a time — a Story for `us refine`, an Acceptance Criterion for `us apply`, a Scenario for `scen check`, a Catalogue phrase that a go-test suite's service maps or its Scenarios use and that has no written step definition there, for `build steps`.
 _Avoid_: subject, entity, record
 
 **Prompt**:
@@ -73,11 +73,11 @@ One full traversal of every Cell in a run. A fix applied mid-walk restarts the t
 _Avoid_: pass, sweep, iteration
 
 **Step coverage**:
-The engine's own answer to which Scenarios have a step no definition binds: the Scenarios it examined, and the unbound steps among them. `examined` is the load-bearing half — an empty gap list says nothing about a Scenario nobody looked at. Answered by `build steps` in-process by parsing each suite's `steps/` package, never by running a test; a step two definitions match is a refusal rather than a gap. Under --fix, all skeletons precede the first AI turn; each applied body must compile, have one definition and contain no pending sentinel. A separate AI critique reads the definition with its whole phrase meaning, Phrase mapping, term glossary entries and Word mappings, declared Public interface and document, and every suite Scenario using the phrase. It checks the mapping by block, the assertion meaning, and whether it computes what it asserts; named findings return the Item to the bounded Fix loop before it can pass. Whole-suite coverage and a generated-test listing follow the final Item, then Red without the target.
+The engine's own answer to which Scenarios have a step no definition binds: the Scenarios it examined, and the unbound steps among them. `examined` is the load-bearing half — an empty gap list says nothing about a Scenario nobody looked at. Answered by `build steps` in-process by parsing each suite's `steps/` package, never by running a test; a step two definitions match is a refusal rather than a gap.
 _Avoid_: coverage report, coverage output, step report, gap list
 
 **Red without the target**:
-One run of the suite in a copy of the Host project without any service's path, after build steps --fix writes every Item and whole-suite Step coverage and listing pass. Every Scenario must fail at a step whose definition ran. Compilation, harness bring-up, skipped tests and missing results fail the check, naming the Scenario. A green Scenario returns the Items of its phrases written in this run to the Fix loop together, with the finding and the same attempt counts. A green Scenario with no written Item, or an exhausted walk, ends distinctly. The harness builds a service only when a step first needs it; its prebuilt oracle flag stays available.
+The check of `build steps --fix` that runs a suite once in a copy of the Host project without any service's path, where every Scenario must fail at a step whose definition ran. A Scenario that passes there has a step definition doing the product's work.
 _Avoid_: expected failure, any failure counts
 
 **Catalogue**:
@@ -89,7 +89,7 @@ The architecture document's list of terms, each saying what the term is in the i
 _Avoid_: architecture glossary, dictionary
 
 **Phrase mapping**:
-The architecture document's list of Catalogue phrases, each saying which operation of the Public interface a step of that shape performs: the operation a `when` phrase calls, how a `given` phrase sets up state, or what a `then` phrase observes and compares with. Each verbatim template is mapped once per service in `architecture.phrases`, with declared interface references and a `does` sentence, or an `intent` sentence replacing both. The `phrase-mappings` check holds phrases used by a claimed Scenario to this list; intent is accepted only for UI services until `llm:` support lands. References name CLI command paths or named file, log record and outgoing call extensions, HTTP operation IDs, or scoped UI roles and accessible names; no Go identifier or link to a step definition is stored. The Word mapping still covers the terms.
+The architecture document's list of Catalogue phrases, each saying which operation of the Public interface a step of that shape performs: the operation a `when` phrase calls, how a `given` phrase sets up state, or what a `then` phrase observes and compares with. Each phrase is mapped once per service that uses it, in `architecture.phrases`; the Word mapping still covers the terms.
 _Avoid_: step mapping, operation map
 
 **Term document**:

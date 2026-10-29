@@ -27,6 +27,9 @@ var ErrMissingStepDefinitions = errors.New("step definitions are missing")
 // ErrBuildStepsChecklist identifies a checklist this deterministic command cannot answer.
 var ErrBuildStepsChecklist = errors.New("build steps checklist must ask D: step-coverage without parameters")
 
+// ErrBuildStepsFramework identifies a host whose suites build steps cannot write.
+var ErrBuildStepsFramework = errors.New("build steps writes go-test suites only")
+
 // BuildStepsDeps contains the dependencies of the step inventory and body writer.
 type BuildStepsDeps struct {
 	Critic             *validate.StepCritic

@@ -18,7 +18,11 @@ const (
 	goSumFile = "go.sum"
 )
 
-func kept(path string) bool {
+func kept(path string, documents map[string]bool) bool {
+	if documents[path] {
+		return true
+	}
+
 	for _, root := range []string{"docs/product/", "true-bdd/", "templates/", "pkg/", "scripts/", "tests/true-bdd/"} {
 		if strings.HasPrefix(path, root) {
 			return true
@@ -36,6 +40,10 @@ func kept(path string) bool {
 	}
 
 	return false
+}
+
+func keptInCut(cut, path string, data []byte, documents map[string]bool) bool {
+	return documents[path] || (kept(path, documents) && !removed(cut, path, data))
 }
 
 func removed(cut, path string, data []byte) bool {
@@ -68,6 +76,17 @@ func removed(cut, path string, data []byte) bool {
 }
 
 func exportTree(directory string, archive []byte, cut string) error {
+	var documents map[string]bool
+
+	if cut != "" {
+		var err error
+
+		documents, err = archiveInterfaceDocuments(archive)
+		if err != nil {
+			return err
+		}
+	}
+
 	reader := tar.NewReader(bytes.NewReader(archive))
 	for {
 		header, err := reader.Next()
@@ -79,19 +98,19 @@ func exportTree(directory string, archive []byte, cut string) error {
 			return fmt.Errorf("reading archive: %w", err)
 		}
 
-		err = exportEntry(directory, cut, header, reader)
+		err = exportEntry(directory, cut, header, reader, documents)
 		if err != nil {
 			return err
 		}
 	}
 }
 
-func exportEntry(directory, cut string, header *tar.Header, reader io.Reader) error {
+func exportEntry(directory, cut string, header *tar.Header, reader io.Reader, documents map[string]bool) error {
 	if header.Typeflag == tar.TypeDir || header.Typeflag == tar.TypeXGlobalHeader {
 		return nil
 	}
 
-	if cut != "" && !kept(header.Name) {
+	if cut != "" && !kept(header.Name, documents) {
 		return nil
 	}
 
@@ -105,7 +124,7 @@ func exportEntry(directory, cut string, header *tar.Header, reader io.Reader) er
 		return fmt.Errorf("reading archive entry: %w", err)
 	}
 
-	if cut != "" && removed(cut, header.Name, data) {
+	if cut != "" && !keptInCut(cut, header.Name, data, documents) {
 		return nil
 	}
 
