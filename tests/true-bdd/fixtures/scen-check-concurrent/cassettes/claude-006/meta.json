@@ -23,7 +23,7 @@
     "## Subject — Registry Scenario\n\n**Scenario ID:** alpha\n**Description:** alpha broken\n\n### Steps\nGiven:\n  - a ready system\nWhen:\n  - an action happens\nThen:\n  - an outcome appears\n\n---\n\n## Fix Prompt to Apply\n\nRepair alpha\n\n---\n\n## Where to write\n\nEach document a fix may change has a working copy in this run's tmp\ndirectory. Edit the working copy of the document the fix prompt names,\nnever the document itself:\n- `scenarios_yaml`: edit `tmp/{{RUN_DIR}}/scenarios_yaml.yaml`, the working copy of `./docs/scenarios.yaml`, the scenario registry\n\nThe engine replaces each document with its working copy once the copy\nreads as valid YAML, and the registry only while it still holds the\nsame Scenarios, so a copy you leave unparseable changes nothing.\n\n## Instructions\n\n1. Use the Read tool to load the working copy the fix prompt names. In\n   the registry, find the `alpha:` entry under `scenarios:`;\n   in the product document, the catalogue entry the fix names.\n2. Apply each change with the Edit tool on that working copy: replace\n   the current text the fix prompt gives with its new text, inside that\n   entry only.\n3. Keep the YAML as it was shaped: a step keeps its `and:` or `but:`\n   key and its list indentation, and a value carrying `: ` or `#`, or\n   opening with a quote or a bracket, stays quoted.\n4. You MAY only edit the working copies listed above. The documents\n   themselves, every other Scenario's entry, a generated test file and\n   a step definition are all out of bounds.\n5. After the edits succeed, output the confirmation block below.\n\n=== FILE_START: tmp/{{RUN_DIR}}/apply-alpha-iter1-result.yaml ===\napplied: true\ntarget: \"\u003cpath of the working copy you edited\u003e\"\nsummary: \"\u003cone-line summary of what changed\u003e\"\n=== FILE_END: tmp/{{RUN_DIR}}/apply-alpha-iter1-result.yaml ===\n"
   ],
   "exit_code": 0,
-  "duration_ms": 31,
+  "duration_ms": 40,
   "request_hash": "sha256:2068ce5d823061482d097623ace97b4482113a4188881decd124f0ce9fad6ab0",
   "fsdiff": {
     "created": [],
@@ -32,5 +32,5 @@
     ],
     "deleted": []
   },
-  "recorded_at": "2026-10-29T16:55:58Z"
+  "recorded_at": "2026-10-29T17:06:14Z"
 }

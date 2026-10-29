@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df-iter1-result.yaml ===
 applied: true
 target: "tests/calc/steps/phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df.go"
-summary: "Applied the supplied body to run double and store its integer stdout in state.Value."
+summary: "Applied the supplied CLI invocation and integer stdout parsing body; no other files changed."
 === FILE_END: tmp/{{RUN_DIR}}/apply-phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df-iter1-result.yaml ===

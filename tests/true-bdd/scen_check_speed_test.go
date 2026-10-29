@@ -27,10 +27,12 @@ func TestScenCheckSpeed001OverlappingValidation(t *testing.T) {
 	s := scenarios.New(t, "scen-check-speed-001-overlapping-validation")
 	s.Given(`the "scen-check-concurrent" project tree`)
 	s.And(`the validation CLIs are controlled for concurrent arrival`)
-	s.And(`the Quality Engineer answers "1" to every question`)
+	s.And(`the Quality Engineer answers "1/1/3" line by line`)
 	s.When(`the Quality Engineer runs "scen check --fix"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`Scenario validation overlaps with ordered gates and fix menus`)
+	s.And(`stdout matches Exiting\.`)
+	s.And(`stdout does not match Walk stopped`)
 	s.Done()
 }
 
@@ -39,10 +41,12 @@ func TestScenCheckSpeed002ReverseRequestReplay(t *testing.T) {
 	s := scenarios.New(t, "scen-check-speed-002-reverse-request-replay")
 	s.Given(`the "scen-check-reverse" project tree`)
 	s.And(`the validation CLIs are controlled for concurrent arrival`)
-	s.And(`the Quality Engineer answers "1" to every question`)
+	s.And(`the Quality Engineer answers "1/1/3" line by line`)
 	s.When(`the Quality Engineer runs "scen check --fix"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`Scenario validation overlaps with ordered gates and fix menus`)
+	s.And(`stdout matches Exiting\.`)
+	s.And(`stdout does not match Walk stopped`)
 	s.And(`replay consumes the recorded validation requests in reverse order`)
 	s.Done()
 }

@@ -14,7 +14,7 @@ if role == 'prompt':
     answer = 'fail' if 'broken' in text else 'pass'
     result = {'structured_output': {'answer': answer, 'context': [subject], 'fix_prompt': ''}}
 elif role == 'fix':
-    result = {'structured_output': {'fix_prompt': '' if subject == 'gamma' else 'Repair ' + subject, 'questions': []}}
+    result = {'structured_output': {'fix_prompt': 'Repair ' + subject, 'questions': []}}
 else:
     scratch = re.search(r'`scenarios_yaml`: edit `([^`]+)`', text).group(1)
     path = pathlib.Path(scratch)
