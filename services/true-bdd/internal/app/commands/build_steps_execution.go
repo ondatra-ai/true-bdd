@@ -45,7 +45,7 @@ func runBuildStepsFix(ctx context.Context, deps BuildStepsDeps, registryFile, ar
 	}
 
 	return runner.Run(ctx, runner.Spec[*BuildStepsItem]{
-		Name: "build steps", ChecklistName: "build-steps", Fix: true,
+		Name: "build steps", ChecklistName: "build-steps", Fix: true, ConfineClaudeWriter: true,
 		LoadItems: execution.prepare, BeforeEvaluate: execution.beforeEvaluate,
 		PostFix: execution.postFix, PostNotApplied: execution.postNotApplied,
 		Finalize: execution.finalize, CheckConvergence: execution.checkConvergence,
@@ -92,9 +92,13 @@ func (e *buildStepsExecution) postFix(ctx context.Context, item *BuildStepsItem,
 		}
 	}
 
-	err := e.critique(ctx, item)
-	if err != nil {
-		return item, err
+	// The critique reads only a body that compiles, binds and is written:
+	// one that fails those checks already returns to the Fix loop.
+	if len(item.Findings) == 0 {
+		err := e.critique(ctx, item)
+		if err != nil {
+			return item, err
+		}
 	}
 
 	if e.attempts[item] > e.maxAttempts {

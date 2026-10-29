@@ -6,7 +6,7 @@ import "context"
 type Request struct {
 	// CodexApply confines every codex apply independently of build-code recovery.
 	CodexApply bool
-	// ClaudeWriter enables build code's hooked, unbounded claude writer.
+	// ClaudeWriter enables the hooked, unbounded claude writer of build code and build steps.
 	ClaudeWriter bool
 	// SystemPrompt is passed natively where the CLI supports it and
 	// prepended to UserPrompt where it does not (codex).

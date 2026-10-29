@@ -1,7 +1,7 @@
 package steps
 
 import (
-	"errors"
+	"bytes"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -10,29 +10,24 @@ import (
 
 func phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df(state *State, args []string) error {
 	const (
-		hostRoot = "../.."
-		pkg      = "./services/calc"
-		command  = "double"
+		hostRoot   = "../.."
+		servicePkg = "./services/calc"
+		command    = "double"
 	)
 
-	value := strconv.Itoa(state.Value)
-	cmd := exec.Command("go", "run", pkg, command, value)
+	cmd := exec.Command("go", "run", servicePkg, command, strconv.Itoa(state.Value))
 	cmd.Dir = hostRoot
-
-	stdout, err := cmd.Output()
-	if err != nil {
-		var exit *exec.ExitError
-		if errors.As(err, &exit) {
-			return fmt.Errorf("%s %s %s: %w: %s", pkg, command, value, err, exit.Stderr)
-		}
-		return fmt.Errorf("%s %s %s: %w", pkg, command, value, err)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("run %s %s %d: %w: %s", servicePkg, command, state.Value, err, strings.TrimSpace(stderr.String()))
 	}
 
-	doubled, err := strconv.Atoi(strings.TrimSpace(string(stdout)))
+	doubled, err := strconv.Atoi(strings.TrimSpace(stdout.String()))
 	if err != nil {
-		return fmt.Errorf("%s %s %s stdout %q: %w", pkg, command, value, stdout, err)
+		return fmt.Errorf("%s stdout %q is not an integer: %w", command, stdout.String(), err)
 	}
-
 	state.Value = doubled
 	return nil
 }

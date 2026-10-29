@@ -5,9 +5,9 @@
     {
       "path": "tests/calc/steps/phrase7c963587b98a9c9fa59fafbd25518c3af0d8d428753a4c888f114e5a06aa3242.go",
       "kind": "created",
-      "size": 309,
-      "sha256": "0924feb6ae343cf8200d13a779715af1a62cff85e1ce6a330f92db9f31a07f3d",
-      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"strconv\"\n)\n\nfunc phrase7c963587b98a9c9fa59fafbd25518c3af0d8d428753a4c888f114e5a06aa3242(state *State, args []string) error {\n\tvalue, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn fmt.Errorf(\"the number is %q: %w\", args[0], err)\n\t}\n\n\tstate.Value = value\n\treturn nil\n}\n"
+      "size": 251,
+      "sha256": "3aa9b94b8417126b4319b96d1e3010172b53a3fa72b110ffca8f0c0dc980ef14",
+      "text": "package steps\n\nimport \"strconv\"\n\nfunc phrase7c963587b98a9c9fa59fafbd25518c3af0d8d428753a4c888f114e5a06aa3242(state *State, args []string) error {\n\tvalue, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn err\n\t}\n\tstate.Value = value\n\treturn nil\n}\n"
     },
     {
       "path": "tests/calc/steps/register.go",

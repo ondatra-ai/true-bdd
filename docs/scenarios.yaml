@@ -6944,8 +6944,7 @@ scenarios:
       - stdout matches Scenario list passed
       - the engine spawned exactly 1 test runner with arguments matching -list \.
       - no file outside "tmp" and "tests" changed
-      - stdout matches sandbox=writer
-      - every file matching "tmp/*/codex-turn*-codex-events.jsonl" matches (?i)permission denied|operation not permitted|read.only
+      - stdout matches msg="Tool calls were denied; this turn did less than it was asked to".*role=apply
       - the engine dispatched 1 validation AI turn to "claude"
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   build-steps-writing-006-bringup-is-not-red:

@@ -2,7 +2,7 @@ engine:
   models:
     xhigh: claude:claude-fable-5
     high: claude:claude-opus-5
-    coder: codex:gpt-6.1-sol
+    coder: claude:claude-sonnet-5-5
     quick: claude:claude-sonnet-5
   default_prompt_model: high
   default_fix_model: high
