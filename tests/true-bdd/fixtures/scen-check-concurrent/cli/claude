@@ -1,0 +1,24 @@
+#!/usr/bin/env python3
+import json, os, pathlib, re, sys, time
+text = sys.argv[sys.argv.index('-p') + 1]
+role = os.environ['CLAUDE_HISTORY_ROLE']
+subject = re.search(r'Scenario ID:\*\* (\w+)', text)
+subject = subject.group(1) if subject else ('gamma' if 'gamma' in text else 'unknown')
+state = pathlib.Path('tmp/aiproxy-state')
+if role == 'prompt':
+    if 'alpha broken' in text and 'rule-based format' in text:
+        deadline = time.monotonic() + 15
+        while not (state / 'beta-forwarded').exists():
+            assert time.monotonic() < deadline, 'validation did not overlap'
+            time.sleep(0.01)
+    answer = 'fail' if 'broken' in text else 'pass'
+    result = {'structured_output': {'answer': answer, 'context': [subject], 'fix_prompt': ''}}
+elif role == 'fix':
+    result = {'structured_output': {'fix_prompt': '' if subject == 'gamma' else 'Repair ' + subject, 'questions': []}}
+else:
+    scratch = re.search(r'`scenarios_yaml`: edit `([^`]+)`', text).group(1)
+    path = pathlib.Path(scratch)
+    path.write_text(path.read_text().replace(subject + ' broken', subject + ' must produce its outcome'))
+    target = re.search(r'=== FILE_START: (.+?) ===', text).group(1)
+    result = {'result': f'=== FILE_START: {target} ===\napplied: true\ntarget: {scratch}\nsummary: Repaired {subject}\n=== FILE_END: {target} ===\n'}
+print(json.dumps(dict(type='result', subtype='success', is_error=False, total_cost_usd=0, **result)))

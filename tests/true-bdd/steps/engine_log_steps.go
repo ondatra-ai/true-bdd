@@ -28,14 +28,15 @@ const (
 // need: the message, a test-runner spawn's binary and args, an AI-turn
 // dispatch's role and CLI. Timings, byte counts and cost stay undecoded.
 type engineLogRecord struct {
-	Level   string   `json:"level"`
-	Version string   `json:"version"`
-	Commit  string   `json:"commit"`
-	Msg     string   `json:"msg"`
-	Binary  string   `json:"binary"`
-	Args    []string `json:"args"`
-	Role    string   `json:"role"`
-	CLI     string   `json:"cli"`
+	SubjectID string   `json:"subjectID"` //nolint:tagliatelle // Engine log wire contract.
+	Level     string   `json:"level"`
+	Version   string   `json:"version"`
+	Commit    string   `json:"commit"`
+	Msg       string   `json:"msg"`
+	Binary    string   `json:"binary"`
+	Args      []string `json:"args"`
+	Role      string   `json:"role"`
+	CLI       string   `json:"cli"`
 }
 
 // turnRoles maps the kind of turn a step names to the `role` the engine

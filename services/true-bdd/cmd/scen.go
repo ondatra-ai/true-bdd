@@ -2,17 +2,22 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"github.com/spf13/cobra"
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/bootstrap"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/commands"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/runner"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/docs"
 )
+
+var errInvalidConcurrency = errors.New("engine.scen_check_concurrency must be a positive integer")
 
 // NewScenCommand builds the `scen` cobra supergroup. The container is
 // resolved lazily inside each subcommand's RunE.
@@ -116,7 +121,19 @@ func runScenCheckWithContainer(
 	ids []string,
 	fix bool,
 ) error {
+	concurrency := 1
+
+	if value := container.Config.GetString("engine.scen_check_concurrency"); value != "" {
+		parsed, err := strconv.Atoi(value)
+		if err != nil || parsed < 1 {
+			return runner.RefuseStartup("scen check", errInvalidConcurrency)
+		}
+
+		concurrency = parsed
+	}
+
 	return commands.RunScenCheck(ctx, commands.ScenCheckDeps{
+		ValidationConcurrency:       concurrency,
 		RegistryLoader:              container.RegistryLoader,
 		ChecklistLoader:             container.ChecklistLoader,
 		DocResolver:                 container.DocResolver,

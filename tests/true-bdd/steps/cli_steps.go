@@ -105,6 +105,7 @@ func Register(suite *bddgo.Suite[State]) {
 	registerGuardSteps(suite)
 	registerClaudeGuardSteps(suite)
 	registerWriterLifecycleSteps(suite)
+	registerConcurrentValidationSteps(suite)
 	registerIOSteps(suite)
 }
 
