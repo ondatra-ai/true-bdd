@@ -1,0 +1,1 @@
+{"type": "result", "subtype": "success", "is_error": false, "total_cost_usd": 0, "result": "=== FILE_START: tmp/{{RUN_DIR}}/apply-alpha-iter1-result.yaml ===\napplied: true\ntarget: tmp/{{RUN_DIR}}/scenarios_yaml.yaml\nsummary: Repaired alpha\n=== FILE_END: tmp/{{RUN_DIR}}/apply-alpha-iter1-result.yaml ===\n"}

@@ -61,7 +61,7 @@ One testable condition inside a refined user story, before it is merged into the
 _Avoid_: AC (in prose), criterion, condition
 
 **Item**:
-Whatever a single command walks one of at a time — a Story for `us refine`, an Acceptance Criterion for `us apply`, a Scenario for `scen check`, a Catalogue phrase that a go-test suite's service maps or its Scenarios use and that has no written step definition there, for `build steps`.
+Whatever a single command walks — a Story for `us refine`, an Acceptance Criterion for `us apply`, a Scenario for `scen check`, a Catalogue phrase that a go-test suite's service maps or its Scenarios use and that has no written step definition there, for `build steps`.
 _Avoid_: subject, entity, record
 
 **Prompt**:

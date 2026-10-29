@@ -230,6 +230,15 @@ in its own `true-bdd/true-bdd.yaml` for its tooling. The `Init defaults drift` g
 holds the init copies to the repository checklists and prompt templates byte for
 byte and to the configuration values after removing `scripts`.
 
+`engine.scen_check_concurrency` bounds the number of Scenarios validating at once in
+`scen check`. `init` writes `1`; an older configuration omitting it retains the
+sequential walk. Set a positive integer such as `10` to overlap validation turns.
+Within each Scenario, all `D:` Prompts precede sequential `Q:` Prompts, and a failed
+`D:` skips its `Q:` Prompts. Above 1, fix menus run after validation, one at a time
+in ascending Scenario id order. An applied fix discards pending verdicts and
+rejudges the whole walk, within `max_apply_attempts`. At 1, the existing cell-by-cell
+validation and fix walk is preserved.
+
 ### Deterministic prompts
 
 A checklist prompt is either `Q:`, a question a model answers, or

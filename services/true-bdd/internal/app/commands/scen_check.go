@@ -33,6 +33,7 @@ var ErrScenariosFailedCheck = errors.New("one or more scenarios failed the scen-
 
 // ScenCheckDeps bundles what `scen check` needs at the command boundary.
 type ScenCheckDeps struct {
+	ValidationConcurrency       int
 	RegistryLoader              *registry.RegistryLoader
 	ChecklistLoader             *checklist.ChecklistLoader
 	DocResolver                 *docs.Resolver
@@ -61,8 +62,9 @@ func RunScenCheck(
 		ChecklistName: "scen-check",
 		// Stays empty: it is a Story id, validated as a slug, and a
 		// scenario id is not one. Ids travel in LoadItems instead.
-		StoryID: "",
-		Fix:     fix,
+		StoryID:               "",
+		Fix:                   fix,
+		ValidationConcurrency: deps.ValidationConcurrency,
 
 		LoadItems:    loadCheckScenarios(deps, requirementsFile, ids, fix, ledger),
 		PostFix:      scenCheckPostFix(deps, requirementsFile),

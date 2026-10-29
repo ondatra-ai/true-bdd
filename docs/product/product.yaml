@@ -266,6 +266,12 @@ glossary:
       fix-applier templates under --fix. A missing file refuses startup,
       naming the file and true-bdd init; an invalid file names the file
       and parse error and asks to fix it, without init advice.
+      scen check validates different Scenarios concurrently up to engine.scen_check_concurrency.
+      Init writes 1; an older configuration without the setting keeps its sequential walk.
+      Above 1, each Scenario answers D Prompts before sequential Q Prompts; a failed D skips its Q Prompts.
+      Fix menus follow validation one at a time in ascending Scenario id order. An applied fix
+      discards all remaining verdicts and rejudges the walk, within max_apply_attempts.
+      At 1 the existing cell-by-cell walk and fix ordering are preserved.
       The pipeline is us refine, us apply, build tests, build steps, build code.
       build tests renders test files deterministically from the Registry, refuses
       stale files without --fix and writes them with --fix. It preserves Registry,
@@ -1269,3 +1275,18 @@ catalogue:
     block: then
     means: The first engine log record is the single INFO Engine started record, with nonempty version and commit fields containing no whitespace.
     terms: [engine, build identity, log record]
+
+  - template: the validation CLIs are controlled for concurrent arrival
+    block: given
+    means: The AI CLIs are deterministic programs selected by the Scenario. Recording admits alpha before beta; replay admits beta before alpha, while both validation turns are outstanding.
+    terms: [AI CLI, Scenario, AI turn]
+
+  - template: Scenario validation overlaps with ordered gates and fix menus
+    block: then
+    means: The engine log shows overlapping validation of different Scenarios, D before Q for each, no Q after a failed D, sequential Q turns within each Scenario, and applied fix menus alpha then beta after validation completes.
+    terms: [engine, Scenario, log record, AI turn]
+
+  - template: replay consumes the recorded validation requests in reverse order
+    block: then
+    means: In replay the second recorded validation request is consumed before the first, with every recorded turn still consumed. Recording uses deterministic AI CLIs and costs nothing.
+    terms: [AI CLI, AI turn, Scenario]

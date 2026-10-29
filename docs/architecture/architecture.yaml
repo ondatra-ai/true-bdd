@@ -500,17 +500,17 @@ architecture:
         ResultPath: *validation-result-path
         Structured: *structured
         Subject.Description: &registry-description >-
-          Subject description from the Registry, YAML-decoded unchanged; missing strings are empty. Registry Items walk in ascending id order.
+          Subject description from the Registry, YAML-decoded unchanged; missing strings are empty. Registry Items are selected and fixes offered in ascending id order; scen check may validate them concurrently.
         Subject.FormatSteps: &registry-steps >-
           Subject Registry merged_steps: scalar strings unchanged; and/but mappings display their original key + " " + value. Keep within-block order, group Given then When then Then, omit empty blocks; method returns "<Block>:\n" and "  - <text>\n" per line, including a final newline, or "" for no steps. No trimming, escaping or quoting.
         Subject.FormatUserStories: &subject-formatuserstories >-
           Subject lineage projected from Registry user_stories in list order, dropping merge_date. Empty returns "(none — no story claims this scenario)\n"; otherwise each line is "  - <story> (<scenario_id>)\n", with strings unchanged.
         Subject.ID: &registry-id >-
-          Subject Registry map key from the Registry, YAML-decoded unchanged; missing strings are empty. Registry Items walk in ascending id order.
+          Subject Registry map key from the Registry, YAML-decoded unchanged; missing strings are empty. Registry Items are selected and fixes offered in ascending id order; scen check may validate them concurrently.
         Subject.Path: &subject-scenario-path >-
           Registry path, YAML-decoded unchanged.
         Subject.Service: &registry-service >-
-          Subject service from the Registry, YAML-decoded unchanged; missing strings are empty. Registry Items walk in ascending id order.
+          Subject service from the Registry, YAML-decoded unchanged; missing strings are empty. Registry Items are selected and fixes offered in ascending id order; scen check may validate them concurrently.
     scen_check_checklist_system:
       rendering: *prompt-rendering
       fields: *checklist-system-fields
@@ -875,7 +875,9 @@ architecture:
               label: >-
                 `codex-turn<NNN>`: NNN is this turn's number, from 1 and
                 zero-padded to three digits, among every AI turn the run
-                dispatched, whichever CLI ran it.
+                dispatched, whichever CLI ran it. For concurrent scen check validation only,
+                the label is validation-<Prompt index, at least two digits>-<SHA256 of subject id,
+                lowercase hex>, so schema and answer paths remain stable under reordered turns.
               schema_path: >-
                 `{run_dir}/{label}-codex-schema.json`, written before the spawn
                 with the JSON Schema the answer must satisfy, every object's
@@ -1084,7 +1086,9 @@ architecture:
                 zero-padded to three digits, among every AI turn the run
                 dispatched, whichever CLI ran it. The counter is shared with
                 codex, not restarted per CLI or role. Thus the Claude writer
-                after one plan turn is `claude-turn002`.
+                after one plan turn is `claude-turn002`. Concurrent scen check validation instead uses
+                validation-<Prompt index, at least two digits>-<SHA256 of subject id, lowercase hex>
+                to keep artifact paths independent of dispatch order.
               writer_settings: >-
                 {run_dir}/{label}-claude-config/settings.json. Explicit PreToolUse
                 hook runs this engine's claude-guard --policy pointing to sibling
@@ -1516,6 +1520,10 @@ architecture:
         One record of the engine's structured log: a level, a message and
         named fields. Message strings and field names are a wire contract the
         BDD report also reads, so a step may pin them.
+        A model Cell emits INFO Cell validation started before evaluation and INFO
+        Cell validation finished after it returns (including errors), with subjectID and promptIndex.
+        These records bound validation overlap; Applying fix prompt follows the person's menu answer
+        and carries subjectID and iteration. Concurrent scen check joins validation before its menus.
         A turn reporting refused tool calls emits one WARN with
         msg="Tool calls were denied; this turn did less than it was asked to"
         and keys label (the dispatch label), role (prompt, fix or apply), and
@@ -1576,7 +1584,13 @@ architecture:
       technical: >-
         `true-bdd/checklists/<command stem>.yaml` in the run directory (`scen
         check` reads `scen-check.yaml`): sections of Prompts the command reads
-        at startup.
+        at startup. Different Scenarios of scen check validate concurrently up to
+        engine.scen_check_concurrency (init writes 1; absence retains legacy sequential behavior).
+        Above 1, runner uses per-Cell verdict state and a bounded worker pool. Each worker
+        finishes a Scenario's D Prompts before its ordered Q Prompts, skipping Q after a failed D.
+        After all validation joins, fixes run serially in ascending Scenario id order. Each apply
+        discards pending verdicts and starts a new whole walk, bounded by max_apply_attempts.
+        At 1 the original cell-by-cell walker remains in use.
       observed_by: >-
         A fixture narrows a checklist in `checklist-prompts.yaml` at its root,
         mapping a checklist's stem to snippets of its Prompts' questions; the
@@ -2003,6 +2017,21 @@ architecture:
   # The Phrase mapping (ADR-0032): what each Catalogue phrase's step does
   # through docs/architecture/true-bdd-cli.yaml, by block (#243).
   phrases:
+    - template: replay consumes the recorded validation requests in reverse order
+      service: true-bdd
+      references:
+      - outgoing_call: claude
+      does: Read the recording proxy consumed request receipts; in replay the first claim must name claude-002, recorded after claude-001. The ordinary cassette census independently requires every recorded request to be consumed.
+    - template: Scenario validation overlaps with ordered gates and fix menus
+      service: true-bdd
+      references:
+      - file: engine-log
+      does: Read Cell validation started and Cell validation finished records by subjectID and Check answered records, asserting overlap, gate precedence and Applying fix prompt order alpha,beta after validation.
+    - template: the validation CLIs are controlled for concurrent arrival
+      service: true-bdd
+      references:
+      - outgoing_call: claude
+      does: Select fixture-controlled launchers before the proxy, controlling first validation request arrival in both record and replay, with deterministic Claude programs behind it.
     - template: the System Architect runs "{command}" while a "{kind}" hold blocks "{directory}" beyond its
         wait limit
       service: true-bdd

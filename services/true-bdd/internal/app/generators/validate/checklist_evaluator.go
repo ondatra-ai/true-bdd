@@ -58,15 +58,16 @@ const checklistResultSchema = `{
 
 // ChecklistEvaluator evaluates subjects against validation prompts using AI.
 type ChecklistEvaluator struct {
-	aiClient     ports.AIPort
-	config       *config.ViperConfig
-	models       *provider.Registry
-	modeFactory  *ai.ModeFactory
-	docResolver  *docs.Resolver
-	systemLoader *template.TemplateLoader[ChecklistPromptData]
-	userLoader   *template.TemplateLoader[ChecklistPromptData]
-	tmpDir       string
-	subjectID    string
+	aiClient      ports.AIPort
+	config        *config.ViperConfig
+	models        *provider.Registry
+	modeFactory   *ai.ModeFactory
+	docResolver   *docs.Resolver
+	systemLoader  *template.TemplateLoader[ChecklistPromptData]
+	userLoader    *template.TemplateLoader[ChecklistPromptData]
+	tmpDir        string
+	subjectID     string
+	artifactLabel string
 }
 
 // NewChecklistEvaluator creates a new checklist evaluator with config-based template paths.
@@ -108,9 +109,16 @@ func (e *ChecklistEvaluator) EvaluateOne(
 	subjectID string,
 	promptCtx checklist.PromptWithContext,
 	tmpDir string,
+	artifactLabel ...string,
 ) (checklist.ValidationResult, error) {
+	local := *e
+	e = &local
 	e.tmpDir = tmpDir
+
 	e.subjectID = subjectID
+	if len(artifactLabel) > 0 {
+		e.artifactLabel = artifactLabel[0]
+	}
 
 	return e.evaluatePrompt(ctx, subject, subjectID, promptCtx)
 }
@@ -170,6 +178,7 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 
 	response, err := e.aiClient.ExecutePromptWithSystem(
 		ctx, provider.RolePrompt, systemPrompt, userPrompt, model, mode, schema,
+		provider.TurnOptions{ArtifactLabel: e.artifactLabel},
 	)
 	if err != nil {
 		return checklist.ValidationResult{}, pkgerrors.ErrChecklistAIEvaluationFailed(err)

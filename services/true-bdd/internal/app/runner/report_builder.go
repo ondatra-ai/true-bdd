@@ -2,6 +2,7 @@ package runner
 
 import (
 	"sort"
+	"sync"
 
 	checklistmodels "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/checklist"
 )
@@ -10,6 +11,7 @@ import (
 // ChecklistReport per subject, keyed by (subjectID, promptIndex) so a
 // re-walk overwrites stale results — the render reflects final state, not the journey.
 type reportBuilder struct {
+	mu        sync.Mutex
 	bySubject map[string]*subjectReport
 	order     []string // first-seen ordering of subject IDs
 }
@@ -29,19 +31,18 @@ func (b *reportBuilder) Add(
 	subjectID, subjectTitle string,
 	result checklistmodels.ValidationResult,
 ) {
-	report, ok := b.bySubject[subjectID]
-	if !ok {
-		report = &subjectReport{
-			subjectID:    subjectID,
-			subjectTitle: subjectTitle,
-			byIndex:      make(map[int]checklistmodels.ValidationResult),
-		}
-		b.bySubject[subjectID] = report
+	b.mu.Lock()
+	defer b.mu.Unlock()
 
-		b.order = append(b.order, subjectID)
-	}
-
+	report := b.ensure(subjectID, subjectTitle)
 	report.byIndex[result.PromptIndex] = result
+}
+
+func (b *reportBuilder) Ensure(id, title string) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	b.ensure(id, title)
 }
 
 // Reports materialises one ChecklistReport per subject, in
@@ -83,4 +84,20 @@ func (b *reportBuilder) RenderAll(renderer *TableRenderer, fix bool) {
 	for _, report := range b.Reports() {
 		renderer.RenderReport(report, fix)
 	}
+}
+
+func (b *reportBuilder) ensure(subjectID, subjectTitle string) *subjectReport {
+	report, ok := b.bySubject[subjectID]
+	if !ok {
+		report = &subjectReport{
+			subjectID:    subjectID,
+			subjectTitle: subjectTitle,
+			byIndex:      make(map[int]checklistmodels.ValidationResult),
+		}
+		b.bySubject[subjectID] = report
+
+		b.order = append(b.order, subjectID)
+	}
+
+	return report
 }

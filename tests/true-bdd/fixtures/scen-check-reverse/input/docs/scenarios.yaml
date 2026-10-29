@@ -1,0 +1,24 @@
+scenarios:
+  alpha:
+    description: alpha broken
+    service: demo
+    path: tests/demo/demo_test.go
+    merged_steps:
+      given: [a ready system]
+      when: [an action happens]
+      then: [an outcome appears]
+  beta:
+    description: beta broken
+    service: demo
+    path: tests/demo/demo_test.go
+    merged_steps:
+      given: [a ready system]
+      when: [an action happens]
+      then: [an outcome appears]
+  gamma:
+    description: No When, so Q turns must be skipped
+    service: demo
+    path: tests/demo/demo_test.go
+    merged_steps:
+      given: [a ready system]
+      then: [an outcome appears]

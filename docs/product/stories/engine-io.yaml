@@ -31,6 +31,7 @@ story:
     - then:
       - the command exits with code 0
       - the file "true-bdd/true-bdd.yaml" is created
+      - 'the file "true-bdd/true-bdd.yaml" matches (?m)^  scen_check_concurrency: 1$'
   - id: 003-events
     description: Engine IO preserves stream events, usage and refusal targets with stable log keys and scrubs Git hook variables
       for Go tools

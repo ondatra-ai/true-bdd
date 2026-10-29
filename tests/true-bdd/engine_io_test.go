@@ -41,6 +41,7 @@ func TestEngineIo002WriteHold(t *testing.T) {
 	s.When(`the System Architect runs "init" while a "shared" hold blocks "true-bdd"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`the file "true-bdd/true-bdd.yaml" is created`)
+	s.And(`the file "true-bdd/true-bdd.yaml" matches (?m)^  scen_check_concurrency: 1$`)
 	s.Done()
 }
 

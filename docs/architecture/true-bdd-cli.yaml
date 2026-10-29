@@ -227,6 +227,15 @@ extensions:
     check-answered:
       message: Check answered
       format: INFO per checklist cell with check, subjectID, promptIndex, answer and context.
+    cell-validation-started:
+      message: Cell validation started
+      format: INFO before a model Cell is evaluated, with subjectID and promptIndex. Different Scenarios may overlap; Prompts within a Scenario stay ordered.
+    cell-validation-finished:
+      message: Cell validation finished
+      format: INFO after the model Cell returns, including an error, with subjectID and promptIndex.
+    applying-fix:
+      message: Applying fix prompt
+      format: INFO with subjectID and iteration after the person answers apply at the fix menu. Concurrent scen check validation has joined before any fix menu.
     clarification-needed:
       message: AI needs clarification
       format: INFO before a clarifying question is asked on stdout.
