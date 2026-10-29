@@ -10,7 +10,6 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/engine"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/validate"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/runner"
-	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/architecture"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/checklist"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/fs"
@@ -142,12 +141,22 @@ func seedFixDocuments(
 		return err
 	}
 
+	interfaceDocuments, err := seedInterfaceDocuments(deps.DocResolver, tmpDir)
+	if err != nil {
+		return err
+	}
+
 	registryDocument, err := seedFixDocument(docs.KeyScenariosYAML, requirementsFile, tmpDir)
 	if err != nil {
 		return err
 	}
 
 	err = ledger.keep(termDocuments...)
+	if err != nil {
+		return err
+	}
+
+	err = ledger.keep(interfaceDocuments...)
 	if err != nil {
 		return err
 	}
@@ -159,6 +168,7 @@ func seedFixDocuments(
 
 	for _, item := range items {
 		item.TermDocuments = termDocuments
+		item.InterfaceDocuments = interfaceDocuments
 		item.RegistryDocument = &registryDocument
 	}
 
@@ -362,17 +372,7 @@ func scenCheckPostCheckFix(
 				continue
 			}
 
-			_, err := architecture.LoadInterfaces(document.Scratch, ".")
-			if err != nil {
-				return nil, fmt.Errorf("validate Public interface fix: %w", err)
-			}
-
-			_, err = architecture.LoadPhraseMappings(document.Scratch)
-			if err != nil {
-				return nil, fmt.Errorf("validate Phrase mapping fix: %w", err)
-			}
-
-			_, err = commitFixDocument(document, nil)
+			err := commitInterfaceFix(document, item.InterfaceDocuments)
 			if err != nil {
 				return nil, err
 			}

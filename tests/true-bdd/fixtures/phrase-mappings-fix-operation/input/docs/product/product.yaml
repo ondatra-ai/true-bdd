@@ -1,0 +1,16 @@
+roles:
+- name: System Architect
+  description: Owns the service and its Phrase mapping.
+catalogue:
+- template: the greeting is configured
+  block: given
+  means: Set the greeting in the declared configuration file.
+  terms: []
+- template: the greeting is translated into {language}
+  block: when
+  means: Translate the configured greeting into the named language once.
+  terms: []
+- template: the greeting is logged
+  block: then
+  means: Compare the greeted log record with the expected greeting.
+  terms: []

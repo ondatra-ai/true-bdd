@@ -145,7 +145,7 @@ architecture:
       rendering: *prompt-rendering
       fields:
         Check: &check >-
-          Failed result D name carried unchanged into the applier; empty for a model Q. Selects Story/Scenario rewrite versus term-document fix; public-interface and phrase-mappings select architecture-only application.
+          Failed result D name carried unchanged into the applier; empty for a model Q. Selects Story/Scenario rewrite versus term-document fix; public-interface and phrase-mappings select application to the architecture and the Public interface documents it names.
         FixPrompt: &fixprompt >-
           Run-selected generated fix, unchanged at applier construction. JSON generation TrimSpace; marker generation extracts between matching FILE markers, TrimSpace, strips a whole wrapping backtick/tilde code fence and TrimSpace again. Clarification/refinement replaces the fix only when a nonempty new fix is returned; no further applier trim.
         ResultPath: &application-result-path >-
@@ -519,6 +519,10 @@ architecture:
         Subject.FormatSteps: *registry-steps
         Subject.FormatUserStories: *subject-formatuserstories
         Subject.ID: *registry-id
+        Subject.InterfaceDocuments: &subject-interfacedocuments >-
+          Run working copies seeded under --fix of each cli or http document the architecture's public_interface declarations name, in service order, each path once. Empty outside fix mode or without an architecture document.
+        Subject.InterfaceDocuments[].Path: &subject-interfacedocumentsitem-path >-
+          The document path as the declaration states it, relative to the Host project root; it names the canonical document.
         Subject.Path: *subject-scenario-path
         Subject.Service: *registry-service
         SubjectID: &registry-subject-id >-
@@ -540,6 +544,10 @@ architecture:
         Subject.Description: *registry-description
         Subject.FormatSteps: *registry-steps
         Subject.ID: *registry-id
+        Subject.InterfaceDocuments: *subject-interfacedocuments
+        Subject.InterfaceDocuments[].Path: *subject-interfacedocumentsitem-path
+        Subject.InterfaceDocuments[].Scratch: >-
+          Run path: filepath.Join(run_dir, "interface-<n>-<basename>"), n counting the listed documents from 1; seeded by copying the canonical document. A public-interface or phrase-mappings fix that changed it commits it, once it parses in the form of its kind, before the architecture.
         Subject.RegistryDocument: >-
           Run Registry working-copy pointer, seeded under --fix; nil otherwise. with omits its line when nil.
         Subject.RegistryDocument.Key: >-

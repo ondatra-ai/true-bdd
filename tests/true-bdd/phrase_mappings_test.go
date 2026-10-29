@@ -116,3 +116,21 @@ func TestPhraseMappings007Exit(t *testing.T) {
 	s.And(`the file "docs/scenarios.yaml" is unchanged`)
 	s.Done()
 }
+
+// phrase-mappings-008-adds-operation: A Phrase mapping fix whose operation the CLI document does not declare yet must add the command to that document and the entry to the architecture, only after apply
+func TestPhraseMappings008AddsOperation(t *testing.T) {
+	s := scenarios.New(t, "phrase-mappings-008-adds-operation")
+	s.Given(`the "phrase-mappings-fix-operation" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "scen check --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="AI needs clarification"`)
+	s.And(`stdout matches msg="User chose fix action".*action=apply`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=docs/greeter-cli.yaml`)
+	s.And(`stdout matches every matched phrase has one valid Phrase mapping`)
+	s.And(`no file outside "tmp" and "docs" changed`)
+	s.And(`the file "docs/greeter-cli.yaml" matches (?m)^  translate:`)
+	s.And(`the file "docs/architecture/architecture.yaml" matches command: translate`)
+	s.And(`the file "docs/scenarios.yaml" is unchanged`)
+	s.Done()
+}

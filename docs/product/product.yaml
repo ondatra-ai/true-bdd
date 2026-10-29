@@ -154,7 +154,8 @@ glossary:
       public-interface built-in check fails every Scenario whose service lacks a valid
       declaration, naming the service without an AI turn. A library kind is excluded;
       another kind is named as not supported yet. Its fix first asks the System Architect
-      what the service offers and writes the architecture document, never the Scenario.
+      what the service offers and writes the architecture document, and a document it
+      names where the answers say it lacks what the service offers, never the Scenario.
 
   - term: Phrase mapping
     means: >-
@@ -169,7 +170,10 @@ glossary:
       entries, incomplete operation entries or undeclared references, naming the phrase
       and reference without an AI turn. With no Catalogue or Story claim it passes unchecked.
       Its fix asks the System Architect what the step does and proposes the entry at the
-      menu; only apply writes the architecture document, never the Scenario. It names no
+      menu, with any operation, file, log record or call the answers name that the Public
+      interface document does not declare yet; only apply writes the architecture document
+      and that document, never the Scenario. Each changed document must still parse in the
+      form of its kind before anything is written. It names no
       Go identifier and stores no link to a step definition. Word mappings still cover terms;
       build steps --fix embeds these entries in each Item’s body-writing context.
 
