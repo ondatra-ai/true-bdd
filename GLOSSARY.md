@@ -36,6 +36,18 @@ _Avoid_: requirements file, scenarios file, spec file
 One entry in the Registry, keyed by its lineage id `<story-id>-<ac-id>` (legacy entries keep an `E2E-NNN` key until their Story renames them), carrying a description, a `service`, a `path`, its originating `user_stories` and its `merged_steps`. The unit of specification a generated test is rendered from, and named after: the key in CamelCase.
 _Avoid_: test case, requirement, feature
 
+**Given**:
+The state the system is in before the behaviour starts, put in place without the role acting. It is never an action of the role: entering a number or pressing a button is a When.
+_Avoid_: setup action, precondition step
+
+**When**:
+The action a role takes, or an event, that the behaviour responds to.
+_Avoid_: trigger step
+
+**Then**:
+The outcome the behaviour must produce, observed from outside the system and compared with what is expected, never read from its storage or code.
+_Avoid_: verification step, assertion step
+
 **Story**:
 One user story: a goal stated as who wants what and why, plus the Acceptance Criteria that define it. Written directly, out of a discussion of a Feature, never extracted from a larger document; no command creates one, and `us refine` is the first step of the pipeline that reads it.
 _Avoid_: epic story, ticket, requirement

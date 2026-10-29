@@ -1,5 +1,7 @@
 # `build steps` writes one step definition per Catalogue phrase, from the Phrase mapping
 
+**Superseded by [ADR-0035](0035-build-steps-writes-definitions-per-concept.md).** Concepts replace the Catalogue's templates ([ADR-0034](0034-concepts-replace-catalogue-templates.md)), so a definition's pattern no longer comes from a template. Historical rationale follows; the steps are still designed, not derived from Scenarios, and the engine still writes the skeleton.
+
 The live run of 28 October had to invent the operation behind `the number is halved`. The Catalogue said what the phrase means, and the Word mapping mapped its one term, `number`. Nothing said which operation of the calculator's Public interface the step performs. Before that, `build tests` walked Scenarios with an unbound step, and its fix prompt asked the model to bind about ten neighbours' steps as well, to save cycles.
 
 We decided:
