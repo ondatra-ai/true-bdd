@@ -28,5 +28,8 @@
       }
     ]
   },
-  "glossary": []
+  "glossary": [],
+  "description": {
+    "summary": "The calculator offers one operation, Halve, which displays half the entered number. It has no Square operation."
+  }
 }
