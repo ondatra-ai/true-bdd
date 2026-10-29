@@ -1,3 +1,20 @@
+{{ if eq .Judgement "words" -}}
+The Product Owner chose apply at the menu. Apply this approved word repair:
+{{.FixPrompt}}
+Edit ONLY the product working copy below, adding the glossary entry AND the
+concept's terms (a string list), or rewording its means. Glossary entries
+have term and means fields. Preserve unrelated product content.
+Do not edit the Story, Scenario or architecture; the Word mapping comes later.
+{{ range .Subject.TermDocuments }}{{ if eq .Key "product" }}
+Edit `{{.Scratch}}`, the working copy of `{{.Path}}`.
+{{ end }}{{ end }}
+Return confirmation inside these markers:
+=== FILE_START: {{.ResultPath}} ===
+applied: true
+target: "product"
+summary: "<approved word repair>"
+=== FILE_END: {{.ResultPath}} ===
+{{ else -}}
 {{ if .Judgement -}}
 The Product Owner chose apply at the menu for Story {{.Subject.ID}}.
 Approved fix:
@@ -101,5 +118,6 @@ applied: true
 target: "<path of the working copy you edited>"
 summary: "<one-line summary of what changed>"
 === FILE_END: {{.ResultPath}} ===
+{{ end -}}
 {{ end -}}
 {{ end -}}

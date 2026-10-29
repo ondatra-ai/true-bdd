@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-var errConceptPrompt = errors.New("with.concepts requires a Q: link, bindings or sketch; " +
+var errConceptPrompt = errors.New("with.concepts requires a Q: link, bindings, words or sketch; " +
 	"link threshold must be an integer from 1 to 10")
 
 // Concept parameters select the answer protocol, without making a Q a built-in D check.
@@ -16,7 +16,7 @@ func (p *Prompt) conceptShapeError() error {
 	}
 
 	kind, text := raw.(string)
-	if !text || p.IsCheck() || (kind != "link" && kind != "bindings" && kind != "sketch") {
+	if !text || p.IsCheck() || (kind != "link" && kind != "bindings" && kind != "sketch" && kind != "words") {
 		return fmt.Errorf("%s: %w", p.Label(), errConceptPrompt)
 	}
 

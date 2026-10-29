@@ -11,6 +11,8 @@ import (
 
 const schemaType = "type"
 const schemaString = "string"
+const schemaMinLength = "minLength"
+const schemaReason = "reason"
 const maxConceptScore = 10
 const defaultLinkThreshold = 9
 
@@ -38,7 +40,7 @@ func linkSchema(steps []conceptStep, concepts []product.Concept) (string, error)
 		}
 
 		properties[step.Key] = requiredObject(answerSchema{
-			"scores": requiredObject(scores), "reason": answerSchema{schemaType: schemaString, "minLength": 1},
+			"scores": requiredObject(scores), schemaReason: answerSchema{schemaType: schemaString, schemaMinLength: 1},
 			"other_block_concept": answerSchema{schemaType: []string{schemaString, "null"}},
 		})
 	}

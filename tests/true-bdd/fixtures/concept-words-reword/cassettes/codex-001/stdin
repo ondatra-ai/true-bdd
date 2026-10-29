@@ -1,0 +1,75 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+Apply only the exact concept, binding or step repair approved at the menu.
+Edit only the listed working copies. Preserve every unaffected entry.
+For a Story step rewrite, return the complete Story YAML instead of editing
+a document. For document edits return the requested confirmation markers.
+
+
+### TASK
+
+The Product Owner chose apply at the menu. Apply this approved word repair:
+## Proposed word repair — Item `host`, concept `when: halve` (Product Owner)
+
+**Failed judgement:** `when:halve` — the means uses the undeclared domain word **"idempotency key"**.
+
+**Why a reword, not a glossary entry:** the product's `language_policy` states: *"Describe repeated requests and their labels in ordinary words; avoid technical protocol vocabulary in the glossary."* "Idempotency key" is exactly such technical protocol vocabulary, so declaring it as a glossary term is closed off by the product's own policy. The `description` already names the ordinary product word for this thing — a **request label** — and states that repeating a request with the same label changes the number only once. So the repair is to say the means in the product's own words.
+
+No new concept and no new variation is needed: this is the same item (`host`) and the same use (halving once per label); only the wording of the existing concept's `means` changes.
+
+### Change — `docs/product/product.yaml` only (one line)
+
+Replace the `means` of the `when` concept `halve`:
+
+```yaml
+# before
+when:
+  - concept: "halve"
+    means: "Halve the entered number once with the supplied idempotency key."
+    terms: []
+
+# after
+when:
+  - concept: "halve"
+    means: "Halve the entered number once for the given request label, so that repeating the same label does not halve it again."
+    terms: []
+```
+
+The document is written in JSON (valid YAML). In the file's own style the edit is exactly:
+
+```json
+    "when": [
+      {
+        "concept": "halve",
+        "means": "Halve the entered number once for the given request label, so that repeating the same label does not halve it again.",
+        "terms": []
+      }
+    ],
+```
+
+### What is untouched
+
+- `glossary` stays `[]` — no new term is declared, so there is **no** follow-up Word mapping for the System Architect from this repair.
+- `terms` of `halve` stays `[]`.
+- `given: number ready`, `then: number result` and `then: unused` concepts are unchanged (the two findings against `given:number ready` and `then:number result` report plain, declared English — no repair is due there; the "undeclared word" note on `then:number result` does not match its means, which contains no such word).
+- `roles`, `description`, `language_policy` unchanged.
+- No Story, Scenario or architecture edit: the Story step "halve six once with idempotency key alpha" is **not** changed by this repair; Item/Story wording is a separate Product Owner decision and a Word mapping is later System Architect work via `scen check` D: term-mappings.
+
+### Meaning preserved
+
+"Once with the supplied idempotency key" and "once for the given request label, so that repeating the same label does not halve it again" assert the same behaviour — a single halving per label, repeats having no further effect — stated in the ordinary English the language policy requires.
+
+**Not applied.** Awaiting an explicit menu decision (`apply`).
+Edit ONLY the product working copy below, adding the glossary entry AND the
+concept's terms (a string list), or rewording its means. Glossary entries
+have term and means fields. Preserve unrelated product content.
+Do not edit the Story, Scenario or architecture; the Word mapping comes later.
+
+Edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`.
+
+Return confirmation inside these markers:
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
+applied: true
+target: "product"
+summary: "<approved word repair>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===

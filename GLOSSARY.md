@@ -97,7 +97,7 @@ The product document's declared step meanings. During transition it uses either 
 _Avoid_: vocabulary (the words a Story must not use), phrase book, step library
 
 **Concept**:
-One way of putting state in place (Given), calling (When), or observing and comparing (Then) through one Public interface item, per block. The item is what the use is about and may be reached through several declared references. What the step definition does, as the step's wording fixes it, decides its concept; an argument's target never changes it. Its closed `means` names the item, kind of use and every admitted variation in prose, relying only on declared `terms` and plain English. A Given concept states a state. Names are unique within a block (ADR-0036).
+One way of putting state in place (Given), calling (When), or observing and comparing (Then) through one Public interface item, per block. The item is what the use is about and may be reached through several declared references. What the step definition does, as the step's wording fixes it, decides its concept; an argument's target never changes it. Its closed `means` names the item, kind of use and every admitted variation in prose, relying only on declared `terms` and plain English. A Given concept states a state. Names are unique within a block (ADR-0036). After the link, a separate model Prompt judges every linked meaning for undeclared domain words, per Story in `us refine` and per Scenario in `scen check`. Its Product Owner menu fix declares the word in both the glossary and the concept, or rewords the meaning; a new Word mapping follows through the System Architect’s term-mapping menu.
 _Avoid_: step template, phrase (for a concept)
 
 **Concept binding**:

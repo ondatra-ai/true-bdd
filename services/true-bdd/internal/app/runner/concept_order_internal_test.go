@@ -7,7 +7,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/checklist"
 )
 
-func TestWalkLinksBeforeSketchAndBindingJudgement(t *testing.T) {
+func TestWalkLinksBeforeSketchBindingAndWordJudgements(t *testing.T) {
 	t.Parallel()
 
 	const conceptsKey = "concepts"
@@ -18,7 +18,7 @@ func TestWalkLinksBeforeSketchAndBindingJudgement(t *testing.T) {
 		{Index: 3, Prompt: checklist.Prompt{Check: "public-interface"}},
 		{Index: 4, Prompt: checklist.Prompt{Question: "Link", With: map[string]any{conceptsKey: "link"}}},
 		{Index: 5, Prompt: checklist.Prompt{Check: "phrase-mappings"}},
-		{Index: 6, Prompt: checklist.Prompt{Question: "Words"}},
+		{Index: 6, Prompt: checklist.Prompt{Question: "Words", With: map[string]any{conceptsKey: "words"}}},
 	}
 
 	indices := make([]int, 0, len(prompts))

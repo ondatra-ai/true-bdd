@@ -485,3 +485,39 @@ sections:
           Concepts have concept, means and terms, with variations in closed prose.
           Apply concept changes only to the product document and a rewrite only
           to the Item. Show the exact change at the menu and wait for apply.
+
+  - id: concept_words
+    name: "Concept Words"
+    description: "Linked meanings rely only on declared terms and plain English."
+    validation_prompts:
+      - Q: |
+          Judge the means of EVERY supplied linked concept, using the product
+          document's glossary for its declared terms. Name every domain word
+          or expression its means relies on that is neither declared in THAT
+          concept's terms nor readable as plain English in that means's context.
+          A glossary entry alone does not declare a term for a concept.
+          Plain English that already defines the word in this context passes;
+          do not demand glossary entries for ordinary words or infer a special
+          domain meaning without evidence. Judge means, not the concept's name,
+          steps, bindings or unrelated concepts. Trust no earlier judgement.
+          Judge each concept independently. Every word in undeclared_words
+          must occur in THAT concept's means; never carry a word from another
+          verdict. Keep the list consistent with the reason: if none is
+          undeclared, return exactly an empty array.
+          For every supplied concept key return undeclared_words (the exact
+          words, or an empty array when none) and a nonempty reason explaining
+          the verdict. Omit no concept. Change nothing.
+        with:
+          concepts: words
+        rationale: "An undeclared domain word leaves a linked meaning open to interpretation."
+        docs: [product]
+        F: |
+          Offer the Product Owner a declared term (a glossary entry with term and
+          means fields, and the word as a string in the affected concept's terms),
+          or reword that concept's means in product words and plain English without
+          a new term. Use the product document's schema, never a meaning field.
+          Preserve the meaning and unrelated concepts. Propose exact YAML for
+          the product document only. Show the change at the menu and apply only
+          after apply. Do not edit the Story, Scenario or architecture. A newly
+          declared term's Word mapping is the System Architect's later work
+          through scen check's D: term-mappings; refinement never waits for it.

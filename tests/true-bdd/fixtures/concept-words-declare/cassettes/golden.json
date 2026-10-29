@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "concept-words-declare",
+  "files": [
+    {
+      "path": "docs/product/product.yaml",
+      "kind": "modified",
+      "size": 1307,
+      "sha256": "31845d95a534871f1d8ed62f819af5965cb3c1d48250b05da216c84608a031ec",
+      "text": "{\n  \"roles\": [\n    {\n      \"name\": \"Product Owner\",\n      \"description\": \"Owns meanings.\"\n    }\n  ],\n  \"concepts\": {\n    \"given\": [\n      {\n        \"concept\": \"number ready\",\n        \"means\": \"A number is entered before the action.\",\n        \"terms\": []\n      }\n    ],\n    \"when\": [\n      {\n        \"concept\": \"halve\",\n        \"means\": \"Halve the entered number once with the supplied idempotency key.\",\n        \"terms\": [\n          \"idempotency key\"\n        ]\n      }\n    ],\n    \"then\": [\n      {\n        \"concept\": \"number result\",\n        \"means\": \"Compare the displayed number with an expected value.\",\n        \"terms\": []\n      },\n      {\n        \"concept\": \"unused\",\n        \"means\": \"The settlement ledger has a reconciled nostro balance.\",\n        \"terms\": []\n      }\n    ]\n  },\n  \"glossary\": [\n    {\n      \"term\": \"idempotency key\",\n      \"means\": \"The label a caller supplies with a request so that repeating the same request with the same label changes the number only once.\"\n    }\n  ],\n  \"description\": \"A calculator accepts a number and a request label. Repeating a request with the same label changes the number only once.\",\n  \"language_policy\": \"The request label is presented to users as an idempotency key. Keep this exact domain name in the product meanings and declare it when needed.\"\n}\n"
+    }
+  ]
+}

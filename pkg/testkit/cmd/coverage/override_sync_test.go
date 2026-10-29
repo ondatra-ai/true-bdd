@@ -245,7 +245,10 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"fix-loop-unsettled":                      overrideFixLoop,
 	}
 
-	for _, fixture := range append(interfaceCheckFixtures(), conceptLinkFixtures()...) {
+	fixtures := append(interfaceCheckFixtures(), conceptLinkFixtures()...)
+	fixtures = append(fixtures, conceptWordFixtures()...)
+
+	for _, fixture := range fixtures {
 		allowed[fixture] = overrideChecks
 	}
 
@@ -565,5 +568,13 @@ func conceptLinkFixtures() []string {
 		"concept-link-unrelated-unbound",
 		"concept-link-widen",
 		"concept-link-wrong-block",
+	}
+}
+
+// Concept word fixtures isolate the link, word verdict and term-mapping handoff.
+func conceptWordFixtures() []string {
+	return []string{
+		"concept-words-declare", "concept-words-reword", "concept-words-plain",
+		"concept-words-scenario-fail", "concept-words-mapping", "concept-words-scenario-fix",
 	}
 }

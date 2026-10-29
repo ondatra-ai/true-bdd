@@ -7416,7 +7416,7 @@ scenarios:
     description: A shared concept fix must cause every linked Scenario to be judged afresh
     service: true-bdd
     path: tests/true-bdd/concept_link_test.go
-    timeout: 25m
+    timeout: 35m
     user_stories:
     - story: docs/product/stories/concept-link.yaml
       scenario_id: concept-link-008-shared-fix
@@ -7491,7 +7491,7 @@ scenarios:
     description: An unstated variation must fail and widen its concept only through the menu
     service: true-bdd
     path: tests/true-bdd/concept_link_test.go
-    timeout: 15m
+    timeout: 20m
     user_stories:
     - story: docs/product/stories/concept-link.yaml
       scenario_id: concept-link-012-widen
@@ -7512,7 +7512,7 @@ scenarios:
     description: A rewritten step must change the Story and preserve the concepts
     service: true-bdd
     path: tests/true-bdd/concept_link_test.go
-    timeout: 15m
+    timeout: 20m
     user_stories:
     - story: docs/product/stories/concept-link.yaml
       scenario_id: concept-link-013-rewrite
@@ -7552,7 +7552,7 @@ scenarios:
     description: An ambiguous binding must fail and be repaired only through the menu
     service: true-bdd
     path: tests/true-bdd/concept_link_test.go
-    timeout: 20m
+    timeout: 25m
     user_stories:
     - story: docs/product/stories/concept-link.yaml
       scenario_id: concept-link-015-ambiguous-binding
@@ -7639,4 +7639,143 @@ scenarios:
       - the command exits with code 0
       - stdout matches no concept of when
       - stdout matches Validation failed
+      - the file "docs/product/stories/host-story.yaml" is unchanged
+
+  concept-words-001-declare:
+    description: A word repair must declare a glossary term and concept term through the refinement menu
+    service: true-bdd
+    path: tests/true-bdd/concept_words_test.go
+    timeout: 20m
+    user_stories:
+    - story: docs/product/stories/concept-words.yaml
+      scenario_id: concept-words-001-declare
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concept-words-declare" project tree
+      - the Product Owner answers "1" to every question
+      when:
+      - the Product Owner runs "us refine host --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches undeclared domain word idempotency key
+      - stdout matches action=apply
+      - stdout matches judgement=words answer=pass
+      - the file "docs/product/product.yaml" matches (?s)("terms":\s*\[\s*"idempotency key"|terms:\s*\n\s*- idempotency key)
+      - 'the file "docs/product/product.yaml" matches (?s)("term":\s*"idempotency key",\s*"means":\s*"[^\"]+"|term: idempotency key\s+means:)'
+      - the only file changed outside "tmp" is "docs/product/product.yaml"
+  concept-words-002-reword:
+    description: A word repair must reword means in product words without a new term
+    service: true-bdd
+    path: tests/true-bdd/concept_words_test.go
+    timeout: 20m
+    user_stories:
+    - story: docs/product/stories/concept-words.yaml
+      scenario_id: concept-words-002-reword
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concept-words-reword" project tree
+      - the Product Owner answers "1" to every question
+      when:
+      - the Product Owner runs "us refine host --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches undeclared domain word idempotency key
+      - stdout matches action=apply
+      - stdout matches judgement=words answer=pass
+      - every file matching "docs/product/product.yaml" does not match idempotency key
+      - the file "docs/product/product.yaml" matches ("glossary":\s*\[\]|glossary:\s*\[\])
+      - the only file changed outside "tmp" is "docs/product/product.yaml"
+  concept-words-003-plain:
+    description: Declared terms and contextually plain English must pass for claimed and unclaimed Scenarios
+    service: true-bdd
+    path: tests/true-bdd/concept_words_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/concept-words.yaml
+      scenario_id: concept-words-003-plain
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concept-words-plain" project tree
+      when:
+      - the Product Owner runs "scen check"
+      then:
+      - the command exits with code 0
+      - the engine dispatched 4 AI turns
+      - stdout matches judgement=words answer=pass
+      - stdout does not match undeclared domain word
+      - stdout does not match then:unused
+      - no file outside "tmp" changed
+      - the file matching "tmp/true-bdd.log.json" has exactly 1 matches for "msg":"Concept judgement answered","subjectID":"host-001","promptIndex":2,"judgement":"words"
+      - the file matching "tmp/true-bdd.log.json" has exactly 1 matches for "msg":"Concept judgement answered","subjectID":"host-002","promptIndex":2,"judgement":"words"
+  concept-words-004-scenario-fail:
+    description: An unclaimed Scenario must fail a fresh word judgement naming the undeclared word
+    service: true-bdd
+    path: tests/true-bdd/concept_words_test.go
+    timeout: 10m
+    user_stories:
+    - story: docs/product/stories/concept-words.yaml
+      scenario_id: concept-words-004-scenario-fail
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concept-words-scenario-fail" project tree
+      when:
+      - the Product Owner runs "scen check"
+      then:
+      - the command exits with code 1
+      - stdout matches judgement=words answer=fail
+      - stdout matches undeclared domain word idempotency key
+      - no file outside "tmp" changed
+  concept-words-005-mapping:
+    description: A newly declared concept term must fail term mappings until its menu fix adds a Word mapping
+    service: true-bdd
+    path: tests/true-bdd/concept_words_test.go
+    timeout: 20m
+    user_stories:
+    - story: docs/product/stories/concept-words.yaml
+      scenario_id: concept-words-005-mapping
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concept-words-mapping" project tree
+      - the Product Owner answers "1" to every question
+      when:
+      - the Product Owner runs "scen check --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches check=term-mappings.*answer=fail
+      - stdout matches idempotency key.*has no mapping
+      - stdout matches action=apply
+      - stdout matches check=term-mappings.*answer=pass
+      - stdout matches judgement=words answer=pass
+      - the only file changed outside "tmp" is "docs/architecture/architecture.yaml"
+  concept-words-006-scenario-fix:
+    description: A Scenario word repair must update the product through its menu before a separate Word mapping repair
+    service: true-bdd
+    path: tests/true-bdd/concept_words_test.go
+    timeout: 25m
+    user_stories:
+    - story: docs/product/stories/concept-words.yaml
+      scenario_id: concept-words-006-scenario-fix
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concept-words-scenario-fix" project tree
+      - the Product Owner answers "1" to every question
+      when:
+      - the Product Owner runs "scen check --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches judgement=words answer=fail
+      - stdout matches undeclared domain word idempotency key
+      - stdout matches check=term-mappings.*answer=fail
+      - stdout matches check=term-mappings.*answer=pass
+      - stdout matches judgement=words answer=pass
+      - the file matching "tmp/true-bdd.log.json" has exactly 2 matches for "action":"apply"
+      - the file "docs/product/product.yaml" is modified
+      - the file "docs/architecture/architecture.yaml" is modified
+      - the file "docs/scenarios.yaml" is unchanged
       - the file "docs/product/stories/host-story.yaml" is unchanged

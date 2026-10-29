@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "binary": "claude",
+  "argv": [
+    "--setting-sources",
+    "",
+    "--strict-mcp-config",
+    "--safe-mode",
+    "--allowedTools",
+    "Read(**),Write(./tmp/**),Glob(**),Grep(**)",
+    "--disallowed-tools",
+    "Bash,Edit(**),MultiEdit(**),Agent,Task",
+    "--model",
+    "claude-opus-5",
+    "--system-prompt",
+    "You propose a fix to a concept's Term documents with their owner.\nRead every reference document and every finding. A concept is identified by its name\nand block. Ask what is missing before proposing exact old_string/new_string YAML.\nFor declared-terms, propose a glossary entry in the product document. For term-mappings,\npropose architecture.terms.\nEach Word mapping has term, technical and observed_by, all nonempty strings.\ntechnical says what the word is in the implementation; observed_by is prose saying\nhow a step definition sets it up or observes it. Neither is a reference object.\n For phrase-mappings, propose architecture.concepts with\nconcept, block, service, references and does, or intent replacing does and references\nfor a UI service only. Remove duplicate bindings or correct undeclared concept names\nusing the product declarations; never invent a concept's meaning from Internal code.\nA Given sets up state, a When calls, and a Then observes and compares. References must\nbe declared in the service's Public interface; when the answers name a missing declaration,\npropose its exact addition to the named interface document too. Never change a Scenario,\na generated test or a step definition. The Product Owner owns product meanings and the\nSystem Architect owns bindings and Word mappings. Propose at the menu before apply.\n\nReturn exactly one JSON object with fix_prompt (string) and questions (array of\n{id, question, context, options}). Exactly one carries content. When clarification is\nneeded return fix_prompt: \"\"; when proposing return questions: [].\n\n",
+    "--permission-mode",
+    "acceptEdits",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--json-schema",
+    "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"fix_prompt\": {\"type\": \"string\"},\n    \"questions\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"id\": {\"type\": \"string\"},\n          \"question\": {\"type\": \"string\"},\n          \"context\": {\"type\": \"string\"},\n          \"options\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}\n        },\n        \"required\": [\"id\", \"question\", \"context\", \"options\"],\n        \"additionalProperties\": false\n      }\n    }\n  },\n  \"required\": [\"fix_prompt\", \"questions\"],\n  \"additionalProperties\": false\n}",
+    "-p",
+    "**Actual:** fail\n## Reference documents\nRead(`./docs/architecture/architecture.yaml`) — architecture_yaml\nRead(`./docs/product/product.yaml`) — product\n\n## Concept document findings\nScenario: host-001\nService: calc\nCheck: term-mappings\n- host-001: when concept 'halve': \"idempotency key\" has no mapping in the architecture\n- host-001: then concept 'number result': \"idempotency key\" has no mapping in the architecture\n\nFix instruction: Propose one architecture.terms entry (term, technical, observed_by) for each unmapped term, asking how it is built and observed first. Write it to the architecture document, never to the Scenario.\nidempotency-key-entry-count: One entry for \"idempotency key\" whose observed_by prose covers both the When setup and the Then observation\nidempotency-key-observed-by: The When step fills the \"Idempotency key\" textbox with the label named in the step before pressing Halve, and reuses that same label for a repeated press; the Then step never reads the key itself — it observes its effect by comparing the displayed Number with the expected value, unchanged after the repeat\nidempotency-key-technical: The text typed into the Calc page's \"Idempotency key\" textbox, which the calculator remembers alongside the last applied halving so a second request carrying the same text is ignored\n\nAsk for the missing meaning or operation before proposing exact YAML to the owner.\nFix the product glossary, architecture.terms or architecture.concepts as the check names.\nBindings use the product's verbatim concept name and block, and their own service.\nEvery binding reference must be declared in that service's Public interface. For a missing\ndeclaration, also propose its addition to the named Public interface document.\nNever propose rewriting a Scenario to repair a concept, term or binding.\n\nReturn exactly one JSON object with fix_prompt (string) and questions (array of\n{id, question, context, options}). Exactly one carries content. When clarification is\nneeded return fix_prompt: \"\"; when proposing return questions: [].\n\n"
+  ],
+  "exit_code": 0,
+  "duration_ms": 23432,
+  "request_hash": "sha256:89adb6baad323e058148c27ac8322c52b695b1a4b23d9d6a2f881ba419a226c6",
+  "fsdiff": {
+    "created": [],
+    "modified": [],
+    "deleted": []
+  },
+  "recorded_at": "2026-10-29T22:51:48Z"
+}

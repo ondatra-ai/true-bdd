@@ -48,14 +48,26 @@ description:
     binding for its service; an unused unbound concept is not its finding.
     After the link, a further Q: Prompt judges every linked binding unambiguous
     enough for an LLM to write a step, given does, references and the complete
-    Public interface. An llm: step needs an intent binding. A failed link or
+    Public interface. An llm: step needs an intent binding. A failed link, word judgement or
     binding fails the Scenario and exits 1. Fixes offer the Product Owner a
     concept repair and the System Architect a binding, only applied after the
     menu's apply decision. Shared fixes cause every Scenario to be judged
     again; binding judgements wait for their links within concurrent Scenario
     validation. No prompt states a time, turn, token or cost budget.
-    The separate judgment of means words and building step definitions per
-    concept remain later work.
+    A separate Q: Prompt, with concepts set to words, judges the means of every
+    linked concept once per Story in us refine and per Scenario in scen check,
+    claimed or not, after its link within the concurrent validation order.
+    It names every domain word neither declared in that concept's terms nor
+    readable as plain English in the context of its means. Plain English passes.
+    Every required concept verdict carries undeclared_words and a reason in a
+    schema-bearing answer. Missing, malformed or incomplete answers fail the
+    Cell, and every verdict is recorded in context. Its Product Owner menu fix
+    changes only the product document: a glossary entry and the word in terms,
+    or a reworded means in product words. Refinement never waits for architecture.
+    On the next walk, D: term-mappings fails for a newly declared unmapped term;
+    its System Architect menu fix adds the Word mapping. Every Scenario judges
+    again after fixes, trusting no earlier result. Template hosts keep their
+    existing behaviour. Building step definitions per concept remains later work.
 
   problem: >-
     AI removed the bottleneck on writing code, but not on deciding
