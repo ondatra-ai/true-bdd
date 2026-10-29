@@ -251,9 +251,11 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 }
 
 // interfaceCheckFixtures narrow scen check to its public-interface and
-// phrase-mappings checks (#239, #240).
+// phrase-mappings checks and concept document closure (#239, #240, #256).
 func interfaceCheckFixtures() []string {
 	return []string{
+		"concepts-valid", "concepts-both", "concepts-undefined-term", "concepts-unmapped-term",
+		"concepts-bindings", "concepts-templates", "concepts-fix-binding",
 		"phrase-mappings-missing", "phrase-mappings-undeclared", "phrase-mappings-valid",
 		"phrase-mappings-duplicate", "phrase-mappings-intent", "phrase-mappings-fix",
 		"phrase-mappings-fix-operation", "phrase-mappings-exit",

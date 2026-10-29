@@ -18,6 +18,7 @@ type StoryRef struct {
 // evaluator: one instance per (scenario, prompt) cell input. It holds the
 // scenario's own fields, the whole Registry, and under --fix its working copy.
 type ScenarioCheckData struct {
+	ConceptForm bool        // document checks hold concepts rather than matched templates
 	ID          string      // e.g. "scen-check-003-unknown-id-refused"
 	Description string      // verbatim registry description
 	Service     string      // names an entry in architecture services[]

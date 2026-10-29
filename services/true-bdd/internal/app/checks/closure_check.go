@@ -31,6 +31,8 @@ func closureCheck(docKeys []string, review closureReview) Check[*template.Scenar
 				return Verdict{}, fmt.Errorf("read the catalogue: %w", err)
 			}
 
+			item.ConceptForm = source.ConceptsDeclared
+
 			verdict, unchecked := activation(item, source)
 			if unchecked {
 				return verdict, nil
@@ -45,6 +47,8 @@ func closureCheck(docKeys []string, review closureReview) Check[*template.Scenar
 // unchecked, and true, or false when the check must read the Item.
 func activation(item *template.ScenarioCheckData, source product.Catalogue) (Verdict, bool) {
 	switch {
+	case source.ConceptsDeclared:
+		return Verdict{}, false
 	case !source.Declared:
 		return notChecked(item.ID, notCheckedNoCatalogue), true
 	case !claimed(item):

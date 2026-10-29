@@ -112,7 +112,8 @@ commands:
       '1': {description: A test still fails after the walk, an impossible repair, or a refusal.}
   init:
     description: >-
-      Writes the missing configuration, checklists and prompt templates into
+      Writes the missing configuration, checklists, prompt templates and product,
+      architecture and Registry schemas into
       the directory it runs in, leaving every existing file untouched, and
       reports each path with a Created or Left existing record. It reads no
       configuration.

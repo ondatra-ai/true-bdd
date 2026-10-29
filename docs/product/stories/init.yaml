@@ -8,7 +8,7 @@ story:
   status: IMPLEMENTED
   acceptance_criteria:
   - id: 001-empty-folder
-    description: Init creates the host configuration without scripts, every checklist and every prompt template without needing
+    description: Init creates the host configuration without scripts, every checklist, every prompt template and three document schemas without needing
       configuration or Specification documents
     steps:
     - given:
@@ -23,6 +23,7 @@ story:
       - and: exactly 1 file matching "true-bdd/true-bdd.yaml" is created
       - and: exactly 5 files matching "true-bdd/checklists/*.yaml" are created
       - and: exactly 32 files matching "templates/*.tpl" are created
+      - and: exactly 3 files matching "true-bdd/*schema.yaml" are created
       - and: 'every file matching "true-bdd/true-bdd.yaml" does not match (?m)^scripts:'
       - and: no file matching "docs/**" is created
   - id: 002-existing-files

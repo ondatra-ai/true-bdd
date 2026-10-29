@@ -13,7 +13,25 @@ description:
     each scenario into an executable test, and drives an agent until
     those tests pass. The harness and the project's files stay on the
     developer's machine and are the only state. It works with any
-    technology stack.
+    technology stack. A Host project may declare concepts instead of Catalogue
+    templates. Concepts are grouped under given, when and then, with concept,
+    means and terms; names are unique within a block. A concept is one Public
+    interface item and kind of use per block. The item is what the use is about,
+    reached through one or several declared references. What a step definition
+    does, as the step wording fixes it, decides the concept, never an argument's
+    target. A Given states a state. The closed means names the item, use and
+    every admitted variation in prose without slots or brackets, relying only
+    on declared terms and plain English. A new variation widens that concept;
+    only a new item or kind of use needs a new concept.
+    Declaring catalogue and concepts together refuses startup naming both,
+    including when either value is null. Existing template hosts keep their
+    behavior. The declared-terms and term-mappings built-in checks hold every
+    concept's terms to the glossary and Word mapping, and phrase-mappings holds
+    all Concept bindings to declared concepts and Public interface references,
+    without AI and regardless of Story claims. Every concept needs a binding,
+    unique per name, block and service. Findings name the concept; fixes write
+    Term documents, never a Scenario. The link pass and the judgment of means
+    words are #257; building step definitions per concept is #258.
 
   problem: >-
     AI removed the bottleneck on writing code, but not on deciding
@@ -157,9 +175,32 @@ glossary:
       what the service offers and writes the architecture document, and a document it
       names where the answers say it lacks what the service offers, never the Scenario.
 
+  - term: Concept
+    means: >-
+      One way of putting state in place, calling, or observing and comparing
+      through one Public interface item and kind of use, per Given, When or
+      Then block. The closed means names every admitted variation in prose
+      using declared terms and plain English. Names are unique within a block.
+      The step definition's use, fixed by the step wording, decides the concept,
+      never an argument's target. A Given concept states a state.
+
+  - term: Concept binding
+    means: >-
+      An architecture.concepts entry with concept, block and service, and
+      references into that service's Public interface plus does, describing
+      setup, calling, or observation and comparison by block. A UI service
+      may state intent instead of does and references. Every concept has at
+      least one binding, unique per concept and service, and every reference
+      is declared. The phrase-mappings built-in check names the concept for
+      undeclared concepts, services, references, duplicates or incomplete
+      bindings; its fix writes the architecture and any needed Public interface
+      declaration after apply, never a Scenario. It does not link steps.
+
   - term: Phrase mapping
     means: >-
-      The architecture's phrases list: one entry per verbatim Catalogue template and
+      The architecture's phrases list for template hosts; concept hosts use Concept
+      bindings in architecture.concepts instead, checked by the same phrase-mappings
+      built-in check over every declaration. The phrases list has one entry per verbatim Catalogue template and
       service, stating what a step does through its declared Public interface by block.
       A when calls an operation, a given sets up state, a then observes and compares.
       An operation entry carries references and a does sentence. References name CLI
@@ -213,10 +254,11 @@ glossary:
       observes. Commands that run AI turns accept model overrides.
       `init` runs without configuration and creates, in the current folder,
       true-bdd/true-bdd.yaml without scripts, every checklist under
-      true-bdd/checklists/ and every prompt template under templates/.
+      true-bdd/checklists/, every prompt template under templates/, and the product,
+      architecture and Registry schemas under true-bdd/.
       It reports each created or existing file through a log record and never overwrites one,
       even an empty or invalid one. It creates no Specification document
-      or schema and detects no test framework. `version` also needs none
+      and detects no test framework. `version` also needs none
       of these files. It prints `true-bdd version <version> commit <commit>` using the build identity. Other commands use only the project files, with no
       embedded runtime fallback. Before their first test run, Item or AI
       turn, checklist commands load their configuration and checklist and parse both

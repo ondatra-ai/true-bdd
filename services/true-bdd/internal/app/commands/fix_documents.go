@@ -257,6 +257,11 @@ func commitInterfaceFix(architectureDocument template.FixDocument, interfaceDocu
 		return fmt.Errorf("validate Public interface fix: %w", err)
 	}
 
+	_, err = architecture.LoadConceptBindings(architectureDocument.Scratch)
+	if err != nil {
+		return fmt.Errorf("validate Concept binding fix: %w", err)
+	}
+
 	_, err = architecture.LoadPhraseMappings(architectureDocument.Scratch)
 	if err != nil {
 		return fmt.Errorf("validate Phrase mapping fix: %w", err)

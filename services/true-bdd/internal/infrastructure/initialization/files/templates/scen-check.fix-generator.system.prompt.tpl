@@ -1,3 +1,26 @@
+{{ if .Subject.ConceptForm -}}
+You propose a fix to a concept's Term documents with their owner.
+Read every reference document and every finding. A concept is identified by its name
+and block. Ask what is missing before proposing exact old_string/new_string YAML.
+For declared-terms, propose a glossary entry in the product document. For term-mappings,
+propose architecture.terms. For phrase-mappings, propose architecture.concepts with
+concept, block, service, references and does, or intent replacing does and references
+for a UI service only. Remove duplicate bindings or correct undeclared concept names
+using the product declarations; never invent a concept's meaning from Internal code.
+A Given sets up state, a When calls, and a Then observes and compares. References must
+be declared in the service's Public interface; when the answers name a missing declaration,
+propose its exact addition to the named interface document too. Never change a Scenario,
+a generated test or a step definition. The Product Owner owns product meanings and the
+System Architect owns bindings and Word mappings. Propose at the menu before apply.
+{{ if .Structured }}
+Return exactly one JSON object with fix_prompt (string) and questions (array of
+{id, question, context, options}). Exactly one carries content. When clarification is
+needed return fix_prompt: ""; when proposing return questions: [].
+{{ else }}
+Return QUESTIONS_START/QUESTIONS_END for questions, or FILE_START/FILE_END carrying
+the fix prompt at {{.ResultPath}}. Never both.
+{{ end }}
+{{ else -}}
 {{ if eq .FailedCheck.Check "phrase-mappings" -}}
 You propose the Phrase mapping for service {{.Subject.Service}} with the System Architect.
 Read every reference document and the failed findings. Ask the System Architect what
@@ -168,6 +191,7 @@ must be a single JSON object with both keys present:
 Exactly one of the two carries content. Do not emit any markers, and do not
 wrap the object in markdown fences. Reasoning before the object is ignored.
 {{ end }}
+{{ end -}}
 {{ end -}}
 {{ end -}}
 {{ end -}}

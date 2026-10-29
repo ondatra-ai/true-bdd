@@ -1,3 +1,32 @@
+{{ if .Subject.ConceptForm -}}
+## Reference documents
+{{ range $key, $path := .DocPaths }}Read(`{{ $path }}`) — {{ $key }}
+{{ end }}{{ range .Subject.InterfaceDocuments }}Read(`{{ .Path }}`) — Public interface
+{{ end }}
+## Concept document findings
+Scenario: {{.Subject.ID}}
+Service: {{.Subject.Service}}
+Check: {{.FailedCheck.Check}}
+{{ range .FailedCheck.Context }}- {{.}}
+{{ end }}
+Fix instruction: {{.FailedCheck.FixPrompt}}
+{{ range $key, $answer := .UserAnswers }}{{ $key }}: {{ $answer }}
+{{ end }}
+Ask for the missing meaning or operation before proposing exact YAML to the owner.
+Fix the product glossary, architecture.terms or architecture.concepts as the check names.
+Bindings use the product's verbatim concept name and block, and their own service.
+Every binding reference must be declared in that service's Public interface. For a missing
+declaration, also propose its addition to the named Public interface document.
+Never propose rewriting a Scenario to repair a concept, term or binding.
+{{ if .Structured }}
+Return exactly one JSON object with fix_prompt (string) and questions (array of
+{id, question, context, options}). Exactly one carries content. When clarification is
+needed return fix_prompt: ""; when proposing return questions: [].
+{{ else }}
+Return QUESTIONS_START/QUESTIONS_END for questions, or FILE_START/FILE_END carrying
+the fix prompt at {{.ResultPath}}. Never both.
+{{ end }}
+{{ else -}}
 {{ if eq .FailedCheck.Check "phrase-mappings" -}}
 ## Reference documents
 {{ range $key, $path := .DocPaths }}
@@ -588,6 +617,7 @@ must be a single JSON object with both keys present:
 Exactly one of the two carries content. Do not emit any markers, and do not
 wrap the object in markdown fences. Reasoning before the object is ignored.
 {{ end }}
+{{ end -}}
 {{ end -}}
 {{ end -}}
 {{ end -}}

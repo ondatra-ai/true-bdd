@@ -207,7 +207,7 @@ templates. `build tests` needs no checklist or prompt templates; `build steps --
 An invalid file stops startup with its name, parse error and advice to fix the
 file; `init` preserves existing files. `version` and `init` need none of these files.
 
-`true-bdd/` holds the initialized files and optional host-authored schemas:
+`true-bdd/` holds the initialized files, including customizable schemas:
 
 - `true-bdd.yaml` — the model tiers (below), filesystem paths under
   `paths:` (`stories_dir`, `checklists_dir`, `tmp_dir`,
@@ -223,7 +223,7 @@ file; `init` preserves existing files. `version` and `init` need none of these f
 - `*-schema.yaml` — Yamale schemas pinning the shape of the spec
   documents (`product.yaml`, the scenario registry, `architecture.yaml`);
   the host project validates them in its lint step, outside the engine
-  itself. These schemas are optional host-authored files; `init` does not create them.
+  itself. The binary ships these schemas through `init`, preserving any existing copies.
 
 The host default configuration omits `scripts:`. This repository keeps that section
 in its own `true-bdd/true-bdd.yaml` for its tooling. The `Init defaults drift` gate
@@ -280,6 +280,46 @@ meant: the quoted `"false"`, which once parked the prompt it was meant
 to keep, and `yes`, which YAML reads as a string, among them. A
 checklist whose every prompt is parked is refused like one with no
 prompts, rather than passing every item unchecked.
+
+### Concepts and their bindings
+
+A host may declare `concepts:` instead of the Catalogue's templates. The engine refuses startup when the product document declares both `catalogue:` and `concepts:`, including null values. Existing hosts keep their templates and their current behavior.
+
+```yaml
+concepts:
+  given:
+    - concept: stored number
+      means: The number file holds the starting number before the command runs.
+      terms: [number]
+  when:
+    - concept: halve a number
+      means: The halve command is called once for the stored number.
+      terms: [number]
+  then:
+    - concept: stored number
+      means: The number file is read and its number compared with the expected number.
+      terms: [number]
+```
+
+Write one concept per Public interface item and kind of use, per block (ADR-0036). The item is what the use is about; a binding can reach it through several declared references. What the step definition does, as the step's wording fixes it, decides its concept, never the target an argument names. A Given states a state. A concept's `means` is closed: name the item, kind of use and every admitted variation in prose, without slots or brackets, using only declared `terms` and plain English. A new variation widens the existing concept; only a new item or kind of use calls for a new concept. Names are unique within their block and may repeat across blocks.
+
+The architecture binds each concept by name and block:
+
+```yaml
+architecture:
+  concepts:
+    - concept: halve a number
+      block: when
+      service: calculator
+      references: [{command: number halve}]
+      does: Call number halve once and keep its result.
+```
+
+A binding's `does` says what the definition does: a Given puts state in place, a When calls, a Then observes and compares. References use the same selectors as Phrase mappings below. An `intent` sentence replaces both `does` and `references`, accepted only for UI services until #246.
+
+The existing `D: declared-terms` and `D: term-mappings` check every concept's terms against the glossary and Word mapping. `D: phrase-mappings` checks that every concept has at least one binding, each binding names a declared concept and service, each concept (name and block) and service pair has at most one binding, and every reference belongs to that service's Public interface. These are document checks over all declarations, including concepts no current step uses and Scenarios no Story claims. Every finding names the concept. Fixes go through the menu to the product or architecture document, with an added Public interface declaration when needed, never to a Scenario. No AI turn answers these checks.
+
+The LLM link pass and the check of undeclared words in `means` belong to #257; `build steps` per concept belongs to #258. This change loads and checks the documents without judging how free-text steps link or generating concept definitions. `D: step-phrases` and `D: step-definitions` explicitly pass concept hosts unchecked; `build tests` renders without template matching for them. TrueBDD's own Catalogue and Phrase mappings stay in the template form until #259.
 
 ### The step-phrase catalogue
 
@@ -365,9 +405,9 @@ pattern, file and line. A step no definition binds yet is a gap `build
 tests --fix` authors, reported but not failed. A pattern that does not
 fold to a constant stops the walk with `msg="Check could not answer"`.
 
-Adoption is opt-in and gradual. With no `catalogue:` key every Scenario
+Adoption is opt-in and gradual. With neither `catalogue:` nor `concepts:` every Scenario
 passes "not checked: the product document declares no catalogue". With
-one, a Scenario is checked once a Story claims it (a non-empty
+templates, a Scenario is checked once a Story claims it (a non-empty
 `user_stories`); until then it passes "not checked: no Story claims this
 Scenario yet". `build tests` is stricter: once a catalogue is declared it
 holds every registry step to it, claimed or not, and refuses to start on
@@ -525,7 +565,7 @@ The host project's documents live under `docs/`:
   runs — see below), tells `build tests` which suite owns a scenario,
   and maps each product word onto the implementation under `terms:`.
 - `docs/product/product.yaml` — the product document, including its
-  `roles:`, the BDD `vocabulary:` (forbidden qualifiers and forbidden action verbs) the `us refine` and `scen check` Prompts cite, its step-phrase `catalogue:` and the `glossary:` defining the terms the catalogue declares. These are roles (responsibilities), not personas (invented
+  `roles:`, the BDD `vocabulary:` (forbidden qualifiers and forbidden action verbs) the `us refine` and `scen check` Prompts cite, either its step-phrase `catalogue:` or its `concepts:`, and the `glossary:` defining their declared terms. These are roles (responsibilities), not personas (invented
   individuals) — one person commonly holds two of them.
 - `docs/product/stories/*.yaml` — the stories, written by hand out of a
   discussion of a Feature, that `us refine` / `us apply` read, one

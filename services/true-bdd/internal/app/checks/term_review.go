@@ -17,6 +17,10 @@ func reviewTerms(
 	held string,
 	review func([]catalogue.Declaration) catalogue.TermReview,
 ) Verdict {
+	if source.ConceptsDeclared {
+		return reviewConceptTerms(itemID, source.Concepts, held, review)
+	}
+
 	compiled, _ := catalogue.Compile(source.Entries, source.Roles)
 
 	found := review(compiled.Declarations(steps))

@@ -93,23 +93,31 @@ The check of `build steps --fix` that runs a suite once in a copy of the Host pr
 _Avoid_: expected failure, any failure counts
 
 **Catalogue**:
-The product document's list of step phrases: each the shape a step may take, the block it may sit in, what it means, and the terms that meaning relies on. Every step a model does not run must match exactly one phrase.
+The product document's declared step meanings. During transition it uses either `catalogue:`, templates giving a step's shape, block, meaning and terms, or `concepts:`, meanings in prose grouped by Given, When and Then. A host declares at most one form. With templates, every step a model does not run must match exactly one phrase; linking free-text steps to concepts is the separate link pass.
 _Avoid_: vocabulary (the words a Story must not use), phrase book, step library
 
+**Concept**:
+One way of putting state in place (Given), calling (When), or observing and comparing (Then) through one Public interface item, per block. The item is what the use is about and may be reached through several declared references. What the step definition does, as the step's wording fixes it, decides its concept; an argument's target never changes it. Its closed `means` names the item, kind of use and every admitted variation in prose, relying only on declared `terms` and plain English. A Given concept states a state. Names are unique within a block (ADR-0036).
+_Avoid_: step template, phrase (for a concept)
+
+**Concept binding**:
+An `architecture.concepts` entry naming a Concept by name and block and its service, with Public interface `references` and a `does` sentence describing what its step definition does by block. An `intent` replaces both for a UI service. Every concept has at least one binding, each concept and service pair has at most one, and every reference is declared by that service. The built-in phrase-mappings check holds these declarations without linking steps; the link pass separately checks which service binding a Scenario needs.
+_Avoid_: concept mapping, step binding
+
 **Word mapping**:
-The architecture document's list of terms, each saying what the term is in the implementation and how a step definition sets it up or observes it, without naming code. Every term a catalogue phrase declares is mapped exactly once.
+The architecture document's list of terms, each saying what the term is in the implementation and how a step definition sets it up or observes it, without naming code. Every term a Catalogue phrase or Concept declares is mapped exactly once.
 _Avoid_: architecture glossary, dictionary
 
 **Phrase mapping**:
-The architecture document's list of Catalogue phrases, each saying which operation of the Public interface a step of that shape performs: the operation a `when` phrase calls, how a `given` phrase sets up state, or what a `then` phrase observes and compares with. Each phrase is mapped once per service that uses it, in `architecture.phrases`; the Word mapping still covers the terms.
+The architecture document's legacy `architecture.phrases` list: one entry per Catalogue template and service, stating what a step does through its Public interface by block. A Given sets up state, a When calls, a Then observes and compares. A host using concepts writes Concept bindings in `architecture.concepts` instead; the Word mapping covers the terms in either form.
 _Avoid_: step mapping, operation map
 
 **Term document**:
-A specification document that holds the words the Catalogue relies on: the product document, with the Catalogue and the glossary, and the architecture document, with the Word mapping (`architecture.terms`) and the Phrase mapping (`architecture.phrases`). A fix for a failed Closure check edits a term document, never the Scenario.
+A specification document holding declared meanings and their implementation: the product document, with its glossary and either Catalogue templates or Concepts, and the architecture document, with the Word mapping and either Phrase mappings or Concept bindings. A fix for a failed Closure check edits a Term document or a named Public interface document, never the Scenario.
 _Avoid_: vocabulary file, dictionary
 
 **Closure check**:
-One of the six Built-in checks that hold a Scenario to its Term documents: its service declares a valid Public interface, every step matches one Catalogue phrase, every matched phrase has one valid Phrase mapping for its service, the glossary defines and the Word mapping maps every term those phrases declare, and the phrases and the suite's step definitions correspond one to one. The five checks about phrases and terms pass a Scenario no Story claims, or a Host project with no Catalogue, unchecked; the Public interface check always runs.
+One of the six Built-in checks over a Scenario and its Term documents. With templates, these hold its Public interface, step phrases, declared terms, Word mappings, Phrase mappings and step definitions to their declarations; the five about templates pass unclaimed Scenarios or hosts without a Catalogue unchecked. With concepts, declared-terms and term-mappings check every declared concept, and phrase-mappings checks all Concept bindings, independently of Story claims; template matching and definition correspondence remain unchecked pending the link pass and build steps per concept. The Public interface check always runs. Both forms answer without an AI turn.
 _Avoid_: spec check, term check
 
 **Services**:

@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "concepts-fix-binding",
+  "files": [
+    {
+      "path": "docs/architecture/architecture.yaml",
+      "kind": "modified",
+      "size": 907,
+      "sha256": "0e61af4addd89995fd0501213df5fb34cc1ca26b30051b05d9b9cd9175c9abd6",
+      "text": "architecture:\n  services:\n  - name: greeter\n    path: services/greeter\n    language: go\n    public_interface:\n      kind: cli\n      document: docs/greeter-cli.yaml\n  concepts:\n  - concept: greeting\n    block: given\n    service: greeter\n    references:\n    - file: greeting-config\n    does: Write the expected greeting to the configuration file before running greet.\n  - concept: request greeting\n    block: when\n    service: greeter\n    references:\n    - command: greet\n    does: Run the greet command once for the person under test.\n  - concept: greeting\n    block: then\n    service: greeter\n    references:\n    - log_record: greeted\n    does: Observe the greeted log record and compare its greeting to the expected text.\n  terms:\n  - term: greeting\n    technical: Text supplied to greet and recorded in the greeted log record.\n    observed_by: Set the greeting configuration and compare the greeted text.\n"
+    }
+  ]
+}

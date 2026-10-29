@@ -5401,7 +5401,7 @@ scenarios:
       - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
 
   init-001-empty-folder:
-    description: Init creates the host configuration without scripts, every checklist and every prompt template without needing configuration or Specification documents
+    description: Init creates the host configuration without scripts, every checklist, every prompt template and three document schemas without needing configuration or Specification documents
     service: true-bdd
     path: tests/true-bdd/init_test.go
     user_stories:
@@ -5421,6 +5421,7 @@ scenarios:
         - and: exactly 1 file matching "true-bdd/true-bdd.yaml" is created
         - and: exactly 5 files matching "true-bdd/checklists/*.yaml" are created
         - and: exactly 32 files matching "templates/*.tpl" are created
+        - and: exactly 3 files matching "true-bdd/*schema.yaml" are created
         - and: 'every file matching "true-bdd/true-bdd.yaml" does not match (?m)^scripts:'
         - and: no file matching "docs/**" is created
 
@@ -7098,3 +7099,137 @@ scenarios:
       - 'every file matching "tmp/*/critique-*-user.txt" matches interface_document:'
       - every file matching "tmp/*/critique-*-user.txt" matches calc-002-double
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+  concepts-001-loads:
+    description: A product document with concepts must load and validate its terms and bindings without AI
+    service: true-bdd
+    path: tests/true-bdd/concepts_test.go
+    user_stories:
+    - story: docs/product/stories/concepts.yaml
+      scenario_id: concepts-001-loads
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concepts-valid" project tree
+      when:
+      - the System Architect runs "scen check"
+      then:
+      - the command exits with code 0
+      - stdout matches every concept binding
+      - stdout matches every concept.s declared terms are defined
+      - stdout matches every concept.s declared terms are mapped
+      - the engine dispatched 0 AI turns
+      - no file outside "tmp" changed
+  concepts-002-both-refused:
+    description: A product declaring both catalogue and concepts must refuse startup naming both
+    service: true-bdd
+    path: tests/true-bdd/concepts_test.go
+    user_stories:
+    - story: docs/product/stories/concepts.yaml
+      scenario_id: concepts-002-both-refused
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concepts-both" project tree
+      when:
+      - the System Architect runs "scen check"
+      then:
+      - the command exits with code 1
+      - 'stdout matches Refusing to start.*catalogue: and concepts:'
+      - the engine dispatched 0 AI turns
+      - no file outside "tmp" changed
+  concepts-003-undefined-term:
+    description: A concept declaring an undefined glossary term must fail naming the concept and term
+    service: true-bdd
+    path: tests/true-bdd/concepts_test.go
+    user_stories:
+    - story: docs/product/stories/concepts.yaml
+      scenario_id: concepts-003-undefined-term
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concepts-undefined-term" project tree
+      when:
+      - the System Architect runs "scen check"
+      then:
+      - the command exits with code 1
+      - stdout matches when concept 'request greeting'.*greeting.*glossary does not define
+      - the engine dispatched 0 AI turns
+      - no file outside "tmp" changed
+  concepts-004-unmapped-term:
+    description: A concept declaring an unmapped term must fail naming the concept and term
+    service: true-bdd
+    path: tests/true-bdd/concepts_test.go
+    user_stories:
+    - story: docs/product/stories/concepts.yaml
+      scenario_id: concepts-004-unmapped-term
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concepts-unmapped-term" project tree
+      when:
+      - the System Architect runs "scen check"
+      then:
+      - the command exits with code 1
+      - stdout matches when concept 'request greeting'.*greeting.*no mapping
+      - the engine dispatched 0 AI turns
+      - no file outside "tmp" changed
+  concepts-005-bindings:
+    description: Undeclared concepts and references and duplicate bindings must fail naming each concept without AI
+    service: true-bdd
+    path: tests/true-bdd/concepts_test.go
+    user_stories:
+    - story: docs/product/stories/concepts.yaml
+      scenario_id: concepts-005-bindings
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concepts-bindings" project tree
+      when:
+      - the System Architect runs "scen check"
+      then:
+      - the command exits with code 1
+      - stdout matches when concept 'undeclared greeting'.*names no declared concept
+      - stdout matches when concept 'request greeting'.*invented-halve
+      - stdout matches given concept 'greeting'.*has 2 Concept bindings
+      - stdout matches then concept 'greeting'.*intent is not supported for a non-UI service
+      - the engine dispatched 0 AI turns
+      - no file outside "tmp" changed
+  concepts-006-templates:
+    description: A host retaining Catalogue templates must behave as before
+    service: true-bdd
+    path: tests/true-bdd/concepts_test.go
+    user_stories:
+    - story: docs/product/stories/concepts.yaml
+      scenario_id: concepts-006-templates
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concepts-templates" project tree
+      when:
+      - the System Architect runs "scen check"
+      then:
+      - the command exits with code 0
+      - stdout matches every matched phrase has one valid Phrase mapping
+      - the engine dispatched 0 AI turns
+      - no file outside "tmp" changed
+  concepts-007-fix-binding:
+    description: A concept binding fix must write the architecture after apply and preserve the Scenario
+    service: true-bdd
+    path: tests/true-bdd/concepts_test.go
+    user_stories:
+    - story: docs/product/stories/concepts.yaml
+      scenario_id: concepts-007-fix-binding
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concepts-fix-binding" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "scen check --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches FIX PROMPT GENERATED
+      - stdout matches msg="User chose fix action".*action=apply
+      - stdout matches every concept binding
+      - the only file changed outside "tmp" is "docs/architecture/architecture.yaml"
+      - the file "docs/scenarios.yaml" is unchanged

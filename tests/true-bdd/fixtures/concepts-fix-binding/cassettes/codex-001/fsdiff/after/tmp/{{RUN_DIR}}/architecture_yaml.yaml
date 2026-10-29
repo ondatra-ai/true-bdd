@@ -1,0 +1,31 @@
+architecture:
+  services:
+  - name: greeter
+    path: services/greeter
+    language: go
+    public_interface:
+      kind: cli
+      document: docs/greeter-cli.yaml
+  concepts:
+  - concept: greeting
+    block: given
+    service: greeter
+    references:
+    - file: greeting-config
+    does: Write the expected greeting to the configuration file before running greet.
+  - concept: request greeting
+    block: when
+    service: greeter
+    references:
+    - command: greet
+    does: Run the greet command once for the person under test.
+  - concept: greeting
+    block: then
+    service: greeter
+    references:
+    - log_record: greeted
+    does: Observe the greeted log record and compare its greeting to the expected text.
+  terms:
+  - term: greeting
+    technical: Text supplied to greet and recorded in the greeted log record.
+    observed_by: Set the greeting configuration and compare the greeted text.

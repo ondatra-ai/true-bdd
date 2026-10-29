@@ -517,6 +517,8 @@ architecture:
     scen_check_fix_generator:
       rendering: *prompt-rendering
       fields:
+        Subject.ConceptForm: >-
+          True when the closure check loaded concepts from the product document for this Cell; false for legacy templates. Selects concept document instructions, preserving legacy rendered bytes.
         DocPaths: *docpaths
         FailedCheck.ActualAnswer: *failedcheck-actualanswer
         FailedCheck.Check: *failedcheck-check
@@ -543,12 +545,16 @@ architecture:
     scen_check_fix_generator_system:
       rendering: *prompt-rendering
       fields:
+        Subject.ConceptForm: >-
+          True when the closure check loaded concepts from the product document for this Cell; false for legacy templates. Selects concept document instructions, preserving legacy rendered bytes.
         <<: *fix-generator-system-fields
         Subject.Service: *registry-service
         ResultPath: *generation-result-path
     scen_check_fix_applier:
       rendering: *prompt-rendering
       fields:
+        Subject.ConceptForm: >-
+          True when the closure check loaded concepts from the product document for this Cell; false for legacy templates. Selects concept document instructions, preserving legacy rendered bytes.
         Subject.Service: *registry-service
         Check: *check
         FixPrompt: *fixprompt
@@ -782,7 +788,7 @@ architecture:
               link entries, are left untouched. Each path is reported through an INFO log record with msg Created or
               Left existing and a path attribute. Init binds stdout text logging and
               tmp/true-bdd.log.json without loading configuration. Creation rechecks existence under the disk channel's
-              exclusive directory Hold. Init writes no Specification or schema and
+              exclusive directory Hold. Init installs the product, architecture and Registry schemas from their repository copies under true-bdd/; it writes no Specification and
               performs no framework detection. Version and init need none of these files.
             - >-
               Every checklist-driven command loads its configuration and selected
@@ -1241,9 +1247,47 @@ architecture:
   # words naming no code identifier, so the steps can be rebuilt from it.
   # It maps every word the catalogue declares, one entry per word.
   terms:
+    - term: Concept
+      technical: >-
+        The product loader decodes concepts given/when/then lists of concept,
+        means and terms, preserving block and declaration order. It refuses names
+        repeated within a block and malformed entries. At command startup both
+        catalogue and concepts keys, even null, are refused naming both. Template
+        hosts retain their old checks. Concepts declare one Public interface item
+        and kind of use per block, with a closed prose means covering every admitted
+        variation, in declared terms and plain English; Given states a state.
+        The definition's use as fixed by the wording decides the concept, never
+        an argument's target. A binding may reach the item through several references.
+      observed_by: >-
+        Load concept hosts and compare scen check exit code, findings and zero AI
+        turns. declared-terms and term-mappings check every concept's terms, naming
+        block, concept and term for missing or repeated definitions or mappings.
+        Both checks read afresh after fixes, regardless of Story claims. Their fixes
+        write the product glossary or architecture Word mapping, never the Registry.
+    - term: Concept binding
+      technical: >-
+        architecture.concepts is an optional list of concept, block, service,
+        references and does, or intent replacing does and references for UI only.
+        The loader preserves duplicates. phrase-mappings checks all bindings:
+        a declared concept by name and block, a service with Public interface,
+        one binding per concept and service, and every reference declared there.
+        Each concept needs at least one binding, without choosing a Scenario's
+        service before #257 links its steps. does states setup, calling or
+        observation and comparison by block. References use the Phrase mapping's
+        selectors. No step text is linked and no AI turn answers these checks.
+      observed_by: >-
+        scen check names the block and concept for unknown concepts, services,
+        references, duplicates, incomplete entries and non-UI intent. Fix proposals
+        go to the System Architect at the menu and apply writes architecture.concepts
+        and any approved missing Public interface declaration, never a Scenario.
+        The existing fix ledger restores documents when a walk fails. The link and
+        means word checks are #257 and build steps per concept is #258; step-phrases
+        and step-definitions report concept hosts unchecked until those passes exist.
     - term: Phrase mapping
       technical: >-
-        architecture.phrases is an optional list of template and service pairs. Operation
+        architecture.phrases is an optional list of template and service pairs for template
+        hosts. Concept hosts use architecture.concepts and the same phrase-mappings
+        check over Concept bindings instead. Operation
         entries carry references and does; intent replaces both, currently accepted only
         for UI services. Each reference has exactly one selector: command is an exact CLI
         commands key, file/log_record/outgoing_call is a key under the corresponding

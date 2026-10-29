@@ -1,0 +1,89 @@
+# Yamale schema for the scenario registry (path from
+# `documents.scenarios_yaml` in true-bdd.yaml, conventionally
+# docs/scenarios.yaml).
+#
+# The filename is not free: the schema gate pairs
+# `true-bdd/<key>-schema.yaml` with `documents.<key>`, and the key is
+# `scenarios_yaml` — the `_yaml` suffix included.
+#
+#   yamale -s true-bdd/scenarios_yaml-schema.yaml docs/scenarios.yaml
+#
+# Unlike the other two documents, this one IS parsed by the engine
+# (`build tests` walks it) and by the test harness
+# (pkg/testkit/bddgo runs it). So the schema's job is narrower than
+# usual: it pins the shape those two readers already require, and its
+# value is catching a hand-edit before a walk does.
+#
+# Three load-time rules the engine enforces that a schema cannot, worth
+# knowing while editing this file:
+#   - `scenarios:` must be a MAP keyed by id, never a list. A list is
+#     well-formed YAML and fails only at decode.
+#   - An empty map is a refusal, not a pass.
+#   - A step is either a plain string or a one-key `{and: …}` / `{but: …}`
+#     mapping; the modifier form is flattened to "and <text>".
+#   - A step whose text opens with `llm:` or `judge:` is run by a model
+#     rather than by a step definition, and each is legal in exactly one
+#     place: `llm:` ACTS, so it belongs in given:/when:; `judge:` RULES
+#     on what already happened, so it belongs in then: and nowhere else.
+#     The prefix in the wrong block is a refusal, not a reinterpretation.
+#     A `judge:` clause is collected as the scenario runs and ruled on
+#     once at the end, so use it only for what no comparison can settle —
+#     that two wordings mean the same thing, that a rewrite kept its
+#     substance. Anything a step definition could assert belongs in one.
+
+metadata: include('metadata')
+# A key is its lineage id `<story-id>-<NNN>-<slug>` (ADR 0014), e.g.
+# `scen-check-001-unknown-id-refused`; the retired `E2E-NNN` stays valid
+# until each Story renames its Scenarios.
+scenarios: map(include('scenario'), key=regex('^(E2E-[0-9]{3}|[a-z0-9][a-z0-9.-]*-[0-9]{3}-[a-z0-9]+(-[a-z0-9]+)*)$'), min=1)
+
+---
+metadata:
+  title: str()
+  version: str()
+  description: str()
+  last_updated: str(required=False)
+
+---
+scenario:
+  # One sentence naming the behaviour, free of the words the product
+  # document's `vocabulary:` forbids. The generated test carries it as the
+  # comment above its function.
+  description: str()
+  # Must name a service declared in architecture.yaml. It is also the
+  # join that decides which tests own the scenario: they live in
+  # `tests/<service>/`, mirroring `services/<service>/`.
+  service: str()
+  # Generated test file this scenario is written into, repo-relative.
+  # Several scenarios may share one file (emitted in id order). Required,
+  # never defaulted — grouping is editorial judgement no generator should guess.
+  path: str()
+  # Free-form note on where the behaviour comes from. Optional.
+  requirement: str(required=False)
+  # Optional grouping label for a human reader; the engine never reads it.
+  feature: str(required=False)
+  last_updated: str(required=False)
+  # Lineage back to the stories this scenario was merged from, written
+  # by `us apply`. An empty list is valid and says so on the record: the
+  # scenario exists and no story claims it yet.
+  user_stories: list(include('user_story'))
+  # How long the scenario's run may take, as a Go duration ("10m"); absent
+  # means the suite's default. Not a step (a machine's speed isn't
+  # behaviour) — an invalid duration is refused, not rounded up to default.
+  timeout: str(required=False)
+  merged_steps: include('merged_steps')
+
+---
+user_story:
+  story: str()
+  scenario_id: str()
+  merge_date: str(required=False)
+
+---
+# All three blocks are optional in shape; a scenario with no step at all
+# is one no test can execute, but that check is left to `build tests` —
+# which blocks are needed depends on the behaviour, not the document.
+merged_steps:
+  given: list(any(str(), map(str())), required=False)
+  when: list(any(str(), map(str())), required=False)
+  then: list(any(str(), map(str())), required=False)

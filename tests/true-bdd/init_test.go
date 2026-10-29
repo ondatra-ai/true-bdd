@@ -22,7 +22,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
-// init-001-empty-folder: Init creates the host configuration without scripts, every checklist and every prompt template without needing configuration or Specification documents
+// init-001-empty-folder: Init creates the host configuration without scripts, every checklist, every prompt template and three document schemas without needing configuration or Specification documents
 func TestInit001EmptyFolder(t *testing.T) {
 	s := scenarios.New(t, "init-001-empty-folder")
 	s.Given(`the "init-empty" project tree`)
@@ -34,6 +34,7 @@ func TestInit001EmptyFolder(t *testing.T) {
 	s.And(`exactly 1 file matching "true-bdd/true-bdd.yaml" is created`)
 	s.And(`exactly 5 files matching "true-bdd/checklists/*.yaml" are created`)
 	s.And(`exactly 32 files matching "templates/*.tpl" are created`)
+	s.And(`exactly 3 files matching "true-bdd/*schema.yaml" are created`)
 	s.And(`every file matching "true-bdd/true-bdd.yaml" does not match (?m)^scripts:`)
 	s.And(`no file matching "docs/**" is created`)
 	s.Done()
