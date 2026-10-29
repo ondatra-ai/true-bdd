@@ -12,4 +12,6 @@ sections:
       Public interface, by block: a when calls an operation, a given sets up state,
       a then observes and compares. Propose one architecture.phrases entry with the
       verbatim template, service, references and does sentence, or intent for a UI
-      service. Write the architecture document only after apply, never the Scenario.'
+      service, and add to the Public interface document what the answers name that
+      it does not declare yet. Write the architecture and that document only after
+      apply, never the Scenario.'

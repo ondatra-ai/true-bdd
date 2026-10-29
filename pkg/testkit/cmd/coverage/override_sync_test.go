@@ -175,21 +175,7 @@ const (
 // checklist overrides. A fixture belongs here only when the override IS
 // the behaviour under test; every other one declares checklist_prompts.
 func allowedOverrideFixtures() map[string]overridePurpose {
-	return map[string]overridePurpose{
-		"phrase-mappings-missing":                 overrideChecks,
-		"phrase-mappings-undeclared":              overrideChecks,
-		"phrase-mappings-valid":                   overrideChecks,
-		"phrase-mappings-duplicate":               overrideChecks,
-		"phrase-mappings-intent":                  overrideChecks,
-		"phrase-mappings-fix":                     overrideChecks,
-		"phrase-mappings-fix-operation":           overrideChecks,
-		"phrase-mappings-exit":                    overrideChecks,
-		"public-interface-missing":                overrideChecks,
-		"public-interface-missing-document":       overrideChecks,
-		"public-interface-malformed-document":     overrideChecks,
-		"public-interface-valid":                  overrideChecks,
-		"public-interface-unsupported":            overrideChecks,
-		"public-interface-fix":                    overrideChecks,
+	allowed := map[string]overridePurpose{
 		"init-existing":                           overridePreserved,
 		"start-invalid-checklist":                 overrideRefused,
 		"build-steps-critique-correct":            overrideTiers,
@@ -255,6 +241,24 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"fix-loop-attempts-exhausted":             overrideFixLoop,
 		"fix-loop-refix-stops":                    overrideFixLoop,
 		"fix-loop-unsettled":                      overrideFixLoop,
+	}
+
+	for _, fixture := range interfaceCheckFixtures() {
+		allowed[fixture] = overrideChecks
+	}
+
+	return allowed
+}
+
+// interfaceCheckFixtures narrow scen check to its public-interface and
+// phrase-mappings checks (#239, #240).
+func interfaceCheckFixtures() []string {
+	return []string{
+		"phrase-mappings-missing", "phrase-mappings-undeclared", "phrase-mappings-valid",
+		"phrase-mappings-duplicate", "phrase-mappings-intent", "phrase-mappings-fix",
+		"phrase-mappings-fix-operation", "phrase-mappings-exit",
+		"public-interface-missing", "public-interface-missing-document", "public-interface-malformed-document",
+		"public-interface-valid", "public-interface-unsupported", "public-interface-fix",
 	}
 }
 

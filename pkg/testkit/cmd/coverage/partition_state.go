@@ -224,7 +224,7 @@ func (s *partitionState) warnAfterLastSave(cell cellID, sanitizedPath string) bo
 			lastSave = eventIdx
 		case evWarnProtocol:
 			lastWarn = eventIdx
-		case evLoadedPrompts, evFixGenerated, evFixApplied, evCodeDiscovery, evCodeComplete:
+		case evLoadedPrompts, evFixGenerated, evFixApplied, evCodeDiscovery, evCodeComplete, evStepsComplete:
 		}
 	}
 

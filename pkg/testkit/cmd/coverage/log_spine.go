@@ -24,6 +24,7 @@ const (
 	evWarnProtocol  logEventKind = "warn_protocol"
 	evCodeDiscovery logEventKind = "code_discovery"
 	evCodeComplete  logEventKind = "code_complete"
+	evStepsComplete logEventKind = "steps_complete"
 )
 
 // logEvent is one relevant, ordered record from the slog JSON stream.
@@ -137,8 +138,24 @@ func parseLogLine(line []byte) (logEvent, bool, bool) {
 	return spineEvent(raw)
 }
 
+// completionBanner maps a command's completion record to its spine kind.
+func completionBanner(msg string) (logEventKind, bool) {
+	switch msg {
+	case "BUILD CODE COMPLETE":
+		return evCodeComplete, true
+	case "BUILD STEPS COMPLETE":
+		return evStepsComplete, true
+	default:
+		return "", false
+	}
+}
+
 func spineEvent(raw rawLogLine) (logEvent, bool, bool) {
 	filePath := raw.File
+
+	if kind, ok := completionBanner(raw.Msg); ok {
+		return logEvent{Kind: kind}, true, false
+	}
 
 	switch raw.Msg {
 	case "Total failing tests across architecture":
@@ -147,8 +164,6 @@ func spineEvent(raw rawLogLine) (logEvent, bool, bool) {
 		}
 
 		return logEvent{Kind: evCodeDiscovery, Failures: *raw.Failures}, true, false
-	case "BUILD CODE COMPLETE":
-		return logEvent{Kind: evCodeComplete}, true, false
 	case "Loaded prompts":
 		return logEvent{Kind: evLoadedPrompts, Command: raw.Command,
 			Items: int(raw.Items), Prompts: int(raw.Prompts)}, true, false
@@ -196,7 +211,7 @@ func attributeApplies(seg logSegment) []applyAttribution {
 			}
 
 			attributions = append(attributions, attr)
-		case evLoadedPrompts, evResultSaved, evWarnProtocol, evCodeDiscovery, evCodeComplete:
+		case evLoadedPrompts, evResultSaved, evWarnProtocol, evCodeDiscovery, evCodeComplete, evStepsComplete:
 		}
 	}
 
@@ -223,6 +238,12 @@ func cleanWalkProven(seg logSegment) bool {
 		return codeDiscoveryConverged(events)
 	}
 
+	// build steps converges through its own whole-suite checks, not a re-walk:
+	// the Item's post-apply save and completion prove it, with no further fix.
+	if seg.Events[0].Command == "build steps" {
+		return saves > 0 && stepsCompleted(events)
+	}
+
 	return saves > items*prompts
 }
 
@@ -238,7 +259,7 @@ func walkShape(seg logSegment) (int, int, int) {
 			items, prompts = event.Items, event.Prompts
 		case evFixApplied:
 			lastApply = eventIdx
-		case evFixGenerated, evResultSaved, evWarnProtocol, evCodeDiscovery, evCodeComplete:
+		case evFixGenerated, evResultSaved, evWarnProtocol, evCodeDiscovery, evCodeComplete, evStepsComplete:
 		}
 	}
 
@@ -258,11 +279,22 @@ func postApplyActivity(events []logEvent) (int, bool) {
 			return saves, true
 		case evResultSaved:
 			saves++
-		case evLoadedPrompts, evFixApplied, evCodeDiscovery, evCodeComplete:
+		case evLoadedPrompts, evFixApplied, evCodeDiscovery, evCodeComplete, evStepsComplete:
 		}
 	}
 
 	return saves, false
+}
+
+// stepsCompleted reports whether build steps printed its completion banner.
+func stepsCompleted(events []logEvent) bool {
+	for _, event := range events {
+		if event.Kind == evStepsComplete {
+			return true
+		}
+	}
+
+	return false
 }
 
 // codeDiscoveryConverged requires fresh full discovery and completion, not a restart alone.
@@ -275,7 +307,7 @@ func codeDiscoveryConverged(events []logEvent) bool {
 			green, complete = event.Failures == 0, false
 		case evCodeComplete:
 			complete = green
-		case evLoadedPrompts, evResultSaved, evFixGenerated, evFixApplied, evWarnProtocol:
+		case evLoadedPrompts, evResultSaved, evFixGenerated, evFixApplied, evWarnProtocol, evStepsComplete:
 		}
 	}
 
