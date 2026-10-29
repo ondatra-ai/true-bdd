@@ -23,14 +23,15 @@ func NewBuildCommand(provide containerProvider) *cobra.Command {
 	}
 
 	buildCmd.AddCommand(newBuildTestsCmd(provide))
+ buildCmd.AddCommand(newBuildStepsCmd(provide))
 	buildCmd.AddCommand(newBuildCodeCmd(provide))
 
 	return buildCmd
 }
 
-// buildRunE is the run shape both `build` subcommands share, receiving the
+// buildRunE is the run shape all `build` subcommands share, receiving the
 // resolved container, spec path, and fix flag — plus the cobra command,
-// since `build tests` alone needs a second document and must check its flag.
+// since Registry commands need a second document and must check their flags.
 type buildRunE func(
 	ctx context.Context,
 	cmd *cobra.Command,
@@ -104,26 +105,9 @@ func buildSpecCmd(use, short, long string, flag specFlag, provide containerProvi
 func newBuildTestsCmd(provide containerProvider) *cobra.Command {
 	cmd := buildSpecCmd(
 		"tests",
-		"Walk the requirements registry and check every scenario has an executable test",
-		`Walk every scenario in the configured scenario registry
-(documents.scenarios_yaml, conventionally docs/scenarios.yaml) against the
-build-tests checklist. The checklist asks whether every step of the
-scenario resolves to a step definition in the suite that owns it — the
-entry under architecture.testing.suites[] whose service: matches the
-scenario's service:. With --fix, every failed (scenario, prompt) cell
-drives a Claude-mediated test-authoring turn that Writes or Edits a step
-definition under that suite's path:; the registry is never touched. The
-CLI exits non-zero if any scenario is still uncovered after the walk.
-
-When the product document (documents.product) declares a catalogue:,
-every step of every scenario must first match exactly one of its
-templates, declared for the step's block, or the run is refused before
-it writes a file or spends an AI turn, naming each step outside it.
-
-Example:
-  true-bdd build tests
-  true-bdd build tests --fix
-  true-bdd build tests --requirements docs/scenarios.yaml`,
+  "Render or verify Registry test files",
+  `Render tests deterministically from the Registry. Without --fix, refuse stale
+files; with --fix, write them. No AI turn or test runner is started.`,
 		specFlag{
 			name: "requirements",
 			usage: "Path to the requirements registry YAML " +
@@ -148,18 +132,10 @@ Example:
 				return err
 			}
 
-			return commands.RunBuildTests(ctx, commands.BuildTestsDeps{
-				TestRunnerDispatcher:         container.TestRunnerDispatcher,
-				RegistryLoader:               container.RegistryLoader,
-				ChecklistLoader:              container.ChecklistLoader,
-				DocResolver:                  container.DocResolver,
-				BuildTestsEvaluator:          container.BuildTestsEvaluator,
-				BuildTestsFixPromptGenerator: container.BuildTestsFixPromptGenerator,
-				BuildTestsFixApplier:         container.BuildTestsFixApplier,
-				UserInputCollector:           container.UserInputCollector,
-				TableRenderer:                container.TableRenderer,
-				RunDir:                       container.RunDir,
-			}, requirementsFile, architectureFile, fix)
+   return commands.RunBuildTests(ctx, commands.BuildTestsDeps{
+    RegistryLoader: container.RegistryLoader,
+    DocResolver: container.DocResolver,
+   }, requirementsFile, architectureFile, fix)
 		},
 	)
 

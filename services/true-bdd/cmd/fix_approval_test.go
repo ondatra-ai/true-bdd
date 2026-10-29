@@ -13,7 +13,7 @@ func TestFixCommandsRejectRemovedApprovalFlagBeforeStartup(t *testing.T) {
 	t.Parallel()
 
 	for _, invocation := range []string{
- "build code", "build tests", "us refine example", "us apply example", "scen check",
+ "build code", "build tests", "build steps", "us refine example", "us apply example", "scen check",
  } {
  arguments := strings.Fields(invocation)
 		t.Run(strings.Join(arguments, " "), func(t *testing.T) {

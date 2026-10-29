@@ -1,5 +1,0 @@
-=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-001-double-iter2-result.yaml ===
-applied: true
-target: "tests/calc/steps/steps.go"
-summary: "Registered double, fixed multiplication, removed the Given special case, and guarded parsing before state mutation."
-=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-001-double-iter2-result.yaml ===

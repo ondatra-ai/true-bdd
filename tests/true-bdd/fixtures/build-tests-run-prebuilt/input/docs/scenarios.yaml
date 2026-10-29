@@ -1,9 +1,0 @@
-scenarios:
-  calc-001-help:
-    description: The running engine lists its commands
-    service: calc
-    path: tests/calc/calc_test.go
-    merged_steps:
-      given: ['the engine is available']
-      when: ['the engine help is requested']
-      then: ['the help lists build']

@@ -80,9 +80,7 @@ between rebuilds, as long as both contracts are honoured.
 subcommand suite manages the spec lifecycle, starting from a Story the
 Product Owner writes directly, out of a discussion of a Feature, into
 `docs/product/stories/`; the `build` subcommands
-implement the regeneration loop — `build tests` derives executable
-tests from the registry, `build code` regenerates production code
-until those tests pass.
+implement the pipeline `us refine`, `us apply`, `build tests`, `build steps`, `build code`. `build tests` renders Registry tests, `build steps` checks their definitions, and `build code` repairs production code until the tests pass.
 
 ## Status
 
@@ -90,7 +88,8 @@ until those tests pass.
 |---|---|
 | `us refine <id>` | **Working** — the pipeline's first step: walks a hand-written Story against `us-refine`, saving it in place when all Prompts pass. Every shipped Prompt has an `F:`; `--fix` proposes added or rewritten Acceptance Criteria or a Catalogue entry, applied only after the Product Owner answers apply at the menu. Stories still need 3 to 7 criteria. Each real failure mode needs its own criterion; a Story with none passes with a context line explaining why. When a Catalogue is declared, each step must match exactly one phrase in its declared block; `D: step-phrases` runs first and its fix adds a missing phrase to the product document while the Story keeps its words. A custom checklist missing an `F:` still refuses `--fix`. |
 | `us apply <id>` | **Working** — walks every AC in a refined story, validates against `us-apply`, and merges scenarios into the central `docs/scenarios.yaml` registry. |
-| `build tests` | **Working** — walks every scenario in the registry against the `build-tests` checklist and exits non-zero if any scenario is not executable: every one of its steps must bind to a step definition in the suite that owns it. When the product document declares a catalogue, every registry step, whether a Story claims its scenario or not, must first match exactly one of its templates, as `D: step-phrases` holds them, or the run is refused before it writes a file or spends an AI turn, naming each step outside it; a host with no catalogue walks as before. With `--fix`, failed cells drive a Claude-mediated authoring loop that writes the missing step definition; when the product document declares a catalogue, that loop is handed each unbound step's phrase, the glossary meaning of the words it relies on and their word mapping, so the definition observes what the mapping says. After each definition fix, it runs the bound Scenarios in every changed step package, including Scenarios that already bound every step, through `architecture.testing.commands.replay` with a Go test name filter. A selected Scenario must pass in its owning Go package; a same-named test elsewhere cannot satisfy it. A Scenario that becomes unbound remains a failure. Runtime failures feed the step-authoring loop; a definition still failing at `config.max_apply_attempts` ends non-zero, naming the Scenario and step. `BUILD TESTS COMPLETE` follows successful execution and generated-file verification. The registry itself is never modified. |
+| `build tests` | **Working** — deterministically renders Registry test files. Without `--fix`, stale files refuse startup; `--fix` writes them. Registry, path, renderer, step-shape and Catalogue phrase refusals precede rendering. No AI turn, fix menu or test runner. |
+| `build steps` | **Working without `--fix`** — lists each Catalogue phrase missing a definition in each go-test suite and checks every Scenario's Step coverage in-process. Missing definitions or failed coverage exit non-zero; nonconstant patterns and ambiguous bindings refuse startup. No AI turn or test runner. `--fix` is not built yet and refuses startup. |
 | `build code` | **Working** — runs the architecture's declared replay command and walks the whole failing set as one Item. An engine-owned `D:` verdict needs no validation AI turn. With `--fix`, one plan and one writer repair the set; the writer receives Specification context, service paths and exact `writable` paths, and codex or Claude whole-suite and selected replay forms. After every completed apply the engine reruns the remaining set in one start; passing members leave and missing results stay failing. A successful writer response missing its confirmation warns once with the result path and follows the same rerun as `applied: false`, keeping files and consuming the same allowance. The terminal apply is rerun but still stops at the existing bound even if it passes. Started codex writers that exit non-zero or answer empty, and Claude writers that exit non-zero, return an error result or answer empty, follow the same recovery without a stall watch. Start failures and engine refusals before spawning remain fatal, as do other roles' failures. The writer ends its final message with the confirmation block; the engine saves the block at the heading's result path, which the writer never writes. Fresh discovery on each outer walk catches regressions. Tests and the Registry remain unchanged. |
 | `scen check [id...]` | **Working** — walks registry scenarios against the `scen-check` checklist, one cell per (scenario, prompt): each prompt reads one scenario's own fields — description, service, path, lineage, steps — and rules on that scenario alone, so no prompt can ask a cross-registry question. Exits non-zero when any scenario fails, so it can gate a change. With no argument every scenario is walked; ids narrow the walk to those scenarios, in ascending id order. |
 
@@ -104,7 +103,7 @@ it in the architecture document, never in the Scenario; a fix for a
 failed model question rewrites the Scenario's own registry entry, or the
 meaning of the catalogue phrase it uses (see "The step-phrase catalogue"
 below).
-`build tests` and `scen check` also take
+`build tests`, `build steps` and `scen check` also take
 `--requirements <path>` and `build code` takes `--architecture <path>`
 to override the configured spec locations (`documents.scenarios_yaml`
 and `documents.architecture_yaml` in `true-bdd.yaml`).
@@ -183,7 +182,8 @@ clean environment:
 ```bash
 env -u CLAUDECODE ./bin/true-bdd us refine scen-check --fix
 env -u CLAUDECODE ./bin/true-bdd us apply  scen-check --fix
-env -u CLAUDECODE ./bin/true-bdd build tests --fix
+./bin/true-bdd build tests --fix
+./bin/true-bdd build steps # --fix is not built yet
 env -u CLAUDECODE ./bin/true-bdd build code  --fix
 env -u CLAUDECODE ./bin/true-bdd scen check scen-check-003-unknown-id-refused
 ```
@@ -201,9 +201,9 @@ Specification documents or schemas and detects no test framework.
 
 The binary carries copies only for `init`. Commands read the project's files
 exclusively, with no embedded runtime fallback. Before any test run, Item or AI
-turn, a command loads its configuration and checklist and parses its system and
-user validation templates; `--fix` also checks its fix-generator and fix-applier
-templates. A missing file stops startup, naming the file and `true-bdd init`.
+turn, checklist commands load their configuration and checklist. Commands running AI parse their system and
+user validation templates; their `--fix` runs also check fix-generator and fix-applier
+templates. `build tests` needs no checklist or prompt templates; `build steps` currently reads only its deterministic checklist. A missing file stops startup, naming the file and `true-bdd init`.
 An invalid file stops startup with its name, parse error and advice to fix the
 file; `init` preserves existing files. `version` and `init` need none of these files.
 
@@ -211,15 +211,14 @@ file; `init` preserves existing files. `version` and `init` need none of these f
 
 - `true-bdd.yaml` — the model tiers (below), filesystem paths under
   `paths:` (`stories_dir`, `checklists_dir`, `tmp_dir`,
-  `tmp_glob`, and the `test_write_globs` roots `build tests --fix` may
-  author into, `./tests/**` and `./services/**` when it names none), per-command prompt-template paths, and a `documents:`
+  `tmp_glob`), per-command prompt-template paths, and a `documents:`
   map naming the files a check may cite (`product`, `architecture_yaml`,
   `scenarios_yaml` — the scenario registry). Each check in a checklist
   lists the document keys it needs under `docs:`, and the engine points
   the prompt at those files.
-- `checklists/` — one checklist per command, named by hyphenating the
-  command path (`us refine` → `us-refine.yaml`, `build tests` →
-  `build-tests.yaml`, …). Each prompt is a `Q:` a model answers or a
+- `checklists/` — one checklist per checklist command, named by hyphenating the
+  command path (`us refine` → `us-refine.yaml`, `build steps` →
+  `build-steps.yaml`, …). Each prompt is a `Q:` a model answers or a
   `D:` the engine answers itself (below).
 - `*-schema.yaml` — Yamale schemas pinning the shape of the spec
   documents (`product.yaml`, the scenario registry, `architecture.yaml`);
@@ -310,13 +309,7 @@ its Scenario with a context line naming the step and the templates; a
 template the grammar refuses fails every checked Scenario. Steps opening
 with `llm:` or `judge:` are exempt, since a model runs them.
 
-`build tests --fix` hands whoever writes a step definition the phrase each
-unbound step matches, with the glossary meaning and the word mapping of
-every term that phrase declares, and nothing else of the catalogue: not
-this grammar. A host whose definitions must follow it states it as a word
-its phrases declare. TrueBDD's own product document does: its glossary
-defines `template`, its architecture document maps it, and every phrase
-whose template holds a slot or brackets declares it.
+`build steps` lists missing definitions by Catalogue phrase and suite, including unused phrases. It checks every concrete Registry step separately; a definition covering only part of a phrase still fails when a Scenario uses an uncovered value. It reads definitions without compiling the suite or running the service. Step authoring with `--fix` is not built yet.
 
 `D: declared-terms` (also `docs: [product]`) holds the words those
 meanings rely on to the product document's `glossary:`, each entry a
@@ -363,7 +356,7 @@ An entry can instead carry `intent`, a sentence replacing `does` and `references
 
 `D: step-definitions` (`docs: [product]`) holds the catalogue to the
 suite's step definitions, the `steps/` package beside the Scenario's test
-file, read without running it as `build tests` reads it. Over the steps
+file, read without running it as `build steps` reads it. Over the steps
 of every Scenario a Story claims in that suite, whatever ids the walk
 selected, the two must correspond one to one: a template whose steps bind
 two definitions, a definition two templates reach, and a step two
@@ -538,7 +531,7 @@ The host project's documents live under `docs/`:
   a slug (`scen-check`, `96.2`), and a story may carry a `feature:` label
   that `us refine` keeps through every rewrite.
 - `docs/scenarios.yaml` — the scenario registry `us apply` merges into,
-  `build tests` walks, and the test suites RUN: each scenario is a test,
+  `build tests` renders, and the test suites RUN: each scenario is a test,
   its steps bound to code by the suite that owns it. A scenario is keyed
   by its lineage, `<story-id>-<ac-id>`, and the author writes each
   acceptance criterion's id as `<NNN>-<slug>` (ADR 0014), so the key
@@ -563,7 +556,6 @@ AI-dependency mode:
 architecture:
   testing:
     framework: go-test            # go-test | jest | playwright
-    prebuilt_engine_arg: "-engine-bin={engine_bin}" # optional; runner must consume it
     commands:
       record: "go test -tags bdd -json -count=1 ./tests/true-bdd/ -mode=services:record,tests:record"
       replay: "go test -tags bdd -json -count=1 ./tests/true-bdd/ -mode=services:replay,tests:replay"
@@ -622,7 +614,6 @@ The rules, all enforced at startup rather than discovered mid-run:
 - **Quoting is honoured, nothing else.** `-run '^TestGreen$'` survives
   as one argument; there is no expansion, substitution or piping. A
   command needing a shell belongs in a script the spec then names.
-- **One bounded exception: `prebuilt_engine_arg`.** This optional field is one argv element containing `{engine_bin}` exactly once. Only `build tests --fix` verification appends it, replacing that placeholder with the running binary's absolute, symlink-resolved path. Spaces and quotes in that path stay in the same argument. Every command that loads the architecture, including `build code`, refuses empty declarations or zero or repeated placeholders at startup, even when it never uses the argument. The replay entry point must consume the argument and skip building its service; this repository's harness does so with `-engine-bin`. Native Jest or Playwright runners need a wrapper, otherwise omit the field. `commands.*` stay literal, hosts without the field keep their existing verification, and `build code` runs its declared command unchanged.
 - **The working directory** is the one holding the suite's `config:`
   file — which is what lets `npx` resolve a suite's own local install.
   A suite that declares no `config:` inherits the directory `true-bdd`
@@ -750,6 +741,6 @@ The plan first seeks a permitted solution. If no solution exists, it returns `im
 
 ## Fix approval
 
-Run `true-bdd build code --fix` to review proposed fixes. Every fix is applied only after a person answers apply at its fix menu. `build tests`, `us refine`, `us apply` and `scen check` use the same menu. The engine offers no way to approve fixes in advance.
+Run `true-bdd build code --fix` to review proposed fixes. Every fix is applied only after a person answers apply at its fix menu. `us refine`, `us apply` and `scen check` use the same menu. The engine offers no way to approve fixes in advance.
 
 A clarifying question at end of stdin prints its question and suggested answers and stops with an error saying a person must answer. End of stdin at a fix menu stops with an error saying a person must choose whether to apply the fix. These stops exit non-zero without a COMPLETE banner. Answers are read from stdin, including pipes used by tests and the drill, with no terminal check. A final non-empty answer without a newline is accepted; a blank line keeps its interactive meaning.

@@ -46,9 +46,7 @@ func (c *ViperConfig) GetStringMapString(key string) map[string]string {
 	return c.viper.GetStringMapString(key)
 }
 
-// GetStringSlice reads a YAML list of strings, e.g. the
-// `paths.test_write_globs` write roots. An unset key yields nil so
-// callers can apply their own default.
+// GetStringSlice reads a YAML list of strings; an unset key yields nil.
 func (c *ViperConfig) GetStringSlice(key string) []string {
 	if !c.viper.IsSet(key) {
 		return nil

@@ -1,5 +1,0 @@
-=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-001-help-iter1-result.yaml ===
-applied: true
-target: "tests/calc/steps/steps.go"
-summary: "Added fmt and strings imports, registered helpLists, and implemented the specified assertion."
-=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-001-help-iter1-result.yaml ===

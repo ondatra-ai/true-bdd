@@ -52,8 +52,6 @@ testing:
   # directory every command runs in; without one they run from wherever
   # the engine was invoked.
   config: str(required=False)
-  # One argument for build tests verification; the loader enforces one placeholder.
-  prebuilt_engine_arg: str(required=False)
   commands: include('commands')
 
 ---

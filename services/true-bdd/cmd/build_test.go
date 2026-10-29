@@ -18,6 +18,7 @@ func TestBuildPathFlagDefaultsAreEmpty(t *testing.T) {
 	}{
 		{subcommand: "code", flag: "architecture"},
 		{subcommand: "tests", flag: "requirements"},
+		{subcommand: "steps", flag: "requirements"},
 	}
 
 	for _, testCase := range cases {
