@@ -30,6 +30,7 @@ type buildStepsExecution struct {
 	items            []*BuildStepsItem
 	attempts         map[*BuildStepsItem]int
 	maxAttempts      int
+	critiqueTier     string
 	redChecked       bool
 	green            []string
 }
@@ -37,6 +38,11 @@ type buildStepsExecution struct {
 func runBuildStepsFix(ctx context.Context, deps BuildStepsDeps, registryFile, architectureFile string) error {
 	execution := &buildStepsExecution{deps: deps, registryFile: registryFile, architectureFile: architectureFile,
 		compiler: testrunner.NewGoTestRunner(testrunner.NewArtifacts(deps.TmpDir))}
+
+	err := execution.prepareCritique()
+	if err != nil {
+		return runner.RefuseStartup("build steps", err)
+	}
 
 	return runner.Run(ctx, runner.Spec[*BuildStepsItem]{
 		Name: "build steps", ChecklistName: "build-steps", Fix: true,
@@ -65,7 +71,7 @@ func (e *buildStepsExecution) beforeEvaluate(_ context.Context, item *BuildSteps
 	return false, nil
 }
 
-func (e *buildStepsExecution) postFix(_ context.Context, item *BuildStepsItem, _ string) (*BuildStepsItem, error) {
+func (e *buildStepsExecution) postFix(ctx context.Context, item *BuildStepsItem, _ string) (*BuildStepsItem, error) {
 	e.redChecked = false
 	e.attempts[item]++
 	item.Findings = nil
@@ -82,6 +88,11 @@ func (e *buildStepsExecution) postFix(_ context.Context, item *BuildStepsItem, _
 		if finding != nil {
 			item.Findings = append(item.Findings, finding.Error())
 		}
+	}
+
+	err := e.critique(ctx, item)
+	if err != nil {
+		return item, err
 	}
 
 	if e.attempts[item] > e.maxAttempts {

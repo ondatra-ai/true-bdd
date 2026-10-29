@@ -25,7 +25,7 @@ story:
       - stdout matches Red without target passed.*scenarios=2
       - the engine spawned exactly 1 test runner with arguments matching -count=1$
       - no file outside "tmp" and "tests" changed
-      - the engine dispatched no validation AI turns to "claude"
+      - the engine dispatched 1 validation AI turn to "claude"
       - the engine spawned exactly 1 test runner with arguments matching -list \.
       - 'every file matching "tmp/*/*fix-iter*-user.txt" matches phrase_mapping:'
       - 'every file matching "tmp/*/apply-*-user.txt" matches interface_document:'
@@ -46,7 +46,7 @@ story:
       - stdout matches Scenario list passed
       - no file outside "tmp" and "tests" changed
       - stdout matches All step skeletons written.*items=3
-      - the engine dispatched no validation AI turns to "claude"
+      - the engine dispatched 3 validation AI turns to "claude"
       - the engine spawned exactly 1 test runner with arguments matching -list \.
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   - id: 003-slot-order
@@ -63,7 +63,7 @@ story:
       - stdout matches Step coverage passed
       - stdout matches Scenario list passed
       - no file outside "tmp" and "tests" changed
-      - the engine dispatched no validation AI turns to "claude"
+      - the engine dispatched 1 validation AI turn to "claude"
       - the engine spawned exactly 1 test runner with arguments matching -list \.
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   - id: 004-interface-cannot-serve
@@ -99,7 +99,7 @@ story:
       - no file outside "tmp" and "tests" changed
       - stdout matches sandbox=writer
       - every file matching "tmp/*/codex-turn*-codex-events.jsonl" matches (?i)permission denied|operation not permitted|read.only
-      - the engine dispatched no validation AI turns to "claude"
+      - the engine dispatched 1 validation AI turn to "claude"
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   - id: 006-bringup-is-not-red
     description: Harness bring-up failure without the target fails the red check and names the Scenario
@@ -128,6 +128,6 @@ story:
       - stdout matches Scenario green without target.*TestCalc001Double
       - stdout matches Red without target passed
       - stdout matches BUILD STEPS COMPLETE
-      - the engine dispatched 4 AI turns
+      - the engine dispatched 6 AI turns
       - no file outside "tmp" and "tests" changed
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0

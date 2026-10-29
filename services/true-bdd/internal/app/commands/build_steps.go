@@ -9,8 +9,8 @@ import (
 	"slices"
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/scenariogen"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/stepskeleton"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/validate"
- "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/stepskeleton"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/runner"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/catalogue"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/architecture"
@@ -29,6 +29,7 @@ var ErrBuildStepsChecklist = errors.New("build steps checklist must ask D: step-
 
 // BuildStepsDeps contains the dependencies of the step inventory and body writer.
 type BuildStepsDeps struct {
+	Critic             *validate.StepCritic
 	Evaluator          *validate.ChecklistEvaluator
 	FixGenerator       *validate.FixPromptGenerator
 	FixApplier         *validate.FixApplier
@@ -110,11 +111,13 @@ func discoverBuildSteps(
 		return nil, nil, err
 	}
 
- answer := &stepcoverage.Answer{}
- if scanCoverage {
-  answer, err = stepcoverage.Scan(scenarios, root)
-  if err != nil { return nil, nil, err }
- }
+	answer := &stepcoverage.Answer{}
+	if scanCoverage {
+		answer, err = stepcoverage.Scan(scenarios, root)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
 
 	compiled, _ := catalogue.Compile(source.Entries, source.Roles)
 	items, err := missingPhrases(scenarios, source.Entries, compiled, arch.Phrases)
@@ -124,7 +127,7 @@ func discoverBuildSteps(
 
 func missingPhrases(
 	scenarios []*registry.RegistryScenario, phrases []catalogue.Entry,
- compiled *catalogue.Catalogue, mappings []architecture.PhraseMapping,
+	compiled *catalogue.Catalogue, mappings []architecture.PhraseMapping,
 ) ([]*BuildStepsItem, error) {
 	items := make([]*BuildStepsItem, 0)
 	seen := make(map[string]bool)
@@ -152,8 +155,8 @@ func missingPhrases(
 				return nil, err
 			}
 
-   location := stepskeleton.Location(dir, phrase.Template, compiled.CapturingPattern(phrase.Template))
-   if !defined || location.Pending() {
+			location := stepskeleton.Location(dir, phrase.Template, compiled.CapturingPattern(phrase.Template))
+			if !defined || location.Pending() {
 				items = append(items, &BuildStepsItem{Suite: dir, Service: scenario.Service, Phrase: phrase})
 			}
 		}

@@ -70,9 +70,16 @@ func TestFixtureTemplateOverlays(t *testing.T) {
 
 func fixtureTemplateDeclarations() map[string]string {
 	return map[string]string{
-		"build-steps-outside/input/templates/build-steps.fix-applier.prompt.tpl":           templateExtension,
-		"engine-io-claude-writer/input/templates/build-code.fix-applier.prompt.tpl":        templateReplacement,
-		"engine-io-claude-writer/input/templates/build-code.fix-applier.system.prompt.tpl": templateReplacement,
+		"build-steps-critique-assertion/input/templates/build-steps.critique.system.prompt.tpl":    templateReplacement,
+		"build-steps-critique-assertion/input/templates/build-steps.fix-applier.system.prompt.tpl": templateReplacement,
+		"build-steps-critique-correct/input/templates/build-steps.critique.system.prompt.tpl":      templateReplacement,
+		"build-steps-critique-correct/input/templates/build-steps.fix-applier.system.prompt.tpl":   templateReplacement,
+		"build-steps-critique-operation/input/templates/build-steps.critique.system.prompt.tpl":    templateReplacement,
+		"build-steps-critique-operation/input/templates/build-steps.fix-applier.system.prompt.tpl": templateReplacement,
+		"build-steps-green/input/templates/build-steps.critique.system.prompt.tpl":                 templateReplacement,
+		"build-steps-outside/input/templates/build-steps.fix-applier.prompt.tpl":                   templateExtension,
+		"engine-io-claude-writer/input/templates/build-code.fix-applier.prompt.tpl":                templateReplacement,
+		"engine-io-claude-writer/input/templates/build-code.fix-applier.system.prompt.tpl":         templateReplacement,
 
 		"engine-io-events/input/templates/build-code.fix-applier.prompt.tpl":              templateReplacement,
 		"engine-io-events/input/templates/build-code.fix-applier.system.prompt.tpl":       templateReplacement,

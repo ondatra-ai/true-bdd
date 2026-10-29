@@ -6,21 +6,13 @@ import (
 )
 
 func phraseed02cd0805872c6dc539a79f13857bcae5921c4b2ff964f4091e2a4a4e97246a(state *State, args []string) error {
-	// Then: observe the result the When recorded and compare it with the
-	// expected integer the Scenario states. The When already ran the declared
-	// `double` command (docs/architecture/calc-cli.yaml) and kept its integer
-	// stdout in state.Result, so nothing is run here and no arithmetic is
-	// performed — the product computed the result, this step only compares it.
-	const (
-		phrase   = "the result is {value:number}"
-		zeroWord = "no"
-	)
+	const phrase = "the result is {value:number}"
+	// The engine's pattern for a number term also accepts the word form of
+	// zero, so accept it here exactly as the Given for the same term does.
+	const zeroWord = "no"
 
 	if len(args) != 1 {
-		return fmt.Errorf("%s: expected 1 captured argument, got %d", phrase, len(args))
-	}
-	if !state.ResultSet {
-		return fmt.Errorf("%s: no result recorded; a When must double the number first", phrase)
+		return fmt.Errorf("%s: expected 1 argument, got %d", phrase, len(args))
 	}
 
 	raw := args[0]
@@ -28,16 +20,17 @@ func phraseed02cd0805872c6dc539a79f13857bcae5921c4b2ff964f4091e2a4a4e97246a(stat
 	if raw != zeroWord {
 		parsed, err := strconv.Atoi(raw)
 		if err != nil {
-			return fmt.Errorf("the result is %q: not an integer: %w", raw, err)
+			return fmt.Errorf("%s: %q is not an integer: %w", phrase, raw, err)
 		}
 		expected = parsed
 	}
 
+	if !state.HasResult {
+		return fmt.Errorf("%s: no result observed; a When must run the double command first", phrase)
+	}
+
 	if state.Result != expected {
-		return fmt.Errorf(
-			"the result is %d, but the double command printed %d",
-			expected, state.Result,
-		)
+		return fmt.Errorf("%s: double printed %d on stdout, want %d", phrase, state.Result, expected)
 	}
 
 	return nil

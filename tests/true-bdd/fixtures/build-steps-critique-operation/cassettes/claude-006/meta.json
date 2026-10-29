@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "binary": "claude",
+  "argv": [
+    "--setting-sources",
+    "",
+    "--strict-mcp-config",
+    "--safe-mode",
+    "--disallowed-tools",
+    "Bash,Write,Edit,MultiEdit,NotebookEdit,Read,Glob,Grep",
+    "--model",
+    "claude-opus-5",
+    "--system-prompt",
+    "Read the supplied complete context and sources. This controlled regression first writes a no-op when definition. If the selected definition is `return nil` without invoking the mapped double operation, return fail with one finding naming the supplied definition, category phrase_mapping, finding \"does not call the mapped double operation\". Otherwise verify it invokes the declared CLI as a process, retains the integer stdout and matches the phrase; return pass with findings: [] when correct. JSON only, answer pass or fail, findings entries definition/category/finding. Do not use tools.\n",
+    "--permission-mode",
+    "acceptEdits",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--json-schema",
+    "{\n \"type\":\"object\", \"additionalProperties\":false,\n \"properties\": {\n  \"answer\":{\"type\":\"string\",\"enum\":[\"pass\",\"fail\"]},\n  \"findings\":{\"type\":\"array\",\"items\":{\n   \"type\":\"object\",\"additionalProperties\":false,\n   \"properties\":{\n    \"definition\":{\"type\":\"string\",\"minLength\":1},\n    \"category\":{\"type\":\"string\",\"enum\":[\"phrase_mapping\",\"phrase_meaning\",\"computes_assertion\"]},\n    \"finding\":{\"type\":\"string\",\"minLength\":1}\n   },\"required\":[\"definition\",\"category\",\"finding\"]\n  }}\n },\"required\":[\"answer\",\"findings\"]\n}",
+    "-p",
+    "Critique this applied definition: tests/calc/steps/phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df.go::phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df\n\nComplete phrase context (meaning, Phrase mapping, term glossary entries and Word mappings, Public interface declaration and whole document, every suite Scenario using the phrase):\nphrase:\n    template: the number is doubled\n    block: when\n    means: The calculator doubles the supplied number.\n    terms:\n        - number\nphrase_mapping:\n    template: the number is doubled\n    service: calc\n    references:\n        - command: double\n    does: Run the declared double command as a process and keep its integer stdout.\nglossary:\n    - term: number\n      means: An integer operand whose double is its sum with itself.\nword_mapping:\n    - term: number\n      technical: The integer argument and stdout of the calculator double command.\n      observed_by: The step runs double as a process and compares its integer stdout with the expected value.\npublic_interface:\n    kind: cli\n    document: docs/architecture/calc-cli.yaml\ninterface_document: |\n    opencli: 0.1\n    info:\n      title: Calculator CLI\n      version: '1.0'\n    commands:\n      double:\n        description: Run go run ./services/calc double VALUE from the host root; stdout\n          is the doubled integer and a newline. The service appends one double VALUE line\n          to its call log for each invocation.\n        parameters:\n        - name: value\n          in: argument\n          required: true\n          schema:\n            type: integer\n        responses:\n          '0':\n            description: Doubled integer on stdout\n          '1':\n            description: Invalid arguments\n    extensions:\n      files:\n        calc_calls:\n          path: tmp/calc-calls.log\n          format: One double VALUE line per invocation, newline terminated.\n          access: write\nscenarios:\n    - id: calc-001-double\n      description: Doubling a number returns twice its value\n      service: calc\n      path: tests/calc/calc_test.go\n      steps: |\n        Given:\n          - the number is 3\n        When:\n          - the number is doubled\n        Then:\n          - the result is 6\n    - id: calc-002-double\n      description: Another Scenario reaches the shared command definition\n      service: calc\n      path: tests/calc/calc_test.go\n      steps: |\n        Given:\n          - the number is 4\n        When:\n          - the number is doubled\n        Then:\n          - the result is 8\n\n\nWhole steps package, including registrations, imports and shared State:\n\n--- tests/calc/steps/phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df.go ---\npackage steps\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\nfunc phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df(state *State, args []string) error {\n\tconst (\n\t\thostRoot = \"../..\"\n\t\tpkg      = \"./services/calc\"\n\t\tcommand  = \"double\"\n\t)\n\n\tvalue := strconv.Itoa(state.Value)\n\tcmd := exec.Command(\"go\", \"run\", pkg, command, value)\n\tcmd.Dir = hostRoot\n\n\tstdout, err := cmd.Output()\n\tif err != nil {\n\t\tvar exit *exec.ExitError\n\t\tif errors.As(err, \u0026exit) {\n\t\t\treturn fmt.Errorf(\"%s %s %s: %w: %s\", pkg, command, value, err, exit.Stderr)\n\t\t}\n\t\treturn fmt.Errorf(\"%s %s %s: %w\", pkg, command, value, err)\n\t}\n\n\tdoubled, err := strconv.Atoi(strings.TrimSpace(string(stdout)))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"%s %s %s stdout %q: %w\", pkg, command, value, stdout, err)\n\t}\n\n\tstate.Value = doubled\n\treturn nil\n}\n\n\n--- tests/calc/steps/register.go ---\npackage steps\n\nimport (\n\t\"fmt\"\n\t\"strconv\"\n)\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the number is (\\d+)$`, number)\n\tsuite.Step(`^the result is (\\d+)$`, result)\n\n\tsuite.Step(\"\\\\Athe number is doubled\\\\z\", phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df)\n}\nfunc number(state *State, args []string) error {\n\tvalue, err := strconv.Atoi(args[0])\n\tstate.Value = value\n\treturn err\n}\nfunc result(state *State, args []string) error {\n\twant, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn err\n\t}\n\tif state.Value != want {\n\t\treturn fmt.Errorf(\"expected %d, got %d\", want, state.Value)\n\t}\n\treturn nil\n}\n\n\n--- tests/calc/steps/state.go ---\npackage steps\n\ntype State struct{ Value int }\ntype Registrar interface {\n\tStep(string, func(*State, []string) error)\n}\n\n\n"
+  ],
+  "exit_code": 0,
+  "duration_ms": 7976,
+  "request_hash": "sha256:5e0e557478c22458c3590434fb4cf8c19c3e293b44a772693605fda980e3a8ef",
+  "fsdiff": {
+    "created": [],
+    "modified": [],
+    "deleted": []
+  },
+  "recorded_at": "2026-10-29T02:42:36Z"
+}

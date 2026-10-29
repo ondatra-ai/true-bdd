@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "fixture": "build-steps-critique-assertion",
+  "files": [
+    {
+      "path": "tests/calc/steps/injected",
+      "kind": "created",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tests/calc/steps/phraseed02cd0805872c6dc539a79f13857bcae5921c4b2ff964f4091e2a4a4e97246a.go",
+      "kind": "created",
+      "size": 418,
+      "sha256": "84613e94d32899ce88433d0071928e48cc338c6dd0349cc07f4288e234ebdf1d",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"strconv\"\n)\n\nfunc phraseed02cd0805872c6dc539a79f13857bcae5921c4b2ff964f4091e2a4a4e97246a(state *State, args []string) error {\n\texpected, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn fmt.Errorf(\"the result is %q: expected an integer: %w\", args[0], err)\n\t}\n\n\tif state.Value != expected {\n\t\treturn fmt.Errorf(\"the result is %d, want %d\", state.Value, expected)\n\t}\n\n\treturn nil\n}\n"
+    },
+    {
+      "path": "tests/calc/steps/register.go",
+      "kind": "modified",
+      "size": 410,
+      "sha256": "26e9d50d44adaf0172310da5cb0ca6f926d8e5955dd6e80a58d5d7fbb1911b9f",
+      "text": "package steps\n\nimport (\n\t\"strconv\"\n)\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the number is (\\d+)$`, number)\n\tsuite.Step(`^the number is doubled$`, double)\n\n\tsuite.Step(\"\\\\Athe result is ((?:[0-9]+|no))\\\\z\", phraseed02cd0805872c6dc539a79f13857bcae5921c4b2ff964f4091e2a4a4e97246a)\n}\nfunc number(state *State, args []string) error {\n\tvalue, err := strconv.Atoi(args[0])\n\tstate.Value = value\n\treturn err\n}\n"
+    }
+  ]
+}

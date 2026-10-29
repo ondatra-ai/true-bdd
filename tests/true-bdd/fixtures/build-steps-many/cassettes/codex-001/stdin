@@ -107,35 +107,38 @@ scenarios:
 tests/calc/steps
 
 ## Scope
-Only two files change:
-1. `tests/calc/steps/phrase7c963587b98a9c9fa59fafbd25518c3af0d8d428753a4c888f114e5a06aa3242.go` — replace the placeholder body (and its import line) only. Keep the function name and the `(state *State, args []string) error` signature exactly as the engine generated them. Do not touch `tests/calc/steps/register.go`.
-2. `tests/calc/steps/state.go` — add the two shared `State` fields this Given populates (additive only; leave any fields other phrases already added in place).
-
-Do not edit the other two phrase files, `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, `docs/**` or `services/**`.
+Two files change, nothing else. Do NOT touch `tests/calc/steps/register.go`, the other two phrase files, `tests/calc/scenarios/scenarios.go`, `tests/calc/calc_test.go`, `docs/scenarios.yaml`, `docs/architecture/calc-cli.yaml` or `services/calc/calc.go`.
 
 ## Required Changes
 
-### 1. `tests/calc/steps/state.go`
+### 1. Shared state: add the double argument slot
 
-Add the `Number` / `NumberSet` fields to the existing `State` struct (if the struct is still `type State struct{}`, the whole file becomes exactly this):
+File: `tests/calc/steps/state.go`
+
+Replace the whole file with:
 
 ```go
 package steps
 
+// State carries what one calc scenario hands from step to step.
+//
+// Value is the integer argument the next `double` command runs with;
+// HasValue records that a Given actually supplied it, so a When can
+// refuse to run the command on an unset slot instead of silently
+// defaulting to 0.
 type State struct {
-	// Number is the integer argument the next `double` command run receives,
-	// stored by the `the number is {value:number}` Given.
-	Number int
-	// NumberSet reports whether a Given has supplied Number yet.
-	NumberSet bool
+	Value    int
+	HasValue bool
 }
 ```
 
-If another phrase has already added fields to `State`, keep them and just insert the two fields above alongside them.
+This adds only shared `State` fields — no package-level constants, variables, helper functions or extra types.
 
-### 2. `tests/calc/steps/phrase7c963587b98a9c9fa59fafbd25518c3af0d8d428753a4c888f114e5a06aa3242.go`
+### 2. The phrase body
 
-Replace the file contents with exactly this (same package, same function name, same signature; `strconv` joins `fmt` in the imports):
+File: `tests/calc/steps/phrase7c963587b98a9c9fa59fafbd25518c3af0d8d428753a4c888f114e5a06aa3242.go`
+
+Replace the whole file with:
 
 ```go
 package steps
@@ -146,38 +149,40 @@ import (
 )
 
 func phrase7c963587b98a9c9fa59fafbd25518c3af0d8d428753a4c888f114e5a06aa3242(state *State, args []string) error {
-	// Given: store the number as the argument for the next `double` command
-	// run, per the phrase mapping. No arithmetic happens here — the When runs
-	// the declared CLI command and the Then compares its stdout.
+	const phrase = "the number is {value:number}"
 	const zeroWord = "no"
 
 	if len(args) != 1 {
-		return fmt.Errorf("the number is {value:number}: expected 1 captured argument, got %d", len(args))
+		return fmt.Errorf("%s: expected 1 argument, got %d", phrase, len(args))
 	}
 
 	raw := args[0]
-	number := 0
+	value := 0
 	if raw != zeroWord {
 		parsed, err := strconv.Atoi(raw)
 		if err != nil {
-			return fmt.Errorf("the number is %q: not an integer: %w", raw, err)
+			return fmt.Errorf("%s: %q is not an integer: %w", phrase, raw, err)
 		}
-		number = parsed
+		value = parsed
 	}
 
-	state.Number = number
-	state.NumberSet = true
-
+	state.Value = value
+	state.HasValue = true
 	return nil
 }
 ```
 
 ## Why this body
-- Phrase mapping `does:` is "Store the number as the next double command argument", so the Given only records input in shared state; it starts no process and performs no doubling.
-- The engine's registered pattern is `\Athe number is ((?:[0-9]+|no))\z`, so the single capture is either a digit run or the word `no`; the body maps `no` to `0` and otherwise parses the digits with `strconv.Atoi`.
-- `docs/architecture/calc-cli.yaml` declares `double`'s `value` parameter as `in: argument, schema: {type: integer}`, so an `int` field is the right shared-state shape for the When to pass to `go run ./services/calc double VALUE`.
-- `NumberSet` lets the When phrase fail loudly when no Given supplied an operand, instead of silently defaulting to 0.
-- No package-level constants, variables, helpers or types are introduced: `zeroWord` lives inside the function body, and the only out-of-body edits are the `State` fields and this file's import block.
+
+- The Phrase mapping says this Given "Store the number as the next double command argument", so the body only parks the operand in shared state. It runs no command and compares nothing — the When owns invoking `double`, the Then owns reading stdout.
+- `docs/architecture/calc-cli.yaml` declares `double`'s `value` parameter as `schema: {type: integer}`, so the step converts the captured text to an `int` here and reports a bad operand as a step error rather than deferring a malformed argument to the process.
+- The engine's registered pattern is `\Athe number is ((?:[0-9]+|no))\z`, so the single capture is either digits or the word `no`; the body maps `no` to 0 and parses the digit form. Both constants stay inside the function body.
+- No doubling, addition or any other product behaviour happens in this step; the expected result is never computed test-side.
+
+## Preserved
+
+- Function name `phrase7c963587b98a9c9fa59fafbd25518c3af0d8d428753a4c888f114e5a06aa3242`, signature `func(state *State, args []string) error`, and `package steps` are unchanged, so `register.go`'s `suite.Step("\\Athe number is ((?:[0-9]+|no))\\z", ...)` line keeps compiling untouched.
+- Only this file's imports (`fmt`, `strconv`) and the shared `State` fields change outside the selected function body.
 
 Read existing state and helpers first. Write only this phrase's body and shared
 state. Preserve the engine's pattern, registration and signature. Reach the

@@ -101,127 +101,123 @@ scenarios:
           - the result is 6
 
 
-# Fix Prompt for Item phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df: the number is doubled
-
 ## Target
-tests/calc/steps
+Suite `tests/calc/steps` — phrase `the number is doubled` (block: when).
 
-## Required Changes
+Two files change: the phrase file's body (and its imports), plus two new shared `State` fields. Nothing else. Do NOT touch `tests/calc/steps/register.go`, the other phrase files, `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, the Specification or `services/calc`.
 
-### 1. `tests/calc/steps/state.go` — add the shared fields this When produces
+---
 
-The Given already stores `Number`/`NumberSet`. This When runs the declared `double` command and must hand its observed stdout to the Then. Add two fields to the existing `State` struct (keep the existing fields and comments exactly as they are). Replace the whole file with:
+## Change 1 — add the result slot to shared state
+
+File: `tests/calc/steps/state.go`
+
+Replace the whole file with:
 
 ```go
 package steps
 
+// State carries what one calc scenario hands from step to step.
+//
+// Value is the integer argument the next `double` command runs with;
+// HasValue records that a Given actually supplied it, so a When can
+// refuse to run the command on an unset slot instead of silently
+// defaulting to 0.
+//
+// Result is the integer the `double` command printed on stdout, and
+// HasResult records that the command actually ran, so a Then observes
+// a real run instead of comparing against a zero value.
 type State struct {
-	// Number is the integer argument the next `double` command run receives,
-	// stored by the `the number is {value:number}` Given.
-	Number int
-	// NumberSet reports whether a Given has supplied Number yet.
-	NumberSet bool
-	// Result is the integer stdout of the last `double` command run, kept by
-	// the `the number is doubled` When for the Then to compare.
-	Result int
-	// ResultSet reports whether a When has run `double` and recorded Result.
-	ResultSet bool
+	Value     int
+	HasValue  bool
+	Result    int
+	HasResult bool
 }
 ```
 
-### 2. `tests/calc/steps/phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df.go` — write the body
+(If `Result`/`HasResult` already exist on `State` with these types, leave `state.go` untouched.)
 
-Keep the function name and the `(state *State, args []string) error` signature exactly as the engine generated them; replace only the body (and the import block). Replace the whole file with:
+---
+
+## Change 2 — write the phrase body
+
+File: `tests/calc/steps/phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df.go`
+
+Replace the whole file with exactly this. The function name and the `(state *State, args []string) error` signature are the engine's and are preserved verbatim; only the body and the import block change.
 
 ```go
 package steps
 
 import (
 	"bytes"
+	"context"
 	"fmt"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df(state *State, args []string) error {
-	// When: run the declared `double` command as a process and keep its
-	// integer stdout. Per docs/architecture/calc-cli.yaml the command is
-	// `go run ./services/calc double VALUE`, run from the host root, and its
-	// stdout is the doubled integer plus a newline. No arithmetic happens
-	// here — the product computes the result, this step only observes it.
 	const phrase = "the number is doubled"
+	// The suite's package directory is tests/calc, so the host root the
+	// declared CLI document runs `double` from is two levels up.
+	const hostRoot = "../.."
+	const command = "double"
+	const runTimeout = 2 * time.Minute
 
 	if len(args) != 0 {
-		return fmt.Errorf("%s: expected 0 captured arguments, got %d", phrase, len(args))
+		return fmt.Errorf("%s: expected 0 arguments, got %d", phrase, len(args))
 	}
-	if !state.NumberSet {
-		return fmt.Errorf("%s: no number supplied; a Given must state the number first", phrase)
-	}
-
-	workdir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("%s: working directory: %w", phrase, err)
+	if !state.HasValue {
+		return fmt.Errorf("%s: no number supplied; a Given must set the number first", phrase)
 	}
 
-	// The host root is the directory holding go.mod, which is where the
-	// declared `go run ./services/calc ...` invocation is rooted.
-	hostRoot := ""
-	for probe := workdir; ; {
-		if _, statErr := os.Stat(filepath.Join(probe, "go.mod")); statErr == nil {
-			hostRoot = probe
-			break
-		}
-		parent := filepath.Dir(probe)
-		if parent == probe {
-			break
-		}
-		probe = parent
-	}
-	if hostRoot == "" {
-		return fmt.Errorf("%s: no host root (a directory with go.mod) found at or above %s", phrase, workdir)
-	}
+	ctx, cancel := context.WithTimeout(context.Background(), runTimeout)
+	defer cancel()
 
-	value := strconv.Itoa(state.Number)
-	cmd := exec.Command("go", "run", "./services/calc", "double", value)
+	value := strconv.Itoa(state.Value)
+	cmd := exec.CommandContext(ctx, "go", "run", "./services/calc", command, value)
 	cmd.Dir = hostRoot
-	cmd.Env = os.Environ()
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	if runErr := cmd.Run(); runErr != nil {
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf(
-			"%s: `go run ./services/calc double %s` in %s failed: %w (stderr: %s)",
-			phrase, value, hostRoot, runErr, strings.TrimSpace(stderr.String()),
+			"%s: running %s %s from %s failed: %w: %s",
+			phrase, command, value, hostRoot, err, strings.TrimSpace(stderr.String()),
 		)
 	}
 
-	printed := strings.TrimSpace(stdout.String())
-	result, convErr := strconv.Atoi(printed)
-	if convErr != nil {
-		return fmt.Errorf(
-			"%s: `go run ./services/calc double %s` printed %q, not an integer: %w",
-			phrase, value, printed, convErr,
-		)
+	raw := strings.TrimSpace(stdout.String())
+	result, err := strconv.Atoi(raw)
+	if err != nil {
+		return fmt.Errorf("%s: stdout %q is not an integer: %w", phrase, raw, err)
 	}
 
 	state.Result = result
-	state.ResultSet = true
-
+	state.HasResult = true
 	return nil
 }
 ```
 
+---
+
+## Why this body
+
+- **Phrase mapping** says: run the declared `double` command as a process and keep its integer stdout. The body does exactly that and nothing more.
+- **Public interface** (`docs/architecture/calc-cli.yaml`) declares `double` as `go run ./services/calc double VALUE` executed from the host root, with the doubled integer plus a newline on stdout and exit `0` on success, `1` on invalid arguments. Hence `cmd.Dir = hostRoot`, `strings.TrimSpace` on stdout, and a non-zero exit surfacing as a step error carrying stderr.
+- **No product arithmetic in the step**: the step never computes `state.Value * 2` or `state.Value + state.Value`. It only transports the argument in and parses the integer out. The comparison against the expected value belongs to the Then phrase `the result is {value:number}`, which reads `state.Result` / `state.HasResult`.
+- `cmd.Env` is left nil, so the process inherits the ambient `GOCACHE`, `GOPATH`, `GOFLAGS` and `TMPDIR` — the inherited Go build cache is preserved rather than replaced.
+- Every constant (`phrase`, `hostRoot`, `command`, `runTimeout`) is declared inside the function body; no package-level constants, variables, helper functions or types are added.
+
 ## Notes for the applier
-- Do not touch `tests/calc/steps/register.go`, the generated `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, the Specification or any service code.
-- Do not touch the other phrase files — in particular leave `phraseed02cd0805872c6dc539a79f13857bcae5921c4b2ff964f4091e2a4a4e97246a.go` (`the result is {value:number}`) exactly as it is; that Then is a separate item and will read `state.Result` / `state.ResultSet` when it is written.
-- No package-level constants, variables, helpers or types are added: `phrase` is a local constant and the host-root walk is inline in the body. The only changes outside the body are the two shared `State` fields and this file's imports.
-- The step shells out to the declared CLI and inherits the ambient environment (`os.Environ()`), so the inherited `GOCACHE`/`TMPDIR` are preserved — no separate build cache is created.
-- Do not run the scenario or require it to pass; the engine owns compilation and the whole-suite checks.
+
+- Do not reorder or rename entries in `register.go`; the pattern `\\Athe number is doubled\\z` and the mapping to this function stay as generated.
+- The sibling Then phrase `phraseed02cd0805872c6dc539a79f13857bcae5921c4b2ff964f4091e2a4a4e97246a` is still an unwritten stub. Leave it alone — it is a separate Catalogue item. The `Result`/`HasResult` fields added here are the slots it will read.
+- Do not run `tests/calc/calc_test.go` or otherwise replay the scenario to validate this change; the target service may be absent or unbuilt. The engine owns compilation and the whole-suite checks.
 
 Read existing state and helpers first. Write only this phrase's body and shared
 state. Preserve the engine's pattern, registration and signature. Reach the

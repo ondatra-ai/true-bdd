@@ -21,6 +21,8 @@ templates:
     apply_fix_generator_system: ./templates/us.apply-checklist.fix-generator.system.prompt.tpl
     apply_fix_applier: ./templates/us.apply-checklist.fix-applier.prompt.tpl
     apply_fix_applier_system: ./templates/us.apply-checklist.fix-applier.system.prompt.tpl
+    build_steps_critique: "./templates/build-steps.critique.prompt.tpl"
+    build_steps_critique_system: "./templates/build-steps.critique.system.prompt.tpl"
     build_steps_checklist: ./templates/build-steps.checklist.prompt.tpl
     build_steps_checklist_system: ./templates/build-steps.checklist.system.prompt.tpl
     build_steps_fix_generator: ./templates/build-steps.fix-generator.prompt.tpl

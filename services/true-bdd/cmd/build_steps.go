@@ -13,7 +13,7 @@ import (
 func newBuildStepsCmd(provide containerProvider) *cobra.Command {
 	cmd := buildSpecCmd("steps", "Write missing step definitions and check Step coverage",
 		"List missing Catalogue phrase definitions; --fix writes bodies, verifies coverage and the test list, "+
- "and requires every Scenario red without the target.",
+			"and requires every Scenario red without the target.",
 		specFlag{
 			name:   "requirements",
 			usage:  "Path to the Registry (default: documents.scenarios_yaml)",
@@ -30,10 +30,11 @@ func newBuildStepsCmd(provide containerProvider) *cobra.Command {
 			}
 
 			return commands.RunBuildSteps(ctx, commands.BuildStepsDeps{
-				TmpDir:    container.RunDir.GetTmpOutPath(),
-				Evaluator: container.BuildStepsEvaluator,
- FixGenerator: container.BuildStepsFixPromptGenerator,
- FixApplier: container.BuildStepsFixApplier,
+				Critic:             container.BuildStepsCritic,
+				TmpDir:             container.RunDir.GetTmpOutPath(),
+				Evaluator:          container.BuildStepsEvaluator,
+				FixGenerator:       container.BuildStepsFixPromptGenerator,
+				FixApplier:         container.BuildStepsFixApplier,
 				UserInputCollector: container.UserInputCollector, TableRenderer: container.TableRenderer,
 				RegistryLoader:  container.RegistryLoader,
 				ChecklistLoader: container.ChecklistLoader,

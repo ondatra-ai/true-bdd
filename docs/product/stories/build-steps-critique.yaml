@@ -1,0 +1,69 @@
+story:
+  id: build-steps-critique
+  feature: build-steps
+  title: Critique every applied definition
+  as_a: System Architect
+  i_want: a separate critique of each definition against its phrase and mapping
+  so_that: a wrong operation or assertion returns to the Fix loop before the Item passes
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 001-operation
+    description: A when omitting its mapped operation fails critique and returns to the Fix loop
+    steps:
+    - given:
+      - the "build-steps-critique-operation" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches BUILD STEPS COMPLETE
+      - stdout matches Step definition critiqued
+      - stdout matches phrase_mapping.*does not call the mapped double operation
+      - the engine dispatched 6 AI turns
+      - the engine dispatched 2 validation AI turns to "claude"
+      - no file outside "tmp" and "tests" changed
+      - 'every file matching "tmp/*/critique-*-user.txt" matches phrase_mapping:'
+      - 'every file matching "tmp/*/critique-*-user.txt" matches interface_document:'
+      - every file matching "tmp/*/critique-*-user.txt" matches calc-002-double
+      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+  - id: 002-assertion
+    description: An assertion contradicting the phrase fails critique and returns to the Fix loop
+    steps:
+    - given:
+      - the "build-steps-critique-assertion" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches BUILD STEPS COMPLETE
+      - stdout matches Step definition critiqued
+      - stdout matches phrase_meaning.*assertion contradicts the phrase
+      - the engine dispatched 6 AI turns
+      - the engine dispatched 2 validation AI turns to "claude"
+      - no file outside "tmp" and "tests" changed
+      - 'every file matching "tmp/*/critique-*-user.txt" matches phrase_mapping:'
+      - 'every file matching "tmp/*/critique-*-user.txt" matches interface_document:'
+      - every file matching "tmp/*/critique-*-user.txt" matches calc-002-double
+      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+  - id: 003-correct
+    description: A correct given that stores its input passes critique and completes
+    steps:
+    - given:
+      - the "build-steps-critique-correct" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches BUILD STEPS COMPLETE
+      - stdout matches Step definition critiqued
+      - the engine dispatched 3 AI turns
+      - the engine dispatched 1 validation AI turn to "claude"
+      - stdout matches role=prompt cli=claude model=claude-sonnet-5
+      - no file outside "tmp" and "tests" changed
+      - 'every file matching "tmp/*/critique-*-user.txt" matches phrase_mapping:'
+      - 'every file matching "tmp/*/critique-*-user.txt" matches interface_document:'
+      - every file matching "tmp/*/critique-*-user.txt" matches calc-002-double
+      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0

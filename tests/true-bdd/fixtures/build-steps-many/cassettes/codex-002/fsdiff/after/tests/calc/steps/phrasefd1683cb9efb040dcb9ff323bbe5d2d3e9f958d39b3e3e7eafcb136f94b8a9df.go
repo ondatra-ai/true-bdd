@@ -2,79 +2,54 @@ package steps
 
 import (
 	"bytes"
+	"context"
 	"fmt"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df(state *State, args []string) error {
-	// When: run the declared `double` command as a process and keep its
-	// integer stdout. Per docs/architecture/calc-cli.yaml the command is
-	// `go run ./services/calc double VALUE`, run from the host root, and its
-	// stdout is the doubled integer plus a newline. No arithmetic happens
-	// here — the product computes the result, this step only observes it.
 	const phrase = "the number is doubled"
+	// The suite's package directory is tests/calc, so the host root the
+	// declared CLI document runs `double` from is two levels up.
+	const hostRoot = "../.."
+	const command = "double"
+	const runTimeout = 2 * time.Minute
 
 	if len(args) != 0 {
-		return fmt.Errorf("%s: expected 0 captured arguments, got %d", phrase, len(args))
+		return fmt.Errorf("%s: expected 0 arguments, got %d", phrase, len(args))
 	}
-	if !state.NumberSet {
-		return fmt.Errorf("%s: no number supplied; a Given must state the number first", phrase)
-	}
-
-	workdir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("%s: working directory: %w", phrase, err)
+	if !state.HasValue {
+		return fmt.Errorf("%s: no number supplied; a Given must set the number first", phrase)
 	}
 
-	// The host root is the directory holding go.mod, which is where the
-	// declared `go run ./services/calc ...` invocation is rooted.
-	hostRoot := ""
-	for probe := workdir; ; {
-		if _, statErr := os.Stat(filepath.Join(probe, "go.mod")); statErr == nil {
-			hostRoot = probe
-			break
-		}
-		parent := filepath.Dir(probe)
-		if parent == probe {
-			break
-		}
-		probe = parent
-	}
-	if hostRoot == "" {
-		return fmt.Errorf("%s: no host root (a directory with go.mod) found at or above %s", phrase, workdir)
-	}
+	ctx, cancel := context.WithTimeout(context.Background(), runTimeout)
+	defer cancel()
 
-	value := strconv.Itoa(state.Number)
-	cmd := exec.Command("go", "run", "./services/calc", "double", value)
+	value := strconv.Itoa(state.Value)
+	cmd := exec.CommandContext(ctx, "go", "run", "./services/calc", command, value)
 	cmd.Dir = hostRoot
-	cmd.Env = os.Environ()
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	if runErr := cmd.Run(); runErr != nil {
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf(
-			"%s: `go run ./services/calc double %s` in %s failed: %w (stderr: %s)",
-			phrase, value, hostRoot, runErr, strings.TrimSpace(stderr.String()),
+			"%s: running %s %s from %s failed: %w: %s",
+			phrase, command, value, hostRoot, err, strings.TrimSpace(stderr.String()),
 		)
 	}
 
-	printed := strings.TrimSpace(stdout.String())
-	result, convErr := strconv.Atoi(printed)
-	if convErr != nil {
-		return fmt.Errorf(
-			"%s: `go run ./services/calc double %s` printed %q, not an integer: %w",
-			phrase, value, printed, convErr,
-		)
+	raw := strings.TrimSpace(stdout.String())
+	result, err := strconv.Atoi(raw)
+	if err != nil {
+		return fmt.Errorf("%s: stdout %q is not an integer: %w", phrase, raw, err)
 	}
 
 	state.Result = result
-	state.ResultSet = true
-
+	state.HasResult = true
 	return nil
 }

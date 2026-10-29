@@ -101,26 +101,14 @@ scenarios:
           - the result is 6
 
 
-=== FILE_START: tests/calc/steps/phraseed02cd0805872c6dc539a79f13857bcae5921c4b2ff964f4091e2a4a4e97246a.go ===
-# Fix Prompt for phrase `the result is {value:number}` (block: then)
-
 ## Target
-Suite `tests/calc/steps`, file `tests/calc/steps/phraseed02cd0805872c6dc539a79f13857bcae5921c4b2ff964f4091e2a4a4e97246a.go`
-
-## Scope of the change
-- Change ONLY the body of `phraseed02cd0805872c6dc539a79f13857bcae5921c4b2ff964f4091e2a4a4e97246a` and this file's import block.
-- Do NOT touch `tests/calc/steps/register.go` (registration, pattern and signature stay exactly as generated).
-- Do NOT touch the other two phrase files, `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, the Specification or any service code.
-- NO shared-state change is needed: `State.Result` and `State.ResultSet` already exist in `tests/calc/steps/state.go` and are set by the `the number is doubled` When. Leave `state.go` untouched.
-- Add no package-level constants, variables, helper functions or types; everything new lives inside the function body.
-
-## Rationale (how this follows the declaration)
-- Phrase mapping says: "Compare the double command stdout with the expected integer." The When (`phrasefd1683...`) already ran the declared `go run ./services/calc double VALUE` process and stored its integer stdout in `state.Result` / `state.ResultSet`.
-- So this Then is a pure observation-and-compare step: it must NOT run the command again and must NOT compute the double itself (no `2 * state.Number`, no arithmetic on `state.Number` at all). The product owns the result; this step only compares what the product printed with the number the Scenario states.
-- The engine's pattern is `\Athe result is ((?:[0-9]+|no))\z`, so the single capture may be the word `no` for zero. Mirror the sibling Given (`phrase7c9635...`), which already maps `no` to `0`, so both phrases read the same vocabulary the same way.
+`tests/calc/steps/phraseed02cd0805872c6dc539a79f13857bcae5921c4b2ff964f4091e2a4a4e97246a.go` (suite `tests/calc/steps`, phrase `the result is {value:number}`, block `then`).
 
 ## Required Changes
-Replace the whole file content with exactly this:
+
+No shared-state change is needed: `State.Result` and `State.HasResult` (tests/calc/steps/state.go) are already populated by the When step `the number is doubled`, which runs the declared `double` command and parses its integer stdout. This Then only observes that recorded stdout and compares it with the expected integer; it must never double anything itself.
+
+Replace the whole contents of `tests/calc/steps/phraseed02cd0805872c6dc539a79f13857bcae5921c4b2ff964f4091e2a4a4e97246a.go` with exactly:
 
 ```go
 package steps
@@ -131,21 +119,13 @@ import (
 )
 
 func phraseed02cd0805872c6dc539a79f13857bcae5921c4b2ff964f4091e2a4a4e97246a(state *State, args []string) error {
-	// Then: observe the result the When recorded and compare it with the
-	// expected integer the Scenario states. The When already ran the declared
-	// `double` command (docs/architecture/calc-cli.yaml) and kept its integer
-	// stdout in state.Result, so nothing is run here and no arithmetic is
-	// performed — the product computed the result, this step only compares it.
-	const (
-		phrase   = "the result is {value:number}"
-		zeroWord = "no"
-	)
+	const phrase = "the result is {value:number}"
+	// The engine's pattern for a number term also accepts the word form of
+	// zero, so accept it here exactly as the Given for the same term does.
+	const zeroWord = "no"
 
 	if len(args) != 1 {
-		return fmt.Errorf("%s: expected 1 captured argument, got %d", phrase, len(args))
-	}
-	if !state.ResultSet {
-		return fmt.Errorf("%s: no result recorded; a When must double the number first", phrase)
+		return fmt.Errorf("%s: expected 1 argument, got %d", phrase, len(args))
 	}
 
 	raw := args[0]
@@ -153,28 +133,28 @@ func phraseed02cd0805872c6dc539a79f13857bcae5921c4b2ff964f4091e2a4a4e97246a(stat
 	if raw != zeroWord {
 		parsed, err := strconv.Atoi(raw)
 		if err != nil {
-			return fmt.Errorf("the result is %q: not an integer: %w", raw, err)
+			return fmt.Errorf("%s: %q is not an integer: %w", phrase, raw, err)
 		}
 		expected = parsed
 	}
 
+	if !state.HasResult {
+		return fmt.Errorf("%s: no result observed; a When must run the double command first", phrase)
+	}
+
 	if state.Result != expected {
-		return fmt.Errorf(
-			"the result is %d, but the double command printed %d",
-			expected, state.Result,
-		)
+		return fmt.Errorf("%s: double printed %d on stdout, want %d", phrase, state.Result, expected)
 	}
 
 	return nil
 }
 ```
 
-## Acceptance
-- `tests/calc/steps` still compiles with the unchanged `Register` signature `func(*State, []string) error`.
-- The `step not written yet: the result is {value:number}` placeholder error is gone, clearing `build-steps/step-coverage`.
-- The body contains no call to `exec`/`os` and no multiplication or addition of `state.Number`: it reads `state.Result` only.
-- Do not run the Scenario or try to make it green; the engine owns the whole-suite checks and the target may not be built.
-=== FILE_END ===
+## Notes for the applier
+- Keep the function name, the `(state *State, args []string) error` signature and `tests/calc/steps/register.go` untouched; the engine owns registration and the pattern.
+- Do not add package-level constants, variables, helpers or types: both constants stay inside the function body.
+- Do not touch `state.go`, the other two phrase files, `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, the Specification or any service code.
+- Do not run the scenario; the `calc` target may not exist yet. The engine owns compilation and the whole-suite checks.
 
 Read existing state and helpers first. Write only this phrase's body and shared
 state. Preserve the engine's pattern, registration and signature. Reach the
