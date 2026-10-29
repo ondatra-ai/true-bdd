@@ -151,7 +151,7 @@ type overridePurpose int
 const (
 	// overrideUnsanctioned is every fixture off the allowlist.
 	overrideUnsanctioned overridePurpose = iota
-	// overrideEmpty walks nothing: build-tests-refusals-004-empty-checklist-refused
+	// overrideEmpty walks nothing: build-steps-refusals-001-empty-checklist-refused
 	// and checklist-skip-003 pin the refusal of a checklist with nothing to ask.
 	overrideEmpty
 	// overrideRefused carries a prompt the engine refuses at startup, so
@@ -250,8 +250,6 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"fix-loop-exit-terms":                     overrideFixLoop,
 		"fix-loop-walks-exhausted-terms":          overrideFixLoop,
 		"fix-loop-attempts-exhausted":             overrideFixLoop,
-		"build-tests-run-bound":                   overrideFixLoop,
-		"build-tests-run-package":                 overrideFixLoop,
 		"fix-loop-refix-stops":                    overrideFixLoop,
 		"fix-loop-unsettled":                      overrideFixLoop,
 	}

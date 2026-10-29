@@ -49,7 +49,7 @@ One testable condition inside a refined user story, before it is merged into the
 _Avoid_: AC (in prose), criterion, condition
 
 **Item**:
-Whatever a single command walks one of at a time — a Story for `us refine`, an Acceptance Criterion for `us apply`, a Scenario for `scen check`, a Catalogue phrase a suite has no step definition for, for `build steps`.
+Whatever a single command walks one of at a time — a Story for `us refine`, an Acceptance Criterion for `us apply`, a Scenario for `scen check`, a Catalogue phrase a go-test suite has no step definition for, for `build steps` (phrase × suite, including unused phrases). `build tests` renders files and walks no Items.
 _Avoid_: subject, entity, record
 
 **Prompt**:
@@ -73,7 +73,7 @@ One full traversal of every Cell in a run. A fix applied mid-walk restarts the t
 _Avoid_: pass, sweep, iteration
 
 **Step coverage**:
-The engine's own answer to which Scenarios have a step no definition binds: the Scenarios it examined, and the unbound steps among them. `examined` is the load-bearing half — an empty gap list says nothing about a Scenario nobody looked at. Resolved in-process by parsing each suite's `steps/` package, never by running a test; a step two definitions match is a refusal rather than a gap.
+The engine's own answer to which Scenarios have a step no definition binds: the Scenarios it examined, and the unbound steps among them. `examined` is the load-bearing half — an empty gap list says nothing about a Scenario nobody looked at. Answered by `build steps` in-process by parsing each suite's `steps/` package, never by running a test; a step two definitions match is a refusal rather than a gap.
 _Avoid_: coverage report, coverage output, step report, gap list
 
 **Catalogue**:

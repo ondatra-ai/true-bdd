@@ -1,0 +1,13 @@
+catalogue:
+- template: the MCP server is running on its configured port
+  block: given
+  means: Start the server.
+- template: the Claude User posts a valid JSON-RPC initialize request to /mcp
+  block: when
+  means: Initialize.
+- template: the server returns HTTP {status:number}
+  block: then
+  means: Compare status.
+- template: the unused operation runs
+  block: when
+  means: Run the unused operation.

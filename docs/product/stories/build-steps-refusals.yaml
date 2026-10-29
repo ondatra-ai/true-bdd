@@ -1,0 +1,22 @@
+story:
+  id: build-steps-refusals
+  feature: build-steps
+  title: Refuse a checklist that asks nothing
+  as_a: System Architect
+  i_want: build steps to check all definitions without AI or a test run
+  so_that: missing and ambiguous bindings cannot pass silently
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 001-empty-checklist-refused
+    description: A checklist file that declares no prompts must be refused before the walk, never converge on an item nothing checked
+    steps:
+    - given:
+      - the "build-tests-empty-checklist" project tree
+    - when:
+      - the System Architect runs "build steps"
+    - then:
+      - the command exits with code 1
+      - stdout matches level=ERROR msg="Refusing to start" command="build steps"
+      - but: stdout does not match BUILD STEPS
+      - and: no file outside "tmp" changed
+      - and: the engine dispatched no AI turns

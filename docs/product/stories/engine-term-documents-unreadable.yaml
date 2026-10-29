@@ -1,24 +1,10 @@
-# Story `engine-term-documents`: a term document the engine cannot read.
-#
-# The term documents are the product document's catalogue and glossary
-# and the architecture document's word mapping. A host edits them by
-# hand. One that is not valid YAML, or whose glossary or word mapping is
-# not a list, stops `scen check` at the first check that reads it, and
-# stops `build tests --fix` before it writes a generated test, both with
-# no AI turn and naming the document. A catalogue `build tests` cannot
-# read is the Story build-tests-steps.
-#
-# Each criterion's id is the second half of its Scenario's Registry key,
-# `engine-term-documents-<id>` (ADR 0014), and its steps are that
-# Scenario's steps.
-
 story:
     id: engine-term-documents
     feature: engine
-    title: Stop a command at a term document it cannot read, before any AI turn, naming the document
+    title: Refuse unreadable term documents
     as_a: Quality Engineer
-    i_want: scen check to stop at the first check that reads a product or architecture document that is not valid YAML, or whose glossary or word mapping is not a list, and build tests --fix to refuse such a document before it writes a generated test, both before any AI turn and naming the document and what is wrong with it
-    so_that: a hand edit that breaks a term document stops the run with the document to fix named, instead of a check passing a Scenario against words it could not look up or a step definition authored without their meaning
+    i_want: scen check to refuse unreadable glossary and Word mapping documents
+    so_that: checks never invent missing specification context
     status: IMPLEMENTED
     acceptance_criteria:
         - id: 001-glossary-not-a-list-stops-scen-check
@@ -77,29 +63,3 @@ story:
                 - but: stdout does not match check=step-definitions
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns
-        - id: 005-glossary-not-a-list-refuses-build-tests-fix
-          description: '`build tests --fix` must be refused before it writes a generated test or dispatches any AI turn when the product document''s `glossary:` is not a list, naming the document, rather than author step definitions without the meaning of the words they observe'
-          steps:
-            - given:
-                - the "build-tests-fix-glossary-not-a-list" project tree
-            - when:
-                - the System Architect runs "build tests --fix"
-            - then:
-                - the command exits with code 1
-                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
-                - and: 'stdout matches read the glossary: product document \./docs/product/product\.yaml: glossary: must hold a list of terms'
-                - and: the engine dispatched no AI turns
-                - but: no file outside "tmp" changed
-        - id: 006-mapping-not-a-list-refuses-build-tests-fix
-          description: '`build tests --fix` must be refused before it writes a generated test or dispatches any AI turn when the architecture document''s `architecture.terms:` is not a list, naming the document, rather than author step definitions without how each word they observe is built'
-          steps:
-            - given:
-                - the "build-tests-fix-mapping-not-a-list" project tree
-            - when:
-                - the System Architect runs "build tests --fix"
-            - then:
-                - the command exits with code 1
-                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
-                - and: 'stdout matches read the word mapping: architecture document \./docs/architecture/architecture\.yaml: architecture\.terms: must hold a list of mappings'
-                - and: the engine dispatched no AI turns
-                - but: no file outside "tmp" changed

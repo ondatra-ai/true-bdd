@@ -1,0 +1,7 @@
+# Checklist for `true-bdd build steps`; --fix is not implemented yet.
+sections:
+  - id: step-coverage
+    name: Step coverage
+    validation_prompts:
+      - D: step-coverage
+        rationale: Every step of every Scenario must bind to exactly one definition.

@@ -118,7 +118,7 @@ func (a *FixApplier) UseDeclaredWriteRoots(roots, patterns []string) {
 }
 
 // UseWriteRoots grants this applier write access to project trees outside
-// tmp — the `services/*` roots for build code, test roots for build tests.
+// tmp — the `services/*` roots for build code, test roots for build steps.
 // Without it, ExecutionMode (writer guard, codex sandbox) denies every write the system prompt instructs.
 func (a *FixApplier) UseWriteRoots(roots []string) {
 	a.writeRoots = roots

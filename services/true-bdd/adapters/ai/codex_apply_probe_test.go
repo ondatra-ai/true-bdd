@@ -17,7 +17,6 @@ import (
 )
 
 const probeBuildCode = "build code"
-const probeBuildTests = "build tests"
 
 func TestCodexEveryCommandApplyConfinement(t *testing.T) {
 	paths, err := gotool.Environment(t.Context())
@@ -25,7 +24,7 @@ func TestCodexEveryCommandApplyConfinement(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for _, command := range []string{"us refine", "us apply", "scen check", probeBuildTests, probeBuildCode} {
+	for _, command := range []string{"us refine", "us apply", "scen check", probeBuildCode} {
 		t.Run(command, func(t *testing.T) { probeCodexApply(t, command, paths) })
 	}
 }
@@ -84,24 +83,6 @@ func probeCodexApply(t *testing.T, command string, paths map[string]string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	assertCodexBuildTestsFiles(t, command, root)
-}
-
-func assertCodexBuildTestsFiles(t *testing.T, command, root string) {
-	t.Helper()
-
-	if command == probeBuildTests {
-		_, err := os.Stat(filepath.Join(root, "tests/alpha/sibling.go"))
-		if !errors.Is(err, os.ErrNotExist) {
-			t.Fatalf("unmatched file survived: %v", err)
-		}
-
-		info, statErr := os.Stat(filepath.Join(root, "tests/missing/single.txt"))
-		if statErr == nil && info.IsDir() {
-			t.Fatal("literal configured file became a directory")
-		}
-	}
 }
 
 const codexApplyProbeScript = `#!/bin/sh
@@ -127,9 +108,7 @@ if [ -n "${TRUE_BDD_CODEX_SANDBOX_PROBE:-}" ]; then
  deny /bin/cat "$cache/cache/vcs/marker"
  deny /bin/sh -c 'printf forbidden > readonly.txt'
  deny /bin/sh -c 'printf forbidden > docs/sibling.yaml'
- if [ "$TRUE_BDD_TEST_COMMAND" != 'build tests' ]; then
-  deny /bin/sh -c 'printf forbidden > tests/alpha/sibling.go'
- fi
+ deny /bin/sh -c 'printf forbidden > tests/alpha/sibling.go'
  deny node -e '
  const net=require("net");const s=net.connect(80,"192.0.2.1");
  s.on("error",e=>{console.error(e.code === "EPERM" ? "Operation not permitted" : e.code);process.exit(1)});
@@ -137,12 +116,6 @@ if [ -n "${TRUE_BDD_CODEX_SANDBOX_PROBE:-}" ]; then
  "$probe" sandbox -C "$PWD" -P writer /bin/sh -ec '
   case "$1" in
    "build code") printf written > services/new/created.txt ;;
-   "build tests")
-    printf written > tests/alpha/steps/new.go
-    printf forbidden > tests/alpha/sibling.go
-    printf written > tests/single.txt
-    printf written > tests/missing/single.txt
-    printf written > tests/new/created.txt ;;
   esac
   printf written > tmp/scratch.txt
   go test -count=1 ./tests/suite/... -run "^TestA$"
@@ -208,17 +181,12 @@ func codexProbeContainer(t *testing.T, root string) *bootstrap.Container {
 paths:
   tmp_dir: ./tmp
   tmp_glob: ./tmp/**
-  test_write_globs:
-    - ./tests/*/steps/**
-    - ./tests/single.txt
-    - ./tests/missing/single.txt
-    - ./tests/new/**
 templates:
   prompts:
 `
 
 	var applierTemplates strings.Builder
-	for _, prefix := range []string{"", "apply_", "scen_check_", "build_tests_", "build_code_"} {
+	for _, prefix := range []string{"", "apply_", "scen_check_", "build_code_"} {
 		applierTemplates.WriteString("    " + prefix + "fix_applier: user.tpl\n" +
 			"    " + prefix + "fix_applier_system: system.tpl\n")
 	}
@@ -249,8 +217,6 @@ func codexCommandApplier(container *bootstrap.Container, command string) *valida
 		return container.ApplyFixApplier
 	case "scen check":
 		return container.ScenCheckFixApplier
-	case probeBuildTests:
-		return container.BuildTestsFixApplier
 	default:
 		return container.BuildCodeFixApplier
 	}

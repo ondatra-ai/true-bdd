@@ -58,8 +58,7 @@ type Spec[I any] struct {
 	// Document commands leave it nil so their commit hooks cannot run.
 	PostNotApplied func(ctx context.Context, item I) (I, error)
 	// Prepare, if non-nil, runs after items load and before the first AI
-	// turn: it may refuse the run or narrow the item set. `build tests`
-	// narrows to unbound scenarios so a converged repo costs zero AI turns.
+	// turn: it may refuse the run or narrow the item set.
 	Prepare func(ctx context.Context, items []I) ([]I, error)
 	// PostFix is invoked after the FixApplier returns: us refine
 	// unmarshals the new ACs and stores a new version; us apply's mutation

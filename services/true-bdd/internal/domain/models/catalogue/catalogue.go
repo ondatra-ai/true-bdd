@@ -84,3 +84,14 @@ func (c *Catalogue) Match(text string) []Entry {
 
 	return matches
 }
+
+// Pattern returns the compiled whole-text pattern of a declared template.
+func (c *Catalogue) Pattern(template string) string {
+	for _, entry := range c.entries {
+		if entry.entry.Template == template {
+			return entry.pattern.String()
+		}
+	}
+
+	return ""
+}

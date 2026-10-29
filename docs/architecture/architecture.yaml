@@ -71,7 +71,7 @@ architecture:
         Rationale: &rationale >-
           Checklist rationale scalar, YAML-decoded unchanged; empty omits the suffix, otherwise the template appends " SO THAT WE ENSURE " and this value without trimming.
         ResultPath: &validation-result-path >-
-          Run result path: run_dir is the cleaned paths.tmp_dir/date-pid join described in invocation.values.run_dir (./tmp yields tmp/<run>, relative; an absolute configured tmp_dir stays absolute); cassettes normalise its date-pid segment to {{RUN_DIR}}. Filename sanitising replaces each run of characters outside [A-Za-z0-9._-] with one hyphen; no other escaping. Format is <run_dir>/<index zero-padded to at least 2 digits>-<safe subject id>-checklist-<safe checklist-stem[/section-id]>-result.yaml. Index counts non-skipped Prompts from 1 in file section/Prompt order, before D Prompts are moved ahead of Q Prompts for walking. Subject id is Story id for us refine, lineage id for us apply, Registry key for build tests/scen check, the stable failing-set Item id for build code (discovery BuildID for a singleton, failing-set otherwise). A build-code id begins with / and sanitises to a leading hyphen, producing 01--go-test-...; an empty id likewise leaves two hyphens.
+          Run result path: run_dir is the cleaned paths.tmp_dir/date-pid join described in invocation.values.run_dir (./tmp yields tmp/<run>, relative; an absolute configured tmp_dir stays absolute); cassettes normalise its date-pid segment to {{RUN_DIR}}. Filename sanitising replaces each run of characters outside [A-Za-z0-9._-] with one hyphen; no other escaping. Format is <run_dir>/<index zero-padded to at least 2 digits>-<safe subject id>-checklist-<safe checklist-stem[/section-id]>-result.yaml. Index counts non-skipped Prompts from 1 in file section/Prompt order, before D Prompts are moved ahead of Q Prompts for walking. Subject id is Story id for us refine, lineage id for us apply, Registry key for scen check, registry for build steps whole-Registry coverage, the stable failing-set Item id for build code (discovery BuildID for a singleton, failing-set otherwise). A build-code id begins with / and sanitises to a leading hyphen, producing 01--go-test-...; an empty id likewise leaves two hyphens.
         Structured: &structured >-
           Run boolean from the resolved role model CLI: true for both supported CLIs, claude and codex. Validation and generation pass the same populated data to both templates; appliers never receive this field.
         Subject: >-
@@ -86,7 +86,7 @@ architecture:
         DocPaths: &docpaths >-
           Failed check effective docs resolved to config path strings by the same resolver as Docs. Duplicate keys collapse; resolution errors warn and skip; template ranges lexically by key, displaying keys unchanged. Empty map renders no Read lines; paths retain configured ./ and are not made absolute.
         FailedCheck.ActualAnswer: &failedcheck-actualanswer >-
-          Model JSON answer is copied unchanged; YAML scalar answer is TrimSpace, YAML mapping or sequence is yaml.Marshal with trailing newline bytes removed. Status classification alone lowercases and trims. Built-in or build-tests runtime failures supply literal fail.
+          Model JSON answer is copied unchanged; YAML scalar answer is TrimSpace, YAML mapping or sequence is yaml.Marshal with trailing newline bytes removed. Status classification alone lowercases and trims. Built-in or runtime failures supply literal fail.
         FailedCheck.Check: &failedcheck-check >-
           TrimSpace of the checklist D name; empty for a model Q. Selects model-fix versus closure-fix wording, including the declared-terms, term-mappings, step-definitions, public-interface and phrase-mappings branches.
         FailedCheck.Context: &failedcheck-context >-
@@ -98,7 +98,7 @@ architecture:
         FailedCheck.Rationale: &failedcheck-rationale >-
           Checklist rationale scalar copied unchanged to the failed result, including YAML block newlines; printed without trimming.
         FailedCheck.SectionPath: &failedcheck-sectionpath >-
-          Checklist command stem (us-refine, us-apply, build-tests, build-code or scen-check), with "/" plus the checklist sections[].id only when nonempty. The runner calls these SectionID and CriterionID respectively; display is unsanitised, while artifact filenames sanitise the entire combined path.
+          Checklist command stem (us-refine, us-apply, build-steps, build-code or scen-check), with "/" plus the checklist sections[].id only when nonempty. The runner calls these SectionID and CriterionID respectively; display is unsanitised, while artifact filenames sanitise the entire combined path.
         ResultPath: &generation-result-path >-
           Run result path: run_dir is the cleaned paths.tmp_dir/date-pid join described in invocation.values.run_dir (./tmp yields tmp/<run>, relative; an absolute configured tmp_dir stays absolute); cassettes normalise its date-pid segment to {{RUN_DIR}}. Filename sanitising replaces each run of characters outside [A-Za-z0-9._-] with one hyphen; no other escaping. Subject id has the same command-specific source as the validation path. Format is <run_dir>/<failed Prompt index zero-padded to at least 2 digits>-<safe subject id>-fix-prompts.md. Reused across clarification/refinement iterations; iteration appears only in saved debug filenames, not this rendered path.
         Structured: *structured
@@ -239,99 +239,59 @@ architecture:
       rendering: *prompt-rendering
       fields: &apply-fix-applier-system-fields
         ResultPath: *application-result-path
-    build_tests_checklist:
-      rendering: *prompt-rendering
+    build_steps_checklist:
+      rendering: >-
+        Reserved step-authoring resource; build steps --fix is unavailable in this version. No turn renders it yet.
       fields:
-        Docs: *docs
-        Docs[].FilePath: *document-file-path
-        FixTemplate: *fixtemplate
-        Question: *question
-        Rationale: *rationale
-        ResultPath: *validation-result-path
-        Structured: *structured
-        Subject.Description: &registry-description >-
-          Subject description from the Registry, YAML-decoded unchanged; missing strings are empty. Registry Items walk in ascending id order.
-        Subject.FormatSteps: &registry-steps >-
-          Subject Registry merged_steps: scalar strings unchanged; and/but mappings display their original key + " " + value. Keep within-block order, group Given then When then Then, omit empty blocks; method returns "<Block>:\n" and "  - <text>\n" per line, including a final newline, or "" for no steps. No trimming, escaping or quoting.
-        Subject.ID: &registry-id >-
-          Subject Registry map key from the Registry, YAML-decoded unchanged; missing strings are empty. Registry Items walk in ascending id order.
-        Subject.Requirement: &subject-requirement >-
-          Subject optional requirement from the Registry, YAML-decoded unchanged; displayed only when nonempty, otherwise its whole line is omitted. Registry Items walk in ascending id order.
-        Subject.Service: &registry-service >-
-          Subject service from the Registry, YAML-decoded unchanged; missing strings are empty. Registry Items walk in ascending id order.
-    build_tests_checklist_system:
-      rendering: *prompt-rendering
-      fields: *checklist-system-fields
-    build_tests_fix_generator:
-      rendering: *prompt-rendering
+        Subject.Suite: Suite steps directory, relative to the Host root.
+        Subject.Phrase.Template: Verbatim Catalogue template.
+        Subject.Phrase.Means: Verbatim Catalogue meaning.
+        Question: Validation question.
+        Rationale: Validation rationale.
+        FixTemplate: Fix guidance.
+        ResultPath: Result artifact path.
+    build_steps_checklist_system:
+      rendering: >-
+        Reserved step-authoring resource; build steps --fix is unavailable in this version. No turn renders it yet.
+      fields: {}
+    build_steps_fix_generator:
+      rendering: >-
+        Reserved step-authoring resource; build steps --fix is unavailable in this version. No turn renders it yet.
       fields:
-        DocPaths: *docpaths
-        FailedCheck.ActualAnswer: *failedcheck-actualanswer
-        FailedCheck.FixPrompt: *failedcheck-fixprompt
-        FailedCheck.Question: *failedcheck-question
-        FailedCheck.SectionPath: *failedcheck-sectionpath
-        ResultPath: *generation-result-path
-        Structured: *structured
-        Subject.Description: *registry-description
-        Subject.Failures: >-
-          Run evidence after verification, initially nil. Scan errors become "Scenario <id>: step definitions cannot run: <error>". For changed packages, plan-file order then Scenario order yields "Scenario <id>: step definitions were not examined" for an unexamined Scenario, or "Scenario <id>: unbound <block> step: <text>" per unbound step in scan order. Runner lookup errors contribute the error text unchanged; runner discovery errors contribute "Scenarios <ids joined by comma-space>: <error>". These lines come first; failing selections follow as "Selection Scenarios: <ids joined by comma-space>" once per selection. Then groups in first-seen order: "Failure affecting Scenarios: <unique affected ids joined by comma-space>\n<whole first output>". Failure identity matches selection test exactly or a /subtest, else affects all selected ids. Comparison only normalises qualified and short test ids to <test>, source file:line[:column] prefixes away retaining indentation, a singleton Scenario heading to <scenario>, and FAIL/PASS/SKIP elapsed seconds away. Distinct remaining text stays separate. Representative output retains EVERY original byte; no truncation. Empty removes the section. Runtime review sets FailedCheck.FixPrompt to the repair instruction, keeping this evidence only here.
-        Subject.FormatSteps: *registry-steps
-        Subject.ID: *registry-id
-        Subject.Requirement: *subject-requirement
-        Subject.Service: *registry-service
-        Subject.Spec.Declared: &subject-spec-declared >-
-          Subject specification comes from config documents.product catalogue and glossary, and documents.architecture_yaml word mappings. An absent/null catalogue is undeclared; an empty list is declared. Build-tests reads it under --fix for own unbound steps (and suite peers); decoding failure refuses before AI. Build-code reads it for Registry Scenarios during discovery, warns and omits invalid optional spec, uses all Scenario steps and no peer sweep. An unavailable or unreadable product document, an absent/null catalogue or invalid optional spec leaves build-code Subject.Spec empty while retaining any matched Subject.Scenario and its steps. False hides all spec text; build-code additionally requires a matched Scenario.
-        Subject.Spec.Phrases: &subject-spec-phrases >-
-          Subject catalogue entries reached by exactly one match, excluding model-run steps, unique by template string in first-reached order: own steps first, then build-tests suite gaps in ascending Registry id and step order; build-code has no sweep. No sorting by term or phrase.
-        Subject.Spec.Phrases[].Block: &subject-spec-phrasesitem-block >-
-          Subject catalogue block unchanged (given, when or then).
-        Subject.Spec.Phrases[].Means: &subject-spec-phrasesitem-means >-
-          Subject catalogue means text unchanged, including YAML block newlines.
-        Subject.Spec.Phrases[].Template: &subject-spec-phrasesitem-template >-
-          Subject catalogue template string unchanged.
-        Subject.Spec.Phrases[].Terms: &subject-spec-phrasesitem-terms >-
-          Subject catalogue terms in declared list order, unchanged; template joins with ", ", or prints none for empty.
-        Subject.Spec.Steps: &subject-spec-steps >-
-          Subject own steps in order, each paired with all catalogue matches in catalogue order. The compiler excludes duplicate templates, invalid blocks and malformed template grammar; build-tests preflight refuses these, while build-code ignores compilation findings. Build-tests uses own gaps; build-code uses the whole Scenario. Each carries its block and TrimSpace of statement text without the and/but keyword. Empty is an empty list.
-        Subject.Spec.Steps[].Block: &subject-spec-stepsitem-block >-
-          Subject step block: literal given, when or then, unchanged.
-        Subject.Spec.Steps[].Templates: &subject-spec-stepsitem-templates >-
-          Subject matching catalogue template strings in catalogue order, unchanged, empty if none. Build-tests prints zero/one/many separately, semicolon between multiple matches; build-code iterates matches and uses its no-match else.
-        Subject.Spec.Steps[].Text: &subject-spec-stepsitem-text >-
-          Subject statement text after TrimSpace, excluding its and/but key; model-run prefixes stay.
-        Subject.Spec.Terms: &subject-spec-terms >-
-          Subject words declared by reached phrases, unique in first-declaration order. Each includes EVERY exactly spelled glossary definition and architecture mapping in document order; missing entries remain empty lists, duplicates remain visible.
-        Subject.Spec.Terms[].Mappings: &subject-spec-termsitem-mappings >-
-          Subject matching architecture terms entries in document order, duplicates retained; empty emits the template's missing-mapping line.
-        Subject.Spec.Terms[].Mappings[].ObservedBy: &subject-spec-termsitem-mappingsitem-observedby >-
-          Subject architecture.terms observed_by text unchanged, including YAML block newlines; template prefixes it and adds a newline.
-        Subject.Spec.Terms[].Mappings[].Technical: &subject-spec-termsitem-mappingsitem-technical >-
-          Subject architecture.terms technical text unchanged, including YAML block newlines; template prefixes it and adds a newline.
-        Subject.Spec.Terms[].Means: &subject-spec-termsitem-means >-
-          Subject matching glossary means strings in document order, no trimming; one "- Means: " line each, or the template's missing-glossary line when empty.
-        Subject.Spec.Terms[].Term: &subject-spec-termsitem-term >-
-          Subject word spelling unchanged from catalogue terms.
-        SubjectID: &registry-subject-id >-
-          Run subject identifier, unchanged for display: Registry Scenario id. Only artifact filenames sanitise it.
-        UserAnswers: *useranswers
-    build_tests_fix_generator_system:
-      rendering: *prompt-rendering
+        DocPaths: Configured document paths.
+        FailedCheck.ActualAnswer: Latest answer.
+        FailedCheck.FixPrompt: Failed Prompt fix guidance.
+        FailedCheck.Question: Failed Prompt.
+        FailedCheck.SectionPath: Checklist section.
+        ResultPath: Result artifact path.
+        Structured: Provider structured answer selection.
+        Subject.Suite: Suite steps directory.
+        Subject.Service: Service name.
+        Subject.Phrase.Template: Verbatim Catalogue template.
+        Subject.Phrase.Block: Catalogue block.
+        Subject.Phrase.Means: Verbatim meaning.
+        SubjectID: Stable phrase and suite Item id.
+        UserAnswers: Prior clarification answers.
+    build_steps_fix_generator_system:
+      rendering: >-
+        Reserved step-authoring resource; build steps --fix is unavailable in this version. No turn renders it yet.
       fields:
-        Structured: *structured
-        Subject.Spec.Declared: *subject-spec-declared
-    build_tests_fix_applier:
-      rendering: *prompt-rendering
+        Structured: Provider structured answer selection.
+    build_steps_fix_applier:
+      rendering: >-
+        Reserved step-authoring resource; build steps --fix is unavailable in this version. No turn renders it yet.
       fields:
-        FixPrompt: *fixprompt
-        ResultPath: *application-result-path
-        Subject.Description: *registry-description
-        Subject.FormatSteps: *registry-steps
-        Subject.ID: *registry-id
-        Subject.Requirement: *subject-requirement
-        Subject.Service: *registry-service
-    build_tests_fix_applier_system:
-      rendering: *prompt-rendering
-      fields: *apply-fix-applier-system-fields
+        FixPrompt: Approved proposal.
+        ResultPath: Confirmation artifact path.
+        Subject.Suite: Suite steps directory.
+        Subject.Service: Service name.
+        Subject.Phrase.Template: Verbatim Catalogue template.
+        Subject.Phrase.Means: Verbatim meaning.
+    build_steps_fix_applier_system:
+      rendering: >-
+        Reserved step-authoring resource; build steps --fix is unavailable in this version. No turn renders it yet.
+      fields:
+        ResultPath: Confirmation artifact path.
     build_code_checklist:
       rendering: *prompt-rendering
       fields: {}
@@ -372,7 +332,7 @@ architecture:
         Subject.Tests[].FilePath: >-
           Go package import path; Jest file rebased against process cwd when absolute; Playwright deepest nonempty suite/spec file, or startup config Path.
         Subject.Groups: >-
-          Remaining failures grouped by build tests runtime normalization: test identity, Scenario heading, source prefixes and runner elapsed times are ignored for comparison only. Group order follows first member.
+          Remaining failures grouped by shared runtime normalization: test identity, Scenario heading, source prefixes and runner elapsed times are ignored for comparison only. Group order follows first member.
         Subject.Groups[].IDs: >-
           Every member id in this group, in discovery order, joined with comma and space.
         Subject.Groups[].Output: >-
@@ -453,7 +413,7 @@ architecture:
         Subject.Tests[].FilePath: >-
           Go package import path; Jest file rebased against process cwd when absolute; Playwright deepest nonempty suite/spec file, or startup config Path.
         Subject.Groups: >-
-          Remaining failures grouped by build tests runtime normalization: test identity, Scenario heading, source prefixes and runner elapsed times are ignored for comparison only. Group order follows first member.
+          Remaining failures grouped by shared runtime normalization: test identity, Scenario heading, source prefixes and runner elapsed times are ignored for comparison only. Group order follows first member.
         Subject.Groups[].IDs: >-
           Every member id in this group, in discovery order, joined with comma and space.
         Subject.Groups[].Output: >-
@@ -523,14 +483,18 @@ architecture:
         Rationale: *rationale
         ResultPath: *validation-result-path
         Structured: *structured
-        Subject.Description: *registry-description
-        Subject.FormatSteps: *registry-steps
+        Subject.Description: &registry-description >-
+          Subject description from the Registry, YAML-decoded unchanged; missing strings are empty. Registry Items walk in ascending id order.
+        Subject.FormatSteps: &registry-steps >-
+          Subject Registry merged_steps: scalar strings unchanged; and/but mappings display their original key + " " + value. Keep within-block order, group Given then When then Then, omit empty blocks; method returns "<Block>:\n" and "  - <text>\n" per line, including a final newline, or "" for no steps. No trimming, escaping or quoting.
         Subject.FormatUserStories: &subject-formatuserstories >-
           Subject lineage projected from Registry user_stories in list order, dropping merge_date. Empty returns "(none — no story claims this scenario)\n"; otherwise each line is "  - <story> (<scenario_id>)\n", with strings unchanged.
-        Subject.ID: *registry-id
+        Subject.ID: &registry-id >-
+          Subject Registry map key from the Registry, YAML-decoded unchanged; missing strings are empty. Registry Items walk in ascending id order.
         Subject.Path: &subject-scenario-path >-
           Registry path, YAML-decoded unchanged.
-        Subject.Service: *registry-service
+        Subject.Service: &registry-service >-
+          Subject service from the Registry, YAML-decoded unchanged; missing strings are empty. Registry Items walk in ascending id order.
     scen_check_checklist_system:
       rendering: *prompt-rendering
       fields: *checklist-system-fields
@@ -553,7 +517,8 @@ architecture:
         Subject.ID: *registry-id
         Subject.Path: *subject-scenario-path
         Subject.Service: *registry-service
-        SubjectID: *registry-subject-id
+        SubjectID: &registry-subject-id >-
+          Run subject identifier, unchanged for display: Registry Scenario id. Only artifact filenames sanitise it.
         UserAnswers: *useranswers
     scen_check_fix_generator_system:
       rendering: *prompt-rendering
@@ -598,9 +563,6 @@ architecture:
       - module: znkr.io/diff
         version: v1.0.1
     framework: go-test
-    # build tests verifies authored definitions against its running binary;
-    # the harness consumes this argument and skips building service source.
-    prebuilt_engine_arg: "-engine-bin={engine_bin}"
     # Gated behind //go:build bdd with a -mode flag naming a mode per
     # CALLER (`services:` the engine, `tests:` the judge) — not guessable,
     # hence commands:. build code runs replay, which reaches no model.
@@ -1108,7 +1070,7 @@ architecture:
                 turn: `Read(**),Write({tmp_glob}),Edit({tmp_glob}),MultiEdit({tmp_glob}),Glob(**),Grep(**)`,
                 followed, for each write root the command grants its applier
                 in order, by `Write(<glob>),Edit(<glob>),MultiEdit(<glob>)`.
-                `build code` replaces its scratch glob with host `./tmp/**` and grants the remaining failing set's services' `path:` and exact `writable:` paths. Existing folders and explicitly declared absent folders receive recursive subtrees; exact files, including absent files, stay literal. `build tests` preserves `paths.test_write_globs` (else `./tests/**` and `./services/**`) as configured patterns and literal files. Other commands retain their existing scratch/document grants.
+                `build code` replaces its scratch glob with host `./tmp/**` and grants the remaining failing set's services' `path:` and exact `writable:` paths. Existing folders and explicitly declared absent folders receive recursive subtrees; exact files, including absent files, stay literal. Other commands retain their existing scratch/document grants.
               disallowed_tools: >-
                 A validation or fix turn: `Bash,Edit(**),MultiEdit(**),Agent,Task`.
                 An apply turn: `Bash,Agent,Task`.
@@ -1310,7 +1272,7 @@ architecture:
 
     - term: Library
       technical: >-
-        Optional libraries lists on each service and on testing contain {module, version}, exact Go module versions including pseudo-versions. Omitted lists grant no external module reads. Before a build-code fix walk's first runner and before each build-code writer preparation, or before a build-tests fix walk with unbound steps, the engine downloads all declarations and their complete module build graph through an isolated Go manifest under tmp/library-download, using the engine's network and the normal GOMODCACHE. No host go.mod or go.sum is modified. Each download has a private temporary manifest directory, removed afterward; writers cannot modify the library-download subtree. The manifest scratch is excluded from run snapshots and per-call fs-diffs; downloaded cache contents are never recorded. Conflicting declarations, versions selected away from a declared pin and incomplete downloads fail before the writer. Downloads name the declared libraries and the underlying error on failure. The writer reads exactly the resolved source directories and their .info, .mod, .zip and .ziphash files; other versions, cached modules and VCS repositories remain inaccessible. No rule names the engine's own module. Build code resolves service roots and follows linked source directories with cycle detection, then parses production Go imports (including platform-tagged files, excluding _test.go) before discovery and every rerun and refuses an import named only in testing.libraries for that service. Protected tests and step definitions remain read-only under the writable paths definition. Only codex enforces subprocess and network confinement; Claude's replay and the code it runs remain unconfined, with network, for model trials. For non-Go hosts libraries must be omitted or empty: npm/Jest/Playwright dependencies keep their existing host-local node_modules paths, with no new package-manager downloading or import check.
+        Optional libraries lists on each service and on testing contain {module, version}, exact Go module versions including pseudo-versions. Omitted lists grant no external module reads. Before a build-code fix walk's first runner and before each build-code writer preparation, the engine downloads all declarations and their complete module build graph through an isolated Go manifest under tmp/library-download, using the engine's network and the normal GOMODCACHE. No host go.mod or go.sum is modified. Each download has a private temporary manifest directory, removed afterward; writers cannot modify the library-download subtree. The manifest scratch is excluded from run snapshots and per-call fs-diffs; downloaded cache contents are never recorded. Conflicting declarations, versions selected away from a declared pin and incomplete downloads fail before the writer. Downloads name the declared libraries and the underlying error on failure. The writer reads exactly the resolved source directories and their .info, .mod, .zip and .ziphash files; other versions, cached modules and VCS repositories remain inaccessible. No rule names the engine's own module. Build code resolves service roots and follows linked source directories with cycle detection, then parses production Go imports (including platform-tagged files, excluding _test.go) before discovery and every rerun and refuses an import named only in testing.libraries for that service. Protected tests and step definitions remain read-only under the writable paths definition. Only codex enforces subprocess and network confinement; Claude's replay and the code it runs remain unconfined, with network, for model trials. For non-Go hosts libraries must be omitted or empty: npm/Jest/Playwright dependencies keep their existing host-local node_modules paths, with no new package-manager downloading or import check.
       observed_by: >-
         writer-config-001-codex pins the full profile with an exact named module; writer-config-002-claude pins settings and the policy read roots with a transitive module. libraries-003-test-only-import-refused and libraries-004-download-fails-before-writer assert the refusal, its cause and zero runner/model turns. Live codex sandbox probes use a fresh build cache to compile and run the calculator host and refuse an undeclared module.
 
@@ -1345,9 +1307,21 @@ architecture:
         require the descendant PID to disappear. These probes run in replay
         too and cannot be satisfied by recorded filesystem effects alone.
 
+    - term: Item
+      technical: >-
+        BuildStepsItem carries one Catalogue Entry, service name and suite steps directory. Discovery orders suites by the first Registry Scenario id and phrases by Catalogue order, deduplicating each phrase and suite. The read-only command reports the whole Registry's coverage through the checklist artifact protocol with subject id registry; it does not walk missing Items through a Fix loop yet.
+      observed_by: >-
+        build-steps-list-001 observes the phrase and suite in each missing-definition log record. Command unit tests verify startup refusal of --fix before files are loaded.
+
+    - term: Step coverage
+      technical: >-
+        build steps parses each Registry suite's steps package and constant-folds every registration pattern. A pattern it cannot fold or compile and a step matching two definitions refuse startup. Absent steps directories contain zero definitions. Every Registry Scenario is examined; an empty gap list alone is insufficient. Missing definitions are listed once per Catalogue phrase and suite, including unused phrases. A phrase has a definition when their regular-expression languages overlap; concrete Registry steps are checked separately, so a partially covering definition still fails coverage. Pattern intersection traverses the paired finite automata, retaining anchors, word boundaries, Unicode and case folding; it does not guess sample slot values.
+      observed_by: >-
+        build-steps-coverage-001 through 005 and build-steps-list-001 name missing or ambiguous definitions without AI or runner starts. Unit tests cover unused phrases and pattern intersection.
+
     - term: command
       technical: >-
-        The quoted text, split into arguments at whitespace (no quoting, so
+        The pipeline is us refine, us apply, build tests, build steps, build code. build tests only renders Registry test files: --fix writes stale files; without it stale files refuse startup. It never reads definitions, starts a test runner or dispatches an AI turn. build steps loads its build-steps checklist, lists missing phrase definitions and checks Step coverage without AI or a runner; --fix refuses startup as not implemented yet. The quoted text, split into arguments at whitespace (no quoting, so
         an argument cannot hold a space) and run as the engine binary's
         arguments in a subprocess; `{{CWD}}` in an argument stands for the
         run directory's absolute path, so a command can name a file of the
@@ -1422,8 +1396,7 @@ architecture:
     - term: exit code
       technical: >-
         The engine process's exit status: 1 when the command returns an error
-        (a refusal, an unusable answer, or a walk of `scen check`, `build
-        tests` or `build code` that ends with a check still failing), 0
+        (a refusal, an unusable answer, or a walk of `scen check` or `build code`, or a failing `build steps` inventory that ends with a check still failing), 0
         otherwise. The Finalize step of `us refine` and `us apply` returns no
         error for a walk that ends failing: it logs the verdict, skips the
         write, and the process exits 0.
@@ -1440,8 +1413,7 @@ architecture:
         ` COMPLETE` only after Finalize returns no error; an earlier error
         or a Finalize error emits no completion banner. A command deferring
         completion owns that announcement: build tests logs BUILD TESTS COMPLETE
-        only after finalization, generated-test integrity checks and runtime
-        verification cleanup all succeed. Existing banner text is preserved.
+        only after deterministic rendering or verification succeeds. Existing banner text is preserved.
       observed_by: >-
         The kept stdout, as one string, is asked for a match of the step's
         pattern anywhere in it, or for none; a failed match prints the tail of
@@ -1853,20 +1825,12 @@ architecture:
         A new outer walk discovers
         the full suite afresh, catching regressions outside the previous set. Before each start it writes one log record, msg="Spawning
         test runner", with the program in `binary` and its arguments in
-        `args`. Optional `testing.prebuilt_engine_arg` is one argument
-        containing `{engine_bin}` exactly once; only `build tests --fix`
-        verification substitutes the running binary's absolute, symlink-resolved
-        path and appends it after splitting the literal replay command.
-        Every command that loads the architecture, including `build code`,
-        refuses an empty declaration or a placeholder count other than one,
-        even when that command never uses the argument.
+        `args`.
       observed_by: >-
         Read the "Spawning test runner" records in the run's JSON log file:
         count them, compare `binary` with the quoted program, or match the
         `args` joined by single spaces against the pattern. A missing log
-        file fails instead of counting zero. For the prebuilt engine path,
-        compare one complete argument with `-engine-bin=` plus the harness
-        binary's absolute, symlink-resolved path.
+        file fails instead of counting zero.
 
     - term: shell command
       technical: >-

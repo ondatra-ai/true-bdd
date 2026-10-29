@@ -31,8 +31,7 @@ func repoRoot(t *testing.T) string {
 }
 
 // TestUniverseCensus pins the verified shipped inventory: 33 prompts,
-// 33 Fs, 99 branches. Every shipped Prompt has a fix template,
-// so each contributes pass/fail/fix branches.
+// 32 Fs, 98 branches. Step coverage has no fix template yet.
 func TestUniverseCensus(t *testing.T) {
 	t.Parallel()
 
@@ -53,12 +52,12 @@ func TestUniverseCensus(t *testing.T) {
 		}
 	}
 
-	if fCount != 33 {
-		t.Errorf("F templates: got %d, want 33", fCount)
+	if fCount != 32 {
+		t.Errorf("F templates: got %d, want 32", fCount)
 	}
 
-	if got := len(uni.Branches); got != 99 {
-		t.Errorf("branches: got %d, want 99", got)
+	if got := len(uni.Branches); got != 98 {
+		t.Errorf("branches: got %d, want 98", got)
 	}
 
 	if len(uni.Diagnostics) != 0 {

@@ -84,7 +84,7 @@ roles:
     definition: >-
       Defines the technical shape of the system — its services, their
       dependencies, and the test suite that observes behaviour.
-    primary_use_case: "Owning the architecture and running the regeneration loop — runs build tests and build code"
+    primary_use_case: "Owning the architecture and running the regeneration loop — runs build tests, build steps and build code"
     characteristics:
       - "Owns architecture.yaml: services, their dependencies, and how the test suite runs"
       - "Designs so behaviour can be tested — every scenario must be observable through a declared service"
@@ -100,7 +100,7 @@ roles:
     characteristics:
       - "Asks what could go wrong: permission denied, not found, timeout, boundary values"
       - "Rejects steps that no test runner could execute"
-      - "Reads a build tests failure as a sign that a scenario cannot be observed, not just that a test is missing"
+      - "Reads a build steps failure as a sign that a scenario cannot be observed, not just that a test is missing"
       - "Often the same person as the Product Owner; the accountability stays separate"
 
 # The words `us refine` rejects in stories and scenarios. The phrases a
@@ -215,12 +215,20 @@ glossary:
       or schema and detects no test framework. `version` also needs none
       of these files. It prints `true-bdd version <version> commit <commit>` using the build identity. Other commands use only the project files, with no
       embedded runtime fallback. Before their first test run, Item or AI
-      turn, they load their configuration and checklist and parse both
-      validation prompt templates, plus both fix-generator and both
+      turn, checklist commands load their configuration and checklist and parse both
+      validation prompt templates when they run AI, plus both fix-generator and both
       fix-applier templates under --fix. A missing file refuses startup,
       naming the file and true-bdd init; an invalid file names the file
       and parse error and asks to fix it, without init advice.
-      Checklist commands print their existing upper-case command name followed
+      The pipeline is us refine, us apply, build tests, build steps, build code.
+      build tests renders test files deterministically from the Registry, refuses
+      stale files without --fix and writes them with --fix. It preserves Registry,
+      path, renderer, step-shape and Catalogue phrase refusals before rendering.
+      It runs no AI turn, fix menu or test runner. build steps reads its own
+      checklist, lists missing Catalogue phrase definitions per go-test suite,
+      checks Step coverage in-process and exits non-zero for Items or failed checks.
+      build steps --fix refuses startup as not implemented yet.
+      Commands print their existing upper-case command name followed
       by ` COMPLETE` on stdout only when they succeed, after finalization and
       any post-run validation. A command returning an error prints no COMPLETE
       banner. Success means exit 0, including the reported failing-check
@@ -250,7 +258,7 @@ glossary:
     means: >-
       The number a finished command reports: anything but 0 when it refused
       to start or could not finish, 0 when it ran to its end. A check still
-      failing at the end makes `scen check`, `build tests` and `build code`
+      failing at the end makes `scen check`, `build steps` and `build code`
       report non-zero too, since they gate a change; `us refine` and `us
       apply` report that check on stdout instead, leave the file they would
       rewrite as it was, and report 0. It is what a script or a CI gate
@@ -493,7 +501,22 @@ glossary:
       product: it sets up what a Given states or observes what a Then
       states. A step runs through the one definition whose pattern matches
       its whole text. Unlike the tests rendered from the Registry, the
-      definitions are written, by a person or by `build tests --fix`.
+      definitions are written by a person. build steps lists missing definitions and checks Step coverage; its --fix writer is not implemented yet.
+
+  - term: Item
+    means: >-
+      What one command walks. For build steps it is one Catalogue phrase
+      without a step definition in one go-test suite. Missing Items include
+      unused Catalogue phrases and are listed once per phrase and suite.
+
+  - term: Step coverage
+    means: >-
+      The in-process answer to whether every step of every Registry Scenario
+      binds to exactly one definition in its suite. Nonconstant or invalid
+      patterns and steps matched by two definitions refuse startup. An absent
+      steps directory has zero definitions; missing bindings fail the command
+      and name the Scenario and step. build steps performs this check without
+      running a test or spending an AI turn.
 
   - term: test runner
     means: >-
@@ -564,7 +587,7 @@ glossary:
 # a Story claims to exactly one entry; the Scenarios no Story claims wait.
   - term: Library
     means: >-
-      Code supplied apart from a service's own source, declared by exact module and version in the service's optional libraries list or testing.libraries. Before build-code or build-tests writers run, the engine uses its network to download every named Go module and its complete build graph. A failed download stops the run before any writer turn, naming the library and the error. Writers may read only those module sources and exact version metadata in the module cache, with no organization-specific grant or deny. A service importing a library named only for its tests is refused before discovery and on rerun. Protected tests and step definitions remain read-only as defined under writable paths. Only the default codex writer enforces these rules for every subprocess; Claude's file tools obey them, but its replay and executed code remain unconfined and have network, a known limit retained for model trials. For non-Go hosts these lists are omitted or empty; the existing Jest and Playwright paths use host-local node_modules without a new package-manager download or import check.
+      Code supplied apart from a service's own source, declared by exact module and version in the service's optional libraries list or testing.libraries. Before build-code writers run, the engine uses its network to download every named Go module and its complete build graph. A failed download stops the run before any writer turn, naming the library and the error. Writers may read only those module sources and exact version metadata in the module cache, with no organization-specific grant or deny. A service importing a library named only for its tests is refused before discovery and on rerun. Protected tests and step definitions remain read-only as defined under writable paths. Only the default codex writer enforces these rules for every subprocess; Claude's file tools obey them, but its replay and executed code remain unconfined and have network, a known limit retained for model trials. For non-Go hosts these lists are omitted or empty; the existing Jest and Playwright paths use host-local node_modules without a new package-manager download or import check.
 
   - term: writable paths
     means: >-

@@ -30,7 +30,6 @@ story:
             - then:
                 - the command exits with code 0
                 - stdout matches msg="Loaded requirements registry" file=/\S+/docs/specs/requirements\.yaml count=1
-                - and: stdout matches 1 of 1 scenario\(s\) already bind every step; walking 0\.
                 - and: stdout matches BUILD TESTS COMPLETE
                 - but: stdout does not match Refusing to start
                 - and: the file "tests/mcp/mcp_test.go" is unchanged
