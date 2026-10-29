@@ -1,0 +1,99 @@
+story:
+  id: build-steps-writing
+  feature: build-steps
+  title: Write step definitions through the declared Public interface
+  as_a: System Architect
+  i_want: build steps --fix to write the engine skeleton and the AI body
+  so_that: the tests reach the declared interface before building the service
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 001-new-body
+    description: A missing phrase gets an engine skeleton and an AI body that executes the declared CLI command
+    steps:
+    - given:
+      - the "build-steps-new" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches BUILD STEPS COMPLETE
+      - stdout matches Step coverage passed
+      - stdout matches Scenario list passed
+      - no file outside "tmp" and "tests" changed
+      - the engine dispatched no validation AI turns to "claude"
+      - the engine spawned exactly 1 test runner with arguments matching -list \.
+      - 'every file matching "tmp/*/*fix-iter*-user.txt" matches phrase_mapping:'
+      - 'every file matching "tmp/*/apply-*-user.txt" matches interface_document:'
+      - every file matching "tmp/*/apply-*-user.txt" matches calc-001-double
+      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+  - id: 002-all-skeletons-first
+    description: All missing phrases get compilable skeletons before the first AI turn and each body is written in one walk; whole-suite checks run once
+    steps:
+    - given:
+      - the "build-steps-many" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches BUILD STEPS COMPLETE
+      - stdout matches Step coverage passed
+      - stdout matches Scenario list passed
+      - no file outside "tmp" and "tests" changed
+      - stdout matches All step skeletons written.*items=3
+      - the engine dispatched no validation AI turns to "claude"
+      - the engine spawned exactly 1 test runner with arguments matching -list \.
+      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+  - id: 003-slot-order
+    description: The quoted operation and numeric value are passed to the written definition in template slot order
+    steps:
+    - given:
+      - the "build-steps-slots" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches BUILD STEPS COMPLETE
+      - stdout matches Step coverage passed
+      - stdout matches Scenario list passed
+      - no file outside "tmp" and "tests" changed
+      - the engine dispatched no validation AI turns to "claude"
+      - the engine spawned exactly 1 test runner with arguments matching -list \.
+      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+  - id: 004-interface-cannot-serve
+    description: A phrase needing an observation the declared CLI cannot offer stops distinctly after its first writer verdict
+    steps:
+    - given:
+      - the "build-steps-interface" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - the command exits with code 1
+      - stdout matches public interface cannot serve phrase
+      - stdout matches the number is doubled
+      - stdout matches heap
+      - stdout does not match BUILD STEPS COMPLETE
+      - the engine dispatched 2 AI turns
+      - no file outside "tmp" and "tests" changed
+  - id: 005-outside-tests-refused
+    description: The confined body writer refuses writes to the service and Specification while completing the test body
+    steps:
+    - given:
+      - the "build-steps-outside" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches BUILD STEPS COMPLETE
+      - stdout matches Step coverage passed
+      - stdout matches Scenario list passed
+      - the engine spawned exactly 1 test runner with arguments matching -list \.
+      - no file outside "tmp" and "tests" changed
+      - stdout matches sandbox=writer
+      - every file matching "tmp/*/codex-turn*-codex-events.jsonl" matches (?i)permission denied|operation not permitted|read.only
+      - the engine dispatched no validation AI turns to "claude"
+      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0

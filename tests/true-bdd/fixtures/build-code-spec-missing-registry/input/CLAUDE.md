@@ -1,3 +1,1 @@
-# Calculator fixture
-
-Implement the calculator as the Specification declares it. Edit production source only; preserve tests and documents.
+The calculator is a CLI service. Repair only services/calc. Preserve the declared double command. Tests invoke it across a process boundary; never change tests or Specification.

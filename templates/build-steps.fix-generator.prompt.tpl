@@ -13,7 +13,16 @@ Phrase: {{ .Subject.Phrase.Template }}
 Block: {{ .Subject.Phrase.Block }}
 Meaning: {{ .Subject.Phrase.Means }}
 
+## Complete phrase context
+{{ .Subject.Context }}
+
 Propose only this phrase's body against the declared Public interface and Phrase mapping.
+Derive the body solely from the declared interface, never from service source or
+a target-dependent test run. Do not propose running a Scenario or making it green.
+When the declaration cannot serve the phrase, propose that the writer return
+interface_cannot_serve with the phrase and what setup or observation is missing;
+do not ask a clarification question to invent or extend the interface.
+
 The engine owns the registration, pattern and function signature. Reuse the suite's
 state and helpers. Never implement the service's behaviour inside a definition.
 Never edit the Specification or service code. Ask for missing context before proposing.
@@ -26,6 +35,9 @@ The following check failed and needs to be fixed:
 
 **Question:** {{ .FailedCheck.Question }}
 **Actual:** {{ .FailedCheck.ActualAnswer }}
+{{ range .FailedCheck.Context }}
+- {{ . }}
+{{ end }}
 
 **Suggested Fix Template:**
 {{ .FailedCheck.FixPrompt }}

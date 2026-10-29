@@ -97,16 +97,16 @@ story:
             - every file matching "tmp/*/*fix-iter*-user.txt" matches the number is doubled
             - every file matching "tmp/*/*fix-iter*-user.txt" matches The calculator doubles the supplied number.
             - every file matching "tmp/*/*fix-iter*-user.txt" matches An integer operand whose double is its sum with itself.
-            - every file matching "tmp/*/*fix-iter*-user.txt" matches The integer argument to services/calc.Double.
-            - every file matching "tmp/*/*fix-iter*-user.txt" matches The step calls Double and compares its integer return
+            - every file matching "tmp/*/*fix-iter*-user.txt" matches The integer argument and stdout of the calculator double command.
+            - every file matching "tmp/*/*fix-iter*-user.txt" matches The step runs double as a process and compares its integer stdout
             - every file matching "tmp/*/apply-*-user.txt" matches \*\*Scenario ID:\*\* calc-001-double
             - every file matching "tmp/*/apply-*-user.txt" matches \*\*Service:\*\* calc
             - every file matching "tmp/*/apply-*-user.txt" matches tests/calc/calc_test.go
             - every file matching "tmp/*/apply-*-user.txt" matches the number is doubled
             - every file matching "tmp/*/apply-*-user.txt" matches The calculator doubles the supplied number.
             - every file matching "tmp/*/apply-*-user.txt" matches An integer operand whose double is its sum with itself.
-            - every file matching "tmp/*/apply-*-user.txt" matches The integer argument to services/calc.Double.
-            - every file matching "tmp/*/apply-*-user.txt" matches The step calls Double and compares its integer return
+            - every file matching "tmp/*/apply-*-user.txt" matches The integer argument and stdout of the calculator double command.
+            - every file matching "tmp/*/apply-*-user.txt" matches The step runs double as a process and compares its integer stdout
             - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
 
         - id: 006-unreadable-product-warned

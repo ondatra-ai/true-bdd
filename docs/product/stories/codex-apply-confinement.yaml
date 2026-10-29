@@ -32,3 +32,21 @@ story:
       - and: the file "docs/product/product.yaml" matches Claude offers to
       - and: the story "docs/product/stories/doc-outline-catalogued.yaml" has 3 acceptance criteria
       - and: the file "docs/product/stories/doc-outline-catalogued.yaml" matches Claude offers to summarise the document instead
+  - id: 002-build-steps-writes-protected-tests
+    description: The codex step writer receives the protected test paths and writes its body while preserving service and Specification
+    steps:
+    - given:
+      - the "codex-apply-build-steps" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches BUILD STEPS COMPLETE
+      - stdout matches Step coverage passed
+      - stdout matches Scenario list passed
+      - the engine spawned exactly 1 test runner with arguments matching -list \.
+      - no file outside "tmp" and "tests" changed
+      - stdout matches msg="Codex turn sandboxed" label=codex-turn[0-9]+ sandbox=writer
+      - the engine dispatched no validation AI turns to "claude"
+      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0

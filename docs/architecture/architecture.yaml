@@ -92,7 +92,7 @@ architecture:
         FailedCheck.Context: &failedcheck-context >-
           Failed result observation strings in original list order, without trimming or joining; built-in checks supply their finding lines. Template prefixes each with "- "; an empty list produces no findings.
         FailedCheck.FixPrompt: &failedcheck-fixprompt >-
-          Failed model result fix_prompt is TrimSpace after JSON/YAML decoding; pass discards it. Built-in failure uses TrimSpace of F. Build-tests runtime review overrides it with the literal "Repair the failing step definitions from the runtime evidence. Do not change the Registry, generated tests, suite command or scenario shim." (not failure output); template inserts it unchanged, even if empty.
+          Failed model result fix_prompt is TrimSpace after JSON/YAML decoding; pass discards it. Built-in failure uses TrimSpace of F; the template inserts it unchanged, even if empty.
         FailedCheck.Question: &failedcheck-question >-
           Failed Q text unchanged, including a trailing YAML block newline; for a built-in check, "D: " plus the trimmed D name.
         FailedCheck.Rationale: &failedcheck-rationale >-
@@ -241,7 +241,7 @@ architecture:
         ResultPath: *application-result-path
     build_steps_checklist:
       rendering: >-
-        Reserved step-authoring resource; build steps --fix is unavailable in this version. No turn renders it yet.
+        Build steps uses the shared Fix loop. Phrase and suite are loaded from the Catalogue and Registry; all skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
       fields:
         Subject.Suite: Suite steps directory, relative to the Host root.
         Subject.Phrase.Template: Verbatim Catalogue template.
@@ -252,12 +252,14 @@ architecture:
         ResultPath: Result artifact path.
     build_steps_checklist_system:
       rendering: >-
-        Reserved step-authoring resource; build steps --fix is unavailable in this version. No turn renders it yet.
+        Build steps uses the shared Fix loop. Phrase and suite are loaded from the Catalogue and Registry; all skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
       fields: {}
     build_steps_fix_generator:
       rendering: >-
-        Reserved step-authoring resource; build steps --fix is unavailable in this version. No turn renders it yet.
+        Build steps uses the shared Fix loop. Phrase and suite are loaded from the Catalogue and Registry; all skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
       fields:
+        Subject.Context: Whole YAML context with phrase, service Phrase mapping, term glossary entries and Word mappings, Public interface declaration and complete named document, and every suite Scenario using the phrase. No truncation.
+        FailedCheck.Context: Every finding from the last per-Item compile, binding and body check.
         DocPaths: Configured document paths.
         FailedCheck.ActualAnswer: Latest answer.
         FailedCheck.FixPrompt: Failed Prompt fix guidance.
@@ -274,13 +276,14 @@ architecture:
         UserAnswers: Prior clarification answers.
     build_steps_fix_generator_system:
       rendering: >-
-        Reserved step-authoring resource; build steps --fix is unavailable in this version. No turn renders it yet.
+        Build steps uses the shared Fix loop. Phrase and suite are loaded from the Catalogue and Registry; all skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
       fields:
         Structured: Provider structured answer selection.
     build_steps_fix_applier:
       rendering: >-
-        Reserved step-authoring resource; build steps --fix is unavailable in this version. No turn renders it yet.
+        Build steps uses the shared Fix loop. Phrase and suite are loaded from the Catalogue and Registry; all skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
       fields:
+        Subject.Context: Whole phrase context, identical to the proposal turn.
         FixPrompt: Approved proposal.
         ResultPath: Confirmation artifact path.
         Subject.Suite: Suite steps directory.
@@ -289,9 +292,10 @@ architecture:
         Subject.Phrase.Means: Verbatim meaning.
     build_steps_fix_applier_system:
       rendering: >-
-        Reserved step-authoring resource; build steps --fix is unavailable in this version. No turn renders it yet.
+        Build steps uses the shared Fix loop. Phrase and suite are loaded from the Catalogue and Registry; all skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
       fields:
         ResultPath: Confirmation artifact path.
+        Subject.Phrase.Template: The phrase an interface_cannot_serve verdict names.
     build_code_checklist:
       rendering: *prompt-rendering
       fields: {}
@@ -1278,7 +1282,7 @@ architecture:
 
     - term: writable paths
       technical: >-
-        Each service's optional writable is a list of exact project-relative files or folders, without patterns. Existing folders grant their subtree; an absent entry remains exact unless a trailing slash declares a folder. Together with the service's path and host tmp these bound the build-code writer. Before any runner, build code refuses absolute or escaping paths, patterns, parent traversal, host-root grants and overlap in either direction with protected test directories, symlinks included. Protected tests are tests/, Registry suite directories, the in-host directory holding testing.config, and in-host Go package directories named by every testing.commands entry (./dir or ./dir/..., resolved relative to the configuration directory or host root). Broad ./... names no separate test directory. Command package directories within a service path remain service code, with _test.go files writable by build code; a filename suffix alone grants no protection. Reserved tests/, Registry and configuration directories take precedence. Host tmp is checked too, and arbitrary configured scratch globs cannot expand these writer grants. Protected tests and step definitions stay read-only. The failing set's services receive grants; unknown-service failures use all declared services. Only codex fully enforces the subprocess boundary; Claude's replay remains unconfined for model trials (ADR-0028 and spec #213).
+        Each service's optional writable is a list of exact project-relative files or folders, without patterns. Existing folders grant their subtree; an absent entry remains exact unless a trailing slash declares a folder. Together with the service's path and host tmp these bound the build-code writer. Before any runner, build code refuses absolute or escaping paths, patterns, parent traversal, host-root grants and overlap in either direction with protected test directories, symlinks included. Protected tests are tests/, Registry suite directories, the in-host directory holding testing.config, and in-host Go package directories named by every testing.commands entry (./dir or ./dir/..., resolved relative to the configuration directory or host root). Broad ./... names no separate test directory. Command package directories within a service path remain service code, with _test.go files writable by build code; a filename suffix alone grants no protection. Reserved tests/, Registry and configuration directories take precedence. Host tmp is checked too, and arbitrary configured scratch globs cannot expand these writer grants. Protected tests and step definitions stay read-only for build code; build steps derives its test-only grants from exactly those directories, refusing overlap with services or Specification documents. The failing set's services receive grants; unknown-service failures use all declared services. Only codex fully enforces the subprocess boundary; Claude's replay remains unconfined for model trials (ADR-0028 and spec #213).
       observed_by: Scenarios supply architecture entries, assert a successful go.sum repair and inspect exact generated file grants; refused test overlap produces no runner or AI turn.
 
     - term: impossible repair
@@ -1309,19 +1313,19 @@ architecture:
 
     - term: Item
       technical: >-
-        BuildStepsItem carries one Catalogue Entry, service name and suite steps directory. Discovery orders suites by the first Registry Scenario id and phrases by Catalogue order, deduplicating each phrase and suite. The read-only command reports the whole Registry's coverage through the checklist artifact protocol with subject id registry; it does not walk missing Items through a Fix loop yet.
+        BuildStepsItem carries one Catalogue Entry, service name and suite steps directory. Discovery orders suites by the first Registry Scenario id and phrases by Catalogue order, deduplicating each phrase and suite. Inventory includes phrases mapped to the suite's service or used by its Scenarios, including mapped unused phrases. The read-only command reports whole-Registry coverage with subject id registry. Under --fix the Item includes its skeleton location, complete YAML Specification context and latest per-Item findings, and uses a stable phrase hash as its artifact id, prefixed by the suite directory when multiple suites write the same phrase.
       observed_by: >-
-        build-steps-list-001 observes the phrase and suite in each missing-definition log record. Command unit tests verify startup refusal of --fix before files are loaded.
+        build-steps-list-001 observes the phrase and suite in each missing-definition log record. build-steps-writing-001 through 005 and the restored term-document, exit and codex-apply Scenarios pin body writing, verification and confinement.
 
     - term: Step coverage
       technical: >-
-        build steps parses each Registry suite's steps package and constant-folds every registration pattern. A pattern it cannot fold or compile and a step matching two definitions refuse startup. Absent steps directories contain zero definitions. Every Registry Scenario is examined; an empty gap list alone is insufficient. Missing definitions are listed once per Catalogue phrase and suite, including unused phrases. A phrase has a definition when their regular-expression languages overlap; concrete Registry steps are checked separately, so a partially covering definition still fails coverage. Pattern intersection traverses the paired finite automata, retaining anchors, word boundaries, Unicode and case folding; it does not guess sample slot values.
+        build steps parses each Registry suite's steps package and constant-folds every registration pattern. A pattern it cannot fold or compile refuses startup. Without --fix ambiguous concrete bindings refuse startup; with --fix concrete Step coverage runs once after every Item is written and refuses ambiguities there. Absent steps directories contain zero definitions. Every Registry Scenario is examined; an empty gap list alone is insufficient. Missing definitions are listed once per Catalogue phrase and suite when mapped to its service or used by a suite Scenario, including mapped unused phrases. A phrase has a definition when their regular-expression languages overlap; concrete Registry steps are checked separately, so a partially covering definition still fails coverage. Pattern intersection traverses the paired finite automata, retaining anchors, word boundaries, Unicode and case folding; it does not guess sample slot values.
       observed_by: >-
         build-steps-coverage-001 through 005 and build-steps-list-001 name missing or ambiguous definitions without AI or runner starts. Unit tests cover unused phrases and pattern intersection.
 
     - term: command
       technical: >-
-        The pipeline is us refine, us apply, build tests, build steps, build code. build tests only renders Registry test files: --fix writes stale files; without it stale files refuse startup. It never reads definitions, starts a test runner or dispatches an AI turn. build steps loads its build-steps checklist, lists missing phrase definitions and checks Step coverage without AI or a runner; --fix refuses startup as not implemented yet. The quoted text, split into arguments at whitespace (no quoting, so
+        The pipeline is us refine, us apply, build tests, build steps, build code. build tests only renders Registry test files: --fix writes stale files; without it stale files refuse startup. It never reads definitions, starts a test runner or dispatches an AI turn. build steps loads its build-steps checklist; without --fix it lists missing phrases and checks coverage without AI or a runner. With --fix it writes all skeletons first, compiles, then writes each body through the shared Fix loop. Per-apply compilation, exact binding and pending-body checks precede one whole-suite coverage and generated-test listing. The writer receives the complete phrase context, writes only protected tests and shared state, and reports interface_cannot_serve with phrase and lacks to stop immediately when the declared interface cannot serve the meaning. The quoted text, split into arguments at whitespace (no quoting, so
         an argument cannot hold a space) and run as the engine binary's
         arguments in a subprocess; `{{CWD}}` in an argument stands for the
         run directory's absolute path, so a command can name a file of the
@@ -1396,7 +1400,7 @@ architecture:
     - term: exit code
       technical: >-
         The engine process's exit status: 1 when the command returns an error
-        (a refusal, an unusable answer, or a walk of `scen check` or `build code`, or a failing `build steps` inventory that ends with a check still failing), 0
+        (a refusal, an unusable answer, or a walk of `scen check` or `build code`, or a `build steps` inventory or authoring walk that ends incomplete), 0
         otherwise. The Finalize step of `us refine` and `us apply` returns no
         error for a walk that ends failing: it logs the verdict, skips the
         write, and the process exits 0.
@@ -1782,7 +1786,7 @@ architecture:
       technical: >-
         A registration in the Go package `steps/` beside a Scenario's test
         file: a regular expression, written as a string literal, paired with
-        the code run for every step whose whole text it matches.
+        the code run for every step whose whole text it matches. The engine writes registrations and functions through stepskeleton, using the same Catalogue compiler in capturing mode. Every slot is one group in template order, passed through the harness shape func(*State, []string) error. Pending bodies fail with the phrase and "step not written yet". The AI writes only the body, necessary imports and shared State. No service package is shared.
       observed_by: >-
         The step reads the source of every `.go` file directly in the quoted
         directory, without building it. The directory is held inside the run
@@ -1829,7 +1833,7 @@ architecture:
       observed_by: >-
         Read the "Spawning test runner" records in the run's JSON log file:
         count them, compare `binary` with the quoted program, or match the
-        `args` joined by single spaces against the pattern. A missing log
+        `args` joined by single spaces against the pattern, including counting only matching starts to pin a single whole-suite listing. New harness cassettes with Go test frame durations declare normalize_go_durations and normalize those elapsed values in request argv/stdin to 0.00s; legacy cassette hashes and all failure evidence remain unchanged. A missing log
         file fails instead of counting zero.
 
     - term: shell command

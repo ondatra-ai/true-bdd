@@ -1,0 +1,203 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You apply the approved body of one Catalogue phrase in one suite.
+Preserve the engine's registration, pattern and signature. Modify only the body
+and the suite's shared state. Use the declared Public interface and Phrase
+mapping; never implement the product's operation inside a step definition.
+
+**Output Requirements:**
+- After your Write/Edit calls succeed, output a YAML confirmation
+  inside FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other content in the target file — only write the
+  selected body and extend shared State as needed.
+
+**Output Format:**
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply-phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df-iter1-result.yaml ===
+```
+
+If the declared Public interface cannot set up or observe the phrase, stop without
+inventing an operation. Return the same confirmation markers with:
+```yaml
+applied: false
+interface_cannot_serve:
+  phrase: "the number is doubled"
+  lacks: "<what the interface offers no way to set up or observe>"
+```
+
+Author solely from the supplied Specification and the suite's state and helpers.
+Do not read service implementation code. Do not execute Scenarios, replay the
+suite against the target, or require a Scenario to pass: the target may be absent
+or not built yet. The engine owns compilation and the whole-suite checks. If you
+compile the steps package while writing, preserve the inherited Go cache and
+temporary-directory environment; never create a separate build cache.
+
+Keep every new constant and local helper value inside the selected function body.
+Do not add package-level constants, variables, helper functions or types; only
+shared State fields and the selected file's imports may change outside that body.
+
+
+### TASK
+
+# Apply a step definition body
+
+Suite: tests/calc/steps
+Service: calc
+Phrase: the number is doubled
+Meaning: The calculator doubles the supplied number.
+
+## Complete phrase context
+phrase:
+    template: the number is doubled
+    block: when
+    means: The calculator doubles the supplied number.
+    terms:
+        - number
+phrase_mapping:
+    template: the number is doubled
+    service: calc
+    references:
+        - command: double
+    does: Run the declared double command as a process and keep its integer stdout.
+glossary:
+    - term: number
+      means: An integer operand whose double is its sum with itself.
+word_mapping:
+    - term: number
+      technical: The integer argument and stdout of the calculator double command.
+      observed_by: The step runs double as a process and compares its integer stdout with the expected value.
+public_interface:
+    kind: cli
+    document: docs/architecture/calc-cli.yaml
+interface_document: |
+    opencli: 0.1
+    info:
+      title: Calculator CLI
+      version: '1.0'
+    commands:
+      double:
+        description: Run go run ./services/calc double VALUE from the host root; stdout
+          is the doubled integer and a newline. The service appends one double VALUE line
+          to its call log for each invocation.
+        parameters:
+        - name: value
+          in: argument
+          required: true
+          schema:
+            type: integer
+        responses:
+          '0':
+            description: Doubled integer on stdout
+          '1':
+            description: Invalid arguments
+    extensions:
+      files:
+        calc_calls:
+          path: tmp/calc-calls.log
+          format: One double VALUE line per invocation, newline terminated.
+          access: write
+scenarios:
+    - id: calc-001-double
+      description: Doubling a number returns twice its value
+      service: calc
+      path: tests/calc/calc_test.go
+      steps: |
+        Given:
+          - the number is 3
+        When:
+          - the number is doubled
+        Then:
+          - the result is 6
+
+
+# Fix Prompt for Item phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df: the number is doubled
+
+## Target
+tests/calc/steps
+
+## Required Changes
+
+Edit only `tests/calc/steps/phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df.go`.
+Keep the function name and signature exactly as generated; replace the import block and the function body only. Do not touch `register.go`, `state.go`, the generated tests, the Specification or any service code.
+
+No shared `State` change is needed: the suite's `State.Value` already carries the number, and the existing `result` Then step observes `State.Value`, so this When writes the command's integer stdout back into that field (the Word mapping declares `number` as "the integer argument and stdout of the calculator double command").
+
+Replace the whole file with:
+
+```go
+package steps
+
+import (
+	"bytes"
+	"fmt"
+	"os/exec"
+	"strconv"
+	"strings"
+)
+
+func phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df(state *State, args []string) error {
+	const (
+		hostRoot    = "../.."
+		servicePath = "./services/calc"
+		command     = "double"
+	)
+
+	value := strconv.Itoa(state.Value)
+
+	cmd := exec.Command("go", "run", servicePath, command, value)
+	cmd.Dir = hostRoot
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("run %s %s %s: %w: %s", servicePath, command, value, err, stderr.String())
+	}
+
+	doubled, err := strconv.Atoi(strings.TrimSpace(stdout.String()))
+	if err != nil {
+		return fmt.Errorf("parse %s stdout %q: %w", command, stdout.String(), err)
+	}
+
+	state.Value = doubled
+
+	return nil
+}
+```
+
+## Why this body
+
+- The Phrase mapping references `command: double`, and the declared Public interface (`docs/architecture/calc-cli.yaml`) states the invocation literally: `go run ./services/calc double VALUE` run "from the host root", with the doubled integer plus a newline on stdout, response `'0'` on success and `'1'` on invalid arguments.
+- `cmd.Dir = "../.."` is the host root as seen from the suite's working directory: the generated suite already resolves `../../docs/scenarios.yaml` in `tests/calc/scenarios/scenarios.go`, and the declared `calc_calls` file `tmp/calc-calls.log` is read as `../../tmp/calc-calls.log` from `tests/calc`.
+- The step performs no arithmetic: it passes `state.Value` to the declared command as the argument and parses the command's own stdout. Doubling stays entirely inside the service, and the declared per-invocation `double VALUE` call-log line is produced by running the real command rather than written by the step.
+- `strings.TrimSpace` removes the single declared trailing newline before `strconv.Atoi`.
+- A non-zero exit (the declared `'1'` response) is surfaced as a step error with the command's stderr attached, rather than being compared or swallowed.
+- All constants are local to the function body; no package-level constants, variables, helper functions or types are added. Only this file's imports change outside the body.
+
+Read existing state and helpers first. Write only this phrase's body and shared
+state. Preserve the engine's pattern, registration and signature. Reach the
+service through its declared Public interface. Preserve generated tests, the
+Specification and service code. Report the changes in the confirmation below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path of the file you wrote/edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df-iter1-result.yaml ===
+
+If the declared Public interface cannot set up or observe the phrase, stop without
+inventing an operation. Return the same confirmation markers with:
+```yaml
+applied: false
+interface_cannot_serve:
+  phrase: "the number is doubled"
+  lacks: "<what the interface offers no way to set up or observe>"
+```

@@ -1,7 +1,10 @@
-# Checklist for `true-bdd build steps`; --fix is not implemented yet.
+# Checklist for `true-bdd build steps`.
+config:
+  max_apply_attempts: 3
 sections:
   - id: step-coverage
     name: Step coverage
     validation_prompts:
       - D: step-coverage
-        rationale: Every step of every Scenario must bind to exactly one definition.
+        rationale: Each phrase needs one compiled definition with its body written; the whole suite is covered and listed after all Items.
+        F: Write only this phrase's body using its Phrase mapping and declared Public interface, preserving the engine's registration and signature.

@@ -70,6 +70,7 @@ func TestFixtureTemplateOverlays(t *testing.T) {
 
 func fixtureTemplateDeclarations() map[string]string {
 	return map[string]string{
+ "build-steps-outside/input/templates/build-steps.fix-applier.prompt.tpl": templateExtension,
 		"engine-io-claude-writer/input/templates/build-code.fix-applier.prompt.tpl":        templateReplacement,
 		"engine-io-claude-writer/input/templates/build-code.fix-applier.system.prompt.tpl": templateReplacement,
 

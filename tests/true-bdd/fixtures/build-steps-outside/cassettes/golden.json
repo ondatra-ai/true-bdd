@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "fixture": "build-steps-outside",
+  "files": [
+    {
+      "path": "tests/calc/steps/phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df.go",
+      "kind": "created",
+      "size": 932,
+      "sha256": "af5c043ed499aeda36998be1aa9cd5b15e5ebc124ce2e43897b8999d671e5161",
+      "text": "package steps\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\nfunc phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df(state *State, args []string) error {\n\tconst (\n\t\thostRoot    = \"../..\"\n\t\tpackagePath = \"./services/calc\"\n\t\tcommandName = \"double\"\n\t)\n\n\tcommand := exec.Command(\"go\", \"run\", packagePath, commandName, strconv.Itoa(state.Value))\n\tcommand.Dir = hostRoot\n\n\tstdout, err := command.Output()\n\tif err != nil {\n\t\tvar exit *exec.ExitError\n\t\tif errors.As(err, \u0026exit) {\n\t\t\treturn fmt.Errorf(\"run %s %s %d: %w: %s\", packagePath, commandName, state.Value, err, strings.TrimSpace(string(exit.Stderr)))\n\t\t}\n\t\treturn fmt.Errorf(\"run %s %s %d: %w\", packagePath, commandName, state.Value, err)\n\t}\n\n\tdoubled, err := strconv.Atoi(strings.TrimSpace(string(stdout)))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"parse %s stdout %q: %w\", commandName, string(stdout), err)\n\t}\n\n\tstate.Value = doubled\n\treturn nil\n}\n"
+    },
+    {
+      "path": "tests/calc/steps/register.go",
+      "kind": "modified",
+      "size": 630,
+      "sha256": "d10b4aa1552a73b2b1df27fe01e7e06ca39f4053ae15f9ceed528dc80ae316c8",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"strconv\"\n)\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the number is (\\d+)$`, number)\n\tsuite.Step(`^the result is (\\d+)$`, result)\n\n\tsuite.Step(\"\\\\Athe number is doubled\\\\z\", phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df)\n}\nfunc number(state *State, args []string) error {\n\tvalue, err := strconv.Atoi(args[0])\n\tstate.Value = value\n\treturn err\n}\nfunc result(state *State, args []string) error {\n\twant, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn err\n\t}\n\tif state.Value != want {\n\t\treturn fmt.Errorf(\"expected %d, got %d\", want, state.Value)\n\t}\n\treturn nil\n}\n"
+    }
+  ]
+}

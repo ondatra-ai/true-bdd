@@ -220,6 +220,10 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 // for. Applied is a POINTER: nil (no `applied:` key, as us refine's
 // story body emits) must stay distinguishable from explicit false, or every such turn misreports as a failed fix.
 type applyResultYAML struct {
+ InterfaceCannotServe *struct {
+ Phrase string `yaml:"phrase"`
+ Lacks string `yaml:"lacks"`
+ } `yaml:"interface_cannot_serve"`
 	Applied    *bool                      `yaml:"applied"`
 	Target     string                     `yaml:"target"`
 	Summary    string                     `yaml:"summary"`
@@ -237,6 +241,10 @@ func checkFixApplied(content string) error {
 		// invalid YAML, and reading that as pass-through would turn a refusal into "Fix applied successfully".
 		return checkFixAppliedFallback(content)
 	}
+
+	if result.InterfaceCannotServe != nil {
+ return pkgerrors.InterfaceCannotServe(result.InterfaceCannotServe.Phrase, result.InterfaceCannotServe.Lacks)
+ }
 
 	if len(result.Impossible) > 0 {
 		return pkgerrors.ImpossibleWork(result.Impossible)

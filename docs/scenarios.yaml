@@ -4070,16 +4070,16 @@ scenarios:
       - every file matching "tmp/*/*fix-iter*-user.txt" matches the number is doubled
       - every file matching "tmp/*/*fix-iter*-user.txt" matches The calculator doubles the supplied number.
       - every file matching "tmp/*/*fix-iter*-user.txt" matches An integer operand whose double is its sum with itself.
-      - every file matching "tmp/*/*fix-iter*-user.txt" matches The integer argument to services/calc.Double.
-      - every file matching "tmp/*/*fix-iter*-user.txt" matches The step calls Double and compares its integer return
+      - every file matching "tmp/*/*fix-iter*-user.txt" matches The integer argument and stdout of the calculator double command.
+      - every file matching "tmp/*/*fix-iter*-user.txt" matches The step runs double as a process and compares its integer stdout
       - every file matching "tmp/*/apply-*-user.txt" matches \*\*Scenario ID:\*\* calc-001-double
       - every file matching "tmp/*/apply-*-user.txt" matches \*\*Service:\*\* calc
       - every file matching "tmp/*/apply-*-user.txt" matches tests/calc/calc_test.go
       - every file matching "tmp/*/apply-*-user.txt" matches the number is doubled
       - every file matching "tmp/*/apply-*-user.txt" matches The calculator doubles the supplied number.
       - every file matching "tmp/*/apply-*-user.txt" matches An integer operand whose double is its sum with itself.
-      - every file matching "tmp/*/apply-*-user.txt" matches The integer argument to services/calc.Double.
-      - every file matching "tmp/*/apply-*-user.txt" matches The step calls Double and compares its integer return
+      - every file matching "tmp/*/apply-*-user.txt" matches The integer argument and stdout of the calculator double command.
+      - every file matching "tmp/*/apply-*-user.txt" matches The step runs double as a process and compares its integer stdout
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
       - the engine dispatched no validation AI turns to "claude"
       - the engine dispatched 2 AI turns
@@ -6693,3 +6693,214 @@ scenarios:
       - and: the engine dispatched no AI turns
       - and: the engine spawned no test runners
       - and: no file outside "tmp" changed
+  build-steps-writing-001-new-body:
+    description: A missing phrase gets an engine skeleton and an AI body that executes the declared CLI command
+    service: true-bdd
+    path: tests/true-bdd/build_steps_test.go
+    user_stories:
+    - story: docs/product/stories/build-steps-writing.yaml
+      scenario_id: build-steps-writing-001-new-body
+      merge_date: '2026-10-29'
+    timeout: 15m
+    merged_steps:
+      given:
+      - the "build-steps-new" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches BUILD STEPS COMPLETE
+      - stdout matches Step coverage passed
+      - stdout matches Scenario list passed
+      - no file outside "tmp" and "tests" changed
+      - the engine dispatched no validation AI turns to "claude"
+      - the engine spawned exactly 1 test runner with arguments matching -list \.
+      - 'every file matching "tmp/*/*fix-iter*-user.txt" matches phrase_mapping:'
+      - 'every file matching "tmp/*/apply-*-user.txt" matches interface_document:'
+      - every file matching "tmp/*/apply-*-user.txt" matches calc-001-double
+      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+  build-steps-writing-002-all-skeletons-first:
+    description: All missing phrases get compilable skeletons before the first AI turn and each body is written in one walk; whole-suite checks run once
+    service: true-bdd
+    path: tests/true-bdd/build_steps_test.go
+    user_stories:
+    - story: docs/product/stories/build-steps-writing.yaml
+      scenario_id: build-steps-writing-002-all-skeletons-first
+      merge_date: '2026-10-29'
+    timeout: 25m
+    merged_steps:
+      given:
+      - the "build-steps-many" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches BUILD STEPS COMPLETE
+      - stdout matches Step coverage passed
+      - stdout matches Scenario list passed
+      - no file outside "tmp" and "tests" changed
+      - stdout matches All step skeletons written.*items=3
+      - the engine dispatched no validation AI turns to "claude"
+      - the engine spawned exactly 1 test runner with arguments matching -list \.
+      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+  build-steps-writing-003-slot-order:
+    description: The quoted operation and numeric value are passed to the written definition in template slot order
+    service: true-bdd
+    path: tests/true-bdd/build_steps_test.go
+    user_stories:
+    - story: docs/product/stories/build-steps-writing.yaml
+      scenario_id: build-steps-writing-003-slot-order
+      merge_date: '2026-10-29'
+    timeout: 15m
+    merged_steps:
+      given:
+      - the "build-steps-slots" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches BUILD STEPS COMPLETE
+      - stdout matches Step coverage passed
+      - stdout matches Scenario list passed
+      - no file outside "tmp" and "tests" changed
+      - the engine dispatched no validation AI turns to "claude"
+      - the engine spawned exactly 1 test runner with arguments matching -list \.
+      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+  build-steps-writing-004-interface-cannot-serve:
+    description: A phrase needing an observation the declared CLI cannot offer stops distinctly after its first writer verdict
+    service: true-bdd
+    path: tests/true-bdd/build_steps_test.go
+    user_stories:
+    - story: docs/product/stories/build-steps-writing.yaml
+      scenario_id: build-steps-writing-004-interface-cannot-serve
+      merge_date: '2026-10-29'
+    timeout: 15m
+    merged_steps:
+      given:
+      - the "build-steps-interface" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - the command exits with code 1
+      - stdout matches public interface cannot serve phrase
+      - stdout matches the number is doubled
+      - stdout matches heap
+      - stdout does not match BUILD STEPS COMPLETE
+      - the engine dispatched 2 AI turns
+      - no file outside "tmp" and "tests" changed
+  fix-loop-choices-006-exit-fails-build-steps:
+    description: Exiting the body-writing Fix loop ends build steps non-zero with no COMPLETE banner
+    service: true-bdd
+    path: tests/true-bdd/build_steps_test.go
+    user_stories:
+    - story: docs/product/stories/fix-loop-choices-apply-refine-exit.yaml
+      scenario_id: fix-loop-choices-006-exit-fails-build-steps
+      merge_date: '2026-10-29'
+    timeout: 15m
+    merged_steps:
+      given:
+      - the "build-steps-exit" project tree
+      - the System Architect answers "3" to every question
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - the command exits with code 1
+      - stdout matches action=exit
+      - stdout does not match BUILD STEPS COMPLETE
+      - the engine dispatched 1 AI turn
+      - no file outside "tmp" and "tests" changed
+  engine-term-documents-005-glossary-not-a-list-refuses-build-steps-fix:
+    description: The body writer refuses a malformed term list before skeletons, runners or AI
+    service: true-bdd
+    path: tests/true-bdd/build_steps_test.go
+    user_stories:
+    - story: docs/product/stories/engine-term-documents-unreadable.yaml
+      scenario_id: engine-term-documents-005-glossary-not-a-list-refuses-build-steps-fix
+      merge_date: '2026-10-29'
+    timeout: 15m
+    merged_steps:
+      given:
+      - the "build-steps-glossary" project tree
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - the command exits with code 1
+      - 'stdout matches glossary: must hold a list of terms'
+      - the engine dispatched no AI turns
+      - the engine spawned no test runners
+      - no file outside "tmp" changed
+  engine-term-documents-006-mapping-not-a-list-refuses-build-steps-fix:
+    description: The body writer refuses a malformed term list before skeletons, runners or AI
+    service: true-bdd
+    path: tests/true-bdd/build_steps_test.go
+    user_stories:
+    - story: docs/product/stories/engine-term-documents-unreadable.yaml
+      scenario_id: engine-term-documents-006-mapping-not-a-list-refuses-build-steps-fix
+      merge_date: '2026-10-29'
+    timeout: 15m
+    merged_steps:
+      given:
+      - the "build-steps-mapping" project tree
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - the command exits with code 1
+      - 'stdout matches architecture.terms: must hold a list of mappings'
+      - the engine dispatched no AI turns
+      - the engine spawned no test runners
+      - no file outside "tmp" changed
+  codex-apply-002-build-steps-writes-protected-tests:
+    description: The codex step writer receives the protected test paths and writes its body while preserving service and Specification
+    service: true-bdd
+    path: tests/true-bdd/build_steps_test.go
+    user_stories:
+    - story: docs/product/stories/codex-apply-confinement.yaml
+      scenario_id: codex-apply-002-build-steps-writes-protected-tests
+      merge_date: '2026-10-29'
+    timeout: 15m
+    merged_steps:
+      given:
+      - the "codex-apply-build-steps" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches BUILD STEPS COMPLETE
+      - stdout matches Step coverage passed
+      - stdout matches Scenario list passed
+      - the engine spawned exactly 1 test runner with arguments matching -list \.
+      - no file outside "tmp" and "tests" changed
+      - stdout matches msg="Codex turn sandboxed" label=codex-turn[0-9]+ sandbox=writer
+      - the engine dispatched no validation AI turns to "claude"
+      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+  build-steps-writing-005-outside-tests-refused:
+    description: The confined body writer refuses writes to the service and Specification while completing the test body
+    service: true-bdd
+    path: tests/true-bdd/build_steps_test.go
+    user_stories:
+    - story: docs/product/stories/build-steps-writing.yaml
+      scenario_id: build-steps-writing-005-outside-tests-refused
+      merge_date: '2026-10-29'
+    timeout: 15m
+    merged_steps:
+      given:
+      - the "build-steps-outside" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches BUILD STEPS COMPLETE
+      - stdout matches Step coverage passed
+      - stdout matches Scenario list passed
+      - the engine spawned exactly 1 test runner with arguments matching -list \.
+      - no file outside "tmp" and "tests" changed
+      - stdout matches sandbox=writer
+      - every file matching "tmp/*/codex-turn*-codex-events.jsonl" matches (?i)permission denied|operation not permitted|read.only
+      - the engine dispatched no validation AI turns to "claude"
+      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0

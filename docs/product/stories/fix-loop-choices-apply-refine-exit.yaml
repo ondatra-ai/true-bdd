@@ -116,3 +116,17 @@ story:
                 - and: the file "docs/product/product.yaml" is unchanged
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched 1 AI turn
+        - id: 006-exit-fails-build-steps
+          description: Exiting the body-writing Fix loop ends build steps non-zero with no COMPLETE banner
+          steps:
+          - given:
+            - the "build-steps-exit" project tree
+            - the System Architect answers "3" to every question
+          - when:
+            - the System Architect runs "build steps --fix"
+          - then:
+            - the command exits with code 1
+            - stdout matches action=exit
+            - stdout does not match BUILD STEPS COMPLETE
+            - the engine dispatched 1 AI turn
+            - no file outside "tmp" and "tests" changed

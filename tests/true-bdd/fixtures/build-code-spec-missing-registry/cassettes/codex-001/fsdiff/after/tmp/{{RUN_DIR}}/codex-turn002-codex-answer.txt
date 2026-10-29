@@ -1,8 +1,6 @@
-Updated `Double` to return `value * 2`. Verification was blocked: the sandbox denied access to the BDD dependency, so `TestCalc001Double` could not run.
-
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===
 applied: false
 impossible: []
 target: "services/calc"
-summary: "Changed Double to return value * 2. Attempted TestCalc001Double with the granted command; setup failed because sandbox access to the BDD dependency was denied. No tests were observed passing."
+summary: "Changed calc.go to print value + value and ran gofmt. Attempted TestCalc001Double with the granted command; setup failed because sandbox permissions block pkg/testkit/bddgo. No tests in the failing set were observed passing. The repair remains written; verification is incomplete."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===

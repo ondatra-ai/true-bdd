@@ -16,13 +16,6 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/registry"
 )
 
-func TestBuildStepsFixRefusesBeforeLoadingFiles(t *testing.T) {
-	err := commands.RunBuildSteps(context.Background(), commands.BuildStepsDeps{}, "absent", "absent", true)
-	if !errors.Is(err, commands.ErrBuildStepsFixUnavailable) {
-		t.Fatalf("want explicit --fix refusal, got %v", err)
-	}
-}
-
 func TestBuildTestsRendersWithoutStepsOrRunner(t *testing.T) {
 	deps := buildFixture(t)
 
@@ -90,9 +83,28 @@ func TestBuildStepsListsUnusedCataloguePhrase(t *testing.T) {
   - template: the unused operation runs
     block: when
     means: Run the unused operation.
+  - template: the foreign operation runs
+    block: when
+    means: Belongs to another service.
 `
 
 	err := disk.Write("docs/product/product.yaml", []byte(product), disk.Shared)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = disk.Write("docs/architecture/architecture.yaml", []byte(`architecture:
+  services:
+    - {name: mcp-service, path: services/mcp-service}
+  testing:
+    framework: go-test
+    commands:
+      record: go test -json ./tests/...
+      replay: go test -json ./tests/...
+      live: go test -json ./tests/...
+  phrases:
+    - {template: the unused operation runs, service: mcp-service}
+`), disk.Shared)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,6 +126,10 @@ func TestBuildStepsListsUnusedCataloguePhrase(t *testing.T) {
 		if !strings.Contains(output.String(), phrase) {
 			t.Errorf("missing phrase %q: %s", phrase, output.String())
 		}
+	}
+
+	if strings.Contains(output.String(), "the foreign operation runs") {
+		t.Fatal("unmapped unused phrase became an Item")
 	}
 }
 

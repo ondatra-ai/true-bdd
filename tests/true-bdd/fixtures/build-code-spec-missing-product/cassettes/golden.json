@@ -5,9 +5,9 @@
     {
       "path": "services/calc/calc.go",
       "kind": "modified",
-      "size": 66,
-      "sha256": "35741799a500f4e7e82e5598c5fc3d9258d4c1718c7660247e9d67bfbf97ce07",
-      "text": "package calc\n\nfunc Double(value int) int { return value + value }\n"
+      "size": 220,
+      "sha256": "f09fff29985392236aeda8f7bb075472b8e47965a70323f89c5c51ff7117911e",
+      "text": "package main\n\nimport (\"fmt\"; \"os\"; \"strconv\")\n\nfunc main() {\n if len(os.Args) != 3 || os.Args[1] != \"double\" { os.Exit(1) }\n value, err := strconv.Atoi(os.Args[2]); if err != nil { os.Exit(1) }\n fmt.Println(value * 2)\n}\n"
     }
   ]
 }

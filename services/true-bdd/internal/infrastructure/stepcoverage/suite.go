@@ -61,3 +61,21 @@ func (s *Suite) Defines(phrasePattern string) (bool, error) {
 
 	return false, nil
 }
+
+// PhraseDefinitions lists every registration whose language overlaps the phrase.
+func (s *Suite) PhraseDefinitions(pattern string) ([]catalogue.StepDefinition, error) {
+	definitions := make([]catalogue.StepDefinition, 0)
+
+	for _, def := range s.defs {
+		overlaps, err := patternsOverlap(pattern, def.source)
+		if err != nil {
+			return nil, err
+		}
+
+		if overlaps {
+			definitions = append(definitions, catalogue.StepDefinition{Pattern: def.source, File: def.file, Line: def.line})
+		}
+	}
+
+	return definitions, nil
+}

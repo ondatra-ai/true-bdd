@@ -1,0 +1,35 @@
+architecture:
+  services:
+  - name: calc
+    path: services/calc
+    language: go
+    public_interface:
+      kind: cli
+      document: docs/architecture/calc-cli.yaml
+  testing:
+    framework: go-test
+    libraries:
+    - module: github.com/ondatra-ai/true-bdd/pkg
+      version: v0.0.0-20261027174914-58543b8e324b
+    commands:
+      record: go test -tags bdd -json -count=1 ./tests/calc/...
+      replay: go test -tags bdd -json -count=1 ./tests/calc/...
+      live: go test -tags bdd -json -count=1 ./tests/calc/...
+  terms:
+    not: a list
+  phrases:
+  - template: the number is {value:number}
+    service: calc
+    references:
+    - command: double
+    does: Store the number as the next double command argument.
+  - template: the number is doubled
+    service: calc
+    references:
+    - command: double
+    does: Run the declared double command as a process and keep its integer stdout.
+  - template: the result is {value:number}
+    service: calc
+    references:
+    - command: double
+    does: Compare the double command stdout with the expected integer.
