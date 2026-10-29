@@ -21,7 +21,7 @@
       },
       {
         "concept": "cut",
-        "means": "Cut the entered number in half.",
+        "means": "Halve the entered number once.",
         "terms": []
       }
     ],

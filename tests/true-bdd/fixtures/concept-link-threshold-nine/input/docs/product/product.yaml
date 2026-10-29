@@ -16,7 +16,7 @@
     "when": [
       {
         "concept": "halve",
-        "means": "Halve the entered number once.",
+        "means": "Halve the entered number once using a pointer.",
         "terms": []
       }
     ],

@@ -42,7 +42,7 @@ func TestConceptLink002RefineBeforeBinding(t *testing.T) {
 	s.Given(`the "concept-link-refine-before-binding" project tree`)
 	s.When(`the Product Owner runs "us refine host"`)
 	s.Then(`the command exits with code 0`)
-	s.And(`every file matching "tmp/*/01-host-*-result.yaml" matches binding not required`)
+	s.And(`every file matching "tmp/*/01-host-*-result.yaml" matches answer.*pass`)
 	s.And(`stdout matches linked to halve`)
 	s.And(`the file "docs/architecture/architecture.yaml" is unchanged`)
 	s.Done()
@@ -67,7 +67,7 @@ func TestConceptLink004FixBinding(t *testing.T) {
 	s.When(`the Product Owner runs "scen check --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches action=apply`)
-	s.And(`stdout matches The references and instructions determine the step`)
+	s.And(`stdout matches judgement=bindings answer=pass`)
 	s.And(`the only file changed outside "tmp" is "docs/architecture/architecture.yaml"`)
 	s.And(`the file "docs/scenarios.yaml" is unchanged`)
 	s.Done()
@@ -79,7 +79,7 @@ func TestConceptLink005WrongBlock(t *testing.T) {
 	s.Given(`the "concept-link-wrong-block" project tree`)
 	s.When(`the Product Owner runs "scen check"`)
 	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches Then block.*When concept halve`)
+	s.And(`stdout matches then step.*other block: when concept.*halve`)
 	s.And(`no file outside "tmp" changed`)
 	s.Done()
 }
@@ -88,6 +88,7 @@ func TestConceptLink005WrongBlock(t *testing.T) {
 func TestConceptLink006Malformed(t *testing.T) {
 	s := scenarios.New(t, "concept-link-006-malformed")
 	s.Given(`the "concept-link-malformed" project tree`)
+	s.And(`the link answer CLI is controlled for invalid replies`)
 	s.When(`the Product Owner runs "scen check"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches link answer malformed or incomplete`)
@@ -99,6 +100,7 @@ func TestConceptLink006Malformed(t *testing.T) {
 func TestConceptLink007Incomplete(t *testing.T) {
 	s := scenarios.New(t, "concept-link-007-incomplete")
 	s.Given(`the "concept-link-incomplete" project tree`)
+	s.And(`the link answer CLI is controlled for invalid replies`)
 	s.When(`the Product Owner runs "scen check"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches cut.*unscored or invalid`)
@@ -189,7 +191,7 @@ func TestConceptLink014JudgeIntent(t *testing.T) {
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches judge: unlinked`)
 	s.And(`stdout matches linked to halve`)
-	s.And(`stdout matches The references and instructions determine the step`)
+	s.And(`stdout matches judgement=bindings answer=pass`)
 	s.Done()
 }
 
@@ -210,6 +212,7 @@ func TestConceptLink015AmbiguousBinding(t *testing.T) {
 func TestConceptLink016MissingAnswer(t *testing.T) {
 	s := scenarios.New(t, "concept-link-016-missing-answer")
 	s.Given(`the "concept-link-missing-answer" project tree`)
+	s.And(`the link answer CLI is controlled for invalid replies`)
 	s.When(`the Product Owner runs "scen check"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches link answer malformed or incomplete`)

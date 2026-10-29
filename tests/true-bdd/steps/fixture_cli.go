@@ -8,20 +8,22 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
 )
 
-// A host tree may supply its external Claude boundary under input/cli.
-// The recording proxy stays first, so these deterministic replies are recorded normally.
-func useTreeCLI(state *State) error {
+// Invalid-answer Scenarios explicitly select a schema-breaking external CLI.
+// The recording proxy stays first so its replies are recorded normally.
+func useInvalidLinkCLI(state *State, _ []string) error {
+	switch state.Fixture.Name {
+	case "concept-link-malformed", "concept-link-missing-answer", "concept-link-incomplete":
+	default:
+		return state.fail("invalid link replies are not sanctioned for %q", state.Fixture.Name)
+	}
+
 	directory, err := filepath.Abs(filepath.Join(state.Fixture.Dir, "input", "cli"))
 	if err != nil {
 		return state.fail("resolve fixture CLI: %w", err)
 	}
 
 	_, err = os.Stat(filepath.Join(directory, "claude"))
-	if os.IsNotExist(err) {
-		return nil
-	}
-
-	if err != nil {
+		if err != nil {
 		return state.fail("stat fixture CLI: %w", err)
 	}
 

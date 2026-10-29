@@ -10,7 +10,7 @@
           "six is entered"
         ],
         "when": [
-          "halve six"
+          "halve six with keyboard"
         ],
         "then": [
           "three is displayed"

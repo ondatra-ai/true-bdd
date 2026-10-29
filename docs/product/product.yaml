@@ -1305,6 +1305,10 @@ catalogue:
     means: The first engine log record is the single INFO Engine started record, with nonempty version and commit fields containing no whitespace.
     terms: [engine, build identity, log record]
 
+  - template: the link answer CLI is controlled for invalid replies
+    block: given
+    means: Only the malformed, missing and incomplete link-answer Scenarios use a controlled Claude CLI behind the recording proxy, since the real model's answer schema excludes these replies.
+    terms: [project tree, AI turn]
   - template: the validation CLIs are controlled for concurrent arrival
     block: given
     means: The AI CLIs are deterministic programs selected by the Scenario. Recording admits alpha before beta; replay admits beta before alpha, while both validation turns are outstanding.

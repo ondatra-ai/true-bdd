@@ -30,7 +30,7 @@ story:
       - the Product Owner runs "us refine host"
     - then:
       - the command exits with code 0
-      - every file matching "tmp/*/01-host-*-result.yaml" matches binding not required
+      - every file matching "tmp/*/01-host-*-result.yaml" matches answer.*pass
       - stdout matches linked to halve
       - the file "docs/architecture/architecture.yaml" is unchanged
   - id: 003-missing-binding
@@ -55,7 +55,7 @@ story:
     - then:
       - the command exits with code 0
       - stdout matches action=apply
-      - stdout matches The references and instructions determine the step
+      - stdout matches judgement=bindings answer=pass
       - the only file changed outside "tmp" is "docs/architecture/architecture.yaml"
       - the file "docs/scenarios.yaml" is unchanged
   - id: 005-wrong-block
@@ -67,13 +67,14 @@ story:
       - the Product Owner runs "scen check"
     - then:
       - the command exits with code 1
-      - stdout matches Then block.*When concept halve
+      - 'stdout matches then step.*other block: when concept.*halve'
       - no file outside "tmp" changed
   - id: 006-malformed
     description: A malformed link answer must fail its cell
     steps:
     - given:
       - the "concept-link-malformed" project tree
+      - the link answer CLI is controlled for invalid replies
     - when:
       - the Product Owner runs "scen check"
     - then:
@@ -85,6 +86,7 @@ story:
     steps:
     - given:
       - the "concept-link-incomplete" project tree
+      - the link answer CLI is controlled for invalid replies
     - when:
       - the Product Owner runs "scen check"
     - then:
@@ -177,7 +179,7 @@ story:
       - the command exits with code 0
       - 'stdout matches judge: unlinked'
       - stdout matches linked to halve
-      - stdout matches The references and instructions determine the step
+      - stdout matches judgement=bindings answer=pass
   - id: 015-ambiguous-binding
     description: An ambiguous binding must fail and be repaired only through the menu
     steps:
@@ -196,6 +198,7 @@ story:
     steps:
     - given:
       - the "concept-link-missing-answer" project tree
+      - the link answer CLI is controlled for invalid replies
     - when:
       - the Product Owner runs "scen check"
     - then:

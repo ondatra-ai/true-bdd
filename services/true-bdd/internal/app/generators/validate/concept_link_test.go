@@ -18,20 +18,24 @@ import (
 
 type linkReply struct {
 	response, schema string
+	system, user     string
 	err              error
 }
 
-func (reply *linkReply) ExecutePromptWithSystem(_ context.Context, _ provider.Role, _, _ string,
+func (reply *linkReply) ExecutePromptWithSystem(_ context.Context, _ provider.Role, system, user string,
 	_ provider.ModelRef, _ provider.ExecutionMode, schema string, _ ...provider.TurnOptions,
 ) (string, error) {
 	reply.schema = schema
+	reply.system, reply.user = system, user
 
 	return reply.response, reply.err
 }
 
-func TestLinkRejectsUnscoredConcept(t *testing.T) {
-	const linkTestTier = "high"
+const linkTestTier = "high"
+const linkTestModel = "claude:test"
+const linkJudgement = "link"
 
+func TestLinkRejectsUnscoredConcept(t *testing.T) {
 	root := t.TempDir()
 	t.Chdir(root)
 
@@ -52,7 +56,7 @@ func TestLinkRejectsUnscoredConcept(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	models, err := provider.NewRegistry(map[string]string{linkTestTier: "claude:test"}, map[provider.Role]string{
+	models, err := provider.NewRegistry(map[string]string{linkTestTier: linkTestModel}, map[provider.Role]string{
 		provider.RolePrompt: linkTestTier, provider.RoleFix: linkTestTier, provider.RoleApply: linkTestTier,
 	})
 	if err != nil {
@@ -65,7 +69,7 @@ func TestLinkRejectsUnscoredConcept(t *testing.T) {
 	result, err := evaluator.EvaluateOne(context.Background(), &template.ScenarioCheckData{
 		ID: "halve", Service: "calc", Phrases: []catalogue.Step{{Block: catalogue.BlockWhen, Text: "halve 6"}},
 	}, "halve", checklist.PromptWithContext{Index: 1, SectionID: "check", Prompt: checklist.Prompt{
-		Question: "Link every step.", With: map[string]any{"concepts": "link"}, Docs: []string{"product"},
+		Question: "Link every step.", With: map[string]any{"concepts": linkJudgement}, Docs: []string{"product"},
 	}}, root)
 	if err != nil {
 		t.Fatal(err)
@@ -89,7 +93,7 @@ func rejectMissingLinkAnswer(t *testing.T, evaluator *validate.ChecklistEvaluato
 
 	missing, err := evaluator.EvaluateOne(context.Background(), &template.ScenarioCheckData{}, "missing",
 		checklist.PromptWithContext{Prompt: checklist.Prompt{
-			Question: "Link", With: map[string]any{"concepts": "link"}}}, root)
+			Question: "Link", With: map[string]any{"concepts": linkJudgement}}}, root)
 	if err != nil || missing.Status != checklist.StatusFail {
 		t.Fatalf("missing answer: result=%+v, error=%v", missing, err)
 	}

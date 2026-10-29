@@ -10,7 +10,7 @@
           "six is entered"
         ],
         "when": [
-          "halve six"
+          "Halve the entered number once."
         ],
         "then": [
           "three is displayed"

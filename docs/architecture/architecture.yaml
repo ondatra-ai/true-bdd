@@ -2050,6 +2050,11 @@ architecture:
       references:
       - file: engine-log
       does: Read Cell validation started and Cell validation finished records by subjectID and Check answered records, asserting overlap, gate precedence and Applying fix prompt order alpha,beta after validation.
+    - template: the link answer CLI is controlled for invalid replies
+      service: true-bdd
+      references:
+      - outgoing_call: claude
+      does: Select the fixture Claude CLI behind the recording proxy only for malformed, missing and incomplete link answers; reject any other fixture's opt-in.
     - template: the validation CLIs are controlled for concurrent arrival
       service: true-bdd
       references:

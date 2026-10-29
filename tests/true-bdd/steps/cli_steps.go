@@ -127,6 +127,7 @@ func registerEngineLogSteps(suite *bddgo.Suite[State]) {
 // registerGivenSteps binds the Given steps: the tree a scenario starts
 // from and the preconditions the fixture establishes on it.
 func registerGivenSteps(suite *bddgo.Suite[State]) {
+	suite.Step(`^the link answer CLI is controlled for invalid replies$`, useInvalidLinkCLI)
 	suite.Step(`^library downloads use an empty offline proxy$`, useOfflineLibraryProxy)
 	suite.Step(`^the "([^"]+)" project tree$`, prepareTree)
 	// Given preconditions the scenario states and the fixture materialises
@@ -166,7 +167,7 @@ func prepareTree(state *State, args []string) error {
 
 	state.Proxy = proxy
 
-	return useTreeCLI(state)
+	return nil
 }
 
 // resolveProxy decides where this scenario's AI calls come from, per
