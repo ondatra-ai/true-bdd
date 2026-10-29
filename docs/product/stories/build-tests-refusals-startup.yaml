@@ -1,23 +1,10 @@
-# Story `build-tests-refusals`: `build tests` refuses at startup a Registry
-# or a checklist it cannot walk.
-#
-# What `build tests` holds its inputs to before the first Cell, the
-# catalogue the product document declares among them. Binding steps
-# to definitions and authoring them from the spec is the Story
-# build-tests-steps; model routing, which every command shares, is the Story
-# engine.
-#
-# Each criterion's id is the second half of its Scenario's Registry key,
-# `build-tests-refusals-<id>` (ADR 0014), and its steps are that Scenario's
-# steps.
-
 story:
     id: build-tests-refusals
     feature: build-tests
-    title: Refuse a build tests run whose Registry or checklist it cannot walk
+    title: Refuse an invalid Registry or a step outside the Catalogue
     as_a: System Architect
-    i_want: build tests to refuse at startup, naming what is wrong, a Registry the host never declared, a Registry whose YAML is not a Registry's shape, a Registry that declares no scenarios, a checklist that declares no prompts, and a Registry step outside the catalogue the product document declares, while a host that declares no catalogue walks unrefused
-    so_that: a misconfigured host never sees its generated tests reported complete over nothing, a hand edit to the Registry cannot bypass the closure scen check holds Stories to, and the refusal costs no AI turn and changes no file
+    i_want: build tests to refuse an absent, empty or malformed Registry and steps outside the declared Catalogue
+    so_that: rendering cannot silently omit behaviour
     status: IMPLEMENTED
     acceptance_criteria:
         - id: 001-empty-registry-refused
@@ -63,19 +50,6 @@ story:
                 - but: stdout does not match Loaded requirements registry
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns
-        - id: 004-empty-checklist-refused
-          description: A checklist file that declares no prompts must be refused before the walk, never converge on an item nothing checked
-          steps:
-            - given:
-                - the "build-tests-empty-checklist" project tree
-            - when:
-                - the System Architect runs "build tests"
-            - then:
-                - the command exits with code 1
-                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
-                - but: stdout does not match BUILD TESTS
-                - and: no file outside "tmp" changed
-                - and: the engine dispatched no AI turns
         - id: 005-step-outside-catalogue-refused
           description: When the product document declares a catalogue, a Registry step that does not match exactly one catalogue template of its own block must refuse `build tests` at startup, naming each such Scenario and step whether or not a Story claims that Scenario, before a generated test is written or an AI turn is spent
           steps:
@@ -94,7 +68,7 @@ story:
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns
         - id: 006-no-catalogue-walks-unrefused
-          description: When the product document declares no catalogue, `build tests` must say that it checks no step phrase and must walk the Registry without refusing any step for its wording, so a host adopts the catalogue only by writing one
+          description: When the product document declares no catalogue, `build tests` must say that it checks no step phrase and must render the Registry without refusing any step for its wording, so a host adopts the catalogue only by writing one
           steps:
             - given:
                 - the "build-tests-no-catalogue" project tree
@@ -103,7 +77,6 @@ story:
             - then:
                 - the command exits with code 0
                 - stdout matches msg="Step phrases not checked" reason="the product document declares no catalogue"
-                - and: stdout matches 1 of 1 scenario\(s\) already bind every step; walking 0\.
                 - and: stdout matches BUILD TESTS COMPLETE
                 - but: stdout does not match Refusing to start
                 - and: the engine dispatched no AI turns

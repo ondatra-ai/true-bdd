@@ -23,14 +23,15 @@ func NewBuildCommand(provide containerProvider) *cobra.Command {
 	}
 
 	buildCmd.AddCommand(newBuildTestsCmd(provide))
+	buildCmd.AddCommand(newBuildStepsCmd(provide))
 	buildCmd.AddCommand(newBuildCodeCmd(provide))
 
 	return buildCmd
 }
 
-// buildRunE is the run shape both `build` subcommands share, receiving the
+// buildRunE is the run shape all `build` subcommands share, receiving the
 // resolved container, spec path, and fix flag — plus the cobra command,
-// since `build tests` alone needs a second document and must check its flag.
+// since Registry commands need a second document and must check their flags.
 type buildRunE func(
 	ctx context.Context,
 	cmd *cobra.Command,
@@ -51,10 +52,12 @@ type specFlag struct {
 	label string
 }
 
-// buildSpecCmd builds the cobra shell shared by every `build` subcommand: a
+// buildSpecCmd builds the cobra shell every `build` subcommand shares: a
 // spec-path flag deferring to host config, plus --fix. The container is
-// resolved at RunE time only (see containerProvider), never at construction.
-func buildSpecCmd(use, short, long string, flag specFlag, provide containerProvider, run buildRunE) *cobra.Command {
+// resolved at RunE time only (see containerProvider).
+func buildSpecCmd(
+	use, short, long, fixUsage string, flag specFlag, provide containerProvider, run buildRunE,
+) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   use,
 		Short: short,
@@ -94,36 +97,25 @@ func buildSpecCmd(use, short, long string, flag specFlag, provide containerProvi
 	}
 
 	cmd.Flags().String(flag.name, "", flag.usage)
-	cmd.Flags().Bool("fix", false, fixFlagDescription)
-	cmd.Flags().StringArray("model", nil,
-		"Override a configured model tier for this run: <tier>=<cli>:<model> (repeatable)")
+	cmd.Flags().Bool("fix", false, fixUsage)
 
 	return cmd
+}
+
+// addModelFlag gives a command that dispatches AI turns its run-only model
+// tier overrides; build tests dispatches none and takes no --model.
+func addModelFlag(cmd *cobra.Command) {
+	cmd.Flags().StringArray("model", nil,
+		"Override a configured model tier for this run: <tier>=<cli>:<model> (repeatable)")
 }
 
 func newBuildTestsCmd(provide containerProvider) *cobra.Command {
 	cmd := buildSpecCmd(
 		"tests",
-		"Walk the requirements registry and check every scenario has an executable test",
-		`Walk every scenario in the configured scenario registry
-(documents.scenarios_yaml, conventionally docs/scenarios.yaml) against the
-build-tests checklist. The checklist asks whether every step of the
-scenario resolves to a step definition in the suite that owns it — the
-entry under architecture.testing.suites[] whose service: matches the
-scenario's service:. With --fix, every failed (scenario, prompt) cell
-drives a Claude-mediated test-authoring turn that Writes or Edits a step
-definition under that suite's path:; the registry is never touched. The
-CLI exits non-zero if any scenario is still uncovered after the walk.
-
-When the product document (documents.product) declares a catalogue:,
-every step of every scenario must first match exactly one of its
-templates, declared for the step's block, or the run is refused before
-it writes a file or spends an AI turn, naming each step outside it.
-
-Example:
-  true-bdd build tests
-  true-bdd build tests --fix
-  true-bdd build tests --requirements docs/scenarios.yaml`,
+		"Render or verify Registry test files",
+		`Render tests deterministically from the Registry. Without --fix, refuse stale
+files; with --fix, write them. No AI turn or test runner is started.`,
+		"Write stale generated test files instead of refusing them",
 		specFlag{
 			name: "requirements",
 			usage: "Path to the requirements registry YAML " +
@@ -149,16 +141,8 @@ Example:
 			}
 
 			return commands.RunBuildTests(ctx, commands.BuildTestsDeps{
-				TestRunnerDispatcher:         container.TestRunnerDispatcher,
-				RegistryLoader:               container.RegistryLoader,
-				ChecklistLoader:              container.ChecklistLoader,
-				DocResolver:                  container.DocResolver,
-				BuildTestsEvaluator:          container.BuildTestsEvaluator,
-				BuildTestsFixPromptGenerator: container.BuildTestsFixPromptGenerator,
-				BuildTestsFixApplier:         container.BuildTestsFixApplier,
-				UserInputCollector:           container.UserInputCollector,
-				TableRenderer:                container.TableRenderer,
-				RunDir:                       container.RunDir,
+				RegistryLoader: container.RegistryLoader,
+				DocResolver:    container.DocResolver,
 			}, requirementsFile, architectureFile, fix)
 		},
 	)
@@ -192,7 +176,7 @@ func resolveSpec(
 }
 
 func newBuildCodeCmd(provide containerProvider) *cobra.Command {
-	return buildSpecCmd(
+	cmd := buildSpecCmd(
 		"code",
 		"Discover failing tests via architecture.yaml and (optionally) drive Claude to fix the production code",
 		`Walk every (service, layer) pair declared in the configured
@@ -208,6 +192,7 @@ Example:
   true-bdd build code
   true-bdd build code --fix
   true-bdd build code --architecture docs/architecture/architecture.yaml`,
+		fixFlagDescription,
 		specFlag{
 			name: "architecture",
 			usage: "Path to the architecture.yaml file driving the test scope " +
@@ -236,4 +221,7 @@ Example:
 			}, architectureFile, fix)
 		},
 	)
+	addModelFlag(cmd)
+
+	return cmd
 }

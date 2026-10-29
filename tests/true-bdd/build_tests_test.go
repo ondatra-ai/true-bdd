@@ -83,36 +83,6 @@ func TestBuildTestsFiles004ForeignPackageRefused(t *testing.T) {
 	s.Done()
 }
 
-// build-tests-files-005-invalid-step-pattern-refused: A step definition whose pattern is not a valid regular expression must refuse `build tests`, naming its file, line and column, before any generated test file is compared with the Registry
-func TestBuildTestsFiles005InvalidStepPatternRefused(t *testing.T) {
-	s := scenarios.New(t, "build-tests-files-005-invalid-step-pattern-refused")
-	s.Given(`the "build-tests-invalid-step-pattern" project tree`)
-	s.When(`the System Architect runs "build tests"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
-	s.And(`stdout matches tests/mcp/steps/steps\.go:23:13: step pattern is not a valid regexp`)
-	s.And(`stdout matches missing closing \)`)
-	s.But(`stdout does not match no generated test file`)
-	s.And(`no file outside "tmp" changed`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// build-tests-files-006-step-file-not-go-refused: A step definition file that is not valid Go must refuse `build tests`, naming the file, line and column where Go stops reading it, before any generated test file is compared with the Registry
-func TestBuildTestsFiles006StepFileNotGoRefused(t *testing.T) {
-	s := scenarios.New(t, "build-tests-files-006-step-file-not-go-refused")
-	s.Given(`the "build-tests-step-file-not-go" project tree`)
-	s.When(`the System Architect runs "build tests"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
-	s.And(`stdout matches tests/mcp/steps/steps\.go:23:75: missing`)
-	s.And(`stdout matches before newline in argument list`)
-	s.But(`stdout does not match no generated test file`)
-	s.And(`no file outside "tmp" changed`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
 // build-tests-paths-001-missing-path-refused: A Scenario that declares no `path:` must refuse `build tests`, naming that Scenario by its Registry key, rather than write its generated test to a file it guessed
 func TestBuildTestsPaths001MissingPathRefused(t *testing.T) {
 	s := scenarios.New(t, "build-tests-paths-001-missing-path-refused")
@@ -248,19 +218,6 @@ func TestBuildTestsRefusals003UndeclaredRegistryRefused(t *testing.T) {
 	s.Done()
 }
 
-// build-tests-refusals-004-empty-checklist-refused: A checklist file that declares no prompts must be refused before the walk, never converge on an item nothing checked
-func TestBuildTestsRefusals004EmptyChecklistRefused(t *testing.T) {
-	s := scenarios.New(t, "build-tests-refusals-004-empty-checklist-refused")
-	s.Given(`the "build-tests-empty-checklist" project tree`)
-	s.When(`the System Architect runs "build tests"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
-	s.But(`stdout does not match BUILD TESTS`)
-	s.And(`no file outside "tmp" changed`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
 // build-tests-refusals-005-step-outside-catalogue-refused: When the product document declares a catalogue, a Registry step that does not match exactly one catalogue template of its own block must refuse `build tests` at startup, naming each such Scenario and step whether or not a Story claims that Scenario, before a generated test is written or an AI turn is spent
 func TestBuildTestsRefusals005StepOutsideCatalogueRefused(t *testing.T) {
 	s := scenarios.New(t, "build-tests-refusals-005-step-outside-catalogue-refused")
@@ -278,18 +235,33 @@ func TestBuildTestsRefusals005StepOutsideCatalogueRefused(t *testing.T) {
 	s.Done()
 }
 
-// build-tests-refusals-006-no-catalogue-walks-unrefused: When the product document declares no catalogue, `build tests` must say that it checks no step phrase and must walk the Registry without refusing any step for its wording, so a host adopts the catalogue only by writing one
+// build-tests-refusals-006-no-catalogue-walks-unrefused: When the product document declares no catalogue, `build tests` must say that it checks no step phrase and must render the Registry without refusing any step for its wording, so a host adopts the catalogue only by writing one
 func TestBuildTestsRefusals006NoCatalogueWalksUnrefused(t *testing.T) {
 	s := scenarios.New(t, "build-tests-refusals-006-no-catalogue-walks-unrefused")
 	s.Given(`the "build-tests-no-catalogue" project tree`)
 	s.When(`the System Architect runs "build tests --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches msg="Step phrases not checked" reason="the product document declares no catalogue"`)
-	s.And(`stdout matches 1 of 1 scenario\(s\) already bind every step; walking 0\.`)
 	s.And(`stdout matches BUILD TESTS COMPLETE`)
 	s.But(`stdout does not match Refusing to start`)
 	s.And(`the engine dispatched no AI turns`)
 	s.And(`the file "tests/mcp/mcp_test.go" is created`)
+	s.And(`no file outside "tmp" and "tests" changed`)
+	s.Done()
+}
+
+// build-tests-render-001-renders-only: build tests --fix renders the Registry tests without definitions, AI turns or test runs
+func TestBuildTestsRender001RendersOnly(t *testing.T) {
+	s := scenarios.New(t, "build-tests-render-001-renders-only")
+	s.Given(`the "build-tests-render-only" project tree`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`the file "tests/mcp/mcp_test.go" is created`)
+	s.And("the file \"tests/mcp/mcp_test.go\" matches // Code generated by `true-bdd build tests`\\. DO NOT EDIT\\.")
+	s.And(`exactly 0 files matching "tests/mcp/steps/*.go" are created`)
+	s.And(`stdout matches BUILD TESTS COMPLETE`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`the engine spawned no test runners`)
 	s.And(`no file outside "tmp" and "tests" changed`)
 	s.Done()
 }
@@ -453,24 +425,6 @@ func TestBuildTestsStepShapes006EmptyModelStepRefused(t *testing.T) {
 	s.Done()
 }
 
-// build-tests-steps-001-unbound-scenario-gets-test-and-steps: A registry scenario with no test must get a generated test file and a step definition for every step it declares
-func TestBuildTestsSteps001UnboundScenarioGetsTestAndSteps(t *testing.T) {
-	s := scenarios.New(t, "build-tests-steps-001-unbound-scenario-gets-test-and-steps")
-	s.Given(`the "build-tests-fix-happy-path" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
-	s.When(`the System Architect runs "build tests --fix"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches level=WARN msg="Tool calls were denied; this turn did less than it was asked to" label=claude-turn002 role=fix denied="Glob .*/pkg/testkit/bddgo/\*\.go"`)
-	s.And(`the file "tests/mcp/mcp_test.go" is created`)
-	s.And("the file \"tests/mcp/mcp_test.go\" matches // Code generated by `true-bdd build tests`\\. DO NOT EDIT\\.")
-	s.And(`the file "tests/mcp/mcp_test.go" matches scenarios\.New\(t, "INT-900"\)`)
-	s.And(`exactly 1 file matching "tests/mcp/steps/*.go" is created`)
-	s.And(`every step of scenario "INT-900" in "docs/scenarios.yaml" is matched by a step definition under "tests/mcp/steps"`)
-	s.But(`the file "docs/scenarios.yaml" is unchanged`)
-	s.And(`no file outside "tmp" and "tests" changed`)
-	s.Done()
-}
-
 // build-tests-steps-002-test-named-after-key: A Scenario keyed by its lower-case lineage must get a CamelCase test name that `go test` runs, while a legacy `E2E-NNN` key keeps the name it always had
 func TestBuildTestsSteps002TestNamedAfterKey(t *testing.T) {
 	s := scenarios.New(t, "build-tests-steps-002-test-named-after-key")
@@ -486,64 +440,6 @@ func TestBuildTestsSteps002TestNamedAfterKey(t *testing.T) {
 	s.Done()
 }
 
-// build-tests-steps-003-only-unbound-scenarios-walked: A host that declares no coverage command must still walk only the scenarios with an unbound step, because the engine resolves step coverage itself
-func TestBuildTestsSteps003OnlyUnboundScenariosWalked(t *testing.T) {
-	s := scenarios.New(t, "build-tests-steps-003-only-unbound-scenarios-walked")
-	s.Given(`the "build-tests-coverage-in-process" project tree`)
-	s.When(`the System Architect runs "build tests --fix"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches 2 of 2 scenario\(s\) already bind every step; walking 0\.`)
-	s.And(`the engine dispatched no AI turns`)
-	s.And(`the engine spawned no test runners`)
-	s.And(`the file "tests/mcp/mcp_test.go" is created`)
-	s.But(`no file outside "tmp" and "tests" changed`)
-	s.Done()
-}
-
-// build-tests-steps-004-unfoldable-pattern-refused: A step pattern the engine cannot resolve to a constant must be refused by name, never skipped, because a skipped pattern reports a bound step as unbound
-func TestBuildTestsSteps004UnfoldablePatternRefused(t *testing.T) {
-	s := scenarios.New(t, "build-tests-steps-004-unfoldable-pattern-refused")
-	s.Given(`the "build-tests-coverage-computed-pattern" project tree`)
-	s.When(`the System Architect runs "build tests"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
-	s.And(`stdout matches step pattern is not a constant expression`)
-	s.And(`stdout matches tests/mcp/steps/steps\.go`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// build-tests-steps-005-double-bound-step-refused: A step matched by two definitions must be refused rather than reported as a gap, because which one runs depends on registration order and a third would paper over it
-func TestBuildTestsSteps005DoubleBoundStepRefused(t *testing.T) {
-	s := scenarios.New(t, "build-tests-steps-005-double-bound-step-refused")
-	s.Given(`the "build-tests-coverage-ambiguous-step" project tree`)
-	s.When(`the System Architect runs "build tests"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
-	s.And(`stdout matches step matches more than one definition`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// build-tests-steps-006-steps-authored-from-spec: `build tests --fix` must author an unbound step from the spec: its step-authoring prompt carries the catalogue phrase the step matches, the glossary meaning of each word that phrase relies on and the architecture's mapping of that word, so the step definition observes what the mapping says
-func TestBuildTestsSteps006StepsAuthoredFromSpec(t *testing.T) {
-	s := scenarios.New(t, "build-tests-steps-006-steps-authored-from-spec")
-	s.Given(`the "build-tests-fix-from-spec" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
-	s.When(`the System Architect runs "build tests --fix"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches msg="Unbound steps specified" subjectID=INT-901 steps=3 phrases=4 terms=4`)
-	s.And(`stdout matches msg="Unbound steps specified" subjectID=INT-902 steps=3 phrases=4 terms=4`)
-	s.And(`the file "tests/mcp/mcp_test.go" is created`)
-	s.And(`every step of scenario "INT-901" in "docs/scenarios.yaml" is matched by a step definition under "tests/mcp/steps"`)
-	s.And(`every step of scenario "INT-902" in "docs/scenarios.yaml" is matched by a step definition under "tests/mcp/steps"`)
-	s.And(`judge: the step definitions created under tests/mcp/steps observe each word the way the word mapping says: the server's address comes from the MCP_PORT environment variable, 7411 when it is unset, and the server counts as running once GET /healthz answers 200; a session is opened by POSTing a JSON-RPC request whose method is initialize to /mcp; the ticket is the reply's X-Session-Ticket header, which must be 32 lowercase hexadecimal characters; and the protocol version is the reply's X-MCP-Protocol header, a date in YYYY-MM-DD form`)
-	s.But(`no file outside "tmp" and "tests" changed`)
-	s.Done()
-}
-
 // build-tests-steps-007-unreadable-catalogue-refused: `build tests --fix` must refuse a product document whose catalogue it cannot read, before it writes a generated test and before any AI turn, rather than author steps blind to the spec the host declared
 func TestBuildTestsSteps007UnreadableCatalogueRefused(t *testing.T) {
 	s := scenarios.New(t, "build-tests-steps-007-unreadable-catalogue-refused")
@@ -554,25 +450,6 @@ func TestBuildTestsSteps007UnreadableCatalogueRefused(t *testing.T) {
 	s.And(`stdout matches read the catalogue: product document \./docs/product/product\.yaml: catalogue: must hold a list of phrases`)
 	s.And(`the engine dispatched no AI turns`)
 	s.But(`no file outside "tmp" changed`)
-	s.Done()
-}
-
-// codex-apply-002-build-tests-writes-configured-root: A codex apply turn of build tests writes missing step definitions in a configured recursive test root through the confined profile
-func TestCodexApply002BuildTestsWritesConfiguredRoot(t *testing.T) {
-	s := scenarios.New(t, "codex-apply-002-build-tests-writes-configured-root")
-	s.Given(`the "codex-apply-build-tests" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
-	s.When(`the System Architect runs "build tests --fix"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches msg="Codex turn sandboxed" label=codex-turn[0-9]+ sandbox=writer`)
-	s.But(`stdout does not match sandbox=workspace-write`)
-	s.And(`the file "tests/mcp/mcp_test.go" is created`)
-	s.And("the file \"tests/mcp/mcp_test.go\" matches // Code generated by `true-bdd build tests`\\. DO NOT EDIT\\.")
-	s.And(`the file "tests/mcp/mcp_test.go" matches scenarios\.New\(t, "INT-900"\)`)
-	s.And(`exactly 1 file matching "tests/mcp/steps/*.go" is created`)
-	s.And(`every step of scenario "INT-900" in "docs/scenarios.yaml" is matched by a step definition under "tests/mcp/steps"`)
-	s.But(`the file "docs/scenarios.yaml" is unchanged`)
-	s.And(`no file outside "tmp" and "tests" changed`)
 	s.Done()
 }
 
@@ -639,19 +516,6 @@ func TestEngineConfig003UnresolvableDefaultTiersRefused(t *testing.T) {
 	s.Done()
 }
 
-// engine-config-006-default-write-roots: When true-bdd.yaml names no `paths.test_write_globs`, `build tests --fix` must grant its apply turn the default write roots `./tests/**` and `./services/**`, so the step definitions a Scenario lacks are authored under the suite that owns it and nothing outside `tests` changes
-func TestEngineConfig006DefaultWriteRoots(t *testing.T) {
-	s := scenarios.New(t, "engine-config-006-default-write-roots")
-	s.Given(`the "build-tests-fix-default-write-roots" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
-	s.When(`the System Architect runs "build tests --fix"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`the file "tests/mcp/mcp_test.go" is created`)
-	s.And(`every step of scenario "INT-900" in "docs/scenarios.yaml" is matched by a step definition under "tests/mcp/steps"`)
-	s.But(`no file outside "tmp" and "tests" changed`)
-	s.Done()
-}
-
 // engine-documents-001-absolute-requirements-overrides-config: `build tests --requirements` given an absolute path must read the Registry at that path instead of the one `true-bdd.yaml` names, and must quote it in a generated test's header by its path relative to the project, so a test rendered from that relative path is reported unchanged and the run exits 0
 func TestEngineDocuments001AbsoluteRequirementsOverridesConfig(t *testing.T) {
 	s := scenarios.New(t, "engine-documents-001-absolute-requirements-overrides-config")
@@ -659,7 +523,6 @@ func TestEngineDocuments001AbsoluteRequirementsOverridesConfig(t *testing.T) {
 	s.When(`the System Architect runs "build tests --requirements {{CWD}}/docs/specs/requirements.yaml"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches msg="Loaded requirements registry" file=/\S+/docs/specs/requirements\.yaml count=1`)
-	s.And(`stdout matches 1 of 1 scenario\(s\) already bind every step; walking 0\.`)
 	s.And(`stdout matches BUILD TESTS COMPLETE`)
 	s.But(`stdout does not match Refusing to start`)
 	s.And(`the file "tests/mcp/mcp_test.go" is unchanged`)
@@ -693,49 +556,5 @@ func TestEngineEntry002StrayArgumentPrintsUsage(t *testing.T) {
 	s.And(`stderr matches --requirements string`)
 	s.But(`stdout does not match BUILD TESTS`)
 	s.And(`no file outside "tmp" changed`)
-	s.Done()
-}
-
-// engine-term-documents-005-glossary-not-a-list-refuses-build-tests-fix: `build tests --fix` must be refused before it writes a generated test or dispatches any AI turn when the product document's `glossary:` is not a list, naming the document, rather than author step definitions without the meaning of the words they observe
-func TestEngineTermDocuments005GlossaryNotAListRefusesBuildTestsFix(t *testing.T) {
-	s := scenarios.New(t, "engine-term-documents-005-glossary-not-a-list-refuses-build-tests-fix")
-	s.Given(`the "build-tests-fix-glossary-not-a-list" project tree`)
-	s.When(`the System Architect runs "build tests --fix"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
-	s.And(`stdout matches read the glossary: product document \./docs/product/product\.yaml: glossary: must hold a list of terms`)
-	s.And(`the engine dispatched no AI turns`)
-	s.But(`no file outside "tmp" changed`)
-	s.Done()
-}
-
-// engine-term-documents-006-mapping-not-a-list-refuses-build-tests-fix: `build tests --fix` must be refused before it writes a generated test or dispatches any AI turn when the architecture document's `architecture.terms:` is not a list, naming the document, rather than author step definitions without how each word they observe is built
-func TestEngineTermDocuments006MappingNotAListRefusesBuildTestsFix(t *testing.T) {
-	s := scenarios.New(t, "engine-term-documents-006-mapping-not-a-list-refuses-build-tests-fix")
-	s.Given(`the "build-tests-fix-mapping-not-a-list" project tree`)
-	s.When(`the System Architect runs "build tests --fix"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
-	s.And(`stdout matches read the word mapping: architecture document \./docs/architecture/architecture\.yaml: architecture\.terms: must hold a list of mappings`)
-	s.And(`the engine dispatched no AI turns`)
-	s.But(`no file outside "tmp" changed`)
-	s.Done()
-}
-
-// fix-loop-choices-006-exit-fails-build-tests: Choosing to exit a `build tests --fix` run's fix loop must write no step definition, leave the Registry as it was, exit 1 and never report BUILD TESTS COMPLETE, since the Scenario's steps still bind to nothing
-func TestFixLoopChoices006ExitFailsBuildTests(t *testing.T) {
-	s := scenarios.New(t, "fix-loop-choices-006-exit-fails-build-tests")
-	s.Given(`the "fix-loop-exit-steps" project tree`)
-	s.And(`the System Architect answers "3" to every question`)
-	s.When(`the System Architect runs "build tests --fix"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches msg="User chose fix action" rawInput=3 action=exit`)
-	s.And(`stdout matches (?s)FIX PROMPTS.*### Fix 1: build-tests/implementation`)
-	s.But(`stdout does not match BUILD TESTS COMPLETE`)
-	s.And(`the file "tests/mcp/mcp_test.go" is created`)
-	s.But(`no file matching "tests/mcp/steps/*.go" is created`)
-	s.And(`the file "docs/scenarios.yaml" is unchanged`)
-	s.And(`no file outside "tmp" and "tests" changed`)
-	s.And(`the engine dispatched 2 AI turns`)
 	s.Done()
 }

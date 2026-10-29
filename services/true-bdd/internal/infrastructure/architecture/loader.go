@@ -51,8 +51,6 @@ type SuiteCommands struct {
 type Testing struct {
 	Libraries []Library `yaml:"libraries,omitempty"`
 	Framework string    `yaml:"framework"`
-	// PrebuiltEngineArg is one opt-in argument for build tests verification.
-	PrebuiltEngineArg string `yaml:"prebuilt_engine_arg,omitempty"`
 	// ConfigFile is the framework's config file. Its directory is where
 	// every command runs — a playwright host resolves testDir from there,
 	// so without it the runner starts in the wrong tree and finds nothing.
@@ -65,16 +63,18 @@ func (t Testing) Label() string { return t.Framework }
 
 // Service declares a production folder and any additional exact writable paths.
 type Service struct {
-	Libraries []Library `yaml:"libraries,omitempty"`
-	Name      string    `yaml:"name"`
-	Path      string    `yaml:"path"`
-	Language  string    `yaml:"language"`
-	Writable  []string  `yaml:"writable,omitempty"`
+	PublicInterface *PublicInterface `yaml:"public_interface,omitempty"`
+	Libraries       []Library        `yaml:"libraries,omitempty"`
+	Name            string           `yaml:"name"`
+	Path            string           `yaml:"path"`
+	Language        string           `yaml:"language"`
+	Writable        []string         `yaml:"writable,omitempty"`
 }
 
 // Architecture is the loaded view of architecture.yaml — only the
 // fields the build pipeline needs are decoded.
 type Architecture struct {
+	Phrases  []PhraseMapping
 	Testing  Testing
 	Services []Service
 }
@@ -94,19 +94,19 @@ func (a *Architecture) ServicePath(name string) (string, bool) {
 // rawTesting mirrors the `architecture.testing:` block — the single
 // place a repository states how its tests run.
 type rawTesting struct {
-	Libraries         []Library     `yaml:"libraries"`
-	PrebuiltEngineArg yaml.Node     `yaml:"prebuilt_engine_arg"`
-	Framework         string        `yaml:"framework"`
-	ConfigFile        string        `yaml:"config"`
-	Commands          SuiteCommands `yaml:"commands"`
+	Libraries  []Library     `yaml:"libraries"`
+	Framework  string        `yaml:"framework"`
+	ConfigFile string        `yaml:"config"`
+	Commands   SuiteCommands `yaml:"commands"`
 }
 
 // rawDef mirrors the top-level `architecture:` block. Every other key a
 // host writes under it — dependencies, patterns, design systems — is
 // spec for its own readers and stays undecoded.
 type rawDef struct {
-	Testing  rawTesting `yaml:"testing"`
-	Services []Service  `yaml:"services"`
+	Testing  rawTesting      `yaml:"testing"`
+	Services []Service       `yaml:"services"`
+	Phrases  []PhraseMapping `yaml:"phrases"`
 }
 
 // rawArchitecture mirrors the top-level shape of architecture.yaml.
@@ -134,20 +134,20 @@ func Load(path string) (*Architecture, error) {
 		return nil, fmt.Errorf("%s: %w", path, ErrNoServices)
 	}
 
-	prebuilt, err := raw.Architecture.Testing.prebuiltArgument(path)
+	services, err := LoadInterfaces(path, ".")
 	if err != nil {
 		return nil, err
 	}
 
 	arch := &Architecture{
+		Phrases: raw.Architecture.Phrases,
 		Testing: Testing{
-			Framework:         raw.Architecture.Testing.Framework,
-			Libraries:         raw.Architecture.Testing.Libraries,
-			PrebuiltEngineArg: prebuilt,
-			ConfigFile:        raw.Architecture.Testing.ConfigFile,
-			Commands:          raw.Architecture.Testing.Commands,
+			Framework:  raw.Architecture.Testing.Framework,
+			Libraries:  raw.Architecture.Testing.Libraries,
+			ConfigFile: raw.Architecture.Testing.ConfigFile,
+			Commands:   raw.Architecture.Testing.Commands,
 		},
-		Services: append([]Service(nil), raw.Architecture.Services...),
+		Services: services,
 	}
 
 	sort.Slice(arch.Services, func(i, j int) bool {
@@ -207,26 +207,4 @@ func (c SuiteCommands) validate(path, suite string) error {
 	}
 
 	return nil
-}
-
-// ErrInvalidPrebuiltEngineArg identifies an invalid opt-in verification argument.
-var ErrInvalidPrebuiltEngineArg = errors.New("prebuilt_engine_arg must contain {engine_bin} exactly once")
-
-func (t rawTesting) prebuiltArgument(path string) (string, error) {
-	if t.PrebuiltEngineArg.Kind == 0 {
-		return "", nil
-	}
-
-	var argument string
-
-	err := t.PrebuiltEngineArg.Decode(&argument)
-	if err != nil {
-		return "", fmt.Errorf("%s: %w: %w", path, ErrInvalidPrebuiltEngineArg, err)
-	}
-
-	if strings.Count(argument, "{engine_bin}") != 1 {
-		return "", fmt.Errorf("%s: %w", path, ErrInvalidPrebuiltEngineArg)
-	}
-
-	return argument, nil
 }

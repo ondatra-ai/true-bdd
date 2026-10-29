@@ -1,0 +1,6 @@
+roles:
+  - name: System Architect
+    description: Owns the service interface
+service_offer:
+  cli_document: docs/greeter-cli.yaml
+  description: Greet a person using the declared CLI document

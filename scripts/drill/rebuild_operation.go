@@ -10,9 +10,14 @@ import (
 )
 
 func rebuildOperation(args []string) (func(context.Context, string, truebdd.Options) (int, error), error) {
-	const baseArgs = 3
+	const (
+		baseArgs  = 3
+		fixFlag   = "--fix"
+		buildVerb = "build"
+	)
+
 	if len(args) < baseArgs {
-		return nil, fmt.Errorf("%w: command must be build tests --fix or build code --fix", errRefused)
+		return nil, fmt.Errorf("%w: command must be build tests --fix, build steps --fix or build code --fix", errRefused)
 	}
 
 	models, err := rebuildModels(args[baseArgs:])
@@ -23,12 +28,18 @@ func rebuildOperation(args []string) (func(context.Context, string, truebdd.Opti
 	var operation func(context.Context, string, truebdd.Options) (int, error)
 
 	switch {
-	case slices.Equal(args[:baseArgs], []string{"build", "tests", "--fix"}):
+	case slices.Equal(args[:baseArgs], []string{buildVerb, "tests", fixFlag}):
+		if len(models) > 0 {
+			return nil, fmt.Errorf("%w: deterministic build tests takes no --model", errRefused)
+		}
+
 		operation = truebdd.BuildTests
-	case slices.Equal(args[:baseArgs], []string{"build", "code", "--fix"}):
+	case slices.Equal(args[:baseArgs], []string{buildVerb, "steps", fixFlag}):
+		operation = truebdd.BuildSteps
+	case slices.Equal(args[:baseArgs], []string{buildVerb, "code", fixFlag}):
 		operation = truebdd.BuildCode
 	default:
-		return nil, fmt.Errorf("%w: command must be build tests --fix or build code --fix", errRefused)
+		return nil, fmt.Errorf("%w: command must be build tests --fix, build steps --fix or build code --fix", errRefused)
 	}
 
 	return func(ctx context.Context, binary string, opt truebdd.Options) (int, error) {

@@ -86,16 +86,14 @@ type Container struct {
 	// Apply-flavored triple drives `us apply`. Templates live under
 	// templates.prompts.apply_* and the fix-applier is configured with
 	// EditMode so Claude can mutate the scratch registry directly.
-	ApplyEvaluator          *validate.ChecklistEvaluator
-	ApplyFixPromptGenerator *validate.FixPromptGenerator
-	ApplyFixApplier         *validate.FixApplier
-	// Build-tests triple drives `build tests`. Templates live under
-	// templates.prompts.build_tests_* and the fix-applier runs in
-	// EditMode so Claude can Write/Edit test files in place.
+	ApplyEvaluator               *validate.ChecklistEvaluator
+	ApplyFixPromptGenerator      *validate.FixPromptGenerator
+	ApplyFixApplier              *validate.FixApplier
 	RegistryLoader               *registry.RegistryLoader
-	BuildTestsEvaluator          *validate.ChecklistEvaluator
-	BuildTestsFixPromptGenerator *validate.FixPromptGenerator
-	BuildTestsFixApplier         *validate.FixApplier
+	BuildStepsCritic             *validate.StepCritic
+	BuildStepsEvaluator          *validate.ChecklistEvaluator
+	BuildStepsFixPromptGenerator *validate.FixPromptGenerator
+	BuildStepsFixApplier         *validate.FixApplier
 	// Build-code triple drives `build code`: templates under
 	// templates.prompts.build_code_*, fix-applier in EditMode writing
 	// services/* files. The dispatcher below routes per-framework runs.
@@ -139,25 +137,28 @@ func NewContainer(overrides ...string) (*Container, error) {
 	refineFixApplier.UseEditMode()
 
 	return &Container{
-		Config:                       cfg,
-		RunDir:                       runDir,
-		StoriesDir:                   cfg.GetString("paths.stories_dir"),
-		StoryLoader:                  story.NewStoryLoader(cfg),
-		StoryScenarioParser:          story.NewStoryScenarioParser(cfg),
-		ChecklistLoader:              checklist.NewChecklistLoader(cfg),
-		DocResolver:                  docs.NewResolver(cfg),
-		UserInputCollector:           input.NewUserInputCollector(),
-		TableRenderer:                runner.NewTableRenderer(),
-		RefineEvaluator:              validate.NewChecklistEvaluator(aiClient, cfg, models),
-		RefineFixPromptGenerator:     validate.NewFixPromptGenerator(aiClient, cfg, models),
-		RefineFixApplier:             refineFixApplier,
-		ApplyEvaluator:               trips.apply.evaluator,
-		ApplyFixPromptGenerator:      trips.apply.fixGenerator,
-		ApplyFixApplier:              trips.apply.fixApplier,
-		RegistryLoader:               registry.NewRegistryLoader(),
-		BuildTestsEvaluator:          trips.buildTests.evaluator,
-		BuildTestsFixPromptGenerator: trips.buildTests.fixGenerator,
-		BuildTestsFixApplier:         trips.buildTests.fixApplier,
+		Config:                   cfg,
+		RunDir:                   runDir,
+		StoriesDir:               cfg.GetString("paths.stories_dir"),
+		StoryLoader:              story.NewStoryLoader(cfg),
+		StoryScenarioParser:      story.NewStoryScenarioParser(cfg),
+		ChecklistLoader:          checklist.NewChecklistLoader(cfg),
+		DocResolver:              docs.NewResolver(cfg),
+		UserInputCollector:       input.NewUserInputCollector(),
+		TableRenderer:            runner.NewTableRenderer(),
+		RefineEvaluator:          validate.NewChecklistEvaluator(aiClient, cfg, models),
+		RefineFixPromptGenerator: validate.NewFixPromptGenerator(aiClient, cfg, models),
+		RefineFixApplier:         refineFixApplier,
+		ApplyEvaluator:           trips.apply.evaluator,
+		ApplyFixPromptGenerator:  trips.apply.fixGenerator,
+		ApplyFixApplier:          trips.apply.fixApplier,
+		RegistryLoader:           registry.NewRegistryLoader(),
+		BuildStepsCritic: validate.NewStepCritic(aiClient, models,
+			cfg.GetString("templates.prompts.build_steps_critique_system"),
+			cfg.GetString("templates.prompts.build_steps_critique")),
+		BuildStepsEvaluator:          trips.buildSteps.evaluator,
+		BuildStepsFixPromptGenerator: trips.buildSteps.fixGenerator,
+		BuildStepsFixApplier:         trips.buildSteps.fixApplier,
 		TestRunnerDispatcher:         testRunnerDispatcher,
 		BuildCodeEvaluator:           trips.buildCode.evaluator,
 		BuildCodeFixPromptGenerator:  trips.buildCode.fixGenerator,
@@ -189,18 +190,6 @@ func newAIRouter(
 	return ai.NewRouter(workDir, runDir.GetTmpOutPath()), models, nil
 }
 
-// testWriteGlobs resolves `build tests --fix` write roots. Keep this in
-// sync with the build-tests fix-applier prompt's stated roots — a
-// mismatch would grant permissions that disagree with instructions.
-func testWriteGlobs(cfg *config.ViperConfig) []string {
-	globs := cfg.GetStringSlice("paths.test_write_globs")
-	if len(globs) > 0 {
-		return globs
-	}
-
-	return []string{"./tests/**", "./services/**"}
-}
-
 // newTestRunnerDispatcher wires the three framework-specific runners
 // behind the `build code` Dispatcher, routed by architecture.yaml's
 // `framework:` field. All three share one Artifacts writer.
@@ -218,8 +207,8 @@ func newTestRunnerDispatcher(runDir *fs.RunDirectory) *testrunner.Dispatcher {
 // NewContainer stays a wiring list rather than a construction site.
 type triples struct {
 	apply      scenarioTriple
-	buildTests scenarioTriple
 	buildCode  scenarioTriple
+	buildSteps scenarioTriple
 	scenCheck  scenarioTriple
 }
 
@@ -240,20 +229,6 @@ func newTriples(
 		fixApplier:         "templates.prompts.apply_fix_applier",
 	})
 	applyTrip.fixApplier.UseEditMode()
-
-	buildTestsTrip := newScenarioTriple(aiClient, cfg, models, scenarioTripleConfigKeys{
-		checklistSystem:    "templates.prompts.build_tests_checklist_system",
-		checklist:          "templates.prompts.build_tests_checklist",
-		fixGeneratorSystem: "templates.prompts.build_tests_fix_generator_system",
-		fixGenerator:       "templates.prompts.build_tests_fix_generator",
-		fixApplierSystem:   "templates.prompts.build_tests_fix_applier_system",
-		fixApplier:         "templates.prompts.build_tests_fix_applier",
-	})
-	buildTestsTrip.fixApplier.UseEditMode()
-	// build tests authors test files outside tmp. Unlike build code it
-	// has no architecture.yaml to read roots from — its fixtures ship
-	// none — so the roots are host config.
-	buildTestsTrip.fixApplier.UseWriteGlobs(testWriteGlobs(cfg))
 
 	buildCodeTrip := newScenarioTriple(aiClient, cfg, models, scenarioTripleConfigKeys{
 		checklistSystem:    "templates.prompts.build_code_checklist_system",
@@ -277,9 +252,19 @@ func newTriples(
 	// documents and the Registry, which the engine commits once they parse.
 	scenCheckTrip.fixApplier.UseEditMode()
 
+	buildStepsTrip := newScenarioTriple(aiClient, cfg, models, scenarioTripleConfigKeys{
+		checklistSystem:    "templates.prompts.build_steps_checklist_system",
+		checklist:          "templates.prompts.build_steps_checklist",
+		fixGeneratorSystem: "templates.prompts.build_steps_fix_generator_system",
+		fixGenerator:       "templates.prompts.build_steps_fix_generator",
+		fixApplierSystem:   "templates.prompts.build_steps_fix_applier_system",
+		fixApplier:         "templates.prompts.build_steps_fix_applier",
+	})
+	buildStepsTrip.fixApplier.UseEditMode()
+
 	return triples{
 		apply:      applyTrip,
-		buildTests: buildTestsTrip,
+		buildSteps: buildStepsTrip,
 		buildCode:  buildCodeTrip,
 		scenCheck:  scenCheckTrip,
 	}

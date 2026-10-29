@@ -1,0 +1,108 @@
+# Story `public-interface`: each service the Registry tests declares its
+# Public interface, and `scen check` holds every Scenario to it.
+#
+# The `D: public-interface` built-in check, the start-time refusal of a
+# document a declaration names but cannot be loaded, the three supported
+# kinds and the check's fix (#239; ADR-0030). The Phrase mapping is the Story
+# phrase-mappings.
+#
+# Each criterion's id is the second half of its Scenario's Registry key,
+# `public-interface-<id>` (ADR 0014), and its steps are that Scenario's steps.
+
+story:
+    id: public-interface
+    feature: scen-check
+    title: Declare each service's Public interface and hold every Scenario to it
+    as_a: System Architect
+    i_want: every service the Registry tests to declare its Public interface in the standard form of its kind, scen check
+        to fail a Scenario whose service declares none without an AI turn, a command to refuse a declared document it cannot
+        load before any work, and the fix to ask me what the service offers and write only the architecture
+    so_that: a step definition reaches a service only through what the Specification says it offers, declared before the code
+        is built
+    status: IMPLEMENTED
+    acceptance_criteria:
+    -   id: 001-missing
+        description: scen check fails a service without a Public interface, naming it without an AI turn
+        steps:
+        -   given:
+            - the "public-interface-missing" project tree
+        -   when:
+            - the System Architect runs "scen check"
+        -   then:
+            - the command exits with code 1
+            - stdout matches service greeter declares no Public interface
+            - stdout matches check=public-interface.*answer=fail
+            - the engine dispatched 0 AI turns
+            - no file outside "tmp" changed
+    -   id: 002-missing-document
+        description: A missing CLI interface document refuses startup before any Scenario or AI turn
+        steps:
+        -   given:
+            - the "public-interface-missing-document" project tree
+        -   when:
+            - the System Architect runs "scen check"
+        -   then:
+            - the command exits with code 1
+            - stdout matches Refusing to start
+            - stdout matches docs/greeter-cli.yaml
+            - stdout does not match msg="Scenario"
+            - the engine dispatched 0 AI turns
+            - no file outside "tmp" changed
+    -   id: 003-malformed-document
+        description: An unparseable CLI interface document refuses startup with its filename and parse error
+        steps:
+        -   given:
+            - the "public-interface-malformed-document" project tree
+        -   when:
+            - the System Architect runs "scen check"
+        -   then:
+            - the command exits with code 1
+            - stdout matches Refusing to start
+            - stdout matches docs/greeter-cli.yaml
+            - stdout does not match msg="Scenario"
+            - stdout matches parse Public interface document
+            - 'stdout matches yaml:'
+            - the engine dispatched 0 AI turns
+            - no file outside "tmp" changed
+    -   id: 004-valid
+        description: CLI with named file, log and outgoing call extensions, HTTP and scoped UI declarations pass without AI
+        steps:
+        -   given:
+            - the "public-interface-valid" project tree
+        -   when:
+            - the System Architect runs "scen check"
+        -   then:
+            - the command exits with code 0
+            - stdout matches service greeter declares a valid Public interface
+            - stdout matches service api declares a valid Public interface
+            - stdout matches service web declares a valid Public interface
+            - the engine dispatched 0 AI turns
+            - no file outside "tmp" changed
+    -   id: 005-unsupported
+        description: Unsupported process kinds are named as not supported yet, and a library is excluded
+        steps:
+        -   given:
+            - the "public-interface-unsupported" project tree
+        -   when:
+            - the System Architect runs "scen check"
+        -   then:
+            - the command exits with code 1
+            - stdout matches grpc.*not supported yet
+            - stdout matches library is excluded
+            - the engine dispatched 0 AI turns
+            - no file outside "tmp" changed
+    -   id: 006-fix
+        description: The Public interface fix asks the System Architect and writes only the architecture, preserving the Scenario
+        steps:
+        -   given:
+            - the "public-interface-fix" project tree
+            - the System Architect answers "1" to every question
+        -   when:
+            - the System Architect runs "scen check --fix"
+        -   then:
+            - the command exits with code 0
+            - stdout matches msg="AI needs clarification"
+            - stdout matches msg="Fix recorded in the document" document=architecture_yaml
+            - stdout matches service greeter declares a valid Public interface
+            - the only file changed outside "tmp" is "docs/architecture/architecture.yaml"
+            - the file "docs/scenarios.yaml" is unchanged

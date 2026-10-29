@@ -1,24 +1,10 @@
-# Story `build-tests-files`: `build tests` holding the suite's files on
-# disk to the Registry.
-#
-# The generated test files (refused when stale without --fix, rewritten
-# under it, never written over a hand-written file) and the hand-written
-# files beside them that `build tests` reads: a test file's package
-# clause and the step definitions. The refusals of a Registry that
-# renders no test are the Stories build-tests-paths, build-tests-renderable
-# and build-tests-step-shapes.
-#
-# Each criterion's id is the second half of its Scenario's Registry key,
-# `build-tests-files-<id>` (ADR 0014), and its steps are that Scenario's
-# steps.
-
 story:
     id: build-tests-files
     feature: build-tests
-    title: Keep the generated tests what the Registry renders, and never write over or misread a hand-written file
+    title: Keep generated files equal to the Registry without overwriting hand-written tests
     as_a: System Architect
-    i_want: build tests to refuse, without --fix, a generated test file that is missing or stale, naming each one and the command that regenerates it, to rewrite under --fix only the stale ones, and to refuse a hand-written test file a generated one would overwrite, a hand-written test file in another package, and a step definition it cannot read
-    so_that: the tests that run are always the ones the Registry states, a hand-written file is never lost or quietly ignored, and every refusal leaves the project as it was and costs no AI turn
+    i_want: build tests to refuse stale generated files without --fix, rewrite them with --fix, and refuse hand-written files or foreign packages
+    so_that: the rendered tests remain faithful and hand-written files remain intact
     status: IMPLEMENTED
     acceptance_criteria:
         - id: 001-stale-test-refused
@@ -81,34 +67,4 @@ story:
                 - and: 'stdout matches tests/mcp/support_test\.go: the target directory declares a different package'
                 - and: stdout matches the directory declares \\"mcpserver_test\\", the suite name derives \\"mcp_test\\"
                 - but: no file outside "tmp" changed
-                - and: the engine dispatched no AI turns
-        - id: 005-invalid-step-pattern-refused
-          description: A step definition whose pattern is not a valid regular expression must refuse `build tests`, naming its file, line and column, before any generated test file is compared with the Registry
-          steps:
-            - given:
-                - the "build-tests-invalid-step-pattern" project tree
-            - when:
-                - the System Architect runs "build tests"
-            - then:
-                - the command exits with code 1
-                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
-                - and: 'stdout matches tests/mcp/steps/steps\.go:23:13: step pattern is not a valid regexp'
-                - and: stdout matches missing closing \)
-                - but: stdout does not match no generated test file
-                - and: no file outside "tmp" changed
-                - and: the engine dispatched no AI turns
-        - id: 006-step-file-not-go-refused
-          description: A step definition file that is not valid Go must refuse `build tests`, naming the file, line and column where Go stops reading it, before any generated test file is compared with the Registry
-          steps:
-            - given:
-                - the "build-tests-step-file-not-go" project tree
-            - when:
-                - the System Architect runs "build tests"
-            - then:
-                - the command exits with code 1
-                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
-                - and: 'stdout matches tests/mcp/steps/steps\.go:23:75: missing'
-                - and: stdout matches before newline in argument list
-                - but: stdout does not match no generated test file
-                - and: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns

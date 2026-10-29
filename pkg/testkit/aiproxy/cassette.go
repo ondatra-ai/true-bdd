@@ -25,14 +25,15 @@ const (
 
 // meta is the cassette manifest for one recorded call.
 type meta struct {
-	Schema      int        `json:"schema"`
-	Binary      string     `json:"binary"`
-	Argv        []string   `json:"argv"` // normalized ({{CWD}}, {{RUN_DIR}})
-	ExitCode    int        `json:"exit_code"`
-	DurationMS  int64      `json:"duration_ms"`
-	RequestHash string     `json:"request_hash"`
-	FSDiff      fsDiffMeta `json:"fsdiff"`
-	RecordedAt  string     `json:"recorded_at"`
+	NormalizeGoDurations bool       `json:"normalize_go_durations,omitempty"`
+	Schema               int        `json:"schema"`
+	Binary               string     `json:"binary"`
+	Argv                 []string   `json:"argv"` // normalized ({{CWD}}, {{RUN_DIR}})
+	ExitCode             int        `json:"exit_code"`
+	DurationMS           int64      `json:"duration_ms"`
+	RequestHash          string     `json:"request_hash"`
+	FSDiff               fsDiffMeta `json:"fsdiff"`
+	RecordedAt           string     `json:"recorded_at"`
 }
 
 // fsDiffMeta lists the working-tree paths the call created, modified,

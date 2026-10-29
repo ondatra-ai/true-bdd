@@ -1,0 +1,26 @@
+story:
+  id: build-steps-list
+  feature: build-steps
+  title: List the phrases each suite cannot bind
+  as_a: System Architect
+  i_want: build steps to list each Catalogue phrase without a definition in each suite
+  so_that: I know which definitions must be written before building the code
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 001-missing-phrases
+    description: build steps without --fix exits non-zero and names every Catalogue phrase with no definition, including an unused phrase
+    steps:
+    - given:
+      - the "build-steps-missing" project tree
+    - when:
+      - the System Architect runs "build steps"
+    - then:
+      - the command exits with code 1
+      - and: stdout matches phrase="the MCP server is running on its configured port"
+      - and: stdout matches phrase="the Claude User posts a valid JSON-RPC initialize request to /mcp"
+      - and: stdout matches phrase="the server returns HTTP \{status:number\}"
+      - and: stdout matches phrase="the unused operation runs"
+      - and: stdout matches Step coverage failed
+      - and: the engine dispatched no AI turns
+      - and: the engine spawned no test runners
+      - and: no file outside "tmp" changed

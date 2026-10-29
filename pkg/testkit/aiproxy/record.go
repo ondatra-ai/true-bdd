@@ -59,14 +59,17 @@ func record(cfg config, name string, argv []string) (int, error) {
 		return 0, fmt.Errorf("snapshot after call: %w", err)
 	}
 
+	normalizeDurations := hasGoDuration(argv, result.Stdin)
+	requestArgs, requestInput := canonicalGoRequest(argv, result.Stdin, normalizeDurations)
 	manifest := &meta{
-		Schema:      metaSchemaVersion,
-		Binary:      name,
-		Argv:        normalizeArgv(argv, cwd),
-		ExitCode:    result.ExitCode,
-		DurationMS:  result.Duration.Milliseconds(),
-		RequestHash: requestHash(argv, result.Stdin, cwd),
-		RecordedAt:  time.Now().UTC().Format(time.RFC3339),
+		NormalizeGoDurations: normalizeDurations,
+		Schema:               metaSchemaVersion,
+		Binary:               name,
+		Argv:                 normalizeArgv(requestArgs, cwd),
+		ExitCode:             result.ExitCode,
+		DurationMS:           result.Duration.Milliseconds(),
+		RequestHash:          requestHash(requestArgs, requestInput, cwd),
+		RecordedAt:           time.Now().UTC().Format(time.RFC3339),
 	}
 
 	dir := filepath.Join(cfg.Cassettes, cassetteName(name, idx))
@@ -82,7 +85,7 @@ func record(cfg config, name string, argv []string) (int, error) {
 	// stdin is normalized too: the fix-generator writes the NEXT turn's prompt,
 	// and a model may resolve a path itself, so an absolute path reaches stdin
 	// that no template contains (the Recordings gate catches it).
-	stdin := []byte(normalizeText(string(result.Stdin), cwd))
+	stdin := []byte(normalizeText(string(requestInput), cwd))
 
 	err = writeCassette(dir, manifest, stdin, stdout, stderr, changes)
 	if err != nil {

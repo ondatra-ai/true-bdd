@@ -1,0 +1,16 @@
+catalogue:
+  - template: 'the number is {value:number}'
+    block: given
+    means: The number supplies the input to double.
+    terms: [number]
+  - template: 'the command "{operation}" doubles {value:number}'
+    block: when
+    means: The quoted operation is the CLI command name; the numeric slot is its operand, replacing any previously stored number. Store the observed integer stdout.
+    terms: [number]
+  - template: 'the result is {value:number}'
+    block: then
+    means: The result equals twice the supplied number.
+    terms: [number]
+glossary:
+  - term: number
+    means: An integer operand whose double is its sum with itself.

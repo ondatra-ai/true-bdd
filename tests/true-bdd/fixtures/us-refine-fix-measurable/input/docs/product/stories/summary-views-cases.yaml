@@ -1,0 +1,36 @@
+story:
+  id: summary-views
+  feature: calculator
+  title: Read summary views
+  as_a: Calculator User
+  i_want: a concise summary in each view
+  so_that: I can scan a document
+  status: PLANNED
+  acceptance_criteria:
+  - id: 001-brief
+    description: The viewer must display a concise summary when the Calculator User requests the brief view.
+    steps:
+    - given:
+      - a shared document is selected
+    - when:
+      - the Calculator User requests the "brief" view
+    - then:
+      - the summary is concise
+  - id: 002-overview
+    description: The viewer must display a concise summary when the Calculator User requests the overview view.
+    steps:
+    - given:
+      - a shared document is selected
+    - when:
+      - the Calculator User requests the "overview" view
+    - then:
+      - the summary is concise
+  - id: 003-preview
+    description: The viewer must display a concise summary when the Calculator User requests the preview view.
+    steps:
+    - given:
+      - a shared document is selected
+    - when:
+      - the Calculator User requests the "preview" view
+    - then:
+      - the summary is concise

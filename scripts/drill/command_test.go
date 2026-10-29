@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
+	"syscall"
 	"testing"
 	"time"
 
@@ -26,9 +28,12 @@ func TestDetachedCommandSurvivesLauncherAndStopsCleanly(t *testing.T) {
 	}
 
 	runner, record, _ := prepare(t, `#!/bin/sh
+printf '%s' "$$" > "$DRILL_ENGINE_PID"
 printf '\nCLARIFICATION NEEDED\n[1/1] What is specified?\n1) Follow Specification\n0) Other\n\n    Your answer: '
 read answer
 `)
+	pidFile := filepath.Join(record.Directory, "engine-pid")
+	t.Setenv("DRILL_ENGINE_PID", pidFile)
 	command := exec.CommandContext(t.Context(),
 		worker,
 		"run",
@@ -38,7 +43,7 @@ read answer
 		"detached-worker",
 		"--",
 		buildCommand,
-		codeArgument,
+		stepsArgument,
 		fixArgument)
 
 	output, err = command.CombinedOutput()
@@ -68,6 +73,8 @@ read answer
 		t.Fatalf("worker disappeared with caller: %v", workers)
 	}
 
+	assertEngineProcessGroup(t, pidFile)
+
 	must(t, runner.Stop(t.Context(), record.Directory, final.Tag))
 
 	finished := waitRun(t, record.Directory, final.Tag, func(run drill.Attempt) bool { return !run.EndedAt.IsZero() })
@@ -76,6 +83,22 @@ read answer
 	}
 
 	waitNoWorkers(t, final.Marker)
+}
+
+func assertEngineProcessGroup(t *testing.T, pidFile string) {
+	t.Helper()
+
+	data, err := os.ReadFile(pidFile)
+	must(t, err)
+	pid, err := strconv.Atoi(string(data))
+	must(t, err)
+
+	group, err := syscall.Getpgid(pid)
+	must(t, err)
+
+	if group != pid {
+		t.Fatalf("engine %d does not lead its process group %d", pid, group)
+	}
 }
 
 func waitRun(t *testing.T, directory, tag string, ready func(drill.Attempt) bool) drill.Attempt {

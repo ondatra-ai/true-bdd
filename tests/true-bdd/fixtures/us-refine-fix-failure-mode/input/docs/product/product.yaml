@@ -1,0 +1,36 @@
+title: Integer calculator
+description:
+  summary: 'The divide Story divides two already validated integers exactly. Its only failure mode is a zero divisor, which must exit 1 with stderr "Cannot divide by zero" and no result. Missing or non-integer
+    input errors belong to calculator-input. Successes: 6 / 2 = 3; 9 / 3 = 3; 0 / 2 = 0.'
+roles:
+- name: Calculator User
+  definition: A person using the calculator CLI
+vocabulary:
+  forbidden_qualifiers:
+  - properly
+  - correctly
+  - appropriate
+  - fast
+  forbidden_actions: []
+glossary: []
+catalogue:
+- template: the dividend is "{value}"
+  block: given
+  means: The first validated integer supplied to the calculator.
+  terms: []
+- template: the divisor is "{value}"
+  block: given
+  means: The second validated integer supplied to the calculator.
+  terms: []
+- template: the Calculator User divides the numbers
+  block: when
+  means: Run the calculator CLI divide command with both supplied integers.
+  terms: []
+- template: the result is "{value}"
+  block: then
+  means: Exit 0 and print exactly this integer on stdout.
+  terms: []
+- template: the error is "{message}"
+  block: then
+  means: Exit 1 with exactly this stderr message and no result.
+  terms: []

@@ -1,8 +1,6 @@
-Changed `Double` to return `value + value`; formatting is correct. Verification was blocked because the sandbox denied access to the external BDD harness. No failing-set test was observed passing.
-
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===
 applied: true
 impossible: []
 target: "services/calc"
-summary: "Updated calc.go so Double returns twice its input. Ran the permitted TestCalc001Double command; setup failed because sandbox access to pkg/testkit/bddgo was denied. No failing-set tests were observed passing."
+summary: "Changed double to print value * 2, preserving argument validation. Ran the permitted TestCalc001Double selection; setup failed because sandbox restrictions prevent reading the referenced bddgo dependency. No failing-set test was observed passing."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===

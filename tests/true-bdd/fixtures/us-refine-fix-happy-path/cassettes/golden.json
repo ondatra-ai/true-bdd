@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "us-refine-fix-happy-path",
+  "files": [
+    {
+      "path": "docs/product/stories/divide-integers-cases.yaml",
+      "kind": "modified",
+      "size": 1800,
+      "sha256": "c03ee8cb8c98d573ac9b55b81cd21c572b23cf1581ea1c7e9265cad506c20e21",
+      "text": "story:\n    id: divide-integers\n    feature: calculator\n    title: Divide integers\n    as_a: Calculator User\n    i_want: to divide two validated integers\n    so_that: I can obtain their quotient or a zero-divisor error\n    status: PLANNED\n    acceptance_criteria:\n        - id: 001-division\n          description: The calculator must report \"Cannot divide by zero\" when dividing 6 by zero.\n          steps:\n            - given:\n                - the dividend is \"6\"\n                - the divisor is \"0\"\n            - when:\n                - the Calculator User divides the numbers\n            - then:\n                - the error is \"Cannot divide by zero\"\n        - id: 002-division\n          description: The calculator must report \"Cannot divide by zero\" when dividing 9 by zero.\n          steps:\n            - given:\n                - the dividend is \"9\"\n                - the divisor is \"0\"\n            - when:\n                - the Calculator User divides the numbers\n            - then:\n                - the error is \"Cannot divide by zero\"\n        - id: 003-division\n          description: The calculator must report \"Cannot divide by zero\" when dividing 0 by zero.\n          steps:\n            - given:\n                - the dividend is \"0\"\n                - the divisor is \"0\"\n            - when:\n                - the Calculator User divides the numbers\n            - then:\n                - the error is \"Cannot divide by zero\"\n        - id: 004-division\n          description: The calculator must report the result \"3\" when dividing 6 by 2.\n          steps:\n            - given:\n                - the dividend is \"6\"\n                - the divisor is \"2\"\n            - when:\n                - the Calculator User divides the numbers\n            - then:\n                - the result is \"3\"\n"
+    }
+  ]
+}

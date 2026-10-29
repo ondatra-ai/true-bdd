@@ -1,0 +1,17 @@
+architecture:
+  services:
+  - name: calculator
+    path: services/calculator
+    language: go
+    description: 'A CLI: calculator halve <integer>; exit 0 and print the integer result on stdout. Input validation is owned
+      by calculator-input.'
+  testing:
+    framework: go-test
+    config: go.mod
+    helpers:
+    - name: os/exec.CommandContext
+      description: Run the calculator CLI with explicit arguments and capture stdout and exit code.
+    commands:
+      record: go test ./tests/calculator/
+      replay: go test ./tests/calculator/
+      live: go test ./tests/calculator/

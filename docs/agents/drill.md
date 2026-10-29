@@ -10,7 +10,20 @@ go run ./scripts/cmd/drill oracle a --iteration <dir>
 go run ./scripts/cmd/drill audit a --iteration <dir>
 ```
 
-`run` accepts exactly `-- build tests --fix` or `-- build code --fix`; every other command line is refused. Each maps to its own typed engine operation. `run` and `oracle` return after launching a detached worker. Read the run's log and state under `record.json`; the worker keeps the three-hour limit, including clarification pauses, without a terminal or launcher. Only one unfinished run is permitted per iteration. Tags cannot be reused. Each rerun remains an operator decision. The fix menu receives `1`; a clarification receives nothing automatically.
+Cuts B, C and D use this pipeline, one command at a time, with an audit and an operator's judgment before continuing:
+
+```text
+go run ./scripts/cmd/drill cut b --iteration <dir>
+go run ./scripts/cmd/drill run b b-tests --iteration <dir> -- build tests --fix
+go run ./scripts/cmd/drill run b b-steps --iteration <dir> -- build steps --fix
+go run ./scripts/cmd/drill run b b-code --iteration <dir> -- build code --fix
+```
+
+`build tests --fix` renders test files deterministically, without AI or a test run. `build steps --fix` writes and verifies the step definitions, including Red without the target; `build code --fix` builds the service to turn the tests green (ADR-0031). The old engine built at the base drives all three commands, but is no test target. The prebuilt oracle flag remains available only for the independent oracle below.
+
+Every cut keeps `docs/product/`, `docs/architecture/architecture.yaml`, `docs/scenarios.yaml`, `true-bdd/`, `templates/`, `pkg/`, `scripts/`, `go.mod`, `go.sum`, `.gitignore` and the portions of `tests/true-bdd/` its layers do not delete. It also keeps each exact interface document named by a service's `public_interface.document` in the base's architecture, relative to the Host project root, wherever the document lives, including inside a deleted layer. Naming one file keeps neither its siblings nor its directory. UI declarations have inline elements and add no document. The architecture is read from the base's archive, so later checkout changes cannot change a cut's kept documents.
+
+`run` accepts exactly `-- build tests --fix`, `-- build steps --fix` or `-- build code --fix`, optionally followed by repeated `--model <tier>=<cli>:<model>` pairs; every other command line is refused. Each maps to its own typed engine operation. The engine validates model overrides; deterministic `build tests` does not support them. `run` and `oracle` return after launching a detached worker. Read the run's log and state under `record.json`; the worker keeps the three-hour limit, including clarification pauses, without a terminal or launcher. Only one unfinished run is permitted per iteration. Tags cannot be reused. Each rerun remains an operator decision. The fix menu receives `1`; a clarification receives nothing automatically.
 
 The drill recognizes the fix menu by its three option lines in order at the end of the engine output so far, and a clarification by suggested answers numbered from 1, each starting a line, then a line starting with `0) Other` at the end of the output so far. Only whitespace or the original engine's optional `Your answer:` prompt may follow the clarification. Both forms wait for 50 milliseconds without output before recognition, so a quoted form followed by more output across chunks does not trigger an answer or pause. The original engine's line-starting `Your choice (1/2/3):` prompt is also accepted; a prompt following an already recognized form does not trigger a second response. A clarification does not require the original engine's `[current/total]` question marker.
 
@@ -24,7 +37,7 @@ A paused run records the printed question, options and a private answer filename
 }
 ```
 
-Write the file through a temporary file and rename to avoid presenting incomplete JSON. Sources are confined to `docs/product/`, `docs/architecture/architecture.yaml` and `docs/scenarios.yaml`; the passage must occur in the named document. The operator remains responsible for whether it supports the answer. When the Specification cannot answer, record the question as the blocker and use `stop`; never restore or copy deleted code. Follow issue #181's stop-at-the-first-blocker rule; the tool does not decide whether progress justifies another command.
+Write the file through a temporary file and rename to avoid presenting incomplete JSON. Sources are confined to `docs/product/`, `docs/architecture/architecture.yaml`, `docs/scenarios.yaml` and the kept interface documents named by the architecture; the passage must occur in the named document. Symlinks resolving outside these Specification documents are refused. The operator remains responsible for whether it supports the answer. When the Specification cannot answer, record the question as the blocker and use `stop`; never restore or copy deleted code. Follow issue #212's stop-at-the-first-blocker rule; the tool does not decide whether progress justifies another command.
 
 Every terminal path stops the engine's process group and discovers and stops every process with the exact `TRUE_BDD_DRILL_RUN` environment entry, including detached children. Argument text cannot claim ownership. An end timestamp and exit code are written only after cleanup verification. A discovery or cleanup failure produces `cleanup_failed`, retaining an unfinished record for a later `stop`. The worker has a separate identity so it can finish the record after killing the engine's descendants.
 

@@ -28,7 +28,7 @@ func stepDefinitions() Check[*template.ScenarioCheckData] {
 }
 
 // reviewDefinitions holds one Item's templates to its suite's step
-// definitions. A step bound to nothing yet is a gap `build tests`
+// definitions. A step bound to nothing yet is a gap `build steps`
 // authors, not a failure.
 func reviewDefinitions(
 	item *template.ScenarioCheckData,

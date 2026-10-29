@@ -7,12 +7,23 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/cmd"
 )
 
+func TestBuildTestsTakesNoModelOverride(t *testing.T) {
+	command, _, err := cmd.NewBuildCommand(nil).Find([]string{"tests"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if command.Flags().Lookup("model") != nil {
+		t.Fatal("build tests dispatches no AI turn, so it must not offer --model")
+	}
+}
+
 func TestEveryAITurnCommandAcceptsRepeatedModelOverrides(t *testing.T) {
 	for _, group := range []struct {
 		name     string
 		commands []string
 	}{
-		{"build", []string{"tests", "code"}}, {"us", []string{"refine", "apply"}}, {"scen", []string{"check"}},
+		{"build", []string{"steps", "code"}}, {"us", []string{"refine", "apply"}}, {"scen", []string{"check"}},
 	} {
 		for _, name := range group.commands {
 			t.Run(group.name+" "+name, func(t *testing.T) {

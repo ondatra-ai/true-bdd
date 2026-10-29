@@ -277,15 +277,15 @@ func assertAITurnsTo(state *State, args []string) error {
 	return nil
 }
 
-func assertPrebuiltEnginePath(state *State, _ []string) error {
-	path, err := filepath.Abs(state.Harness.BinPath)
+func assertTestRunnerMatchingCount(state *State, args []string) error {
+	want, err := numberSlot(args[0])
 	if err != nil {
-		return state.fail("absolute engine path: %w", err)
+		return state.fail("test-runner count: %w", err)
 	}
 
-	path, err = filepath.EvalSymlinks(path)
+	pattern, err := regexp.Compile(args[1])
 	if err != nil {
-		return state.fail("resolve engine path: %w", err)
+		return state.fail("test-runner argument pattern: %w", err)
 	}
 
 	records, err := readEngineLog(state)
@@ -293,17 +293,17 @@ func assertPrebuiltEnginePath(state *State, _ []string) error {
 		return err
 	}
 
-	for _, record := range records {
-		if record.Msg != engineMsgSpawnTestRunner {
-			continue
-		}
+	got := 0
 
-		for _, argument := range record.Args {
-			if argument == "-engine-bin="+path {
-				return nil
-			}
+	for _, record := range records {
+		if record.Msg == engineMsgSpawnTestRunner && pattern.MatchString(strings.Join(record.Args, " ")) {
+			got++
 		}
 	}
 
-	return state.fail("no runner received the running engine path %q as one argument", path)
+	if got != want {
+		return state.fail("expected %d test runner(s) matching %q, got %d", want, args[1], got)
+	}
+
+	return nil
 }

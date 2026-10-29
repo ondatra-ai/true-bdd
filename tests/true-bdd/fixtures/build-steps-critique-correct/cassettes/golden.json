@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "fixture": "build-steps-critique-correct",
+  "files": [
+    {
+      "path": "tests/calc/steps/phrase7c963587b98a9c9fa59fafbd25518c3af0d8d428753a4c888f114e5a06aa3242.go",
+      "kind": "created",
+      "size": 251,
+      "sha256": "3aa9b94b8417126b4319b96d1e3010172b53a3fa72b110ffca8f0c0dc980ef14",
+      "text": "package steps\n\nimport \"strconv\"\n\nfunc phrase7c963587b98a9c9fa59fafbd25518c3af0d8d428753a4c888f114e5a06aa3242(state *State, args []string) error {\n\tvalue, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn err\n\t}\n\tstate.Value = value\n\treturn nil\n}\n"
+    },
+    {
+      "path": "tests/calc/steps/register.go",
+      "kind": "modified",
+      "size": 519,
+      "sha256": "8bcd4eac2859cb7798fed80bba23f3580a937e50e84308f12bd9013502e74584",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"strconv\"\n)\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the number is doubled$`, double)\n\tsuite.Step(`^the result is (\\d+)$`, result)\n\n\tsuite.Step(\"\\\\Athe number is ((?:[0-9]+|no))\\\\z\", phrase7c963587b98a9c9fa59fafbd25518c3af0d8d428753a4c888f114e5a06aa3242)\n}\nfunc result(state *State, args []string) error {\n\twant, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn err\n\t}\n\tif state.Value != want {\n\t\treturn fmt.Errorf(\"expected %d, got %d\", want, state.Value)\n\t}\n\treturn nil\n}\n"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-summary-views-iter1-result.yaml ===
+id: "summary-views"
+title: "Read summary views"
+as_a: "Calculator User"
+i_want: "a concise summary in each view"
+so_that: "I can scan a document"
+status: "PLANNED"
+acceptance_criteria:
+  - id: "001-brief"
+    description: 'The viewer must display a summary of at most 150 words when the Calculator User requests the brief view.'
+    steps:
+      - given:
+          - 'a shared document is selected'
+      - when:
+          - 'the Calculator User requests the "brief" view'
+      - then:
+          - 'the summary has at most 150 words'
+  - id: "002-overview"
+    description: 'The viewer must display a summary of at most 150 words when the Calculator User requests the overview view.'
+    steps:
+      - given:
+          - 'a shared document is selected'
+      - when:
+          - 'the Calculator User requests the "overview" view'
+      - then:
+          - 'the summary has at most 150 words'
+  - id: "003-preview"
+    description: 'The viewer must display a summary of at most 150 words when the Calculator User requests the preview view.'
+    steps:
+      - given:
+          - 'a shared document is selected'
+      - when:
+          - 'the Calculator User requests the "preview" view'
+      - then:
+          - 'the summary has at most 150 words'
+=== FILE_END: tmp/{{RUN_DIR}}/apply-summary-views-iter1-result.yaml ===

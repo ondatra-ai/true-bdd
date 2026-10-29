@@ -15,7 +15,17 @@ func (a *Architecture) CodeWritableRoots(host string, suites []string) ([]Writab
 		return nil, fmt.Errorf("resolve host: %w", err)
 	}
 
-	tests := append([]string(nil), suites...)
+	tests, err := a.TestDirectories(host, suites)
+	if err != nil {
+		return nil, err
+	}
+
+	return WritableRoots(host, a.Services, tests)
+}
+
+// TestDirectories is the test protection shared by the code and step writers.
+func (a *Architecture) TestDirectories(host string, suites []string) ([]string, error) {
+	tests := append([]string{"tests"}, suites...)
 
 	base := host
 	if a.Testing.ConfigFile != "" {
@@ -24,9 +34,9 @@ func (a *Architecture) CodeWritableRoots(host string, suites []string) ([]Writab
 			base = filepath.Join(host, base)
 		}
 
-		resolved, resolveErr := resolveWritablePath(base, 0)
-		if resolveErr != nil {
-			return nil, resolveErr
+		resolved, err := resolveWritablePath(base, 0)
+		if err != nil {
+			return nil, err
 		}
 
 		if withinWritable(host, resolved) {
@@ -39,7 +49,49 @@ func (a *Architecture) CodeWritableRoots(host string, suites []string) ([]Writab
 		return nil, err
 	}
 
-	return WritableRoots(host, a.Services, append(tests, commands...))
+	return append(tests, commands...), nil
+}
+
+// TestWritableRoots grants exactly protected test directories, refusing service overlap.
+func (a *Architecture) TestWritableRoots(host string, suites, documents []string) ([]WritableRoot, error) {
+	host, err := filepath.EvalSymlinks(host)
+	if err != nil {
+		return nil, fmt.Errorf("resolve host: %w", err)
+	}
+
+	tests, err := a.TestDirectories(host, suites)
+	if err != nil {
+		return nil, err
+	}
+
+	protected := make([]string, 0, len(documents)+len(a.Services))
+	for _, document := range documents {
+		if document == "" {
+			continue
+		}
+
+		if filepath.IsAbs(document) {
+			document = relativeTestPath(host, document)
+		}
+
+		protected = append(protected, document)
+	}
+
+	for _, service := range a.Services {
+		protected = append(protected, service.Path)
+	}
+
+	roots := make([]WritableRoot, 0, len(tests))
+	for _, test := range tests {
+		root, err := writableRoot(host, test, protected, true)
+		if err != nil {
+			return nil, err
+		}
+
+		roots = append(roots, root)
+	}
+
+	return roots, nil
 }
 
 func (a *Architecture) commandTestDirectories(host, base string) ([]string, error) {
