@@ -10,6 +10,6 @@ scenarios:
       given:
       - the greeting is configured
       when:
-      - the greeting is translated into French
+      - the greeting is translated into "French"
       then:
       - the greeting is logged

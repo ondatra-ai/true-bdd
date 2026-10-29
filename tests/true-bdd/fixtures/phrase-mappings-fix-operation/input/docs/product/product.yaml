@@ -6,7 +6,7 @@ catalogue:
   block: given
   means: Set the greeting in the declared configuration file.
   terms: []
-- template: the greeting is translated into {language}
+- template: 'the greeting is translated into "{language}"'
   block: when
   means: Translate the configured greeting into the named language once.
   terms: []

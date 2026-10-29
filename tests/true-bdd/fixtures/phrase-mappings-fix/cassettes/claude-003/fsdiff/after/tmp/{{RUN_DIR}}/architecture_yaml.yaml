@@ -17,8 +17,8 @@ architecture:
     service: greeter
     references:
     - command: greet
-    does: Run the declared greet command once with the scenario's person argument
-      and no loud flag.
+    does: Call the greet command once, passing the person named by the scenario as
+      the 'person' argument and omitting the 'loud' flag.
   - template: the greeting is logged
     service: greeter
     references:
