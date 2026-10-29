@@ -1,0 +1,136 @@
+story:
+  id: us-refine-quality-fix
+  feature: us-refine
+  title: Repair Acceptance Criteria through the menu
+  as_a: Product Owner
+  i_want: to apply concrete proposals for every quality Prompt
+  so_that: the shipped checklist can complete refinement
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 001-count-proposes-criteria
+    description: A Story with two criteria must get a count-fix proposal at the menu, and apply must save a third criterion using Catalogue phrases
+    steps:
+    - given:
+      - the "us-refine-fix-count" project tree
+      - and: the "us-refine" checklist is narrowed to its "Count the total number of acceptance criteria" prompt
+      - the Product Owner answers "1" to every question
+    - when:
+      - the Product Owner runs "us refine halve-negative --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches FIX PROMPT GENERATED
+      - stdout matches msg="User chose fix action" rawInput=1 action=apply
+      - stdout matches ALL CHECKS PASSED!
+      - and: the story "docs/product/stories/halve-negative-cases.yaml" has 3 acceptance criteria
+      - and: every acceptance criterion in the story "docs/product/stories/halve-negative-cases.yaml" has given, when and then steps
+      - and: the only file changed outside "tmp" is "docs/product/stories/halve-negative-cases.yaml"
+      - and: 'judge: The count proposal adds the missing -1 to 0 boundary criterion, retains both original criteria and uses only the three Catalogue phrases with filled slots.'
+  - id: 002-implementation-rewritten
+    description: Implementation details must be rewritten as observable behaviour through the menu
+    steps:
+    - given:
+      - the "us-refine-fix-implementation" project tree
+      - and: the "us-refine" checklist is narrowed to its "whether it describes implementation" prompt
+      - the Product Owner answers "1" to every question
+    - when:
+      - the Product Owner runs "us refine halve-negative --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches FIX PROMPT GENERATED
+      - stdout matches msg="User chose fix action" rawInput=1 action=apply
+      - stdout matches ALL CHECKS PASSED!
+      - and: the story "docs/product/stories/halve-negative-cases.yaml" has 3 acceptance criteria
+      - and: every acceptance criterion in the story "docs/product/stories/halve-negative-cases.yaml" has given, when and then steps
+      - and: the only file changed outside "tmp" is "docs/product/stories/halve-negative-cases.yaml"
+      - and: 'judge: The first criterion now describes the observable -6 to -3 result instead of SQL persistence; all three original inputs and results survive and every step uses a Catalogue phrase.'
+  - id: 003-happy-path-added
+    description: A Story containing only failures must get a success criterion through the menu
+    steps:
+    - given:
+      - the "us-refine-fix-happy-path" project tree
+      - and: the "us-refine" checklist is narrowed to its "whether it describes the happy path" prompt
+      - the Product Owner answers "1" to every question
+    - when:
+      - the Product Owner runs "us refine divide-integers --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches FIX PROMPT GENERATED
+      - stdout matches msg="User chose fix action" rawInput=1 action=apply
+      - stdout matches ALL CHECKS PASSED!
+      - and: the story "docs/product/stories/divide-integers-cases.yaml" has 4 acceptance criteria
+      - and: every acceptance criterion in the story "docs/product/stories/divide-integers-cases.yaml" has given, when and then steps
+      - and: the only file changed outside "tmp" is "docs/product/stories/divide-integers-cases.yaml"
+      - and: 'judge: A new success criterion divides 6 by 2 and observes 3 while retaining the three zero-divisor criteria. Every step uses only Catalogue phrases.'
+  - id: 004-uncovered-failure-added
+    description: An uncovered real failure mode must fail the error-scenario Prompt and get its own criterion through the menu
+    steps:
+    - given:
+      - the "us-refine-fix-failure-mode" project tree
+      - and: the "us-refine" checklist is narrowed to its "Identify every failure mode" prompt
+      - the Product Owner answers "1" to every question
+    - when:
+      - the Product Owner runs "us refine divide-integers --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches FIX PROMPT GENERATED
+      - stdout matches msg="User chose fix action" rawInput=1 action=apply
+      - stdout matches ALL CHECKS PASSED!
+      - and: the story "docs/product/stories/divide-integers-cases.yaml" has 4 acceptance criteria
+      - and: every acceptance criterion in the story "docs/product/stories/divide-integers-cases.yaml" has given, when and then steps
+      - and: the only file changed outside "tmp" is "docs/product/stories/divide-integers-cases.yaml"
+      - and: 'judge: The proposal and saved Story add exactly one criterion for the real zero-divisor failure, asserting the declared error; all three original successful divisions remain. No invented failure
+          or new Story field is added. Every step uses only Catalogue phrases.'
+  - id: 005-criteria-made-measurable
+    description: Unmeasurable criteria must get concrete thresholds from the product through the menu
+    steps:
+    - given:
+      - the "us-refine-fix-measurable" project tree
+      - and: the "us-refine" checklist is narrowed to its "whether it includes specific measurable criteria" prompt
+      - the Product Owner answers "1" to every question
+    - when:
+      - the Product Owner runs "us refine summary-views --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches FIX PROMPT GENERATED
+      - stdout matches msg="User chose fix action" rawInput=1 action=apply
+      - stdout matches ALL CHECKS PASSED!
+      - and: the story "docs/product/stories/summary-views-cases.yaml" has 3 acceptance criteria
+      - and: every acceptance criterion in the story "docs/product/stories/summary-views-cases.yaml" has given, when and then steps
+      - and: the only file changed outside "tmp" is "docs/product/stories/summary-views-cases.yaml"
+      - and: 'judge: At least two criteria replace an unmeasurable concise summary with the declared limit of at most 150 words. All three views remain and every step uses only Catalogue phrases.'
+  - id: 006-outcome-made-binary
+    description: A subjective outcome must become a binary observation through the menu
+    steps:
+    - given:
+      - the "us-refine-fix-binary" project tree
+      - and: the "us-refine" checklist is narrowed to its "whether it has a binary pass/fail outcome" prompt
+      - the Product Owner answers "1" to every question
+    - when:
+      - the Product Owner runs "us refine halve-negative --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches FIX PROMPT GENERATED
+      - stdout matches msg="User chose fix action" rawInput=1 action=apply
+      - stdout matches ALL CHECKS PASSED!
+      - and: the story "docs/product/stories/halve-negative-cases.yaml" has 3 acceptance criteria
+      - and: every acceptance criterion in the story "docs/product/stories/halve-negative-cases.yaml" has given, when and then steps
+      - and: the only file changed outside "tmp" is "docs/product/stories/halve-negative-cases.yaml"
+      - and: 'judge: The first criterion now asserts the objective -6 to -3 result with a runnable CLI observation, retaining the other two criteria and using only Catalogue phrases.'
+  - id: 007-test-sketch-made-runnable
+    description: A criterion without an objective runnable sketch must be rewritten using the declared interface and test helpers through the menu
+    steps:
+    - given:
+      - the "us-refine-fix-sketch" project tree
+      - and: the "us-refine" checklist is narrowed to its "attempt to draft a runnable test sketch" prompt
+      - the Product Owner answers "1" to every question
+    - when:
+      - the Product Owner runs "us refine halve-negative --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches FIX PROMPT GENERATED
+      - stdout matches msg="User chose fix action" rawInput=1 action=apply
+      - stdout matches ALL CHECKS PASSED!
+      - and: the story "docs/product/stories/halve-negative-cases.yaml" has 3 acceptance criteria
+      - and: every acceptance criterion in the story "docs/product/stories/halve-negative-cases.yaml" has given, when and then steps
+      - and: the only file changed outside "tmp" is "docs/product/stories/halve-negative-cases.yaml"
+      - and: 'judge: The first criterion now asserts the objective -6 to -3 result with a runnable CLI observation, retaining the other two criteria and using only Catalogue phrases.'

@@ -1,0 +1,20 @@
+architecture:
+  services:
+  - name: greeter
+    path: services/greeter
+    language: go
+    public_interface:
+      kind: cli
+      document: docs/greeter-cli.yaml
+  - name: api
+    public_interface:
+      kind: http
+      document: docs/api.yaml
+  - name: web
+    public_interface:
+      kind: ui
+      elements:
+      - page: Order
+        region: Details
+        role: button
+        name: Save

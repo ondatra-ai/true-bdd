@@ -1,0 +1,65 @@
+story:
+  id: us-refine-shipped
+  feature: us-refine
+  title: Refine with the shipped checklist
+  as_a: Product Owner
+  i_want: to use the checklist installed by init without overriding it
+  so_that: I can refine a Story through the documented pipeline
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 003-no-own-failure-passes
+    description: A Story with no failure mode of its own must pass the error-scenario Prompt with a context line saying why
+    steps:
+    - given:
+      - the "us-refine-shipped-no-failure" project tree
+      - and: the "us-refine" checklist is narrowed to its "Identify every failure mode" prompt
+    - when:
+      - the Product Owner runs "us refine halve-negative"
+    - then:
+      - the command exits with code 0
+      - stdout matches ALL CHECKS PASSED!
+      - and: 'every file matching "tmp/*/*-checklist-*-result.yaml" matches No failure mode of its own:'
+      - and: every file matching "tmp/*/*-checklist-*-result.yaml" matches calculator-input
+      - and: the story "docs/product/stories/halve-negative-cases.yaml" has 3 acceptance criteria
+      - and: the file "docs/product/product.yaml" is unchanged
+      - and: 'judge: The error-scenario Prompt passes because input validation belongs to calculator-input, with a context line explaining that reason. The three success criteria are retained without invented
+          error criteria or a new Story field.'
+  - id: 001-shipped-checklist-reaches-menu
+    description: The full shipped checklist must reach a fix proposal, and exit at the menu must leave the Story and Catalogue unchanged
+    steps:
+    - given:
+      - the "us-refine-shipped-menu-exit" project tree
+      - the Product Owner answers "3" to every question
+    - when:
+      - the Product Owner runs "us refine halve-negative --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches US REFINE
+      - stdout matches FIX PROMPT GENERATED
+      - but: stdout does not match checklist has prompts with no F fix template
+      - stdout matches msg="User chose fix action" rawInput=3 action=exit
+      - and: no file outside "tmp" changed
+      - and: the file "docs/product/stories/halve-negative-cases.yaml" is unchanged
+      - and: the file "docs/product/product.yaml" is unchanged
+  - id: 002-shipped-checklist-adds-phrase
+    description: The full shipped checklist must add a missing Catalogue phrase only after apply and retain the Story words
+    steps:
+    - given:
+      - the "us-refine-shipped-catalogue" project tree
+      - the Product Owner answers "1" to every question
+    - when:
+      - the Product Owner runs "us refine halve-negative --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches US REFINE
+      - stdout matches FIX PROMPT GENERATED
+      - but: stdout does not match checklist has prompts with no F fix template
+      - stdout matches msg="User chose fix action" rawInput=1 action=apply
+      - stdout matches msg="Fix recorded in the document" document=product
+      - stdout matches ALL CHECKS PASSED!
+      - and: the story "docs/product/stories/halve-negative-cases.yaml" has 3 acceptance criteria
+      - and: the file "docs/product/product.yaml" is modified
+      - and: the file "docs/product/stories/halve-negative-cases.yaml" matches the Calculator User halves the number
+      - and: no file outside "tmp" and "docs/product" changed
+      - and: 'judge: The menu proposal adds a Catalogue entry for the existing halving action. The Story keeps all of its original descriptions and step words; no substitute action, error criterion or new
+          Story field is introduced.'

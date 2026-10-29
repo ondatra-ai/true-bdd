@@ -58,6 +58,38 @@ func seedTermDocuments(resolver *docs.Resolver, tmpDir string) ([]template.FixDo
 	return seeded, nil
 }
 
+// seedInterfaceDocuments copies each Public interface document the
+// architecture names into tmp, keyed by its declared path, for a
+// public-interface or phrase-mappings fix to extend.
+func seedInterfaceDocuments(resolver *docs.Resolver, tmpDir string) ([]template.FixDocument, error) {
+	architecturePath, err := resolver.Resolve(docs.KeyArchitectureYAML)
+	if err != nil {
+		return nil, nil //nolint:nilerr // seedTermDocuments already logged the missing architecture.
+	}
+
+	declared, err := architecture.DeclaredInterfaceDocuments(architecturePath)
+	if err != nil {
+		return nil, fmt.Errorf("list the Public interface documents: %w", err)
+	}
+
+	seeded := make([]template.FixDocument, 0, len(declared))
+
+	for idx, document := range declared {
+		scratch := filepath.Join(tmpDir, fmt.Sprintf("interface-%d-%s", idx+1, filepath.Base(document.Path)))
+
+		err = disk.Copy(scratch, document.Path, disk.Shared)
+		if err != nil {
+			return nil, fmt.Errorf("seed the scratch copy of %s: %w", document.Path, err)
+		}
+
+		slog.Info("Seeded scratch document", "document", document.Path, "from", document.Path, "to", scratch)
+
+		seeded = append(seeded, template.FixDocument{Key: document.Path, Path: document.Path, Scratch: scratch})
+	}
+
+	return seeded, nil
+}
+
 // seedFixDocument copies one document into the run's tmp dir as the
 // working copy a fix edits.
 func seedFixDocument(key, path, tmpDir string) (template.FixDocument, error) {
@@ -214,4 +246,77 @@ func registryIDs(scenarios []*template.ScenarioCheckData) []string {
 	}
 
 	return ids
+}
+
+// commitInterfaceFix commits the architecture's working copy and the
+// interface documents the fix changed, documents first, once each parses
+// in the form of the kind the edited architecture declares for it.
+func commitInterfaceFix(architectureDocument template.FixDocument, interfaceDocuments []template.FixDocument) error {
+	_, err := architecture.LoadInterfaces(architectureDocument.Scratch, ".")
+	if err != nil {
+		return fmt.Errorf("validate Public interface fix: %w", err)
+	}
+
+	_, err = architecture.LoadPhraseMappings(architectureDocument.Scratch)
+	if err != nil {
+		return fmt.Errorf("validate Phrase mapping fix: %w", err)
+	}
+
+	declared, err := architecture.DeclaredInterfaceDocuments(architectureDocument.Scratch)
+	if err != nil {
+		return fmt.Errorf("validate Public interface fix: %w", err)
+	}
+
+	kinds := make(map[string]string, len(declared))
+	for _, document := range declared {
+		kinds[document.Path] = document.Kind
+	}
+
+	for _, document := range interfaceDocuments {
+		err = checkInterfaceWorkingCopy(document, kinds[document.Path])
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, document := range interfaceDocuments {
+		_, err = commitFixDocument(document, nil)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = commitFixDocument(architectureDocument, nil)
+
+	return err
+}
+
+// checkInterfaceWorkingCopy holds a changed interface document working copy
+// to the form of its kind; an unchanged one needs no check.
+func checkInterfaceWorkingCopy(document template.FixDocument, kind string) error {
+	edited, err := disk.Read(document.Scratch)
+	if err != nil {
+		return fmt.Errorf("read the scratch copy of %s: %w", document.Path, err)
+	}
+
+	current, err := disk.Read(document.Path)
+	if err != nil {
+		return fmt.Errorf("read %s: %w", document.Path, err)
+	}
+
+	if bytes.Equal(edited, current) {
+		return nil
+	}
+
+	if kind == "" {
+		return fmt.Errorf("%s: %w: no Public interface declaration names it any more",
+			document.Path, ErrTermDocumentUnparseable)
+	}
+
+	err = architecture.CheckInterfaceDocument(kind, edited, document.Path, ".")
+	if err != nil {
+		return fmt.Errorf("%s: %w: %w", document.Path, ErrTermDocumentUnparseable, err)
+	}
+
+	return nil
 }

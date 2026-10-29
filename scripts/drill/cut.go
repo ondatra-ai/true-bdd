@@ -50,7 +50,12 @@ func (r Runner) Cut(ctx context.Context, directory, name string) (Cut, error) {
 }
 
 func validateTree(directory, cut string) error {
-	err := filepath.WalkDir(directory, func(path string, entry fs.DirEntry, walkErr error) error {
+	documents, err := readInterfaceDocuments(directory)
+	if err != nil {
+		return err
+	}
+
+	err = filepath.WalkDir(directory, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return fmt.Errorf("walking cut: %w", walkErr)
 		}
@@ -69,7 +74,7 @@ func validateTree(directory, cut string) error {
 			return err
 		}
 
-		if !kept(relative) || removed(cut, relative, data) || entry.Type()&fs.ModeSymlink != 0 {
+		if !keptInCut(cut, relative, data, documents) || entry.Type()&fs.ModeSymlink != 0 {
 			return fmt.Errorf("%w: unexpected cut file %s", errRefused, relative)
 		}
 

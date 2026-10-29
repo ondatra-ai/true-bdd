@@ -1,3 +1,78 @@
+{{ if eq .FailedCheck.Check "phrase-mappings" -}}
+## Reference documents
+{{ range $key, $path := .DocPaths }}
+Read(`{{ $path }}`) — {{ $key }}
+{{ end }}{{ range .Subject.InterfaceDocuments }}
+Read(`{{ .Path }}`) — Public interface document
+{{ end }}
+## Scenario
+ID: {{.Subject.ID}}
+Service: {{.Subject.Service}}
+{{.Subject.FormatSteps}}
+## Failed check
+{{.FailedCheck.SectionPath}}
+{{.FailedCheck.Question}}
+{{.FailedCheck.Rationale}}
+**Actual:** {{.FailedCheck.ActualAnswer}}
+{{ range .FailedCheck.Context }}- {{.}}
+{{ end }}
+## Fix template
+{{.FailedCheck.FixPrompt}}
+## Clarification answers
+{{ range $key, $answer := .UserAnswers }}{{ $key }}: {{ $answer }}
+{{ end }}
+Without answers, ask the System Architect what each named step does. After answers,
+propose exact YAML for architecture.phrases, and for the Public interface document when the
+answers name an operation, file, log record or call it does not declare yet. Those are the
+only targets, and apply at the menu authorizes writing them.
+{{ if .Structured }}
+Return exactly one JSON object with fix_prompt (string) and questions (array of
+{id, question, context, options}). Exactly one carries content. When clarification is
+needed return fix_prompt: ""; when proposing return questions: [].
+{{ else }}
+Return QUESTIONS_START/QUESTIONS_END for questions, or FILE_START/FILE_END carrying
+the fix prompt at {{.ResultPath}}. Never both.
+{{ end }}
+{{ else -}}
+{{ if eq .FailedCheck.Check "public-interface" -}}
+## Reference documents
+{{ range $key, $path := .DocPaths }}
+Read(`{{ $path }}`) — {{ $key }}
+{{ end }}{{ range .Subject.InterfaceDocuments }}
+Read(`{{ .Path }}`) — Public interface document
+{{ end }}
+## Scenario
+ID: {{.Subject.ID}}
+Service: {{.Subject.Service}}
+Description: {{.Subject.Description}}
+{{.Subject.FormatSteps}}
+### Failed Check: {{.FailedCheck.SectionPath}}
+**Question:** {{.FailedCheck.Question}}
+**Why it matters:** {{.FailedCheck.Rationale}}
+**Actual:** {{.FailedCheck.ActualAnswer}}
+## Findings
+{{ range .FailedCheck.Context }}- {{.}}
+{{ end }}
+## Fix template
+{{.FailedCheck.FixPrompt}}
+## Clarification answers
+{{ range $key, $answer := .UserAnswers }}{{ $key }}: {{ $answer }}
+{{ end }}
+If no clarification answers have arrived, ask the System Architect what this service
+offers. Once answered, propose exact YAML for architecture.services[].public_interface,
+using only what the answer and Specification declare. Edit the architecture document's
+working copy, and an existing interface document's where the answers say it lacks what the
+service offers; never a Scenario or the product document. For ui, list elements with page
+or region, role and accessible name; for cli/http name an existing document. Do not choose the service's Public interface on the Architect's behalf.
+{{ if .Structured }}
+Return exactly one JSON object with fix_prompt (string) and questions (array of
+{id, question, context, options}). Exactly one carries content. When clarification is
+needed return fix_prompt: ""; when proposing return questions: [].
+{{ else }}
+Return QUESTIONS_START/QUESTIONS_END for questions, or FILE_START/FILE_END carrying
+the fix prompt at {{.ResultPath}}. Never both.
+{{ end }}
+{{ else -}}
 {{ if eq .FailedCheck.Check "" -}}
 # Generate Fix Prompt for a Registry Scenario
 
@@ -513,4 +588,6 @@ must be a single JSON object with both keys present:
 Exactly one of the two carries content. Do not emit any markers, and do not
 wrap the object in markdown fences. Reasoning before the object is ignored.
 {{ end }}
+{{ end -}}
+{{ end -}}
 {{ end -}}

@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"regexp"
 )
 
 // initBallastFields are the `system`/`init` frame's inventories of the
@@ -36,7 +37,8 @@ func sanitizeStream(stdout []byte) []byte {
 		}
 	}
 
-	return bytes.Join(lines, []byte("\n"))
+	return privateGoTelemetry.ReplaceAll(bytes.Join(lines, []byte("\n")),
+		[]byte("${1}{{GO_TELEMETRY_FILE}}"))
 }
 
 // sanitizeLine reports whether it rewrote the line, so an unparseable or
@@ -82,3 +84,6 @@ func sanitizeLine(line []byte) ([]byte, bool) {
 
 	return encoded, true
 }
+
+// Counter basenames are machine inventory, including @version text resembling mail.
+var privateGoTelemetry = regexp.MustCompile(`(/go/telemetry/local/)[^\s/\\"]+`)

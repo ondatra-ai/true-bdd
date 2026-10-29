@@ -9,8 +9,8 @@
 #
 #   yamale -s true-bdd/architecture_yaml-schema.yaml docs/architecture/architecture.yaml
 #
-# The engine decodes only `testing:`, `services[].{name,path,language,writable,libraries}`
-# and, for the `D: term-mappings` check, `terms:`; everything else here is
+# The engine decodes only `testing:`, `services[].{name,path,language,writable,libraries,public_interface}`
+# and, for closure checks, `terms:` and `phrases:`; everything else here is
 # spec a host writes for its own readers and for the checklists' prompts.
 # Which is exactly why it needs a schema: nothing else would notice a typo
 # in it.
@@ -20,7 +20,7 @@
 
 architecture: include('architecture')
 # No `vocabulary:` here: the product document holds it and its catalogue,
-# which `us refine` cites; this document only maps the words (`terms:`).
+# which `us refine` cites; this document maps words (`terms:`) and phrases (`phrases:`).
 
 ---
 # One `testing:` section for the whole repository, beside the services it
@@ -30,6 +30,7 @@ architecture:
   testing: include('testing')
   services: list(include('service'), min=1)
   terms: list(include('term_mapping'), required=False)
+  phrases: list(include('phrase_mapping'), required=False)
   prompt_data: map(include('prompt_data'), required=False)
 
 ---
@@ -51,8 +52,6 @@ testing:
   # directory every command runs in; without one they run from wherever
   # the engine was invoked.
   config: str(required=False)
-  # One argument for build tests verification; the loader enforces one placeholder.
-  prebuilt_engine_arg: str(required=False)
   commands: include('commands')
 
 ---
@@ -67,6 +66,7 @@ service:
   path: str()
   # Exact project-relative files or folders; no patterns or test overlap.
   writable: list(str(), required=False)
+  public_interface: include('public_interface', required=False)
   language: str()
   # Free-form classification (`cli`, `web:frontend`, `service`, …). Not
   # a closed vocabulary: nothing in the engine branches on it.
@@ -160,3 +160,38 @@ commands:
 prompt_data:
   rendering: str()
   fields: map(str())
+
+---
+# Optional for loading old architectures; public-interface checks every Scenario's service.
+public_interface:
+  # cli, http and ui are supported; library is excluded, other kinds await support.
+  kind: str()
+  document: str(required=False)
+  elements: list(include('ui_element'), required=False)
+
+---
+ui_element:
+  page: str(required=False)
+  region: str(required=False)
+  role: str()
+  name: str()
+
+---
+# One entry per verbatim Catalogue template and service; semantics checked by phrase-mappings.
+phrase_mapping:
+  template: str()
+  service: str()
+  # Operation form requires does and nonempty references; intent replaces both (UI only).
+  does: str(required=False)
+  references: list(include('interface_reference'), min=1, required=False)
+  intent: str(required=False)
+
+---
+# Exactly one selector, checked against the service's loaded Public interface.
+interface_reference:
+  command: str(required=False)
+  file: str(required=False)
+  log_record: str(required=False)
+  outgoing_call: str(required=False)
+  operation_id: str(required=False)
+  element: include('ui_element', required=False)

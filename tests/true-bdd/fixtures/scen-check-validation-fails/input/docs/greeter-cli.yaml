@@ -1,0 +1,23 @@
+opencli: 1.0.0
+info:
+  title: Greeter
+  version: 1.0.0
+commands:
+  greet:
+    parameters:
+    - name: name
+      in: argument
+      required: true
+      schema:
+        type: string
+    responses:
+      '0':
+        description: Greeting printed
+      '1':
+        description: Invalid input
+extensions:
+  files:
+    greeting-config:
+      path: greeter.yaml
+      format: YAML mapping with a greeting string
+      access: read

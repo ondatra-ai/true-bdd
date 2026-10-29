@@ -1,0 +1,27 @@
+# Proposed operation for the missing when phrase: greet. Ask the System Architect to confirm.
+architecture:
+  services:
+  - name: greeter
+    path: services/greeter
+    language: go
+    public_interface:
+      kind: cli
+      document: docs/greeter-cli.yaml
+  phrases:
+  - template: the greeting is configured
+    service: greeter
+    references:
+    - file: greeting-config
+    does: Write the expected greeting to the configuration file before running greet.
+  - template: the greeting is requested
+    service: greeter
+    references:
+    - command: greet
+    does: Run the declared greet command once with a fixed person value and no loud
+      flag.
+  - template: the greeting is logged
+    service: greeter
+    references:
+    - log_record: greeted
+    does: Observe the greeted log record and compare its greeting to the expected
+      text.

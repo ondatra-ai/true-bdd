@@ -1,0 +1,16 @@
+catalogue:
+  - template: 'the number is {value:number}'
+    block: given
+    means: The number supplies the input to double.
+    terms: [number]
+  - template: 'the number is doubled'
+    block: when
+    means: Read and compare the service process private, transient heap address for the supplied number, without running a command.
+    terms: [number]
+  - template: 'the result is {value:number}'
+    block: then
+    means: The result equals twice the supplied number.
+    terms: [number]
+glossary:
+  - term: number
+    means: An integer operand whose double is its sum with itself.

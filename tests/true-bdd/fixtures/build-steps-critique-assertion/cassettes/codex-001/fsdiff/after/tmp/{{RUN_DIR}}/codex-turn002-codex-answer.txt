@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-phraseed02cd0805872c6dc539a79f13857bcae5921c4b2ff964f4091e2a4a4e97246a-iter1-result.yaml ===
+applied: true
+target: "tests/calc/steps/phraseed02cd0805872c6dc539a79f13857bcae5921c4b2ff964f4091e2a4a4e97246a.go"
+summary: "Installed deliberate equality-fails assertion and created injected marker; isolated checks passed for equality, inequality, and invalid integers."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-phraseed02cd0805872c6dc539a79f13857bcae5921c4b2ff964f4091e2a4a4e97246a-iter1-result.yaml ===

@@ -73,7 +73,6 @@ type FixApplier struct {
 	// via UseWriteRoots(); empty keeps the tmp-only behaviour.
 	writeRoots    []string
 	writePatterns []string
-	writeGlobs    bool
 }
 
 // NewFixApplier creates a new fix applier with config-based template paths.
@@ -118,17 +117,10 @@ func (a *FixApplier) UseDeclaredWriteRoots(roots, patterns []string) {
 }
 
 // UseWriteRoots grants this applier write access to project trees outside
-// tmp — the `services/*` roots for build code, test roots for build tests.
+// tmp — the `services/*` roots for build code, test roots for build steps.
 // Without it, ExecutionMode (writer guard, codex sandbox) denies every write the system prompt instructs.
 func (a *FixApplier) UseWriteRoots(roots []string) {
 	a.writeRoots = roots
-	a.writeGlobs = false
-}
-
-// UseWriteGlobs preserves the host's configured patterns instead of interpreting bare paths as service directories.
-func (a *FixApplier) UseWriteGlobs(patterns []string) {
-	a.writeRoots = patterns
-	a.writeGlobs = true
 }
 
 // UseTestCommand supplies each writer its declared replay forms.
@@ -220,10 +212,24 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 // for. Applied is a POINTER: nil (no `applied:` key, as us refine's
 // story body emits) must stay distinguishable from explicit false, or every such turn misreports as a failed fix.
 type applyResultYAML struct {
-	Applied    *bool                      `yaml:"applied"`
-	Target     string                     `yaml:"target"`
-	Summary    string                     `yaml:"summary"`
-	Impossible []pkgerrors.RequiredChange `yaml:"impossible"`
+	InterfaceCannotServe *interfaceCannotServeYAML  `yaml:"interface_cannot_serve"`
+	Applied              *bool                      `yaml:"applied"`
+	Target               string                     `yaml:"target"`
+	Summary              string                     `yaml:"summary"`
+	Impossible           []pkgerrors.RequiredChange `yaml:"impossible"`
+}
+
+// interfaceCannotServeYAML is build steps' verdict that the declared Public
+// interface cannot set up or observe a phrase.
+type interfaceCannotServeYAML struct {
+	Phrase string `yaml:"phrase"`
+	Lacks  string `yaml:"lacks"`
+}
+
+// nonempty holds the verdict to a named phrase or lack: an empty
+// `interface_cannot_serve:` key stops nothing.
+func (v *interfaceCannotServeYAML) nonempty() bool {
+	return v != nil && (strings.TrimSpace(v.Phrase) != "" || strings.TrimSpace(v.Lacks) != "")
 }
 
 // checkFixApplied returns an error when the applier explicitly reported
@@ -236,6 +242,10 @@ func checkFixApplied(content string) error {
 		// scan for a literal `applied:` line: an unquoted `": "` in `target:` makes
 		// invalid YAML, and reading that as pass-through would turn a refusal into "Fix applied successfully".
 		return checkFixAppliedFallback(content)
+	}
+
+	if result.InterfaceCannotServe.nonempty() {
+		return pkgerrors.InterfaceCannotServe(result.InterfaceCannotServe.Phrase, result.InterfaceCannotServe.Lacks)
 	}
 
 	if len(result.Impossible) > 0 {
@@ -302,10 +312,6 @@ func (a *FixApplier) selectMode() ai.ExecutionMode {
 	}
 
 	if len(a.writeRoots) > 0 {
-		if a.writeGlobs {
-			return a.modeFactory.GetGlobEditMode(a.writeRoots)
-		}
-
 		return a.modeFactory.GetSourceEditMode(a.writeRoots)
 	}
 

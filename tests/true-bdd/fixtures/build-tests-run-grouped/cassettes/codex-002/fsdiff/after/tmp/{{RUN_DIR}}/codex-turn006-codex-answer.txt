@@ -1,5 +1,0 @@
-=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-001-double-iter2-result.yaml ===
-applied: true
-target: "tests/calc/steps/steps.go"
-summary: "Applied the exact replacement; replay blocked by sandbox access to bddgo."
-=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-001-double-iter2-result.yaml ===

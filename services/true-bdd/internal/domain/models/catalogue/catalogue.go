@@ -18,8 +18,9 @@ func (m Malformation) Line() string {
 
 // compiledEntry is one entry beside the expression its steps must match.
 type compiledEntry struct {
-	entry   Entry
-	pattern *regexp.Regexp
+	entry    Entry
+	pattern  *regexp.Regexp
+	captures *regexp.Regexp
 }
 
 // Catalogue is the compiled catalogue: every entry the grammar accepts,
@@ -56,7 +57,8 @@ func Compile(entries []Entry, roles []string) (*Catalogue, []Malformation) {
 		}
 
 		if reason == "" {
-			compiled.entries = append(compiled.entries, compiledEntry{entry: entry, pattern: pattern})
+			captures, _ := compilePattern(entry.Template, roles, true)
+			compiled.entries = append(compiled.entries, compiledEntry{entry: entry, pattern: pattern, captures: captures})
 
 			continue
 		}
@@ -83,4 +85,26 @@ func (c *Catalogue) Match(text string) []Entry {
 	}
 
 	return matches
+}
+
+// Pattern returns the compiled whole-text pattern of a declared template.
+func (c *Catalogue) Pattern(template string) string {
+	for _, entry := range c.entries {
+		if entry.entry.Template == template {
+			return entry.pattern.String()
+		}
+	}
+
+	return ""
+}
+
+// CapturingPattern uses the same grammar, capturing each slot in template order.
+func (c *Catalogue) CapturingPattern(template string) string {
+	for _, entry := range c.entries {
+		if entry.entry.Template == template {
+			return entry.captures.String()
+		}
+	}
+
+	return ""
 }

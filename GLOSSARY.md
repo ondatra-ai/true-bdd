@@ -13,7 +13,7 @@ The three documents a Host project's system is built from, and the only source o
 _Avoid_: spec files, sources, the docs
 
 **Public interface**:
-What a service offers to anything outside it, with its formats and the criteria it meets. The architecture document declares it for each service, in the standard form of the service's kind, and every rebuild keeps it; a build never chooses it. A step definition sets up and observes a service through it from outside, across a process boundary, sharing no code or package with the service; so a library alone is never a service the Registry tests.
+What a service offers to anything outside it, with its formats and the criteria it meets. The architecture document declares it for each service, in the standard form of the service's kind (`cli`, `http` or `ui`), and every rebuild keeps it; a build never chooses it. A step definition sets up and observes a service through it from outside, across a process boundary, sharing no code or package with the service; so a library alone is never a service the Registry tests.
 _Avoid_: external API, contract, surface
 
 **Persistent data model**:
@@ -49,7 +49,7 @@ One testable condition inside a refined user story, before it is merged into the
 _Avoid_: AC (in prose), criterion, condition
 
 **Item**:
-Whatever a single command walks one of at a time — a Story for `us refine`, an Acceptance Criterion for `us apply`, a Scenario for `scen check`, a Catalogue phrase a suite has no step definition for, for `build steps`.
+Whatever a single command walks one of at a time — a Story for `us refine`, an Acceptance Criterion for `us apply`, a Scenario for `scen check`, a Catalogue phrase that a go-test suite's service maps or its Scenarios use and that has no written step definition there, for `build steps`.
 _Avoid_: subject, entity, record
 
 **Prompt**:
@@ -73,8 +73,12 @@ One full traversal of every Cell in a run. A fix applied mid-walk restarts the t
 _Avoid_: pass, sweep, iteration
 
 **Step coverage**:
-The engine's own answer to which Scenarios have a step no definition binds: the Scenarios it examined, and the unbound steps among them. `examined` is the load-bearing half — an empty gap list says nothing about a Scenario nobody looked at. Resolved in-process by parsing each suite's `steps/` package, never by running a test; a step two definitions match is a refusal rather than a gap.
+The engine's own answer to which Scenarios have a step no definition binds: the Scenarios it examined, and the unbound steps among them. `examined` is the load-bearing half — an empty gap list says nothing about a Scenario nobody looked at. Answered by `build steps` in-process by parsing each suite's `steps/` package, never by running a test; a step two definitions match is a refusal rather than a gap.
 _Avoid_: coverage report, coverage output, step report, gap list
+
+**Red without the target**:
+The check of `build steps --fix` that runs a suite once in a copy of the Host project without any service's path, where every Scenario must fail at a step whose definition ran. A Scenario that passes there has a step definition doing the product's work.
+_Avoid_: expected failure, any failure counts
 
 **Catalogue**:
 The product document's list of step phrases: each the shape a step may take, the block it may sit in, what it means, and the terms that meaning relies on. Every step a model does not run must match exactly one phrase.
@@ -85,15 +89,15 @@ The architecture document's list of terms, each saying what the term is in the i
 _Avoid_: architecture glossary, dictionary
 
 **Phrase mapping**:
-The architecture document's list of Catalogue phrases, each saying which operation of the Public interface a step of that shape performs: the operation a `when` phrase calls, how a `given` phrase sets up state, or what a `then` phrase observes and compares with. Every phrase is mapped exactly once; the Word mapping still covers the terms.
+The architecture document's list of Catalogue phrases, each saying which operation of the Public interface a step of that shape performs: the operation a `when` phrase calls, how a `given` phrase sets up state, or what a `then` phrase observes and compares with. Each phrase is mapped once per service that uses it, in `architecture.phrases`; the Word mapping still covers the terms.
 _Avoid_: step mapping, operation map
 
 **Term document**:
-A specification document that holds the words the Catalogue relies on: the product document, with the Catalogue and the glossary, and the architecture document, with the Word mapping and the Phrase mapping. A fix for a failed Closure check edits a term document, never the Scenario.
+A specification document that holds the words the Catalogue relies on: the product document, with the Catalogue and the glossary, and the architecture document, with the Word mapping (`architecture.terms`) and the Phrase mapping (`architecture.phrases`). A fix for a failed Closure check edits a term document, never the Scenario.
 _Avoid_: vocabulary file, dictionary
 
 **Closure check**:
-One of the four Built-in checks that hold a Scenario's steps to its Term documents: every step matches one Catalogue phrase, the glossary defines and the Word mapping maps every term those phrases declare, and the phrases and the suite's step definitions correspond one to one. A Scenario no Story claims, or a Host project with no Catalogue, passes them unchecked.
+One of the six Built-in checks that hold a Scenario to its Term documents: its service declares a valid Public interface, every step matches one Catalogue phrase, every matched phrase has one valid Phrase mapping for its service, the glossary defines and the Word mapping maps every term those phrases declare, and the phrases and the suite's step definitions correspond one to one. The five checks about phrases and terms pass a Scenario no Story claims, or a Host project with no Catalogue, unchecked; the Public interface check always runs.
 _Avoid_: spec check, term check
 
 **Services**:
@@ -109,7 +113,7 @@ All tests failing in one `build code` discovery, walked as one Item with one pro
 _Avoid_: repair batch, failure queue
 
 **Writable paths**:
-The exact files or folders a service declares under `writable` in the architecture document, relative to the Host project root, with no patterns. Together with that service's `path` and the host's tmp they bound its build-code writer. A grant covering tests or step definitions, or lying outside the host, is refused before any test runner or AI turn. Here the tests are `tests/`, the Registry's suite directories, the in-host directory holding `testing.config`, and the in-host package directories named by the Go `testing.commands` (`./dir` or `./dir/...`, relative to the command's working directory). A broad `./...` names no separate test directory. Command package directories inside a service's own `path` remain service code; `_test.go` files there are writable by build code. The filename suffix alone never makes a file protected. The reserved `tests/`, Registry and configuration directories still take precedence. Protected tests and step definitions can only be read and run.
+The exact files or folders a service declares under `writable` in the architecture document, relative to the Host project root, with no patterns. Together with that service's `path` and the host's tmp they bound its build-code writer. A grant covering tests or step definitions, or lying outside the host, is refused before any test runner or AI turn. Here the tests are `tests/`, the Registry's suite directories, the in-host directory holding `testing.config`, and the in-host package directories named by the Go `testing.commands` (`./dir` or `./dir/...`, relative to the command's working directory). A broad `./...` names no separate test directory. Command package directories inside a service's own `path` remain service code; `_test.go` files there are writable by build code. The filename suffix alone never makes a file protected. The reserved `tests/`, Registry and configuration directories still take precedence. Protected tests and step definitions can only be read and run by build code. Build steps writes only those protected test directories and host tmp; grants overlapping service code or Specification documents are refused.
 _Avoid_: extra roots, writable globs, implicit manifest grants
 
 **Impossible repair**:

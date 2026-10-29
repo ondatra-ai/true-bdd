@@ -64,11 +64,12 @@ func RunScenCheck(
 		StoryID: "",
 		Fix:     fix,
 
-		LoadItems:   loadCheckScenarios(deps, requirementsFile, ids, fix, ledger),
-		PostFix:     scenCheckPostFix(deps, requirementsFile),
-		Finalize:    finalizeScenCheck,
-		GetSubject:  scenCheckSubject,
-		OnItemStart: scenCheckOnItemStart,
+		LoadItems:    loadCheckScenarios(deps, requirementsFile, ids, fix, ledger),
+		PostFix:      scenCheckPostFix(deps, requirementsFile),
+		PostCheckFix: scenCheckPostCheckFix(deps, requirementsFile),
+		Finalize:     finalizeScenCheck,
+		GetSubject:   scenCheckSubject,
+		OnItemStart:  scenCheckOnItemStart,
 
 		Checks:       checks.ForScenarios(),
 		Evaluator:    deps.ScenCheckEvaluator,
@@ -140,12 +141,22 @@ func seedFixDocuments(
 		return err
 	}
 
+	interfaceDocuments, err := seedInterfaceDocuments(deps.DocResolver, tmpDir)
+	if err != nil {
+		return err
+	}
+
 	registryDocument, err := seedFixDocument(docs.KeyScenariosYAML, requirementsFile, tmpDir)
 	if err != nil {
 		return err
 	}
 
 	err = ledger.keep(termDocuments...)
+	if err != nil {
+		return err
+	}
+
+	err = ledger.keep(interfaceDocuments...)
 	if err != nil {
 		return err
 	}
@@ -157,6 +168,7 @@ func seedFixDocuments(
 
 	for _, item := range items {
 		item.TermDocuments = termDocuments
+		item.InterfaceDocuments = interfaceDocuments
 		item.RegistryDocument = &registryDocument
 	}
 
@@ -344,4 +356,28 @@ func finalizeScenCheck(result *engine.Result[*template.ScenarioCheckData]) error
 	}
 
 	return ErrScenariosFailedCheck
+}
+
+func scenCheckPostCheckFix(
+	deps ScenCheckDeps,
+	requirementsFile string,
+) func(context.Context, *template.ScenarioCheckData, string) (*template.ScenarioCheckData, error) {
+	return func(ctx context.Context, item *template.ScenarioCheckData, check string) (*template.ScenarioCheckData, error) {
+		if check != checks.CheckPublicInterface && check != checks.CheckPhraseMappings {
+			return scenCheckPostFix(deps, requirementsFile)(ctx, item, "")
+		}
+
+		for _, document := range item.TermDocuments {
+			if document.Key != docs.KeyArchitectureYAML {
+				continue
+			}
+
+			err := commitInterfaceFix(document, item.InterfaceDocuments)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		return item, nil
+	}
 }

@@ -16,6 +16,10 @@ const (
 	// CheckTermMappings names the check that the architecture's word
 	// mapping maps, exactly once, every term those phrases declare.
 	CheckTermMappings = "term-mappings"
+	// CheckPhraseMappings names the phrase-to-interface check.
+	CheckPhraseMappings = "phrase-mappings"
+	// CheckPublicInterface names the service declaration check.
+	CheckPublicInterface = "public-interface"
 	// CheckStepDefinitions names the check that those phrases and the
 	// suite's step definitions correspond one to one.
 	CheckStepDefinitions = "step-definitions"
@@ -29,6 +33,8 @@ func ForScenarios() Set[*template.ScenarioCheckData] {
 		CheckStepPhrases:     stepPhrases(),
 		CheckDeclaredTerms:   declaredTerms(),
 		CheckTermMappings:    termMappings(),
+		CheckPhraseMappings:  phraseMappings(),
+		CheckPublicInterface: publicInterface(),
 		CheckStepDefinitions: stepDefinitions(),
 	}
 }

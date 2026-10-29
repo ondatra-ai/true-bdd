@@ -27,6 +27,12 @@ func runObservedIO(
 	state *State, command, barrier string, env []string, observe func(string, <-chan struct{}) error,
 ) error {
 	original := state.Harness
+
+	engineErr := original.RequireEngine()
+	if engineErr != nil {
+		return state.fail("%w", engineErr)
+	}
+
 	wrapper := filepath.Join(original.SessionRoot, state.Fixture.Name+"-engine")
 
 	err := disk.Write(wrapper, []byte(ioLaunchScript), disk.Private)

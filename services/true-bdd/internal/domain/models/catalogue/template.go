@@ -55,20 +55,25 @@ var slotName = regexp.MustCompile(`^[a-z_]+$`)
 // compiler turns one template into the regular expression a step's whole
 // text must match, refusing a template the grammar does not allow.
 type compiler struct {
-	src   string
-	pos   int
-	roles []string
-	names map[string]bool
-	expr  strings.Builder
+	capture bool
+	src     string
+	pos     int
+	roles   []string
+	names   map[string]bool
+	expr    strings.Builder
 }
 
 // compileTemplate compiles one template against the product's roles.
 func compileTemplate(template string, roles []string) (*regexp.Regexp, error) {
+	return compilePattern(template, roles, false)
+}
+
+func compilePattern(template string, roles []string, capture bool) (*regexp.Regexp, error) {
 	if strings.TrimSpace(template) == "" {
 		return nil, errEmptyTemplate
 	}
 
-	comp := &compiler{src: template, roles: roles, names: make(map[string]bool)}
+	comp := &compiler{capture: capture, src: template, roles: roles, names: make(map[string]bool)}
 	comp.expr.WriteString(`\A`)
 
 	for comp.pos < len(comp.src) {
@@ -162,6 +167,10 @@ func (c *compiler) slot() error {
 	expr, err := c.slotExpr(body, kind, end)
 	if err != nil {
 		return err
+	}
+
+	if c.capture {
+		expr = "(" + expr + ")"
 	}
 
 	c.expr.WriteString(expr)

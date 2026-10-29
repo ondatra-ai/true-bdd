@@ -80,17 +80,16 @@ between rebuilds, as long as both contracts are honoured.
 subcommand suite manages the spec lifecycle, starting from a Story the
 Product Owner writes directly, out of a discussion of a Feature, into
 `docs/product/stories/`; the `build` subcommands
-implement the regeneration loop — `build tests` derives executable
-tests from the registry, `build code` regenerates production code
-until those tests pass.
+implement the pipeline `us refine`, `us apply`, `build tests`, `build steps`, `build code`. `build tests` renders Registry tests, `build steps` checks their definitions, and `build code` repairs production code until the tests pass.
 
 ## Status
 
 | Subcommand | State |
 |---|---|
-| `us refine <id>` | **Working** — the pipeline's first step: iterates a hand-written story against the `us-refine` checklist; updates in place. When the product document declares a catalogue, every step of every acceptance criterion must match exactly one of its templates (`D: step-phrases`), checked before any model prompt; under `--fix` a step outside it gets a new catalogue entry in the product document, and the Story keeps its words. |
+| `us refine <id>` | **Working** — the pipeline's first step: walks a hand-written Story against `us-refine`, saving it in place when all Prompts pass. Every shipped Prompt has an `F:`; `--fix` proposes added or rewritten Acceptance Criteria or a Catalogue entry, applied only after the Product Owner answers apply at the menu. Stories still need 3 to 7 criteria. Each real failure mode needs its own criterion; a Story with none passes with a context line explaining why. When a Catalogue is declared, each step must match exactly one phrase in its declared block; `D: step-phrases` runs first and its fix adds a missing phrase to the product document while the Story keeps its words. A custom checklist missing an `F:` still refuses `--fix`. |
 | `us apply <id>` | **Working** — walks every AC in a refined story, validates against `us-apply`, and merges scenarios into the central `docs/scenarios.yaml` registry. |
-| `build tests` | **Working** — walks every scenario in the registry against the `build-tests` checklist and exits non-zero if any scenario is not executable: every one of its steps must bind to a step definition in the suite that owns it. When the product document declares a catalogue, every registry step, whether a Story claims its scenario or not, must first match exactly one of its templates, as `D: step-phrases` holds them, or the run is refused before it writes a file or spends an AI turn, naming each step outside it; a host with no catalogue walks as before. With `--fix`, failed cells drive a Claude-mediated authoring loop that writes the missing step definition; when the product document declares a catalogue, that loop is handed each unbound step's phrase, the glossary meaning of the words it relies on and their word mapping, so the definition observes what the mapping says. After each definition fix, it runs the bound Scenarios in every changed step package, including Scenarios that already bound every step, through `architecture.testing.commands.replay` with a Go test name filter. A selected Scenario must pass in its owning Go package; a same-named test elsewhere cannot satisfy it. A Scenario that becomes unbound remains a failure. Runtime failures feed the step-authoring loop; a definition still failing at `config.max_apply_attempts` ends non-zero, naming the Scenario and step. `BUILD TESTS COMPLETE` follows successful execution and generated-file verification. The registry itself is never modified. |
+| `build tests` | **Working** — deterministically renders Registry test files. Without `--fix`, stale files refuse startup; `--fix` writes them. Registry, path, renderer, step-shape and Catalogue phrase refusals precede rendering. No AI turn, fix menu or test runner. |
+| `build steps` | Lists missing phrase definitions and checks Step coverage in-process. `--fix` writes every skeleton first, then walks each phrase through the Fix loop to write only its body and shared state. After each apply it checks compilation, one binding and a written body, and, once those pass, separately critiques the definition's body against its phrase and mapping; after all Items it checks whole-suite coverage, lists every generated test and requires every Scenario to fail at an executed step in a copy without the service paths. Green Scenarios return their written Items to the bounded Fix loop; bring-up failures, skipped tests and missing results fail the check. Writes only protected test paths: a codex writer through its sandbox, a Claude writer through the `claude-guard` hook, as `build code`'s writer is. An interface that cannot serve a phrase stops distinctly; incomplete walks exit non-zero. Success prints `BUILD STEPS COMPLETE`. |
 | `build code` | **Working** — runs the architecture's declared replay command and walks the whole failing set as one Item. An engine-owned `D:` verdict needs no validation AI turn. With `--fix`, one plan and one writer repair the set; the writer receives Specification context, service paths and exact `writable` paths, and codex or Claude whole-suite and selected replay forms. After every completed apply the engine reruns the remaining set in one start; passing members leave and missing results stay failing. A successful writer response missing its confirmation warns once with the result path and follows the same rerun as `applied: false`, keeping files and consuming the same allowance. The terminal apply is rerun but still stops at the existing bound even if it passes. Started codex writers that exit non-zero or answer empty, and Claude writers that exit non-zero, return an error result or answer empty, follow the same recovery without a stall watch. Start failures and engine refusals before spawning remain fatal, as do other roles' failures. The writer ends its final message with the confirmation block; the engine saves the block at the heading's result path, which the writer never writes. Fresh discovery on each outer walk catches regressions. Tests and the Registry remain unchanged. |
 | `scen check [id...]` | **Working** — walks registry scenarios against the `scen-check` checklist, one cell per (scenario, prompt): each prompt reads one scenario's own fields — description, service, path, lineage, steps — and rules on that scenario alone, so no prompt can ask a cross-registry question. Exits non-zero when any scenario fails, so it can gate a change. With no argument every scenario is walked; ids narrow the walk to those scenarios, in ascending id order. |
 
@@ -104,7 +103,7 @@ it in the architecture document, never in the Scenario; a fix for a
 failed model question rewrites the Scenario's own registry entry, or the
 meaning of the catalogue phrase it uses (see "The step-phrase catalogue"
 below).
-`build tests` and `scen check` also take
+`build tests`, `build steps` and `scen check` also take
 `--requirements <path>` and `build code` takes `--architecture <path>`
 to override the configured spec locations (`documents.scenarios_yaml`
 and `documents.architecture_yaml` in `true-bdd.yaml`).
@@ -183,7 +182,8 @@ clean environment:
 ```bash
 env -u CLAUDECODE ./bin/true-bdd us refine scen-check --fix
 env -u CLAUDECODE ./bin/true-bdd us apply  scen-check --fix
-env -u CLAUDECODE ./bin/true-bdd build tests --fix
+./bin/true-bdd build tests --fix
+env -u CLAUDECODE ./bin/true-bdd build steps --fix
 env -u CLAUDECODE ./bin/true-bdd build code  --fix
 env -u CLAUDECODE ./bin/true-bdd scen check scen-check-003-unknown-id-refused
 ```
@@ -201,9 +201,9 @@ Specification documents or schemas and detects no test framework.
 
 The binary carries copies only for `init`. Commands read the project's files
 exclusively, with no embedded runtime fallback. Before any test run, Item or AI
-turn, a command loads its configuration and checklist and parses its system and
-user validation templates; `--fix` also checks its fix-generator and fix-applier
-templates. A missing file stops startup, naming the file and `true-bdd init`.
+turn, checklist commands load their configuration and checklist. Commands running AI parse their system and
+user validation templates; their `--fix` runs also check fix-generator and fix-applier
+templates. `build tests` needs no checklist or prompt templates; `build steps --fix` reads its checklist, body-writing templates and `build_steps_critique` / `build_steps_critique_system` templates. A missing file stops startup, naming the file and `true-bdd init`.
 An invalid file stops startup with its name, parse error and advice to fix the
 file; `init` preserves existing files. `version` and `init` need none of these files.
 
@@ -211,15 +211,14 @@ file; `init` preserves existing files. `version` and `init` need none of these f
 
 - `true-bdd.yaml` — the model tiers (below), filesystem paths under
   `paths:` (`stories_dir`, `checklists_dir`, `tmp_dir`,
-  `tmp_glob`, and the `test_write_globs` roots `build tests --fix` may
-  author into, `./tests/**` and `./services/**` when it names none), per-command prompt-template paths, and a `documents:`
+  `tmp_glob`), per-command prompt-template paths, and a `documents:`
   map naming the files a check may cite (`product`, `architecture_yaml`,
   `scenarios_yaml` — the scenario registry). Each check in a checklist
   lists the document keys it needs under `docs:`, and the engine points
   the prompt at those files.
-- `checklists/` — one checklist per command, named by hyphenating the
-  command path (`us refine` → `us-refine.yaml`, `build tests` →
-  `build-tests.yaml`, …). Each prompt is a `Q:` a model answers or a
+- `checklists/` — one checklist per checklist command, named by hyphenating the
+  command path (`us refine` → `us-refine.yaml`, `build steps` →
+  `build-steps.yaml`, …). Each prompt is a `Q:` a model answers or a
   `D:` the engine answers itself (below).
 - `*-schema.yaml` — Yamale schemas pinning the shape of the spec
   documents (`product.yaml`, the scenario registry, `architecture.yaml`);
@@ -255,10 +254,10 @@ model's shape (pass or fail plus context lines), and under `--fix` its
 carrying both `D:` and `Q:` or neither, a `D:` naming a check the
 command does not hold, a `with:` parameter the check does not read, and
 `model:` on a `D:` prompt, since no model answers it, and a `D:` whose
-`docs:` does not list a document its check reads. `scen check` holds five
+`docs:` does not list a document its check reads. `scen check` holds seven
 checks, `given-when-then`, `step-phrases`, `declared-terms`,
-`term-mappings` and `step-definitions` (below); the shipped `scen-check`
-checklist walks the last four.
+`term-mappings`, `phrase-mappings`, `public-interface` and `step-definitions` (below); the shipped `scen-check`
+checklist walks the last six, its six Closure checks.
 
 ### Parking a prompt
 
@@ -310,13 +309,7 @@ its Scenario with a context line naming the step and the templates; a
 template the grammar refuses fails every checked Scenario. Steps opening
 with `llm:` or `judge:` are exempt, since a model runs them.
 
-`build tests --fix` hands whoever writes a step definition the phrase each
-unbound step matches, with the glossary meaning and the word mapping of
-every term that phrase declares, and nothing else of the catalogue: not
-this grammar. A host whose definitions must follow it states it as a word
-its phrases declare. TrueBDD's own product document does: its glossary
-defines `template`, its architecture document maps it, and every phrase
-whose template holds a slot or brackets declares it.
+`build steps` lists missing definitions for phrases mapped to the suite's service or used by its Scenarios, including mapped unused phrases. It checks every concrete Registry step separately; a definition covering only part of a phrase still fails when a Scenario uses an uncovered value. Without `--fix`, it reads definitions without compiling or running the suite. With `--fix`, it writes all skeletons before AI, then writes each body through the Fix loop and checks compilation, binding and completion after each apply. Once an apply's compilation, binding and body checks pass, a separate AI critique turn reads the applied definition's body (the engine's registration, pattern and signature are not judged) with the whole phrase meaning, Phrase mapping entry, term glossary entries and Word mappings, Public interface declaration and document, and every suite Scenario using the phrase. It checks the mapping by block (when calls its named operation, given sets up the stated state, then observes and compares as stated), assertions against the phrase meaning, and that the definition does not compute what it asserts. Failures name the definition and discrepancy and return to the same Fix loop within its configured attempts. The turn uses build-steps checklist engine.critique_model, falling back to engine.default_prompt_model, and states no time, turn, token or cost budget. After all bodies, whole-suite coverage and a generated-test listing pass, then it runs the suite once in a Host project copy without any service path. Every Scenario must fail at an executed step definition; compilation, bring-up, skipped and missing results fail the check and name the Scenario. Green Scenarios return all Items written in this run for their phrases to the Fix loop together, with the finding and existing attempt counts. If none of those Items can repair a green Scenario, or attempts are exhausted, the command fails distinctly. The original Host project is preserved. The writer changes only protected tests and shared state; a declared interface that cannot serve a phrase stops with its missing setup or observation.
 
 `D: declared-terms` (also `docs: [product]`) holds the words those
 meanings rely on to the product document's `glossary:`, each entry a
@@ -347,9 +340,23 @@ Every term must be mapped exactly once: an unmapped term fails the
 Scenario naming the term, and a term mapped twice fails it naming the
 count.
 
+`D: phrase-mappings` (`docs: [product, architecture_yaml]`) holds each matched phrase to `architecture.phrases`, one entry per verbatim Catalogue template and service. An operation entry has `references` and a `does` sentence saying what the step does by block: a `when` calls an operation, a `given` sets up state, and a `then` observes and compares. Each reference has exactly one selector: `command` is the CLI command path (the exact `commands` key), `file`, `log_record` and `outgoing_call` name keys under the CLI document's `extensions.files`, `extensions.log_records` and `extensions.outgoing_calls`; `operation_id` names an HTTP `operationId`; `element` names a UI element by page or region, role and accessible `name`.
+
+```yaml
+architecture:
+  phrases:
+    - template: 'the number is halved'
+      service: calculator
+      references:
+        - command: number halve
+      does: Call number halve once and keep its exit code and standard output.
+```
+
+An entry can instead carry `intent`, a sentence replacing `does` and `references`. The check accepts intent only for UI services until `llm:` support lands. Missing or duplicate entries, empty operation entries and references absent from the service's Public interface fail the claimed Scenario, naming its phrase and reference, without an AI turn. The check uses the same Catalogue and Story exemptions as the term checks. Its `F:` first asks the System Architect what the step does, proposes the entry at the fix menu, with any declaration the answers name that the service's Public interface document lacks, and after apply writes the architecture document and that document. Each fix to one of these two checks works on run working copies of the architecture and of every cli or http document it names; a changed document must still parse in the form of its kind, and is committed before the architecture. The architecture stores no Go identifier or link to a step definition. The Word mapping continues to map terms; `build steps --fix` embeds Phrase mappings in each Item’s body-writing context.
+
 `D: step-definitions` (`docs: [product]`) holds the catalogue to the
 suite's step definitions, the `steps/` package beside the Scenario's test
-file, read without running it as `build tests` reads it. Over the steps
+file, read without running it as `build steps` reads it. Over the steps
 of every Scenario a Story claims in that suite, whatever ids the walk
 selected, the two must correspond one to one: a template whose steps bind
 two definitions, a definition two templates reach, and a step two
@@ -373,7 +380,7 @@ parses: the Scenario, the Story and the step definitions are never
 edited.
 
 What no check can settle, a model answers. The shipped `scen-check`
-checklist follows the four closure checks with two `Q:` prompts that
+checklist follows the six closure checks with two `Q:` prompts that
 read the product and the architecture document: whether the meaning of
 each phrase a Scenario's steps use says what is set up or observed (a
 pattern slot's phrase must say which output its pattern is held
@@ -419,7 +426,7 @@ provider-qualified model ids survive intact. Supported CLIs are
 `claude` and `codex`; each must be on `$PATH`.
 
 Every command that runs AI turns (`us refine`, `us apply`, `scen check`,
-`build tests`, `build code`) accepts repeated `--model <tier>=<cli>:<model>`
+`build steps`, `build code`) accepts repeated `--model <tier>=<cli>:<model>`
 flags. Each replaces only that declared tier's binding for this run, after
 validating the loaded config. An undeclared tier, malformed reference,
 unknown CLI or repeated tier refuses startup with exit 1 before any turn.
@@ -434,9 +441,10 @@ true-bdd build code --fix --model coder=claude:claude-sonnet-5-5
 ```
 
 The drill accepts repeated `--model <tier>=<cli>:<model>` pairs after
-`build code --fix` or `build tests --fix`, records them in the run's
+`build steps --fix` or `build code --fix`, records them in the run's
 arguments and forwards their values unchanged through typed options.
-It still refuses other extra arguments; the engine validates the values.
+It refuses other extra arguments, and any after `build tests --fix`; the engine validates the values.
+Deterministic `build tests` dispatches no AI turn and has no `--model` flag.
 
 A checklist picks a tier per role, and any single prompt overrides it:
 
@@ -445,6 +453,7 @@ engine:
   prompt_model: xhigh   # the validation turn
   fix_model: high       # failure → fix prompt
   apply_model: coder    # writes the file
+  critique_model: high  # build-steps only: reviews every applied definition
 
 sections:
   - id: test-passes
@@ -524,7 +533,7 @@ The host project's documents live under `docs/`:
   a slug (`scen-check`, `96.2`), and a story may carry a `feature:` label
   that `us refine` keeps through every rewrite.
 - `docs/scenarios.yaml` — the scenario registry `us apply` merges into,
-  `build tests` walks, and the test suites RUN: each scenario is a test,
+  `build tests` renders, and the test suites RUN: each scenario is a test,
   its steps bound to code by the suite that owns it. A scenario is keyed
   by its lineage, `<story-id>-<ac-id>`, and the author writes each
   acceptance criterion's id as `<NNN>-<slug>` (ADR 0014), so the key
@@ -549,7 +558,6 @@ AI-dependency mode:
 architecture:
   testing:
     framework: go-test            # go-test | jest | playwright
-    prebuilt_engine_arg: "-engine-bin={engine_bin}" # optional; runner must consume it
     commands:
       record: "go test -tags bdd -json -count=1 ./tests/true-bdd/ -mode=services:record,tests:record"
       replay: "go test -tags bdd -json -count=1 ./tests/true-bdd/ -mode=services:replay,tests:replay"
@@ -559,6 +567,42 @@ architecture:
       path: services/true-bdd
       language: go
 ```
+
+Each service may declare `public_interface`. It is optional in the schema so an older architecture loads, but `scen check`'s `D: public-interface` (`docs: [architecture_yaml]`) fails every Scenario whose service has no valid declaration, naming the service without an AI turn. This check runs even without a Catalogue or Story. Its `F:` asks the System Architect what the service offers, then writes the architecture document, and an existing document it names where the answers say that document lacks what the service offers, never the Scenario.
+
+```yaml
+public_interface:
+  kind: cli
+  document: docs/greeter-cli.yaml
+```
+
+`document` is relative to the Host project root. CLI documents use this supported OpenCLI-like draft shape (YAML or JSON): `opencli` and `info: {title, version}` identify the document; `commands` maps command names to `parameters` (with `name` and optional `in: argument|flag|option`, `schema: {type: ...}`, `description` and `required`) and `responses` (exit-code keys mapped to objects with optional `description` and `content`). This follows the [OpenCLI reference](https://github.com/nrranjithnr/open-cli-specification/blob/main/opencli.spec.json); the referenced project currently advertises `opencli: "1.0.0"`. Every command declares responses for its exit codes. Optional `extensions` holds maps keyed by stable names the Phrase mapping can reference:
+
+```yaml
+opencli: "1.0.0"
+info: {title: Greeter, version: "1.0.0"}
+commands:
+  greet:
+    parameters:
+      - {name: person, in: argument, required: true, schema: {type: string}}
+      - {name: loud, in: flag, schema: {type: boolean}}
+    responses:
+      '0': {description: Greeting printed}
+      '1': {description: Invalid input}
+extensions:
+  files:
+    greeting-config: {path: greeter.yaml, format: YAML mapping, access: read}
+  log_records:
+    greeted: {message: Greeting printed, format: logfmt with person field}
+  outgoing_calls:
+    notify: {command: notifier, arguments: [--person, "{person}"]}
+```
+
+File `access` is `read`, `write` or `read-write`; each file has a path and format, each log record a message and format, and each outgoing call a command and optional argument list. `kind: http` names an OpenAPI 3 document instead. `kind: ui` has inline `elements`, each with `role`, accessible `name` and a `page` or `region` (both may be present); the same role and name must be unique within that scope. CLI/HTTP declarations have no elements; UI declarations have no document. There is no library kind; another process-boundary kind is reported by name as not supported yet.
+
+TrueBDD declares its own Public interface the same way: the `true-bdd` service names `docs/architecture/true-bdd-cli.yaml` (`kind: cli`), and `architecture.phrases` maps every phrase of its Catalogue that a Scenario uses to that document. The document lists every command with its arguments, options and exit codes, the hidden `claude-guard` hook, and, under `extensions`, the files the engine reads and writes in a Host project, the log records its Scenarios observe and its outgoing calls to `claude`, `codex`, the declared suite command and the Go toolchain. A statement the architecture already holds keeps that home, and the document points to it: the log vocabulary under `architecture.terms`, the IO contract under `patterns.owned_io`, the AI CLIs' invocation contracts under the service's `dependencies`, and the templates' inputs under `prompt_data`. The drill keeps the document in every cut because the declaration names it.
+
+Named documents are part of the Specification. Commands reading the architecture load and parse them at start, refusing a missing or invalid document with its filename and error before any test run, Item or AI turn. HTTP documents and their local `$ref` documents are validated with the architecture's exact-version OpenAPI library; references outside the Host project or to network URLs are refused. TrueBDD's own declaration names `docs/architecture/true-bdd-cli.yaml`, described above.
 
 The rules, all enforced at startup rather than discovered mid-run:
 
@@ -574,7 +618,6 @@ The rules, all enforced at startup rather than discovered mid-run:
 - **Quoting is honoured, nothing else.** `-run '^TestGreen$'` survives
   as one argument; there is no expansion, substitution or piping. A
   command needing a shell belongs in a script the spec then names.
-- **One bounded exception: `prebuilt_engine_arg`.** This optional field is one argv element containing `{engine_bin}` exactly once. Only `build tests --fix` verification appends it, replacing that placeholder with the running binary's absolute, symlink-resolved path. Spaces and quotes in that path stay in the same argument. Every command that loads the architecture, including `build code`, refuses empty declarations or zero or repeated placeholders at startup, even when it never uses the argument. The replay entry point must consume the argument and skip building its service; this repository's harness does so with `-engine-bin`. Native Jest or Playwright runners need a wrapper, otherwise omit the field. `commands.*` stay literal, hosts without the field keep their existing verification, and `build code` runs its declared command unchanged.
 - **The working directory** is the one holding the suite's `config:`
   file — which is what lets `npx` resolve a suite's own local install.
   A suite that declares no `config:` inherits the directory `true-bdd`
@@ -702,6 +745,6 @@ The plan first seeks a permitted solution. If no solution exists, it returns `im
 
 ## Fix approval
 
-Run `true-bdd build code --fix` to review proposed fixes. Every fix is applied only after a person answers apply at its fix menu. `build tests`, `us refine`, `us apply` and `scen check` use the same menu. The engine offers no way to approve fixes in advance.
+Run `true-bdd build code --fix` to review proposed fixes. Every fix is applied only after a person answers apply at its fix menu. `us refine`, `us apply`, `scen check` and `build steps` use the same menu. The engine offers no way to approve fixes in advance.
 
 A clarifying question at end of stdin prints its question and suggested answers and stops with an error saying a person must answer. End of stdin at a fix menu stops with an error saying a person must choose whether to apply the fix. These stops exit non-zero without a COMPLETE banner. Answers are read from stdin, including pipes used by tests and the drill, with no terminal check. A final non-empty answer without a newline is accepted; a blank line keeps its interactive meaning.

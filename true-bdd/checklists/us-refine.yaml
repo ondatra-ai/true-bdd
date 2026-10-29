@@ -7,7 +7,7 @@
 # - Fibonacci Estimation: https://www.mountaingoatsoftware.com/blog/why-the-fibonacci-sequence-works-well-for-estimating
 
 version: "1.0"
-last_updated: "2026-04-18"
+last_updated: "2026-10-28"
 
 sections:
   - id: acceptance_criteria
@@ -27,6 +27,19 @@ sections:
         docs:
           - product
           - architecture_yaml
+        F: |
+          Propose enough distinct, behaviour-derived ACs to bring a Story with
+          fewer than 3 ACs into the 3 to 7 range. For more than 7, propose a
+          coherent split or consolidation for the Product Owner to review;
+          never discard required behaviour just to meet the count.
+          Give each added or rewritten AC an id, a one-sentence must/should
+          description and concrete Given/When/Then steps. Preserve unaffected
+          ACs and Story fields. When a Catalogue is declared, use only its
+          phrases with filled slots in their declared blocks, including any
+          phrases already added by the step-phrases fix; a missing phrase
+          must be proposed through that fix, never invented in a Story step.
+          Present the proposal at the fix menu; apply it only after the
+          Product Owner answers apply.
 
       - Q: |
           For every AC, decide whether its description field follows the
@@ -213,6 +226,19 @@ sections:
         docs:
           - product
           - architecture_yaml
+        F: |
+          Propose rewrites of the ACs that describe implementation so their
+          descriptions and steps state only behaviour observable by the Story's
+          role. Derive the input, action and expected result from the Story and
+          product document; preserve the behaviour and unaffected ACs.
+          Give each added or rewritten AC an id, a one-sentence must/should
+          description and concrete Given/When/Then steps. Preserve unaffected
+          ACs and Story fields. When a Catalogue is declared, use only its
+          phrases with filled slots in their declared blocks, including any
+          phrases already added by the step-phrases fix; a missing phrase
+          must be proposed through that fix, never invented in a Story step.
+          Present the proposal at the fix menu; apply it only after the
+          Product Owner answers apply.
 
       - Q: |
           For every AC, decide whether it describes the happy path (the primary
@@ -229,23 +255,56 @@ sections:
         docs:
           - product
           - architecture_yaml
+        F: |
+          Propose a new AC for the Story's primary success path, or rewrite an
+          existing AC that obscures it. Give an explicit successful input,
+          action and expected outcome derived from the Story and product
+          document. Preserve the real failure cases already covered.
+          Give each added or rewritten AC an id, a one-sentence must/should
+          description and concrete Given/When/Then steps. Preserve unaffected
+          ACs and Story fields. When a Catalogue is declared, use only its
+          phrases with filled slots in their declared blocks, including any
+          phrases already added by the step-phrases fix; a missing phrase
+          must be proposed through that fix, never invented in a Story step.
+          Present the proposal at the fix menu; apply it only after the
+          Product Owner answers apply.
 
       - Q: |
-          For every AC, decide whether it describes an error scenario (failure
-          cases such as permission denied, not found, validation error, timeout,
-          etc.).
+          Identify every failure mode the Story's behaviour meets, using the
+          Story, product document and architecture to establish its scope.
+          For every AC, decide whether it describes an error scenario for
+          one of those real failure modes.
 
-          Pass when at least 2 ACs describe error scenarios.
-          Fail when fewer than 2 ACs describe error scenarios.
+          Pass when every failure mode the Story's behaviour meets has its
+          own AC. Fail when any such failure mode lacks its own AC.
+          A Story with no failure mode of its own passes with a context line
+          saying why, for example that its input errors belong to another
+          Story. Do not invent errors or copy another Story's error ACs.
 
-          Context: emit one line per AC, then a totals line.
-            - "<AC-id>: error scenario — '<short summary>'"
-            - "<AC-id>: not error scenario"
-            - "Total error scenario ACs: <N> (need ≥2)"
-        rationale: "Missing error handling leads to production issues."
+          Context: emit one line per failure mode, naming its AC or gap.
+            - "Failure mode: <mode> — covered by <AC-id>"
+            - "Failure mode: <mode> — missing AC"
+          When there are none, emit:
+            - "No failure mode of its own: <reason>"
+        rationale: "Every real failure mode needs coverage; a Story with none must not invent error scenarios to meet a count."
         docs:
           - product
           - architecture_yaml
+        F: |
+          Propose one AC for each uncovered real failure mode identified in
+          the context, with the actual trigger and observable error outcome
+          supported by the Story and its reference documents. Preserve existing
+          coverage. Do not invent failures, import errors owned by another
+          Story, duplicate a failure to meet a count, or add a Story field.
+          A Story with no failure mode of its own needs no error AC.
+          Give each added or rewritten AC an id, a one-sentence must/should
+          description and concrete Given/When/Then steps. Preserve unaffected
+          ACs and Story fields. When a Catalogue is declared, use only its
+          phrases with filled slots in their declared blocks, including any
+          phrases already added by the step-phrases fix; a missing phrase
+          must be proposed through that fix, never invented in a Story step.
+          Present the proposal at the fix menu; apply it only after the
+          Product Owner answers apply.
 
       - Q: |
           For every AC, decide whether it includes specific measurable criteria
@@ -263,6 +322,20 @@ sections:
         docs:
           - product
           - architecture_yaml
+        F: |
+          Propose rewrites of enough ACs to make at least half measurable,
+          using exact values, messages, counts or named fields supported by
+          the Story and product document. Put the measurable observation in
+          the Then steps as well as the description. Ask when a required
+          threshold is unspecified; never invent a product requirement.
+          Give each added or rewritten AC an id, a one-sentence must/should
+          description and concrete Given/When/Then steps. Preserve unaffected
+          ACs and Story fields. When a Catalogue is declared, use only its
+          phrases with filled slots in their declared blocks, including any
+          phrases already added by the step-phrases fix; a missing phrase
+          must be proposed through that fix, never invented in a Story step.
+          Present the proposal at the fix menu; apply it only after the
+          Product Owner answers apply.
 
       - Q: |
           For every AC, decide whether it has a binary pass/fail outcome —
@@ -280,6 +353,20 @@ sections:
         docs:
           - product
           - architecture_yaml
+        F: |
+          Propose rewrites of every subjective AC so its description and
+          Then steps state an unambiguous pass/fail observation, with an
+          objective expected value or comparison from the product document.
+          Preserve the Story's intended behaviour; ask for an oracle when the
+          documents do not define one instead of inventing it.
+          Give each added or rewritten AC an id, a one-sentence must/should
+          description and concrete Given/When/Then steps. Preserve unaffected
+          ACs and Story fields. When a Catalogue is declared, use only its
+          phrases with filled slots in their declared blocks, including any
+          phrases already added by the step-phrases fix; a missing phrase
+          must be proposed through that fix, never invented in a Story step.
+          Present the proposal at the fix menu; apply it only after the
+          Product Owner answers apply.
 
       - Q: |
           For every AC, attempt to draft a runnable test sketch that would
@@ -331,6 +418,21 @@ sections:
         docs:
           - product
           - architecture_yaml
+        F: |
+          Propose rewrites of the non-convertible ACs until at least 80% have
+          explicit inputs, actions and objective assertions. Show a runnable
+          sketch for each rewrite using only the framework and helpers
+          declared in the architecture document. Repair the Story's criteria
+          and steps, not test code or the architecture; never invent helpers
+          or an oracle absent from the Specification.
+          Give each added or rewritten AC an id, a one-sentence must/should
+          description and concrete Given/When/Then steps. Preserve unaffected
+          ACs and Story fields. When a Catalogue is declared, use only its
+          phrases with filled slots in their declared blocks, including any
+          phrases already added by the step-phrases fix; a missing phrase
+          must be proposed through that fix, never invented in a Story step.
+          Present the proposal at the fix menu; apply it only after the
+          Product Owner answers apply.
 
   # Appended, not inserted: `D:` prompts walk first wherever they sit, but
   # a Cell's artifacts keep its file position, so a prompt above the `Q:`s

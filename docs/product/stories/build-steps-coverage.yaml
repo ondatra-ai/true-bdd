@@ -1,0 +1,84 @@
+story:
+  id: build-steps-coverage
+  feature: build-steps
+  title: Resolve step definitions in-process
+  as_a: System Architect
+  i_want: build steps to check all definitions without AI or a test run
+  so_that: missing and ambiguous bindings cannot pass silently
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 001-covered-in-process
+    description: build steps resolves every Scenario in-process without a coverage command, test run or AI turn
+    steps:
+    - given:
+      - the "build-tests-coverage-in-process" project tree
+    - when:
+      - the System Architect runs "build steps"
+    - then:
+      - the command exits with code 0
+      - stdout matches Step coverage passed
+      - and: stdout matches examined=2
+      - and: the engine dispatched no AI turns
+      - and: the engine spawned no test runners
+      - and: no file outside "tmp" changed
+  - id: 002-unfoldable-pattern-refused
+    description: A step pattern the engine cannot resolve to a constant must be refused by name, never skipped, because a skipped pattern reports a bound step as
+      unbound
+    steps:
+    - given:
+      - the "build-tests-coverage-computed-pattern" project tree
+    - when:
+      - the System Architect runs "build steps"
+    - then:
+      - the command exits with code 1
+      - stdout matches level=ERROR msg="Refusing to start" command="build steps"
+      - and: stdout matches step pattern is not a constant expression
+      - and: stdout matches tests/mcp/steps/steps\.go
+      - but: no file outside "tmp" changed
+      - and: the engine dispatched no AI turns
+  - id: 003-double-bound-step-refused
+    description: A step matched by two definitions must be refused rather than reported as a gap, because which one runs depends on registration order and a third
+      would paper over it
+    steps:
+    - given:
+      - the "build-tests-coverage-ambiguous-step" project tree
+    - when:
+      - the System Architect runs "build steps"
+    - then:
+      - the command exits with code 1
+      - stdout matches level=ERROR msg="Refusing to start" command="build steps"
+      - and: stdout matches step matches more than one definition
+      - but: no file outside "tmp" changed
+      - and: the engine dispatched no AI turns
+  - id: 004-invalid-step-pattern-refused
+    description: A step definition whose pattern is not a valid regular expression must refuse `build steps`, naming its file, line and column, before any generated
+      test file is compared with the Registry
+    steps:
+    - given:
+      - the "build-tests-invalid-step-pattern" project tree
+    - when:
+      - the System Architect runs "build steps"
+    - then:
+      - the command exits with code 1
+      - stdout matches level=ERROR msg="Refusing to start" command="build steps"
+      - and: 'stdout matches tests/mcp/steps/steps\.go:23:13: step pattern is not a valid regexp'
+      - and: stdout matches missing closing \)
+      - but: stdout does not match no generated test file
+      - and: no file outside "tmp" changed
+      - and: the engine dispatched no AI turns
+  - id: 005-step-file-not-go-refused
+    description: A step definition file that is not valid Go must refuse `build steps`, naming the file, line and column where Go stops reading it, before any generated
+      test file is compared with the Registry
+    steps:
+    - given:
+      - the "build-tests-step-file-not-go" project tree
+    - when:
+      - the System Architect runs "build steps"
+    - then:
+      - the command exits with code 1
+      - stdout matches level=ERROR msg="Refusing to start" command="build steps"
+      - and: 'stdout matches tests/mcp/steps/steps\.go:23:75: missing'
+      - and: stdout matches before newline in argument list
+      - but: stdout does not match no generated test file
+      - and: no file outside "tmp" changed
+      - and: the engine dispatched no AI turns

@@ -853,3 +853,43 @@ func TestSequentialWalker_ManyDistinctFixesAreNotStuck(t *testing.T) {
 		t.Errorf("want more fixes than the per-query budget, got %d", fixCalls)
 	}
 }
+
+func TestEngine_WholeSuiteFindingsUseTheSameAttemptBound(t *testing.T) {
+	t.Parallel()
+
+	for _, example := range []struct {
+		name   string
+		passOn int
+		reason engine.StopReason
+	}{
+		{"repaired", 2, engine.Converged},
+		{"exhausted", 3, engine.MaxAttemptsExhausted},
+	} {
+		t.Run(example.name, func(t *testing.T) {
+			t.Parallel()
+
+			walker := &stubWalker[int, string]{runs: []engine.ItemRun[int]{{Item: 1, Passed: true, FixApplied: true}}}
+			eng := engine.New[int, string, string](
+				func(_ int, prompt string) string { return prompt }, walker, engine.Options{MaxApplyAttempts: 2})
+			checks := 0
+			eng.CheckConvergence = func(_ context.Context, items []int) (bool, error) {
+				checks++
+
+				if len(items) != 1 || items[0] != 1 {
+					t.Fatalf("lost written Items: %v", items)
+				}
+
+				return checks == example.passOn, nil
+			}
+
+			result, err := eng.Run(context.Background(), []int{1}, []string{"body"})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if result.Reason != example.reason || checks != 2 || walker.calls != 2 {
+				t.Fatalf("result=%+v, checks=%d, walks=%d", result, checks, walker.calls)
+			}
+		})
+	}
+}

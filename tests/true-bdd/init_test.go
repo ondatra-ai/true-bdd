@@ -33,7 +33,7 @@ func TestInit001EmptyFolder(t *testing.T) {
 	s.And(`every file matching "tmp/true-bdd.log.json" matches "msg":"Created","path":"true-bdd/true-bdd.yaml"`)
 	s.And(`exactly 1 file matching "true-bdd/true-bdd.yaml" is created`)
 	s.And(`exactly 5 files matching "true-bdd/checklists/*.yaml" are created`)
-	s.And(`exactly 30 files matching "templates/*.tpl" are created`)
+	s.And(`exactly 32 files matching "templates/*.tpl" are created`)
 	s.And(`every file matching "true-bdd/true-bdd.yaml" does not match (?m)^scripts:`)
 	s.And(`no file matching "docs/**" is created`)
 	s.Done()

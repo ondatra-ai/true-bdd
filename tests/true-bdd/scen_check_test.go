@@ -76,7 +76,7 @@ func TestChecklistChecks004UnknownCheckRefused(t *testing.T) {
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
-	s.And(`stdout matches scen-check/scenario_quality #1 D: steps-are-present names no built-in check of scen check, which has declared-terms, given-when-then, step-definitions, step-phrases, term-mappings`)
+	s.And(`stdout matches scen-check/scenario_quality #1 D: steps-are-present names no built-in check of scen check, which has declared-terms, given-when-then, phrase-mappings, public-interface, step-definitions, step-phrases, term-mappings`)
 	s.But(`stdout does not match SCEN CHECK`)
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
@@ -376,14 +376,14 @@ func TestEngineTermDocuments003ProductNotYamlStopsScenCheck(t *testing.T) {
 	s.Done()
 }
 
-// engine-term-documents-004-architecture-not-yaml-stops-scen-check: `scen check` must stop at its term-mapping check when the architecture document is not valid YAML, naming the document and the line its reader stopped at, before any later check or AI turn
+// engine-term-documents-004-architecture-not-yaml-stops-scen-check: `scen check` must refuse startup when the architecture document is not valid YAML, naming the document and the line its reader stopped at, before any later check or AI turn
 func TestEngineTermDocuments004ArchitectureNotYamlStopsScenCheck(t *testing.T) {
 	s := scenarios.New(t, "engine-term-documents-004-architecture-not-yaml-stops-scen-check")
 	s.Given(`the "scen-check-architecture-not-yaml" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Check could not answer" check=term-mappings subjectID=E2E-001`)
-	s.And(`stdout matches read the word mapping: .*architecture document \./docs/architecture/architecture\.yaml: yaml: line \d+: did not find expected`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start: checklist documents unsatisfiable"`)
+	s.And(`stdout matches failed to parse architecture file \./docs/architecture/architecture\.yaml: yaml: line \d+: did not find expected`)
 	s.But(`stdout does not match check=step-definitions`)
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
@@ -473,7 +473,7 @@ func TestScenCheck001ClaimedScenarioPasses(t *testing.T) {
 	s.And(`stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=2 answer=pass`)
 	s.And(`stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=3 answer=pass`)
 	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=4 answer=pass`)
-	s.And(`stdout matches PASS: 14 `)
+	s.And(`stdout matches PASS: 16 `)
 	s.And(`stdout matches ALL CHECKS PASSED!`)
 	s.And(`stdout matches SCEN CHECK COMPLETE`)
 	s.And(`the engine dispatched 10 AI turns`)
@@ -490,7 +490,7 @@ func TestScenCheck002FailedScenarioExits1(t *testing.T) {
 	s.And(`stdout matches SCEN CHECK`)
 	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass`)
 	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-002 promptIndex=1 answer=fail context="\[E2E-002: then step \\"the greeter prints \\"Hello Ada\\" on one line\\" matches no template\]"`)
-	s.And(`stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=14`)
+	s.And(`stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=15`)
 	s.And(`stdout matches SKIP: 10\n`)
 	s.And(`stdout matches Validation failed`)
 	s.But(`stdout does not match ALL CHECKS PASSED`)
@@ -684,7 +684,7 @@ func TestScenCheckFix007WholeChecklistFixesDescription(t *testing.T) {
 	s.And(`stdout matches FIX PROMPT GENERATED`)
 	s.And(`stdout matches msg="Fix recorded in the document" document=scenarios_yaml`)
 	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=4 answer=pass`)
-	s.And(`stdout matches PASS: 14 `)
+	s.And(`stdout matches PASS: 16 `)
 	s.And(`stdout matches ALL CHECKS PASSED`)
 	s.But(`stdout does not match Hit max apply attempts`)
 	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)

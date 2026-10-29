@@ -45,13 +45,20 @@ func declaredSelections() map[string]declaredSelection {
 	return map[string]declaredSelection{
 		"engine-claude-minimal":                  {Stem: scenCheckStem, QShort: "30469152", RequireF: false},
 		"engine-model-dispatch":                  {Stem: scenCheckStem, QShort: "30469152", RequireF: false},
+		"us-refine-fix-count":                    {Stem: usRefineStem, QShort: "895981ea", RequireF: true},
+		"us-refine-fix-failure-mode":             {Stem: usRefineStem, QShort: "bff23596", RequireF: true},
+		"us-refine-shipped-no-failure":           {Stem: usRefineStem, QShort: "bff23596", RequireF: true},
+		"us-refine-fix-implementation":           {Stem: usRefineStem, QShort: "0372c4be", RequireF: true},
+		"us-refine-fix-happy-path":               {Stem: usRefineStem, QShort: "5b2f20ef", RequireF: true},
+		"us-refine-fix-measurable":               {Stem: usRefineStem, QShort: "9f77fac8", RequireF: true},
+		"us-refine-fix-binary":                   {Stem: usRefineStem, QShort: "8ed91a7d", RequireF: true},
+		"us-refine-fix-sketch":                   {Stem: usRefineStem, QShort: "1fa8ce2c", RequireF: true},
 		"us-refine-fix-descriptions":             {Stem: usRefineStem, QShort: "800eb66b", RequireF: true},
 		"us-refine-fix-steps":                    {Stem: usRefineStem, QShort: "fa3f00d3", RequireF: true},
 		"us-refine-fix-desc-qualifier":           {Stem: usRefineStem, QShort: vagueDescriptionQ, RequireF: true},
 		"us-refine-fix-keeps-feature":            {Stem: usRefineStem, QShort: vagueDescriptionQ, RequireF: true},
 		"us-refine-fix-step-qualifier":           {Stem: usRefineStem, QShort: "882442b9", RequireF: true},
 		"us-refine-fix-forbidden-verb":           {Stem: usRefineStem, QShort: "3929749d", RequireF: true},
-		"us-refine-fix-unfixable-checklist":      {Stem: usRefineStem, QShort: "895981ea", RequireF: false},
 		"us-apply-rewalk-converges":              {Stem: usApplyStem, QShort: presenceQ, RequireF: true},
 		"us-apply-key-apart-from-lineage":        {Stem: usApplyStem, QShort: presenceQ, RequireF: true},
 		"fix-loop-exit-story":                    {Stem: usRefineStem, QShort: vagueDescriptionQ, RequireF: true},
@@ -144,14 +151,14 @@ type overridePurpose int
 const (
 	// overrideUnsanctioned is every fixture off the allowlist.
 	overrideUnsanctioned overridePurpose = iota
-	// overrideEmpty walks nothing: build-tests-refusals-004-empty-checklist-refused
+	// overrideEmpty walks nothing: build-steps-refusals-001-empty-checklist-refused
 	// and checklist-skip-003 pin the refusal of a checklist with nothing to ask.
 	overrideEmpty
 	// overrideRefused carries a prompt the engine refuses at startup, so
 	// it walks nothing and nothing in it need be shipped.
 	overrideRefused
- // overridePreserved is an unusable file init must preserve without loading.
- overridePreserved
+	// overridePreserved is an unusable file init must preserve without loading.
+	overridePreserved
 	// overrideChecks adds `D:` prompts no shipped checklist carries yet
 	// (ADR 0015); its `Q:` prompts must still copy shipped ones.
 	overrideChecks
@@ -168,9 +175,12 @@ const (
 // checklist overrides. A fixture belongs here only when the override IS
 // the behaviour under test; every other one declares checklist_prompts.
 func allowedOverrideFixtures() map[string]overridePurpose {
-	return map[string]overridePurpose{
- "init-existing": overridePreserved,
- "start-invalid-checklist": overrideRefused,
+	allowed := map[string]overridePurpose{
+		"init-existing":                           overridePreserved,
+		"start-invalid-checklist":                 overrideRefused,
+		"build-steps-critique-correct":            overrideTiers,
+		"build-steps-critique-operation":          overrideTiers,
+		"build-steps-critique-assertion":          overrideTiers,
 		"build-code-claude-replay":                overrideTiers,
 		"build-code-claude-failure":               overrideTiers,
 		"build-code-writer-bound":                 overrideFixLoop,
@@ -219,6 +229,7 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"scen-check-fix-records-mapping":          overrideChecks,
 		"scen-check-fix-merges-phrases":           overrideChecks,
 		"scen-check-skipped-prompt":               overrideChecks,
+		"us-refine-fix-unfixable-checklist":       overrideRefused,
 		"us-refine-fix-records-phrase":            overrideChecks,
 		"codex-apply-us-refine":                   overrideChecks,
 		"scen-check-prompt-names-its-tiers":       overrideTiers,
@@ -228,10 +239,26 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"fix-loop-exit-terms":                     overrideFixLoop,
 		"fix-loop-walks-exhausted-terms":          overrideFixLoop,
 		"fix-loop-attempts-exhausted":             overrideFixLoop,
-		"build-tests-run-bound":                   overrideFixLoop,
-		"build-tests-run-package":                 overrideFixLoop,
 		"fix-loop-refix-stops":                    overrideFixLoop,
 		"fix-loop-unsettled":                      overrideFixLoop,
+	}
+
+	for _, fixture := range interfaceCheckFixtures() {
+		allowed[fixture] = overrideChecks
+	}
+
+	return allowed
+}
+
+// interfaceCheckFixtures narrow scen check to its public-interface and
+// phrase-mappings checks (#239, #240).
+func interfaceCheckFixtures() []string {
+	return []string{
+		"phrase-mappings-missing", "phrase-mappings-undeclared", "phrase-mappings-valid",
+		"phrase-mappings-duplicate", "phrase-mappings-intent", "phrase-mappings-fix",
+		"phrase-mappings-fix-operation", "phrase-mappings-exit",
+		"public-interface-missing", "public-interface-missing-document", "public-interface-malformed-document",
+		"public-interface-valid", "public-interface-unsupported", "public-interface-fix",
 	}
 }
 

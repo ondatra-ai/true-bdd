@@ -33,9 +33,9 @@ import (
 const ()
 
 // ErrRepoRootNotFound is returned when FindRepoRoot walks above cwd
-// without finding a .git directory.
+// without finding VCS metadata or the complete Specification.
 var ErrRepoRootNotFound = errors.New(
-	"BDD runner: repo root (with .git) not found above cwd",
+	"BDD runner: repo root (with .git or the Specification) not found above cwd",
 )
 
 // RepoLayer lists subtrees the runner pre-copies from the real repo
@@ -69,7 +69,7 @@ func NewSessionRoot() (string, error) {
 }
 
 // FindRepoRoot walks up from cwd until it finds a directory containing
-// a `.git` entry — the unambiguous repository marker. Exported for
+// VCS metadata or the complete Specification. Exported for
 // reuse by the harness fixture materializer.
 func FindRepoRoot() (string, error) {
 	dir, err := os.Getwd()
@@ -79,7 +79,7 @@ func FindRepoRoot() (string, error) {
 
 	for {
 		_, statErr := os.Stat(filepath.Join(dir, ".git"))
-		if statErr == nil {
+		if statErr == nil || specificationRoot(dir) {
 			return dir, nil
 		}
 
@@ -90,6 +90,20 @@ func FindRepoRoot() (string, error) {
 
 		dir = parent
 	}
+}
+
+// A target-absent copy has no VCS metadata; do not walk out to its original host.
+func specificationRoot(dir string) bool {
+	names := []string{"go.mod", "docs/scenarios.yaml",
+		"docs/architecture/architecture.yaml", "true-bdd/true-bdd.yaml"}
+	for _, name := range names {
+		_, err := os.Stat(filepath.Join(dir, name))
+		if err != nil {
+			return false
+		}
+	}
+
+	return true
 }
 
 // FileChange describes one file's diff between the fixture's input/ and

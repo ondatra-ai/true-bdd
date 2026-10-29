@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "us-refine-fix-measurable",
+  "files": [
+    {
+      "path": "docs/product/stories/summary-views-cases.yaml",
+      "kind": "modified",
+      "size": 1429,
+      "sha256": "c9c90cfff5b0eef422ad2faf07f7fbb7eeee086e65a89f7dc59ed7415f825d45",
+      "text": "story:\n    id: summary-views\n    feature: calculator\n    title: Read summary views\n    as_a: Calculator User\n    i_want: a concise summary in each view\n    so_that: I can scan a document\n    status: PLANNED\n    acceptance_criteria:\n        - id: 001-brief\n          description: The viewer must display a summary of at most 150 words when the Calculator User requests the brief view.\n          steps:\n            - given:\n                - a shared document is selected\n            - when:\n                - the Calculator User requests the \"brief\" view\n            - then:\n                - the summary has at most 150 words\n        - id: 002-overview\n          description: The viewer must display a summary of at most 150 words when the Calculator User requests the overview view.\n          steps:\n            - given:\n                - a shared document is selected\n            - when:\n                - the Calculator User requests the \"overview\" view\n            - then:\n                - the summary has at most 150 words\n        - id: 003-preview\n          description: The viewer must display a summary of at most 150 words when the Calculator User requests the preview view.\n          steps:\n            - given:\n                - a shared document is selected\n            - when:\n                - the Calculator User requests the \"preview\" view\n            - then:\n                - the summary has at most 150 words\n"
+    }
+  ]
+}
