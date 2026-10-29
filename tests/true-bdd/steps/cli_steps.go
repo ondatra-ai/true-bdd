@@ -117,8 +117,8 @@ func registerEngineLogSteps(suite *bddgo.Suite[State]) {
 	suite.Step(`^the engine spawned a test runner with arguments matching (.+)$`, assertTestRunnerArgs)
 	suite.Step(`^the engine spawned a test runner with its own prebuilt engine path$`, assertPrebuiltEnginePath)
 	suite.Step(`^the engine spawned exactly (\d+|no) test runners?$`, assertTestRunnerCount)
- suite.Step(`^the engine spawned exactly (\d+|no) test runners? with arguments matching (.+)$`,
-  assertTestRunnerMatchingCount)
+	suite.Step(`^the engine spawned exactly (\d+|no) test runners? with arguments matching (.+)$`,
+		assertTestRunnerMatchingCount)
 	suite.Step(`^the engine spawned no test runners?$`, assertNoTestRunnerSpawned)
 	suite.Step(`^the engine dispatched (\d+|no) AI turns?$`, assertAITurnCount)
 	suite.Step(`^the engine dispatched (\d+|no) (validation|fix|apply) AI turns? to "([^"]+)"$`, assertAITurnsTo)
@@ -310,6 +310,11 @@ func runEngine(state *State, command string, extraEnv ...string) error {
 	err := state.Fixture.UseCommand(command)
 	if err != nil {
 		return state.fail("%w", err)
+	}
+
+	engineErr := state.Harness.RequireEngine()
+	if engineErr != nil {
+		return state.fail("%w", engineErr)
 	}
 
 	timeout := state.runTimeout()

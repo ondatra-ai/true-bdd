@@ -133,6 +133,10 @@ func TestBuildStepsWriting001NewBody(t *testing.T) {
 	s.And(`stdout matches BUILD STEPS COMPLETE`)
 	s.And(`stdout matches Step coverage passed`)
 	s.And(`stdout matches Scenario list passed`)
+	s.And(`stdout matches Scenario red without target.*scenario=calc-001-double`)
+	s.And(`stdout matches Scenario red without target.*scenario=calc-002-double`)
+	s.And(`stdout matches Red without target passed.*scenarios=2`)
+	s.And(`the engine spawned exactly 1 test runner with arguments matching -count=1$`)
 	s.And(`no file outside "tmp" and "tests" changed`)
 	s.And(`the engine dispatched no validation AI turns to "claude"`)
 	s.And(`the engine spawned exactly 1 test runner with arguments matching -list \.`)
@@ -209,6 +213,36 @@ func TestBuildStepsWriting005OutsideTestsRefused(t *testing.T) {
 	s.And(`stdout matches sandbox=writer`)
 	s.And(`every file matching "tmp/*/codex-turn*-codex-events.jsonl" matches (?i)permission denied|operation not permitted|read.only`)
 	s.And(`the engine dispatched no validation AI turns to "claude"`)
+	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
+	s.Done()
+}
+
+// build-steps-writing-006-bringup-is-not-red: Harness bring-up failure without the target fails the red check and names the Scenario
+func TestBuildStepsWriting006BringupIsNotRed(t *testing.T) {
+	s := scenarios.New(t, "build-steps-writing-006-bringup-is-not-red")
+	s.Given(`the "build-steps-bringup" project tree`)
+	s.When(`the System Architect runs "build steps --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches Red without target check failed`)
+	s.And(`stderr matches red without target check failed.*TestCalc001Double`)
+	s.And(`stdout does not match BUILD STEPS COMPLETE`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`no file outside "tmp" and "tests" changed`)
+	s.Done()
+}
+
+// build-steps-writing-007-green-body-repaired: A written body doing the product work goes back to the Fix loop with the green-without-target finding
+func TestBuildStepsWriting007GreenBodyRepaired(t *testing.T) {
+	s := scenarios.New(t, "build-steps-writing-007-green-body-repaired")
+	s.Given(`the "build-steps-green" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build steps --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches Scenario green without target.*TestCalc001Double`)
+	s.And(`stdout matches Red without target passed`)
+	s.And(`stdout matches BUILD STEPS COMPLETE`)
+	s.And(`the engine dispatched 4 AI turns`)
+	s.And(`no file outside "tmp" and "tests" changed`)
 	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
 	s.Done()
 }

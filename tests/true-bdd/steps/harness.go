@@ -2,12 +2,7 @@
 // that executes the Given/When/Then lines of every registry scenario
 // whose `service:` is true-bdd.
 //
-// Every definition here was authored by `build tests --fix`: a scenario
-// arrives in the registry, the walk reports which of its steps bind to
-// nothing, and a model writes the ones that do not. Nothing in this
-// package is meant to be written by hand, and a step that reads as
-// though it were is a step whose scenario said something the vocabulary
-// could not.
+// build tests renders Scenarios; build steps writes their missing definitions.
 package steps
 
 import (
@@ -51,6 +46,8 @@ var ErrNoJudgeRecording = errors.New("no recorded judge verdict for this scenari
 type Harness struct {
 	// BinPath is the true-bdd binary this run built.
 	BinPath string
+	// Binary builds the service only when a definition needs it.
+	Binary *runner.LazyBinary
 	// SessionRoot is tmp/test_run/<timestamp>/.
 	SessionRoot string
 	// Shims holds one aiproxy dir per caller. The services dir also supports
@@ -98,6 +95,22 @@ func (h *Harness) JudgeShelf(name string) (string, error) {
 	}
 
 	return filepath.Join(dir, "judge"), nil
+}
+
+// RequireEngine resolves the lazy build at a step, preserving an explicit oracle binary.
+func (h *Harness) RequireEngine() error {
+	if h.BinPath != "" {
+		return nil
+	}
+
+	path, err := h.Binary.Path()
+	if err != nil {
+		return fmt.Errorf("resolve engine: %w", err)
+	}
+
+	h.BinPath = path
+
+	return nil
 }
 
 // prepareJudgeStaging gives a judge recording somewhere to land. It sits

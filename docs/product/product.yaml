@@ -171,7 +171,7 @@ glossary:
       Its fix asks the System Architect what the step does and proposes the entry at the
       menu; only apply writes the architecture document, never the Scenario. It names no
       Go identifier and stores no link to a step definition. Word mappings still cover terms;
-      build steps reading these entries is separate work.
+      build steps --fix embeds these entries in each Item’s body-writing context.
 
   - term: engine
     means: >-
@@ -236,7 +236,8 @@ glossary:
       After each apply compilation, exactly one definition and a written body
       are required; failures return to that Item within the configured attempts.
       Once all Items pass, whole-suite Step coverage and one generated-test listing
-      must pass. The writer may change only the protected test paths (writable paths),
+      must pass. After whole-suite coverage and generated-test listing, it runs the suite once in a Host project copy without any service path. Every Scenario must fail at an executed step definition; compilation, bring-up, skipped and missing results fail the check and name the Scenario. Green Scenarios return all Items written in this run for their phrases to the Fix loop together, with the finding and existing attempt counts. If none of those Items can repair a green Scenario, or attempts are exhausted, the command fails distinctly. The original Host project is preserved.
+      The writer may change only the protected test paths (writable paths),
       never service code or the Specification. An interface_cannot_serve writer
       verdict stops immediately, naming the phrase and missing setup or observation;
       the System Architect extends the declaration. An unfinished walk exits non-zero.
@@ -536,12 +537,16 @@ glossary:
       and name the Scenario and step. build steps performs this check without
       running a test or spending an AI turn.
 
+  - term: red without the target
+    means: >-
+      One run of every Scenario after build steps --fix writes its Items, in a Host project copy without every service path. Only a failure at an executed step definition counts as red. Compilation, harness bring-up, skipped and missing results fail the check, naming the Scenario. A green Scenario returns all Items written in this run for the phrases it uses to the same bounded Fix loop together, with the finding. A green Scenario with no written Item, or exhausted attempts, ends distinctly. The harness defers service builds until a step needs them, preserving the prebuilt oracle flag.
+
   - term: test runner
     means: >-
       The program a project runs its own tests with, such as `go test` or
       `npx playwright test`, as the architecture document declares it.
       build steps --fix invokes it without executing tests to compile the
-      definitions and list every generated Scenario test.
+      definitions and list every generated Scenario test; it then runs the suite in a copy without service paths and requires every Scenario to fail at an executed definition.
       `build code` starts it to find the failing set and after every completed
       apply to rerun all remaining members in one selection. Go build and
       Playwright startup members make the rerun unfiltered. Jest load members

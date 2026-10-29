@@ -30,3 +30,12 @@ func TestCalc001Double(t *testing.T) {
 	s.Then(`the result is 6`)
 	s.Done()
 }
+
+// calc-002-double: Another Scenario reaches the shared command definition
+func TestCalc002Double(t *testing.T) {
+	s := scenarios.New(t, "calc-002-double")
+	s.Given(`the number is 4`)
+	s.When(`the number is doubled`)
+	s.Then(`the result is 8`)
+	s.Done()
+}

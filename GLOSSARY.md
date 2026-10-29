@@ -73,8 +73,12 @@ One full traversal of every Cell in a run. A fix applied mid-walk restarts the t
 _Avoid_: pass, sweep, iteration
 
 **Step coverage**:
-The engine's own answer to which Scenarios have a step no definition binds: the Scenarios it examined, and the unbound steps among them. `examined` is the load-bearing half — an empty gap list says nothing about a Scenario nobody looked at. Answered by `build steps` in-process by parsing each suite's `steps/` package, never by running a test; a step two definitions match is a refusal rather than a gap. Under --fix, all skeletons precede the first AI turn; each applied body must compile, have one definition and contain no pending sentinel. Whole-suite coverage and a generated-test listing follow the final Item once.
+The engine's own answer to which Scenarios have a step no definition binds: the Scenarios it examined, and the unbound steps among them. `examined` is the load-bearing half — an empty gap list says nothing about a Scenario nobody looked at. Answered by `build steps` in-process by parsing each suite's `steps/` package, never by running a test; a step two definitions match is a refusal rather than a gap. Under --fix, all skeletons precede the first AI turn; each applied body must compile, have one definition and contain no pending sentinel. Whole-suite coverage and a generated-test listing follow the final Item, then Red without the target.
 _Avoid_: coverage report, coverage output, step report, gap list
+
+**Red without the target**:
+One run of the suite in a copy of the Host project without any service's path, after build steps --fix writes every Item and whole-suite Step coverage and listing pass. Every Scenario must fail at a step whose definition ran. Compilation, harness bring-up, skipped tests and missing results fail the check, naming the Scenario. A green Scenario returns the Items of its phrases written in this run to the Fix loop together, with the finding and the same attempt counts. A green Scenario with no written Item, or an exhausted walk, ends distinctly. The harness builds a service only when a step first needs it; its prebuilt oracle flag stays available.
+_Avoid_: expected failure, any failure counts
 
 **Catalogue**:
 The product document's list of step phrases: each the shape a step may take, the block it may sit in, what it means, and the terms that meaning relies on. Every step a model does not run must match exactly one phrase.

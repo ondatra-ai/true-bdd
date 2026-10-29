@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df-iter2-result.yaml ===
+applied: true
+target: "tests/calc/steps/phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df.go"
+summary: "Replaced local doubling with one CLI process invocation from the host root, storing integer stdout in State.Value; preserved marker and other definitions."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df-iter2-result.yaml ===

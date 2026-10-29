@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "fixture": "build-steps-green",
+  "files": [
+    {
+      "path": "tests/calc/steps/first-body-written",
+      "kind": "created",
+      "size": 9,
+      "sha256": "ca14a1137a0cec7f58cd4b6f319917367b61a6a7e1f5efc714e1f54cb16c4b90",
+      "text": "injected\n"
+    },
+    {
+      "path": "tests/calc/steps/phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df.go",
+      "kind": "created",
+      "size": 1031,
+      "sha256": "28553190d302d9d3bc56073ea1015d25dc518efb9f0718bbeed7f6ce347bd300",
+      "text": "package steps\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"path/filepath\"\n\t\"strconv\"\n\t\"strings\"\n)\n\nfunc phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df(state *State, args []string) error {\n\tconst hostRootFromSuite = \"../..\"\n\tconst commandPackage = \"./services/calc\"\n\n\thostRoot, err := filepath.Abs(hostRootFromSuite)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"locate host root %q: %w\", hostRootFromSuite, err)\n\t}\n\n\tvalue := strconv.Itoa(state.Value)\n\tcommand := exec.Command(\"go\", \"run\", commandPackage, \"double\", value)\n\tcommand.Dir = hostRoot\n\tvar stdout, stderr bytes.Buffer\n\tcommand.Stdout = \u0026stdout\n\tcommand.Stderr = \u0026stderr\n\tif err := command.Run(); err != nil {\n\t\treturn fmt.Errorf(\"run %s double %s in %s: %w: %s\", commandPackage, value, hostRoot, err, strings.TrimSpace(stderr.String()))\n\t}\n\n\tdoubled, err := strconv.Atoi(strings.TrimSpace(stdout.String()))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"double %s stdout %q is not an integer: %w\", value, stdout.String(), err)\n\t}\n\n\tstate.Value = doubled\n\treturn nil\n}\n"
+    },
+    {
+      "path": "tests/calc/steps/register.go",
+      "kind": "modified",
+      "size": 630,
+      "sha256": "d10b4aa1552a73b2b1df27fe01e7e06ca39f4053ae15f9ceed528dc80ae316c8",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"strconv\"\n)\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the number is (\\d+)$`, number)\n\tsuite.Step(`^the result is (\\d+)$`, result)\n\n\tsuite.Step(\"\\\\Athe number is doubled\\\\z\", phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df)\n}\nfunc number(state *State, args []string) error {\n\tvalue, err := strconv.Atoi(args[0])\n\tstate.Value = value\n\treturn err\n}\nfunc result(state *State, args []string) error {\n\twant, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn err\n\t}\n\tif state.Value != want {\n\t\treturn fmt.Errorf(\"expected %d, got %d\", want, state.Value)\n\t}\n\treturn nil\n}\n"
+    }
+  ]
+}

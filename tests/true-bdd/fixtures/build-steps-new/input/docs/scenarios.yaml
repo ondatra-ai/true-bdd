@@ -7,3 +7,11 @@ scenarios:
       given: [the number is 3]
       when: [the number is doubled]
       then: [the result is 6]
+  calc-002-double:
+    description: Another Scenario reaches the shared command definition
+    service: calc
+    path: tests/calc/calc_test.go
+    merged_steps:
+      given: [the number is 4]
+      when: [the number is doubled]
+      then: [the result is 8]
