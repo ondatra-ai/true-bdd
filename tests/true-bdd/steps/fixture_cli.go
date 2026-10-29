@@ -23,7 +23,7 @@ func useInvalidLinkCLI(state *State, _ []string) error {
 	}
 
 	_, err = os.Stat(filepath.Join(directory, "claude"))
-		if err != nil {
+	if err != nil {
 		return state.fail("stat fixture CLI: %w", err)
 	}
 
