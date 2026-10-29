@@ -10,7 +10,7 @@
 #   yamale -s true-bdd/architecture_yaml-schema.yaml docs/architecture/architecture.yaml
 #
 # The engine decodes only `testing:`, `services[].{name,path,language,writable,libraries,public_interface}`
-# and, for closure checks, `terms:` and `phrases:`; everything else here is
+# and, for closure checks, `terms:`, `phrases:` and `concepts:`; everything else here is
 # spec a host writes for its own readers and for the checklists' prompts.
 # Which is exactly why it needs a schema: nothing else would notice a typo
 # in it.
@@ -31,6 +31,7 @@ architecture:
   services: list(include('service'), min=1)
   terms: list(include('term_mapping'), required=False)
   phrases: list(include('phrase_mapping'), required=False)
+  concepts: list(include('concept_binding'), required=False)
   prompt_data: map(include('prompt_data'), required=False)
 
 ---
@@ -195,3 +196,13 @@ interface_reference:
   outgoing_call: str(required=False)
   operation_id: str(required=False)
   element: include('ui_element', required=False)
+
+---
+# One binding per declared concept (name and block) and service.
+concept_binding:
+  concept: str()
+  block: enum('given', 'when', 'then')
+  service: str()
+  does: str(required=False)
+  references: list(include('interface_reference'), min=1, required=False)
+  intent: str(required=False)

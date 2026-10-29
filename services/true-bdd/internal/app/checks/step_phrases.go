@@ -23,6 +23,10 @@ func stepPhrases() Check[*template.ScenarioCheckData] {
 // template fails every checked Item, since no step can be held to it.
 // `build tests` holds every Registry Scenario to it the same way.
 func ReviewPhrases(itemID string, steps []catalogue.Step, source product.Catalogue) Verdict {
+	if source.ConceptsDeclared {
+		return notChecked(itemID, "concept steps need the concept link pass")
+	}
+
 	compiled, malformed := catalogue.Compile(source.Entries, source.Roles)
 	if len(malformed) > 0 {
 		lines := make([]string, 0, len(malformed))

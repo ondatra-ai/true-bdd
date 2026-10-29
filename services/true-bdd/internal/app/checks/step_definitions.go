@@ -16,6 +16,10 @@ import (
 func stepDefinitions() Check[*template.ScenarioCheckData] {
 	return closureCheck([]string{docs.KeyProduct},
 		func(item *template.ScenarioCheckData, _ Input, source product.Catalogue) (Verdict, error) {
+			if source.ConceptsDeclared {
+				return notChecked(item.ID, "concept definitions belong to build steps per concept"), nil
+			}
+
 			dir := stepcoverage.StepsDir(item.Path)
 
 			suite, err := stepcoverage.LoadSuite(dir)

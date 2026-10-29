@@ -16,6 +16,10 @@ func phraseMappings() Check[*template.ScenarioCheckData] {
 }
 
 func reviewPhraseMappings(item *template.ScenarioCheckData, input Input, source product.Catalogue) (Verdict, error) {
+	if source.ConceptsDeclared {
+		return reviewConceptBindings(item, input, source.Concepts)
+	}
+
 	path := input.Docs[docs.KeyArchitectureYAML]
 
 	mappings, err := architecture.LoadPhraseMappings(path)
@@ -100,7 +104,12 @@ func phraseMappingFindings(phrase, service string, entries []architecture.Phrase
 		return []string{fmt.Sprintf("%s has %d Phrase mapping entries (references: %v)", subject, len(entries), entries)}
 	}
 
-	entry := entries[0]
+	return operationMappingFindings(subject, entries[0], declaration)
+}
+
+func operationMappingFindings(subject string, entry architecture.PhraseMapping,
+	declaration *architecture.PublicInterface,
+) []string {
 	if strings.TrimSpace(entry.Intent) != "" {
 		return intentFinding(subject, entry, declaration)
 	}

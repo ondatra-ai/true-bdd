@@ -119,12 +119,12 @@ reads as valid YAML, so a copy you leave unparseable changes nothing.
 
 {{ if .Subject.Writes "architecture_yaml" -}}
 1. Use the Read tool to load the working copy the fix prompt's
-   document names, and find the list it changes (`catalogue:` or
+   document names, and find the list it changes (`{{ if .Subject.ConceptForm }}concepts:{{ else }}catalogue:{{ end }}` or
    `glossary:` in the product document, `architecture.terms:` in the
    architecture document).
 {{- else -}}
 1. Use the Read tool to load the working copy the fix prompt's
-   document names, and find the list it changes (`catalogue:` or
+   document names, and find the list it changes (`{{ if .Subject.ConceptForm }}concepts:{{ else }}catalogue:{{ end }}` or
    `glossary:`).
 {{- end }}
 2. Apply the changes described in the "Fix Prompt to Apply" section

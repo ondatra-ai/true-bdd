@@ -22,9 +22,11 @@ var ErrCatalogueNotList = errors.New("catalogue: must hold a list of phrases")
 // Declared is false when the document, or its `catalogue:` key, is absent:
 // a host that never wrote one has its Scenarios left unchecked.
 type Catalogue struct {
-	Declared bool
-	Entries  []catalogue.Entry
-	Roles    []string
+	ConceptsDeclared bool
+	Concepts         []Concept
+	Declared         bool
+	Entries          []catalogue.Entry
+	Roles            []string
 }
 
 // LoadCatalogue reads the catalogue and the roles from the product
@@ -38,6 +40,15 @@ func LoadCatalogue(path string) (Catalogue, error) {
 	roles := make([]string, 0, len(doc.Roles))
 	for _, role := range doc.Roles {
 		roles = append(roles, role.Name)
+	}
+
+	concepts, err := decodeConcepts(path, &doc.Concepts)
+	if err != nil {
+		return Catalogue{}, err
+	}
+
+	if doc.Concepts.Kind != 0 {
+		return Catalogue{ConceptsDeclared: true, Concepts: concepts, Roles: roles}, nil
 	}
 
 	return decodeCatalogue(path, &doc.Catalogue, roles)

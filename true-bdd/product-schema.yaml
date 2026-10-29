@@ -1,16 +1,15 @@
 # Yamale schema for the product document (path from `documents.product`
 # in true-bdd.yaml, conventionally docs/product/product.yaml).
 #
-# The engine reads three parts of it as data: `catalogue` and the role
-# names, for the `D: step-phrases` check, and `glossary`, for the
-# `D: declared-terms` check. The rest reaches the checklists only as
+# The engine reads `catalogue` or `concepts`, role names and `glossary`
+# for its built-in checks. The rest reaches the checklists only as
 # prompt text, so this schema is the only thing pinning its shape.
 # Validate it in the host project's lint step, outside the engine:
 #
 #   yamale -s true-bdd/product-schema.yaml docs/product/product.yaml
 #
-# Every field is required but `catalogue`, whose absence is how a host
-# declines it. Only `roles` and the vocabulary's own lists must carry an
+# Every field is required but `catalogue` and `concepts`, the alternative
+# forms a host may opt into. Only `roles` and the vocabulary's own lists must carry an
 # entry; `vision` may be an empty string and `goals`, `releases`,
 # `not_goals`, `glossary` and `catalogue` empty lists, but the key must be
 # declared rather than omitted, so an empty value reads as a decision on
@@ -21,7 +20,9 @@ description: include('description')
 roles: list(include('role'), min=1)
 vocabulary: include('vocabulary')
 glossary: list(include('glossary_entry'))
+# The engine refuses catalogue: and concepts: together, including null values.
 catalogue: list(include('phrase'), required=False)
+concepts: include('concept_blocks', required=False)
 
 ---
 # vision: why; goals: where to; releases: the next steps, each target
@@ -90,5 +91,19 @@ glossary_entry:
 phrase:
   template: str()
   block: enum('given', 'when', 'then')
+  means: str()
+  terms: list(str())
+
+---
+# Names are unique within their block; the loader refuses duplicates.
+concept_blocks:
+  given: list(include('concept'), required=False)
+  when: list(include('concept'), required=False)
+  then: list(include('concept'), required=False)
+
+---
+# Closed prose: one interface item and kind of use, with every admitted variation.
+concept:
+  concept: str()
   means: str()
   terms: list(str())

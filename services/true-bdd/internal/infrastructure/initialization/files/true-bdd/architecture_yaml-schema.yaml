@@ -1,0 +1,208 @@
+# Yamale schema for the architectural spec (path from
+# `documents.architecture_yaml` in true-bdd.yaml, conventionally
+# docs/architecture/architecture.yaml).
+#
+# The filename is not free: the schema gate pairs
+# `true-bdd/<key>-schema.yaml` with `documents.<key>`, and the key is
+# `architecture_yaml`. A file named `architecture-schema.yaml` would
+# resolve no document and fail the gate rather than validate anything.
+#
+#   yamale -s true-bdd/architecture_yaml-schema.yaml docs/architecture/architecture.yaml
+#
+# The engine decodes only `testing:`, `services[].{name,path,language,writable,libraries,public_interface}`
+# and, for closure checks, `terms:`, `phrases:` and `concepts:`; everything else here is
+# spec a host writes for its own readers and for the checklists' prompts.
+# Which is exactly why it needs a schema: nothing else would notice a typo
+# in it.
+#
+# Yamale is strict by default — an unlisted key is an error — so a host
+# adding a block to its architectural spec adds it here too.
+
+architecture: include('architecture')
+# No `vocabulary:` here: the product document holds it and its catalogue,
+# which `us refine` cites; this document maps words (`terms:`) and phrases (`phrases:`).
+
+---
+# One `testing:` section for the whole repository, beside the services it
+# exercises: it says how the tests run, once. Which service a test belongs
+# to and which file it lives in are the scenario's, not a suite's.
+architecture:
+  testing: include('testing')
+  services: list(include('service'), min=1)
+  terms: list(include('term_mapping'), required=False)
+  phrases: list(include('phrase_mapping'), required=False)
+  concepts: list(include('concept_binding'), required=False)
+  prompt_data: map(include('prompt_data'), required=False)
+
+---
+# How one product glossary word turns into the implementation, and how a
+# step definition sets it up or observes it, in words, never a Go name.
+term_mapping:
+  term: str()
+  technical: str()
+  observed_by: str()
+
+---
+# How this repository's tests run. `framework` routes to a runner and
+# decides what `build tests` renders; `commands` is how each mode is
+# invoked. Declaring neither describes a project nothing can build.
+testing:
+  libraries: list(include('library'), required=False)
+  framework: enum('go-test', 'jest', 'playwright')
+  # Framework config file. Its containing directory is the working
+  # directory every command runs in; without one they run from wherever
+  # the engine was invoked.
+  config: str(required=False)
+  commands: include('commands')
+
+---
+library:
+  module: str()
+  version: str(matches='^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+incompatible)?$')
+
+---
+service:
+  libraries: list(include('library'), required=False)
+  name: str()
+  path: str()
+  # Exact project-relative files or folders; no patterns or test overlap.
+  writable: list(str(), required=False)
+  public_interface: include('public_interface', required=False)
+  language: str()
+  # Free-form classification (`cli`, `web:frontend`, `service`, …). Not
+  # a closed vocabulary: nothing in the engine branches on it.
+  type: str(required=False)
+  frameworks: list(str(), required=False)
+  dependencies: list(include('dependency'), required=False)
+  patterns: map(include('pattern'), required=False)
+  design_system: include('design_system', required=False)
+  # Non-test gates a host runs against this service (linters, type
+  # checkers). Declared for its own readers; the engine reads none of it.
+  quality_gate: include('quality_gate', required=False)
+
+---
+# What a service talks to at runtime. `scope` decides how a build treats
+# it: self_hosted gets the real thing, third_party gets mocked
+# (record/replay), internal is another service in this same document.
+dependency:
+  name: str()
+  protocol: str()
+  scope: enum('internal', 'self_hosted', 'third_party')
+  # How the service spawns a `protocol: cli` dependency, when a rebuild must
+  # send exactly the same request: replay hashes argv and stdin.
+  invocation: include('invocation', required=False)
+
+---
+# One spawn of a CLI dependency, stated byte for byte. A `{name}` token
+# anywhere in it stands for the entry `values` defines under that name.
+invocation:
+  # The executable, found on PATH. A cassette records it as `binary`.
+  binary: str()
+  # Every argument after the binary, in order. A cassette records them as
+  # `argv`. A map entry is a run of arguments sent only when `when` holds.
+  args: list(any(str(), include('conditional_args')), min=1)
+  # What the child reads on stdin, then EOF. `with_system` applies when the
+  # turn has a system prompt, `without_system` when it has none. Absent when
+  # the child reads nothing there (its prompts travel in argv).
+  stdin: include('stdin', required=False)
+  # What each `{name}` token stands for.
+  values: map(str(), min=1)
+  # The child's working directory.
+  dir: str()
+  # Environment entries set on top of the inherited environment.
+  env: map(str(), required=False)
+  # Facts about the binary that shaped this invocation.
+  notes: list(str(), required=False)
+
+---
+conditional_args:
+  when: str()
+  args: list(str(), min=1)
+
+---
+stdin:
+  with_system: str()
+  without_system: str()
+
+---
+pattern:
+  description: str()
+  rules: list(str(), min=1)
+
+---
+design_system:
+  path: str()
+
+---
+quality_gate:
+  code: list(include('code_gate'), required=False)
+
+---
+code_gate:
+  name: str()
+  config: str()
+
+---
+# How to run this suite, per AI-dependency mode — all 3 mandatory (no
+# engine default; build code runs only replay today). Each MUST include
+# the machine-readable flag (-json/--json/--reporter=json) — without it the runner parses prose, finds no failures, and the walk goes falsely green.
+commands:
+  # Real AI CLIs, recording their calls for later replay.
+  record: str()
+  # Recorded calls served back. MUST reach no model and cost nothing —
+  # `build code` runs it in its fix loop, where a paid call would bill a
+  # walk per attempt. Every AI caller in the run replays, not just some.
+  replay: str()
+  # Real AI CLIs, nothing recorded.
+  live: str()
+
+---
+# One entry per templates.prompts key; the Go guard holds fields to template reads.
+prompt_data:
+  rendering: str()
+  fields: map(str())
+
+---
+# Optional for loading old architectures; public-interface checks every Scenario's service.
+public_interface:
+  # cli, http and ui are supported; library is excluded, other kinds await support.
+  kind: str()
+  document: str(required=False)
+  elements: list(include('ui_element'), required=False)
+
+---
+ui_element:
+  page: str(required=False)
+  region: str(required=False)
+  role: str()
+  name: str()
+
+---
+# One entry per verbatim Catalogue template and service; semantics checked by phrase-mappings.
+phrase_mapping:
+  template: str()
+  service: str()
+  # Operation form requires does and nonempty references; intent replaces both (UI only).
+  does: str(required=False)
+  references: list(include('interface_reference'), min=1, required=False)
+  intent: str(required=False)
+
+---
+# Exactly one selector, checked against the service's loaded Public interface.
+interface_reference:
+  command: str(required=False)
+  file: str(required=False)
+  log_record: str(required=False)
+  outgoing_call: str(required=False)
+  operation_id: str(required=False)
+  element: include('ui_element', required=False)
+
+---
+# One binding per declared concept (name and block) and service.
+concept_binding:
+  concept: str()
+  block: enum('given', 'when', 'then')
+  service: str()
+  does: str(required=False)
+  references: list(include('interface_reference'), min=1, required=False)
+  intent: str(required=False)

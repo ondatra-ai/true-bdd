@@ -1,0 +1,11 @@
+version: '1.0'
+sections:
+- id: term_closure
+  validation_prompts:
+  - D: declared-terms
+    rationale: A phrase whose meaning relies on an undefined word still has no stated meaning, so no step definition follows
+      from the spec.
+    docs:
+    - product
+    F: Propose one glossary entry (term, means) for each undefined term, asking what it means first. Write it to the product
+      document's glossary, never to the Scenario.

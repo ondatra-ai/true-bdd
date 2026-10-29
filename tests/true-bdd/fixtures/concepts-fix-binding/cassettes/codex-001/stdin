@@ -1,0 +1,58 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+The user has already chosen Apply at the engine menu, authorizing this turn.
+Apply the approved Phrase mapping now to the architecture working copy, and any
+declaration it adds to the working copy of the Public interface document it names,
+without asking for another choice. Menu reminders inside the approved proposal are
+satisfied. Do not edit any other file, including the Registry, product, tests or step
+definitions. Read each working copy and replace the exact text the fix provides.
+
+
+### TASK
+
+Service: greeter
+The menu action was apply. Perform the approved fix now.
+Approved fix:
+To the System Architect — proposed binding for concept 'request greeting' (block: when), scenario host-001, check phrase-mappings. Nothing is missing: the product document declares the concept under `when` ("Call greet once."), and `docs/greeter-cli.yaml` already declares the `greet` command, so the `{command: greet}` reference is backed by the service's Public interface and no Public interface addition is needed. The greeter service is a CLI (not UI), so the entry uses `does` rather than `intent`. The Scenario, the generated test and the step definitions are left untouched.
+
+Apply one edit, to `docs/architecture/architecture.yaml` only — add a new `architecture.concepts` entry for the concept host, inserted between the existing given and then bindings so the list reads given / when / then:
+
+old_string:
+    does: Write the expected greeting to the configuration file before running greet.
+  - concept: greeting
+    block: then
+
+new_string:
+    does: Write the expected greeting to the configuration file before running greet.
+  - concept: request greeting
+    block: when
+    service: greeter
+    references:
+    - command: greet
+    does: Run the greet command once for the person under test.
+  - concept: greeting
+    block: then
+
+Rationale per field:
+- concept: `request greeting` — verbatim from the product `when` declaration; the undeclared/unbound name is now bound exactly as declared.
+- block: `when` — the step calls an operation, matching the product block the concept is declared in.
+- service: `greeter` — the service the scenario runs against.
+- references: `[{command: greet}]` — the when invokes the declared `greet` command. Per the answers, the command reference alone is enough; the `person` and `loud` parameters need no separate references.
+- does: "Run the greet command once for the person under test." — a calling sentence, consistent with the product meaning "Call greet once."; it sets up no state and observes nothing, leaving state to the given and the comparison to the then.
+
+No duplicate binding is created: there is no other `request greeting` entry, and the two existing `greeting` bindings stay as they are (given → `greeting-config` file, then → `greeted` log record). No product glossary or `architecture.terms` change is required — `greeting` is already declared in both.
+
+Confirm at the menu before apply; write `docs/architecture/architecture.yaml` only after approval.
+Architecture working copy:
+
+Edit `tmp/{{RUN_DIR}}/architecture_yaml.yaml`, the working copy of `./docs/architecture/architecture.yaml`.
+Public interface working copies:
+
+Edit `tmp/{{RUN_DIR}}/interface-1-greeter-cli.yaml`, the working copy of `docs/greeter-cli.yaml`, only where the approved fix changes that document.
+
+After editing, return:
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===
+applied: true
+target: "<architecture working copy>"
+summary: "Mapped the phrase to the service's Public interface"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===
