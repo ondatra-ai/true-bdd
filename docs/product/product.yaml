@@ -227,7 +227,19 @@ glossary:
       It runs no AI turn, fix menu or test runner. build steps reads its own
       checklist, lists missing Catalogue phrase definitions per go-test suite,
       checks Step coverage in-process and exits non-zero for Items or failed checks.
-      build steps --fix refuses startup as not implemented yet.
+      build steps --fix first writes all missing registrations and functions with
+      one capture per template slot in order and bodies failing "step not written yet".
+      It compiles the suite before the first AI turn. The Fix loop writes one body
+      at a time from the complete phrase meaning, service Phrase mapping, glossary,
+      Word mapping, Public interface declaration and document, and every suite
+      Scenario using the phrase. Only the body and shared state may change.
+      After each apply compilation, exactly one definition and a written body
+      are required; failures return to that Item within the configured attempts.
+      Once all Items pass, whole-suite Step coverage and one generated-test listing
+      must pass. The writer may change only the protected test paths (writable paths),
+      never service code or the Specification. An interface_cannot_serve writer
+      verdict stops immediately, naming the phrase and missing setup or observation;
+      the System Architect extends the declaration. An unfinished walk exits non-zero.
       Commands print their existing upper-case command name followed
       by ` COMPLETE` on stdout only when they succeed, after finalization and
       any post-run validation. A command returning an error prints no COMPLETE
@@ -237,7 +249,7 @@ glossary:
   - term: model override
     means: >-
       A repeatable `--model <tier>=<cli>:<model>` flag on `us refine`,
-      `us apply`, `scen check`, `build tests` and `build code`. It replaces
+      `us apply`, `scen check`, `build tests`, `build steps` and `build code`. It replaces
       only that tier's configured binding for one run. The tier must already
       be declared under engine.models; references use the config's first-colon
       split and validation, with claude and codex as the known CLIs.
@@ -500,20 +512,26 @@ glossary:
       The test code that carries out one shape of step against the running
       product: it sets up what a Given states or observes what a Then
       states. A step runs through the one definition whose pattern matches
-      its whole text. Unlike the tests rendered from the Registry, the
-      definitions are written by a person. build steps lists missing definitions and checks Step coverage; its --fix writer is not implemented yet.
+      its whole text. The
+      engine writes their skeletons and the AI writes their bodies through build steps --fix,
+      using the declared Public interface across a process boundary. The body may extend
+      shared state but preserves every registration and signature. A pending body fails
+      with "step not written yet" and its phrase.
 
   - term: Item
     means: >-
       What one command walks. For build steps it is one Catalogue phrase
-      without a step definition in one go-test suite. Missing Items include
-      unused Catalogue phrases and are listed once per phrase and suite.
+      without a completed step definition in one go-test suite; pending engine skeletons
+      resume as Items. Missing Items include
+      unused Catalogue phrases mapped to the suite's service, as well as phrases used
+      by any Scenario of the suite, and are listed once per phrase and suite.
 
   - term: Step coverage
     means: >-
       The in-process answer to whether every step of every Registry Scenario
       binds to exactly one definition in its suite. Nonconstant or invalid
-      patterns and steps matched by two definitions refuse startup. An absent
+      patterns refuse startup. Ambiguous bindings refuse the read-only command at
+      startup, or the --fix command at final whole-suite Step coverage. An absent
       steps directory has zero definitions; missing bindings fail the command
       and name the Scenario and step. build steps performs this check without
       running a test or spending an AI turn.
@@ -522,6 +540,8 @@ glossary:
     means: >-
       The program a project runs its own tests with, such as `go test` or
       `npx playwright test`, as the architecture document declares it.
+      build steps --fix invokes it without executing tests to compile the
+      definitions and list every generated Scenario test.
       `build code` starts it to find the failing set and after every completed
       apply to rerun all remaining members in one selection. Go build and
       Playwright startup members make the rerun unfiltered. Jest load members
@@ -987,6 +1007,11 @@ catalogue:
       The engine started the project's test runner exactly that many times
       during the run.
     terms: [engine, test runner, template]
+
+  - template: 'the engine spawned exactly {count:number} test runner[s] with arguments matching {expected:pattern}'
+    block: then
+    means: The engine started exactly that many test runners whose complete argument string matches the given regular expression.
+    terms: [engine, test runner, pattern, template]
 
   - template: 'the engine spawned no test runner[s]'
     block: then

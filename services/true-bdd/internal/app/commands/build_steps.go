@@ -9,17 +9,17 @@ import (
 	"slices"
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/scenariogen"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/validate"
+ "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/stepskeleton"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/runner"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/catalogue"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/architecture"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/checklist"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/docs"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/input"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/registry"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/stepcoverage"
 )
-
-// ErrBuildStepsFixUnavailable refuses the not-yet-implemented body writer.
-var ErrBuildStepsFixUnavailable = errors.New("build steps --fix is not implemented yet")
 
 // ErrMissingStepDefinitions identifies missing phrase definitions or uncovered Registry steps.
 var ErrMissingStepDefinitions = errors.New("step definitions are missing")
@@ -27,18 +27,23 @@ var ErrMissingStepDefinitions = errors.New("step definitions are missing")
 // ErrBuildStepsChecklist identifies a checklist this deterministic command cannot answer.
 var ErrBuildStepsChecklist = errors.New("build steps checklist must ask D: step-coverage without parameters")
 
-// BuildStepsDeps contains the dependencies of the deterministic step inventory.
+// BuildStepsDeps contains the dependencies of the step inventory and body writer.
 type BuildStepsDeps struct {
-	RegistryLoader  *registry.RegistryLoader
-	ChecklistLoader *checklist.ChecklistLoader
-	DocResolver     *docs.Resolver
-	TmpDir          string
+	Evaluator          *validate.ChecklistEvaluator
+	FixGenerator       *validate.FixPromptGenerator
+	FixApplier         *validate.FixApplier
+	UserInputCollector *input.UserInputCollector
+	TableRenderer      *runner.TableRenderer
+	RegistryLoader     *registry.RegistryLoader
+	ChecklistLoader    *checklist.ChecklistLoader
+	DocResolver        *docs.Resolver
+	TmpDir             string
 }
 
-// RunBuildSteps lists missing phrase definitions and checks every Registry step in-process.
-func RunBuildSteps(_ context.Context, deps BuildStepsDeps, registryFile, architectureFile string, fix bool) error {
+// RunBuildSteps lists missing phrases or writes their bodies, then checks every Registry step.
+func RunBuildSteps(ctx context.Context, deps BuildStepsDeps, registryFile, architectureFile string, fix bool) error {
 	if fix {
-		return runner.RefuseStartup("build steps", ErrBuildStepsFixUnavailable)
+		return runBuildStepsFix(ctx, deps, registryFile, architectureFile)
 	}
 
 	prompts, err := buildStepsPrompts(deps.ChecklistLoader, deps.DocResolver)
@@ -46,7 +51,7 @@ func RunBuildSteps(_ context.Context, deps BuildStepsDeps, registryFile, archite
 		return runner.RefuseStartup("build steps", err)
 	}
 
-	items, answer, err := discoverBuildSteps(deps, registryFile, architectureFile)
+	items, answer, err := discoverBuildSteps(deps, registryFile, architectureFile, true)
 	if err != nil {
 		return runner.RefuseStartup("build steps", err)
 	}
@@ -76,7 +81,7 @@ func RunBuildSteps(_ context.Context, deps BuildStepsDeps, registryFile, archite
 }
 
 func discoverBuildSteps(
-	deps BuildStepsDeps, registryFile, architectureFile string,
+	deps BuildStepsDeps, registryFile, architectureFile string, scanCoverage bool,
 ) ([]*BuildStepsItem, *stepcoverage.Answer, error) {
 	scenarios, err := deps.RegistryLoader.Load(registryFile)
 	if err != nil {
@@ -105,19 +110,21 @@ func discoverBuildSteps(
 		return nil, nil, err
 	}
 
-	answer, err := stepcoverage.Scan(scenarios, root)
-	if err != nil {
-		return nil, nil, err
-	}
+ answer := &stepcoverage.Answer{}
+ if scanCoverage {
+  answer, err = stepcoverage.Scan(scenarios, root)
+  if err != nil { return nil, nil, err }
+ }
 
 	compiled, _ := catalogue.Compile(source.Entries, source.Roles)
-	items, err := missingPhrases(scenarios, source.Entries, compiled)
+	items, err := missingPhrases(scenarios, source.Entries, compiled, arch.Phrases)
 
 	return items, answer, err
 }
 
 func missingPhrases(
-	scenarios []*registry.RegistryScenario, phrases []catalogue.Entry, compiled *catalogue.Catalogue,
+	scenarios []*registry.RegistryScenario, phrases []catalogue.Entry,
+ compiled *catalogue.Catalogue, mappings []architecture.PhraseMapping,
 ) ([]*BuildStepsItem, error) {
 	items := make([]*BuildStepsItem, 0)
 	seen := make(map[string]bool)
@@ -136,12 +143,17 @@ func missingPhrases(
 		}
 
 		for _, phrase := range phrases {
+			if !phraseBelongs(scenarios, dir, scenario.Service, phrase.Template, compiled, mappings) {
+				continue
+			}
+
 			defined, err := suite.Defines(compiled.Pattern(phrase.Template))
 			if err != nil {
 				return nil, err
 			}
 
-			if !defined {
+   location := stepskeleton.Location(dir, phrase.Template, compiled.CapturingPattern(phrase.Template))
+   if !defined || location.Pending() {
 				items = append(items, &BuildStepsItem{Suite: dir, Service: scenario.Service, Phrase: phrase})
 			}
 		}
@@ -162,4 +174,29 @@ func stepCoverageFindings(answer *stepcoverage.Answer) []string {
 	slices.Sort(findings)
 
 	return findings
+}
+
+func phraseBelongs(scenarios []*registry.RegistryScenario, dir, service, template string,
+	compiled *catalogue.Catalogue, mappings []architecture.PhraseMapping) bool {
+	for _, mapping := range mappings {
+		if mapping.Template == template && mapping.Service == service {
+			return true
+		}
+	}
+
+	for _, scenario := range scenarios {
+		if stepcoverage.StepsDir(scenario.Path) != dir {
+			continue
+		}
+
+		for _, step := range scenario.Phrases() {
+			for _, phrase := range compiled.Match(step.Text) {
+				if phrase.Template == template {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
 }

@@ -2,5 +2,5 @@
 applied: false
 impossible: []
 target: "services/calc"
-summary: "Changed Double to return value + value. Verification remains incomplete: the permitted TestCalc001Double command failed during setup because sandbox permissions blocked access to the bddgo harness dependency. No test in the failing set was observed passing."
+summary: "Saved the fix in calc.go to print value + value, preserving validation and newline output. Ran the granted selection for TestCalc001Double; setup failed because sandbox permissions deny access to the BDD harness referenced by go.mod. No failing-set tests were observed passing; verification remains incomplete."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===

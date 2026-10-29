@@ -86,10 +86,13 @@ type Container struct {
 	// Apply-flavored triple drives `us apply`. Templates live under
 	// templates.prompts.apply_* and the fix-applier is configured with
 	// EditMode so Claude can mutate the scratch registry directly.
-	ApplyEvaluator          *validate.ChecklistEvaluator
-	ApplyFixPromptGenerator *validate.FixPromptGenerator
-	ApplyFixApplier         *validate.FixApplier
-	RegistryLoader *registry.RegistryLoader
+	ApplyEvaluator               *validate.ChecklistEvaluator
+	ApplyFixPromptGenerator      *validate.FixPromptGenerator
+	ApplyFixApplier              *validate.FixApplier
+	RegistryLoader               *registry.RegistryLoader
+	BuildStepsEvaluator          *validate.ChecklistEvaluator
+	BuildStepsFixPromptGenerator *validate.FixPromptGenerator
+	BuildStepsFixApplier         *validate.FixApplier
 	// Build-code triple drives `build code`: templates under
 	// templates.prompts.build_code_*, fix-applier in EditMode writing
 	// services/* files. The dispatcher below routes per-framework runs.
@@ -149,6 +152,9 @@ func NewContainer(overrides ...string) (*Container, error) {
 		ApplyFixPromptGenerator:      trips.apply.fixGenerator,
 		ApplyFixApplier:              trips.apply.fixApplier,
 		RegistryLoader:               registry.NewRegistryLoader(),
+		BuildStepsEvaluator:          trips.buildSteps.evaluator,
+		BuildStepsFixPromptGenerator: trips.buildSteps.fixGenerator,
+		BuildStepsFixApplier:         trips.buildSteps.fixApplier,
 		TestRunnerDispatcher:         testRunnerDispatcher,
 		BuildCodeEvaluator:           trips.buildCode.evaluator,
 		BuildCodeFixPromptGenerator:  trips.buildCode.fixGenerator,
@@ -198,6 +204,7 @@ func newTestRunnerDispatcher(runDir *fs.RunDirectory) *testrunner.Dispatcher {
 type triples struct {
 	apply      scenarioTriple
 	buildCode  scenarioTriple
+	buildSteps scenarioTriple
 	scenCheck  scenarioTriple
 }
 
@@ -241,8 +248,19 @@ func newTriples(
 	// documents and the Registry, which the engine commits once they parse.
 	scenCheckTrip.fixApplier.UseEditMode()
 
+	buildStepsTrip := newScenarioTriple(aiClient, cfg, models, scenarioTripleConfigKeys{
+		checklistSystem:    "templates.prompts.build_steps_checklist_system",
+		checklist:          "templates.prompts.build_steps_checklist",
+		fixGeneratorSystem: "templates.prompts.build_steps_fix_generator_system",
+		fixGenerator:       "templates.prompts.build_steps_fix_generator",
+		fixApplierSystem:   "templates.prompts.build_steps_fix_applier_system",
+		fixApplier:         "templates.prompts.build_steps_fix_applier",
+	})
+	buildStepsTrip.fixApplier.UseEditMode()
+
 	return triples{
 		apply:      applyTrip,
+		buildSteps: buildStepsTrip,
 		buildCode:  buildCodeTrip,
 		scenCheck:  scenCheckTrip,
 	}

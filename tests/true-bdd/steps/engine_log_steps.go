@@ -307,3 +307,34 @@ func assertPrebuiltEnginePath(state *State, _ []string) error {
 
 	return state.fail("no runner received the running engine path %q as one argument", path)
 }
+
+func assertTestRunnerMatchingCount(state *State, args []string) error {
+	want, err := numberSlot(args[0])
+	if err != nil {
+		return state.fail("test-runner count: %w", err)
+	}
+
+	pattern, err := regexp.Compile(args[1])
+	if err != nil {
+		return state.fail("test-runner argument pattern: %w", err)
+	}
+
+	records, err := readEngineLog(state)
+	if err != nil {
+		return err
+	}
+
+	got := 0
+
+	for _, record := range records {
+		if record.Msg == engineMsgSpawnTestRunner && pattern.MatchString(strings.Join(record.Args, " ")) {
+			got++
+		}
+	}
+
+	if got != want {
+		return state.fail("expected %d test runner(s) matching %q, got %d", want, args[1], got)
+	}
+
+	return nil
+}

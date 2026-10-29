@@ -1,11 +1,14 @@
 architecture:
   services:
-    - name: calc
-      path: services/calc
-      language: go
-    - name: neighbour
-      path: services/neighbour
-      language: go
+  - name: calc
+    path: services/calc
+    language: go
+    public_interface:
+      kind: cli
+      document: docs/architecture/calc-cli.yaml
+  - name: neighbour
+    path: services/neighbour
+    language: go
   testing:
     framework: go-test
     commands:
@@ -13,6 +16,23 @@ architecture:
       replay: go test -tags bdd -json -count=1 ./tests/calc/...
       live: go test -tags bdd -json -count=1 ./tests/calc/...
   terms:
-    - term: number
-      technical: The integer argument to services/calc.Double.
-      observed_by: The step calls Double and compares its integer return with the expected value.
+  - term: number
+    technical: The integer argument and stdout of the calculator double command.
+    observed_by: The step runs double as a process and compares its integer stdout
+      with the expected value.
+  phrases:
+  - template: the number is {value:number}
+    service: calc
+    references:
+    - command: double
+    does: Store the number as the next double command argument.
+  - template: the number is doubled
+    service: calc
+    references:
+    - command: double
+    does: Run the declared double command as a process and keep its integer stdout.
+  - template: the result is {value:number}
+    service: calc
+    references:
+    - command: double
+    does: Compare the double command stdout with the expected integer.

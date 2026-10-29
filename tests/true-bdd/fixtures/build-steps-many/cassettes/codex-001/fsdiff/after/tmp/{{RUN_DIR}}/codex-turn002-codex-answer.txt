@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-phrase7c963587b98a9c9fa59fafbd25518c3af0d8d428753a4c888f114e5a06aa3242-iter1-result.yaml ===
+applied: true
+target: "tests/calc/steps/phrase7c963587b98a9c9fa59fafbd25518c3af0d8d428753a4c888f114e5a06aa3242.go"
+summary: "Applied the supplied Given body and added Number and NumberSet to shared State."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-phrase7c963587b98a9c9fa59fafbd25518c3af0d8d428753a4c888f114e5a06aa3242-iter1-result.yaml ===

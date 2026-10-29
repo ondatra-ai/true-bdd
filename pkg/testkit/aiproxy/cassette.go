@@ -25,6 +25,7 @@ const (
 
 // meta is the cassette manifest for one recorded call.
 type meta struct {
+ NormalizeGoDurations bool `json:"normalize_go_durations,omitempty"`
 	Schema      int        `json:"schema"`
 	Binary      string     `json:"binary"`
 	Argv        []string   `json:"argv"` // normalized ({{CWD}}, {{RUN_DIR}})

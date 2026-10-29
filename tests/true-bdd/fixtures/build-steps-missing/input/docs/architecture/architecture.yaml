@@ -9,3 +9,9 @@ architecture:
   - name: mcp-service
     path: services/mcp-service
     language: go
+  phrases:
+  - template: the unused operation runs
+    service: mcp-service
+    references:
+    - command: unused
+    does: Run the unused command.

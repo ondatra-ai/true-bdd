@@ -122,3 +122,151 @@ func TestBuildStepsRefusals001EmptyChecklistRefused(t *testing.T) {
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
+
+// build-steps-writing-001-new-body: A missing phrase gets an engine skeleton and an AI body that executes the declared CLI command
+func TestBuildStepsWriting001NewBody(t *testing.T) {
+	s := scenarios.New(t, "build-steps-writing-001-new-body")
+	s.Given(`the "build-steps-new" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build steps --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches BUILD STEPS COMPLETE`)
+	s.And(`stdout matches Step coverage passed`)
+	s.And(`stdout matches Scenario list passed`)
+	s.And(`no file outside "tmp" and "tests" changed`)
+	s.And(`the engine dispatched no validation AI turns to "claude"`)
+	s.And(`the engine spawned exactly 1 test runner with arguments matching -list \.`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches phrase_mapping:`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches interface_document:`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches calc-001-double`)
+	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
+	s.Done()
+}
+
+// build-steps-writing-002-all-skeletons-first: All missing phrases get compilable skeletons before the first AI turn and each body is written in one walk; whole-suite checks run once
+func TestBuildStepsWriting002AllSkeletonsFirst(t *testing.T) {
+	s := scenarios.New(t, "build-steps-writing-002-all-skeletons-first")
+	s.Given(`the "build-steps-many" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build steps --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches BUILD STEPS COMPLETE`)
+	s.And(`stdout matches Step coverage passed`)
+	s.And(`stdout matches Scenario list passed`)
+	s.And(`no file outside "tmp" and "tests" changed`)
+	s.And(`stdout matches All step skeletons written.*items=3`)
+	s.And(`the engine dispatched no validation AI turns to "claude"`)
+	s.And(`the engine spawned exactly 1 test runner with arguments matching -list \.`)
+	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
+	s.Done()
+}
+
+// build-steps-writing-003-slot-order: The quoted operation and numeric value are passed to the written definition in template slot order
+func TestBuildStepsWriting003SlotOrder(t *testing.T) {
+	s := scenarios.New(t, "build-steps-writing-003-slot-order")
+	s.Given(`the "build-steps-slots" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build steps --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches BUILD STEPS COMPLETE`)
+	s.And(`stdout matches Step coverage passed`)
+	s.And(`stdout matches Scenario list passed`)
+	s.And(`no file outside "tmp" and "tests" changed`)
+	s.And(`the engine dispatched no validation AI turns to "claude"`)
+	s.And(`the engine spawned exactly 1 test runner with arguments matching -list \.`)
+	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
+	s.Done()
+}
+
+// build-steps-writing-004-interface-cannot-serve: A phrase needing an observation the declared CLI cannot offer stops distinctly after its first writer verdict
+func TestBuildStepsWriting004InterfaceCannotServe(t *testing.T) {
+	s := scenarios.New(t, "build-steps-writing-004-interface-cannot-serve")
+	s.Given(`the "build-steps-interface" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build steps --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches public interface cannot serve phrase`)
+	s.And(`stdout matches the number is doubled`)
+	s.And(`stdout matches heap`)
+	s.And(`stdout does not match BUILD STEPS COMPLETE`)
+	s.And(`the engine dispatched 2 AI turns`)
+	s.And(`no file outside "tmp" and "tests" changed`)
+	s.Done()
+}
+
+// build-steps-writing-005-outside-tests-refused: The confined body writer refuses writes to the service and Specification while completing the test body
+func TestBuildStepsWriting005OutsideTestsRefused(t *testing.T) {
+	s := scenarios.New(t, "build-steps-writing-005-outside-tests-refused")
+	s.Given(`the "build-steps-outside" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build steps --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches BUILD STEPS COMPLETE`)
+	s.And(`stdout matches Step coverage passed`)
+	s.And(`stdout matches Scenario list passed`)
+	s.And(`the engine spawned exactly 1 test runner with arguments matching -list \.`)
+	s.And(`no file outside "tmp" and "tests" changed`)
+	s.And(`stdout matches sandbox=writer`)
+	s.And(`every file matching "tmp/*/codex-turn*-codex-events.jsonl" matches (?i)permission denied|operation not permitted|read.only`)
+	s.And(`the engine dispatched no validation AI turns to "claude"`)
+	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
+	s.Done()
+}
+
+// codex-apply-002-build-steps-writes-protected-tests: The codex step writer receives the protected test paths and writes its body while preserving service and Specification
+func TestCodexApply002BuildStepsWritesProtectedTests(t *testing.T) {
+	s := scenarios.New(t, "codex-apply-002-build-steps-writes-protected-tests")
+	s.Given(`the "codex-apply-build-steps" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build steps --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches BUILD STEPS COMPLETE`)
+	s.And(`stdout matches Step coverage passed`)
+	s.And(`stdout matches Scenario list passed`)
+	s.And(`the engine spawned exactly 1 test runner with arguments matching -list \.`)
+	s.And(`no file outside "tmp" and "tests" changed`)
+	s.And(`stdout matches msg="Codex turn sandboxed" label=codex-turn[0-9]+ sandbox=writer`)
+	s.And(`the engine dispatched no validation AI turns to "claude"`)
+	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
+	s.Done()
+}
+
+// engine-term-documents-005-glossary-not-a-list-refuses-build-steps-fix: The body writer refuses a malformed term list before skeletons, runners or AI
+func TestEngineTermDocuments005GlossaryNotAListRefusesBuildStepsFix(t *testing.T) {
+	s := scenarios.New(t, "engine-term-documents-005-glossary-not-a-list-refuses-build-steps-fix")
+	s.Given(`the "build-steps-glossary" project tree`)
+	s.When(`the System Architect runs "build steps --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches glossary: must hold a list of terms`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`the engine spawned no test runners`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// engine-term-documents-006-mapping-not-a-list-refuses-build-steps-fix: The body writer refuses a malformed term list before skeletons, runners or AI
+func TestEngineTermDocuments006MappingNotAListRefusesBuildStepsFix(t *testing.T) {
+	s := scenarios.New(t, "engine-term-documents-006-mapping-not-a-list-refuses-build-steps-fix")
+	s.Given(`the "build-steps-mapping" project tree`)
+	s.When(`the System Architect runs "build steps --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches architecture.terms: must hold a list of mappings`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`the engine spawned no test runners`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// fix-loop-choices-006-exit-fails-build-steps: Exiting the body-writing Fix loop ends build steps non-zero with no COMPLETE banner
+func TestFixLoopChoices006ExitFailsBuildSteps(t *testing.T) {
+	s := scenarios.New(t, "fix-loop-choices-006-exit-fails-build-steps")
+	s.Given(`the "build-steps-exit" project tree`)
+	s.And(`the System Architect answers "3" to every question`)
+	s.When(`the System Architect runs "build steps --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches action=exit`)
+	s.And(`stdout does not match BUILD STEPS COMPLETE`)
+	s.And(`the engine dispatched 1 AI turn`)
+	s.And(`no file outside "tmp" and "tests" changed`)
+	s.Done()
+}

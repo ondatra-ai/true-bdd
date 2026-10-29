@@ -49,7 +49,7 @@ One testable condition inside a refined user story, before it is merged into the
 _Avoid_: AC (in prose), criterion, condition
 
 **Item**:
-Whatever a single command walks one of at a time — a Story for `us refine`, an Acceptance Criterion for `us apply`, a Scenario for `scen check`, a Catalogue phrase a go-test suite has no step definition for, for `build steps` (phrase × suite, including unused phrases). `build tests` renders files and walks no Items.
+Whatever a single command walks one of at a time — a Story for `us refine`, an Acceptance Criterion for `us apply`, a Scenario for `scen check`, a Catalogue phrase a go-test suite has no completed step definition for, for `build steps` (phrase × suite: a phrase mapped to the suite's service or used by one of its Scenarios, including mapped unused phrases; a pending engine skeleton resumes as an Item). `build tests` renders files and walks no Items.
 _Avoid_: subject, entity, record
 
 **Prompt**:
@@ -73,7 +73,7 @@ One full traversal of every Cell in a run. A fix applied mid-walk restarts the t
 _Avoid_: pass, sweep, iteration
 
 **Step coverage**:
-The engine's own answer to which Scenarios have a step no definition binds: the Scenarios it examined, and the unbound steps among them. `examined` is the load-bearing half — an empty gap list says nothing about a Scenario nobody looked at. Answered by `build steps` in-process by parsing each suite's `steps/` package, never by running a test; a step two definitions match is a refusal rather than a gap.
+The engine's own answer to which Scenarios have a step no definition binds: the Scenarios it examined, and the unbound steps among them. `examined` is the load-bearing half — an empty gap list says nothing about a Scenario nobody looked at. Answered by `build steps` in-process by parsing each suite's `steps/` package, never by running a test; a step two definitions match is a refusal rather than a gap. Under --fix, all skeletons precede the first AI turn; each applied body must compile, have one definition and contain no pending sentinel. Whole-suite coverage and a generated-test listing follow the final Item once.
 _Avoid_: coverage report, coverage output, step report, gap list
 
 **Catalogue**:
@@ -109,7 +109,7 @@ All tests failing in one `build code` discovery, walked as one Item with one pro
 _Avoid_: repair batch, failure queue
 
 **Writable paths**:
-The exact files or folders a service declares under `writable` in the architecture document, relative to the Host project root, with no patterns. Together with that service's `path` and the host's tmp they bound its build-code writer. A grant covering tests or step definitions, or lying outside the host, is refused before any test runner or AI turn. Here the tests are `tests/`, the Registry's suite directories, the in-host directory holding `testing.config`, and the in-host package directories named by the Go `testing.commands` (`./dir` or `./dir/...`, relative to the command's working directory). A broad `./...` names no separate test directory. Command package directories inside a service's own `path` remain service code; `_test.go` files there are writable by build code. The filename suffix alone never makes a file protected. The reserved `tests/`, Registry and configuration directories still take precedence. Protected tests and step definitions can only be read and run.
+The exact files or folders a service declares under `writable` in the architecture document, relative to the Host project root, with no patterns. Together with that service's `path` and the host's tmp they bound its build-code writer. A grant covering tests or step definitions, or lying outside the host, is refused before any test runner or AI turn. Here the tests are `tests/`, the Registry's suite directories, the in-host directory holding `testing.config`, and the in-host package directories named by the Go `testing.commands` (`./dir` or `./dir/...`, relative to the command's working directory). A broad `./...` names no separate test directory. Command package directories inside a service's own `path` remain service code; `_test.go` files there are writable by build code. The filename suffix alone never makes a file protected. The reserved `tests/`, Registry and configuration directories still take precedence. Protected tests and step definitions can only be read and run by build code. Build steps writes only those protected test directories and host tmp; grants overlapping service code or Specification documents are refused.
 _Avoid_: extra roots, writable globs, implicit manifest grants
 
 **Impossible repair**:

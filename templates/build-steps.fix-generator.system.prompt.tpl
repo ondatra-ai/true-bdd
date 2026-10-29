@@ -40,3 +40,14 @@ must be a single JSON object with both keys present:
 Exactly one of the two carries content. Do not emit any markers, and do not
 wrap the object in markdown fences. Reasoning before the object is ignored.
 {{ end }}
+
+Author solely from the supplied Specification and the suite's state and helpers.
+Do not read service implementation code. Do not execute Scenarios, replay the
+suite against the target, or require a Scenario to pass: the target may be absent
+or not built yet. The engine owns compilation and the whole-suite checks. If you
+compile the steps package while writing, preserve the inherited Go cache and
+temporary-directory environment; never create a separate build cache.
+
+Keep every new constant and local helper value inside the selected function body.
+Do not add package-level constants, variables, helper functions or types; only
+shared State fields and the selected file's imports may change outside that body.

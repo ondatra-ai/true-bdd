@@ -63,3 +63,29 @@ story:
                 - but: stdout does not match check=step-definitions
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns
+        - id: 005-glossary-not-a-list-refuses-build-steps-fix
+          description: The body writer refuses a malformed term list before skeletons, runners or AI
+          steps:
+          - given:
+            - the "build-steps-glossary" project tree
+          - when:
+            - the System Architect runs "build steps --fix"
+          - then:
+            - the command exits with code 1
+            - 'stdout matches glossary: must hold a list of terms'
+            - the engine dispatched no AI turns
+            - the engine spawned no test runners
+            - no file outside "tmp" changed
+        - id: 006-mapping-not-a-list-refuses-build-steps-fix
+          description: The body writer refuses a malformed term list before skeletons, runners or AI
+          steps:
+          - given:
+            - the "build-steps-mapping" project tree
+          - when:
+            - the System Architect runs "build steps --fix"
+          - then:
+            - the command exits with code 1
+            - 'stdout matches architecture.terms: must hold a list of mappings'
+            - the engine dispatched no AI turns
+            - the engine spawned no test runners
+            - no file outside "tmp" changed
