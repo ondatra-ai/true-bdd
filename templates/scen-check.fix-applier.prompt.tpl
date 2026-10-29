@@ -1,3 +1,26 @@
+{{ if .Judgement -}}
+The responsible person chose apply at the menu for Scenario {{.Subject.ID}}.
+Approved fix:
+{{.FixPrompt}}
+Working copies (edit only the approved target):
+{{ range .Subject.TermDocuments }}
+- `{{.Key}}`: edit `{{.Scratch}}`, the working copy of `{{.Path}}`
+{{ end }}
+{{ with .Subject.RegistryDocument }}
+- `{{.Key}}`: edit `{{.Scratch}}`, the working copy of `{{.Path}}`
+{{ end }}
+{{ range .Subject.InterfaceDocuments }}
+- interface: edit `{{.Scratch}}`, the working copy of `{{.Path}}`
+{{ end }}
+Concept changes belong only to product, bindings to architecture_yaml and
+needed Public interface working copies, step rewrites to this Scenario's
+Registry entry. Preserve all unrelated entries. Return confirmation:
+=== FILE_START: {{.ResultPath}} ===
+applied: true
+target: "<working copy edited>"
+summary: "<approved change applied>"
+=== FILE_END: {{.ResultPath}} ===
+{{ else -}}
 {{ if eq .Check "phrase-mappings" -}}
 Service: {{.Subject.Service}}
 The menu action was apply. Perform the approved fix now.
@@ -143,6 +166,7 @@ applied: true
 target: "<path of the working copy you edited>"
 summary: "<one-line summary of what changed>"
 === FILE_END: {{.ResultPath}} ===
+{{ end -}}
 {{ end -}}
 {{ end -}}
 {{ end -}}

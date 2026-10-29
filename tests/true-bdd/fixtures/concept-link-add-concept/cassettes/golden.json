@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "concept-link-add-concept",
+  "files": [
+    {
+      "path": "docs/product/product.yaml",
+      "kind": "modified",
+      "size": 729,
+      "sha256": "791ecefc30c2153468565fe89ec4d33437a1d3e9bec06e02c7abbedb2587d2ca",
+      "text": "{\n  \"roles\": [\n    {\n      \"name\": \"Product Owner\",\n      \"description\": \"Owns meanings.\"\n    }\n  ],\n  \"concepts\": {\n    \"given\": [\n      {\n        \"concept\": \"number ready\",\n        \"means\": \"A number is entered before the action.\",\n        \"terms\": []\n      }\n    ],\n    \"when\": [\n      {\n        \"concept\": \"halve\",\n        \"means\": \"Halve the entered number once.\",\n        \"terms\": []\n      },\n      {\n        \"concept\": \"square\",\n        \"means\": \"Square the entered number.\",\n        \"terms\": []\n      }\n    ],\n    \"then\": [\n      {\n        \"concept\": \"number result\",\n        \"means\": \"Compare the displayed number with an expected value.\",\n        \"terms\": []\n      }\n    ]\n  },\n  \"glossary\": [],\n  \"note\": \"approved\"\n}\n"
+    }
+  ]
+}

@@ -1,3 +1,9 @@
+{{ if .FailedCheck.Judgement -}}
+You prepare a concept or binding repair for the responsible person's menu.
+Change nothing; propose only the failed judgement's repair. Apply requires
+an explicit menu decision. The Product Owner owns concepts and Item wording,
+the System Architect bindings. Return the required structured answer.
+{{ else -}}
 {{ if eq .FailedCheck.Check "" -}}
 You are a Technical Scrum Master helping to fix user story acceptance criteria.
 
@@ -163,4 +169,5 @@ must be a single JSON object with both keys present:
 Exactly one of the two carries content. Do not emit any markers, and do not
 wrap the object in markdown fences. Reasoning before the object is ignored.
 {{ end }}
+{{ end -}}
 {{ end -}}

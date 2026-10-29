@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "concept-link-ambiguous-binding",
+  "files": [
+    {
+      "path": "docs/architecture/architecture.yaml",
+      "kind": "modified",
+      "size": 1594,
+      "sha256": "2c537b1ca3dd76facaafb3533a4b584193e16d07bac5bc0c522657a32a4fecc3",
+      "text": "{\n  \"architecture\": {\n    \"services\": [\n      {\n        \"name\": \"calc\",\n        \"path\": \"services/calc\",\n        \"language\": \"go\",\n        \"public_interface\": {\n          \"kind\": \"ui\",\n          \"elements\": [\n            {\n              \"page\": \"Calc\",\n              \"role\": \"button\",\n              \"name\": \"Halve\"\n            },\n            {\n              \"page\": \"Calc\",\n              \"role\": \"textbox\",\n              \"name\": \"Number\"\n            }\n          ]\n        }\n      }\n    ],\n    \"concepts\": [\n      {\n        \"concept\": \"number ready\",\n        \"block\": \"given\",\n        \"service\": \"calc\",\n        \"references\": [\n          {\n            \"element\": {\n              \"page\": \"Calc\",\n              \"role\": \"textbox\",\n              \"name\": \"Number\"\n            }\n          }\n        ],\n        \"does\": \"Enter the given number into the Number field.\"\n      },\n      {\n        \"concept\": \"halve\",\n        \"block\": \"when\",\n        \"service\": \"calc\",\n        \"references\": [\n          {\n            \"element\": {\n              \"page\": \"Calc\",\n              \"role\": \"button\",\n              \"name\": \"Halve\"\n            }\n          }\n        ],\n        \"does\": \"Press Halve once.\"\n      },\n      {\n        \"concept\": \"number result\",\n        \"block\": \"then\",\n        \"service\": \"calc\",\n        \"references\": [\n          {\n            \"element\": {\n              \"page\": \"Calc\",\n              \"role\": \"textbox\",\n              \"name\": \"Number\"\n            }\n          }\n        ],\n        \"does\": \"Compare the displayed Number text with the expected result.\"\n      }\n    ],\n    \"terms\": []\n  }\n}\n"
+    }
+  ]
+}

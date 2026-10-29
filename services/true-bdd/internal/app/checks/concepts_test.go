@@ -33,6 +33,8 @@ func TestConceptTerms(t *testing.T) {
 }
 
 func TestConceptBindings(t *testing.T) {
+	const validBindings = "every concept binding"
+
 	t.Parallel()
 
 	cases := []struct {
@@ -41,7 +43,7 @@ func TestConceptBindings(t *testing.T) {
 	}{
 		{"declared", "[{concept: halve, block: when, service: calc, references: " +
 			"[{element: {page: Calc, role: button, name: Halve}}], does: Call " +
-			"halve.}]", "every concept binding", true},
+			"halve.}]", validBindings, true},
 		{"undeclared concept",
 			"[{concept: missing, block: when, service: calc, intent: Call it.}]",
 			"concept 'missing'", false},
@@ -55,11 +57,11 @@ func TestConceptBindings(t *testing.T) {
 		{"unknown service",
 			"[{concept: halve, block: when, service: missing, intent: Call it.}]",
 			"service missing", false},
-		{"UI intent", "[{concept: halve, block: when, service: calc, intent: Call it.}]", "every concept binding", true},
+		{"UI intent", "[{concept: halve, block: when, service: calc, intent: Call it.}]", validBindings, true},
 		{"intent and operation",
 			"[{concept: halve, block: when, service: calc, intent: Call it., does: Call it.}]",
 			"replace does", false},
-		{"no binding", "", "has no Concept binding", false},
+		{"no binding", "", validBindings, true},
 		{"empty operation", "[{concept: halve, block: when, service: calc}]", "does", false},
 		{"missing references", "[{concept: halve, block: when, service: calc, does: Call it.}]", "references", false},
 	}

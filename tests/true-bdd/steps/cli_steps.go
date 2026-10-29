@@ -166,7 +166,7 @@ func prepareTree(state *State, args []string) error {
 
 	state.Proxy = proxy
 
-	return nil
+	return useTreeCLI(state)
 }
 
 // resolveProxy decides where this scenario's AI calls come from, per

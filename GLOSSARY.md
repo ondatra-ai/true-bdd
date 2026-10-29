@@ -101,7 +101,7 @@ One way of putting state in place (Given), calling (When), or observing and comp
 _Avoid_: step template, phrase (for a concept)
 
 **Concept binding**:
-An `architecture.concepts` entry naming a Concept by name and block and its service, with Public interface `references` and a `does` sentence describing what its step definition does by block. An `intent` replaces both for a UI service. Every concept has at least one binding, each concept and service pair has at most one, and every reference is declared by that service. The built-in phrase-mappings check holds these declarations without linking steps; the link pass separately checks which service binding a Scenario needs.
+An `architecture.concepts` entry naming a Concept by name and block and its service, with Public interface `references` and a `does` sentence describing what its step definition does by block. An `intent` replaces both for a UI service. Each concept (name and block) and service pair has at most one binding, and every reference is declared by that service. The built-in phrase-mappings check holds these declarations without linking steps. After the link, scen check requires every linked concept to be bound for the Scenario's service and judges those bindings usable; an unused unbound concept is not that Scenario's finding.
 _Avoid_: concept mapping, step binding
 
 **Word mapping**:
@@ -117,7 +117,7 @@ A specification document holding declared meanings and their implementation: the
 _Avoid_: vocabulary file, dictionary
 
 **Closure check**:
-One of the six Built-in checks over a Scenario and its Term documents. With templates, these hold its Public interface, step phrases, declared terms, Word mappings, Phrase mappings and step definitions to their declarations; the five about templates pass unclaimed Scenarios or hosts without a Catalogue unchecked. With concepts, declared-terms and term-mappings check every declared concept, and phrase-mappings checks all Concept bindings, independently of Story claims; template matching and definition correspondence remain unchecked pending the link pass and build steps per concept. The Public interface check always runs. Both forms answer without an AI turn.
+One of the six Built-in checks over a Scenario and its Term documents. With templates, these hold its Public interface, step phrases, declared terms, Word mappings, Phrase mappings and step definitions to their declarations; the five about templates pass unclaimed Scenarios or hosts without a Catalogue unchecked. With concepts, declared-terms and term-mappings check every declared concept, and phrase-mappings checks all Concept bindings, independently of Story claims; template matching and definition correspondence stay unchecked, while model Prompts link steps and judge their service bindings. The Public interface check always runs. Both forms answer without an AI turn.
 _Avoid_: spec check, term check
 
 **Services**:

@@ -1,22 +1,32 @@
-roles:
-- name: System Architect
-  description: Owns the service and its Phrase mapping.
-concepts:
-  given:
-  - concept: greeting
-    means: The greeting configuration file contains the greeting before a request.
-    terms:
-    - greeting
-  when:
-  - concept: request greeting
-    means: Call greet once.
-    terms:
-    - greeting
-  then:
-  - concept: greeting
-    means: Compare the greeted log record with the expected greeting.
-    terms:
-    - greeting
-glossary:
-- term: greeting
-  means: The text spoken to the person.
+{
+  "roles": [
+    {
+      "name": "Product Owner",
+      "description": "Owns meanings."
+    }
+  ],
+  "concepts": {
+    "given": [
+      {
+        "concept": "number ready",
+        "means": "A number is entered before the action.",
+        "terms": []
+      }
+    ],
+    "when": [
+      {
+        "concept": "halve",
+        "means": "Halve the entered number once.",
+        "terms": []
+      }
+    ],
+    "then": [
+      {
+        "concept": "number result",
+        "means": "Compare the displayed number with an expected value.",
+        "terms": []
+      }
+    ]
+  },
+  "glossary": []
+}

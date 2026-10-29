@@ -21,6 +21,7 @@ func (s Status) String() string {
 type ValidationResult struct {
 	SectionPath  string   // e.g., "template/who" or "invest/valuable"
 	Question     string   // The question that was asked
+	Judgement    string   // Structured Q protocol, empty for ordinary pass/fail questions.
 	Check        string   // The built-in check a `D:` prompt names; "" for a model's `Q:`
 	ActualAnswer string   // The actual answer from AI evaluation (pass/fail)
 	Context      []string // Per-question context lines from AI (one observation per line)

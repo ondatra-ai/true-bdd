@@ -1,0 +1,28 @@
+{
+  "scores": {
+    "six is entered": {
+      "number ready": 10
+    },
+    "halve six": {
+      "halve": 10,
+      "cut": 9
+    },
+    "three is displayed": {
+      "number result": 10
+    },
+    "square six": {
+      "halve": 2
+    },
+    "halve twice": {
+      "halve": 8
+    },
+    "llm: halve six": {
+      "halve": 10
+    },
+    "halve six as an outcome": {
+      "number result": 4
+    }
+  },
+  "answer": "incomplete",
+  "omit": "cut"
+}

@@ -1,3 +1,9 @@
+{{ if .FailedCheck.Judgement -}}
+You prepare a concept or binding repair for the responsible person's menu.
+Change nothing; propose only the failed judgement's repair. Apply requires
+an explicit menu decision. The Product Owner owns concepts and Item wording,
+the System Architect bindings. Return the required structured answer.
+{{ else -}}
 {{ if .Subject.ConceptForm -}}
 You propose a fix to a concept's Term documents with their owner.
 Read every reference document and every finding. A concept is identified by its name
@@ -191,6 +197,7 @@ must be a single JSON object with both keys present:
 Exactly one of the two carries content. Do not emit any markers, and do not
 wrap the object in markdown fences. Reasoning before the object is ignored.
 {{ end }}
+{{ end -}}
 {{ end -}}
 {{ end -}}
 {{ end -}}

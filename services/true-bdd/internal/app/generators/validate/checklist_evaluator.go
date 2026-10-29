@@ -120,6 +120,10 @@ func (e *ChecklistEvaluator) EvaluateOne(
 		e.artifactLabel = artifactLabel[0]
 	}
 
+	if kind, ok := promptCtx.Prompt.With["concepts"].(string); ok && kind != "sketch" {
+		return e.evaluateConcepts(ctx, subject, subjectID, promptCtx, kind)
+	}
+
 	return e.evaluatePrompt(ctx, subject, subjectID, promptCtx)
 }
 
@@ -159,7 +163,7 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 		Structured:  ai.SupportsResultSchema(model.CLI),
 	}
 
-	systemPrompt, userPrompt, err := e.renderPrompts(promptData)
+	systemPrompt, userPrompt, err := e.renderChecklistPrompts(promptCtx, promptData)
 	if err != nil {
 		return checklist.ValidationResult{}, err
 	}
@@ -200,7 +204,7 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 
 	return checklist.ValidationResult{
 		SectionPath:  promptCtx.GetFullSectionPath(),
-		Question:     promptCtx.Prompt.Question,
+		Question:     promptData.Question,
 		ActualAnswer: parsedResult.Answer,
 		Context:      parsedResult.Context,
 		Status:       status,

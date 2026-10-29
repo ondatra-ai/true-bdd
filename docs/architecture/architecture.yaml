@@ -58,7 +58,7 @@ architecture:
   prompt_data:
     checklist:
       rendering: &prompt-rendering >-
-        Render the configured template file verbatim through Go text/template with Sprig FuncMap and the engine toYaml override (yaml.v3 Marshal). Template literal bytes, leading/trailing newlines, trim markers, field order and conditional branches are authoritative; no final trim or YAML/Markdown escaping is applied to rendered prompts. Lists retain their input order; map ranges sort string keys. Dot paths below are reads, including methods and collection tests/ranges; [] denotes one ranged value. All strings are YAML-decoded values rather than their source spelling. The same role data reaches system and user templates.
+        Render the configured template file verbatim through Go text/template with Sprig FuncMap and the engine toYaml override (yaml.v3 Marshal). Template literal bytes, leading/trailing newlines, trim markers, field order and conditional branches are authoritative; no final trim or YAML/Markdown escaping is applied to rendered prompts. Lists retain their input order; map ranges sort string keys. Dot paths below are reads, including methods and collection tests/ranges; [] denotes one ranged value. All strings are YAML-decoded values rather than their source spelling. The same role data reaches system and user templates. Structured concept Q protocols bypass these templates: the Q text plus a JSON-only instruction is the system prompt, and indented JSON is the user prompt. Link embeds the Item id/title, steps with numeric keys and optional criterion ids, and the whole product including roles/glossary. Its schema requires every non-judge step and every own-block concept score (integer 0..10), reason and nullable other_block_concept. with.threshold defaults to 9 and accepts integers 1..10. Binding embeds the product, Scenario steps, linked means, bindings and full Public interface; its schema requires every block:name key, an unambiguous boolean and reason. Raw model answers are saved as model-answer.txt, and the engine-derived canonical answer/context JSON is saved in both response.txt and result.yaml for the coverage census. Links live only in the current walk Item. Walking orders D prompts, then concept links, then other Q prompts, preserving file-position indices; template hosts omit the concept cells and keep their old order.
       fields:
         Docs: &docs >-
           Checklist effective docs: a nonempty Prompt docs list replaces the checklist defaults; even an explicitly empty list falls back. Keys resolve through config documents.<key>; duplicate keys collapse in a map, unsatisfiable keys warn and are skipped after preflight. Template map range sorts string keys lexically, not checklist order; empty emits no documentation section.
@@ -67,7 +67,7 @@ architecture:
         FixTemplate: &fixtemplate >-
           Checklist F scalar, YAML-decoded unchanged, including its block chomping and trailing newline; empty omits the failure guidance. This input is NOT the trimmed failed-check fix text.
         Question: &question >-
-          Checklist Q scalar, YAML-decoded without trimming; a literal block retains its trailing newline. Inserted immediately before the conditional rationale, so that newline remains before the literal space in " SO THAT WE ENSURE ".
+          Checklist Q scalar, YAML-decoded without trimming; a literal block retains its trailing newline. For with.concepts: sketch on a concept host only, replace it with instructions to sketch against closed means and service interface kinds, embed the complete product and the service-name-to-kind JSON map, and omit reference Read paths; no architecture binding is read. Inserted immediately before the conditional rationale, so that newline remains before the literal space in " SO THAT WE ENSURE ".
         Rationale: &rationale >-
           Checklist rationale scalar, YAML-decoded unchanged; empty omits the suffix, otherwise the template appends " SO THAT WE ENSURE " and this value without trimming.
         ResultPath: &validation-result-path >-
@@ -83,6 +83,12 @@ architecture:
     fix_generator:
       rendering: *prompt-rendering
       fields:
+        Subject: >-
+          Complete StoryRefineData serialized with the same Story fields and exclusions as checklist.Subject, only for a structured concept repair.
+        SubjectID: >-
+          Selected Story id, unchanged.
+        FailedCheck.Judgement: >-
+          The structured Q protocol from with.concepts: link or bindings, empty for ordinary Q and D prompts. Selects concept repair wording; no earlier link is trusted.
         DocPaths: &docpaths >-
           Failed check effective docs resolved to config path strings by the same resolver as Docs. Duplicate keys collapse; resolution errors warn and skip; template ranges lexically by key, displaying keys unchanged. Empty map renders no Read lines; paths retain configured ./ and are not made absolute.
         FailedCheck.ActualAnswer: &failedcheck-actualanswer >-
@@ -94,7 +100,7 @@ architecture:
         FailedCheck.FixPrompt: &failedcheck-fixprompt >-
           Failed model result fix_prompt is TrimSpace after JSON/YAML decoding; pass discards it. Built-in failure uses TrimSpace of F; the template inserts it unchanged, even if empty.
         FailedCheck.Question: &failedcheck-question >-
-          Failed Q text unchanged, including a trailing YAML block newline; for a built-in check, "D: " plus the trimmed D name.
+          Evaluated Q text, including the concept-sketch replacement and embedded context when active; otherwise unchanged, including a trailing YAML block newline. For a built-in check, "D: " plus the trimmed D name.
         FailedCheck.Rationale: &failedcheck-rationale >-
           Checklist rationale scalar copied unchanged to the failed result, including YAML block newlines; printed without trimming.
         FailedCheck.SectionPath: &failedcheck-sectionpath >-
@@ -138,12 +144,19 @@ architecture:
           Run map of question id to answer, initially empty; later answers overwrite matching ids across clarification rounds. UI trims each answer, substitutes a valid positive numbered option (option text is not trimmed), and free text or an out-of-range number is retained after trimming; an interactive blank line stays empty; EOF at a clarification stops before another AI request. Refinement stores feedback lines (each trimmed, joined by newline) at _user_refinement. Map range is lexical by id, excludes that reserved key from bullets, and prints it separately as feedback; empty values are false in template conditionals.
     fix_generator_system:
       rendering: *prompt-rendering
-      fields: &fix-generator-system-fields
-        FailedCheck.Check: *failedcheck-check
-        Structured: *structured
+      fields:
+        FailedCheck.Judgement: >-
+          The structured Q protocol from with.concepts: link or bindings, empty for ordinary Q and D prompts. Selects concept repair wording; no earlier link is trusted.
+        <<: &fix-generator-system-fields
+          FailedCheck.Check: *failedcheck-check
+          Structured: *structured
     fix_applier:
       rendering: *prompt-rendering
       fields:
+        Subject: >-
+          StoryRefineData serialised with the same Story shape and exclusions as checklist.Subject; used for an approved concept-link step rewrite.
+        Judgement: >-
+          The failed structured Q protocol, carried unchanged to the approved applier; empty retains legacy wording.
         Check: &check >-
           Failed result D name carried unchanged into the applier; empty for a model Q. Selects Story/Scenario rewrite versus term-document fix; public-interface and phrase-mappings select application to the architecture and the Public interface documents it names.
         FixPrompt: &fixprompt >-
@@ -171,6 +184,8 @@ architecture:
     fix_applier_system:
       rendering: *prompt-rendering
       fields:
+        Judgement: >-
+          The failed structured Q protocol, carried unchanged to the approved applier; empty retains legacy wording.
         Check: *check
         ResultPath: *application-result-path
     apply_checklist:
@@ -517,6 +532,8 @@ architecture:
     scen_check_fix_generator:
       rendering: *prompt-rendering
       fields:
+        FailedCheck.Judgement: >-
+          The structured Q protocol from with.concepts: link or bindings, empty for ordinary Q and D prompts. Selects concept repair wording; no earlier link is trusted.
         Subject.ConceptForm: >-
           True when the closure check loaded concepts from the product document for this Cell; false for legacy templates. Selects concept document instructions, preserving legacy rendered bytes.
         DocPaths: *docpaths
@@ -545,6 +562,8 @@ architecture:
     scen_check_fix_generator_system:
       rendering: *prompt-rendering
       fields:
+        FailedCheck.Judgement: >-
+          The structured Q protocol from with.concepts: link or bindings, empty for ordinary Q and D prompts. Selects concept repair wording; no earlier link is trusted.
         Subject.ConceptForm: >-
           True when the closure check loaded concepts from the product document for this Cell; false for legacy templates. Selects concept document instructions, preserving legacy rendered bytes.
         <<: *fix-generator-system-fields
@@ -553,6 +572,8 @@ architecture:
     scen_check_fix_applier:
       rendering: *prompt-rendering
       fields:
+        Judgement: >-
+          The failed structured Q protocol, carried unchanged to the approved applier; empty retains legacy wording.
         Subject.ConceptForm: >-
           True when the closure check loaded concepts from the product document for this Cell; false for legacy templates. Selects concept document instructions, preserving legacy rendered bytes.
         Subject.Service: *registry-service
@@ -581,6 +602,8 @@ architecture:
     scen_check_fix_applier_system:
       rendering: *prompt-rendering
       fields:
+        Judgement: >-
+          The failed structured Q protocol, carried unchanged to the approved applier; empty retains legacy wording.
         Check: *check
         Subject.Writes: *subject-writes
 

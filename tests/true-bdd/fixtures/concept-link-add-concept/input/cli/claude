@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+"""Deterministic replies at the external AI CLI boundary; no model calls."""
+import json, os, pathlib, re, sys
+root = pathlib.Path.cwd()
+case = json.loads((root / 'link-case.json').read_text())
+text = sys.argv[sys.argv.index('-p') + 1]
+system = sys.argv[sys.argv.index('--system-prompt') + 1]
+role = os.environ['CLAUDE_HISTORY_ROLE']
+def block(body):
+    target = re.search(r'=== FILE_START: (.+?) ===', text).group(1)
+    return {'result': f'=== FILE_START: {target} ===\n{body}\n=== FILE_END: {target} ===\n'}
+def scratch(key):
+    match = re.search(r'`' + key + r'`: edit `([^`]+)`', text)
+    assert match, (key, text)
+    return pathlib.Path(match.group(1))
+if role == 'prompt' and 'Link every step' in system:
+    assert 'CLOSED' in system and 'at most 8' in system and 'at most 4' in system
+    assert 'architecture' not in text.lower(), 'link must not depend on architecture'
+    payload = json.loads(text)
+    product = json.loads(payload['product'])
+    schema = json.loads(sys.argv[sys.argv.index('--json-schema') + 1])
+    answer = {}
+    for step in payload['steps']:
+        if step['text'].startswith('judge:'):
+            assert step['key'] not in schema['properties']['steps']['properties']
+            continue
+        names = [c['concept'] for c in product['concepts'].get(step['block'], [])]
+        assert set(schema['properties']['steps']['properties'][step['key']]['properties']['scores']['required']) == set(names)
+        known = case['scores'][step['text']]
+        scores = {name: known.get(name, 0) for name in names}
+        if case.get('fix') in ('new', 'widen', 'shared') and 'approved' in product.get('note', '') and case['fixed_concept'] in names:
+            scores[case['fixed_concept']] = 10
+        answer[step['key']] = {'scores': scores, 'reason': case.get('reason', 'The stated closed meaning fits.'),
+                               'other_block_concept': case.get('other') if step['text'] == case.get('bad_step') else None}
+    result = {'steps': answer}
+    if case.get('answer') == 'malformed':
+        result = {'steps': []}
+    elif case.get('answer') == 'missing':
+        result = None
+    elif case.get('answer') == 'incomplete':
+        for value in answer.values():
+            if case['omit'] in value['scores']:
+                del value['scores'][case['omit']]
+                break
+    envelope = {'structured_output': result} if result is not None else {'result': ''}
+elif role == 'prompt' and 'Judge every supplied linked' in system:
+    payload = json.loads(text)
+    verdicts = {}
+    for key, entry in payload['bindings'].items():
+        ambiguous = case.get('ambiguous_binding', False) and entry['binding'].get('Does') == 'Perform the operation.'
+        verdicts[key] = {'unambiguous': not ambiguous, 'reason': 'Ambiguous instructions.' if ambiguous else
+                        'The references and instructions determine the step.'}
+    envelope = {'structured_output': {'bindings': verdicts}}
+elif role == 'prompt':
+    assert 'Square the entered number.' in text, 'the concept link must run before the sketch'
+    assert 'architecture bindings or helpers' in text and 'Service interface kinds:' in text
+    assert '"calc":"ui"' in text
+    assert not re.search(r'Read\(`[^`]*architecture', text)
+    envelope = {'structured_output': {'answer': 'pass', 'context': ['AC-1: convertible from means through ui; binding not required'], 'fix_prompt': ''}}
+elif role == 'fix':
+    envelope = {'structured_output': {'fix_prompt': 'Apply the approved ' + case['fix'] + ' repair.', 'questions': []}}
+else:
+    assert 'chose apply at the menu' in text
+    if case['fix'] == 'rewrite':
+        story = json.loads((root / 'docs/product/stories/host-story.yaml').read_text())['story']
+        story['acceptance_criteria'][0]['steps'][1]['when'][0] = 'halve six'
+        envelope = block(json.dumps(story))
+    else:
+        key = 'architecture_yaml' if case['fix'] == 'binding' else 'product'
+        path = scratch(key)
+        document = json.loads(path.read_text())
+        if key == 'product':
+            document['note'] = 'approved'
+            if case['fix'] == 'new':
+                document['concepts']['when'].append({'concept': 'square', 'means': 'Square the entered number.', 'terms': []})
+            else:
+                document['concepts']['when'][0]['means'] = 'Halve the entered number, once or twice.'
+        else:
+            document['architecture']['concepts'] = case['bindings']
+        path.write_text(json.dumps(document, indent=2) + '\n')
+        envelope = block('applied: true\ntarget: "' + str(path) + '"\nsummary: Approved repair')
+print(json.dumps(dict(type='result', subtype='success', is_error=False, total_cost_usd=0, **envelope)))

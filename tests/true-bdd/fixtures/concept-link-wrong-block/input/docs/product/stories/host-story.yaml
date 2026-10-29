@@ -1,0 +1,33 @@
+{
+  "story": {
+    "id": "host",
+    "title": "Halve a number",
+    "as_a": "Product Owner",
+    "i_want": "to halve a number",
+    "so_that": "I can read its half",
+    "status": "DRAFT",
+    "acceptance_criteria": [
+      {
+        "id": "AC-1",
+        "description": "The number must be halved",
+        "steps": [
+          {
+            "given": [
+              "six is entered"
+            ]
+          },
+          {
+            "when": [
+              "halve six"
+            ]
+          },
+          {
+            "then": [
+              "halve six as an outcome"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

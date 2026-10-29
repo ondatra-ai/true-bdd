@@ -1,0 +1,74 @@
+{
+  "scores": {
+    "six is entered": {
+      "number ready": 10
+    },
+    "halve six": {
+      "halve": 10
+    },
+    "three is displayed": {
+      "number result": 10
+    },
+    "square six": {
+      "halve": 2
+    },
+    "halve twice": {
+      "halve": 8
+    },
+    "llm: halve six": {
+      "halve": 10
+    },
+    "halve six as an outcome": {
+      "number result": 4
+    }
+  },
+  "fix": "new",
+  "fixed_concept": "square",
+  "bindings": [
+    {
+      "concept": "number ready",
+      "block": "given",
+      "service": "calc",
+      "references": [
+        {
+          "element": {
+            "page": "Calc",
+            "role": "textbox",
+            "name": "Number"
+          }
+        }
+      ],
+      "does": "Enter the given number into the Number field."
+    },
+    {
+      "concept": "halve",
+      "block": "when",
+      "service": "calc",
+      "references": [
+        {
+          "element": {
+            "page": "Calc",
+            "role": "button",
+            "name": "Halve"
+          }
+        }
+      ],
+      "does": "Press Halve once."
+    },
+    {
+      "concept": "number result",
+      "block": "then",
+      "service": "calc",
+      "references": [
+        {
+          "element": {
+            "page": "Calc",
+            "role": "textbox",
+            "name": "Number"
+          }
+        }
+      ],
+      "does": "Compare the displayed Number text with the expected result."
+    }
+  ]
+}

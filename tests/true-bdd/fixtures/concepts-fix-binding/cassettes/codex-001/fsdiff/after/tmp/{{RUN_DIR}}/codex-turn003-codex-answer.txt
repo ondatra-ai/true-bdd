@@ -1,5 +1,0 @@
-=== FILE_START: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===
-applied: true
-target: "tmp/{{RUN_DIR}}/architecture_yaml.yaml"
-summary: "Mapped the phrase to the service's Public interface"
-=== FILE_END: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===

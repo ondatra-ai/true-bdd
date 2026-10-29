@@ -1,0 +1,1 @@
+{"type": "result", "subtype": "success", "is_error": false, "total_cost_usd": 0, "result": "=== FILE_START: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===\napplied: true\ntarget: \"tmp/{{RUN_DIR}}/architecture_yaml.yaml\"\nsummary: Approved repair\n=== FILE_END: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===\n"}

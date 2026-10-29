@@ -22,6 +22,7 @@ type fixSubject struct {
 
 // Check names the `D:` check that failed; empty renders a model Prompt's fix.
 type failedCheck struct {
+	Judgement    string
 	SectionPath  string
 	Question     string
 	Check        string

@@ -30,6 +30,7 @@ type FixApplierData struct {
 	SubjectID  string // Subject identifier
 	FixPrompt  string // The fix prompt to apply
 	ResultPath string // Path for FILE_START/FILE_END output
+	Judgement  string
 	// Check names the `D:` check whose finding the fix closes; empty for
 	// a model's `Q:`, so a template can tell the two kinds of fix apart.
 	Check string
@@ -42,6 +43,7 @@ type ApplyParams struct {
 	Subject      any    // Current subject to modify
 	SubjectID    string // Subject identifier
 	FixPrompt    string // The concrete fix prompt to apply
+	Judgement    string
 	Check        string // The failed `D:` check's name; "" for a `Q:` prompt
 	TmpDir       string // Run artifact directory
 	Iteration    int    // 1-based apply counter, for file naming
@@ -358,7 +360,7 @@ func (a *FixApplier) execute(ctx context.Context, model provider.ModelRef, syste
 
 func (a *FixApplier) writerData(params ApplyParams, model provider.ModelRef, resultPath string) FixApplierData {
 	data := FixApplierData{WriteRoots: a.writeRoots, Subject: params.Subject, SubjectID: params.SubjectID,
-		FixPrompt: params.FixPrompt, ResultPath: resultPath, Check: params.Check,
+		FixPrompt: params.FixPrompt, ResultPath: resultPath, Check: params.Check, Judgement: params.Judgement,
 		ClaudeWriter: model.CLI == provider.CLIClaude && params.ClaudeWriter,
 		CodexWriter:  model.CLI == provider.CLICodex && params.CodexWriter}
 	if data.CodexWriter || data.ClaudeWriter {

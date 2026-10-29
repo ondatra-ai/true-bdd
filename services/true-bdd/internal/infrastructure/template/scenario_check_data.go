@@ -18,13 +18,15 @@ type StoryRef struct {
 // evaluator: one instance per (scenario, prompt) cell input. It holds the
 // scenario's own fields, the whole Registry, and under --fix its working copy.
 type ScenarioCheckData struct {
-	ConceptForm bool        // document checks hold concepts rather than matched templates
-	ID          string      // e.g. "scen-check-003-unknown-id-refused"
-	Description string      // verbatim registry description
-	Service     string      // names an entry in architecture services[]
-	Path        string      // generated test file the scenario renders into
-	UserStories []StoryRef  // lineage back to the stories it was merged from
-	Steps       MergedSteps // Given / When / Then as the registry holds them
+	ConceptLinks      []ConceptLink // The current walk only; never stored in the Registry.
+	ConceptLinkPassed bool
+	ConceptForm       bool        // document checks hold concepts rather than matched templates
+	ID                string      // e.g. "scen-check-003-unknown-id-refused"
+	Description       string      // verbatim registry description
+	Service           string      // names an entry in architecture services[]
+	Path              string      // generated test file the scenario renders into
+	UserStories       []StoryRef  // lineage back to the stories it was merged from
+	Steps             MergedSteps // Given / When / Then as the registry holds them
 	// Phrases are the same steps as the closure checks read them: each
 	// one's own text, without its and:/but: keyword, beside its block.
 	Phrases []catalogue.Step

@@ -1,4 +1,34 @@
+{{ if .FailedCheck.Judgement -}}
+You propose a repair; change no file. The Product Owner owns concepts and
+Story or Scenario wording; the System Architect owns concept bindings.
+Read the reference documents:
+{{ range $key, $path := .DocPaths }}
+- Read(`{{ $path }}`) - {{ $key }}
+{{ end }}
+Item: {{.SubjectID}}
+**Actual:** {{.FailedCheck.ActualAnswer}}
+Description: {{.Subject.Description}}
+Service: {{.Subject.Service}}
+Steps:
+{{.Subject.FormatSteps}}
+Findings:
+{{ range .FailedCheck.Context }}
+- {{.}}
+{{ end }}
+Required repair policy:
+{{.FailedCheck.FixPrompt}}
+{{ with .UserAnswers }}User answers: {{. | toYaml}}{{ end }}
+Return the exact proposed changes in fix_prompt for review at the menu.
+Do not apply them. Preserve unaffected steps and concepts. A new variation
+widens an existing concept of that item and use; add one only for a new item or use.
+Return JSON with fix_prompt and questions (an empty array when no clarification
+is needed). If no schema is supplied, put the proposed fix between these markers:
+=== FILE_START: {{.ResultPath}} ===
+<exact proposed changes>
+=== FILE_END: {{.ResultPath}} ===
+{{ else -}}
 {{ if .Subject.ConceptForm -}}
+**Actual:** {{.FailedCheck.ActualAnswer}}
 ## Reference documents
 {{ range $key, $path := .DocPaths }}Read(`{{ $path }}`) — {{ $key }}
 {{ end }}{{ range .Subject.InterfaceDocuments }}Read(`{{ .Path }}`) — Public interface
@@ -617,6 +647,7 @@ must be a single JSON object with both keys present:
 Exactly one of the two carries content. Do not emit any markers, and do not
 wrap the object in markdown fences. Reasoning before the object is ignored.
 {{ end }}
+{{ end -}}
 {{ end -}}
 {{ end -}}
 {{ end -}}

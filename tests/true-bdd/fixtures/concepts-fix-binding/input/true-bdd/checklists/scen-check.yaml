@@ -1,15 +1,26 @@
-version: '1.0'
-sections:
-- id: term_closure
-  validation_prompts:
-  - D: phrase-mappings
-    rationale: A phrase without a Public interface operation leaves its step definition to invent what to do.
-    docs:
-    - product
-    - architecture_yaml
-    F: 'Ask the System Architect what a step of this shape does through the service''s Public interface, by block: a when
-      calls an operation, a given sets up state, a then observes and compares. For a template host propose one architecture.phrases
-      entry with the verbatim template; for a concept host propose architecture.concepts with the declared concept name and
-      block. Include service, references and does, or intent for a UI service, and add to the Public interface document what
-      the answers name that it does not declare yet. Write the architecture and that document only after apply, never the
-      Scenario.'
+{
+  "sections": [
+    {
+      "id": "term_closure",
+      "validation_prompts": [
+        {
+          "D": "public-interface",
+          "rationale": "A Scenario must observe what its service offers across a process boundary, declared before the code is built.",
+          "docs": [
+            "architecture_yaml"
+          ],
+          "F": "Ask the System Architect what this service offers across its process boundary, then propose its public_interface declaration in the architecture document: cli names an OpenCLI-like document with named extensions, http names an OpenAPI 3 document, ui lists elements by role and accessible name within a page or region. Write the architecture document, and a document it names where the answers say it lacks what the service offers, never the Scenario."
+        },
+        {
+          "D": "phrase-mappings",
+          "rationale": "A phrase without a Public interface operation leaves its step definition to invent what to do.",
+          "docs": [
+            "product",
+            "architecture_yaml"
+          ],
+          "F": "Ask the System Architect what a step of this shape does through the service's Public interface, by block: a when calls an operation, a given sets up state, a then observes and compares. For a template host propose one architecture.phrases entry with the verbatim template; for a concept host propose architecture.concepts with the declared concept name and block. Include service, references and does, or intent for a UI service, and add to the Public interface document what the answers name that it does not declare yet. Write the architecture and that document only after apply, never the Scenario."
+        }
+      ]
+    }
+  ]
+}

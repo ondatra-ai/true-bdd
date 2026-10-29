@@ -200,7 +200,7 @@ func validateSpec[I any](spec Spec[I]) (
 		return nil, nil, RefuseStartup(spec.Name, fmt.Errorf("failed to load checklist: %w", err))
 	}
 
-	prompts := flattenChecklistPrompts(doc, spec.ChecklistName)
+	prompts := conceptPrompts(flattenChecklistPrompts(doc, spec.ChecklistName), spec.DocResolver)
 
 	err = validateChecklistHasPrompts(spec.ChecklistName, prompts)
 	if err != nil {
@@ -476,6 +476,7 @@ func buildFixClosure[I any](
 			SubjectID:    subjectID,
 			FixPrompt:    decision.FixPrompt,
 			Check:        latestResult.Check,
+			Judgement:    latestResult.Judgement,
 			TmpDir:       spec.TmpDir,
 			Iteration:    *fixCount,
 			ModelTier:    latestResult.ApplyModelTier,

@@ -7218,6 +7218,7 @@ scenarios:
     description: A concept binding fix must write the architecture after apply and preserve the Scenario
     service: true-bdd
     path: tests/true-bdd/concepts_test.go
+    timeout: 10m
     user_stories:
     - story: docs/product/stories/concepts.yaml
       scenario_id: concepts-007-fix-binding
@@ -7276,3 +7277,363 @@ scenarios:
         - 'stdout matches Exiting\.'
         - 'stdout does not match Walk stopped'
         - "replay consumes the recorded validation requests in reverse order"
+  concept-link-001-add-concept:
+    description: An unlinked Story step must offer a new concept through the menu
+    service: true-bdd
+    path: tests/true-bdd/concept_link_test.go
+    timeout: 20m
+    user_stories:
+    - story: docs/product/stories/concept-link.yaml
+      scenario_id: concept-link-001-add-concept
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concept-link-add-concept" project tree
+      - the Product Owner answers "1" to every question
+      when:
+      - the Product Owner runs "us refine host --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches no concept of when
+      - stdout matches action=apply
+      - the file "docs/product/product.yaml" matches square
+      - the file "docs/product/stories/host-story.yaml" is unchanged
+  concept-link-002-refine-before-binding:
+    description: A Story must pass refinement sketches before its concept has a binding
+    service: true-bdd
+    path: tests/true-bdd/concept_link_test.go
+    timeout: 10m
+    user_stories:
+    - story: docs/product/stories/concept-link.yaml
+      scenario_id: concept-link-002-refine-before-binding
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concept-link-refine-before-binding" project tree
+      when:
+      - the Product Owner runs "us refine host"
+      then:
+      - the command exits with code 0
+      - every file matching "tmp/*/01-host-*-result.yaml" matches binding not required
+      - stdout matches linked to halve
+      - the file "docs/architecture/architecture.yaml" is unchanged
+  concept-link-003-missing-binding:
+    description: An unclaimed Scenario must fail when its linked concept has no service binding
+    service: true-bdd
+    path: tests/true-bdd/concept_link_test.go
+    timeout: 10m
+    user_stories:
+    - story: docs/product/stories/concept-link.yaml
+      scenario_id: concept-link-003-missing-binding
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concept-link-missing-binding" project tree
+      when:
+      - the Product Owner runs "scen check"
+      then:
+      - the command exits with code 1
+      - stdout matches when concept.*halve.*service calc has 0 Concept bindings
+      - no file outside "tmp" changed
+  concept-link-004-fix-binding:
+    description: A missing linked binding must be added only after menu apply
+    service: true-bdd
+    path: tests/true-bdd/concept_link_test.go
+    timeout: 20m
+    user_stories:
+    - story: docs/product/stories/concept-link.yaml
+      scenario_id: concept-link-004-fix-binding
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concept-link-fix-binding" project tree
+      - the Product Owner answers "1" to every question
+      when:
+      - the Product Owner runs "scen check --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches action=apply
+      - stdout matches The references and instructions determine the step
+      - the only file changed outside "tmp" is "docs/architecture/architecture.yaml"
+      - the file "docs/scenarios.yaml" is unchanged
+  concept-link-005-wrong-block:
+    description: An action written as Then must fail naming its When concept
+    service: true-bdd
+    path: tests/true-bdd/concept_link_test.go
+    timeout: 10m
+    user_stories:
+    - story: docs/product/stories/concept-link.yaml
+      scenario_id: concept-link-005-wrong-block
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concept-link-wrong-block" project tree
+      when:
+      - the Product Owner runs "scen check"
+      then:
+      - the command exits with code 1
+      - stdout matches Then block.*When concept halve
+      - no file outside "tmp" changed
+  concept-link-006-malformed:
+    description: A malformed link answer must fail its cell
+    service: true-bdd
+    path: tests/true-bdd/concept_link_test.go
+    timeout: 10m
+    user_stories:
+    - story: docs/product/stories/concept-link.yaml
+      scenario_id: concept-link-006-malformed
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concept-link-malformed" project tree
+      when:
+      - the Product Owner runs "scen check"
+      then:
+      - the command exits with code 1
+      - stdout matches link answer malformed or incomplete
+      - no file outside "tmp" changed
+  concept-link-007-incomplete:
+    description: A link answer leaving one concept unscored must fail its cell
+    service: true-bdd
+    path: tests/true-bdd/concept_link_test.go
+    timeout: 10m
+    user_stories:
+    - story: docs/product/stories/concept-link.yaml
+      scenario_id: concept-link-007-incomplete
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concept-link-incomplete" project tree
+      when:
+      - the Product Owner runs "scen check"
+      then:
+      - the command exits with code 1
+      - stdout matches cut.*unscored or invalid
+      - no file outside "tmp" changed
+  concept-link-008-shared-fix:
+    description: A shared concept fix must cause every linked Scenario to be judged afresh
+    service: true-bdd
+    path: tests/true-bdd/concept_link_test.go
+    timeout: 25m
+    user_stories:
+    - story: docs/product/stories/concept-link.yaml
+      scenario_id: concept-link-008-shared-fix
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concept-link-shared-fix" project tree
+      - the Product Owner answers "1" to every question
+      when:
+      - the Product Owner runs "scen check --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches action=apply
+      - the file "docs/product/product.yaml" matches pointer or keyboard
+      - the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "msg":"Cell validation started","subjectID":"alpha","promptIndex":1
+      - the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "msg":"Cell validation started","subjectID":"beta","promptIndex":1
+  concept-link-009-threshold-nine:
+    description: A borderline score of eight must fail at threshold nine
+    service: true-bdd
+    path: tests/true-bdd/concept_link_test.go
+    timeout: 10m
+    user_stories:
+    - story: docs/product/stories/concept-link.yaml
+      scenario_id: concept-link-009-threshold-nine
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concept-link-threshold-nine" project tree
+      when:
+      - the Product Owner runs "scen check"
+      then:
+      - the command exits with code 1
+      - stdout matches threshold 9
+      - stdout matches no concept of when
+  concept-link-010-threshold-eight:
+    description: A borderline score of eight must pass at threshold eight
+    service: true-bdd
+    path: tests/true-bdd/concept_link_test.go
+    timeout: 10m
+    user_stories:
+    - story: docs/product/stories/concept-link.yaml
+      scenario_id: concept-link-010-threshold-eight
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concept-link-threshold-eight" project tree
+      when:
+      - the Product Owner runs "scen check"
+      then:
+      - the command exits with code 0
+      - stdout matches threshold 8
+      - stdout matches linked to halve
+  concept-link-011-ambiguous:
+    description: An ambiguous step must fail naming both fitting concepts
+    service: true-bdd
+    path: tests/true-bdd/concept_link_test.go
+    timeout: 10m
+    user_stories:
+    - story: docs/product/stories/concept-link.yaml
+      scenario_id: concept-link-011-ambiguous
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concept-link-ambiguous" project tree
+      when:
+      - the Product Owner runs "scen check"
+      then:
+      - the command exits with code 1
+      - 'stdout matches ambiguous: halve, cut'
+      - no file outside "tmp" changed
+  concept-link-012-widen:
+    description: An unstated variation must fail and widen its concept only through the menu
+    service: true-bdd
+    path: tests/true-bdd/concept_link_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/concept-link.yaml
+      scenario_id: concept-link-012-widen
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concept-link-widen" project tree
+      - the Product Owner answers "1" to every question
+      when:
+      - the Product Owner runs "us refine host --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches no concept of when
+      - stdout matches action=apply
+      - the file "docs/product/product.yaml" matches once or twice
+      - the file "docs/product/stories/host-story.yaml" is unchanged
+  concept-link-013-rewrite:
+    description: A rewritten step must change the Story and preserve the concepts
+    service: true-bdd
+    path: tests/true-bdd/concept_link_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/concept-link.yaml
+      scenario_id: concept-link-013-rewrite
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concept-link-rewrite" project tree
+      - the Product Owner answers "1" to every question
+      when:
+      - the Product Owner runs "us refine host --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches action=apply
+      - the file "docs/product/stories/host-story.yaml" is modified
+      - the file "docs/product/product.yaml" is unchanged
+      - the steps of acceptance criterion "AC-1" of the story "docs/product/stories/host-story.yaml" do not match square
+  concept-link-014-judge-intent:
+    description: A judge clause must pass unlinked and an llm step must link to an intent binding
+    service: true-bdd
+    path: tests/true-bdd/concept_link_test.go
+    timeout: 10m
+    user_stories:
+    - story: docs/product/stories/concept-link.yaml
+      scenario_id: concept-link-014-judge-intent
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concept-link-judge-intent" project tree
+      when:
+      - the Product Owner runs "scen check"
+      then:
+      - the command exits with code 0
+      - 'stdout matches judge: unlinked'
+      - stdout matches linked to halve
+      - stdout matches The references and instructions determine the step
+  concept-link-015-ambiguous-binding:
+    description: An ambiguous binding must fail and be repaired only through the menu
+    service: true-bdd
+    path: tests/true-bdd/concept_link_test.go
+    timeout: 20m
+    user_stories:
+    - story: docs/product/stories/concept-link.yaml
+      scenario_id: concept-link-015-ambiguous-binding
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concept-link-ambiguous-binding" project tree
+      - the Product Owner answers "1" to every question
+      when:
+      - the Product Owner runs "scen check --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches binding is ambiguous
+      - stdout matches action=apply
+      - the only file changed outside "tmp" is "docs/architecture/architecture.yaml"
+  concept-link-016-missing-answer:
+    description: A missing link answer must fail its cell
+    service: true-bdd
+    path: tests/true-bdd/concept_link_test.go
+    timeout: 10m
+    user_stories:
+    - story: docs/product/stories/concept-link.yaml
+      scenario_id: concept-link-016-missing-answer
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concept-link-missing-answer" project tree
+      when:
+      - the Product Owner runs "scen check"
+      then:
+      - the command exits with code 1
+      - stdout matches link answer malformed or incomplete
+  concept-link-017-llm-needs-intent:
+    description: An llm step must fail when its binding does not state intent
+    service: true-bdd
+    path: tests/true-bdd/concept_link_test.go
+    timeout: 10m
+    user_stories:
+    - story: docs/product/stories/concept-link.yaml
+      scenario_id: concept-link-017-llm-needs-intent
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concept-link-llm-needs-intent" project tree
+      when:
+      - the Product Owner runs "scen check"
+      then:
+      - the command exits with code 1
+      - 'stdout matches llm: step requires a binding stated by intent'
+  concept-link-018-unrelated-unbound:
+    description: An unbound concept no step links to must not fail the Scenario
+    service: true-bdd
+    path: tests/true-bdd/concept_link_test.go
+    timeout: 10m
+    user_stories:
+    - story: docs/product/stories/concept-link.yaml
+      scenario_id: concept-link-018-unrelated-unbound
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concept-link-unrelated-unbound" project tree
+      when:
+      - the Product Owner runs "scen check"
+      then:
+      - the command exits with code 0
+      - stdout matches linked to halve
+      - stdout does not match square.*has 0 Concept bindings
+  concept-link-019-unfixed:
+    description: An unlinked Story step must fail refinement and leave its Story unsaved
+    service: true-bdd
+    path: tests/true-bdd/concept_link_test.go
+    timeout: 10m
+    user_stories:
+    - story: docs/product/stories/concept-link.yaml
+      scenario_id: concept-link-019-unfixed
+      merge_date: '2026-10-29'
+    merged_steps:
+      given:
+      - the "concept-link-unfixed" project tree
+      when:
+      - the Product Owner runs "us refine host"
+      then:
+      - the command exits with code 0
+      - stdout matches no concept of when
+      - stdout matches Validation failed
+      - the file "docs/product/stories/host-story.yaml" is unchanged
