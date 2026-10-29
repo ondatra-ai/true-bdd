@@ -1,0 +1,253 @@
+# TrueBDD's Public interface (GLOSSARY: Public interface; ADR-0030).
+#
+# Named by architecture.services[true-bdd].public_interface in
+# docs/architecture/architecture.yaml, and so part of the Specification. It
+# states everything TrueBDD's step definitions set up or observe, from outside
+# and across the process boundary: the commands with their arguments, options
+# and exit codes; their answers on stdout and stderr; the files the engine
+# reads and writes in the Host project; its log records; and its calls to the
+# processes it depends on.
+#
+# One home per statement. Where the architecture document already states a
+# contract, an entry here names it instead of repeating it:
+#   - the log record vocabulary: architecture.terms[log record], [stdout],
+#     [stderr], [AI turn] and [test runner];
+#   - the IO contract (holds, atomic replacement, permissions, process groups):
+#     architecture.services[true-bdd].patterns.owned_io;
+#   - the AI CLIs' invocation: architecture.services[true-bdd].dependencies[]
+#     .invocation for claude and codex;
+#   - the prompt templates' inputs: architecture.prompt_data;
+#   - the exit status rule: architecture.terms[exit code].
+# The Phrase mapping (architecture.phrases) references the names declared
+# below: a command by its path, an extension by its key.
+
+opencli: "1.0.0"
+info:
+  title: true-bdd
+  version: 1.0.0
+
+commands:
+  us refine:
+    description: >-
+      Walks the Story whose id is the argument (the one <story-id>-*.yaml file
+      in paths.stories_dir that declares it) against the us-refine checklist,
+      and saves it in place when every Prompt passes. With --fix, a failed
+      Prompt's proposal is applied to the Story or the product document only
+      after apply is answered on stdin at its fix menu.
+    parameters:
+      - {name: story-id, in: argument, required: true, schema: {type: string}}
+      - {name: fix, in: flag, schema: {type: boolean}}
+      - name: model
+        in: option
+        description: Repeatable <tier>=<cli>:<model> override of a configured model tier for this run.
+        schema: {type: string}
+    responses:
+      '0': {description: 'The walk ended, passing or failing: a failing walk logs its verdict and skips the save (architecture.terms[exit code]).'}
+      '1': {description: A refusal before the walk, an unusable answer, or end of stdin at a question or a fix menu.}
+  us apply:
+    description: >-
+      Walks every Acceptance Criterion of the Story whose id is the argument
+      against the us-apply checklist. With --fix, applied fixes edit a scratch
+      copy of the Registry, which replaces the Registry only when every
+      Acceptance Criterion passes every Prompt.
+    parameters:
+      - {name: story-id, in: argument, required: true, schema: {type: string}}
+      - {name: fix, in: flag, schema: {type: boolean}}
+      - {name: model, in: option, description: 'Repeatable <tier>=<cli>:<model> override.', schema: {type: string}}
+    responses:
+      '0': {description: The walk ended, passing or failing; a failing walk leaves the Registry untouched.}
+      '1': {description: A refusal before the walk, an unusable answer, or end of stdin at a question or a fix menu.}
+  scen check:
+    description: >-
+      Walks the Registry's Scenarios against the scen-check checklist, one cell
+      per (Scenario, Prompt); its D: Prompts are built-in checks with no AI
+      turn, run before any Q: Prompt. With --fix, a failed check's fix writes
+      the product or the architecture document, or the Scenario's own Registry
+      entry, after apply at its fix menu.
+    parameters:
+      - {name: scenario-id, in: argument, description: Narrows the walk to these Scenarios; repeatable.}
+      - {name: fix, in: flag, schema: {type: boolean}}
+      - {name: requirements, in: option, description: Path to the Registry (default documents.scenarios_yaml)., schema: {type: string}}
+      - {name: model, in: option, description: 'Repeatable <tier>=<cli>:<model> override.', schema: {type: string}}
+    responses:
+      '0': {description: Every walked Scenario passes every check.}
+      '1': {description: A Scenario fails a check, or a refusal.}
+  build tests:
+    description: >-
+      Renders the generated test files from the Registry, deterministically:
+      no AI turn, fix menu or test runner. Without --fix a stale file refuses
+      the start; with --fix it is written.
+    parameters:
+      - {name: fix, in: flag, schema: {type: boolean}}
+      - {name: architecture, in: option, description: Path to the architecture document (default documents.architecture_yaml)., schema: {type: string}}
+      - {name: requirements, in: option, description: Path to the Registry (default documents.scenarios_yaml)., schema: {type: string}}
+    responses:
+      '0': {description: Every generated test file is current or written; stdout ends with BUILD TESTS COMPLETE.}
+      '1': {description: A refusal before rendering, or a stale file without --fix.}
+  build steps:
+    description: >-
+      Lists each Catalogue phrase a go-test suite has no step definition for
+      and checks Step coverage. With --fix it writes every skeleton, then each
+      body through the Fix loop, and checks compilation, binding, coverage, the
+      test list and that every Scenario is red without the target.
+    parameters:
+      - {name: fix, in: flag, schema: {type: boolean}}
+      - {name: architecture, in: option, description: Path to the architecture document., schema: {type: string}}
+      - {name: requirements, in: option, description: Path to the Registry., schema: {type: string}}
+      - {name: model, in: option, description: 'Repeatable <tier>=<cli>:<model> override.', schema: {type: string}}
+    responses:
+      '0': {description: No phrase lacks a definition and every check passes; under --fix stdout ends with BUILD STEPS COMPLETE.}
+      '1': {description: A missing definition without --fix, a failed check, a phrase the Public interface cannot serve, or a walk that ends incomplete.}
+  build code:
+    description: >-
+      Runs the architecture's declared replay command, walks the failing set,
+      and with --fix has a writer change only the services' paths and their
+      writable entries until the tests pass.
+    parameters:
+      - {name: fix, in: flag, schema: {type: boolean}}
+      - {name: architecture, in: option, description: Path to the architecture document., schema: {type: string}}
+      - {name: model, in: option, description: 'Repeatable <tier>=<cli>:<model> override.', schema: {type: string}}
+    responses:
+      '0': {description: No test fails; under --fix stdout ends with BUILD CODE COMPLETE.}
+      '1': {description: A test still fails after the walk, an impossible repair, or a refusal.}
+  init:
+    description: >-
+      Writes the missing configuration, checklists and prompt templates into
+      the directory it runs in, leaving every existing file untouched, and
+      reports each path with a Created or Left existing record. It reads no
+      configuration.
+    responses:
+      '0': {description: Every default file exists.}
+      '1': {description: A file could not be written.}
+  version:
+    description: Prints the engine's build version and commit on stdout (architecture.terms[build identity]). It reads no configuration and changes no file.
+    responses:
+      '0': {description: The answer line was printed.}
+  claude-guard:
+    description: >-
+      Hidden. The PreToolUse hook the generated Claude settings name for every
+      exposed tool. It reads the hook payload (JSON with tool_name, cwd and
+      tool_input) on stdin and the write policy named by --policy, and decides
+      the tool call (architecture.terms[write guard] and [hook payload]).
+    parameters:
+      - {name: policy, in: option, required: true, description: Path to the generated write policy., schema: {type: string}}
+    responses:
+      '0': {description: 'Allowed: stdout carries the hook allow decision as one JSON line.'}
+      '2': {description: 'Denied: stderr carries one "true-bdd guard: <reason>" line.'}
+
+extensions:
+  files:
+    project-tree:
+      path: .
+      format: The Host project, the directory a command runs in; the files below are its parts.
+      access: read-write
+    configuration:
+      path: true-bdd/true-bdd.yaml
+      format: YAML; engine models, template paths, paths and documents. init writes it when missing.
+      access: read-write
+    checklists:
+      path: true-bdd/checklists/<command>.yaml
+      format: "YAML checklist per command, its sections of Q:, D: and F: Prompts. init writes the missing ones."
+      access: read-write
+    prompt-templates:
+      path: templates/*.tpl
+      format: Go text/template files with Sprig; their inputs are architecture.prompt_data. init writes the missing ones.
+      access: read-write
+    product-document:
+      path: docs/product/product.yaml
+      format: The product document (documents.product); us refine --fix and scen check --fix add Catalogue and glossary entries.
+      access: read-write
+    stories:
+      path: docs/product/stories/<story-id>-*.yaml
+      format: One Story per file (paths.stories_dir); us refine saves it in place.
+      access: read-write
+    architecture-document:
+      path: docs/architecture/architecture.yaml
+      format: The architecture document (documents.architecture_yaml); scen check --fix writes Word mappings, Public interface declarations and Phrase mapping entries.
+      access: read-write
+    interface-documents:
+      path: the documents the architecture's public_interface declarations name
+      format: OpenCLI-like YAML, OpenAPI 3 or listed UI elements, loaded at start.
+      access: read
+    registry:
+      path: docs/scenarios.yaml
+      format: The Registry (documents.scenarios_yaml); us apply replaces it atomically, scen check --fix edits a Scenario's entry.
+      access: read-write
+    generated-tests:
+      path: the path of each Registry Scenario
+      format: Go test files marked "Code generated by `true-bdd build tests`. DO NOT EDIT.", one test per Scenario named after its key.
+      access: read-write
+    step-definitions:
+      path: <suite>/steps/*.go
+      format: Go step definitions; build steps --fix writes the skeleton and the body, under the protected test paths only.
+      access: read-write
+    service-code:
+      path: each architecture service's path and its writable entries
+      format: The services' source; only build code --fix writes it.
+      access: write
+    engine-log:
+      path: tmp/true-bdd.log.json
+      format: Newline-delimited JSON, one record per line at DEBUG and above (architecture.terms[engine] and [log record]).
+      access: write
+    run-artifacts:
+      path: tmp/<run>/
+      format: Each run's prompts, responses, transcripts and verdicts, under paths.tmp_dir.
+      access: write
+    write-policy:
+      path: the generated JSON a claude turn's --settings hook names with --policy
+      format: JSON write policy (architecture.terms[write policy]).
+      access: write
+    staging-files:
+      path: .true-bdd.tmp.<basename> beside each whole-file write
+      format: The atomic-replacement staging file of the IO contract (architecture.services[true-bdd].patterns.owned_io).
+      access: write
+  log_records:
+    stdout-text:
+      message: Every record at INFO and above
+      format: 'slog text on stdout, time=… level=… msg="…" key=value, sharing the stream with the console answer lines (architecture.terms[stdout] and [log record]).'
+    stderr-error:
+      message: 'Error: <error text>'
+      format: The command-line library's error line on stderr; a failure before logging is set up prints its record as <date> <time> ERROR <msg> key=value (architecture.terms[stderr]).
+    engine-started:
+      message: Engine started
+      format: INFO, the first record of a run, with nonempty version and commit (architecture.terms[build identity]).
+    refusing-to-start:
+      message: Refusing to start
+      format: ERROR with command and error, before any Item, test run or AI turn.
+    dispatching-ai-turn:
+      message: Dispatching AI turn
+      format: One record per AI turn before its CLI is spawned, with turn, label, role, cli and model (architecture.terms[AI turn] and [AI CLI]).
+    spawning-test-runner:
+      message: Spawning test runner
+      format: One record per test runner start, with binary, args and dir (architecture.terms[test runner]).
+    tool-calls-denied:
+      message: Tool calls were denied; this turn did less than it was asked to
+      format: WARN with label, role and denied (architecture.terms[log record]).
+    check-answered:
+      message: Check answered
+      format: INFO per checklist cell with check, subjectID, promptIndex, answer and context.
+    clarification-needed:
+      message: AI needs clarification
+      format: INFO before a clarifying question is asked on stdout.
+    fix-recorded:
+      message: Fix recorded in the document
+      format: INFO with document, after an applied fix is written to the product or the architecture document.
+    file-created:
+      message: Created
+      format: INFO with path, for each file init writes.
+    file-left:
+      message: Left existing
+      format: INFO with path, for each file init leaves untouched.
+  outgoing_calls:
+    claude:
+      command: claude
+      arguments: ['the invocation contract at architecture.services[true-bdd].dependencies[claude].invocation']
+    codex:
+      command: codex
+      arguments: ['the invocation contract at architecture.services[true-bdd].dependencies[codex].invocation']
+    suite-command:
+      command: the architecture's testing.commands entry (replay for build code)
+      arguments: ['split by shell quoting rules, with the failing set''s selector (architecture.terms[test runner])']
+    go-toolchain:
+      command: go
+      arguments: ['test -list and compile-only runs of a go-test suite for build steps; mod download -json all of an isolated exact manifest (architecture.services[true-bdd].patterns.owned_io)']
