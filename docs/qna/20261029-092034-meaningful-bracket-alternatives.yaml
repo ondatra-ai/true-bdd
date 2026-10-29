@@ -1,0 +1,485 @@
+# Q&A log of one grilling session (mpc_grilling).
+
+intent: |
+  Triage and grill #248: `build steps` writes each step definition's pattern
+  from its Catalogue phrase and captures only slots, so a phrase whose bracket
+  alternatives carry meaning ([matches|does not match], [validation|fix|apply],
+  [browser ]) reaches a definition that cannot tell them apart. Decide how such
+  a phrase reaches its step definition, then shape #248 for an agent.
+
+log:
+  - decision_trace:
+      research:
+        - |
+          The claim of #248 holds: a bracket group compiles to a non-capturing
+          group (services/true-bdd/internal/domain/models/catalogue/template.go,
+          closeBrackets); capturing_test.go pins that [with|using] is not
+          captured; stepDefinitionBinding (build_steps_execution.go) requires
+          the engine's exact pattern. No .out-of-scope/ entry exists.
+        - |
+          docs/qna/20261021-112516-self-spec-and-doc-validation-chain.yaml, Q34:
+          the Catalogue grammar from spike #133, brackets as "inflections and
+          literal alternatives"; the product document's template entry calls
+          them "a choice"; meaning is carried by what fills a slot.
+        - |
+          Cucumber Expressions: alternative text (belly/stomach) and optional
+          text (cucumber(s)) never capture; a choice the step definition must
+          see is a parameter, often a custom parameter type with an enumeration
+          regexp (https://github.com/cucumber/cucumber-expressions#readme).
+      recommendation: |
+        (b): an enumeration slot kind, captured and named; brackets stay
+        grammar only, as in Cucumber.
+      settled: |
+        Not answered. The Owner set two rules for this session: (1) every
+        question shows concrete examples by block (given, when, then): the
+        Catalogue entry, the Registry step, the architecture's Phrase mapping
+        entry and what fits or does not under each option; (2) default to what
+        Cucumber and standard practice do, researched before asking: for a
+        practically new system, standard solutions outweigh what the project
+        has now. Q1 is asked again as Q2 under these rules.
+    question: |
+      Q1 - How does a choice that changes a phrase's meaning reach its step
+      definition: (a) capture every bracket group, grammatical ones included;
+      (b) a new enumeration slot kind, e.g. {mode:matches|does not match},
+      captured and named, brackets staying grammar only; (c) no new grammar,
+      a phrase may not carry meaning in brackets and is split per alternative.
+    answer: |
+      Слушай, а тут надо погрилить. А, смотри, давай, во-первых, договоримся, что в этой сессии грилинга ты предлагаешь пример. То есть мне надо прям понять, откуда берется тот или иной пример. Вот, то есть это у нас given, when, then. И конкретно какая еще вещь? То есть это, потому что разница же будет между given, when и then достаточно ощутимая. Поэтому, задавая вопросы, говоришь, что типа вот конкретный пример, хочу вот так. То есть есть вот такая опция, есть такая опция, есть вот такая опция. Вот если в этой опции мы принимаем такое, то в архитектурном файле будет, например, как-то вот так это описано. Тогда вот это подойдет, вот это не подойдет. И второй момент, смотри, по умолчанию я бы принимался за то, что делает Cucumber. Все-таки у них уже есть определенная комьюнити, определенный опыт, и прежде чем опять же задавать этот вопрос, делал бы ресерч по поводу того, что по этому поводу предлагает Cucumber и какие-то стандартные подходы в интернете. Поскольку мы делаем практически новую систему, то я бы сказал, что это тот случай, когда стандартные решения интернета преобладают над чем-то, что есть сейчас в проекте.
+  - decision_trace:
+      research:
+        - |
+          Cucumber Expressions: alternative text and optional text are grammar
+          and never pass a parameter; a value the code needs is a built-in or a
+          custom parameter type, named and reusable, e.g. {color} =
+          red|blue|yellow (https://cucumber.io/docs/cucumber/cucumber-expressions).
+        - |
+          Aslak Hellesøy: define parameter types "only ... that represent
+          something from my problem domain"; negation as two steps, "Clarity and
+          simplicity trumps DRY" (https://groups.google.com/g/cukes/c/9UdTBci0i8E).
+          Matt Wynne, regex era: capture (should|should not)
+          (https://groups.google.com/g/cukes/c/8msAO1vKG3s).
+      recommendation: |
+        (b): Cucumber Expressions' rule. Brackets are grammar only; a choice
+        from a domain concept is a named parameter type declared in the product
+        document, as roles are; negation, meaningful optional text and two
+        different operations are separate phrases.
+      settled: |
+        Not answered as asked; the Owner rejects the deterministic Cucumber
+        scheme here and pivots: simplify by letting an LLM judge whether a step
+        is understandable, with far fewer, broader Catalogue entries. The
+        balance between the number of Catalogue entries and their clarity must
+        hold; if product concepts grow too many, maintaining them costs more
+        than writing code and the system loses its point. The Owner asked for
+        an estimate of how many Catalogue entries a real project would need.
+        This overrides Q1's session rule 2 (Cucumber as the default) for this
+        question.
+    question: |
+      Q2 - Which rule do we take for a choice inside a phrase, shown on four
+      examples (then negation [matches|does not match]; then domain set
+      [validation|fix|apply]; given optional [browser ]; when two operations
+      [doubled|halved]): (a) capture every bracket; (b) Cucumber Expressions'
+      rule, brackets grammar only, a domain choice a named parameter type
+      declared in the product document, negation, optional meaning and two
+      operations separate phrases; (c) split everything, no new grammar.
+    answer: |
+      Слушай, мне не нравится сейчас Cucumber, потому что, смотри, Cucumber был без... как будто бы Cucumber, да, он же абсолютно детерминистический, что абсолютно окей. Но вот здесь возникает вопрос, а не можем ли мы упростить эту схему, используя LLM-ку? То есть, смотри, наша задача какая, да? То есть, если есть, например, у меня почему-то хочется избежать сложных концепций, всяких то есть мне хочется попробовать, по крайней мере, избежать сложных концептов, используя возможности LLM-ки для определения понятности или непонятности. То есть, да, LLM-ка дается определенной там погрешностью, но эта погрешность может быть приемлемой для того, чтобы мы могли там легко, ну, достаточно легко определять как-то. Вот. В общем, на текущий момент, конечно, каждый вот этот вот темплейт, да, он выглядит как хороший темплейт, но, может быть, мы могли бы объединить эти вещи и писать гораздо меньше строк в темплейте, используя LLM-ки. Я считаю, что здесь соблюдение баланса между количеством строк в темплейте и, ну, вот в этом каталоге, и их понятностью должно, ну, как бы соблюдаться. Когда этих... То есть, если детализировать вот до такого уровня деталей, который использует эти темплейты, то придется писать чересчур много. Ну, каталог будет состоять из тысячи элементов. Ты можешь даже приблизительно сейчас пойти и прикинуть, сколько элементов будет для реального, ну, должно быть для реального TurbDD проекта, да, сколько нужно будет создать, положить вот этих строк template в продукт яму. Это очень сложно. Мне кажется, очень сложно, и я тебя прошу это сделать, пойти прикинуть прямо сейчас, сколько их будет. И если этих строк там будет больше, и вообще если концептов, да, вот параметр types, вот нам нужно как-то, да, там определить, если этих концептов будет становиться чересчур много, то вся наша система теряет смысл, потому что сложность поддержки вот этих... Здесь даже суть не в том, что это YAML-файл. YAML-файл, да, это просто как хранилище, да, просто сложность поддержки концептов продуктовых будет выше, чем сложность написания кода, и тогда как бы смысл теряется. Поэтому давай мы здесь попробуем все-таки сделать вот такой пивот и уйти больше в LLM-ный подход.
+  - decision_trace:
+      research:
+        - |
+          TrueBDD: 76 templates for 309 Scenarios and 61 Stories; 9 used by more
+          than 50 Scenarios, 22 by 11-50, 34 by at most 3 (16 by exactly one).
+          From 195 to 309 Scenarios the Catalogue grew from 55 to 76 templates,
+          about one per 5-6 new Scenarios (git history of docs/product/product.yaml
+          and docs/scenarios.yaml).
+        - |
+          Large Cucumber projects: "hundreds - sometimes thousands" of step
+          definitions (https://dev.to/luiinge/when-cucumber-grows-too-big-pain-points-lessons-learned-and-alternatives-21pm);
+          1.1M steps from 347 public repositories, median exact-duplicate rate
+          58.6% (https://arxiv.org/abs/2604.20462).
+        - |
+          TrueBDD's 76 templates group into about 17 concepts.
+        - |
+          Botrytis (2025) matches a step to a definition by meaning with an LLM at
+          test run time, with a cache; its README shows "they gently caresses the
+          Buy Now button" matching the click definition
+          (https://github.com/sublayerapp/botrytis).
+      recommendation: |
+        (a): the LLM at authoring time (us refine, scen check judge that a step
+        belongs to one concept and is clear; build steps' AI writes patterns and
+        bodies per concept), deterministic at run time (binding, red run,
+        critique). Reverses Q13 of the #212 log and ADR-0032's skeleton from
+        the template.
+      settled: |
+        Not answered yet: the Owner leans to (a) but will not move on until the
+        real difference is clear, and asked for concrete examples of (b) and (c)
+        like the one given for (a).
+    question: |
+      Q3 - Where does the LLM replace the template grammar, the Catalogue being
+      a list of concepts in prose: (a) the LLM at authoring time, determinism at
+      run time (AI-written patterns checked by coverage); (b) the LLM at run
+      time, matching a step to a definition and its arguments, with recorded
+      choices for replay (Botrytis); (c) templates stay and the LLM only folds
+      paraphrases together and proposes broader templates.
+    answer: |
+      Смотри, твой вариант ответа, к сожалению, опять же, не дает мне очень большое пространство для того, чтобы думать, что к нему еще надо. А мне не хватает все-таки конкретной разницы между A, B и C. Вот. For reference, похоже, что мы можем идти с A, но я бы не хотел двигаться дальше от этого вопроса до тех пор, пока я действительно не посмотрю и не пойму реальную разницу. Ты можешь привести больше примеров для B и C? Точнее, не больше, а просто привести примеры для B и C.
+  - decision_trace:
+      research:
+        - nothing new; the same Story halve shown under each option, through the
+          Specification, the code build steps writes, the test run, a new
+          wording (cut in half) and a wrong step (squared).
+      recommendation: |
+        (a): (b) moves the LLM's mistakes into the test run, where they become
+        silent wrong tests; (c) keeps the Catalogue growing with every
+        operation and wording; (a) leaves the LLM where its mistake is caught
+        before the code.
+      settled: |
+        (a). The Catalogue becomes a list of concepts in prose. An LLM judges at
+        authoring time (us refine, scen check) that each step belongs to exactly
+        one concept and is clear; build steps' AI writes the definitions'
+        patterns and bodies per concept; the engine checks the binding
+        deterministically, then the red run without the target and the
+        critique; tests run and replay with no LLM. Overrides Q2 of this log's
+        direction toward Cucumber's grammar and, as Q3 stated, Q13 of
+        docs/qna/20261028-094259-build-tests-new-behaviour.yaml (the engine
+        derives the pattern from the template), ADR-0032's skeleton from the
+        template, and #240's deterministic template checks. What stays with the
+        engine is the next question.
+    question: |
+      Q4 - Where does the LLM replace the template grammar (Q3), shown on one
+      Story (halve) under (a), (b) and (c): the Specification, the code build
+      steps writes, the test run, a new wording and a wrong step, with a table
+      comparing them.
+    answer: |
+      Да, поехали с операцией A. Ну, точнее, с опцией A.
+  - decision_trace:
+      research:
+        - |
+          Cucumber snippets: for an undefined step Cucumber proposes a definition
+          skeleton derived from the step's text by rule: numbers become {int},
+          quoted strings {string}, custom types with useForSnippets; unquoted
+          words stay literal (https://cucumber.io/docs/cucumber/cucumber-expressions).
+        - |
+          The #192 skeleton writer takes a ready pattern,
+          stepskeleton.Write(dir, phrase, pattern)
+          (services/true-bdd/internal/app/generators/stepskeleton/writer.go), so
+          it does not depend on where the pattern comes from.
+      recommendation: |
+        (ii): two passes; the AI proposes each concept's patterns as data, the
+        engine checks every Registry step of the concept in the suite binds
+        exactly one pattern, writes the skeleton as #192 does, and the AI
+        writes only the bodies. Keeps Q13's intent (the engine owns the
+        skeleton, binding checked before code), reuses #192's machinery, and
+        solves #248 by capturing the alternative.
+      settled: |
+        (ii). For each concept and suite, the AI first proposes the concept's
+        patterns as data; the engine checks that every Registry step of that
+        concept in the suite binds exactly one of them, then writes the
+        skeleton (registration, a function taking the captures in order, a body
+        failing "step not written yet"); the AI then writes only the bodies,
+        under #192's checks and #242's critique. A meaningful alternative such
+        as (matches|does not match) is a capture of the proposed pattern. This
+        keeps Q13 of the #212 log in intent and changes only the pattern's
+        source, from a template to an AI proposal.
+    question: |
+      Q5 - Under (a), what does the engine still write and what the AI: (i) the
+      AI writes all of it (registrations, patterns, functions, bodies), the
+      engine only checks afterwards; (ii) two passes: the AI proposes each
+      concept's patterns as data, the engine checks the binding before any
+      body and writes the skeleton, the AI writes the bodies; (iii) Cucumber
+      snippets: the engine derives patterns from the step texts by rule, the
+      AI writes bodies. Shown on three blocks: when (operation on the number),
+      then (file content), given (project tree).
+    answer: |
+      ii.
+  - decision_trace:
+      research:
+        - |
+          Cucumber stores no step-to-definition binding; it is computed by regex
+          on every run (https://cucumber.io/docs/cucumber/cucumber-expressions).
+          Azure Test Plans' shared steps are stored references
+          (https://learn.microsoft.com/en-us/azure/devops/test/share-steps-between-test-cases).
+          TrueBDD's harness reads merged_steps as plain strings
+          (pkg/testkit/bddgo/registry.go, flattenSteps).
+      recommendation: |
+        (ii): the concept recorded only in the Registry, as a map beside the
+        steps, written by us apply's LLM; scen check and build steps read it
+        deterministically.
+      settled: |
+        (iii): no per-step record. Concepts and steps are separate layers,
+        linked by an LLM validation pass: every Given, When and Then of every
+        Scenario must be found, with a high score (about 9 of 10), among the
+        concepts the product document declares. The Owner corrected the model
+        behind the question:
+        - Given, When and Then are not interchangeable shapes: a Given is the
+          system's state before the behaviour; an operation is a When. "the
+          number is 6" is not a Given; entering a number or pressing divide is
+          a When.
+        - Concepts are written without square brackets, in the product
+          document, per block, a little more abstract than the steps (for
+          example a Given concept "number is set" means build steps must
+          produce the preparatory operations that put the system in that
+          state).
+        - Each concept is bound again in the architecture document with more
+          detail on how it appears in the system (for example a field on a web
+          page), without technical implementation, enough for the LLM that
+          later writes the step definition to know how to write it.
+        - When the LLM writes a step it is too late to involve a person, so
+          people validate concepts beforehand: the LLM validates that concepts
+          exist and are bound; people in their roles validate that the
+          concepts describe the system adequately, the System Architect that a
+          concept is unambiguous enough for an LLM to write its step.
+        The Owner asked to research and restore what goes into Given, When and
+        Then (the repository's checklists and general practice) and keep it.
+    question: |
+      Q6 - Where is it recorded which concept a step belongs to: (i) on every
+      step, in the Story and the Registry; (ii) only in the Registry, as a map
+      beside the steps written by us apply; (iii) nowhere, the LLM decides
+      again wherever it is needed. Shown on halve-001.
+    answer: |
+      конкретно в этом случае, скорее всего, выглядит, что должна быть опция 3. И вот смотри, у нас же нету концепции number is 6, да, то есть мы будем писать просто the number is 6, во-первых, given не может быть number is 6, потому что, ну да, в общем, number is half, да, типа там, что значит number is half? Ну, то есть, короче говоря, как правило, таких, ну, то есть мы не будем писать это в квадратных, ну, хотелось бы, чтобы это не писалось в квадратных скобочках. То есть, а концепции, типа, они, вот, они должны идти в отдельном файле products и описывать, как бы, что можно быть в этих given, when, then, только чуть более, то есть, смотри, в products concepts будут иметь, типа, там, state или given, можно прямо сказать, концепты для given, number, там, number is set, тогда мы можем сказать, что if number is 6, да, это подходит под концепт для given number is set. Вот этот number is set, он предполагает, что у нас код должен создать, ну, вот build steps должен создать, что типа number is set to something, да, типа, вот, и он должен сделать какие-то предварительные операции над системой, как этот number должен устанавливаться. Просто number is set, это не важно, это не тот, это не state, потому что это операция. То есть number is 6 не может быть в given. Это некоторое, это он переходит в next, и там будет user pressed to, user pressed divide, user pressed что-то там. То есть вот ты неправильно смотришь на given, when, then, как на концепт, поэтому как будто бы у тебя не получается, где это должно быть. А в целом, смотри, это разные вещи, и они связываются на этапе определенного прохода валидации LLM-кой. То есть в каждом сценарии, что бы ни было в given, when, then, это должно быть очень легко должно находиться там с каким-нибудь скорингом 9 из 10, должно находиться в концепциях, которые находятся в файле product. А потом, смотри, концепции в файле product, они должны отдельно записываться еще, перепривязываться в файле архитектор, где должно быть больше деталей о том, как этот концепт описывается в системе, ну, то есть описывается технически в системе, ну, имеется в виду прям именно в виде кода. Что-то типа, что вот есть number is 6, и тогда в системе должно быть, ну, то есть в архитектуре должно быть написано, что типа что-то там, да, что-то на веб-странице должно быть поле, допустим, или что-то вот такое, да. То есть, опять же, без технической реализации, но так, чтобы когда пишется step, мы поняли, как этот step, то есть вот система, которая LLM, которая следующим будет писать step, она поняла, как этот step написать. В чем фишка? Фишка в том, что когда LLM-ка пишет уже step, там уже как будто поздно вовлекать юзера. То есть юзер должен провалидировать, что концепты адекватные. То есть LLM-ка валидирует, что концепты существуют и привязки есть. Юзер с разными ролями валидирует, что эти концепты ну, адекватно описывают систему. То есть и инженер, solution architect проверяет, что этот концепт может быть достаточно однозначно интерпретирован при написании степа, опять же, той же самой LLM-кой. Это он уже будет на опыте делать. Вот. В общем, короче говоря, вот этот вопрос, он как будто просто нерелевантный с той концепцией, которую как будто вот мы потеряли, опять где-то потеряли этот концепт, где что происходит. И мы немножко потеряли концепт, что такое given, when, then. Я бы, кстати, просил, у нас там есть чек-лист и есть еще какие-то вещи, да, вот что писать в given, что when, что then, это надо опять же поресерчить и восстановить в памяти и не забывать больше.
+  - decision_trace:
+      research:
+        - |
+          Gherkin reference: a Given "put[s] the system in a known state ...
+          Avoid talking about user interaction in Given's"; a When is "an event,
+          or an action"; a Then is "an expected outcome", checked by an assertion
+          on observable output, not the database
+          (https://cucumber.io/docs/gherkin/reference). Steps are declarative
+          (https://cucumber.io/docs/bdd/better-gherkin).
+        - |
+          true-bdd/checklists/us-refine.yaml shapes a step as given:
+          <precondition>, when: <role> <concrete, observable action> <object>,
+          then: <observable outcome with measurable criteria>; the product
+          glossary's step entry says the same.
+        - |
+          GLOSSARY.md gained Given, When and Then, at the Owner's request to
+          keep them.
+      recommendation: |
+        (a): a concept is a kind of state, action or outcome, independent of a
+        particular operation; the detail a step's code needs moves to the
+        architecture binding. About 17 concepts for TrueBDD.
+      settled: |
+        The structure of concepts in the product document: a concepts key
+        holding given, when and then, each a list of entries with concept and
+        means (no block field per entry). (a) fits best, but how broad a
+        concept is and how to write one is a separate task: an epic of its own,
+        researched and grilled separately, to be created now under #212.
+    question: |
+      Q7 - How broad is one concept (fields concept, block, means in every
+      option): (a) a kind of state, action or outcome, independent of a
+      particular operation (about 17 for TrueBDD); (b) one domain operation or
+      observation (about 40-50); (c) one item of the Public interface (about
+      41). Shown on the calculator and TrueBDD with the architecture binding.
+    answer: |
+      Ну, окей, если честно, я не понял, в чем разница. То есть, смотри, A как будто подходит, но мне хотелось бы, чтобы они были не блок given, а было как бы concepts given, да, и given как ключ в concepts, а в нем массив как бы concept means. Понял, да? Разница между ABC, я, честно говоря, вообще не понял, потому что, ну, структура-то одинаковая, а уже то, что там написано внутри, ну, ближе всего подходит A, но мне кажется, это как бы чуть-чуть другая в целом задача, то есть, которая должна решаться отдельно дополнительным ресерчем, это прям будет какой-то целый эпик, скорее всего, отдельно прогрилить, как писать концепты. То есть это тоже нужно такую, ну, где-то там создать такой эпик, чтобы мы его начали грилить.
+  - decision_trace:
+      research:
+        - |
+          Today a step is held to the Catalogue deterministically in us refine
+          (D: step-phrases, first), in scen check (term closure) and by a
+          refusal in build tests. Under Q4's (a) the link becomes an LLM
+          judgement, which build tests cannot run (ADR-0031: no AI turn).
+        - |
+          Botrytis keeps a configurable confidence threshold (0.7 by default)
+          and logs every fuzzy match (https://github.com/sublayerapp/botrytis).
+      recommendation: |
+        (a): in us refine and scen check, where D: step-phrases is today.
+      settled: |
+        Delegated to Claude; see the next entry. The Owner also corrected Q7's
+        framing: how broad a concept is depends on how deterministically the
+        system can go on using it; concepts serve what comes after them, and
+        such questions are not to be put to the Owner in a vacuum. The rule
+        for Q8: the failure must stop the pipeline with an error somewhere,
+        never let it continue; scen check never trusts earlier results, it
+        checks afresh that the current Scenario has everything needed to build
+        it further.
+    question: |
+      Q8 - Where does the pass linking steps to concepts run, and what happens
+      when a step does not link (one LLM turn per Story or Scenario, a score
+      out of 10 per step against the concepts of its block, below 9 fails; the
+      fix offers a rewritten step or a new or wider concept): (a) in us refine
+      and scen check; (b) only in scen check; (c) only in us refine, scen check
+      trusting it.
+    answer: |
+      То есть мне не нравится на самом деле то, как ты задаешь вопрос, как насколько большой how broad the concept is. How broad is one concept? Потому что, смотри, насколько он большой, зависит от того, насколько дальше система сможет детерминированно пользоваться этим концептом. Понимаешь, о чем я? То есть мне очень хотелось бы, чтобы ты как бы опять же вспомнил цель, что это не просто концепт в вакууме, а дальше нам нужно с ним что-то делать. И не перекладывал на меня эти вопросы. Если говорить про Q8, то я, опять же, я хотел бы это передать на тебя, потому что здесь очень сильно зависит от того, то есть, что происходит? Но оно должно, где-то оно должно упасть с ошибкой, понимаешь, да? То есть оно не должно продолжить работу с ошибкой. А уже где? То есть, поскольку операции вызываются достаточно как-то, знаешь, один за другим, ну вот где-то должно, подумай сам, где лучше всего это делать. Исходя из... Ты помнишь, что ты написал последовательность, в принципе, операций, и send-check, он должен просто вообще валидировать, да, валидировать или фиксить как-то все это дело. В общем, надо смотреть, send-check никогда не trusts earlier results, наоборот, он mistrusts earlier results и пытается проверить текущий сценарий, есть ли вся необходимая для них информация, чтобы построить их дальше.
+  - decision_trace:
+      research:
+        - |
+          The pipeline: us refine, us apply, scen check, build tests, build
+          steps, build code. us refine ends exit 0 with a failing verdict and
+          saves no Story; scen check exits 1 when any Scenario fails; build
+          tests runs no AI turn (ADR-0031); build steps groups the suite's steps
+          by concept with an LLM (Q6 (iii)).
+      recommendation: |
+        Judge the link at the first step and at the gate before the build,
+        and stop the build if a step still links to no concept.
+      settled: |
+        The link of each step to a concept of its own block is judged by an
+        LLM, a score out of 10 with a reason per step, 9 or more passing, in
+        three places, each stopping rather than going on with the error:
+        - us refine: a Story whose step does not link fails its walk; the fix
+          offers at the menu a rewritten step or a new or wider concept, the
+          Product Owner choosing; an unfixed Story is not saved;
+        - scen check: every Scenario's steps are judged afresh against the
+          current concepts, trusting no earlier result; a failure fails the
+          Scenario and the command exits 1; --fix offers the same choices;
+        - build steps: its grouping pass stops the run with a distinct error,
+          before any skeleton, when a step links to no concept at 9 or more.
+        build tests drops its deterministic refusal of a step outside the
+        Catalogue, since it runs no LLM; scen check is the gate before it.
+    question: |
+      Where is a step's link to a concept judged, and where does a failure stop the pipeline?
+    answer: |
+      Claude, delegated in Q8 («Если говорить про Q8, то я, опять же, я хотел бы это передать на тебя ... где-то оно должно упасть с ошибкой ... подумай сам, где лучше всего это делать»): judged in us refine, in scen check afresh (exit 1) and by build steps' grouping pass, which stops before any skeleton; build tests drops its refusal of steps outside the Catalogue.
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        build steps needs, per concept and service, the interface items to go through and what to do with them, deterministically checkable; #240's shape already holds both.
+      settled: |
+        architecture.concepts replaces architecture.phrases, with the Phrase mapping's shape keyed by concept: concept (verbatim), service, references into the service's declared Public interface (checked deterministically as now), and does, saying by block what a step definition does through them (a Given puts the state in place, a When calls, a Then observes and compares). A deterministic check holds every concept to at least one binding and every reference to the Public interface; the LLM link pass (Q8 entry) also checks that a linked concept has a binding for the Scenario's service.
+    question: |
+      The architecture binding of a concept?
+    answer: |
+      Claude, delegated in Q8 («не перекладывал на меня эти вопросы»: questions whose answer follows from what the system must do with a concept downstream): architecture.concepts replaces architecture.phrases, with the Phrase mapping's shape keyed by concept: concept (verbatim), service, references into the service's declared Public interface (checked deterministically as now), and does, saying by block what a step definition does through them (a Given puts the state in place, a When calls, a Then observes and compares). A deterministic check holds every concept to at least one binding and every reference to the Public interface; the LLM link pass (Q8 entry) also checks that a linked concept has a binding for the Scenario's service.
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        Forced by Q5 and Q6: patterns are proposed per concept, and no step records its concept.
+      settled: |
+        An Item is a concept and suite. A grouping pass, one LLM turn per suite, assigns every unbound step of the suite to a concept of its block at 9 or more, or stops (Q8 entry); then, per Item, the AI proposes the concept's patterns (Q5), the engine checks the binding and writes the skeleton, the AI writes the bodies, the critique judges them against the concept's means and binding, and #192's whole-suite checks run as now.
+    question: |
+      build steps' Items?
+    answer: |
+      Claude, delegated in Q8 («не перекладывал на меня эти вопросы»: questions whose answer follows from what the system must do with a concept downstream): An Item is a concept and suite. A grouping pass, one LLM turn per suite, assigns every unbound step of the suite to a concept of its block at 9 or more, or stops (Q8 entry); then, per Item, the AI proposes the concept's patterns (Q5), the engine checks the binding and writes the skeleton, the AI writes the bodies, the critique judges them against the concept's means and binding, and #192's whole-suite checks run as now.
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        The Owner in Q6: people validate concepts before any step is written, the System Architect their unambiguity.
+      settled: |
+        The Product Owner validates a product concept when applying a new or wider one at the us refine or scen check menu; the System Architect validates its binding when applying it at the scen check menu; a scen check Prompt judges each binding of a linked concept unambiguous enough for an LLM to write its step, and a failure goes to the System Architect's fix. No step definition is written for a concept nobody validated.
+    question: |
+      Who validates concepts?
+    answer: |
+      Claude, delegated in Q8 («не перекладывал на меня эти вопросы»: questions whose answer follows from what the system must do with a concept downstream): The Product Owner validates a product concept when applying a new or wider one at the us refine or scen check menu; the System Architect validates its binding when applying it at the scen check menu; a scen check Prompt judges each binding of a linked concept unambiguous enough for an LLM to write its step, and a failure goes to the System Architect's fix. No step definition is written for a concept nobody validated.
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        Concepts are prose relying on product words; the closure of words stays deterministic over the documents.
+      settled: |
+        Kept. A concept lists the glossary terms its means relies on (terms); the declared-terms and term-mappings checks hold concepts, no longer steps, to the glossary and the Word mapping.
+    question: |
+      Glossary and Word mapping?
+    answer: |
+      Claude, delegated in Q8 («не перекладывал на меня эти вопросы»: questions whose answer follows from what the system must do with a concept downstream): Kept. A concept lists the glossary terms its means relies on (terms); the declared-terms and term-mappings checks hold concepts, no longer steps, to the glossary and the Word mapping.
+  - decision_trace:
+      research:
+        - |
+          Q3-Q8 overturn ADR-0032 (one definition per template, the skeleton
+          from the template) and the Catalogue's template grammar (Q34 of the
+          self-spec log): hard to reverse, surprising without context, the
+          result of a trade-off, so an ADR is warranted.
+      recommendation: |
+        (a): close #248 as superseded; record Q3-Q8 as ADR-0034 and in
+        GLOSSARY.md; file the mechanics tickets under #212 now, only TrueBDD's
+        and the calculator's migration blocked by #254.
+      settled: |
+        Delegated to Claude, to decide after consulting Codex and Fable as
+        second readers, choosing what Claude itself will work with best.
+    question: |
+      Q9 - How does #248 end and where do the decisions land: (a) #248 closes
+      as superseded, Q3-Q8 become ADR-0034 and GLOSSARY entries, the mechanics
+      tickets are filed now under #212 with only the migration blocked by
+      #254; (b) #248 closes and nothing is written until #254's grilling; (c)
+      #248 stays, rewritten as one mechanics ticket blocked by #254.
+    answer: |
+      Если честно, я тут не очень хорошо знаю, понимаю, поэтому я бы хотел, чтобы ты с Подексом просто все это дело пересоветовался, посоветовался с Подексом, посоветовался с Фейблом и принял решение для себя наиболее, ну, как бы самое лучшее решение, так, чтобы тебе же этим потом пользоваться.
+  - decision_trace:
+      research:
+        - |
+          Codex plan-read (tmp/codex/plan-read-248-q9/final.md): (a), amended.
+          A binding check in us refine recreates #250's deadlock; #254 bears on
+          whether linking, grouping and bindings work, not only on migration;
+          AI-proposed patterns need a suite-wide collision check and a critique
+          that judges them, which today's critique template forbids; groupings
+          can differ across rebuilds and skeleton identity hashes only a
+          phrase; a 9/10 self-score is not calibrated; one ADR; split or hold
+          PR #253 rather than merge its template contract unchanged.
+        - |
+          Fable reading: (a), amended. Merge PR #253 as is (merge-base is
+          main's tip, replay 311/312; the superseded code is small:
+          CapturingPattern, the exact-pattern binding rule, holdToCatalogue,
+          the keying of step-phrases and phrase-mappings, #243's entries as
+          data). Two ADRs. A dual-form transition (a host declares catalogue: or
+          concepts:, never both): 92 of 310 fixtures carry catalogue:, 30
+          architectures phrases:. A spike first: TrueBDD's single suite has 391,
+          70 and 881 distinct given, when and then texts (3129 steps). Name the
+          deviation from ADR-0015. The skeleton records its concept; the
+          critique gets the pattern, its captures and the Scenarios.
+      recommendation: |
+        (a), amended by both readers.
+      settled: |
+        - #248 closes as superseded, its comment linking the tickets that cover
+          its three cases (alternatives captured by proposed patterns, judged by
+          the critique).
+        - Two ADRs. ADR-0034: concepts in prose replace the Catalogue's
+          templates; an LLM links steps to concepts at authoring time; nothing
+          stores the link; who validates. It names its deviation from ADR-0015:
+          a model judges where a structural check stood. The threshold is a
+          checklist setting, default 9, and every verdict records its score
+          and reason. ADR-0035: build steps per concept and
+          architecture.concepts; supersedes ADR-0032 and amends ADR-0031's
+          critique inputs and ADR-0033's wording.
+        - us refine links a step to a product concept only; a concept's binding
+          and its unambiguity are checked in scen check and again before build
+          steps writes any skeleton (Codex 1; overrides the delegated entry
+          that had the link pass check the binding everywhere). #250 folds into
+          the link-pass ticket: its Prompt 12 sketches against the concept's
+          means and the service's kind of interface.
+        - A host declares catalogue: or concepts:, never both, until TrueBDD's
+          own migration removes catalogue: and phrases:.
+        - Tickets under #212, in order:
+          1. a spike on TrueBDD's real Registry, with provisional concepts:
+             grouping, pattern proposal, collisions and the link pass measured;
+          2. product concepts and architecture.concepts with deterministic
+             checks and the dual form; the calculator fixtures migrate;
+          3. the link pass in us refine and scen check, absorbing #250;
+          4. build steps per concept, with grouping by block, the overlap
+             check, the skeleton recording its concept, a critique judging
+             patterns and bodies, build tests dropping its refusal; #251 closes
+             as superseded;
+          5. TrueBDD's own concepts and bindings, blocked by #254.
+          #245 runs again after 2 to 4; #249 and #252 stand.
+        - GLOSSARY.md's Concept and the updated Catalogue, Phrase mapping and
+          Closure check land with ticket 2, so the glossary never describes
+          code that does not exist.
+        - PR #253 is recommended for merging as is. The merge is the Owner's.
+        - Given stays a state, as the Owner's last words in Q6 say: "number is
+          6 не может быть в given". The calculator's given: the number is N
+          Scenarios are rewritten in migration.
+    question: |
+      How does #248 end, where do the decisions land, and what happens to PR #253?
+    answer: |
+      Claude, delegated in Q9 («посоветовался с Подексом, посоветовался с Фейблом и принял решение для себя наиболее ... самое лучшее решение»): (a) amended by both readers: #248 superseded; ADR-0034 and ADR-0035; us refine links to product concepts only; dual-form transition; a spike first, then four tickets under #212, the last blocked by #254; glossary with ticket 2; PR #253 recommended for merging as is.
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        Yes: the frontier is empty; how to write concepts is #254's; the
+        mechanics are decided and logged.
+      settled: |
+        Shared understanding confirmed. Claude writes ADR-0034 and ADR-0035,
+        drafts the five tickets and has Codex plan-read them before
+        publication, publishes them under #212, closes #248, #250 and #251 with
+        links, notes the pivot on PR #253, and commits this log with the
+        glossary and ADRs on their own branch from main, with a PR.
+    question: |
+      Q10 - Have we reached a shared understanding, so that Claude writes the
+      ADRs, drafts the tickets with a Codex plan-read, publishes them, closes
+      #248, #250 and #251, notes PR #253, and commits the log on its own
+      branch?
+    answer: |
+      Да, хорошо. Вроде мы нашли понимание. Скажи, что делать дальше, какую команду вызывать дальше.
