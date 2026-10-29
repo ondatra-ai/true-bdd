@@ -41,6 +41,11 @@ type Change struct {
 // skipDirs entries are root-relative paths (e.g. "tmp", ".git") whose
 // subtrees are excluded from the snapshot entirely.
 func Snapshot(root string, skipDirs ...string) (map[string][]byte, error) {
+	return SnapshotFiltered(root, nil, skipDirs...)
+}
+
+// SnapshotFiltered omits caller-owned artifacts before any file is opened.
+func SnapshotFiltered(root string, omit func(string) bool, skipDirs ...string) (map[string][]byte, error) {
 	out := make(map[string][]byte)
 
 	walkErr := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
@@ -61,7 +66,7 @@ func Snapshot(root string, skipDirs ...string) (map[string][]byte, error) {
 			return nil
 		}
 
-		if isSkipped(rel, skipDirs) {
+		if omitSnapshotFile(rel, skipDirs, omit) {
 			return nil
 		}
 
@@ -167,4 +172,8 @@ func Diff(before, after map[string][]byte) []Change {
 	sort.Slice(changes, func(i, j int) bool { return changes[i].Path < changes[j].Path })
 
 	return changes
+}
+
+func omitSnapshotFile(rel string, skipDirs []string, omit func(string) bool) bool {
+	return isSkipped(rel, skipDirs) || (omit != nil && omit(rel))
 }

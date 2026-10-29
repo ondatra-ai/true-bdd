@@ -5419,6 +5419,7 @@ scenarios:
         - the command exits with code 0
         - every file matching "tmp/true-bdd.log.json" matches "msg":"Created","path":"true-bdd/true-bdd.yaml"
         - and: exactly 1 file matching "true-bdd/true-bdd.yaml" is created
+        - and: 'the file "true-bdd/true-bdd.yaml" matches (?m)^  scen_check_concurrency: 1$'
         - and: exactly 5 files matching "true-bdd/checklists/*.yaml" are created
         - and: exactly 32 files matching "templates/*.tpl" are created
         - and: 'every file matching "true-bdd/true-bdd.yaml" does not match (?m)^scripts:'
@@ -5880,6 +5881,7 @@ scenarios:
       then:
       - the command exits with code 0
       - the file "true-bdd/true-bdd.yaml" is created
+      - 'the file "true-bdd/true-bdd.yaml" matches (?m)^  scen_check_concurrency: 1$'
 
   engine-io-003-events:
     description: Engine IO preserves stream events, usage and refusal targets with stable log keys and scrubs Git hook variables for Go tools
@@ -7098,3 +7100,44 @@ scenarios:
       - 'every file matching "tmp/*/critique-*-user.txt" matches interface_document:'
       - every file matching "tmp/*/critique-*-user.txt" matches calc-002-double
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+  scen-check-speed-001-overlapping-validation:
+    description: Concurrent validation preserves each Scenario gate and Prompt order and serializes fixes in Scenario order
+    service: true-bdd
+    path: tests/true-bdd/scen_check_speed_test.go
+    user_stories:
+      - story: docs/product/stories/scen-check-speed.yaml
+        scenario_id: scen-check-speed-001-overlapping-validation
+        merge_date: "2026-10-29"
+    merged_steps:
+      given:
+        - "the \"scen-check-concurrent\" project tree"
+        - "the validation CLIs are controlled for concurrent arrival"
+        - "the Quality Engineer answers \"1/1/3\" line by line"
+      when:
+        - "the Quality Engineer runs \"scen check --fix\""
+      then:
+        - "the command exits with code 1"
+        - "Scenario validation overlaps with ordered gates and fix menus"
+        - 'stdout matches Exiting\.'
+        - 'stdout does not match Walk stopped'
+  scen-check-speed-002-reverse-request-replay:
+    description: A concurrent walk replays when its validation requests arrive in reverse recorded order
+    service: true-bdd
+    path: tests/true-bdd/scen_check_speed_test.go
+    user_stories:
+      - story: docs/product/stories/scen-check-speed.yaml
+        scenario_id: scen-check-speed-002-reverse-request-replay
+        merge_date: "2026-10-29"
+    merged_steps:
+      given:
+        - "the \"scen-check-reverse\" project tree"
+        - "the validation CLIs are controlled for concurrent arrival"
+        - "the Quality Engineer answers \"1/1/3\" line by line"
+      when:
+        - "the Quality Engineer runs \"scen check --fix\""
+      then:
+        - "the command exits with code 1"
+        - "Scenario validation overlaps with ordered gates and fix menus"
+        - 'stdout matches Exiting\.'
+        - 'stdout does not match Walk stopped'
+        - "replay consumes the recorded validation requests in reverse order"

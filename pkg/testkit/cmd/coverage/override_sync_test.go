@@ -177,6 +177,8 @@ const (
 func allowedOverrideFixtures() map[string]overridePurpose {
 	allowed := map[string]overridePurpose{
 		"init-existing":                           overridePreserved,
+		"scen-check-concurrent":                   overrideChecks,
+		"scen-check-reverse":                      overrideChecks,
 		"start-invalid-checklist":                 overrideRefused,
 		"build-steps-critique-correct":            overrideTiers,
 		"build-steps-critique-operation":          overrideTiers,

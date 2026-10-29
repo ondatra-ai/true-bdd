@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,7 +14,7 @@ import (
 )
 
 // cassetteName matches the shim's `<binary>-<NNN>` directory naming.
-var cassetteNamePattern = regexp.MustCompile(`^([a-z]+)-(\d{3})$`)
+var cassetteNamePattern = regexp.MustCompile(`^([a-z]+)-(\d{3,})$`)
 
 // CheckCassettesConsumed reports whether the run used every recorded
 // call, per binary — the one divergence a per-call request hash can't
@@ -72,6 +73,16 @@ func countCassettes(dir string) (map[string]int, error) {
 // missing cursor means the binary was never spawned, which is zero
 // served — and a real failure when cassettes exist for it.
 func readCursor(stateDir, binary string) int {
+	consumed, readErr := disk.Read(filepath.Join(stateDir, "consumed-"+binary))
+	if readErr == nil {
+		var names []string
+		if json.Unmarshal(consumed, &names) != nil {
+			return 0
+		}
+
+		return len(names)
+	}
+
 	blob, err := disk.Read(filepath.Join(stateDir, "cursor-"+binary))
 	if err != nil {
 		return 0
