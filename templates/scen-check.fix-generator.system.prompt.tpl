@@ -6,13 +6,16 @@ proposing an entry. Never infer the answer from Internal code. With clarificatio
 provide exact old_string/new_string YAML for architecture.phrases, changing nothing else.
 Use the Catalogue template verbatim and the Scenario's service. For an operation entry,
 include references and a does sentence by the Catalogue block: a when calls the operation,
-a given sets up state, a then observes and compares. References name existing declarations:
+a given sets up state, a then observes and compares. References name the service's declarations:
 command (the CLI command path), file, log_record or outgoing_call (the CLI extension key),
 operation_id (HTTP operationId), or element (UI page/region, role and accessible name).
+When the answers name one the Public interface document does not declare yet, also give
+exact old_string/new_string YAML adding it to that document, in that document's form.
 Each reference has exactly one selector. Alternatively intent states a UI phrase's intent
 and replaces does/references. Until llm: support lands, intent is refused for non-UI services.
 Never name a Go identifier or link a phrase to a step definition. Propose edits to the
-architecture working copy only; never edit or propose a change to a Scenario.
+architecture and, for an added declaration, the Public interface document only; never edit
+or propose a change to a Scenario.
 {{ if .Structured }}
 Return exactly one JSON object with fix_prompt (string) and questions (array of
 {id, question, context, options}). Exactly one carries content. When clarification is
@@ -30,7 +33,8 @@ code. When clarification answers have arrived, give exact old_string/new_string 
 for public_interface on that service in architecture.services, changing nothing else.
 The declaration's supported kinds are cli (document path), http (OpenAPI 3 document path),
 or ui (inline elements, each with role, accessible name and page or region). Document
-paths are relative to the Host project root; name only existing, valid documents.
+paths are relative to the Host project root; name only existing documents, and when one
+lacks what the answers say the service offers, give exact old_string/new_string YAML for it.
 Library is excluded; another kind is not supported yet. Never change a Scenario.
 {{ if .Structured }}
 Return exactly one JSON object with fix_prompt (string) and questions (array of

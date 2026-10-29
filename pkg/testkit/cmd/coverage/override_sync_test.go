@@ -182,6 +182,7 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"phrase-mappings-duplicate":           overrideChecks,
 		"phrase-mappings-intent":              overrideChecks,
 		"phrase-mappings-fix":                 overrideChecks,
+		"phrase-mappings-fix-operation":       overrideChecks,
 		"phrase-mappings-exit":                overrideChecks,
 		"public-interface-missing":            overrideChecks,
 		"public-interface-missing-document":   overrideChecks,

@@ -6,6 +6,9 @@ Approved fix:
 Architecture working copy:
 {{ range .Subject.TermDocuments }}{{ if eq .Key "architecture_yaml" }}
 Edit `{{.Scratch}}`, the working copy of `{{.Path}}`.
+{{ end }}{{ end }}{{ with .Subject.InterfaceDocuments }}Public interface working copies:
+{{ range . }}
+Edit `{{.Scratch}}`, the working copy of `{{.Path}}`, only where the approved fix changes that document.
 {{ end }}{{ end }}
 After editing, return:
 === FILE_START: {{.ResultPath}} ===
@@ -21,6 +24,9 @@ Approved fix:
 Architecture working copy:
 {{ range .Subject.TermDocuments }}{{ if eq .Key "architecture_yaml" }}
 Edit `{{.Scratch}}`, the working copy of `{{.Path}}`.
+{{ end }}{{ end }}{{ with .Subject.InterfaceDocuments }}Public interface working copies:
+{{ range . }}
+Edit `{{.Scratch}}`, the working copy of `{{.Path}}`, only where the approved fix changes that document.
 {{ end }}{{ end }}
 After editing, return:
 === FILE_START: {{.ResultPath}} ===
