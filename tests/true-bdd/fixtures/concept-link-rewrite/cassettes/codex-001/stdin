@@ -1,0 +1,110 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+Apply only the exact concept, binding or step repair approved at the menu.
+Edit only the listed working copies. Preserve every unaffected entry.
+For a Story step rewrite, return the complete Story YAML instead of editing
+a document. For document edits return the requested confirmation markers.
+
+
+### TASK
+
+The Product Owner chose apply at the menu for Story host.
+Approved fix:
+=== FILE_START: tmp/{{RUN_DIR}}/01-host-fix-prompts.md ===
+# Proposed repair — Item `host` (not applied)
+
+## Failed judgement
+
+Only the AC-1 **when** step failed: `square six` reaches no `when` concept
+(best score: `halve` = 1, threshold 9). The given step (`number ready`, 10)
+and the then step (`number result`, 10) both pass and stay untouched.
+
+## Diagnosis and choice of repair
+
+The product description states: *"The calculator offers one operation, Halve,
+which displays half the entered number. It has no Square operation."*
+
+So squaring is **not** a Public interface item of this product:
+
+- A **new concept** is not admissible — a concept for squaring would describe a
+  use the product does not offer.
+- A **new variation** of `halve` is not admissible — a variation widens an
+  existing concept for the same item and use, and squaring is a different
+  operation, not another wording of halving.
+
+Therefore the repair is a **Story rewrite**, owned by the Product Owner: state
+the when step as the operation the product actually has. The then step
+`three is displayed` is already the half of the entered six, so the rewritten
+step makes AC-1 internally consistent.
+
+## Change 1 of 1 — rewrite the AC-1 when step in Item `host`
+
+Product document `docs/product/product.yaml`: **no change**. Concepts
+`number ready`, `halve` and `number result` stay exactly as they are.
+
+Story `host`, acceptance criterion AC-1, when block:
+
+- remove: `square six`
+- add: `halve six`
+
+### Resulting Story (only the when step differs)
+
+```yaml
+id: host
+title: Halve a number
+as_a: Product Owner
+i_want: to halve a number
+so_that: I can read its half
+status: DRAFT
+acceptance_criteria:
+    - id: AC-1
+      description: The number must be halved
+      steps:
+        - given:
+            - six is entered
+        - when:
+            - halve six
+        - then:
+            - three is displayed
+```
+
+## Expected outcome after apply
+
+`halve six` becomes a plain instance of the `when` concept `halve`
+("Halve the entered number once."): the operation is halving, applied once to
+the entered number. Given and then steps keep their existing links.
+
+## Status
+
+Proposal only — nothing changed. Apply requires an explicit menu decision by
+the Product Owner, who owns the Story wording.
+=== FILE_END: tmp/{{RUN_DIR}}/01-host-fix-prompts.md ===
+Product working copy:
+
+- `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
+
+If the approved fix changes a concept, edit only that product working copy;
+return applied: true, target and summary inside the markers below.
+If it rewrites a step, return the COMPLETE updated Story body inside those
+markers, preserving every other field and criterion. Do not edit concepts
+for a step rewrite. Current Story:
+id: host
+title: Halve a number
+as_a: Product Owner
+i_want: to halve a number
+so_that: I can read its half
+status: DRAFT
+acceptance_criteria:
+    - id: AC-1
+      description: The number must be halved
+      steps:
+        - given:
+            - six is entered
+        - when:
+            - square six
+        - then:
+            - three is displayed
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
+<confirmation YAML or complete Story body YAML>
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===

@@ -1,3 +1,9 @@
+{{ if .Judgement -}}
+Apply only the exact concept, binding or step repair approved at the menu.
+Edit only the listed working copies. Preserve every unaffected entry.
+For a Story step rewrite, return the complete Story YAML instead of editing
+a document. For document edits return the requested confirmation markers.
+{{ else -}}
 {{ if eq .Check "phrase-mappings" -}}
 The user has already chosen Apply at the engine menu, authorizing this turn.
 Apply the approved Phrase mapping now to the architecture working copy, and any
@@ -74,6 +80,7 @@ or glossary.
   - `applied: true` (or `false` on failure)
   - `target:` — the working copy you edited (QUOTED)
   - `summary:` — one line on what changed
+{{ end -}}
 {{ end -}}
 {{ end -}}
 {{ end -}}

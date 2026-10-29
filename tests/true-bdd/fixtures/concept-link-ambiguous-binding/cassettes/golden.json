@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "concept-link-ambiguous-binding",
+  "files": [
+    {
+      "path": "docs/architecture/architecture.yaml",
+      "kind": "modified",
+      "size": 1757,
+      "sha256": "5ac17f4ffff13790ca12d8e85c7a66e3d504cae45f827e00d690a8a084037316",
+      "text": "{\n  \"architecture\": {\n    \"services\": [\n      {\n        \"name\": \"calc\",\n        \"path\": \"services/calc\",\n        \"language\": \"go\",\n        \"public_interface\": {\n          \"kind\": \"ui\",\n          \"elements\": [\n            {\n              \"page\": \"Calc\",\n              \"role\": \"button\",\n              \"name\": \"Halve\"\n            },\n            {\n              \"page\": \"Calc\",\n              \"role\": \"textbox\",\n              \"name\": \"Number\"\n            }\n          ]\n        }\n      }\n    ],\n    \"concepts\": [\n      {\n        \"concept\": \"number ready\",\n        \"block\": \"given\",\n        \"service\": \"calc\",\n        \"references\": [\n          {\n            \"element\": {\n              \"page\": \"Calc\",\n              \"role\": \"textbox\",\n              \"name\": \"Number\"\n            }\n          }\n        ],\n        \"does\": \"Enter the given number into the Number field.\"\n      },\n      {\n        \"concept\": \"halve\",\n        \"block\": \"when\",\n        \"service\": \"calc\",\n        \"references\": [\n          {\n            \"element\": {\n              \"page\": \"Calc\",\n              \"role\": \"button\",\n              \"name\": \"Halve\"\n            }\n          }\n        ],\n        \"does\": \"Press the Halve button on the Calc page once. Do not type or re-enter any number: act on the value already present in the Number field, even when the step text repeats that number.\"\n      },\n      {\n        \"concept\": \"number result\",\n        \"block\": \"then\",\n        \"service\": \"calc\",\n        \"references\": [\n          {\n            \"element\": {\n              \"page\": \"Calc\",\n              \"role\": \"textbox\",\n              \"name\": \"Number\"\n            }\n          }\n        ],\n        \"does\": \"Compare the displayed Number text with the expected result.\"\n      }\n    ],\n    \"terms\": []\n  }\n}\n"
+    }
+  ]
+}

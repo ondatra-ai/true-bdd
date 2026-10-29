@@ -100,6 +100,11 @@ func (p *CodexProvider) execute(ctx context.Context, req Request, home string) (
 		Writer:     req.CodexApply || req.CodexWriter,
 	}
 
+	err = clearCodexAnswer(req, answerPath)
+	if err != nil {
+		return "", err
+	}
+
 	result, runErr := turn.Run(ctx)
 
 	return finishCodexTurn(req, answerPath, result, runErr, guard)
@@ -158,12 +163,7 @@ func codexAnswer(req Request, answerPath string, result codex.Result, runErr err
 
 	answer, readErr := disk.Read(answerPath)
 	if readErr != nil {
-		if req.CodexWriter && errors.Is(readErr, fs.ErrNotExist) {
-			return trace, &pkgerrors.CodexTurnError{Outcome: pkgerrors.CodexTurnEmptyOutput,
-				Cause: pkgerrors.ErrProviderProducedNoOutput("codex")}
-		}
-
-		return trace, pkgerrors.ErrProviderExecutionFailed("codex", readErr)
+		return missingCodexAnswer(req, trace, readErr)
 	}
 
 	if strings.TrimSpace(string(answer)) == "" {
@@ -222,4 +222,30 @@ func requireEveryProperty(node any) {
 // codexSandbox keeps planning and validation read-only regardless of their tool specs.
 func codexSandbox(_ ExecutionMode) string {
 	return codex.SandboxReadOnly
+}
+
+func missingCodexAnswer(req Request, trace string, readErr error) (string, error) {
+	if req.CodexWriter && errors.Is(readErr, fs.ErrNotExist) {
+		return trace, &pkgerrors.CodexTurnError{Outcome: pkgerrors.CodexTurnEmptyOutput,
+			Cause: pkgerrors.ErrProviderProducedNoOutput("codex")}
+	}
+
+	if req.ResultSchema != "" && errors.Is(readErr, fs.ErrNotExist) {
+		return "", pkgerrors.ErrProviderProducedNoOutput("codex")
+	}
+
+	return trace, pkgerrors.ErrProviderExecutionFailed("codex", readErr)
+}
+
+func clearCodexAnswer(req Request, path string) error {
+	if req.ResultSchema == "" {
+		return nil
+	}
+
+	err := disk.Remove(path)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return pkgerrors.ErrProviderExecutionFailed("codex", err)
+	}
+
+	return nil
 }

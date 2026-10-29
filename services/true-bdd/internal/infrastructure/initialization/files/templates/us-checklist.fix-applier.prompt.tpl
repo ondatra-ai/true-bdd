@@ -1,3 +1,21 @@
+{{ if .Judgement -}}
+The Product Owner chose apply at the menu for Story {{.Subject.ID}}.
+Approved fix:
+{{.FixPrompt}}
+Product working copy:
+{{ range .Subject.TermDocuments }}{{ if eq .Key "product" }}
+- `{{.Key}}`: edit `{{.Scratch}}`, the working copy of `{{.Path}}`
+{{ end }}{{ end }}
+If the approved fix changes a concept, edit only that product working copy;
+return applied: true, target and summary inside the markers below.
+If it rewrites a step, return the COMPLETE updated Story body inside those
+markers, preserving every other field and criterion. Do not edit concepts
+for a step rewrite. Current Story:
+{{.Subject | toYaml}}
+=== FILE_START: {{.ResultPath}} ===
+<confirmation YAML or complete Story body YAML>
+=== FILE_END: {{.ResultPath}} ===
+{{ else -}}
 {{ if eq .Check "" -}}
 ## Current Story
 
@@ -83,4 +101,5 @@ applied: true
 target: "<path of the working copy you edited>"
 summary: "<one-line summary of what changed>"
 === FILE_END: {{.ResultPath}} ===
+{{ end -}}
 {{ end -}}

@@ -18,7 +18,8 @@ architecture:
     service: greeter
     references:
     - command: greet
-    does: Run the greet command once for the person under test.
+    does: Run the greet command once with the required person argument and the loud flag
+      unset, then capture its exit code and printed output.
   - concept: greeting
     block: then
     service: greeter

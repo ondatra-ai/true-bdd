@@ -1,0 +1,33 @@
+{
+  "sections": [
+    {
+      "id": "concepts",
+      "validation_prompts": [
+        {
+          "with": {
+            "concepts": "sketch"
+          },
+          "Q": "For every AC, attempt to draft a runnable test sketch that would\nverify the AC.\n\nREAD docs/architecture/architecture.yaml CAREFULLY. It is the single\nsource of truth for both:\n- the test framework per service and per layer (e2e / integration)\n- the test helpers available per layer (e.g. McpClient, page fixtures)\n\nPick the framework whose service+layer best matches what the AC\ntests, and use the helpers declared for that layer. Do NOT invent\nhelpers; use only what is declared in architecture.yaml. Do NOT\ndiscover the framework from code, package manifests, or other docs.\n\nAn AC is convertible if you can write a concrete test sketch\nwith explicit inputs, actions, and assertions whose pass/fail\ncan be decided without human judgement.\n\nAn AC is NOT convertible if the assertion would require human\ntaste or interpretation (e.g. \"response is helpful\", \"UX feels\nright\") or has no objective oracle.\n\nPass when at least 80% of ACs are convertible.\nFail when fewer than 80% are convertible.\n\nContext: emit a discovery line FIRST, then one item per AC, then\na totals line.\n\nFirst context line MUST state the framework AND helpers you picked,\neach with its exact YAML path in docs/architecture/architecture.yaml:\n  - \"Discovered: framework <name> (architecture.yaml <yaml path>); helpers <names> (architecture.yaml <yaml path>)\"\n\nFor convertible ACs, prefer a single-line form:\n  - \"<AC-id>: convertible (framework: <name>) -- <one-line sketch using declared helpers>\"\n\nIf the sketch needs setup that exceeds 200 chars, use a YAML\nliteral block:\n  - |\n      <AC-id>: convertible (framework: <name>)\n      <multi-line sketch using declared helpers>\n\nFor non-convertible ACs:\n  - \"<AC-id>: not convertible -- '<short reason>'\"\n\nFinal line:\n  - \"Totals: <convertible_count>/<total> = <percentage>%\"\n",
+          "rationale": "Drafting the actual test reveals hidden ambiguity and proves the AC is testable, not just claims to be.",
+          "docs": [
+            "product",
+            "architecture_yaml"
+          ],
+          "F": "Propose rewrites of the non-convertible ACs until at least 80% have\nexplicit inputs, actions and objective assertions. Show a runnable\nsketch for each rewrite using only the framework and helpers\ndeclared in the architecture document. Repair the Story's criteria\nand steps, not test code or the architecture; never invent helpers\nor an oracle absent from the Specification.\nGive each added or rewritten AC an id, a one-sentence must/should\ndescription and concrete Given/When/Then steps. Preserve unaffected\nACs and Story fields. When a Catalogue is declared, use only its\nphrases with filled slots in their declared blocks, including any\nphrases already added by the step-phrases fix; a missing phrase\nmust be proposed through that fix, never invented in a Story step.\nPresent the proposal at the fix menu; apply it only after the\nProduct Owner answers apply.\n"
+        },
+        {
+          "Q": "Link every step of this Item to a product concept of its own block.\nGiven is a state before the behaviour, When an action or event,\nThen an observable outcome. A concept is one Public interface item\nand kind of use, as the wording fixes it; an argument's target\ndoes not change the concept. Read the product roles and glossary.\nScore EVERY concept of the step's block, from 0 to 10:\n10: a plain instance; 9: an instance in other words without doubt;\n7 or 8: related but partly outside its meaning, or another fits as well;\n1 to 6: not this concept; 0: unrelated.\nRead means as CLOSED: it admits only the variations its prose states,\nnever everything in the same area. An unstated variation scores at most 8.\nA step of the wrong kind for its block scores at most 4 for every\nconcept of that block. Name the other block's concept it is an instance\nof in other_block_concept, or null if none. For a right-kind step use null.\nGive a reason for the highest score, or why none fits.\njudge: clauses are unlinked: omit them from the answer.\nllm: steps link by their intent; strip the prefix when judging meaning.\nAnswer steps by their supplied keys, with every concept a required\nkey of scores, a reason and other_block_concept. Change nothing.\n",
+          "with": {
+            "concepts": "link",
+            "threshold": 9
+          },
+          "rationale": "A step without one closed meaning cannot yield an unambiguous definition.",
+          "docs": [
+            "product"
+          ],
+          "F": "Offer the Product Owner a rewritten step applied to the Story or\nScenario, a wider concept when its Public interface item and kind of\nuse already exist, or else a new concept for the new item or use.\nConcepts have concept, means and terms, with variations in closed prose.\nApply concept changes only to the product document and a rewrite only\nto the Item. Show the exact change at the menu and wait for apply.\n"
+        }
+      ]
+    }
+  ]
+}

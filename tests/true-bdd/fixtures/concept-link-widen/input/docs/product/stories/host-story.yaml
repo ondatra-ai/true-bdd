@@ -1,0 +1,17 @@
+story:
+    id: host
+    title: Halve a number twice
+    as_a: Product Owner
+    i_want: to halve a number twice
+    so_that: I can read its quarter
+    status: DRAFT
+    acceptance_criteria:
+        - id: AC-1
+          description: The number must be halved twice
+          steps:
+            - given:
+                - six is entered
+            - when:
+                - halve twice
+            - then:
+                - one and a half is displayed

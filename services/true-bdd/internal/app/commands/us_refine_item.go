@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"gopkg.in/yaml.v3"
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/engine"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/runner"
@@ -34,6 +35,23 @@ func refinePostFix(
 		item *template.StoryRefineData,
 		applierContent string,
 	) (*template.StoryRefineData, error) {
+		var confirmation struct {
+			Applied *bool `yaml:"applied"`
+		}
+		if yaml.Unmarshal([]byte(applierContent), &confirmation) == nil && confirmation.Applied != nil {
+			productDocuments := make([]template.FixDocument, 0)
+
+			for _, document := range item.TermDocuments {
+				if document.Key == docs.KeyProduct {
+					productDocuments = append(productDocuments, document)
+				}
+			}
+
+			_, err := commitDocuments(productDocuments, nil)
+
+			return item, err
+		}
+
 		latest, err := postFix(ctx, &item.Story, applierContent)
 		if err != nil {
 			return nil, err

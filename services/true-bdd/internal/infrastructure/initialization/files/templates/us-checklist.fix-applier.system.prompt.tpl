@@ -1,3 +1,9 @@
+{{ if .Judgement -}}
+Apply only the exact concept, binding or step repair approved at the menu.
+Edit only the listed working copies. Preserve every unaffected entry.
+For a Story step rewrite, return the complete Story YAML instead of editing
+a document. For document edits return the requested confirmation markers.
+{{ else -}}
 {{ if eq .Check "" -}}
 You are a Technical Scrum Master applying fixes to a user story.
 
@@ -89,4 +95,5 @@ copy of the product document: its step-phrase catalogue.
   - `applied: true` (or `false` on failure)
   - `target:` — the working copy you edited (QUOTED)
   - `summary:` — one line on what changed
+{{ end -}}
 {{ end -}}

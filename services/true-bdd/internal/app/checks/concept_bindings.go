@@ -64,7 +64,7 @@ func conceptBindingFindings(concepts []product.Concept, bindings []architecture.
 		}
 	}
 
-	return append(findings, unboundConceptFindings(concepts, bindings)...)
+	return findings
 }
 
 func conceptBindingEntries(bindings []architecture.ConceptBinding,
@@ -81,28 +81,6 @@ func conceptBindingEntries(bindings []architecture.ConceptBinding,
 	}
 
 	return entries
-}
-
-func unboundConceptFindings(concepts []product.Concept, bindings []architecture.ConceptBinding) []string {
-	findings := make([]string, 0)
-
-	for _, entry := range concepts {
-		bound := false
-
-		for _, binding := range bindings {
-			if binding.Concept == entry.Name && binding.Block == entry.Block {
-				bound = true
-
-				break
-			}
-		}
-
-		if !bound {
-			findings = append(findings, fmt.Sprintf("%s concept '%s' has no Concept binding", entry.Block, entry.Name))
-		}
-	}
-
-	return findings
 }
 
 func declaredConcept(concepts []product.Concept, binding architecture.ConceptBinding) bool {

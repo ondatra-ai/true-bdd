@@ -245,7 +245,7 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"fix-loop-unsettled":                      overrideFixLoop,
 	}
 
-	for _, fixture := range interfaceCheckFixtures() {
+	for _, fixture := range append(interfaceCheckFixtures(), conceptLinkFixtures()...) {
 		allowed[fixture] = overrideChecks
 	}
 
@@ -542,4 +542,28 @@ func loadConfigBlock(t *testing.T, path string) configBlock {
 	}
 
 	return block
+}
+
+func conceptLinkFixtures() []string {
+	return []string{
+		"concept-link-add-concept",
+		"concept-link-ambiguous",
+		"concept-link-ambiguous-binding",
+		"concept-link-fix-binding",
+		"concept-link-incomplete",
+		"concept-link-judge-intent",
+		"concept-link-llm-needs-intent",
+		"concept-link-malformed",
+		"concept-link-missing-answer",
+		"concept-link-missing-binding",
+		"concept-link-refine-before-binding",
+		"concept-link-rewrite",
+		"concept-link-shared-fix",
+		"concept-link-threshold-eight",
+		"concept-link-threshold-nine",
+		"concept-link-unfixed",
+		"concept-link-unrelated-unbound",
+		"concept-link-widen",
+		"concept-link-wrong-block",
+	}
 }

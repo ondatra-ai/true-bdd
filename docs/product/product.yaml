@@ -28,10 +28,34 @@ description:
     behavior. The declared-terms and term-mappings built-in checks hold every
     concept's terms to the glossary and Word mapping, and phrase-mappings holds
     all Concept bindings to declared concepts and Public interface references,
-    without AI and regardless of Story claims. Every concept needs a binding,
-    unique per name, block and service. Findings name the concept; fixes write
-    Term documents, never a Scenario. The link pass and the judgment of means
-    words are #257; building step definitions per concept is #258.
+    without AI and regardless of Story claims. Bindings are unique per name,
+    block and service. The walk answers D: Prompts first, then the link before the other Q:
+    Prompts, preserving artifact indices so a new concept reaches refinement
+    sketches after its link fix. The link pass in us refine and scen check scores every
+    concept of each step's own block from 0 to 10, using a required-key schema
+    built for the Item. Exactly one must reach the checklist threshold, 9 by
+    default; ambiguity names both. Missing, malformed or incomplete answers fail
+    the Cell. Every score, reason for the highest and verdict is recorded in
+    context, with the other-block concept or none. Closed means admits only
+    stated variations; an unstated one scores at most 8 and a wrong-block step
+    at most 4. A judge: clause passes unlinked; an llm: step links by intent.
+    Refinement links only against product concepts. Its menu offers the Product
+    Owner a rewritten Story step, a wider concept for a variation of an existing
+    item and use, or else a new concept, applied to the product document.
+    Prompt 12 sketches from means and the service interface kind, so a new
+    concept passes refinement before its binding exists. scen check judges
+    every Scenario afresh, claimed or not. Only linked concepts require a
+    binding for its service; an unused unbound concept is not its finding.
+    After the link, a further Q: Prompt judges every linked binding unambiguous
+    enough for an LLM to write a step, given does, references and the complete
+    Public interface. An llm: step needs an intent binding. A failed link or
+    binding fails the Scenario and exits 1. Fixes offer the Product Owner a
+    concept repair and the System Architect a binding, only applied after the
+    menu's apply decision. Shared fixes cause every Scenario to be judged
+    again; binding judgements wait for their links within concurrent Scenario
+    validation. No prompt states a time, turn, token or cost budget.
+    The separate judgment of means words and building step definitions per
+    concept remain later work.
 
   problem: >-
     AI removed the bottleneck on writing code, but not on deciding
@@ -189,12 +213,13 @@ glossary:
       An architecture.concepts entry with concept, block and service, and
       references into that service's Public interface plus does, describing
       setup, calling, or observation and comparison by block. A UI service
-      may state intent instead of does and references. Every concept has at
-      least one binding, unique per concept and service, and every reference
-      is declared. The phrase-mappings built-in check names the concept for
+      may state intent instead of does and references. Bindings are unique per
+      concept name, block and service, and every reference is declared. Only
+      concepts this Scenario links to require a binding for its service. The phrase-mappings built-in check names the concept for
       undeclared concepts, services, references, duplicates or incomplete
       bindings; its fix writes the architecture and any needed Public interface
-      declaration after apply, never a Scenario. It does not link steps.
+      declaration after apply, never a Scenario. After the link, a Q: Prompt judges
+      each linked binding unambiguous enough to write a step definition from.
 
   - term: Phrase mapping
     means: >-
@@ -378,10 +403,14 @@ glossary:
       the error-scenario Prompt with a context line saying why, for example
       that its input errors belong to another Story. The rule adds no Story
       field, and fixes propose error criteria only for real failure modes.
-      With a Catalogue, each step must match exactly one phrase in its
+      With catalogue: templates, each step must match exactly one phrase in its
       declared block, including phrases the step-phrases fix adds.
       That built-in check runs before model Prompts, and its fix records a
       missing phrase in the product document while the Story keeps its words.
+      With concepts, the link Prompt holds each step to one closed means, and
+      Prompt 12 sketches against means and the service interface kind without
+      requiring a binding. Concept fixes write the product document, while
+      a step rewrite changes only the Story.
 
   - term: Prompt
     means: >-
@@ -1276,6 +1305,10 @@ catalogue:
     means: The first engine log record is the single INFO Engine started record, with nonempty version and commit fields containing no whitespace.
     terms: [engine, build identity, log record]
 
+  - template: the link answer CLI is controlled for invalid replies
+    block: given
+    means: Only the malformed, missing and incomplete link-answer Scenarios use a controlled Claude CLI behind the recording proxy, since the real model's answer schema excludes these replies.
+    terms: [project tree, AI turn]
   - template: the validation CLIs are controlled for concurrent arrival
     block: given
     means: The AI CLIs are deterministic programs selected by the Scenario. Recording admits alpha before beta; replay admits beta before alpha, while both validation turns are outstanding.

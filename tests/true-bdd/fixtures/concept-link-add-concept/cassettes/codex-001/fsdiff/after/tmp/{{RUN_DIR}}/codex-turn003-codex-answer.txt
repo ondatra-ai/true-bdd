@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
+applied: true
+target: tmp/{{RUN_DIR}}/product.yaml
+summary: 'Appended square after halve in concepts.when with means "Square the entered number once." and empty terms. All existing content and Story host remain unchanged.'
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===

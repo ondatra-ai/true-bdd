@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "concept-link-widen",
+  "files": [
+    {
+      "path": "docs/product/product.yaml",
+      "kind": "modified",
+      "size": 781,
+      "sha256": "49da216472ff198eb6957c3e429e479ff650621fe31e3377e617087adcec4b2b",
+      "text": "{\n  \"roles\": [\n    {\n      \"name\": \"Product Owner\",\n      \"description\": \"Owns meanings.\"\n    }\n  ],\n  \"concepts\": {\n    \"given\": [\n      {\n        \"concept\": \"number ready\",\n        \"means\": \"A number is entered before the action.\",\n        \"terms\": []\n      }\n    ],\n    \"when\": [\n      {\n        \"concept\": \"halve\",\n        \"means\": \"Halve the entered number, either once or twice in succession.\",\n        \"terms\": []\n      }\n    ],\n    \"then\": [\n      {\n        \"concept\": \"number result\",\n        \"means\": \"Compare the displayed number with an expected value.\",\n        \"terms\": []\n      }\n    ]\n  },\n  \"glossary\": [],\n  \"description\": {\n    \"summary\": \"The calculator lets a person press Halve once to display half the entered number, or twice to display its quarter.\"\n  }\n}\n"
+    }
+  ]
+}
