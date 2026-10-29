@@ -10,7 +10,7 @@
           "six is entered"
         ],
         "when": [
-          "halve six"
+          "reduce six by roughly half"
         ],
         "then": [
           "three is displayed"
