@@ -54,7 +54,7 @@ func replay(cfg config, name string, argv []string) (int, error) {
 	incoming := stdin.collect(len(liveStdin))
 
 	requestArgs, requestInput := canonicalGoRequest(argv, incoming, manifest.NormalizeGoDurations)
- if requestHash(requestArgs, requestInput, cwd) != manifest.RequestHash {
+	if requestHash(requestArgs, requestInput, cwd) != manifest.RequestHash {
 		return 0, fmt.Errorf("%w (%s)", errCassetteStale, dir)
 	}
 

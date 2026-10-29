@@ -161,6 +161,7 @@ func TestBuildStepsWriting002AllSkeletonsFirst(t *testing.T) {
 	s.And(`stdout matches All step skeletons written.*items=3`)
 	s.And(`the engine dispatched no validation AI turns to "claude"`)
 	s.And(`the engine spawned exactly 1 test runner with arguments matching -list \.`)
+	s.And(`the engine spawned exactly 1 test runner with arguments matching -run \^\(Test`)
 	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
 	s.Done()
 }

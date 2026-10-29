@@ -9,8 +9,8 @@ import (
 	"slices"
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/scenariogen"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/stepskeleton"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/validate"
- "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/stepskeleton"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/runner"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/catalogue"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/architecture"
@@ -26,6 +26,9 @@ var ErrMissingStepDefinitions = errors.New("step definitions are missing")
 
 // ErrBuildStepsChecklist identifies a checklist this deterministic command cannot answer.
 var ErrBuildStepsChecklist = errors.New("build steps checklist must ask D: step-coverage without parameters")
+
+// ErrBuildStepsFramework identifies a host whose suites build steps cannot write.
+var ErrBuildStepsFramework = errors.New("build steps writes go-test suites only")
 
 // BuildStepsDeps contains the dependencies of the step inventory and body writer.
 type BuildStepsDeps struct {
@@ -110,11 +113,13 @@ func discoverBuildSteps(
 		return nil, nil, err
 	}
 
- answer := &stepcoverage.Answer{}
- if scanCoverage {
-  answer, err = stepcoverage.Scan(scenarios, root)
-  if err != nil { return nil, nil, err }
- }
+	answer := &stepcoverage.Answer{}
+	if scanCoverage {
+		answer, err = stepcoverage.Scan(scenarios, root)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
 
 	compiled, _ := catalogue.Compile(source.Entries, source.Roles)
 	items, err := missingPhrases(scenarios, source.Entries, compiled, arch.Phrases)
@@ -124,7 +129,7 @@ func discoverBuildSteps(
 
 func missingPhrases(
 	scenarios []*registry.RegistryScenario, phrases []catalogue.Entry,
- compiled *catalogue.Catalogue, mappings []architecture.PhraseMapping,
+	compiled *catalogue.Catalogue, mappings []architecture.PhraseMapping,
 ) ([]*BuildStepsItem, error) {
 	items := make([]*BuildStepsItem, 0)
 	seen := make(map[string]bool)
@@ -152,8 +157,8 @@ func missingPhrases(
 				return nil, err
 			}
 
-   location := stepskeleton.Location(dir, phrase.Template, compiled.CapturingPattern(phrase.Template))
-   if !defined || location.Pending() {
+			location := stepskeleton.Location(dir, phrase.Template, compiled.CapturingPattern(phrase.Template))
+			if !defined || location.Pending() {
 				items = append(items, &BuildStepsItem{Suite: dir, Service: scenario.Service, Phrase: phrase})
 			}
 		}

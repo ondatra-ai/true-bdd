@@ -43,7 +43,7 @@ func TestEngineModel001Dispatch(t *testing.T) {
 func TestEngineModel002Undeclared(t *testing.T) {
 	s := scenarios.New(t, "engine-model-002-undeclared")
 	s.Given(`the "engine-model-undeclared" project tree`)
-	s.When(`the System Architect runs "build tests --model coder=claude:claude-sonnet-5-5"`)
+	s.When(`the System Architect runs "build steps --model coder=claude:claude-sonnet-5-5"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start"`)
 	s.And(`stdout matches not configured`)

@@ -1797,7 +1797,7 @@ architecture:
       technical: >-
         A registration in the Go package `steps/` beside a Scenario's test
         file: a regular expression, written as a string literal, paired with
-        the code run for every step whose whole text it matches. The engine writes registrations and functions through stepskeleton, using the same Catalogue compiler in capturing mode. Every slot is one group in template order, passed through the harness shape func(*State, []string) error. Pending bodies fail with the phrase and "step not written yet". The AI writes only the body, necessary imports and shared State. No service package is shared.
+        the code run for every step whose whole text it matches. The engine writes registrations and functions through stepskeleton, using the same Catalogue compiler in capturing mode. Every slot is one group in template order, passed through the harness shape func(*State, []string) error. Pending bodies fail with the phrase and "step not written yet". The AI writes only the body, necessary imports and shared State. No service package is shared. Each phrase's function is named phrase<hex sha256 of the template> and lives in its own <name>.go in the suite's steps/ directory, so an interrupted walk finds it again. The registration is appended to the package's existing Register function; a package without one gets register.go, and one without a State type gets state.go with an empty State, each named true_bdd_register.go or true_bdd_state.go when that file name is already taken.
       observed_by: >-
         The step reads the source of every `.go` file directly in the quoted
         directory, without building it. The directory is held inside the run
@@ -1844,7 +1844,7 @@ architecture:
       observed_by: >-
         Read the "Spawning test runner" records in the run's JSON log file:
         count them, compare `binary` with the quoted program, or match the
-        `args` joined by single spaces against the pattern, including counting only matching starts to pin a single whole-suite listing. New harness cassettes with Go test frame durations declare normalize_go_durations and normalize those elapsed values in request argv/stdin to 0.00s; legacy cassette hashes and all failure evidence remain unchanged. A missing log
+        `args` joined by single spaces against the pattern, including counting only matching starts to pin a single whole-suite listing. A missing log
         file fails instead of counting zero.
 
     - term: shell command
@@ -2105,9 +2105,8 @@ architecture:
       service: true-bdd
       references:
       - file: project-tree
-      - outgoing_call: suite-command
-      does: Has the fixture install the project's test dependencies before the next run, and checks that it
-        declares the install.
+      does: Requires the fixture to declare the install of the project's test dependencies, which its prep
+        runs while the project tree is assembled for the next run.
     - template: the {actor:role} runs "{command}"
       service: true-bdd
       references: &id010
@@ -2385,12 +2384,12 @@ architecture:
       service: true-bdd
       references:
       - command: claude-guard
-      does: Requires the guard to exit 0 with the allow decision on stdout.
+      does: Requires the guard's kept exit status to be 0, its allow.
     - template: the guard denies the tool call
       service: true-bdd
       references:
       - command: claude-guard
-      does: Requires the guard to exit 2 with its denial reason.
+      does: Requires the guard's kept exit status to be 2, its denial.
     - template: the guard's reason matches {expected:pattern}
       service: true-bdd
       references:

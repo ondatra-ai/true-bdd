@@ -254,10 +254,10 @@ model's shape (pass or fail plus context lines), and under `--fix` its
 carrying both `D:` and `Q:` or neither, a `D:` naming a check the
 command does not hold, a `with:` parameter the check does not read, and
 `model:` on a `D:` prompt, since no model answers it, and a `D:` whose
-`docs:` does not list a document its check reads. `scen check` holds six
+`docs:` does not list a document its check reads. `scen check` holds seven
 checks, `given-when-then`, `step-phrases`, `declared-terms`,
 `term-mappings`, `phrase-mappings`, `public-interface` and `step-definitions` (below); the shipped `scen-check`
-checklist walks the last six.
+checklist walks the last six, its six Closure checks.
 
 ### Parking a prompt
 
@@ -441,10 +441,10 @@ true-bdd build code --fix --model coder=claude:claude-sonnet-5-5
 ```
 
 The drill accepts repeated `--model <tier>=<cli>:<model>` pairs after
-`build tests --fix`, `build steps --fix` or `build code --fix`, records them in the run's
+`build steps --fix` or `build code --fix`, records them in the run's
 arguments and forwards their values unchanged through typed options.
-It still refuses other extra arguments; the engine validates the values.
-Deterministic `build tests` does not support model overrides.
+It refuses other extra arguments, and any after `build tests --fix`; the engine validates the values.
+Deterministic `build tests` dispatches no AI turn and has no `--model` flag.
 
 A checklist picks a tier per role, and any single prompt overrides it:
 
@@ -744,6 +744,6 @@ The plan first seeks a permitted solution. If no solution exists, it returns `im
 
 ## Fix approval
 
-Run `true-bdd build code --fix` to review proposed fixes. Every fix is applied only after a person answers apply at its fix menu. `us refine`, `us apply` and `scen check` use the same menu. The engine offers no way to approve fixes in advance.
+Run `true-bdd build code --fix` to review proposed fixes. Every fix is applied only after a person answers apply at its fix menu. `us refine`, `us apply`, `scen check` and `build steps` use the same menu. The engine offers no way to approve fixes in advance.
 
 A clarifying question at end of stdin prints its question and suggested answers and stops with an error saying a person must answer. End of stdin at a fix menu stops with an error saying a person must choose whether to apply the fix. These stops exit non-zero without a COMPLETE banner. Answers are read from stdin, including pipes used by tests and the drill, with no terminal check. A final non-empty answer without a newline is accepted; a blank line keeps its interactive meaning.

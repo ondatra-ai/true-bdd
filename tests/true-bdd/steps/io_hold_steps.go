@@ -17,8 +17,26 @@ func registerIOHoldSteps(suite *bddgo.Suite[State]) {
 		`while a "(exclusive|shared)" hold blocks "([^"]+)" beyond its wait limit$`,
 		runWithHoldExpiry)
 	suite.Step(`^Git hook variables point outside the project$`, poisonGitEnvironment)
-	suite.Step(`^the System Architect runs "([^"]+)" while a "(exclusive|shared)" hold (blocks|permits) "([^"]+)"$`,
-		runWithHold)
+	// One definition per Catalogue phrase (ADR-0032): blocks and permits are
+	// two phrases, so each has its own registration.
+	suite.Step(`^the System Architect runs "([^"]+)" while a "(exclusive|shared)" hold blocks "([^"]+)"$`,
+		runWithBlockingHold)
+	suite.Step(`^the System Architect runs "([^"]+)" while a "(exclusive|shared)" hold permits "([^"]+)"$`,
+		runWithPermittingHold)
+}
+
+// The hold effects the two phrases name, passed on to runWithHold.
+const (
+	holdBlocks  = "blocks"
+	holdPermits = "permits"
+)
+
+func runWithBlockingHold(state *State, args []string) error {
+	return runWithHold(state, []string{args[0], args[1], holdBlocks, args[2]})
+}
+
+func runWithPermittingHold(state *State, args []string) error {
+	return runWithHold(state, []string{args[0], args[1], holdPermits, args[2]})
 }
 
 func runWithHold(state *State, args []string) error {
@@ -63,7 +81,7 @@ func observeHold(state *State, ended <-chan struct{}, effect string) error {
 		sharedWindow  = 3 * time.Second
 	)
 
-	if effect == "permits" {
+	if effect == holdPermits {
 		select {
 		case <-ended:
 			return nil
@@ -127,7 +145,7 @@ func observeHoldExpiry(state *State, root string) error {
 
 func verifyHoldObservation(state *State, root string, ended <-chan struct{}, effect string) error {
 	err := observeHold(state, ended, effect)
-	if err != nil || effect == "permits" {
+	if err != nil || effect == holdPermits {
 		return err
 	}
 

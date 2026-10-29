@@ -870,7 +870,7 @@ func TestEngine_WholeSuiteFindingsUseTheSameAttemptBound(t *testing.T) {
 
 			walker := &stubWalker[int, string]{runs: []engine.ItemRun[int]{{Item: 1, Passed: true, FixApplied: true}}}
 			eng := engine.New[int, string, string](
- func(_ int, prompt string) string {return prompt}, walker, engine.Options{MaxApplyAttempts:2})
+				func(_ int, prompt string) string { return prompt }, walker, engine.Options{MaxApplyAttempts: 2})
 			checks := 0
 			eng.CheckConvergence = func(_ context.Context, items []int) (bool, error) {
 				checks++

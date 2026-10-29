@@ -94,10 +94,10 @@ func (a *Architecture) ServicePath(name string) (string, bool) {
 // rawTesting mirrors the `architecture.testing:` block — the single
 // place a repository states how its tests run.
 type rawTesting struct {
-	Libraries         []Library     `yaml:"libraries"`
-	Framework         string        `yaml:"framework"`
-	ConfigFile        string        `yaml:"config"`
-	Commands          SuiteCommands `yaml:"commands"`
+	Libraries  []Library     `yaml:"libraries"`
+	Framework  string        `yaml:"framework"`
+	ConfigFile string        `yaml:"config"`
+	Commands   SuiteCommands `yaml:"commands"`
 }
 
 // rawDef mirrors the top-level `architecture:` block. Every other key a
@@ -142,10 +142,10 @@ func Load(path string) (*Architecture, error) {
 	arch := &Architecture{
 		Phrases: raw.Architecture.Phrases,
 		Testing: Testing{
-			Framework:         raw.Architecture.Testing.Framework,
-			Libraries:         raw.Architecture.Testing.Libraries,
-			ConfigFile:        raw.Architecture.Testing.ConfigFile,
-			Commands:          raw.Architecture.Testing.Commands,
+			Framework:  raw.Architecture.Testing.Framework,
+			Libraries:  raw.Architecture.Testing.Libraries,
+			ConfigFile: raw.Architecture.Testing.ConfigFile,
+			Commands:   raw.Architecture.Testing.Commands,
 		},
 		Services: services,
 	}

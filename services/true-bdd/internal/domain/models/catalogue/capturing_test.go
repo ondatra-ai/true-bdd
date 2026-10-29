@@ -14,7 +14,7 @@ func TestCapturingPatternPreservesSlotOrderAndGrammar(t *testing.T) {
 	const template = `the {actor:role} sends "{message}" [with|using] {count:number} item[s] matching {tail:pattern}`
 
 	compiled, malformed := catalogue.Compile(
- []catalogue.Entry{{Template: template, Block: "when"}}, []string{"User", "Architect"})
+		[]catalogue.Entry{{Template: template, Block: "when"}}, []string{"User", "Architect"})
 	if len(malformed) != 0 {
 		t.Fatal(malformed)
 	}

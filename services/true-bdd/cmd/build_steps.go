@@ -13,7 +13,8 @@ import (
 func newBuildStepsCmd(provide containerProvider) *cobra.Command {
 	cmd := buildSpecCmd("steps", "Write missing step definitions and check Step coverage",
 		"List missing Catalogue phrase definitions; --fix writes bodies, verifies coverage and the test list, "+
- "and requires every Scenario red without the target.",
+			"and requires every Scenario red without the target.",
+		fixFlagDescription,
 		specFlag{
 			name:   "requirements",
 			usage:  "Path to the Registry (default: documents.scenarios_yaml)",
@@ -30,10 +31,10 @@ func newBuildStepsCmd(provide containerProvider) *cobra.Command {
 			}
 
 			return commands.RunBuildSteps(ctx, commands.BuildStepsDeps{
-				TmpDir:    container.RunDir.GetTmpOutPath(),
-				Evaluator: container.BuildStepsEvaluator,
- FixGenerator: container.BuildStepsFixPromptGenerator,
- FixApplier: container.BuildStepsFixApplier,
+				TmpDir:             container.RunDir.GetTmpOutPath(),
+				Evaluator:          container.BuildStepsEvaluator,
+				FixGenerator:       container.BuildStepsFixPromptGenerator,
+				FixApplier:         container.BuildStepsFixApplier,
 				UserInputCollector: container.UserInputCollector, TableRenderer: container.TableRenderer,
 				RegistryLoader:  container.RegistryLoader,
 				ChecklistLoader: container.ChecklistLoader,
@@ -41,6 +42,7 @@ func newBuildStepsCmd(provide containerProvider) *cobra.Command {
 			}, registryFile, architectureFile, fix)
 		})
 	cmd.Flags().String("architecture", "", "Path to the architectural spec (default: documents.architecture_yaml)")
+	addModelFlag(cmd)
 
 	return cmd
 }
