@@ -34,7 +34,8 @@ description:
     sketches after its link fix. The link pass in us refine and scen check scores every
     concept of each step's own block from 0 to 10, using a required-key schema
     built for the Item. Exactly one must reach the checklist threshold, 9 by
-    default; ambiguity names both. Missing, malformed or incomplete answers fail
+    default; ambiguity names both, and a step of a block declaring no concept
+    has none to reach it and fails. Missing, malformed or incomplete answers fail
     the Cell. Every score, reason for the highest and verdict is recorded in
     context, with the other-block concept or none. Closed means admits only
     stated variations; an unstated one scores at most 8 and a wrong-block step
