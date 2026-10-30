@@ -1,9 +1,3 @@
-# Architectural spec for `scen-check-fix-records-mapping`.
-#
-# The word mapping says how "mcp service" and "message" are built and
-# observed, and says nothing of "reply", which E2E-001 relies on; the fix
-# adds the mapping.
-
 architecture:
   testing:
     framework: go-test
@@ -30,8 +24,8 @@ architecture:
         Post the request to /mcp and keep the response for the steps after.
     - term: reply
       technical: >-
-        The JSON-RPC response the mcp-service returns for the request
-        posted to /mcp, whose result field carries the answer text.
+        The JSON-RPC response body returned by POST /mcp, whose result
+        carries the answer text as a string.
       observed_by: >-
-        Read the response the When step kept, decode its JSON-RPC result
-        and compare that text to the one the step states.
+        Read the result text out of the response the send step kept, and
+        compare it with the stated text.

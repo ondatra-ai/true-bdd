@@ -1,27 +1,3 @@
-# Registry seed for `scen-check-validation-fails`.
-#
-# Two Scenarios a Story claims, walked against the shipped checklist.
-#
-# E2E-001 passes every structural check, none of its steps bound to a
-# step definition yet, and carries a designed defect for every model
-# question that rules on it:
-#
-#   concept link     its when step and its first then step fall under
-#                    no concept of their block
-#   1 description is two sentences with neither must nor should
-#   2 no given step
-#   3 "quickly" in the description
-#   4 "properly" in a then step
-#   5 "handles" and "processes", forbidden action verbs
-#   6 "formatGreeting() was called" is implementation, not behaviour
-#   7 no measurable criterion anywhere
-#   8 "shown properly" cannot be decided without taste
-#
-# E2E-002's last step binds a step definition that records no concept,
-# so it fails the step-definition check and its model questions are
-# skipped, costing no turn. The walk reports both and the CLI exits 1,
-# so a bare `scen check` gates a change.
-
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
   version: "2.0"

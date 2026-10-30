@@ -25,12 +25,12 @@
     "**Actual:** fail\n## Reference documents\nRead(`./docs/architecture/architecture.yaml`) — architecture_yaml\nRead(`./docs/product/product.yaml`) — product\n\n## Concept document findings\nScenario: E2E-001\nService: mcp-service\nCheck: term-mappings\n- E2E-001: then concept 'answer': \"reply\" has no mapping in the architecture\n\nFix instruction: Propose one architecture.terms entry (term, technical, observed_by) for each unmapped term, asking how it is built and observed first. Write it to the architecture document, never to the Scenario.\n\nAsk for the missing meaning or operation before proposing exact YAML to the owner.\nFix the product glossary, architecture.terms or architecture.concepts as the check names.\nBindings use the product's verbatim concept name and block, and their own service.\nEvery binding reference must be declared in that service's Public interface. For a missing\ndeclaration, also propose its addition to the named Public interface document.\nNever propose rewriting a Scenario to repair a concept, term or binding.\n\nReturn exactly one JSON object with fix_prompt (string) and questions (array of\n{id, question, context, options}). Exactly one carries content. When clarification is\nneeded return fix_prompt: \"\"; when proposing return questions: [].\n\n"
   ],
   "exit_code": 0,
-  "duration_ms": 47707,
+  "duration_ms": 27929,
   "request_hash": "sha256:7b4bf39d44ca8538d3a7d5b73ec93f9c76c6b046f8e57f288f2a27c9210c35ab",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-10-30T14:50:35Z"
+  "recorded_at": "2026-10-30T17:43:20Z"
 }

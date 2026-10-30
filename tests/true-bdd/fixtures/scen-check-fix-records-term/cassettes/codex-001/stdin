@@ -48,13 +48,13 @@ Then:
 
 ## Fix Prompt to Apply
 
-Fix the undefined term declared by the `then` concept `answer` in the product document. The Product Owner owns this change: the only edit is one new glossary entry in `docs/product/product.yaml`. Do not touch the Scenario E2E-001, any generated test, any step definition, `architecture.terms`, or `architecture.concepts` — the check is `declared-terms`, so the concept's `terms: [mcp service, reply]` list stays exactly as written and the glossary gains the missing definition.
+Apply one fix to the product glossary only. Owner: Product Owner (product meanings). Do not touch any Scenario, generated test, step definition, or architecture section.
 
-Finding addressed: E2E-001 / mcp-service / declared-terms — "then concept 'answer'" declares "reply", which the glossary does not define.
+File: ./docs/product/product.yaml
 
-Confirmed meaning from the owner: "The text the MCP service answers a message with: one reply per message, as text."
+The `then` concept `answer` (block: then) lists term `reply` in its `terms`, but the glossary defines only `mcp service` and `message`. Add the missing glossary entry with the meaning the owner supplied, keeping the existing entry order and the file's two-space list indentation and `>-` folded-block style.
 
-Apply exactly one edit to `docs/product/product.yaml`. The glossary is ordered alphabetically (`mcp service`, `message`), so insert `reply` after `message` to keep that order:
+Edit (exact):
 
 old_string:
 ```
@@ -72,11 +72,11 @@ new_string:
       answers each message on its own.
   - term: reply
     means: >-
-      The text the MCP service answers a message with: one reply per
-      message, as text.
+      The text the MCP service sends back for one message — exactly one
+      reply per message.
 ```
 
-After the edit, every term declared by the `given`, `when` and `then` concepts (`mcp service`, `message`, `reply`) resolves to a glossary entry, and the `declared-terms` check for E2E-001 passes. No bindings or Public interface declarations change, because no reference was added.
+Nothing else changes: the concept `answer` keeps its verbatim name, block `then`, its means, and `terms: [mcp service, reply]`. No architecture.terms or architecture.concepts change is needed for this finding, and no Public interface declaration is involved.
 
 ---
 

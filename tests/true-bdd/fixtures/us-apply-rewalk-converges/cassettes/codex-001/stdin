@@ -73,45 +73,43 @@ Then:
 ## Target
 Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 
-## Context (already verified — do not re-derive)
-- The scratch registry currently has an EMPTY scenario map: the file's last
-  content line is literally `scenarios: {}`. There is no existing entry to
-  amend, and no existing `path:` in the registry to reuse, so a new entry
-  plus a new test-file path must be created.
-- No other scenario in the file references story
-  `docs/product/stories/99.3-rewalk-fixture.yaml`, so this is an ADD, never
-  a merge into an existing entry.
-- The registry key MUST be the lineage id verbatim: `99.3-001-mcp-initialize`.
-  Do not number it, do not slugify it differently, do not invent an `E2E-NNN` id.
-- Steps are copied verbatim from
-  `docs/product/stories/99.3-rewalk-fixture.yaml`, AC `001-mcp-initialize`.
-  Note the final `then` step is the one-key modifier mapping
-  `- and: the response body is a well-formed JSON-RPC envelope referencing the request id`
-  — keep the `and:` mapping form exactly as the story writes it (it is
-  schema-legal per `true-bdd/scenarios_yaml-schema.yaml`).
-- `service: ""` — this fixture repo has no `architecture.yaml`, so there is no
-  service name to join against; the empty string is intentional and
-  schema-valid (`service: str()`).
-- `path:` — no existing file fits (the registry is empty and there is no
-  `tests/` tree yet), so a new one is created for the MCP endpoint family:
-  `tests/mcp/mcp_test.go`. Sibling AC `002-mcp-get-refused` is the same
-  family (HTTP behaviour of the `/mcp` endpoint) and should land on this
-  same path when its own fix runs — do not create a second file for it.
-- Today's date is `2026-10-25`; use it for `last_updated` and `merge_date`.
+## Context (verified by reading the target file)
+The scratch registry is an empty seed. Its entire body is:
+
+```
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-05-14"
+  description: "Empty seed for us-apply re-walk converges fixture"
+
+scenarios: {}
+```
+
+There is no entry under `scenarios:` at all, therefore no entry whose
+`user_stories[]` contains `docs/product/stories/99.3-rewalk-fixture.yaml`
+together with lineage id `99.3-001-mcp-initialize`. The merge check fails
+because the AC is not present. The fix is to convert the empty flow mapping
+`{}` into a block mapping holding exactly one new scenario keyed by the
+lineage id.
+
+Because the registry is empty there is no existing `path:` to reuse, so a new
+generated-test file is introduced for the `mcp` feature family. `service:` is
+`""` per the registry convention for this fixture, so the suite path is
+`tests/` and the file is `tests/mcp_test.go`. Sibling MCP ACs from the same
+story (e.g. `99.3-002-mcp-get-refused`) are expected to reuse this same
+`path:` later — do not invent a second file for them.
 
 ## Required Changes
 
-### Change #1: Add the scenario entry keyed by lineage id `99.3-001-mcp-initialize`
-**Issue:** The `us-apply/merge` check fails because no entry under `scenarios:`
-has a `user_stories[]` element carrying BOTH the story path
-`docs/product/stories/99.3-rewalk-fixture.yaml` and the lineage scenario id
-`99.3-001-mcp-initialize`. The map is empty (`scenarios: {}`), which the
-engine treats as a refusal, not a pass.
+### Change #1: Add scenario `99.3-001-mcp-initialize` under `scenarios:`
+**Issue:** AC `001-mcp-initialize` (lineage `99.3-001-mcp-initialize`) is not
+present in the registry — `scenarios:` is the empty mapping `{}`.
 
 **Action:** Use the Edit tool on `tmp/{{RUN_DIR}}/scenarios.yaml`
-with the exact `old_string` and `new_string` below. This replaces the empty
-inline map `{}` with a real block map containing exactly one entry. Leave the
-file's leading comment block and the entire `metadata:` block untouched.
+with the exact `old_string` and `new_string` below. Replace the empty flow
+mapping with a block mapping. Do not modify the `metadata:` block, the blank
+line before `scenarios:`, or anything else in the file.
 
 **old_string:**
 ```
@@ -121,15 +119,15 @@ scenarios: {}
 **new_string:**
 ```
 scenarios:
-  "99.3-001-mcp-initialize":
-    description: "The MCP server returns HTTP 200 and a well-formed JSON-RPC envelope for a valid initialize POST to /mcp."
+  99.3-001-mcp-initialize:
+    description: "MCP server returns HTTP 200 and a JSON-RPC envelope for a valid initialize POST to /mcp"
     service: ""
-    path: "tests/mcp/mcp_test.go"
-    last_updated: "2026-10-25"
+    path: tests/mcp_test.go
+    last_updated: "2026-10-30"
     user_stories:
-      - story: "docs/product/stories/99.3-rewalk-fixture.yaml"
-        scenario_id: "99.3-001-mcp-initialize"
-        merge_date: "2026-10-25"
+      - story: docs/product/stories/99.3-rewalk-fixture.yaml
+        scenario_id: 99.3-001-mcp-initialize
+        merge_date: "2026-10-30"
     merged_steps:
       given:
         - the MCP server is running on its configured port
@@ -138,31 +136,22 @@ scenarios:
         - the Claude User posts a valid JSON-RPC initialize request to /mcp
       then:
         - the server returns HTTP 200
-        - and: the response body is a well-formed JSON-RPC envelope referencing the request id
+        - and the response body is a well-formed JSON-RPC envelope referencing the request id
 ```
 
-## Constraints
-- Exactly ONE Edit call; exactly ONE new entry added.
-- Do not add, remove or reword any other entry, and do not add an entry for
-  AC `002-mcp-get-refused` — that AC has its own fix pass.
-- Do not edit `docs/scenarios.yaml` or any story file; the only writable
-  target is the scratch copy `tmp/{{RUN_DIR}}/scenarios.yaml`.
-- Do not change `metadata.last_updated` or any other metadata field.
-- Keep 2-space indentation and the block-map style shown above.
-
-## Verification after the edit
-Re-read `tmp/{{RUN_DIR}}/scenarios.yaml` and confirm:
-1. `scenarios:` is a block MAP (not a list, not `{}`) with the single key
-   `99.3-001-mcp-initialize`.
-2. That entry's `user_stories[0]` has
-   `story: docs/product/stories/99.3-rewalk-fixture.yaml` AND
-   `scenario_id: 99.3-001-mcp-initialize` — this is what makes the
-   `us-apply/merge` check emit
-   `AC 001-mcp-initialize (lineage 99.3-001-mcp-initialize): present in 99.3-001-mcp-initialize`.
-3. `description`, `service`, `path`, `user_stories`, and `merged_steps` are all
-   present (all are required by `true-bdd/scenarios_yaml-schema.yaml`).
-4. The `metadata:` block and the leading comment block are byte-identical to
-   before the edit.
+## Acceptance (how the applier verifies)
+After the edit, the file must:
+1. Contain a top-level `scenarios:` block mapping (no longer `{}`).
+2. Contain exactly one scenario key, spelled verbatim `99.3-001-mcp-initialize`
+   (story id `99.3` + `-` + AC id `001-mcp-initialize`). Do not renumber,
+   abbreviate, or quote-mangle this key.
+3. Have that entry's `user_stories[0].story` equal
+   `docs/product/stories/99.3-rewalk-fixture.yaml` and
+   `user_stories[0].scenario_id` equal `99.3-001-mcp-initialize`.
+4. Carry `merged_steps.given` with 2 items, `merged_steps.when` with 1 item,
+   and `merged_steps.then` with 2 items, matching the AC step text above.
+5. Still parse as valid YAML with 2-space indentation and an unchanged
+   `metadata:` block.
 
 ---
 

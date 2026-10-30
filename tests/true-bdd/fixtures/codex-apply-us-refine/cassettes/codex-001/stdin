@@ -10,21 +10,27 @@ a document. For document edits return the requested confirmation markers.
 
 The Product Owner chose apply at the menu for Story doc-outline.
 Approved fix:
-## Repair proposal — Item `doc-outline` (owner: Product Owner)
+## Repair proposal — Item `doc-outline` (do not apply until the menu decides)
 
 ### Failed judgement
+AC-2 then step `Claude offers to summarise the document instead` — no `then` concept reaches
+threshold 9; best score `reply`: 4. The closed prose of `reply` admits only two variations
+(a listing of a stated number of headings, or exactly a stated message), so an offer to
+summarise falls outside it.
 
-AC-2 then step `Claude offers to summarise the document instead` — no `then` concept reaches threshold 9 (scores: `reply` 5).
+### Chosen repair: widen the existing `reply` concept (one new variation)
+Rationale: the Public interface item (Claude's reply in the conversation) and the kind of use
+(`then`) already exist in `reply`. Per policy, a new variation widens the existing concept of
+that item and use; a new concept is reserved for a new item or use. The Story wording is
+observable and unambiguous as written, so no step rewrite is proposed.
 
-### Diagnosis
+Owner: **Product Owner** (concept change).
+Scope: **`docs/product/product.yaml` only.** No change to the Item/Story. No change to any
+other concept, the glossary, roles or vocabulary.
 
-The step is an observable outcome of the same Public interface item as the other `then` steps — Claude's reply in the conversation — and it is used in the same kind of use (`then`). `reply` already covers that item and use, but its closed prose admits only two variations: listing exactly a stated number of headings, or being exactly a stated message. An offer to summarise is neither.
+### Exact change — `docs/product/product.yaml`, `concepts.then`
 
-Because the item and the kind of use already exist, the repair is to **widen the existing `reply` concept with a third variation**, not to rewrite the step and not to add a new concept. The Story wording stays verbatim: AC-2 states the offer of a summary as a required outcome, and the step names it observably.
-
-### Exact change — `docs/product/product.yaml` only
-
-Under `concepts.then`, replace this entry:
+Replace exactly these lines (46–51):
 
 ```yaml
     - concept: reply
@@ -35,34 +41,31 @@ Under `concepts.then`, replace this entry:
       terms: [outline]
 ```
 
-with:
+with exactly:
 
 ```yaml
     - concept: reply
       means: >-
         Claude's reply in the conversation either lists exactly a stated
         number of headings, in document order, is exactly a stated
-        message, or offers to summarise the Google Doc instead of
-        outlining it.
+        message, or offers to summarise the Google Doc instead.
       terms: [Google Doc, outline]
 ```
 
-Changes, precisely:
-1. `means`: third variation added to the closed prose — `or offers to summarise the Google Doc instead of outlining it`; the two existing variations keep their wording (`either … lists exactly a stated number of headings, in document order,` / `is exactly a stated message`).
-2. `terms`: `Google Doc` added, since the widened `means` now names that glossary term; `outline` kept.
+Two edits only: the third variation `, or offers to summarise the Google Doc instead` added to
+the closed prose of `means` (replacing the trailing `, or is exactly a stated message.` with
+`, is exactly a stated message, or offers to summarise the Google Doc instead.`), and
+`Google Doc` added to `terms` because the new variation uses that glossary term.
 
-### Not changed
+### Resulting binding after apply
+- AC-2 then `Claude offers to summarise the document instead` → `reply` (third variation:
+  Claude's reply offers to summarise the Google Doc instead).
+- Unaffected and preserved: AC-1/AC-2/AC-3 given steps → `shared document`; all three when
+  steps → `outline request`; AC-1 then → `reply` (first variation); AC-2 and AC-3 message
+  steps → `reply` (second variation). The widening adds an alternative and removes none, so
+  no existing binding changes.
 
-- No change to the Story `doc-outline` — every step, including AC-2's `Claude offers to summarise the document instead`, keeps its current wording.
-- No change to `shared document` or `outline request`.
-- No change to `glossary`, `roles`, `vocabulary`, or any other key of the product document.
-- No binding changes (nothing for the System Architect in this repair).
-
-### Effect after apply
-
-AC-2's second then step links to the widened `reply` at or above threshold 9 via the new variation; the ten already-passing judgements keep their existing links unchanged.
-
-**Awaiting an explicit menu decision — nothing has been applied.**
+Awaiting an explicit apply decision at the menu. Nothing has been changed.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

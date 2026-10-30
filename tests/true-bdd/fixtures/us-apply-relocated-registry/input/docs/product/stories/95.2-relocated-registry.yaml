@@ -1,18 +1,3 @@
-# Story seed for the `us-apply-relocated-registry` BDD fixture.
-#
-# Note where this file lives: `docs/product/stories/`, NOT the
-# conventional `docs/product/stories/`. The fixture's `true-bdd.yaml` points
-# `paths.stories_dir` here, and `us apply` finds its story by globbing
-# <stories_dir>/<number>-*.yaml — so if that key stops being honoured,
-# the run fails to find story 95.2 at all.
-#
-# One AC only, and the relocated registry has NO entry for it. Against
-# the SHIPPED us-apply checklist the walk goes: "present?" fails, the F:
-# adds the entry to the scratch registry, the re-validation and the
-# "duplicate?" prompt pass, and the outer re-walk confirms the fixpoint
-# before the scratch copy is committed over the relocated canonical
-# file.
-
 story:
     id: "95.2"
     title: BDD fixture - us apply relocated registry

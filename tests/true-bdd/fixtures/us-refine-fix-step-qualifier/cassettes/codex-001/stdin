@@ -109,19 +109,16 @@ Apply the following changes to the acceptance criteria for this story.
 
 ## Required Changes
 
-Only AC-4 fails the check. AC-1, AC-2, and AC-3 contain no forbidden qualifiers and are reproduced below exactly as they stand — same description, same steps, word for word. Do not modify them.
+Only AC-4 fails the check. AC-1, AC-2, and AC-3 contain no forbidden qualifiers in any Given, When, or Then step and are reproduced below word for word — do not edit them.
 
 ### Change #1: AC-4
-**Before (description):** Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words.
+**Before:** Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words.
 
-**Before (then step):**
-- "Claude quickly displays a user-friendly notice that only the first 10000 words were summarized"
+**Issue:** The `then` step reads "Claude quickly displays a user-friendly notice that only the first 10000 words were summarized". It contains two forbidden qualifiers from the product document's `vocabulary.forbidden_qualifiers` list:
+- `quickly` — gives no time bound, so nothing can be asserted about timing.
+- `user-friendly` — gives no assertable content, so the tester cannot know what text must appear.
 
-**Issue:** The Then step contains two forbidden qualifiers from the product document's `vocabulary.forbidden_qualifiers` list:
-1. `quickly` — no measurable latency bound, so the step cannot be asserted.
-2. `user-friendly` — the notice text is not stated, so there is nothing to assert literally.
-
-**After (description):** Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words. *(description unchanged — it contains no forbidden qualifiers)*
+**After (description):** Claude must display the message 'Only the first 10000 words of this document were summarized' when the document contains more than 10000 words.
 
 **After (steps):**
 ```yaml
@@ -130,13 +127,13 @@ Only AC-4 fails the check. AC-1, AC-2, and AC-3 contain no forbidden qualifiers 
 - when:
     - "the Claude User asks Claude to summarize the document"
 - then:
-    - "Claude displays the message 'Only the first 10000 words of this document were summarized' within 5 seconds"
-    - and: "Claude displays a summary of 150 words or fewer in the conversation"
+    - "Claude displays the message 'Only the first 10000 words of this document were summarized'"
+    - and: "the message is displayed within 30 seconds of the Claude User's request"
 ```
 
-**Why this fixes it:** `quickly` is replaced by the measurable bound "within 5 seconds"; `user-friendly` is replaced by the exact message text Claude displays, so the step can be asserted literally. No other word from the forbidden_qualifiers list (properly, correctly, appropriate, appropriately, user-friendly, fast, quickly, easily, seamless, intuitive) is introduced. The role is kept exactly as "Claude User".
+`quickly` is replaced by the measurable 30-second bound already established by AC-3, and `user-friendly` is replaced by the exact message text Claude must display.
 
-No new ACs are added and no ACs are merged or removed.
+No new ACs are added and no ACs are removed or merged.
 
 ## Complete Fixed Acceptance Criteria
 
@@ -175,16 +172,19 @@ No new ACs are added and no ACs are merged or removed.
         - "Claude displays the message 'The summary timed out - please try again'"
 
 - ac_id: AC-4
-  description: "Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words."
+  description: "Claude must display the message 'Only the first 10000 words of this document were summarized' when the document contains more than 10000 words."
   steps:
     - given:
         - "a Google Doc with more than 10000 words is shared with the Claude User's account"
     - when:
         - "the Claude User asks Claude to summarize the document"
     - then:
-        - "Claude displays the message 'Only the first 10000 words of this document were summarized' within 5 seconds"
-        - and: "Claude displays a summary of 150 words or fewer in the conversation"
+        - "Claude displays the message 'Only the first 10000 words of this document were summarized'"
+        - and: "the message is displayed within 30 seconds of the Claude User's request"
 ```
+
+## Post-edit verification
+Re-scan every Given, When, and Then step of all four ACs against the product document's `forbidden_qualifiers` list (properly, correctly, appropriate, appropriately, user-friendly, fast, quickly, easily, seamless, intuitive). After this edit no step contains any of them.
 
 ---
 

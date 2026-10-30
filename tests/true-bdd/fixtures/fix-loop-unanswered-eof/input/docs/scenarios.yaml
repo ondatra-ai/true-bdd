@@ -1,9 +1,3 @@
-# Registry seed for `fix-loop-unanswered-eof`.
-#
-# One Scenario a Story claims, its last step's concept declaring a term
-# the glossary does not define. The fix stops at its question, so this
-# file stays exactly as it is.
-
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
   version: "2.0"

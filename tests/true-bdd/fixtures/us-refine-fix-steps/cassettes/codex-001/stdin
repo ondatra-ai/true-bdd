@@ -103,7 +103,7 @@ Claude must list every section heading of a shared Google Doc in the conversatio
 # Fix Prompt for Story 96.5: Document Summary On Demand
 
 ## Instructions
-Apply the following changes to the acceptance criteria for this story. Only AC-2 is faulted by the failed check (`us-refine/acceptance_criteria`). AC-1, AC-3, AC-4 and AC-5 already carry valid Given/When/Then steps and must be reproduced exactly as they stand — same descriptions, same steps, word for word.
+Apply the following changes to the acceptance criteria for this story. Only AC-2 is faulted by the failed check (`us-refine/acceptance_criteria`). AC-1, AC-3, AC-4 and AC-5 already carry valid Given/When/Then steps and must be reproduced word for word — do not reword, re-order, or "improve" them.
 
 ## Original Acceptance Criteria
 1. AC-1: Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc. [has steps]
@@ -112,34 +112,40 @@ Apply the following changes to the acceptance criteria for this story. Only AC-2
 4. AC-4: Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words. [has steps]
 5. AC-5: Claude must list every section heading of a shared Google Doc in the conversation when the Claude User asks for the document outline. [has steps]
 
+## Validation Line-by-Line
+- AC-1: ok
+- AC-2: missing steps field
+- AC-3: ok
+- AC-4: ok
+- AC-5: ok
+
 ## Required Changes
 
 ### Change #1: AC-2
-**Before:** Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access.
-**Issue:** The `steps` field is missing entirely — the AC has no Given, no When and no Then step, so the behavior is not expressed in executable Given/When/Then form. The description itself is already a single-line rule-based statement with "must" and needs no change.
+**Before:** Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access. — `steps` field absent entirely.
+**Issue:** The `steps` field is missing, so the criterion has no Given, no When and no Then step. The behavior is stated only in prose and is not expressed as an executable Given/When/Then sequence like the other criteria in this story.
 **After (description):** Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access.
+(The description is already a single-line rule-based statement with `must` and needs no change — only the `steps` field is added.)
 **After (steps):**
 ```yaml
-- given:
-    - "a Google Doc is not shared with the Claude User's account"
-- when:
-    - "the Claude User asks Claude to summarize the document"
-- then:
-    - "Claude displays the message 'This document is not shared with your account'"
+steps:
+  - given:
+      - "a Google Doc is not shared with the Claude User's account"
+  - when:
+      - "the Claude User asks Claude to summarize the document"
+  - then:
+      - "Claude displays the message 'This document is not shared with your account'"
 ```
 
-Notes on the new steps:
-- Third person, using the exact role from the story's `as_a:` clause — "Claude User".
-- Active voice ("Claude displays", not "the message is displayed").
-- The Then asserts the exact literal message string from the description, so the outcome is observable in the conversation (the e2e `chatPage` fixture reads the rendered reply; the integration `McpClient` helper reads the parsed response).
-- No forbidden qualifiers (properly, correctly, appropriate, clear, …) and no forbidden actions (handle, process, parse).
+Notes on the added steps:
+- Third person, using the exact role from the story's `as_a:` field — "Claude User" (never generic "User").
+- Active voice: "Claude displays", not "is displayed".
+- Observable outcome: the exact message text the Claude User sees in the conversation.
+- No vague qualifiers (`properly`, `correctly`, `clear`, `appropriate`, `seamless`, `fast`, `quickly`, `easily`, `intuitive`, `user-friendly`) and no forbidden actions (`handle`, `process`, `parse`).
 - Every step is under 120 characters.
-- The product document declares no `catalogue:`, so no step-phrase vocabulary constrains the wording — plain steps are used.
+- The Given mirrors AC-1/AC-3/AC-4/AC-5's sharing precondition, inverted to the not-shared case, so the whole story reads consistently.
 
-### No other changes
-- No new ACs are added.
-- No ACs are merged or removed. AC-1 (summary of a shared doc) and AC-5 (list of section headings) are distinct outcomes, not duplicates.
-- AC-1, AC-3, AC-4 and AC-5 keep their existing descriptions and steps unchanged, including AC-3's two Given steps and AC-4's second Then (`and:`) outcome.
+No new acceptance criteria are added and none are merged or removed: AC-1 (150-word summary) and AC-5 (section-heading outline) are distinct user requests with distinct observable outputs, and AC-3 (timeout) and AC-4 (10000-word truncation) each cover a separate condition.
 
 ## Complete Fixed Acceptance Criteria
 
@@ -197,6 +203,9 @@ Notes on the new steps:
         - "Claude displays each section heading in its original order"
 ```
 
+## Verification After Applying
+- AC-2 now has a `steps` field containing at least one `given`, one `when` and one `then` step — the failed check should report `AC-2: ok`.
+- AC-1, AC-3, AC-4 and AC-5 retain their original descriptions and steps verbatim (AC-3 keeps both of its given preconditions; AC-4 keeps both of its then outcomes, the second as an `and` continuation).
 === FILE_END: tmp/{{RUN_DIR}}/01-96.5-fix-prompts.md ===
 
 ---

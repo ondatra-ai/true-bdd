@@ -1,17 +1,8 @@
-# Product document for the greeter, the host project of the scen-check
-# fixtures that walk the shipped checklist.
-#
-# Its concepts cover every step of the claimed Scenario, and its
-# glossary defines every term they declare; the architecture document
-# maps each term and binds each concept. The vocabulary is what the
-# quality prompts rule against.
-
 title: "Greeter"
 
 description:
   summary: >-
-    A command-line greeter: given a name, it prints the greeting its
-    config file sets, followed by that name.
+    A command-line greeter: given a name, it greets that person.
 
 roles:
   - name: Operator
@@ -45,8 +36,8 @@ vocabulary:
 glossary:
   - term: greeting
     means: >-
-      The word the greeter prints before a name, read from the project's
-      config file. It is what a user changes to make the greeter speak
+      The word the greeter greets with, read from the project's config
+      file. It is what a user changes to make the greeter speak
       differently.
   - term: command
     means: >-

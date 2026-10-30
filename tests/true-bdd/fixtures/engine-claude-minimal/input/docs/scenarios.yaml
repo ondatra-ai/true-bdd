@@ -1,10 +1,3 @@
-# Registry seed for `scen-check-id-filter`.
-#
-# Three scenarios, all satisfying the narrowed prompt. The run names two
-# of them in descending order on the command line; the walk must visit
-# exactly those two, ascending, and never mention the third. Replay
-# matches cassettes by sequence, so the order is what it pins.
-
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
   version: "2.0"

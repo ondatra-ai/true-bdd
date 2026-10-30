@@ -51,42 +51,41 @@ Then:
 # Fix Prompt for Scenario E2E-001: The greeter must print the configured greeting followed by the name it is given
 
 ## Target
-The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry). No other document changes: the product document's catalogue is not involved (the product document declares no `catalogue:`, and this Scenario's `user_stories:` is empty), and no generated test or step definition is edited here.
+The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry), at `docs/scenarios.yaml`. No other document is touched: `product.yaml` is unchanged (no catalogue entry is named by the finding), and no generated test or step definition is edited here.
 
 ## Why
-The scen-check `scenario_quality` check reported:
+The scen-check finding is:
 
 - `E2E-001: forbidden verb 'handle' in then`
 
-The product document (`docs/product/product.yaml`, `vocabulary.forbidden_actions`) forbids `handle` because it "Hides what the program observably does with the input", and gives the replacement: "Name the observable action: prints, exits, writes."
+The product document lists `handle` under `vocabulary.forbidden_actions` with reason "Hides what the program observably does with the input." and replacement "Name the observable action: prints, exits, writes." The `then` step opens with the abstract `handles the name "Ada"` clause and only afterwards names the observable action (`prints "Hello Ada"`). Dropping the abstract clause leaves exactly one observable assertion — the greeter prints `Hello Ada` — which is what the step already asserts; the name `Ada` remains specified by the `when` step (`the Operator runs "greet Ada"`), so no coverage is lost.
 
-The then step already names the observable action — it prints `"Hello Ada"`. The clause `handles the name "Ada" and` states an intent on top of that, asserts nothing a run can settle, and is the only source of the forbidden verb. Removing it keeps the whole assertion (the greeter's standard output has a match for `Hello Ada`, which is the configured greeting `"Hello"` followed by the name `Ada` given in the when step) while naming only the observable action.
+Note: the product document declares no `catalogue:`, and this Scenario's `user_stories:` is empty, so no catalogue template constrains the wording of the replacement step.
 
 ## Required Changes
 
-### Change #1: Replace the forbidden verb in the then step with the observable action it hides
-**Document:** scenarios_yaml
-**Field:** `merged_steps.then` (the single then step of scenario `E2E-001`)
+### Change #1: Replace the forbidden verb `handle` in the `then` step with the observable action
+**Document:** scenarios_yaml (`docs/scenarios.yaml`)
+**Field:** `scenarios.E2E-001.merged_steps.then` (the single list item)
 **Current text:**
 ```
-the greeter handles the name "Ada" and prints "Hello Ada"
+        - the greeter handles the name "Ada" and prints "Hello Ada"
 ```
 **New text:**
 ```
-the greeter prints "Hello Ada"
+        - the greeter prints "Hello Ada"
 ```
 
-Apply this as a literal replacement of that one list item. Keep the step as a single item of the `then` block, with the same YAML indentation and quoting style as the line it replaces.
+## Must Not Change
+- `scenarios.E2E-001.description` — it contains no forbidden qualifier and no forbidden action verb; leave it verbatim as `The greeter must print the configured greeting followed by the name it is given`.
+- `scenarios.E2E-001.service` (`greeter`), `path` (`tests/greeter/greet_test.go`), `user_stories` (`[]`).
+- The `given` step (`the greeting is configured as "Hello"`) and the `when` step (`the Operator runs "greet Ada"`).
+- `docs/product/product.yaml` — no `means` edit is called for by this finding.
+- `tests/greeter/greet_test.go` and every step definition — the generated test is re-rendered by `true-bdd build tests --fix` after the registry entry reads correctly.
+- Every other scenario and the `metadata:` block of the registry.
 
-## Leave unchanged
-- `E2E-001`'s id, `description`, `service: greeter`, `path: tests/greeter/greet_test.go` and `user_stories: []`.
-- The `given` step `the greeting is configured as "Hello"` and the `when` step `the Operator runs "greet Ada"` — neither uses a forbidden verb.
-- The registry `metadata` block, its comments, and every other Scenario.
-- `docs/product/product.yaml` — no catalogue entry's `means` is named by this finding.
-- `tests/greeter/greet_test.go` and any step definition. After the registry entry reads correctly, re-render the test with `true-bdd build tests --fix`.
-
-## Done when
-The `then` block of `E2E-001` reads `the greeter prints "Hello Ada"`, no step of the Scenario contains `handle`, `process` or `parse`, and the only diff in the registry is that one line.
+## Verification
+After applying, `scenarios.E2E-001.merged_steps.then` must contain no occurrence of `handle`, `handles`, `handled`, `process`, `parse` or their inflections, and must still assert the printed output `Hello Ada`.
 
 ---
 

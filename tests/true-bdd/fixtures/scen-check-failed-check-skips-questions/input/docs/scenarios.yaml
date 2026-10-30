@@ -1,11 +1,3 @@
-# Registry seed for `scen-check-failed-check-skips-questions`.
-#
-# Two scenarios against a checklist whose built-in check sits AFTER its
-# model question in the file. E2E-001 carries all three step kinds: its
-# check passes, so the walk spends one model turn on its question.
-# E2E-002 has no then step: its check fails first, and its question is
-# skipped without a turn. One turn in all proves both the order and the skip.
-
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
   version: "2.0"

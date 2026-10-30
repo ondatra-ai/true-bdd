@@ -1,11 +1,3 @@
-# Product document for the greeter, the host project of the scen-check
-# fixtures that walk the shipped checklist.
-#
-# Its concepts cover every step of the claimed Scenario, and its
-# glossary defines every term they declare; the architecture document
-# maps each term and binds each concept. The vocabulary is what the
-# quality prompts rule against.
-
 title: "Greeter"
 
 description:
@@ -82,6 +74,7 @@ concepts:
       terms: [command, exit code]
     - concept: standard output
       means: >-
-        A line the command printed on its standard output has a match for
-        a stated pattern, a regular expression.
+        One of the lines the command printed on its standard output, its
+        answer or a log record alike, has a match for a stated pattern, a
+        regular expression.
       terms: [command, standard output]

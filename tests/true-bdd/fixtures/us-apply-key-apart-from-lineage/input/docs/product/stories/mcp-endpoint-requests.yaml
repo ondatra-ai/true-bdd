@@ -1,8 +1,3 @@
-# Story seed for the `us-apply-key-apart-from-lineage` BDD fixture.
-#
-# Two criteria, both cited in the seeded registry; the Scenario for 002
-# is keyed apart from its lineage id there.
-
 story:
     id: mcp-endpoint
     feature: mcp-server

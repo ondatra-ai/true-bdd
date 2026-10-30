@@ -1,9 +1,3 @@
-# Registry seed for `scen-check-fix-adds-missing-step`.
-#
-# One Scenario with no then step, though its description pins the
-# outcome: the greeting and the name printed, and exit code 0. The fix
-# adds the missing step to this entry.
-
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
   version: "2.0"

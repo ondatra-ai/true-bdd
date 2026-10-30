@@ -67,48 +67,50 @@ Then:
 
 ## Fix Prompt to Apply
 
-=== FILE_START: tmp/{{RUN_DIR}}/01-99.3-002-mcp-get-refused-fix-prompts.md ===
 # Fix Prompt for AC 99.3-002-mcp-get-refused: The MCP server must respond with HTTP 405 Method Not Allowed when a Claude User sends a GET request to the /mcp endpoint.
 
 ## Target
 Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 
-## Context (verified by reading the target file)
-The `scenarios:` block currently contains exactly ONE entry, `"99.3-001-mcp-initialize"`, whose `user_stories[]` references story `docs/product/stories/99.3-rewalk-fixture.yaml` with `scenario_id: "99.3-001-mcp-initialize"`. No entry anywhere in the file references lineage id `99.3-002-mcp-get-refused`, so the `us-apply/merge` "present?" check fails for AC `002-mcp-get-refused`. The fix is to ADD one new scenario entry keyed by the lineage id. Do not modify, reorder, or re-indent the existing `99.3-001-mcp-initialize` entry, and do not touch `metadata:` (leave `metadata.last_updated` as `"2026-05-14"`).
+## Context (current registry state)
+The registry currently contains exactly one scenario, `99.3-001-mcp-initialize`, which:
+- belongs to the same story (`docs/product/stories/99.3-rewalk-fixture.yaml`)
+- is in the same feature family (the MCP `/mcp` HTTP endpoint)
+- has `service: ""` and `path: tests/mcp_test.go`
 
-`path:` REUSES the existing generated-test file `tests/mcp/mcp_test.go` from sibling scenario `99.3-001-mcp-initialize` — both ACs come from the same story and the same `/mcp` HTTP-endpoint feature family, so their Go tests belong in one file. Do not invent a new path.
+There is no entry whose `user_stories[]` contains story `docs/product/stories/99.3-rewalk-fixture.yaml` together with lineage scenario id `99.3-002-mcp-get-refused`, so the AC must be added as a NEW scenario keyed by its lineage id.
 
-`service:` is `""` to match the sibling entry in this registry.
+Reuse the existing `path: tests/mcp_test.go` — both scenarios describe behaviour of the same `/mcp` endpoint and belong in one generated test file. Do NOT invent a new path. Keep `service: ""` to match the sibling scenario.
 
 ## Required Changes
 
-### Change #1: Add scenario `99.3-002-mcp-get-refused` under `scenarios:`
+### Change #1: Append new scenario `99.3-002-mcp-get-refused` under `scenarios:`
 
-**Issue:** AC `002-mcp-get-refused` (lineage `99.3-002-mcp-get-refused`) is not present in the registry — no `scenarios:` entry has a `user_stories[]` element pairing story `docs/product/stories/99.3-rewalk-fixture.yaml` with `scenario_id: 99.3-002-mcp-get-refused`.
+**Issue:** AC `002-mcp-get-refused` (lineage `99.3-002-mcp-get-refused`) is not present in the registry — no `scenarios:` entry lists both story `docs/product/stories/99.3-rewalk-fixture.yaml` and scenario_id `99.3-002-mcp-get-refused`.
 
-**Action:** Use the Edit tool on `tmp/{{RUN_DIR}}/scenarios.yaml` with the exact `old_string` and `new_string` below. This anchors on the tail of the existing entry (the last lines of the file) and appends the new entry immediately after it, preserving existing ordering and 2-space indentation.
+**Action:** Use the Edit tool on `tmp/{{RUN_DIR}}/scenarios.yaml` with the exact `old_string` and `new_string` below. This appends the new entry immediately after the existing `99.3-001-mcp-initialize` entry (end of file), leaving every existing line byte-identical. Do not modify `metadata:` or the `99.3-001-mcp-initialize` entry.
 
 **old_string:**
 ```
       then:
         - the server returns HTTP 200
-        - and: the response body is a well-formed JSON-RPC envelope referencing the request id
+        - and the response body is a well-formed JSON-RPC envelope referencing the request id
 ```
 
 **new_string:**
 ```
       then:
         - the server returns HTTP 200
-        - and: the response body is a well-formed JSON-RPC envelope referencing the request id
-  "99.3-002-mcp-get-refused":
-    description: "The MCP server returns HTTP 405 Method Not Allowed for a GET request to /mcp."
+        - and the response body is a well-formed JSON-RPC envelope referencing the request id
+  99.3-002-mcp-get-refused:
+    description: "MCP server returns HTTP 405 Method Not Allowed for a GET request to /mcp"
     service: ""
-    path: "tests/mcp/mcp_test.go"
-    last_updated: "2026-10-25"
+    path: tests/mcp_test.go
+    last_updated: "2026-10-30"
     user_stories:
-      - story: "docs/product/stories/99.3-rewalk-fixture.yaml"
-        scenario_id: "99.3-002-mcp-get-refused"
-        merge_date: "2026-10-25"
+      - story: docs/product/stories/99.3-rewalk-fixture.yaml
+        scenario_id: 99.3-002-mcp-get-refused
+        merge_date: "2026-10-30"
     merged_steps:
       given:
         - the MCP server is running on its configured port
@@ -119,13 +121,12 @@ The `scenarios:` block currently contains exactly ONE entry, `"99.3-001-mcp-init
         - and the response indicates the method is not allowed for this endpoint
 ```
 
-## Verification after applying
-1. The file parses as valid YAML.
-2. `scenarios:` now has exactly two keys, in order: `"99.3-001-mcp-initialize"` then `"99.3-002-mcp-get-refused"`.
-3. The new entry's `user_stories[0]` is `{story: docs/product/stories/99.3-rewalk-fixture.yaml, scenario_id: 99.3-002-mcp-get-refused, merge_date: 2026-10-25}` — this is what makes the `us-apply/merge` check emit `AC 002-mcp-get-refused (lineage 99.3-002-mcp-get-refused): present in 99.3-002-mcp-get-refused`.
-4. `merged_steps.given` / `.when` / `.then` match the AC's steps verbatim (1 given, 1 when, 2 then).
-5. The `99.3-001-mcp-initialize` entry is byte-for-byte unchanged.
-=== FILE_END: tmp/{{RUN_DIR}}/01-99.3-002-mcp-get-refused-fix-prompts.md ===
+## Verification
+After the edit, the file must:
+1. Contain a scenario key `99.3-002-mcp-get-refused:` under `scenarios:`, indented 2 spaces, with child keys indented 4 spaces (matching the sibling entry exactly).
+2. Have that entry's `user_stories[0]` carry BOTH `story: docs/product/stories/99.3-rewalk-fixture.yaml` AND `scenario_id: 99.3-002-mcp-get-refused`.
+3. Reproduce `merged_steps.given` / `when` / `then` verbatim from the AC steps (1 given, 1 when, 2 then — note the second `then` line keeps its leading `and `).
+4. Still parse as valid YAML with exactly two scenarios, `99.3-001-mcp-initialize` first and `99.3-002-mcp-get-refused` second.
 
 ---
 

@@ -1,9 +1,3 @@
-# Registry seed for `scen-check-skipped-prompt`.
-#
-# One scenario that carries all three step kinds and a binary outcome,
-# so every Prompt the walk asks passes it. Whether its description
-# follows the rule-based format is never asked: that Prompt is parked.
-
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
   version: "2.0"

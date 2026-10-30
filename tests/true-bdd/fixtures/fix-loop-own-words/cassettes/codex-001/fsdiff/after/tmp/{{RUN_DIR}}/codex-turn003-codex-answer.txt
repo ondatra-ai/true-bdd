@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/product.yaml"
-summary: "Added latency after reply in the glossary with the exact supplied meaning."
+summary: "Appended latency as the final glossary entry with the exact supplied definition."
 === FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===

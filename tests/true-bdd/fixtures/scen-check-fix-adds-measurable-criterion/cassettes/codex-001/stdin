@@ -52,65 +52,55 @@ Then:
 
 ## Target
 The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry).
-No catalogue entry is involved: the `product` document declares no
-`catalogue:`, and this Scenario's `user_stories:` is empty, so no catalogue
-template constrains the step wording. Do not touch the `product` document.
+Only the `then:` step of that entry changes. No catalogue entry is involved:
+the `product` document declares no `catalogue:`, and `E2E-001` has
+`user_stories: []`, so no catalogue template constrains the wording.
 
-## What the finding is
-The reviewer's line was `E2E-001: not measurable` — no exact message, count,
-code or threshold appears anywhere in the description or the steps: the Then
-step only says the greeter "greets that person", which a step definition
-cannot assert on.
+## Finding being fixed
+`scen-check/scenario_quality` — "E2E-001: not measurable". No status code,
+exact message, timeout, error code, named field or count appears in the
+description or any step, so the step definition has nothing to assert on
+beyond re-stating the prose.
 
-The user chose the criterion: **an exact printed message**, with the
-configured greeting `Hello` and the name `Alice`, so the outcome step asserts
-the literal line `Hello, Alice`.
+The user chose the criterion: the exact printed line, with the greeting
+`Hello` and the name `Alice`, asserted on standard output. Given and When
+stay exactly as they are.
 
 ## Required Changes
 
-### Change #1: Name the exact printed line in the outcome step
+### Change #1: give the Then step an exact printed line as its measurable criterion
 **Document:** scenarios_yaml
-**Field:** `scenarios.E2E-001.merged_steps.then` (the single `then` step — the
-step that asserts this Scenario's outcome)
+**Field:** merged_steps.then
 **Current text:**
 ```
-        - the greeter greets that person
+the greeter greets that person
 ```
 **New text:**
 ```
-        - the greeter prints the line "Hello, Alice"
+the greeter prints the line "Hello Alice" on standard output
 ```
 
 Notes for the applier:
-- Write the replacement as a YAML plain scalar exactly as shown — the inner
-  double quotes around `Hello, Alice` are part of the step text and are valid
-  inside a plain scalar that begins with `the`. Do not wrap the whole step in
-  quotes and do not escape the inner quotes.
-- Keep the existing list indentation of the `then:` block as it stands in the
-  file.
+- Replace that one list item in `scenarios.E2E-001.merged_steps.then`. The
+  `then:` block still holds exactly one step after the change.
+- Keep the quotation marks around `Hello Alice` in the step text. In YAML,
+  write the item so the inner quotes survive, e.g.
+  `- the greeter prints the line "Hello Alice" on standard output`
+  (unquoted plain scalar — the inner double quotes are literal there), or a
+  single-quoted scalar if the file's style needs one.
+- The step keeps the behaviour the description states — the greeter greets
+  the person whose name it is given — and now names what a run can settle:
+  the exact line `Hello Alice`, on standard output, which the product
+  document's `then` concept `standard output` already covers.
 
 ## What must not change
-- The Scenario's `description:` (`The greeter must greet the person whose name
-  it is given`) stays exactly as it is.
-- The `given:` step (`the greeting is configured`) and the `when:` step
-  (`the Operator runs the greeter with a name`) stay exactly as they are — the
-  fix template says to change no other step, so do not add the greeting value
-  or the name to them.
-- `scenarios.E2E-001`'s id, `service: greeter`, `path:
-  tests/greeter/greet_test.go` and `user_stories: []` stay exactly as they are.
-- Every other Scenario and the `metadata:` block stay untouched.
-- Do not edit `tests/greeter/greet_test.go` or any step definition:
-  `true-bdd build tests --fix` re-renders the generated test from the registry
-  once this entry reads correctly.
-
-## Why this satisfies the check
-The outcome step now carries one specific measurable criterion — the exact
-message `Hello, Alice` — which a step definition can assert against the
-command's standard output. The behaviour specified is unchanged: the greeter
-still greets the person whose name it is given; the step now says so in terms
-a run can settle, naming the greeting text and the name together. The verb
-`prints` is the observable action the product document's vocabulary asks for,
-and the wording introduces no forbidden qualifier or forbidden action.
+- `scenarios.E2E-001.description`: `The greeter must greet the person whose name it is given` — unchanged.
+- `merged_steps.given`: `the greeting is configured` — unchanged.
+- `merged_steps.when`: `the Operator runs the greeter with a name` — unchanged.
+- The Scenario's id `E2E-001`, `service: greeter`, `path: tests/greeter/greet_test.go` and `user_stories: []` — unchanged.
+- Every other Scenario in the registry, the `product` document, the generated
+  test `tests/greeter/greet_test.go`, and all step definitions — untouched.
+  The test is re-rendered later by `true-bdd build tests --fix`.
 
 ---
 

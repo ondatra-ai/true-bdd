@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/scenarios_yaml.yaml"
-summary: 'Changed only E2E-001’s outcome step to assert the exact printed line "Hello, Alice".'
+summary: 'Updated only E2E-001’s Then step to require the exact line "Hello Alice" on standard output.'
 === FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===

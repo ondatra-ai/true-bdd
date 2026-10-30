@@ -1,8 +1,3 @@
-# Product document for `scen-check-fix-records-mapping`.
-#
-# Its concepts cover every step of E2E-001 and the glossary defines
-# every term they declare; only the architecture lacks one.
-
 title: "Fixture host project"
 
 description:

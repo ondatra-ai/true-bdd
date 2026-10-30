@@ -1,9 +1,3 @@
-# Registry seed for `fix-loop-walks-exhausted-terms`.
-#
-# One Scenario a Story claims, its last step's concept declaring a term
-# the glossary does not define. The fix writes the product document only;
-# this file stays as it is.
-
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
   version: "2.0"

@@ -5,9 +5,9 @@
     {
       "path": "docs/scenarios.yaml",
       "kind": "modified",
-      "size": 1173,
-      "sha256": "3800cdfa68bc076b684685443c8bb34dba211719f8d3b7081f554bf7f8746c0f",
-      "text": "# Registry seed for `scen-check-fix-rewrites-description`.\n#\n# The happy path's claimed Scenario with one defect, walked with --fix\n# against the whole shipped checklist: its description states what\n# happens but no rule, with neither must nor should. Every other prompt\n# passes it. The fix rewrites the description here, in this entry, and\n# the re-walk asks every prompt about the Scenario as it now reads.\n\nmetadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-10-21\"\n  description: \"One claimed scenario whose description is not a rule\"\n\nscenarios:\n  E2E-001:\n    description: Greeting a name must print the configured greeting followed by that name and exit with code 0\n    service: greeter\n    path: tests/greeter/greet_test.go\n    user_stories:\n      - story: docs/product/stories/greet-by-name.yaml\n        scenario_id: greet-by-name-001-prints-greeting\n        merge_date: \"2026-10-21\"\n    merged_steps:\n      given:\n        - the greeting is configured as \"Hello\"\n      when:\n        - the Operator runs \"greet Ada\"\n      then:\n        - the command exits with code 0\n        - and: stdout matches ^Hello Ada$\n"
+      "size": 767,
+      "sha256": "810b67d89e7363e9e90094f77b0a12aa4351482b6d36a126627aefe03c006f17",
+      "text": "metadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-10-21\"\n  description: \"One claimed scenario whose description is not a rule\"\n\nscenarios:\n  E2E-001:\n    description: Greeting a name must print the configured greeting followed by that name and must exit with code 0\n    service: greeter\n    path: tests/greeter/greet_test.go\n    user_stories:\n      - story: docs/product/stories/greet-by-name.yaml\n        scenario_id: greet-by-name-001-prints-greeting\n        merge_date: \"2026-10-21\"\n    merged_steps:\n      given:\n        - the greeting is configured as \"Hello\"\n      when:\n        - the Operator runs \"greet Ada\"\n      then:\n        - the command exits with code 0\n        - and: stdout matches ^Hello Ada$\n"
     }
   ]
 }
