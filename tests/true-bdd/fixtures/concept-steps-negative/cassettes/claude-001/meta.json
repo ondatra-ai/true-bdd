@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "binary": "claude",
+  "argv": [
+    "--setting-sources",
+    "",
+    "--strict-mcp-config",
+    "--safe-mode",
+    "--allowedTools",
+    "Read(**),Write(./tmp/**),Glob(**),Grep(**)",
+    "--disallowed-tools",
+    "Bash,Edit(**),MultiEdit(**),Agent,Task",
+    "--model",
+    "claude-opus-5",
+    "--system-prompt",
+    "Group the supplied distinct unbound steps of one suite and block.\nRead the product roles, concepts and glossary. Given is a state\nbefore behaviour, When an action or event, Then an observable outcome.\nA concept is one Public interface item and kind of use, as the\nwording fixes it; an argument's target never changes the concept.\nRead means as CLOSED: only the variations its prose states fit.\nScore from 0 to 10: 10 a plain instance; 9 an instance in other\nwords without doubt; 7 or 8 related but partly outside its meaning\nor another fits as well; 1 to 6 not this concept; 0 unrelated.\nAn unstated variation scores at most 8. A step of the wrong kind\nfor its block scores at most 4 against every concept of that block.\nFor every supplied key return exactly one assignment: index is\nthe numeric key, concept and score are the highest scoring concept\nof its block, runner_up and runner_up_score the next highest.\nWith only one concept use runner_up null and runner_up_score 0.\nUse distinct names for best and runner-up, never rank a higher\nscore second. Omit no index and invent none. Change nothing.\n\nAnswer only the JSON object described by the supplied schema. Change nothing.\n",
+    "--permission-mode",
+    "acceptEdits",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--json-schema",
+    "{\"additionalProperties\":false,\"properties\":{\"assignments\":{\"items\":{\"additionalProperties\":false,\"properties\":{\"concept\":{\"enum\":[\"halving\"],\"type\":\"string\"},\"index\":{\"type\":\"integer\"},\"runner_up\":{\"type\":\"null\"},\"runner_up_score\":{\"maximum\":10,\"minimum\":0,\"type\":\"integer\"},\"score\":{\"maximum\":10,\"minimum\":0,\"type\":\"integer\"}},\"required\":[\"concept\",\"index\",\"runner_up\",\"runner_up_score\",\"score\"],\"type\":\"object\"},\"type\":\"array\"}},\"required\":[\"assignments\"],\"type\":\"object\"}",
+    "-p",
+    "{\n  \"suite\": \"tests/calc-when-1\",\n  \"service\": \"calc\",\n  \"product\": \"roles:\\n  - name: Owner\\n    description: Uses the calculator.\\nconcepts:\\n  when:\\n    - concept: halving\\n      means: The Owner halves a whole number, positive, zero or negative, with the calculator, which rounds an odd number's half toward zero.\\n      terms: [number]\\n  then:\\n    - concept: result\\n      means: The calculator prints the whole number the halving produced.\\n      terms: [number]\\nglossary:\\n  - term: number\\n    means: A whole number, positive, zero or negative.\\n\",\n  \"steps\": [\n    {\n      \"key\": \"1\",\n      \"block\": \"when\",\n      \"text\": \"the Owner halves 6\"\n    },\n    {\n      \"key\": \"2\",\n      \"block\": \"when\",\n      \"text\": \"the Owner halves -7\"\n    }\n  ]\n}"
+  ],
+  "exit_code": 0,
+  "duration_ms": 5241,
+  "request_hash": "sha256:040aa6ac8fcd65821b358901375ac285f41a0ee0e237040a513467c0a0cc1ef1",
+  "fsdiff": {
+    "created": [],
+    "modified": [],
+    "deleted": []
+  },
+  "recorded_at": "2026-10-30T05:14:53Z"
+}

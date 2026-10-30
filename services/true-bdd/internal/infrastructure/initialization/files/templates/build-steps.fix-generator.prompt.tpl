@@ -5,7 +5,30 @@
 - Read(`{{ $path }}`) — {{ $key }}
 {{ end }}
 
-## Catalogue phrase
+{{ if .Subject.Concept }}## Concept
+
+Suite: {{ .Subject.Suite }}
+Service: {{ .Subject.Service }}
+Concept: {{ .Subject.Concept.Name }}
+Block: {{ .Subject.Concept.Block }}
+Meaning: {{ .Subject.Concept.Means }}
+
+## Complete concept context
+{{ .Subject.Context }}
+
+Propose the body of every definition the context lists, against the concept's
+binding and the declared Public interface. Each function receives its pattern's
+captures in args, in the order its captures name them. Derive every body solely
+from the declared interface, never from service source or a target-dependent
+test run. Do not propose running a Scenario or making it green. When the
+declaration cannot serve the concept, propose that the writer return
+interface_cannot_serve with the concept and what setup or observation is
+missing; do not ask a clarification question to invent or extend the interface.
+
+The engine owns every registration, pattern, function signature and
+//truebdd:concept record. Reuse the suite's state and helpers. Never implement
+the service's behaviour inside a definition. Never edit the Specification or
+service code. Ask for missing context before proposing.{{ else }}## Catalogue phrase
 
 Suite: {{ .Subject.Suite }}
 Service: {{ .Subject.Service }}
@@ -25,7 +48,7 @@ do not ask a clarification question to invent or extend the interface.
 
 The engine owns the registration, pattern and function signature. Reuse the suite's
 state and helpers. Never implement the service's behaviour inside a definition.
-Never edit the Specification or service code. Ask for missing context before proposing.
+Never edit the Specification or service code. Ask for missing context before proposing.{{ end }}
 
 ## Validation Failure
 
@@ -86,13 +109,16 @@ Using the user's clarifications above, generate a complete fix prompt.
 Analyze if you have enough context to generate a confident fix.
 {{- end }}
 
-When ready, propose only the phrase's body and any shared state it needs.
+{{ if .Subject.Concept }}When ready, propose only these definitions' bodies and any shared state they need.
+Preserve registrations, patterns, signatures and concept records. Do not edit other
+definitions, generated tests, the Specification or service code. Follow the binding
+through the declared Public interface; never perform the product's operation yourself.{{ else }}When ready, propose only the phrase's body and any shared state it needs.
 Preserve registration, pattern and signature. Do not edit other phrases, generated
 tests, the Specification or service code. Follow the Phrase mapping through the
-declared Public interface; never perform the product's operation yourself.
+declared Public interface; never perform the product's operation yourself.{{ end }}
 
 === FILE_START: {{.ResultPath}} ===
-# Fix Prompt for Item {{.SubjectID}}: {{.Subject.Phrase.Template}}
+# Fix Prompt for Item {{.SubjectID}}: {{ if .Subject.Concept }}{{ .Subject.Label }}{{ else }}{{.Subject.Phrase.Template}}{{ end }}
 
 ## Target
 {{.Subject.Suite}}

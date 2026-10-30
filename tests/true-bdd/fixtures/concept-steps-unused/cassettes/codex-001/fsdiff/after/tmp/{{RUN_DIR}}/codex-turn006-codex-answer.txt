@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-when-halving-iter1-result.yaml ===
+applied: true
+target: "tests/calc/steps/concept6ac0aa0a415cecc00e2fb53aee3eb1fb378819d8a71108ae58475b7f0ebbe4ea.go"
+summary: "Applied the supplied body to run the halve CLI and store its integer stdout in State.Result."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-when-halving-iter1-result.yaml ===

@@ -22,6 +22,10 @@ type sourceFile struct {
 }
 
 func readPackage(dir string) ([]sourceFile, error) {
+	return readPackageMode(dir, 0)
+}
+
+func readPackageMode(dir string, mode parser.Mode) ([]sourceFile, error) {
 	entries, err := os.ReadDir(dir)
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, nil
@@ -47,7 +51,7 @@ func readPackage(dir string) ([]sourceFile, error) {
 
 		positions := token.NewFileSet()
 
-		tree, err := parser.ParseFile(positions, path, data, 0)
+		tree, err := parser.ParseFile(positions, path, data, mode)
 		if err != nil {
 			return nil, fmt.Errorf("parse steps: %w", err)
 		}
@@ -81,7 +85,7 @@ func register(dir, packageName, function, pattern string, files []sourceFile) er
 	for _, file := range files {
 		for _, declaration := range file.tree.Decls {
 			fun, ok := declaration.(*ast.FuncDecl)
-			if !ok || fun.Name.Name != "Register" || fun.Recv != nil {
+			if !ok || fun.Name.Name != registerFunction || fun.Recv != nil {
 				continue
 			}
 
@@ -107,6 +111,9 @@ func Register(suite interface { Step(string, func(*State, []string) error) }) {
 
 	return writeGo(unusedSkeletonFile(dir, "register.go"), []byte(source))
 }
+
+// registerFunction is the steps package's registration entry point.
+const registerFunction = "Register"
 
 var errRegisterShape = errors.New("registration function must take one named suite parameter")
 

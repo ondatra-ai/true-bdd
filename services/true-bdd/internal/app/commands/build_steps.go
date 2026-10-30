@@ -53,7 +53,7 @@ func RunBuildSteps(ctx context.Context, deps BuildStepsDeps, registryFile, archi
 	}
 
 	if source.ConceptsDeclared {
-		err = runConceptBuildSteps(ctx, deps, registryFile, architectureFile)
+		err = runConceptBuildSteps(ctx, deps, registryFile, architectureFile, fix)
 		if err != nil {
 			slog.Error("Concept build steps stopped", "error", err)
 		}
@@ -68,7 +68,7 @@ func runTemplateBuildSteps(ctx context.Context, deps BuildStepsDeps,
 	registryFile, architectureFile string, fix bool,
 ) error {
 	if fix {
-		return runBuildStepsFix(ctx, deps, registryFile, architectureFile)
+		return runBuildStepsFix(ctx, deps, registryFile, architectureFile, false)
 	}
 
 	prompts, err := buildStepsPrompts(deps.ChecklistLoader, deps.DocResolver)
@@ -90,7 +90,7 @@ func runTemplateBuildSteps(ctx context.Context, deps BuildStepsDeps,
 		slog.Error("Step coverage failed", "finding", finding)
 	}
 
-	err = recordStepCoverage(deps.TmpDir, prompts, findings, len(items))
+	err = recordStepCoverage(deps.TmpDir, prompts, findings, len(items), true)
 	if err != nil {
 		return err
 	}

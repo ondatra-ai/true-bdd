@@ -349,9 +349,20 @@ glossary:
       Every grouped concept and suite is one Item. All Items must have a binding
       for the suite service, judged afresh by scen check's binding judgement;
       a missing or ambiguous binding stops before any skeleton, naming the concept.
-      Pattern proposal is not built yet. After grouping and binding validation,
-      build steps stops with that distinct error and writes no definitions or
-      generated tests. Proposal, pattern checks and skeletons are a later slice.
+      Without --fix, build steps then lists every concept Item still to write
+      and exits 1. With --fix, the AI proposes each Item's patterns as data,
+      given the concept, its binding, its terms, the Public interface, the
+      patterns of its existing definitions and every step grouped into it.
+      Before any skeleton the engine checks each proposal against every step of
+      the suite in every block: each pattern compiles and names each of its
+      captures, each grouped step binds exactly one pattern,
+      no pattern binds a step another definition binds or another Item groups,
+      and every pattern binds at least one step. A refused proposal goes back
+      with the engine's findings, within config.max_apply_attempts proposals;
+      past them the run stops writing nothing. Each accepted pattern gets a
+      skeleton that records its concept, identified by concept, suite and
+      pattern; a later walk resumes the pending skeletons it finds. Bodies,
+      the critique and the whole-suite checks then run as for templates.
       Commands print their existing upper-case command name followed
       by ` COMPLETE` on stdout only when they succeed, after finalization and
       any post-run validation. A command returning an error prints no COMPLETE
@@ -632,9 +643,11 @@ glossary:
       its whole text. The
       engine writes template-host skeletons and the AI writes their bodies through build steps --fix,
       using the declared Public interface across a process boundary.
-      Concept-host pattern proposal and definitions are not built yet. The body may extend
+      On a concept host the engine writes one skeleton per checked proposed pattern,
+      recording its concept, and the AI writes its body the same way. The body may extend
       shared state but preserves every registration and signature. A pending body fails
-      with "step not written yet" and its phrase.
+      with "step not written yet" and its phrase, or on a concept host its
+      concept and pattern.
 
   - term: Item
     means: >-

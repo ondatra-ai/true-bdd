@@ -58,9 +58,11 @@ func buildStepsPrompts(
 }
 
 func recordStepCoverage(
-	tmpDir string, prompts []checklistmodels.PromptWithContext, findings []string, missing int,
+	tmpDir string, prompts []checklistmodels.PromptWithContext, findings []string, missing int, logPrompts bool,
 ) error {
-	slog.Info("Loaded prompts", "command", "build steps", "items", 1, "prompts", len(prompts))
+	if logPrompts {
+		slog.Info("Loaded prompts", "command", "build steps", "items", 1, "prompts", len(prompts))
+	}
 
 	context := append([]string{fmt.Sprintf("%d missing phrase definition(s)", missing)}, findings...)
 
@@ -91,5 +93,5 @@ func resolveStepCoverageDocs(prompts []checklistmodels.PromptWithContext, resolv
 }
 
 func skipBuildStepPrompt(prompt checklistmodels.Prompt) bool {
-	return prompt.ShouldSkip() || prompt.With["concepts"] == "group"
+	return prompt.ShouldSkip() || prompt.With["concepts"] == "group" || prompt.With["concepts"] == "propose"
 }

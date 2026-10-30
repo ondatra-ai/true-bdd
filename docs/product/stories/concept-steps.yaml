@@ -1,0 +1,85 @@
+story:
+  id: concept-steps
+  feature: build-steps
+  title: Write concept step definitions from proposed patterns the engine checks
+  as_a: System Architect
+  i_want: each concept's patterns proposed as data and checked against every step of the suite before any skeleton
+  so_that: every step binds exactly one definition whose captures carry what the body needs
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 001-collision
+    description: A proposed pattern that also binds a step another definition binds goes back to the proposal with the engine's findings
+    steps:
+    - given:
+      - the "concept-steps-collision" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches Pattern proposal refused.*attempt=1.*also binds when step
+      - stdout matches Pattern proposal accepted.*attempt=2
+      - stdout matches BUILD STEPS COMPLETE
+      - the file "tests/calc/steps/definitions.go" is unchanged
+      - no file outside "tmp" and "tests" changed
+  - id: 002-unused-pattern
+    description: A proposed pattern that binds no step of the suite goes back to the proposal
+    steps:
+    - given:
+      - the "concept-steps-unused" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches Pattern proposal refused.*binds no step of the suite
+      - stdout matches Pattern proposal accepted
+      - stdout matches BUILD STEPS COMPLETE
+      - no file outside "tmp" and "tests" changed
+  - id: 003-negative-operand
+    description: The proposed pattern captures a negative operand
+    steps:
+    - given:
+      - the "concept-steps-negative" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches Concept pattern binds.*step="the Owner halves -7" captures=-7
+      - stdout matches Concept pattern binds.*step="the Owner halves 6" captures=6
+      - stdout matches BUILD STEPS COMPLETE
+      - no file outside "tmp" and "tests" changed
+  - id: 004-resume
+    description: An interrupted walk resumes from the skeletons it finds, writing the pending body without grouping or proposing again
+    steps:
+    - given:
+      - the "concept-steps-resume" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches Concept Item resumed.*halving
+      - stdout does not match Grouping batch
+      - stdout does not match Pattern proposal
+      - stdout matches BUILD STEPS COMPLETE
+      - the file "tests/calc/steps/register.go" is unchanged
+      - the file "tests/calc/steps/definitions.go" is unchanged
+      - exactly no files matching "tests/calc/steps/*.go" are created
+  - id: 005-new-step
+    description: A new step of an already implemented concept is covered without changing the definitions that bind its earlier steps
+    steps:
+    - given:
+      - the "concept-steps-extend" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches BUILD STEPS COMPLETE
+      - the file "tests/calc/steps/halving.go" is unchanged
+      - the file "tests/calc/steps/definitions.go" is unchanged
+      - exactly 1 file matching "tests/calc/steps/concept*.go" is created
+      - every file matching "tests/calc/steps/register.go" matches halves \(\\d\+\)\$., halving\)
+      - no file outside "tmp" and "tests" changed
