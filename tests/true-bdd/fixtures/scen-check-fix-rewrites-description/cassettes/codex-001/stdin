@@ -49,27 +49,29 @@ Then:
 
 ## Fix Prompt to Apply
 
-Proposal for the Product Owner — one change, to the Scenario's registry entry description only. Show this at the menu and apply only after apply.
+Proposal for the Product Owner — E2E-001's registry description, one edit, in `docs/scenarios.yaml`.
 
-Finding: E2E-001 — missing must/should — "Greeting a name prints the configured greeting followed by that name, and the greeter exits with code 0". The description narrates what happens instead of stating the rule it pins.
+Finding: `E2E-001: missing must/should — "Greeting a name prints the configured greeting followed by that name, and the greeter exits with code 0"`. The sentence narrates what happens instead of stating the rule it pins. Nothing is missing from the documents: the Scenario's own steps and the product glossary already name every criterion the rule needs — the `greeting` read from the config file (`given: the greeting is configured as "Hello"`), the name the command is given (`when: the Operator runs "greet Ada"`), the `standard output` line (`then: stdout matches ^Hello Ada$`) and the `exit code` 0 (`then: the command exits with code 0`) — so the rule can be stated from what the entry already specifies, with no new meaning invented.
 
-Nothing is missing from the documents, so no owner question is needed to settle the meaning:
-- docs/product/product.yaml already defines greeting, command, exit code and standard output, and declares the four concepts the steps use.
-- docs/architecture/architecture.yaml already maps all four terms and binds all four concepts for service greeter.
-- docs/greeter-cli.yaml already declares command `greet` and extension file `greeting-config`, the only references those bindings name, so no Public interface addition is proposed.
-The rule is therefore read off what the entry already specifies: the configured greeting, then the given name, and exit code 0.
+Nothing about the concepts, terms or bindings is at fault here, so this touches no product glossary entry, no `architecture.terms` entry and no `architecture.concepts` binding, and `docs/greeter-cli.yaml` needs no new declaration: `command: greet` and `file: greeting-config`, the references the bound concepts use, are already declared there.
 
-Exact change — file docs/scenarios.yaml
+Exact change — `docs/scenarios.yaml`:
 
 old_string:
+```
     description: Greeting a name prints the configured greeting followed by that name, and the greeter exits with code 0
+```
 
 new_string:
-    description: Greeting a name must print the configured greeting followed by that name and exit with code 0
+```
+    description: Greeting a name must print the configured greeting followed by that name and must exit with code 0
+```
 
-Why this satisfies the check: one sentence; carries the keyword "must"; no Given/When/Then text; keeps both things the entry specifies (the configured greeting followed by the name, and the exit code 0, which remains the measurable criterion); uses "print" and "exit", the observable verbs the product document names as replacements, and no forbidden qualifier.
+Why this wording: one sentence; carries `must`; no Given/When/Then text; keeps both criteria the entry specifies, the configured greeting followed by the given name and the exit code 0; uses the product's own words (`greeting`, `exit code`) and no forbidden qualifier.
 
-Out of scope for this fix, and not proposed: no change to the product glossary, to architecture.terms, or to architecture.concepts — the check names none, and a Scenario is never rewritten to repair a concept, term or binding. The Given, When and Then steps of E2E-001 are untouched, as are tests/greeter/greet_test.go and every step definition.
+No step changes. `merged_steps` — the `given`, the `when` and both `then` clauses — stays byte-for-byte as it is, as do `service`, `path`, `user_stories` and the file's `metadata`. No generated test and no step definition is touched.
+
+Apply this single edit only after the owner answers apply at the menu.
 
 ---
 

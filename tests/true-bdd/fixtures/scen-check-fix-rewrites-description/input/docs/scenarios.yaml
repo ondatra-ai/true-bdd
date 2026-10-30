@@ -1,11 +1,3 @@
-# Registry seed for `scen-check-fix-rewrites-description`.
-#
-# The happy path's claimed Scenario with one defect, walked with --fix
-# against the whole shipped checklist: its description states what
-# happens but no rule, with neither must nor should. Every other prompt
-# passes it. The fix rewrites the description here, in this entry, and
-# the re-walk asks every prompt about the Scenario as it now reads.
-
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
   version: "2.0"
