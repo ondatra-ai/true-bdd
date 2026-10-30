@@ -67,7 +67,9 @@ description:
     On the next walk, D: term-mappings fails for a newly declared unmapped term;
     its System Architect menu fix adds the Word mapping. Every Scenario judges
     again after fixes, trusting no earlier result. Template hosts keep their
-    existing behaviour. Building step definitions per concept remains later work.
+    existing behaviour. build steps writes step definitions per concept and
+    build code embeds the concepts a failing Scenario's steps link to, both
+    described under the pipeline below.
 
   problem: >-
     AI removed the bottleneck on writing code, but not on deciding
@@ -378,7 +380,18 @@ glossary:
       with the findings: the engine checks the new patterns as before, removes
       the skeletons of the patterns it dropped, keeps unchanged ones with their
       bodies and writes the new ones, whose bodies go back to the writer. A
-      finding against a body sends that body back.
+      finding against a body sends that body back. build steps --fix reads the
+      product's concepts and glossary, the Word mapping and the bindings before
+      its grouping turns, so a malformed term list stops it before any turn.
+      On a concept host build code hands both repair turns, for each failing
+      Scenario it matches, the concepts its steps link to, with no link turn:
+      a step's concept is the declared concept of its block that the one step
+      definition it binds records. A judge: or llm: step, a step binding none
+      or two, or an unrecorded definition links nothing. Each linked concept
+      appears once across the failing set with its means, its terms, and its
+      binding for the Scenario's service, followed by those terms' glossary
+      entries and Word mappings; a template host keeps its Catalogue phrases
+      and words unchanged.
       Commands print their existing upper-case command name followed
       by ` COMPLETE` on stdout only when they succeed, after finalization and
       any post-run validation. A command returning an error prints no COMPLETE
@@ -550,7 +563,9 @@ glossary:
   - term: failing set
     means: >-
       All tests failing in one build code discovery, with their latest
-      failure evidence and matched Specification context. It is one Item;
+      failure evidence and matched Specification context: the Catalogue phrases
+      and words of their Scenarios' steps on a template host, the concepts
+      those steps link to, with words and bindings, on a concept host. It is one Item;
       discovery with no failures yields no Item. After an apply, members
       leave only on their own passing result. A member with no result stays
       failing and is reported as not having run. A Go build member's own
