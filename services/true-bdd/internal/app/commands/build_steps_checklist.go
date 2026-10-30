@@ -64,7 +64,7 @@ func recordStepCoverage(
 		slog.Info("Loaded prompts", "command", "build steps", "items", 1, "prompts", len(prompts))
 	}
 
-	context := append([]string{fmt.Sprintf("%d missing phrase definition(s)", missing)}, findings...)
+	context := append([]string{fmt.Sprintf("%d concept Item(s) without step definitions", missing)}, findings...)
 
 	verdict := checks.Verdict{Pass: missing == 0 && len(findings) == 0, Context: context}
 	for _, prompt := range prompts {

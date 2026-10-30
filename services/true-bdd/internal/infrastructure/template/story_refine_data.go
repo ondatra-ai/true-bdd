@@ -9,7 +9,7 @@ type StoryRefineData struct {
 	story.Story `yaml:",inline"`
 
 	// TermDocuments are the documents a closure fix may write; empty
-	// without --fix. A fix phrases a step there, never in the Story.
+	// without --fix. A concept fix writes there, never in the Story.
 	TermDocuments     []FixDocument `json:"-" yaml:"-"`
 	ConceptLinks      []ConceptLink `json:"-" yaml:"-"`
 	ConceptLinkPassed bool          `json:"-" yaml:"-"`

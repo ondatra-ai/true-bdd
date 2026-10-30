@@ -6,7 +6,7 @@ import (
 )
 
 // numberSlot reads what a step's number slot holds: digits, or the word
-// "no" for zero, as the catalogue's template grammar spells a count.
+// "no" for zero, as a step spells a count.
 func numberSlot(token string) (int, error) {
 	if token == "no" {
 		return 0, nil

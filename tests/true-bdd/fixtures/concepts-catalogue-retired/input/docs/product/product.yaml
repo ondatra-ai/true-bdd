@@ -1,0 +1,22 @@
+roles:
+- name: System Architect
+  description: Owns the service and the steps of its Scenarios.
+catalogue:
+- template: the greeting is configured
+  block: given
+  means: Set the greeting in the declared configuration file.
+  terms:
+  - greeting
+- template: the greeting is requested
+  block: when
+  means: Call greet once.
+  terms:
+  - greeting
+- template: the greeting is logged
+  block: then
+  means: Compare the greeted log record with the expected greeting.
+  terms:
+  - greeting
+glossary:
+- term: greeting
+  means: The text spoken to the person.

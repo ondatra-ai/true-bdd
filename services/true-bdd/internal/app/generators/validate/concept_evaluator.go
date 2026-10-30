@@ -25,7 +25,7 @@ func (e *ChecklistEvaluator) evaluateConcepts(ctx context.Context, subject any, 
 		return checklist.ValidationResult{}, fmt.Errorf("resolve link product: %w", err)
 	}
 
-	source, err := product.LoadCatalogue(path)
+	source, err := product.Load(path)
 	if err != nil {
 		return checklist.ValidationResult{}, fmt.Errorf("read link product: %w", err)
 	}
@@ -33,7 +33,7 @@ func (e *ChecklistEvaluator) evaluateConcepts(ctx context.Context, subject any, 
 	result := conceptResult(prompt, kind)
 
 	if item, ok := subject.(*template.ScenarioCheckData); ok {
-		item.ConceptForm = source.ConceptsDeclared
+		item.ConceptsDeclared = source.ConceptsDeclared
 	}
 
 	if !source.ConceptsDeclared {

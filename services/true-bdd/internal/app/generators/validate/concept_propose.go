@@ -34,7 +34,7 @@ type proposalRequest struct {
 }
 
 func (e *ChecklistEvaluator) evaluatePropose(ctx context.Context, subject any, prompt checklist.PromptWithContext,
-	source product.Catalogue, result checklist.ValidationResult,
+	source product.Document, result checklist.ValidationResult,
 ) (checklist.ValidationResult, error) {
 	item, ok := subject.(*template.ConceptProposalData)
 	if !ok {
@@ -75,7 +75,7 @@ func (e *ChecklistEvaluator) evaluatePropose(ctx context.Context, subject any, p
 	return result, nil
 }
 
-func (e *ChecklistEvaluator) proposalRequest(item *template.ConceptProposalData, source product.Catalogue,
+func (e *ChecklistEvaluator) proposalRequest(item *template.ConceptProposalData, source product.Document,
 ) (proposalRequest, error) {
 	bindings, services, err := e.loadBindingDocuments()
 	if err != nil {

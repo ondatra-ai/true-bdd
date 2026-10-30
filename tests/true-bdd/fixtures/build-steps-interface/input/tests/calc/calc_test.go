@@ -22,11 +22,11 @@ import (
 	"fixture/stepsrun/tests/calc/scenarios"
 )
 
-// calc-001-double: Doubling a number returns twice its value
+// calc-001-double: Doubling a number keeps its doubled number at the stated heap address
 func TestCalc001Double(t *testing.T) {
 	s := scenarios.New(t, "calc-001-double")
-	s.Given(`the number is 3`)
-	s.When(`the number is doubled`)
-	s.Then(`the result is 6`)
+	s.Given(`the calculator is installed`)
+	s.When(`the Owner doubles 3`)
+	s.Then(`the doubled number was held at heap address 0xc000012088`)
 	s.Done()
 }

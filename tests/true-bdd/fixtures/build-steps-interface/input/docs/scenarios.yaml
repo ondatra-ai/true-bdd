@@ -1,9 +1,9 @@
 scenarios:
   calc-001-double:
-    description: Doubling a number returns twice its value
+    description: Doubling a number keeps its doubled number at the stated heap address
     service: calc
     path: tests/calc/calc_test.go
     merged_steps:
-      given: [the number is 3]
-      when: [the number is doubled]
-      then: [the result is 6]
+      given: [the calculator is installed]
+      when: [the Owner doubles 3]
+      then: [the doubled number was held at heap address 0xc000012088]

@@ -21,12 +21,12 @@ func conceptSteps(subject any) []conceptStep {
 
 	switch item := subject.(type) {
 	case *template.ScenarioCheckData:
-		for _, phrase := range item.Phrases {
+		for _, phrase := range item.CheckedSteps {
 			steps = appendConceptStep(steps, "", phrase)
 		}
 	case *template.StoryRefineData:
 		for _, criterion := range item.AcceptanceCriteria {
-			for _, phrase := range criterion.Phrases() {
+			for _, phrase := range criterion.CheckedSteps() {
 				steps = appendConceptStep(steps, criterion.ID, phrase)
 			}
 		}

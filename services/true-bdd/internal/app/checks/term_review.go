@@ -1,38 +1,34 @@
 package checks
 
 import (
-	"strings"
+	"fmt"
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/catalogue"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/product"
 )
 
-// reviewTerms holds the terms one Item's steps rely on to one term
+// reviewTerms holds the terms every declared concept relies on to one term
 // document, through review; held names what a pass found each term to be
-// ("defined", "mapped"). A template the grammar refuses declares nothing here.
-func reviewTerms(
-	itemID string,
-	steps []catalogue.Step,
-	source product.Catalogue,
-	held string,
+// ("defined", "mapped"). Each finding names its concept once.
+func reviewTerms(itemID string, concepts []product.Concept, held string,
 	review func([]catalogue.Declaration) catalogue.TermReview,
 ) Verdict {
-	if source.ConceptsDeclared {
-		return reviewConceptTerms(itemID, source.Concepts, held, review)
+	findings := make([]string, 0, len(concepts))
+
+	for _, entry := range concepts {
+		subject := fmt.Sprintf("%s concept '%s'", entry.Block, entry.Name)
+
+		declarations := make([]catalogue.Declaration, 0, len(entry.Terms))
+		for _, term := range entry.Terms {
+			declarations = append(declarations, catalogue.Declaration{Concept: subject, Term: term})
+		}
+
+		findings = append(findings, review(declarations).Findings...)
 	}
 
-	compiled, _ := catalogue.Compile(source.Entries, source.Roles)
-
-	found := review(compiled.Declarations(steps))
-	if len(found.Findings) > 0 {
-		return Verdict{Pass: false, Context: prefixed(itemID, found.Findings)}
+	if len(findings) > 0 {
+		return Verdict{Pass: false, Context: prefixed(itemID, findings)}
 	}
 
-	if len(found.Terms) == 0 {
-		return Verdict{Pass: true, Context: []string{itemID + ": no matched template declares a term"}}
-	}
-
-	return Verdict{Pass: true, Context: []string{
-		itemID + ": every declared term is " + held + ": " + strings.Join(found.Terms, ", "),
-	}}
+	return Verdict{Pass: true, Context: []string{itemID + ": every concept's declared terms are " + held}}
 }

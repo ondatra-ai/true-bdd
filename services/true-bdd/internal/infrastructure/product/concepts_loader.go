@@ -10,17 +10,15 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/catalogue"
 )
 
-// ErrBothForms refuses a Host project declaring both transition forms.
-var ErrBothForms = errors.New("catalogue: and concepts: cannot both be declared")
-
 // ErrInvalidConcepts identifies a malformed concept declaration.
 var ErrInvalidConcepts = errors.New("concepts: requires given, when or then lists with concept, means and terms; " +
 	"names must be unique within each block")
 
-// ValidateForm refuses mixed forms and malformed concepts before a command starts.
+// ValidateForm refuses the retired catalogue and malformed concepts before a
+// command starts.
 func ValidateForm(path string) error {
 	doc, found, err := readDocument(path)
-	if errors.Is(err, ErrBothForms) {
+	if errors.Is(err, ErrCatalogueRetired) {
 		return err
 	}
 	// Legacy unreadable products keep their command's original finding (#256,

@@ -36,13 +36,13 @@ func TestConcepts001Loads(t *testing.T) {
 	s.Done()
 }
 
-// concepts-002-both-refused: A product declaring both catalogue and concepts must refuse startup naming both
+// concepts-002-both-refused: A product document still declaring the retired catalogue must refuse startup, naming concepts as its replacement
 func TestConcepts002BothRefused(t *testing.T) {
 	s := scenarios.New(t, "concepts-002-both-refused")
-	s.Given(`the "concepts-both" project tree`)
+	s.Given(`the "concepts-catalogue-retired" project tree`)
 	s.When(`the System Architect runs "scen check"`)
 	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches Refusing to start.*catalogue: and concepts:`)
+	s.And(`stdout matches Refusing to start.*catalogue: is no longer read; declare concepts: in its place`)
 	s.And(`the engine dispatched 0 AI turns`)
 	s.And(`no file outside "tmp" changed`)
 	s.Done()
@@ -87,13 +87,13 @@ func TestConcepts005Bindings(t *testing.T) {
 	s.Done()
 }
 
-// concepts-006-templates: A host retaining Catalogue templates must behave as before
+// concepts-006-templates: An architecture document still declaring the retired Phrase mapping must refuse startup, naming architecture.concepts as its replacement
 func TestConcepts006Templates(t *testing.T) {
 	s := scenarios.New(t, "concepts-006-templates")
-	s.Given(`the "concepts-templates" project tree`)
+	s.Given(`the "concepts-phrases-retired" project tree`)
 	s.When(`the System Architect runs "scen check"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches every matched phrase has one valid Phrase mapping`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches Refusing to start.*architecture.phrases is no longer read; bind each concept in architecture.concepts in its place`)
 	s.And(`the engine dispatched 0 AI turns`)
 	s.And(`no file outside "tmp" changed`)
 	s.Done()

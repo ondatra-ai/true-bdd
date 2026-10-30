@@ -73,7 +73,7 @@ func conceptFixtures(item *BuildStepsItem, scenarios []*registry.RegistryScenari
 func namedFixtures(scenario *registry.RegistryScenario, root string) []string {
 	names := make([]string, 0)
 
-	for _, step := range scenario.Phrases() {
+	for _, step := range scenario.CheckedSteps() {
 		for _, match := range quotedValue.FindAllStringSubmatch(step.Text, -1) {
 			name := match[1]
 			if name != filepath.Base(name) || name == "." || name == ".." || slices.Contains(names, name) {

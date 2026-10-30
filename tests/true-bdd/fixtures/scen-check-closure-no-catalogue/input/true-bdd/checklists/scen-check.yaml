@@ -18,7 +18,7 @@ sections:
           - architecture_yaml
         F: "Propose one architecture.terms entry (term, technical, observed_by) for each unmapped term, asking how it is built and observed first. Write it to the architecture document, never to the Scenario."
       - D: step-definitions
-        rationale: "A template bound to two step definitions, or a definition two templates reach, means the catalogue and the steps disagree on what a phrase is, so no step definition follows from the spec."
+        rationale: "A step bound to two step definitions, or to one recording no declared concept of its block, leaves what runs for it to chance, so no step definition follows from the spec."
         docs:
           - product
-        F: "Split or merge catalogue entries so each template binds to one step definition and each definition is reached by one template, asking what the phrases mean first. Write it to the product document's catalogue, never to the Scenario or a step definition."
+        F: "Ask what each named step means first, then propose the concept of its block that its one step definition records, declared in the product document's concepts. Write it to the product document, never to the Scenario or a step definition; a step bound to two definitions is the suite's to repair."

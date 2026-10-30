@@ -1,1 +1,1 @@
-Read the declared phrase and suite. Answer the requested validation without modifying files.
+Read the declared concept and suite. Answer the requested validation without modifying files.

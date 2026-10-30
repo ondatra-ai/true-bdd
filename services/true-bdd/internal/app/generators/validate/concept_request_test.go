@@ -97,7 +97,7 @@ func shippedConceptPrompt(t *testing.T, repository, kind string) checklist.Promp
 
 func TestConceptLinkRequestHasClosedMeaningsAndRequiredBlockScores(t *testing.T) {
 	evaluator, reply, repository := conceptRequestEvaluator(t)
-	item := &template.ScenarioCheckData{ID: linkTestConcept, Service: linkTestService, Phrases: []catalogue.Step{
+	item := &template.ScenarioCheckData{ID: linkTestConcept, Service: linkTestService, CheckedSteps: []catalogue.Step{
 		{Block: catalogue.BlockWhen, Text: linkTestStepText},
 		{Block: catalogue.BlockThen, Text: "36 is displayed"},
 		{Block: catalogue.BlockThen, Text: "judge: the explanation is clear"},
@@ -126,7 +126,7 @@ func TestConceptLinkRequestHasClosedMeaningsAndRequiredBlockScores(t *testing.T)
 func TestConceptLinkFailsAStepOfABlockWithoutConceptsUnderAValidSchema(t *testing.T) {
 	evaluator, reply, repository := conceptRequestEvaluator(t)
 	reply.response = `{"steps":{"1":{"scores":{},"reason":"No given concept is declared.","other_block_concept":null}}}`
-	item := &template.ScenarioCheckData{ID: linkTestConcept, Service: linkTestService, Phrases: []catalogue.Step{
+	item := &template.ScenarioCheckData{ID: linkTestConcept, Service: linkTestService, CheckedSteps: []catalogue.Step{
 		{Block: catalogue.BlockGiven, Text: "six is entered"},
 	}}
 

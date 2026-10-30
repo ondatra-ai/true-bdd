@@ -15,22 +15,24 @@ func TestStepCritiqueVerdict(t *testing.T) {
 		wantFail, wantError bool
 	}{
 		{"pass", `{"answer":"pass","findings":[]}`, false, false},
-		{"mapping", `{"answer":"fail","findings":[
- {"definition":"double","category":"phrase_mapping","finding":"does not call double"}]}`, true, false},
+		{"binding", `{"answer":"fail","findings":[
+ {"definition":"double","category":"concept_binding","finding":"does not call double"}]}`, true, false},
 		{"meaning", `{"answer":"fail","findings":[
- {"definition":"double","category":"phrase_meaning","finding":"checks half instead"}]}`, true, false},
+ {"definition":"double","category":"concept_meaning","finding":"checks half instead"}]}`, true, false},
 		{"computes", `{"answer":"fail","findings":[
  {"definition":"double","category":"computes_assertion","finding":"doubles locally"}]}`, true, false},
 		{"unknown verdict", `{"answer":"maybe","findings":[]}`, false, true},
 		{"empty failure", `{"answer":"fail","findings":[]}`, false, true},
 		{"contradictory pass", `{"answer":"pass","findings":[
- {"definition":"double","category":"phrase_meaning","finding":"wrong"}]}`, false, true},
+ {"definition":"double","category":"concept_meaning","finding":"wrong"}]}`, false, true},
 		{"unnamed", `{"answer":"fail","findings":[
- {"definition":"","category":"phrase_meaning","finding":"wrong"}]}`, false, true},
+ {"definition":"","category":"concept_meaning","finding":"wrong"}]}`, false, true},
 		{"unknown category", `{"answer":"fail","findings":[
  {"definition":"double","category":"style","finding":"wrong"}]}`, false, true},
+		{"retired template category", `{"answer":"fail","findings":[
+ {"definition":"double","category":"phrase_mapping","finding":"wrong"}]}`, false, true},
 		{"empty finding", `{"answer":"fail","findings":[
- {"definition":"double","category":"phrase_meaning","finding":" "}]}`, false, true},
+ {"definition":"double","category":"concept_meaning","finding":" "}]}`, false, true},
 		{"missing findings", `{"answer":"pass"}`, false, true},
 		{"invalid JSON", `not an answer`, false, true},
 	}
@@ -48,7 +50,7 @@ func TestStepCritiqueVerdict(t *testing.T) {
 			}
 
 			if testCase.wantFail && (!strings.Contains(findings[0].String(), "double") ||
-				!strings.Contains(findings[0].String(), "phrase_") &&
+				!strings.Contains(findings[0].String(), "concept_") &&
 					!strings.Contains(findings[0].String(), "computes_assertion")) {
 				t.Fatalf("finding lost definition/category: %v", findings)
 			}

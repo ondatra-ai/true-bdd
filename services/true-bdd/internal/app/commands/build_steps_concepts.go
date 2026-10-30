@@ -15,6 +15,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/catalogue"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/architecture"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/product"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/registry"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/stepcoverage"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/template"
@@ -30,7 +31,7 @@ func runConceptBuildSteps(ctx context.Context, deps BuildStepsDeps, registryFile
 	fix bool,
 ) error {
 	if fix {
-		return runBuildStepsFix(ctx, deps, registryFile, architectureFile, true)
+		return runBuildStepsFix(ctx, deps, registryFile, architectureFile)
 	}
 
 	discovery, err := discoverConceptItems(ctx, deps, registryFile, architectureFile)
@@ -77,7 +78,10 @@ func discoverConceptItems(ctx context.Context, deps BuildStepsDeps, registryFile
 		return nil, runner.RefuseStartup("build steps", err)
 	}
 
-	suites := unboundConceptSuites(scenarios, answer)
+	suites, err := conceptSuites(deps, scenarios, answer)
+	if err != nil {
+		return nil, err
+	}
 
 	groups, err := groupConceptSuites(ctx, deps, suites)
 	if err != nil {
@@ -97,6 +101,23 @@ func discoverConceptItems(ctx context.Context, deps BuildStepsDeps, registryFile
 	}
 
 	return discovery, nil
+}
+
+// conceptSuites lists the suites whose unbound steps grouping reads. A host
+// declaring no concepts has none: its unbound steps stay Step coverage's findings.
+func conceptSuites(deps BuildStepsDeps, scenarios []*registry.RegistryScenario,
+	answer *stepcoverage.Answer,
+) ([]*template.ScenarioCheckData, error) {
+	source, err := product.Load(productDocument(deps.DocResolver))
+	if err != nil {
+		return nil, runner.RefuseStartup("build steps", err)
+	}
+
+	if !source.ConceptsDeclared {
+		return make([]*template.ScenarioCheckData, 0), nil
+	}
+
+	return unboundConceptSuites(scenarios, answer), nil
 }
 
 func groupConceptSuites(ctx context.Context, deps BuildStepsDeps, suites []*template.ScenarioCheckData,
@@ -192,8 +213,8 @@ func unboundConceptSuites(scenarios []*registry.RegistryScenario,
 				continue
 			}
 
-			if !slices.Contains(item.Phrases, step) {
-				item.Phrases = append(item.Phrases, step)
+			if !slices.Contains(item.CheckedSteps, step) {
+				item.CheckedSteps = append(item.CheckedSteps, step)
 			}
 		}
 	}
@@ -243,7 +264,7 @@ func groupConceptSuite(ctx context.Context, deps BuildStepsDeps, suite *template
 	for _, block := range []catalogue.Block{catalogue.BlockGiven, catalogue.BlockWhen, catalogue.BlockThen} {
 		steps := make([]catalogue.Step, 0)
 
-		for _, step := range suite.Phrases {
+		for _, step := range suite.CheckedSteps {
 			if step.Block == block {
 				steps = append(steps, step)
 			}
@@ -251,7 +272,7 @@ func groupConceptSuite(ctx context.Context, deps BuildStepsDeps, suite *template
 
 		for batchIndex, batch := range equalStepBatches(steps, limit) {
 			item := &template.ScenarioCheckData{ID: fmt.Sprintf("%s-%s-%d", suite.ID, block, batchIndex+1),
-				Service: suite.Service, Phrases: batch}
+				Service: suite.Service, CheckedSteps: batch}
 			slog.Info("Grouping batch", "suite", suite.ID, "block", block, "batch", batchIndex+1, "texts", len(batch))
 
 			result, err := deps.Evaluator.EvaluateOne(ctx, item, item.ID, prompt, deps.TmpDir)

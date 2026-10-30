@@ -79,7 +79,7 @@ story:
             - then:
                 - the command exits with code 1
                 - stdout matches level=ERROR msg="Refusing to start" command="scen check"
-                - 'stdout matches scen-check/scenario_quality #1 D: steps-are-present names no built-in check of scen check, which has declared-terms, given-when-then, phrase-mappings, public-interface, step-definitions, step-phrases, term-mappings'
+                - 'stdout matches scen-check/scenario_quality #1 D: steps-are-present names no built-in check of scen check, which has concept-bindings, declared-terms, given-when-then, public-interface, step-definitions, term-mappings'
                 - but: stdout does not match SCEN CHECK
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns

@@ -68,7 +68,7 @@ story:
       - the engine spawned exactly 1 test runner with arguments matching -list \.
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   - id: 004-interface-cannot-serve
-    description: A phrase needing an observation the declared CLI cannot offer stops distinctly after its first writer verdict
+    description: A concept needing an observation the declared CLI cannot offer stops distinctly after its first writer verdict
     steps:
     - given:
       - the "build-steps-interface" project tree
@@ -77,11 +77,9 @@ story:
       - the System Architect runs "build steps --fix"
     - then:
       - the command exits with code 1
-      - stdout matches public interface cannot serve phrase
-      - stdout matches the number is doubled
-      - stdout matches heap
+      - stdout matches public interface cannot serve
+      - stdout matches heap address
       - stdout does not match BUILD STEPS COMPLETE
-      - the engine dispatched 2 AI turns
       - no file outside "tmp" and "tests" changed
   - id: 005-outside-tests-refused
     description: The confined body writer refuses writes to the service and Specification while completing the test body

@@ -65,7 +65,7 @@ func conceptRecorded(item *BuildStepsItem) error {
 }
 
 func conceptItemUsed(item *BuildStepsItem, scenario *registry.RegistryScenario) bool {
-	for _, step := range scenario.Phrases() {
+	for _, step := range scenario.CheckedSteps() {
 		if step.Block == item.Concept.Block && slices.Contains(item.Concept.Steps, step.Text) {
 			return true
 		}

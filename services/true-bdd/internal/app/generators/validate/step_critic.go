@@ -15,7 +15,6 @@ type StepCritiqueData struct {
 	Definition string
 	Context    string
 	Sources    string
-	Concept    bool // a concept Item: its context is a concept's, not a Catalogue phrase's
 }
 
 // StepCritic reads an applied definition separately from the writer.
@@ -75,12 +74,8 @@ func (c *StepCritic) Critique(ctx context.Context, data StepCritiqueData, tier, 
 		"Bash", "Write", "Edit", "MultiEdit", "NotebookEdit", "Read", "Glob", "Grep",
 	}}
 
-	schema := stepCritiqueSchema
-	if data.Concept {
-		schema = conceptCritiqueSchema
-	}
-
-	response, err := c.ai.ExecutePromptWithSystem(ctx, provider.RolePrompt, system, user, model, mode, schema)
+	response, err := c.ai.ExecutePromptWithSystem(ctx, provider.RolePrompt, system, user, model, mode,
+		stepCritiqueSchema)
 	if err != nil {
 		return nil, fmt.Errorf("step critique: %w", err)
 	}

@@ -151,7 +151,7 @@ func TestConceptGrouping010ModelSteps(t *testing.T) {
 	s.Done()
 }
 
-// concept-grouping-011-build-tests: Concept hosts render free text without Catalogue matching
+// concept-grouping-011-build-tests: build tests renders a concept host's free-text steps without matching them against anything
 func TestConceptGrouping011BuildTests(t *testing.T) {
 	s := scenarios.New(t, "concept-grouping-011-build-tests")
 	s.Given(`the "concept-grouping-render" project tree`)

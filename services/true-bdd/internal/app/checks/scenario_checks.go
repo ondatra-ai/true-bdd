@@ -7,21 +7,19 @@ const (
 	// CheckGivenWhenThen names the check that a Scenario carries Given,
 	// When and Then steps.
 	CheckGivenWhenThen = "given-when-then"
-	// CheckStepPhrases names the check that every step of a Scenario a
-	// Story claims matches exactly one phrase of the product's catalogue.
-	CheckStepPhrases = "step-phrases"
 	// CheckDeclaredTerms names the check that the product glossary
-	// defines, exactly once, every term those phrases declare.
+	// defines, exactly once, every term the product's concepts declare.
 	CheckDeclaredTerms = "declared-terms"
 	// CheckTermMappings names the check that the architecture's word
-	// mapping maps, exactly once, every term those phrases declare.
+	// mapping maps, exactly once, every term the product's concepts declare.
 	CheckTermMappings = "term-mappings"
-	// CheckPhraseMappings names the phrase-to-interface check.
-	CheckPhraseMappings = "phrase-mappings"
+	// CheckConceptBindings names the check that every concept binding names
+	// a declared concept and the Public interface its service declares.
+	CheckConceptBindings = "concept-bindings"
 	// CheckPublicInterface names the service declaration check.
 	CheckPublicInterface = "public-interface"
-	// CheckStepDefinitions names the check that those phrases and the
-	// suite's step definitions correspond one to one.
+	// CheckStepDefinitions names the check that each step binds one step
+	// definition, which records a declared concept of the step's block.
 	CheckStepDefinitions = "step-definitions"
 )
 
@@ -30,10 +28,9 @@ const (
 func ForScenarios() Set[*template.ScenarioCheckData] {
 	return Set[*template.ScenarioCheckData]{
 		CheckGivenWhenThen:   givenWhenThen(),
-		CheckStepPhrases:     stepPhrases(),
 		CheckDeclaredTerms:   declaredTerms(),
 		CheckTermMappings:    termMappings(),
-		CheckPhraseMappings:  phraseMappings(),
+		CheckConceptBindings: conceptBindings(),
 		CheckPublicInterface: publicInterface(),
 		CheckStepDefinitions: stepDefinitions(),
 	}

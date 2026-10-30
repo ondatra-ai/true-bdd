@@ -15,7 +15,7 @@ import (
 // codeConceptSpecifications reads, per Scenario, the concepts its steps link
 // to: the concept recorded on the one definition each deterministic step
 // binds, with its binding for the Scenario's service. Unreadable parts warn.
-func codeConceptSpecifications(source product.Catalogue, productFile, architectureFile string,
+func codeConceptSpecifications(source product.Document, productFile, architectureFile string,
 	scenarios []*registry.RegistryScenario,
 ) map[string]catalogue.Specification {
 	specs := make(map[string]catalogue.Specification)
@@ -101,7 +101,7 @@ func (s *codeConceptSuite) linked(scenario *registry.RegistryScenario, concepts 
 		return linked
 	}
 
-	for _, step := range scenario.Phrases() {
+	for _, step := range scenario.CheckedSteps() {
 		concept, found := s.concept(step, concepts)
 		if !found || slices.ContainsFunc(linked, func(spec catalogue.ConceptSpec) bool {
 			return spec.Concept == concept.Name && spec.Block == concept.Block

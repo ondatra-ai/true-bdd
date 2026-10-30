@@ -20,19 +20,25 @@ architecture:
     technical: The integer argument and stdout of the calculator double command.
     observed_by: The step runs double as a process and compares its integer stdout
       with the expected value.
-  phrases:
-  - template: the number is {value:number}
+  - term: heap address
+    technical: The address in the double process's memory at which it holds the doubled integer.
+    observed_by: The step reads that address from the double process that doubled the number and compares it with the stated one.
+  concepts:
+  - concept: installation
+    block: given
     service: calc
     references:
     - command: double
-    does: Store the number as the next double command argument.
-  - template: the number is doubled
+    does: Build the declared calculator command as a program under the host's tmp directory and keep its path for the When.
+  - concept: doubling
+    block: when
     service: calc
     references:
     - command: double
-    does: Observe the private transient heap address without a command; the declared interface offers only double stdout and no way to read the heap.
-  - template: the result is {value:number}
+    does: Run the kept calculator program's double command as a process from the host root with the step's whole number and keep its integer stdout.
+  - concept: heap address
+    block: then
     service: calc
     references:
     - command: double
-    does: Compare the double command stdout with the expected integer.
+    does: Read the heap address at which the double process that doubled the number held its doubled number, and compare it with the step's stated address.

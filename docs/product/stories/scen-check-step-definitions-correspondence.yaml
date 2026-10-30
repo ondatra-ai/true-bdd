@@ -24,35 +24,6 @@ story:
     so_that: the catalogue and the step definitions never drift apart, and each step definition follows from the one catalogue entry whose steps it binds
     status: IMPLEMENTED
     acceptance_criteria:
-        - id: 001-template-binds-twice-fails
-          description: A catalogue template whose steps, across every Scenario a Story claims that shares one suite, bind to two different step definitions must fail each of those Scenarios using it, naming the template and both definitions with where each is written, while a Scenario no Story claims neither counts nor is checked
-          steps:
-            - given:
-                - the "scen-check-template-binds-twice" project tree
-            - when:
-                - the Quality Engineer runs "scen check"
-            - then:
-                - the command exits with code 1
-                - 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: template \\"the service answers \\"\{reply\}\\"\\" binds to 2 step definitions in tests/mcp/steps: \^the service answers \\"pong\\"\$ \(mcp_steps\.go:24\); \^the service answers \\"hello\\"\$ \(mcp_steps\.go:25\)\]"'
-                - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=1 answer=fail context="\[E2E-002: template \\"the service answers \\"\{reply\}\\"\\" binds to 2 step definitions in tests/mcp/steps: \^the service answers \\"pong\\"\$ \(mcp_steps\.go:24\); \^the service answers \\"hello\\"\$ \(mcp_steps\.go:25\)\]"'
-                - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-003 promptIndex=1 answer=pass context="\[E2E-003: not checked: no Story claims this Scenario yet\]"'
-                - and: stdout matches Validation failed
-                - and: the engine dispatched no AI turns
-                - and: no file outside "tmp" changed
-        - id: 002-definition-reached-twice-fails
-          description: A step definition that the steps of two catalogue templates bind, across the Scenarios a Story claims that share one suite, must fail each of those Scenarios, naming the definition with where it is written and both templates
-          steps:
-            - given:
-                - the "scen-check-definition-reached-twice" project tree
-            - when:
-                - the Quality Engineer runs "scen check"
-            - then:
-                - the command exits with code 1
-                - 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: step definition \^the service \(\?:answers\|replies\) \\"\(\[\^\\"\]\+\)\\"\$ \(mcp_steps\.go:24\) is reached by 2 templates: \\"the service answers \\"\{reply\}\\"\\"; \\"the service replies \\"\{reply\}\\"\\"\]"'
-                - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=1 answer=fail context="\[E2E-002: step definition \^the service \(\?:answers\|replies\) \\"\(\[\^\\"\]\+\)\\"\$ \(mcp_steps\.go:24\) is reached by 2 templates: \\"the service answers \\"\{reply\}\\"\\"; \\"the service replies \\"\{reply\}\\"\\"\]"'
-                - and: stdout matches Validation failed
-                - and: the engine dispatched no AI turns
-                - and: no file outside "tmp" changed
         - id: 003-step-binds-twice-fails
           description: A step of a Scenario a Story claims that two step definitions of its suite bind must fail that Scenario, naming the step and both definitions with where each is written, because which one runs depends on the order they were registered in
           steps:

@@ -23,15 +23,15 @@ story:
       - the engine dispatched 0 AI turns
       - no file outside "tmp" changed
   - id: 002-both-refused
-    description: A product declaring both catalogue and concepts must refuse startup naming both
+    description: A product document still declaring the retired catalogue must refuse startup, naming concepts as its replacement
     steps:
     - given:
-      - the "concepts-both" project tree
+      - the "concepts-catalogue-retired" project tree
     - when:
       - the System Architect runs "scen check"
     - then:
       - the command exits with code 1
-      - 'stdout matches Refusing to start.*catalogue: and concepts:'
+      - 'stdout matches Refusing to start.*catalogue: is no longer read; declare concepts: in its place'
       - the engine dispatched 0 AI turns
       - no file outside "tmp" changed
   - id: 003-undefined-term
@@ -74,15 +74,15 @@ story:
       - the engine dispatched 0 AI turns
       - no file outside "tmp" changed
   - id: 006-templates
-    description: A host retaining Catalogue templates must behave as before
+    description: An architecture document still declaring the retired Phrase mapping must refuse startup, naming architecture.concepts as its replacement
     steps:
     - given:
-      - the "concepts-templates" project tree
+      - the "concepts-phrases-retired" project tree
     - when:
       - the System Architect runs "scen check"
     - then:
-      - the command exits with code 0
-      - stdout matches every matched phrase has one valid Phrase mapping
+      - the command exits with code 1
+      - 'stdout matches Refusing to start.*architecture.phrases is no longer read; bind each concept in architecture.concepts in its place'
       - the engine dispatched 0 AI turns
       - no file outside "tmp" changed
   - id: 007-fix-binding

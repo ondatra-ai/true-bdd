@@ -12,7 +12,7 @@ import (
 )
 
 func (e *ChecklistEvaluator) evaluateWords(ctx context.Context, subject any, prompt checklist.PromptWithContext,
-	source product.Catalogue, result checklist.ValidationResult,
+	source product.Document, result checklist.ValidationResult,
 ) (checklist.ValidationResult, error) {
 	links, passed := conceptLinks(subject)
 	if !passed {

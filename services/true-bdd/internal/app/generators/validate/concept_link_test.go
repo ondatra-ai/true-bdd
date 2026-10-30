@@ -60,7 +60,7 @@ func TestConceptLinkThresholdChangesSameAnswerVerdict(t *testing.T) {
 				prompt.Prompt.With["threshold"] = testCase.threshold
 			}
 
-			item := &template.ScenarioCheckData{ID: linkTestConcept, Phrases: []catalogue.Step{
+			item := &template.ScenarioCheckData{ID: linkTestConcept, CheckedSteps: []catalogue.Step{
 				{Block: catalogue.BlockWhen, Text: "square six approximately"},
 			}}
 
@@ -112,7 +112,7 @@ func TestLinkRejectsUnscoredConcept(t *testing.T) {
 	evaluator := validate.NewChecklistEvaluatorWithPaths(reply, cfg, models, "missing", "missing")
 
 	result, err := evaluator.EvaluateOne(context.Background(), &template.ScenarioCheckData{
-		ID: "halve", Service: linkTestService, Phrases: []catalogue.Step{{Block: catalogue.BlockWhen, Text: "halve 6"}},
+		ID: "halve", Service: linkTestService, CheckedSteps: []catalogue.Step{{Block: catalogue.BlockWhen, Text: "halve 6"}},
 	}, "halve", checklist.PromptWithContext{Index: 1, SectionID: "check", Prompt: checklist.Prompt{
 		Question: "Link every step.", With: map[string]any{conceptsParameter: linkJudgement}, Docs: []string{"product"},
 	}}, root)

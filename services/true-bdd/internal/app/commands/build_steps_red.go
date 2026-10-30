@@ -11,10 +11,8 @@ import (
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/scenariogen"
-	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/catalogue"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/architecture"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/disk"
-	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/product"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/registry"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/stepcoverage"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/testrunner"
@@ -144,12 +142,6 @@ func (e *buildStepsExecution) runWithoutTarget(identities []string) (testrunner.
 func (e *buildStepsExecution) returnGreenItems(
 	scenarios []*registry.RegistryScenario, identities, green []string,
 ) error {
-	source, err := product.LoadCatalogue(productDocument(e.deps.DocResolver))
-	if err != nil {
-		return err
-	}
-
-	compiled, _ := catalogue.Compile(source.Entries, source.Roles)
 	finding := fmt.Sprintf("%v: %s; a definition is doing the product's work. "+
 		"Repair the written Items together through the declared Public interface.",
 		ErrScenarioGreen, strings.Join(green, ", "))
@@ -160,11 +152,11 @@ func (e *buildStepsExecution) returnGreenItems(
 			continue
 		}
 
-		found := e.markGreenItems(scenario, compiled, affected)
+		found := e.markGreenItems(scenario, affected)
 
 		if !found {
 			slog.Error("Scenario green without target", "scenario", scenario.ID,
-				"finding", "no phrase used by this Scenario was written in this run")
+				"finding", "no concept used by this Scenario was written in this run")
 
 			return fmt.Errorf("%w: %s; no written Item can repair it", ErrScenarioGreen, scenario.ID)
 		}
@@ -179,30 +171,14 @@ func (e *buildStepsExecution) returnGreenItems(
 	return nil
 }
 
-func (e *buildStepsExecution) markGreenItems(scenario *registry.RegistryScenario, compiled *catalogue.Catalogue,
-	affected map[*BuildStepsItem]bool) bool {
+func (e *buildStepsExecution) markGreenItems(scenario *registry.RegistryScenario,
+	affected map[*BuildStepsItem]bool,
+) bool {
 	found := false
 
 	for _, item := range e.items {
-		if item.Suite != stepcoverage.StepsDir(scenario.Path) {
-			continue
-		}
-
-		if item.Concept != nil {
-			if conceptItemUsed(item, scenario) {
-				affected[item], found = true, true
-			}
-
-			continue
-		}
-
-		for _, step := range scenario.Phrases() {
-			for _, phrase := range compiled.Match(step.Text) {
-				if phrase.Template == item.Phrase.Template {
-					affected[item] = true
-					found = true
-				}
-			}
+		if item.Suite == stepcoverage.StepsDir(scenario.Path) && conceptItemUsed(item, scenario) {
+			affected[item], found = true, true
 		}
 	}
 

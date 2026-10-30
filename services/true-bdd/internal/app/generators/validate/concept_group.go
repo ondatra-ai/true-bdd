@@ -11,7 +11,7 @@ import (
 )
 
 func (e *ChecklistEvaluator) evaluateGroup(ctx context.Context, subject any, prompt checklist.PromptWithContext,
-	source product.Catalogue, result checklist.ValidationResult,
+	source product.Document, result checklist.ValidationResult,
 ) (checklist.ValidationResult, error) {
 	item, ok := subject.(*template.ScenarioCheckData)
 	if !ok {

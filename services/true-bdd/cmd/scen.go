@@ -56,7 +56,7 @@ carries a fix template, and is refused at startup while a prompt it
 would walk carries none. A failed D: check's fix defines what it found
 undefined in the product document, or maps it in the architecture
 document, never in the scenario; a failed Q: prompt's fix rewrites the
-scenario's own registry entry, or the meaning of a catalogue phrase.
+scenario's own registry entry.
 
 Example:
   true-bdd scen check

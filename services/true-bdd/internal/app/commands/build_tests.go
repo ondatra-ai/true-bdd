@@ -28,8 +28,7 @@ type BuildTestsDeps struct {
 func RunBuildTests(_ context.Context, deps BuildTestsDeps, registryFile, architectureFile string, fix bool) error {
 	slog.Info("BUILD TESTS")
 
-	prep := &buildTestsPrep{registryFile: registryFile, architectureFile: architectureFile,
-		productFile: productDocument(deps.DocResolver), fix: fix}
+	prep := &buildTestsPrep{registryFile: registryFile, architectureFile: architectureFile, fix: fix}
 
 	err := prep.run(deps.RegistryLoader)
 	if err != nil {
@@ -43,7 +42,6 @@ func RunBuildTests(_ context.Context, deps BuildTestsDeps, registryFile, archite
 
 type buildTestsPrep struct {
 	architectureFile string
-	productFile      string
 	registryFile     string
 	fix              bool
 	repoRoot         string
@@ -67,11 +65,6 @@ func (p *buildTestsPrep) run(loader *registry.RegistryLoader) error {
 	}
 
 	p.plan, err = scenariogen.BuildPlan(scenarios, arch, p.repoRoot, p.registryFile)
-	if err != nil {
-		return err
-	}
-
-	_, err = p.holdToCatalogue(scenarios)
 	if err != nil {
 		return err
 	}

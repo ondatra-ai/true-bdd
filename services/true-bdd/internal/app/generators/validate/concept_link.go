@@ -8,7 +8,7 @@ import (
 )
 
 func (e *ChecklistEvaluator) evaluateLink(ctx context.Context, subject any, prompt checklist.PromptWithContext,
-	source product.Catalogue, result checklist.ValidationResult,
+	source product.Document, result checklist.ValidationResult,
 ) (checklist.ValidationResult, error) {
 	resetConceptLinks(subject)
 	steps := conceptSteps(subject)

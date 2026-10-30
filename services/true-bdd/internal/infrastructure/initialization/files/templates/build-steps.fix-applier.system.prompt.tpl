@@ -1,11 +1,8 @@
-{{ if .Subject.Concept }}You apply the approved bodies of one concept's step definitions in one suite.
+You apply the approved bodies of one concept's step definitions in one suite.
 Preserve the engine's registrations, patterns, signatures and //truebdd:concept
 records. Modify only those bodies and the suite's shared state. Use the declared
 Public interface and the concept's binding; never implement the product's
-operation inside a step definition.{{ else }}You apply the approved body of one Catalogue phrase in one suite.
-Preserve the engine's registration, pattern and signature. Modify only the body
-and the suite's shared state. Use the declared Public interface and Phrase
-mapping; never implement the product's operation inside a step definition.{{ end }}
+operation inside a step definition.
 
 **Output Requirements:**
 - After your Write/Edit calls succeed, output a YAML confirmation
@@ -25,12 +22,12 @@ summary: "<one-line summary>"
 === FILE_END: {{.ResultPath}} ===
 ```
 
-If the declared Public interface cannot set up or observe the {{ if .Subject.Concept }}concept{{ else }}phrase{{ end }}, stop without
+If the declared Public interface cannot set up or observe the concept, stop without
 inventing an operation. Return the same confirmation markers with:
 ```yaml
 applied: false
 interface_cannot_serve:
-  phrase: {{ if .Subject.Concept }}{{ .Subject.Label | printf "%q" }}{{ else }}{{ .Subject.Phrase.Template | printf "%q" }}{{ end }}
+  phrase: {{ .Subject.Label | printf "%q" }}
   lacks: "<what the interface offers no way to set up or observe>"
 ```
 

@@ -11,7 +11,6 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/scenariogen"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/stepskeleton"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/runner"
-	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/stepcoverage"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/testrunner"
 )
 
@@ -36,9 +35,7 @@ type buildStepsExecution struct {
 	concepts         *conceptRun
 }
 
-func runBuildStepsFix(ctx context.Context, deps BuildStepsDeps, registryFile, architectureFile string,
-	concepts bool,
-) error {
+func runBuildStepsFix(ctx context.Context, deps BuildStepsDeps, registryFile, architectureFile string) error {
 	execution := &buildStepsExecution{deps: deps, registryFile: registryFile, architectureFile: architectureFile,
 		compiler: testrunner.NewGoTestRunner(testrunner.NewArtifacts(deps.TmpDir))}
 
@@ -47,15 +44,11 @@ func runBuildStepsFix(ctx context.Context, deps BuildStepsDeps, registryFile, ar
 		return runner.RefuseStartup("build steps", err)
 	}
 
-	load := execution.prepare
-	if concepts {
-		load = execution.prepareConcepts
-	}
-
 	return runner.Run(ctx, runner.Spec[*BuildStepsItem]{
 		Name: "build steps", ChecklistName: buildStepsChecklistName, Fix: true, ConfineClaudeWriter: true,
-		OmitConceptJudgements: concepts, PromptsLogged: concepts, LoadItems: load, BeforeEvaluate: execution.beforeEvaluate,
-		PostFix: execution.postFix, PostNotApplied: execution.postNotApplied,
+		OmitConceptJudgements: true, PromptsLogged: true, LoadItems: execution.prepareConcepts,
+		BeforeEvaluate: execution.beforeEvaluate,
+		PostFix:        execution.postFix, PostNotApplied: execution.postNotApplied,
 		Finalize: execution.finalize, CheckConvergence: execution.checkConvergence,
 		GetSubject: func(item *BuildStepsItem) (string, string) { return item.subjectID, item.Label() },
 		Checks:     checks.Set[*BuildStepsItem]{"step-coverage": {Run: stepBodyVerdict}},
@@ -86,20 +79,11 @@ func (e *buildStepsExecution) postFix(ctx context.Context, item *BuildStepsItem,
 	e.attempts[item]++
 	item.Findings = nil
 
-	findings := []error{
+	findings := append(append([]error{
 		e.compiler.CompileDefinitions(e.command),
 		VerifyGeneratedTests(e.plan, "."),
 		e.preserveOtherBodies(item),
-	}
-	for _, definition := range item.definitions() {
-		findings = append(findings, definition.Intact(item.Suite), definition.Written())
-	}
-
-	if item.Concept != nil {
-		findings = append(findings, conceptDefinitionBinding(item), conceptRecorded(item))
-	} else {
-		findings = append(findings, stepDefinitionBinding(item))
-	}
+	}, definitionFindings(item)...), conceptDefinitionBinding(item), conceptRecorded(item))
 
 	for _, finding := range findings {
 		if finding != nil {
@@ -127,12 +111,22 @@ func (e *buildStepsExecution) postFix(ctx context.Context, item *BuildStepsItem,
 			failure = ErrScenarioGreen
 		}
 
-		return item, fmt.Errorf("%w: phrase %s", failure, item.Label())
+		return item, fmt.Errorf("%w: %s", failure, item.Label())
 	}
 
-	slog.Info("Step body checked", "phrase", item.Label(), "findings", item.Findings)
+	slog.Info("Step body checked", "concept", item.Label(), "findings", item.Findings)
 
 	return item, nil
+}
+
+// definitionFindings holds each of the Item's skeletons intact and written.
+func definitionFindings(item *BuildStepsItem) []error {
+	findings := make([]error, 0, len(item.definitions()))
+	for _, definition := range item.definitions() {
+		findings = append(findings, definition.Intact(item.Suite), definition.Written())
+	}
+
+	return findings
 }
 
 func (e *buildStepsExecution) preserveOtherBodies(item *BuildStepsItem) error {
@@ -144,24 +138,6 @@ func (e *buildStepsExecution) preserveOtherBodies(item *BuildStepsItem) error {
 	if shape != e.shape {
 		return fmt.Errorf("%w: only the selected body, imports and State may change; "+
 			"remove added package declarations and restore other bodies", stepskeleton.ErrSkeletonChanged)
-	}
-
-	return nil
-}
-
-func stepDefinitionBinding(item *BuildStepsItem) error {
-	definitions, err := stepcoverage.LoadSuite(item.Suite)
-	if err != nil {
-		return err
-	}
-
-	bound, err := definitions.PhraseDefinitions(item.Definition.Pattern)
-	if err != nil {
-		return err
-	}
-
-	if len(bound) != 1 || bound[0].Pattern != item.Definition.Pattern {
-		return fmt.Errorf("%w: phrase must have exactly one definition with the capturing pattern", ErrMissingStepDefinitions)
 	}
 
 	return nil

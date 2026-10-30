@@ -8,9 +8,9 @@ type AcceptanceCriterion struct {
 	Steps       []ScenarioStep `json:"steps,omitempty" yaml:"steps,omitempty"`
 }
 
-// Phrases are the criterion's steps as the closure checks read them: each
+// CheckedSteps are the criterion's steps as the closure checks read them: each
 // one's own text, without its and:/but: keyword, beside its block.
-func (c AcceptanceCriterion) Phrases() []catalogue.Step {
+func (c AcceptanceCriterion) CheckedSteps() []catalogue.Step {
 	phrases := make([]catalogue.Step, 0, len(c.Steps))
 
 	for _, step := range c.Steps {

@@ -95,16 +95,12 @@ architecture:
           Failed check effective docs resolved to config path strings by the same resolver as Docs. Duplicate keys collapse; resolution errors warn and skip; template ranges lexically by key, displaying keys unchanged. Empty map renders no Read lines; paths retain configured ./ and are not made absolute.
         FailedCheck.ActualAnswer: &failedcheck-actualanswer >-
           Model JSON answer is copied unchanged; YAML scalar answer is TrimSpace, YAML mapping or sequence is yaml.Marshal with trailing newline bytes removed. Status classification alone lowercases and trims. Built-in or runtime failures supply literal fail.
-        FailedCheck.Check: &failedcheck-check >-
-          TrimSpace of the checklist D name; empty for a model Q. Selects model-fix versus closure-fix wording, including the declared-terms, term-mappings, step-definitions, public-interface and phrase-mappings branches.
         FailedCheck.Context: &failedcheck-context >-
           Failed result observation strings in original list order, without trimming or joining; built-in checks supply their finding lines. Template prefixes each with "- "; an empty list produces no findings.
         FailedCheck.FixPrompt: &failedcheck-fixprompt >-
           Failed model result fix_prompt is TrimSpace after JSON/YAML decoding; pass discards it. Built-in and structured concept failures use TrimSpace of F; the template inserts it unchanged, even if empty.
         FailedCheck.Question: &failedcheck-question >-
           Evaluated Q text, including the concept-sketch replacement and embedded context when active; otherwise unchanged, including a trailing YAML block newline. For a built-in check, "D: " plus the trimmed D name.
-        FailedCheck.Rationale: &failedcheck-rationale >-
-          Checklist rationale scalar copied unchanged to the failed result, including YAML block newlines; printed without trimming.
         FailedCheck.SectionPath: &failedcheck-sectionpath >-
           Checklist command stem (us-refine, us-apply, build-steps, build-code or scen-check), with "/" plus the checklist sections[].id only when nonempty. The runner calls these SectionID and CriterionID respectively; display is unsanitised, while artifact filenames sanitise the entire combined path.
         ResultPath: &generation-result-path >-
@@ -149,9 +145,7 @@ architecture:
       fields:
         FailedCheck.Judgement: >-
           The structured Q protocol from with.concepts: link, bindings or words, empty for ordinary Q and D prompts. Selects concept repair wording; no earlier link is trusted.
-        <<: &fix-generator-system-fields
-          FailedCheck.Check: *failedcheck-check
-          Structured: *structured
+        Structured: *structured
     fix_applier:
       rendering: *prompt-rendering
       fields:
@@ -159,8 +153,6 @@ architecture:
           StoryRefineData serialised with the same Story shape and exclusions as checklist.Subject; used for an approved concept-link step rewrite.
         Judgement: >-
           The failed structured Q protocol, carried unchanged to the approved applier; empty retains legacy wording.
-        Check: &check >-
-          Failed result D name carried unchanged into the applier; empty for a model Q. Selects Story/Scenario rewrite versus term-document fix; public-interface and phrase-mappings select application to the architecture and the Public interface documents it names.
         FixPrompt: &fixprompt >-
           Run-selected generated fix, unchanged at applier construction. JSON generation TrimSpace; marker generation extracts between matching FILE markers, TrimSpace, strips a whole wrapping backtick/tilde code fence and TrimSpace again. Clarification/refinement replaces the fix only when a nonempty new fix is returned; no further applier trim.
         ResultPath: &application-result-path >-
@@ -188,7 +180,6 @@ architecture:
       fields:
         Judgement: >-
           The failed structured Q protocol, carried unchanged to the approved applier; empty retains legacy wording.
-        Check: *check
         ResultPath: *application-result-path
     apply_checklist:
       rendering: *prompt-rendering
@@ -258,25 +249,24 @@ architecture:
         ResultPath: *application-result-path
     build_steps_checklist:
       rendering: >-
-        Build steps uses the shared Fix loop. On a template host, phrase and suite are loaded from the Catalogue and Registry; on a concept host, an Item is a concept and suite whose patterns the proposal Prompt supplied and the engine checked. All skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
+        Build steps uses the shared Fix loop. An Item is a concept and suite whose patterns the proposal Prompt supplied and the engine checked. All skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
       fields:
         Subject.Suite: Suite steps directory, relative to the Host root.
-        Subject.Phrase.Template: Verbatim Catalogue template.
-        Subject.Phrase.Means: Verbatim Catalogue meaning.
+        Subject.Label: The concept Item's label, its block and quoted concept name.
+        Subject.Concept.Means: Verbatim concept meaning.
         Question: Validation question.
         Rationale: Validation rationale.
         FixTemplate: Fix guidance.
         ResultPath: Result artifact path.
     build_steps_checklist_system:
       rendering: >-
-        Build steps uses the shared Fix loop. On a template host, phrase and suite are loaded from the Catalogue and Registry; on a concept host, an Item is a concept and suite whose patterns the proposal Prompt supplied and the engine checked. All skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
+        Build steps uses the shared Fix loop. An Item is a concept and suite whose patterns the proposal Prompt supplied and the engine checked. All skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
       fields: {}
     build_steps_fix_generator:
       rendering: >-
-        Build steps uses the shared Fix loop. On a template host, phrase and suite are loaded from the Catalogue and Registry; on a concept host, an Item is a concept and suite whose patterns the proposal Prompt supplied and the engine checked. All skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
+        Build steps uses the shared Fix loop. An Item is a concept and suite whose patterns the proposal Prompt supplied and the engine checked. All skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
       fields:
-        Subject.Context: Whole YAML context with phrase, service Phrase mapping, term glossary entries and Word mappings, Public interface declaration and complete named document, and every suite Scenario using the phrase. No truncation. On a concept host the whole YAML context holds instead the concept (name, block, means, terms), its binding for the service, term glossary entries and Word mappings, Public interface declaration and complete named document, each definition (function, file, pattern, the proposal's captures and served clause, and every bound step with the engine's captures), every suite Scenario using the concept's steps, and under fixture_inputs, when any, each fixture those Scenarios name (a directory under the suite's fixtures/ equal to a quoted value of one of their steps) with the Scenarios naming it and every file of it, cassettes/ left out, in lexical path order, whole, a file that is not valid UTF-8 replaced by its size. No truncation.
-        Subject.Concept: A concept Item's concept, nil on a template host; it selects the concept wording.
+        Subject.Context: Whole YAML context with the concept (name, block, means, terms), its binding for the service, term glossary entries and Word mappings, Public interface declaration and complete named document, each definition (function, file, pattern, the proposal's captures and served clause, and every bound step with the engine's captures), every suite Scenario using the concept's steps, and under fixture_inputs, when any, each fixture those Scenarios name (a directory under the suite's fixtures/ equal to a quoted value of one of their steps) with the Scenarios naming it and every file of it, cassettes/ left out, in lexical path order, whole, a file that is not valid UTF-8 replaced by its size. No truncation.
         Subject.Concept.Name: Verbatim concept name.
         Subject.Concept.Block: Concept block.
         Subject.Concept.Means: Verbatim concept meaning.
@@ -291,55 +281,44 @@ architecture:
         Structured: Provider structured answer selection.
         Subject.Suite: Suite steps directory.
         Subject.Service: Service name.
-        Subject.Phrase.Template: Verbatim Catalogue template.
-        Subject.Phrase.Block: Catalogue block.
-        Subject.Phrase.Means: Verbatim meaning.
-        SubjectID: Stable phrase and suite Item id.
+        SubjectID: Stable concept and suite Item id, its block and concept name joined by a hyphen, prefixed by its suite when two suites hold that concept.
         UserAnswers: Prior clarification answers.
     build_steps_fix_generator_system:
       rendering: >-
-        Build steps uses the shared Fix loop. On a template host, phrase and suite are loaded from the Catalogue and Registry; on a concept host, an Item is a concept and suite whose patterns the proposal Prompt supplied and the engine checked. All skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
+        Build steps uses the shared Fix loop. An Item is a concept and suite whose patterns the proposal Prompt supplied and the engine checked. All skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
       fields:
         Structured: Provider structured answer selection.
-        Subject.Concept: A concept Item's concept, nil on a template host; it selects the concept wording.
     build_steps_fix_applier:
       rendering: >-
-        Build steps uses the shared Fix loop. On a template host, phrase and suite are loaded from the Catalogue and Registry; on a concept host, an Item is a concept and suite whose patterns the proposal Prompt supplied and the engine checked. All skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
+        Build steps uses the shared Fix loop. An Item is a concept and suite whose patterns the proposal Prompt supplied and the engine checked. All skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
       fields:
-        Subject.Context: Whole phrase context, identical to the proposal turn.
+        Subject.Context: Whole concept context, identical to the proposal turn.
         FixPrompt: Approved proposal.
         ResultPath: Confirmation artifact path.
         Subject.Suite: Suite steps directory.
         Subject.Service: Service name.
-        Subject.Phrase.Template: Verbatim Catalogue template.
-        Subject.Phrase.Means: Verbatim meaning.
-        Subject.Concept: A concept Item's concept, nil on a template host; it selects the concept wording.
         Subject.Concept.Name: Verbatim concept name.
         Subject.Concept.Block: Concept block.
         Subject.Concept.Means: Verbatim concept meaning.
         Subject.Label: The concept an interface_cannot_serve verdict names, its block and quoted name.
     build_steps_fix_applier_system:
       rendering: >-
-        Build steps uses the shared Fix loop. On a template host, phrase and suite are loaded from the Catalogue and Registry; on a concept host, an Item is a concept and suite whose patterns the proposal Prompt supplied and the engine checked. All skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
+        Build steps uses the shared Fix loop. An Item is a concept and suite whose patterns the proposal Prompt supplied and the engine checked. All skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
       fields:
         ResultPath: Confirmation artifact path.
-        Subject.Phrase.Template: The phrase an interface_cannot_serve verdict names.
-        Subject.Concept: A concept Item's concept, nil on a template host; it selects the concept wording.
         Subject.Label: The concept an interface_cannot_serve verdict names, its block and quoted name.
     build_steps_critique:
       rendering: >-
-        After a completed apply whose compilation, binding and body checks pass, before the Item can pass, a separate read-only prompt-role turn reads the selected definition; an apply those checks fail goes back to the Fix loop without it. Claude's file and shell tools are disabled; Codex uses the standard read-only validation sandbox. Only that definition, imports and shared State may change; the existing suite shape check rejects other definition edits. All suite steps-package Go files are embedded in lexical path order, whole, with path headings, so shared State and helper context are visible even when compilation fails. The complete phrase context is identical to the writer's. Findings append to the Item's existing compile, binding and body findings and return through D: step-coverage to the same bounded Fix loop. On a concept Item a pattern_captures or pattern_scope finding first sends the Item back to the concept-patterns Prompt, its refusal the Item's current patterns and every such finding prefixed critique:, within max_apply_attempts proposals of the engine's check; the engine then removes each skeleton whose pattern the proposal dropped with its registration, keeps an unchanged one, writes the new ones, compiles, renders the Item's context again and adds a pending-body finding. A malformed verdict stops the walk. The build-steps checklist engine.critique_model tier overrides engine.default_prompt_model; templates and tier validate before any skeleton or runner. No prompt budget is stated. Each apply saves critique-<Item id>-<apply count>-{system,user,response}.txt under the run directory.
+        After a completed apply whose compilation, binding and body checks pass, before the Item can pass, a separate read-only prompt-role turn reads the selected definition; an apply those checks fail goes back to the Fix loop without it. Claude's file and shell tools are disabled; Codex uses the standard read-only validation sandbox. Only that definition, imports and shared State may change; the existing suite shape check rejects other definition edits. All suite steps-package Go files are embedded in lexical path order, whole, with path headings, so shared State and helper context are visible even when compilation fails. The complete concept context is identical to the writer's. Findings append to the Item's existing compile, binding and body findings and return through D: step-coverage to the same bounded Fix loop. A pattern_captures or pattern_scope finding first sends the Item back to the concept-patterns Prompt, its refusal the Item's current patterns and every such finding prefixed critique:, within max_apply_attempts proposals of the engine's check; the engine then removes each skeleton whose pattern the proposal dropped with its registration, keeps an unchanged one, writes the new ones, compiles, renders the Item's context again and adds a pending-body finding. A malformed verdict stops the walk. The build-steps checklist engine.critique_model tier overrides engine.default_prompt_model; templates and tier validate before any skeleton or runner. No prompt budget is stated. Each apply saves critique-<Item id>-<apply count>-{system,user,response}.txt under the run directory.
       fields:
         Definition: >-
-          Engine definition file path joined with :: and its function name; for a concept Item, every definition of the Item so, joined with commas.
-        Context: Whole YAML phrase meaning, Phrase mapping, term glossary entries and Word mappings, Public interface declaration and complete document, and every suite Scenario using the phrase. No summarising or truncation. For a concept Item, the concept context the writer reads, its fixture inputs included; it carries no Catalogue, Phrase mapping or template Word mapping.
-        Concept: True for a concept Item; it selects the concept wording.
+          Every definition of the concept Item, each its engine file path joined with :: and its function name, joined with commas.
+        Context: The whole concept context the writer reads, its fixture inputs included. No summarising or truncation.
         Sources: Whole suite steps-package Go files in lexical path order with path headings, including the definition, imports, registrations and shared State.
     build_steps_critique_system:
       rendering: >-
-        Static semantic review policy and JSON verdict contract. Answer pass with no findings, or fail with at least one finding. Each finding requires a nonempty definition, category (phrase_mapping, phrase_meaning or computes_assertion) and finding. The mapping criterion follows the phrase block: when calls its operation, given sets up state, then observes and compares; not every definition must itself call a command. Assertion meaning and computing the asserted result are the other two criteria. The registration, pattern and signature are the engine's, derived from the template (a number slot also accepts no), and are never judged. For a concept Item the patterns are an AI's proposal, checked by the engine only for binding, and are judged too: the categories are pattern_captures and pattern_scope against a pattern, and concept_binding, concept_meaning and computes_assertion against a body, judged against the binding, each pattern's bound steps and the bound Scenarios' fixture inputs; a body requiring anything beyond its binding and those fixture inputs is a concept_binding finding. Unusable replies are errors, never passes.
-      fields:
-        Concept: True for a concept Item; it selects the concept policy and categories.
+        Static semantic review policy and JSON verdict contract. Answer pass with no findings, or fail with at least one finding. Each finding requires a nonempty definition, category and finding. The patterns are an AI's proposal, checked by the engine only for binding, and are judged as well as the bodies: the categories are pattern_captures and pattern_scope against a pattern, and concept_binding, concept_meaning and computes_assertion against a body, judged against the binding, each pattern's bound steps and the bound Scenarios' fixture inputs. The binding criterion follows the concept's block: when calls its operation, given puts the state in place, then observes and compares; not every definition must itself call a command. A body requiring anything beyond its binding and those fixture inputs is a concept_binding finding. Unusable replies are errors, never passes.
+      fields: {}
     build_code_checklist:
       rendering: *prompt-rendering
       fields: {}
@@ -400,21 +379,9 @@ architecture:
         Subject.Scenarios[].FormatSteps: >-
           All original Given, When and Then steps, in Registry order, with their block headings.
         Subject.Specification: >-
-          Union of the remaining members Specifications in discovery order: catalogue phrases on a template host, linked concepts on a concept host. Optional unreadable, catalogue-less or concept-less product leaves it empty without dropping matched Scenarios.
-        Subject.Specification.Declared: >-
-          True when any remaining member has a declared catalogue; false on a concept host.
-        Subject.Specification.Phrases: >-
-          Each reached catalogue phrase once, in first-reached order across members.
-        Subject.Specification.Phrases[].Template: >-
-          Catalogue template, unchanged.
-        Subject.Specification.Phrases[].Block: >-
-          Catalogue block, unchanged.
-        Subject.Specification.Phrases[].Means: >-
-          Catalogue meaning, unchanged.
-        Subject.Specification.Phrases[].Terms: >-
-          Declared words in catalogue order, joined by comma and space, or none.
+          Union of the remaining members Specifications in discovery order: the concepts their steps link to. An optional unreadable or concept-less product leaves it empty without dropping matched Scenarios.
         Subject.Specification.Terms: >-
-          Each declared word once, in first-reached order across members: the reached phrases' words on a template host, the linked concepts' words on a concept host.
+          Each declared word once, in first-reached order across members: the linked concepts' words.
         Subject.Specification.Terms[].Term: >-
           Declared word, unchanged.
         Subject.Specification.Terms[].Means: >-
@@ -426,7 +393,7 @@ architecture:
         Subject.Specification.Terms[].Mappings[].ObservedBy: >-
           Mapping observed_by text, unchanged.
         Subject.Specification.Concepts: >-
-          Concept host only, empty on a template host. Each concept a remaining member's Scenario links to once, in first-linked order across members: for each deterministic step in Registry order (judge: and llm: excluded), the step definition it alone binds in its Scenario's suite (stepcoverage.LoadSuite of the path's steps directory) and the //truebdd:concept record on that definition (stepskeleton.Concepts, matched by registered pattern) naming a concept the product declares under the step's block. A step binding none or two definitions, an unrecorded definition, or a record naming an undeclared or other-block concept links nothing; an unreadable suite warns and links nothing.
+          Each concept a remaining member's Scenario links to once, in first-linked order across members: for each deterministic step in Registry order (judge: and llm: excluded), the step definition it alone binds in its Scenario's suite (stepcoverage.LoadSuite of the path's steps directory) and the //truebdd:concept record on that definition (stepskeleton.Concepts, matched by registered pattern) naming a concept the product declares under the step's block. A step binding none or two definitions, an unrecorded definition, or a record naming an undeclared or other-block concept links nothing; an unreadable suite warns and links nothing.
         Subject.Specification.Concepts[].Concept: >-
           Product concept name, unchanged.
         Subject.Specification.Concepts[].Block: >-
@@ -501,21 +468,9 @@ architecture:
         Subject.Scenarios[].FormatSteps: >-
           All original Given, When and Then steps, in Registry order, with their block headings.
         Subject.Specification: >-
-          Union of the remaining members Specifications in discovery order: catalogue phrases on a template host, linked concepts on a concept host. Optional unreadable, catalogue-less or concept-less product leaves it empty without dropping matched Scenarios.
-        Subject.Specification.Declared: >-
-          True when any remaining member has a declared catalogue; false on a concept host.
-        Subject.Specification.Phrases: >-
-          Each reached catalogue phrase once, in first-reached order across members.
-        Subject.Specification.Phrases[].Template: >-
-          Catalogue template, unchanged.
-        Subject.Specification.Phrases[].Block: >-
-          Catalogue block, unchanged.
-        Subject.Specification.Phrases[].Means: >-
-          Catalogue meaning, unchanged.
-        Subject.Specification.Phrases[].Terms: >-
-          Declared words in catalogue order, joined by comma and space, or none.
+          Union of the remaining members Specifications in discovery order: the concepts their steps link to. An optional unreadable or concept-less product leaves it empty without dropping matched Scenarios.
         Subject.Specification.Terms: >-
-          Each declared word once, in first-reached order across members: the reached phrases' words on a template host, the linked concepts' words on a concept host.
+          Each declared word once, in first-reached order across members: the linked concepts' words.
         Subject.Specification.Terms[].Term: >-
           Declared word, unchanged.
         Subject.Specification.Terms[].Means: >-
@@ -527,7 +482,7 @@ architecture:
         Subject.Specification.Terms[].Mappings[].ObservedBy: >-
           Mapping observed_by text, unchanged.
         Subject.Specification.Concepts: >-
-          Concept host only, empty on a template host. Each concept a remaining member's Scenario links to once, in first-linked order across members: for each deterministic step in Registry order (judge: and llm: excluded), the step definition it alone binds in its Scenario's suite (stepcoverage.LoadSuite of the path's steps directory) and the //truebdd:concept record on that definition (stepskeleton.Concepts, matched by registered pattern) naming a concept the product declares under the step's block. A step binding none or two definitions, an unrecorded definition, or a record naming an undeclared or other-block concept links nothing; an unreadable suite warns and links nothing.
+          Each concept a remaining member's Scenario links to once, in first-linked order across members: for each deterministic step in Registry order (judge: and llm: excluded), the step definition it alone binds in its Scenario's suite (stepcoverage.LoadSuite of the path's steps directory) and the //truebdd:concept record on that definition (stepskeleton.Concepts, matched by registered pattern) naming a concept the product declares under the step's block. A step binding none or two definitions, an unrecorded definition, or a record naming an undeclared or other-block concept links nothing; an unreadable suite warns and links nothing.
         Subject.Specification.Concepts[].Concept: >-
           Product concept name, unchanged.
         Subject.Specification.Concepts[].Block: >-
@@ -591,15 +546,15 @@ architecture:
       fields:
         FailedCheck.Judgement: >-
           The structured Q protocol from with.concepts: link, bindings or words, empty for ordinary Q and D prompts. Selects concept repair wording; no earlier link is trusted.
-        Subject.ConceptForm: >-
-          True when the closure check loaded concepts from the product document for this Cell; false for legacy templates. Selects concept document instructions, preserving legacy rendered bytes.
         DocPaths: *docpaths
         FailedCheck.ActualAnswer: *failedcheck-actualanswer
-        FailedCheck.Check: *failedcheck-check
+        FailedCheck.Check: &failedcheck-check >-
+          TrimSpace of the checklist D name; empty for a model Q. Selects the model-fix wording when empty, the public-interface wording, or the concept document wording of declared-terms, term-mappings, step-definitions and concept-bindings.
         FailedCheck.Context: *failedcheck-context
         FailedCheck.FixPrompt: *failedcheck-fixprompt
         FailedCheck.Question: *failedcheck-question
-        FailedCheck.Rationale: *failedcheck-rationale
+        FailedCheck.Rationale: &failedcheck-rationale >-
+          Checklist rationale scalar copied unchanged to the failed result, including YAML block newlines; printed without trimming.
         FailedCheck.SectionPath: *failedcheck-sectionpath
         ResultPath: *generation-result-path
         Structured: *structured
@@ -621,9 +576,8 @@ architecture:
       fields:
         FailedCheck.Judgement: >-
           The structured Q protocol from with.concepts: link, bindings or words, empty for ordinary Q and D prompts. Selects concept repair wording; no earlier link is trusted.
-        Subject.ConceptForm: >-
-          True when the closure check loaded concepts from the product document for this Cell; false for legacy templates. Selects concept document instructions, preserving legacy rendered bytes.
-        <<: *fix-generator-system-fields
+        FailedCheck.Check: *failedcheck-check
+        Structured: *structured
         Subject.Service: *registry-service
         ResultPath: *generation-result-path
     scen_check_fix_applier:
@@ -631,10 +585,9 @@ architecture:
       fields:
         Judgement: >-
           The failed structured Q protocol, carried unchanged to the approved applier; empty retains legacy wording.
-        Subject.ConceptForm: >-
-          True when the closure check loaded concepts from the product document for this Cell; false for legacy templates. Selects concept document instructions, preserving legacy rendered bytes.
         Subject.Service: *registry-service
-        Check: *check
+        Check: &check >-
+          Failed result D name carried unchanged into the applier; empty for a model Q. Selects Scenario rewrite versus term-document fix; public-interface and concept-bindings select application to the architecture and the Public interface documents it names.
         FixPrompt: *fixprompt
         ResultPath: *application-result-path
         Subject.Description: *registry-description
@@ -643,7 +596,7 @@ architecture:
         Subject.InterfaceDocuments: *subject-interfacedocuments
         Subject.InterfaceDocuments[].Path: *subject-interfacedocumentsitem-path
         Subject.InterfaceDocuments[].Scratch: >-
-          Run path: filepath.Join(run_dir, "interface-<n>-<basename>"), n counting the listed documents from 1; seeded by copying the canonical document. A public-interface or phrase-mappings fix that changed it commits it, once it parses in the form of its kind, before the architecture.
+          Run path: filepath.Join(run_dir, "interface-<n>-<basename>"), n counting the listed documents from 1; seeded by copying the canonical document. A public-interface or concept-bindings fix that changed it commits it, once it parses in the form of its kind, before the architecture.
         Subject.RegistryDocument: >-
           Run Registry working-copy pointer, seeded under --fix; nil otherwise. with omits its line when nil.
         Subject.RegistryDocument.Key: >-

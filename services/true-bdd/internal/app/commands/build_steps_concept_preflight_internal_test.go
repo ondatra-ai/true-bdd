@@ -10,7 +10,7 @@ import (
 const conceptRegistry = "docs/scenarios.yaml"
 
 // A concept host's malformed term list stops build steps --fix before its
-// grouping and binding turns, as a template host's does.
+// grouping and binding turns.
 func TestConceptBuildStepsReadsTermListsBeforeAnyTurn(t *testing.T) {
 	for name, example := range map[string]struct{ file, from, to, want string }{
 		"glossary": {"docs/product/product.yaml", "glossary:\n  - term: number",

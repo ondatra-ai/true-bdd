@@ -3,7 +3,7 @@ sections:
 - id: term_closure
   validation_prompts:
   - D: declared-terms
-    rationale: A phrase whose meaning relies on an undefined word still has no stated meaning, so no step definition follows
+    rationale: A concept whose meaning relies on an undefined word still has no stated meaning, so no step definition follows
       from the spec.
     docs:
     - product

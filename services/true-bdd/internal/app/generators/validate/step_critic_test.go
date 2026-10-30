@@ -58,7 +58,7 @@ func checkCriticRoute(t *testing.T, models *provider.Registry, tier, want string
 	}
 
 	client := &critiqueAI{answer: `{"answer":"fail","findings":[
- {"definition":"double","category":"phrase_mapping","finding":"missing operation"}]}`}
+ {"definition":"double","category":"concept_binding","finding":"missing operation"}]}`}
 	critic := validate.NewStepCritic(client, models, path, path)
 	data := validate.StepCritiqueData{Definition: "double", Context: "whole specification", Sources: "whole source"}
 
@@ -81,34 +81,25 @@ func checkCriticRoute(t *testing.T, models *provider.Registry, tier, want string
 	}
 }
 
-// A concept host's critique judges each AI-proposed pattern as well as the
-// body, against the binding and the fixture inputs; a template host keeps
-// its rule that the engine's pattern is never judged.
+// The critique judges each AI-proposed pattern as well as the body, against
+// the concept's binding and the fixture inputs, and names no template form.
 func TestConceptCritiqueJudgesPatternsAndFixtureContracts(t *testing.T) {
 	t.Parallel()
 
-	concept, phrase := critiqueRequest(t, true), critiqueRequest(t, false)
+	concept := critiqueRequest(t)
 	requireTerms(t, concept.system, "pattern_captures", "pattern_scope", "fixture inputs")
 	requireTerms(t, concept.schema, "pattern_captures", "pattern_scope")
 	requireTerms(t, concept.user, "fixture inputs")
 
-	if strings.Contains(concept.system, "Never judge them") || !strings.Contains(phrase.system, "Never judge them") {
-		t.Errorf("only a template host keeps the engine's pattern out of the critique:\n%s", concept.system)
-	}
-
-	for _, leak := range []string{"Catalogue", "Phrase mapping", "template"} {
-		if strings.Contains(concept.system+concept.user, leak) {
-			t.Errorf("concept critique carries the template form %q", leak)
+	for _, leak := range []string{"Catalogue", "Phrase mapping", "template", "phrase_", "Never judge them"} {
+		if strings.Contains(concept.system+concept.user+concept.schema, leak) {
+			t.Errorf("the critique carries the template form %q", leak)
 		}
-	}
-
-	if concept.schema == phrase.schema || strings.Contains(phrase.schema, "pattern_") {
-		t.Errorf("template schema changed or concept schema lacks pattern categories:\n%s", phrase.schema)
 	}
 }
 
-// critiqueRequest renders the shipped critique templates for one host form.
-func critiqueRequest(t *testing.T, concept bool) *critiqueAI {
+// critiqueRequest renders the shipped critique templates.
+func critiqueRequest(t *testing.T) *critiqueAI {
 	t.Helper()
 
 	repository, err := filepath.Abs("../../../../../..")
@@ -129,7 +120,7 @@ func critiqueRequest(t *testing.T, concept bool) *critiqueAI {
 		filepath.Join(repository, "templates/build-steps.critique.prompt.tpl"))
 
 	_, err = critic.Critique(context.Background(), validate.StepCritiqueData{
-		Definition: "halving", Context: "context", Sources: "sources", Concept: concept,
+		Definition: "halving", Context: "context", Sources: "sources",
 	}, "", filepath.Join(t.TempDir(), "turn"))
 	if err != nil {
 		t.Fatal(err)

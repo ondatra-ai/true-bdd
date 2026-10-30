@@ -32,7 +32,6 @@ func (e *buildStepsExecution) critique(ctx context.Context, item *BuildStepsItem
 
 	findings, err := e.deps.Critic.Critique(ctx, validate.StepCritiqueData{
 		Definition: definitionLabels(item), Context: item.Context, Sources: sources.String(),
-		Concept: item.Concept != nil,
 	}, e.critiqueTier, artifact)
 	if err != nil {
 		return nil, err

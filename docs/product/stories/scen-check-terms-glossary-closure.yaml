@@ -21,37 +21,6 @@ story:
     so_that: every word a step's meaning relies on has exactly one definition a reader and a step definition can follow, and the gap is reported before any AI turn is spent
     status: IMPLEMENTED
     acceptance_criteria:
-        - id: 001-undefined-term-fails
-          description: A term that the catalogue template a step matches declares, and that the product glossary does not define, must fail the Scenario a Story claims, naming the template and the term, while a term only an unmatched template declares is no failure of that Scenario
-          steps:
-            - given:
-                - the "scen-check-term-undefined" project tree
-            - when:
-                - the Quality Engineer runs "scen check"
-            - then:
-                - the command exits with code 1
-                - 'stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: \\"the service answers \\"\{reply\}\\"\\" declares \\"reply\\", which the glossary does not define\]"'
-                - but: stdout does not match the service restarts
-                - and: 'stdout matches scen-check/term_closure +D: declared-terms +fail +FAIL'
-                - and: stdout matches Validation failed
-                - but: stdout does not match ALL CHECKS PASSED
-                - and: the engine dispatched no AI turns
-                - and: no file outside "tmp" changed
-        - id: 002-defined-terms-pass
-          description: A Scenario a Story claims must pass the declared-term check when the glossary defines every term the templates its steps match declare, naming those terms, while a Scenario no Story claims passes unchecked and one whose templates declare no term passes saying so
-          steps:
-            - given:
-                - the "scen-check-terms-defined" project tree
-            - when:
-                - the Quality Engineer runs "scen check"
-            - then:
-                - the command exits with code 0
-                - 'stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: every declared term is defined: mcp service, message, reply\]"'
-                - and: 'stdout matches msg="Check answered" check=declared-terms subjectID=E2E-002 promptIndex=1 answer=pass context="\[E2E-002: not checked: no Story claims this Scenario yet\]"'
-                - and: 'stdout matches msg="Check answered" check=declared-terms subjectID=E2E-003 promptIndex=1 answer=pass context="\[E2E-003: no matched template declares a term\]"'
-                - and: stdout matches ALL CHECKS PASSED
-                - and: the engine dispatched no AI turns
-                - and: no file outside "tmp" changed
         - id: 003-term-defined-twice-fails
           description: A term a concept declares, which the glossary defines more than once, must fail every Scenario, naming the concept, the term and how many times it is defined, because a word with two meanings has none a reader can rely on
           steps:
@@ -66,7 +35,7 @@ story:
                 - and: the engine dispatched no AI turns
                 - and: no file outside "tmp" changed
         - id: 004-no-catalogue-unchecked
-          description: A product document that declares no catalogue must leave every Scenario unchecked by the declared-term check, saying so, whatever its glossary holds
+          description: A product document that declares no concepts must leave every Scenario unchecked by the declared-term check, saying so, whatever its glossary holds
           steps:
             - given:
                 - the "scen-check-terms-no-catalogue" project tree
@@ -74,7 +43,7 @@ story:
                 - the Quality Engineer runs "scen check"
             - then:
                 - the command exits with code 0
-                - 'stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: not checked: the product document declares no catalogue\]"'
+                - 'stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: not checked: the product document declares no concepts\]"'
                 - and: stdout matches ALL CHECKS PASSED
                 - and: the engine dispatched no AI turns
                 - and: no file outside "tmp" changed
