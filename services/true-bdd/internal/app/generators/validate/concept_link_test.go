@@ -34,6 +34,51 @@ func (reply *linkReply) ExecutePromptWithSystem(_ context.Context, _ provider.Ro
 const linkTestTier = "high"
 const linkTestModel = "claude:test"
 const linkJudgement = "link"
+const conceptsParameter = "concepts"
+const linkTestConcept = "square"
+
+func TestConceptLinkThresholdChangesSameAnswerVerdict(t *testing.T) {
+	evaluator, reply, repository := conceptRequestEvaluator(t)
+	reply.response = `{"steps":{"1":{"scores":{"square":8,"halve":2},` +
+		`"reason":"Related but partly outside square's meaning.","other_block_concept":null}}}`
+
+	for _, testCase := range []struct {
+		name      string
+		threshold int
+		status    checklist.Status
+		links     int
+	}{
+		{"eight", 8, checklist.StatusPass, 1},
+		{"nine", 9, checklist.StatusFail, 0},
+		{"omitted", 0, checklist.StatusFail, 0},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			prompt := shippedConceptPrompt(t, repository, linkJudgement)
+			delete(prompt.Prompt.With, "threshold")
+
+			if testCase.threshold != 0 {
+				prompt.Prompt.With["threshold"] = testCase.threshold
+			}
+
+			item := &template.ScenarioCheckData{ID: linkTestConcept, Phrases: []catalogue.Step{
+				{Block: catalogue.BlockWhen, Text: "square six approximately"},
+			}}
+
+			result, err := evaluator.EvaluateOne(t.Context(), item, item.ID, prompt, t.TempDir())
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if result.Status != testCase.status {
+				t.Fatalf("same highest score eight: got %s, want %s; %v", result.Status, testCase.status, result.Context)
+			}
+
+			if item.ConceptLinkPassed != (testCase.status == checklist.StatusPass) || len(item.ConceptLinks) != testCase.links {
+				t.Fatalf("score eight: want %d links; got %+v", testCase.links, item)
+			}
+		})
+	}
+}
 
 func TestLinkRejectsUnscoredConcept(t *testing.T) {
 	root := t.TempDir()
@@ -69,7 +114,7 @@ func TestLinkRejectsUnscoredConcept(t *testing.T) {
 	result, err := evaluator.EvaluateOne(context.Background(), &template.ScenarioCheckData{
 		ID: "halve", Service: "calc", Phrases: []catalogue.Step{{Block: catalogue.BlockWhen, Text: "halve 6"}},
 	}, "halve", checklist.PromptWithContext{Index: 1, SectionID: "check", Prompt: checklist.Prompt{
-		Question: "Link every step.", With: map[string]any{"concepts": linkJudgement}, Docs: []string{"product"},
+		Question: "Link every step.", With: map[string]any{conceptsParameter: linkJudgement}, Docs: []string{"product"},
 	}}, root)
 	if err != nil {
 		t.Fatal(err)
@@ -93,7 +138,7 @@ func rejectMissingLinkAnswer(t *testing.T, evaluator *validate.ChecklistEvaluato
 
 	missing, err := evaluator.EvaluateOne(context.Background(), &template.ScenarioCheckData{}, "missing",
 		checklist.PromptWithContext{Prompt: checklist.Prompt{
-			Question: "Link", With: map[string]any{"concepts": linkJudgement}}}, root)
+			Question: "Link", With: map[string]any{conceptsParameter: linkJudgement}}}, root)
 	if err != nil || missing.Status != checklist.StatusFail {
 		t.Fatalf("missing answer: result=%+v, error=%v", missing, err)
 	}

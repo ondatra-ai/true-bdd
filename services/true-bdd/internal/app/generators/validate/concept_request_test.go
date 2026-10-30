@@ -84,7 +84,7 @@ func shippedConceptPrompt(t *testing.T, repository, kind string) checklist.Promp
 
 	for _, section := range document.Sections {
 		for _, prompt := range section.ValidationPrompts {
-			if prompt.With["concepts"] == kind {
+			if prompt.With[conceptsParameter] == kind {
 				return checklist.PromptWithContext{Index: 1, SectionID: section.ID, Prompt: prompt}
 			}
 		}
@@ -97,7 +97,7 @@ func shippedConceptPrompt(t *testing.T, repository, kind string) checklist.Promp
 
 func TestConceptLinkRequestHasClosedMeaningsAndRequiredBlockScores(t *testing.T) {
 	evaluator, reply, repository := conceptRequestEvaluator(t)
-	item := &template.ScenarioCheckData{ID: "square", Service: "calc", Phrases: []catalogue.Step{
+	item := &template.ScenarioCheckData{ID: linkTestConcept, Service: "calc", Phrases: []catalogue.Step{
 		{Block: catalogue.BlockWhen, Text: "square six"},
 		{Block: catalogue.BlockThen, Text: "36 is displayed"},
 		{Block: catalogue.BlockThen, Text: "judge: the explanation is clear"},
@@ -166,7 +166,7 @@ func assertRequiredBlockScores(t *testing.T, schema string) {
 func TestConceptSketchEmbedsMeaningsAndInterfaceKindsWithoutArchitectureRead(t *testing.T) {
 	evaluator, reply, repository := conceptRequestEvaluator(t)
 
-	_, err := evaluator.EvaluateOne(context.Background(), &template.StoryRefineData{}, "square",
+	_, err := evaluator.EvaluateOne(context.Background(), &template.StoryRefineData{}, linkTestConcept,
 		shippedConceptPrompt(t, repository, "sketch"), t.TempDir())
 	if err != nil {
 		t.Fatal(err)

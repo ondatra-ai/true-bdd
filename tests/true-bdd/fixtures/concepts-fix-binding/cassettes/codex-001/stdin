@@ -10,31 +10,41 @@ a document. For document edits return the requested confirmation markers.
 
 The responsible person chose apply at the menu for Scenario host-001.
 Approved fix:
-## Proposed repair for Item host-001 (actual: fail)
+## Repair for Item host-001 — missing concept binding (owner: System Architect)
 
-Finding: `when` concept "request greeting" for service `greeter` has 0 Concept bindings.
+### Finding
+`when` concept **"request greeting"** for service `greeter` has 0 Concept bindings, so the step
+`the greeting is requested for person "Alice" with loud omitted` cannot be executed.
 
-Owner of this change: **System Architect** (concept binding).
-No Product Owner change is proposed: the `when` concept `request greeting` already
-exists in `docs/product/product.yaml` with `means: Call greet once.` and term
-`greeting`, which correctly covers the step "the greeting is requested". The meaning
-needs no widening or correction, and no new variation is warranted (the existing
-concept already covers this item and use).
+### Judgement against the declared Public interface
+`docs/greeter-cli.yaml` (opencli, service `greeter`) already declares everything the step needs:
 
-No change to the declared Public interface (`docs/greeter-cli.yaml`) is proposed:
-command `greet` with required argument `person` and exit codes `0`/`1` is already
-declared, so the missing binding is expressible as-is.
+- command `greet` with required `person` argument (`in: argument`, type string)
+- optional `loud` flag (`in: flag`, type boolean, `default: false`) — "With loud omitted (false), the greeting is unchanged"
+- `greet` reads `greeting-config` (`greeter.yaml`) and emits one `greeted` log record per successful call
 
-### Change 1 of 1 — File: `docs/architecture/architecture.yaml` (System Architect)
+**No extension of the Public interface is required.**
 
-Add one Concept binding to the `architecture.concepts` list, inserted between the
-existing `greeting/given` binding and the existing `greeting/then` binding so the
-list stays in given → when → then order. Both existing bindings, `architecture.services`,
-and `architecture.terms` are preserved unchanged.
+### Judgement against the product document
+`docs/product/product.yaml` already declares, under `when`:
 
-Exact edit — insert these 7 lines after line 21
-(`    does: Observe the greeted log record and compare its greeting to the expected text.`
-is the then binding; insert BEFORE line 16 `  - concept: greeting` / `block: then`):
+```yaml
+  - concept: request greeting
+    means: Call greet once for the named person with the optional loud flag omitted.
+    terms:
+    - greeting
+```
+
+This meaning covers the Item's `when` step verbatim in intent. **No Product Owner change is required** — no wider concept, no new variation, no Item re-wording.
+
+### Proposed change — exactly one, in `docs/architecture/architecture.yaml`
+
+Add one `concept_binding` entry to the top-level `concepts:` list, inserted between the existing
+`greeting`/`given` binding and the existing `greeting`/`then` binding so the list stays in
+given → when → then order.
+
+Insert after line 15 (`does: Write the expected greeting to the configuration file before running greet.`)
+and before line 16 (`- concept: greeting` / `block: then`):
 
 ```yaml
   - concept: request greeting
@@ -42,11 +52,11 @@ is the then binding; insert BEFORE line 16 `  - concept: greeting` / `block: the
     service: greeter
     references:
     - command: greet
-    does: Run the greet command once with the required person argument and the loud flag
-      unset, then capture its exit code and printed output.
+    does: Run greet once, passing the person argument and omitting the loud flag, so the configured
+      greeting is printed verbatim and recorded in the greeted log record.
 ```
 
-Resulting `architecture.concepts` section in full (for review):
+### Resulting `concepts:` section (full, for review)
 
 ```yaml
   concepts:
@@ -61,8 +71,8 @@ Resulting `architecture.concepts` section in full (for review):
     service: greeter
     references:
     - command: greet
-    does: Run the greet command once with the required person argument and the loud flag
-      unset, then capture its exit code and printed output.
+    does: Run greet once, passing the person argument and omitting the loud flag, so the configured
+      greeting is printed verbatim and recorded in the greeted log record.
   - concept: greeting
     block: then
     service: greeter
@@ -71,24 +81,17 @@ Resulting `architecture.concepts` section in full (for review):
     does: Observe the greeted log record and compare its greeting to the expected text.
 ```
 
-### Why this satisfies the repair policy
+### Conformance notes
+- Form is the operation form required by `true-bdd/architecture_yaml-schema.yaml` → `concept_binding`:
+  `concept`, `block` (`when`), `service`, non-empty `references` and `does`. No `intent` — this is a CLI
+  step, not a UI step performed by a model.
+- The single `interface_reference` carries exactly one selector, `command: greet`, which resolves against
+  the loaded Public interface `docs/greeter-cli.yaml`.
+- Unaffected items preserved: both existing `greeting` bindings (`given`, `then`), the `terms:` section,
+  the `services:` section, all product concepts and the glossary, and every step of host-001.
 
-- Supplies every required field for the missing linked concept: `concept`, `block`,
-  `service`, `references`, `does`.
-- `references: [- command: greet]` points at a command that is already declared in the
-  `greeter` Public interface (`docs/greeter-cli.yaml`, `commands.greet`), matching the
-  reference style of the sibling bindings (`file:`, `log_record:`), which likewise name
-  declared interface entries.
-- `does` is an observable action through the Public interface only — invoke `greet`, do
-  not read internals — and leaves the `greeted` log-record assertion to the existing
-  `then` binding, so no step or concept outside this finding is touched.
-- `intent` is not used: `greeter` is a `cli` service and this `when` step is not a UI
-  step performed by a model.
-
-### Not applied
-
-Nothing has been written. This is a proposal only; apply the binding above only after an
-explicit menu decision by the System Architect.
+### Nothing was applied
+No file was modified. Apply this entry only after an explicit menu decision by the System Architect.
 Working copies (edit only the approved target):
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

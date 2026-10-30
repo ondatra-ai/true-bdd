@@ -5,7 +5,6 @@ import (
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/product"
-	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/template"
 )
 
 func (e *ChecklistEvaluator) evaluateLink(ctx context.Context, subject any, prompt checklist.PromptWithContext,
@@ -53,9 +52,8 @@ func (e *ChecklistEvaluator) evaluateLink(ctx context.Context, subject any, prom
 		result.ActualAnswer = AnswerFail
 	}
 
-	if item, ok := subject.(*template.ScenarioCheckData); ok && result.Status == checklist.StatusPass {
-		item.ConceptLinks = links
-		item.ConceptLinkPassed = true
+	if result.Status == checklist.StatusPass {
+		storeConceptLinks(subject, links, true)
 	}
 
 	e.saveConceptResult(result)

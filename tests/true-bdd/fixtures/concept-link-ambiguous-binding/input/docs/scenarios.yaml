@@ -7,13 +7,13 @@
       "user_stories": [],
       "merged_steps": {
         "given": [
-          "six is entered"
+          "6 is entered"
         ],
         "when": [
-          "halve six"
+          "halve once"
         ],
         "then": [
-          "three is displayed"
+          "3 is displayed"
         ]
       }
     }

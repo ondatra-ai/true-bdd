@@ -42,6 +42,10 @@ func (e *ChecklistEvaluator) evaluateConcepts(ctx context.Context, subject any, 
 		return result, nil
 	}
 
+	if kind == "words" {
+		return e.evaluateWords(ctx, subject, prompt, source, result)
+	}
+
 	if kind == "bindings" {
 		return e.evaluateBindings(ctx, subject, prompt, source, result)
 	}
@@ -132,11 +136,4 @@ func (e *ChecklistEvaluator) conceptProduct() (string, error) {
 	}
 
 	return string(content), nil
-}
-
-func resetConceptLinks(subject any) {
-	if item, ok := subject.(*template.ScenarioCheckData); ok {
-		item.ConceptLinks = nil
-		item.ConceptLinkPassed = false
-	}
 }

@@ -10,30 +10,24 @@ a document. For document edits return the requested confirmation markers.
 
 The responsible person chose apply at the menu for Scenario host-001.
 Approved fix:
-=== FILE_START: tmp/{{RUN_DIR}}/02-host-001-fix-prompts.md ===
+## Repair proposal — Item host-001 (service `calc`)
 
-# Proposed repair — Item host-001 (service `calc`)
+**Finding:** when concept "halve" for service calc has 0 Concept bindings.
 
-**Finding:** when concept "halve" for service `calc` has 0 Concept bindings.
+**Owner of this repair:** System Architect (concept binding only).
+**No Product Owner change needed:** `product.yaml` → `concepts.when` already declares
+`halve` → means "Halve the entered number once.", which covers this Item's use.
+**No Public interface change needed:** the declared `calc` UI interface already exposes
+`{page: Calc, role: button, name: Halve}` and `{page: Calc, role: textbox, name: Number}`.
 
-**Owner of this repair:** System Architect (binding only).
-**No Product Owner change is needed:** `product.yaml` already defines the `when`
-concept `halve` with the meaning "Halve the entered number once.", which exactly
-covers the Scenario step "halve six". Item wording and all other steps/concepts
-stay unchanged.
+### Exact change — ONE file: `docs/architecture/architecture.yaml`
 
-**Public interface check:** `calc` declares `kind: ui` with the element
-`{page: Calc, role: button, name: Halve}`. The missing binding is fully covered by
-the declared Public interface, so **no interface extension is required**.
-The step is a deterministic click on a declared element, so the binding uses
-`references` + `does` (consistent with the existing `number ready` / `number result`
-bindings) rather than a model-performed `intent`.
+Add exactly one new entry to `architecture.concepts`, inserted between the existing
+`number ready` (given) entry and the existing `number result` (then) entry, so the list
+stays in given / when / then order. Change nothing else in the file.
 
-## Exact change — `docs/architecture/architecture.yaml`
-
-Append one entry to `architecture.concepts`, after the existing `number result`
-entry (the two existing concepts are preserved verbatim; `services` and `terms`
-are untouched):
+Insert after the `number ready` object (i.e. after the `},` closing it at line 40) and
+before the `number result` object (line 41):
 
 ```json
       {
@@ -49,73 +43,37 @@ are untouched):
             }
           }
         ],
-        "does": "Click the Halve button to halve the entered number once."
-      }
+        "does": "Press the Halve button once to halve the number in the Number field."
+      },
 ```
 
 ### Resulting `architecture.concepts` list (for review)
 
-```json
-{
-  "architecture": {
-    "services": [
-      {
-        "name": "calc",
-        "path": "services/calc",
-        "language": "go",
-        "public_interface": {
-          "kind": "ui",
-          "elements": [
-            { "page": "Calc", "role": "button",  "name": "Halve"  },
-            { "page": "Calc", "role": "textbox", "name": "Number" }
-          ]
-        }
-      }
-    ],
-    "concepts": [
-      {
-        "concept": "number ready",
-        "block": "given",
-        "service": "calc",
-        "references": [
-          { "element": { "page": "Calc", "role": "textbox", "name": "Number" } }
-        ],
-        "does": "Enter the given number into the Number field."
-      },
-      {
-        "concept": "number result",
-        "block": "then",
-        "service": "calc",
-        "references": [
-          { "element": { "page": "Calc", "role": "textbox", "name": "Number" } }
-        ],
-        "does": "Compare the displayed Number text with the expected result."
-      },
-      {
-        "concept": "halve",
-        "block": "when",
-        "service": "calc",
-        "references": [
-          { "element": { "page": "Calc", "role": "button", "name": "Halve" } }
-        ],
-        "does": "Click the Halve button to halve the entered number once."
-      }
-    ],
-    "terms": []
-  }
-}
-```
+1. `number ready` — block `given`, service `calc` — UNCHANGED
+2. `halve` — block `when`, service `calc` — NEW (the entry above)
+3. `number result` — block `then`, service `calc` — UNCHANGED
 
-## Notes
+`architecture.services` and `architecture.terms` are UNCHANGED.
+`docs/product/product.yaml` is UNCHANGED.
 
-- This is a **new binding for a new item and use** (`when halve` had no binding
-  at all), not a variation: no existing concept of this item and use is widened,
-  so no variation is added.
-- No change to `docs/product/product.yaml`.
-- Nothing has been applied; this awaits an explicit menu decision by the
-  System Architect.
+### Why this binding
 
-=== FILE_END: tmp/{{RUN_DIR}}/02-host-001-fix-prompts.md ===
+- `concept: "halve"` matches the Scenario's When step wording "halve six" as linked, and
+  matches the existing product concept name exactly, so the link resolves.
+- `block: "when"` — the step is in the When block, and the product concept `halve` is
+  declared under `when`.
+- `service: "calc"` — the Item's service.
+- `references` — the single declared Public interface element that performs the halving,
+  the `Halve` button on page `Calc`; no interface extension is required.
+- `does` — a deterministic single action, so `references` + `does` is used and `intent`
+  is deliberately NOT used (no model-performed UI step here).
+- The Given ("six is entered") stays bound by `number ready`, and the Then
+  ("three is displayed") stays bound by `number result`; both are left untouched.
+
+### Apply only after an explicit menu decision
+
+Do not write this change now. Apply exactly the inserted object above, and nothing else,
+only if the System Architect approves it at the menu.
 Working copies (edit only the approved target):
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

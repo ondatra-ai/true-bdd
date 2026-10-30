@@ -27,7 +27,8 @@ func withoutConceptJudgements(prompts []checklist.PromptWithContext) []checklist
 	filtered := make([]checklist.PromptWithContext, 0, len(prompts))
 	for _, prompt := range prompts {
 		kind := prompt.Prompt.With["concepts"]
-		if !prompt.Prompt.IsCheck() && prompt.Prompt.ShapeError() == nil && (kind == linkJudgement || kind == "bindings") {
+		if !prompt.Prompt.IsCheck() && prompt.Prompt.ShapeError() == nil &&
+			(kind == linkJudgement || kind == "bindings" || kind == "words") {
 			continue
 		}
 

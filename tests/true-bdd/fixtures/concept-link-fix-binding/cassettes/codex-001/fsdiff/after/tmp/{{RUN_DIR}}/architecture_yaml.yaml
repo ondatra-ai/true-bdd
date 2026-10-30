@@ -39,6 +39,21 @@
         "does": "Enter the given number into the Number field."
       },
       {
+        "concept": "halve",
+        "block": "when",
+        "service": "calc",
+        "references": [
+          {
+            "element": {
+              "page": "Calc",
+              "role": "button",
+              "name": "Halve"
+            }
+          }
+        ],
+        "does": "Press the Halve button once to halve the number in the Number field."
+      },
+      {
         "concept": "number result",
         "block": "then",
         "service": "calc",
@@ -52,21 +67,6 @@
           }
         ],
         "does": "Compare the displayed Number text with the expected result."
-      },
-      {
-        "concept": "halve",
-        "block": "when",
-        "service": "calc",
-        "references": [
-          {
-            "element": {
-              "page": "Calc",
-              "role": "button",
-              "name": "Halve"
-            }
-          }
-        ],
-        "does": "Click the Halve button to halve the entered number once."
       }
     ],
     "terms": []

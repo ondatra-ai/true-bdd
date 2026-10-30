@@ -10,36 +10,29 @@ a document. For document edits return the requested confirmation markers.
 
 The Product Owner chose apply at the menu for Story host.
 Approved fix:
-PROPOSED REPAIR — Item `host`, AC-1 `when` step "square six" (NOT APPLIED; awaiting explicit menu decision)
+PROPOSED REPAIR (not applied — awaiting an explicit menu decision)
 
-Owner of this repair: **Product Owner** (concept text; no binding change, so the System Architect is not involved).
+Item: host — AC-1 when step "square six"
+Owner of this repair: Product Owner (concept addition; no binding change, so the System Architect is not involved)
 
-## Why this repair and not another
+WHY THIS REPAIR
+The when step "square six" is of the correct kind (a when-step in the when block) but reaches no concept: the only when concept, "halve", is closed to "Halve the entered number once." The product description states the calculator offers separate Halve and Square controls, and that Square multiplies the entered number by itself. Squaring is therefore a different Public interface item and a different use, not a variation of halving. Per the repair policy, a new variation may only widen an existing concept of the same item and use; a new item or use requires a new concept. So the repair is a new when concept, not a widened "halve" and not a rewrite of the Story step ("square six" already matches the described Square control and the Story's intent, so rewriting it would misstate the product).
 
-- The step is a correct-kind `when` action and it matches the product description: "The calculator offers separate Halve and Square controls. ... Square multiplies the entered number by itself." So the Story wording is sound and **no step rewrite is proposed** — rewriting it would contradict the Story's intent ("to square a number") and the described Public interface.
-- Widening `halve` with a variation is **not** proposed: a variation widens an existing concept of the *same* item and use. The description fixes Square and Halve as two separate controls with different arithmetic, so Square is a *different item* of the Public interface. Folding squaring into `halve` (closed meaning: dividing the entered number by two once) would break that closed meaning.
-- Therefore: **add one new `when` concept** for the new item Square. The `given` and `then` steps already link at score 10 (`number ready`, `number result`) and are left untouched.
+EXACT CHANGE — one file: docs/product/product.yaml
+Add one concept to concepts.when, after the existing "halve" entry. Nothing else changes: "halve", "number ready", "number result", the glossary, the description and the roles are preserved verbatim, and the Story "host" is left exactly as written.
 
-## Exact change — `docs/product/product.yaml`, `concepts.when` (one new concept appended after `halve`)
+Before (concepts.when):
 
-```
-   "when": [
+    "when": [
       {
         "concept": "halve",
         "means": "Halve the entered number once.",
         "terms": []
-      },
-+     {
-+       "concept": "square",
-+       "means": "Square the entered number once.",
-+       "terms": []
-+     }
+      }
     ],
-```
 
-Resulting `concepts.when` block in full, as it would read after apply:
+After (concepts.when):
 
-```json
     "when": [
       {
         "concept": "halve",
@@ -48,23 +41,19 @@ Resulting `concepts.when` block in full, as it would read after apply:
       },
       {
         "concept": "square",
-        "means": "Square the entered number once.",
+        "means": "Multiply the entered number by itself once.",
         "terms": []
       }
     ],
-```
 
-## Scope of the change
+EXPECTED RESULT AFTER APPLY
+- AC-1 when step "square six" links to the new concept "square" (the step invokes the Square control on the entered number; six is the argument and does not change the concept).
+- AC-1 given step "six is entered" keeps its link to "number ready" — unchanged.
+- AC-1 then step "thirty-six is displayed" keeps its link to "number result" — unchanged.
+- Item host: fail -> pass, with no edit to the Story text.
 
-- Changed: `docs/product/product.yaml` only — a single added concept object in `concepts.when`.
-- Unchanged: `concepts.given` (`number ready`), `concepts.then` (`number result`), the existing `when` concept `halve` (meaning and terms verbatim), `roles`, `glossary`, `description`.
-- Unchanged: the Story `host` — all three steps of AC-1 keep their current wording, including "square six". No Item rewrite is part of this repair.
-
-## Expected effect after apply
-
-AC-1 `when` step "square six" becomes a plain instance of the new `when` concept `square` ("Square the entered number once."), clearing the threshold of 9, with `halve` remaining a non-match. The other two steps keep their existing links.
-
-No files have been modified. Apply only on an explicit menu decision by the Product Owner.
+APPLY DECISION REQUIRED
+Nothing has been changed. Apply this repair only on an explicit menu decision by the Product Owner.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

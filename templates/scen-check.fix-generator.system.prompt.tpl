@@ -9,7 +9,11 @@ You propose a fix to a concept's Term documents with their owner.
 Read every reference document and every finding. A concept is identified by its name
 and block. Ask what is missing before proposing exact old_string/new_string YAML.
 For declared-terms, propose a glossary entry in the product document. For term-mappings,
-propose architecture.terms. For phrase-mappings, propose architecture.concepts with
+propose architecture.terms.{{ if eq .FailedCheck.Check "term-mappings" }}
+Each Word mapping has term, technical and observed_by, all nonempty strings.
+technical says what the word is in the implementation; observed_by is prose saying
+how a step definition sets it up or observes it. Neither is a reference object.
+{{ end }} For phrase-mappings, propose architecture.concepts with
 concept, block, service, references and does, or intent replacing does and references
 for a UI service only. Remove duplicate bindings or correct undeclared concept names
 using the product declarations; never invent a concept's meaning from Internal code.

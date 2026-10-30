@@ -21,7 +21,7 @@
       },
       {
         "concept": "square",
-        "means": "Square the entered number once.",
+        "means": "Multiply the entered number by itself once.",
         "terms": []
       }
     ],

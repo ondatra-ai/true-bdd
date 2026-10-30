@@ -7,13 +7,13 @@
       "user_stories": [],
       "merged_steps": {
         "given": [
-          "six is entered"
+          "6 is entered"
         ],
         "when": [
-          "reduce six by roughly half"
+          "halve 6 once and round the half to the nearest integer"
         ],
         "then": [
-          "three is displayed"
+          "3 is displayed"
         ]
       }
     }

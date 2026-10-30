@@ -9,7 +9,7 @@
     "given": [
       {
         "concept": "number ready",
-        "means": "A number is entered before the action.",
+        "means": "An even whole number, written using digits, is entered before the action.",
         "terms": []
       }
     ],
@@ -23,10 +23,11 @@
     "then": [
       {
         "concept": "number result",
-        "means": "Compare the displayed number with an expected value.",
+        "means": "Compare the displayed number with an expected value written using digits.",
         "terms": []
       }
     ]
   },
-  "glossary": []
+  "glossary": [],
+  "description": "This calculator accepts only even whole numbers. Halve divides the entered number by two and displays its integer half in Number."
 }

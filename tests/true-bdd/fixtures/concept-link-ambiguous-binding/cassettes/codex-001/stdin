@@ -10,47 +10,35 @@ a document. For document edits return the requested confirmation markers.
 
 The responsible person chose apply at the menu for Scenario host-001.
 Approved fix:
-## Repair proposal — Item host-001 (service `calc`) — NOT APPLIED
+## Repair proposal — Item host-001, failed judgement `when:halve` (binding ambiguous)
 
-Failed judgement: **`when:halve` — binding is ambiguous.**
-Owner of this repair: **System Architect** (concept binding).
-No Product Owner change proposed — see "Why no product change" below.
+**Nothing is applied.** Below is the exact change, awaiting an explicit menu decision.
 
 ### Diagnosis
 
-`docs/architecture/architecture.yaml`, concept `halve` (block `when`, service `calc`) has
-`does: "Perform the operation."`. That text:
+- Product concept `when: halve` — meaning `"Halve the entered number once."` — is **correct and wide enough**: it covers the step `halve once` and the Item description `The number must be halved`. **No Product Owner change is proposed, and no new variation is needed** (the existing concept already covers this item and use).
+- The failure is confined to the **System Architect's binding**. The architecture concept `halve` is intent-only with `"Do whatever is appropriate with the entered number."`, which names no intent actually performed through the UI, names no element, and does not fix the once-only cardinality. `references` is absent and `does` is empty, so nothing compensates.
+- The declared Public interface of service `calc` **already contains** the needed element (`Page "Calc"`, `Role "button"`, `Name "Halve"`). **No extension of the Public interface is required.**
+- Because the step is a single deterministic UI activation, the binding is offered as `references` + `does` (a model-performed `intent` is not warranted).
 
-1. names no interaction — it never says to press the declared `Halve` button, so the call
-   under test is only inferable from the `references` entry rather than stated; and
-2. leaves the admitted variation open — the step text `halve six` restates a number, and the
-   binding does not say whether the When re-enters that number or acts on the value the Given
-   already placed in the `Number` textbox.
+### Owner of this change
 
-The declared Public interface is sufficient: `Calc / button / Halve` and
-`Calc / textbox / Number` are both already present. **No extension of
-`public_interface` is proposed.** Only the `does` text changes.
+**System Architect** — `docs/architecture/architecture.yaml`, `architecture.concepts[]`, the entry with `concept: "halve"`, `block: "when"`, `service: "calc"`.
 
-### Exact change 1 of 1 — `docs/architecture/architecture.yaml`
+### Exact change — `docs/architecture/architecture.yaml`
 
-Within `architecture.concepts`, in the single entry where
-`concept: "halve"`, `block: "when"`, `service: "calc"` (currently lines 42–55),
-replace the `does` line only. `concept`, `block`, `service` and `references`
-are unchanged.
-
-Before (line 54):
+Replace this object (currently lines 41–46):
 
 ```json
-        "does": "Perform the operation."
+      {
+        "concept": "halve",
+        "block": "when",
+        "service": "calc",
+        "intent": "Do whatever is appropriate with the entered number."
+      },
 ```
 
-After (line 54):
-
-```json
-        "does": "Press the Halve button on the Calc page once. Do not type or re-enter any number: act on the value already present in the Number field, even when the step text repeats that number."
-```
-
-Resulting entry in full, for review:
+with:
 
 ```json
       {
@@ -66,45 +54,31 @@ Resulting entry in full, for review:
             }
           }
         ],
-        "does": "Press the Halve button on the Calc page once. Do not type or re-enter any number: act on the value already present in the Number field, even when the step text repeats that number."
-      }
+        "does": "Activate the Calc page ‘Halve’ button exactly once. Perform no other interaction, enter no value and assert nothing."
+      },
 ```
+
+Note: the `intent` key is removed, since `does` now states the action.
 
 ### Why this resolves the finding
 
-- **Names the interaction:** "Press the Halve button on the Calc page" states the call
-  explicitly instead of leaving it to be guessed from `references`.
-- **Resolves the admitted variation:** "Do not type or re-enter any number: act on the value
-  already present in the Number field" fixes the one open choice, so `halve six` needs no
-  invention — the number named in the When text is the one the Given already entered.
-- **Pins the count:** "once" matches the product meaning "Halve the entered number once."
-- **Stays inside the declared Public interface:** the only element named is
-  `Calc / button / Halve`, already declared; `Calc / textbox / Number` is referred to only as
-  state placed by the Given, which binds through the existing `number ready` concept.
+- **Names the real UI intent:** activating the declared `Halve` button, instead of "whatever is appropriate".
+- **One declared element, already in the Public interface:** `(Page "Calc", Role "button", Name "Halve")` — no guessing about which control performs the halving.
+- **Cardinality is explicit:** "exactly once" matches concept `"Halve the entered number once."` and step `halve once`.
+- **No hidden state or assertion:** the explicit exclusion keeps the When block free of Given-style value entry and Then-style checking, so it composes with `given: number ready` (sets the `Number` textbox to `6`) and `then: number result` (reads the `Number` textbox and asserts numeric equality with `3`).
+- An LLM can now write this When step definition with no invented behaviour.
 
-### Why no product change, and no new variation
+### Preserved unchanged
 
-- `product.yaml`, `concepts.when → halve`, `means: "Halve the entered number once."` already
-  carries the correct, sufficient meaning: the operand is *the entered number*, and the
-  operation runs *once*. The failure is in the architecture `does`, not in the meaning, so
-  no wider or corrected concept is offered to the Product Owner.
-- The Item has a single use of `halve`, and the repaired `does` covers it, so **no new
-  variation is added**; the existing concept is corrected in place.
+- `architecture.concepts[]` entries `given: number ready` and `then: number result` — both passed; untouched.
+- `architecture.services[0].public_interface` — both elements untouched, nothing added.
+- `architecture.terms`, all of `docs/product/product.yaml` (roles, all three concepts, glossary) — untouched.
+- Scenario `host-001` wording (Given `6 is entered`, When `halve once`, Then `3 is displayed`) — untouched.
 
-### Explicitly unaffected — do not touch on apply
+### Menu decision requested
 
-- `architecture.concepts` → `number ready` (given) — passing; `does` and `references` unchanged.
-- `architecture.concepts` → `number result` (then) — passing; `does` and `references` unchanged.
-- `architecture.services[calc].public_interface` — unchanged, both elements already declared.
-- `architecture.terms`, `product.roles`, `product.concepts.given`, `product.concepts.when.halve`,
-  `product.concepts.then`, `product.glossary` — unchanged.
-- Item host-001 Story/Scenario wording (`six is entered` / `halve six` / `three is displayed`) —
-  unchanged; owned by the Product Owner and not part of this repair.
-
-### Apply gate
-
-Nothing has been written. Apply the single `does` replacement above only after an explicit
-menu decision by the System Architect.
+- **Approve (System Architect):** apply the `architecture.yaml` binding replacement above, exactly as written.
+- **Reject:** leave `when:halve` ambiguous; Item host-001 stays failing.
 Working copies (edit only the approved target):
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

@@ -10,46 +10,33 @@ a document. For document edits return the requested confirmation markers.
 
 The Product Owner chose apply at the menu for Story host.
 Approved fix:
-=== FILE_START: tmp/{{RUN_DIR}}/01-host-fix-prompts.md ===
-# Proposed repair — Item `host` (not applied)
+PROPOSED REPAIR (not applied — awaiting explicit menu decision)
 
-## Failed judgement
+Item: host (Story) — owner: Product Owner
+Kind of repair: rewritten step applied to the Story.
+Concept changes: none. Do not modify docs/product/product.yaml.
 
-Only the AC-1 **when** step failed: `square six` reaches no `when` concept
-(best score: `halve` = 1, threshold 9). The given step (`number ready`, 10)
-and the then step (`number result`, 10) both pass and stay untouched.
+RATIONALE
+The failed judgement is AC-1's `when` step "square six" (score {"halve": 1}, threshold 9). The step is of the right kind (an action), but it names squaring. The product description states: "The calculator offers one operation, Halve, which displays half the entered number. It has no Square operation." Every other part of the Story already says halving — title "Halve a number", i_want "to halve a number", so_that "I can read its half", AC-1 description "The number must be halved", and the then step "three is displayed" (three is half of six, not the square of six). The `when` step is therefore a wording slip in the Item, not a gap in the concept set.
 
-## Diagnosis and choice of repair
+No wider concept and no new concept is warranted:
+- A new variation would widen "halve" to cover squaring, which contradicts the product description (no Square operation).
+- A new `when` concept for squaring would introduce an operation the product does not offer.
+So the smallest correct repair is to restate the step as the halve action the rest of the Story already asserts.
 
-The product description states: *"The calculator offers one operation, Halve,
-which displays half the entered number. It has no Square operation."*
+EXACT CHANGE — docs/product/product.yaml
+No change.
 
-So squaring is **not** a Public interface item of this product:
+EXACT CHANGE — Item: host, AC-1, `when` step
+Replace this one line:
 
-- A **new concept** is not admissible — a concept for squaring would describe a
-  use the product does not offer.
-- A **new variation** of `halve` is not admissible — a variation widens an
-  existing concept for the same item and use, and squaring is a different
-  operation, not another wording of halving.
+-        - when:
+-            - square six
++        - when:
++            - halve six
 
-Therefore the repair is a **Story rewrite**, owned by the Product Owner: state
-the when step as the operation the product actually has. The then step
-`three is displayed` is already the half of the entered six, so the rewritten
-step makes AC-1 internally consistent.
+RESULTING STORY AFTER APPLY (unaffected fields and steps preserved verbatim)
 
-## Change 1 of 1 — rewrite the AC-1 when step in Item `host`
-
-Product document `docs/product/product.yaml`: **no change**. Concepts
-`number ready`, `halve` and `number result` stay exactly as they are.
-
-Story `host`, acceptance criterion AC-1, when block:
-
-- remove: `square six`
-- add: `halve six`
-
-### Resulting Story (only the when step differs)
-
-```yaml
 id: host
 title: Halve a number
 as_a: Product Owner
@@ -66,19 +53,11 @@ acceptance_criteria:
             - halve six
         - then:
             - three is displayed
-```
 
-## Expected outcome after apply
-
-`halve six` becomes a plain instance of the `when` concept `halve`
-("Halve the entered number once."): the operation is halving, applied once to
-the entered number. Given and then steps keep their existing links.
-
-## Status
-
-Proposal only — nothing changed. Apply requires an explicit menu decision by
-the Product Owner, who owns the Story wording.
-=== FILE_END: tmp/{{RUN_DIR}}/01-host-fix-prompts.md ===
+EXPECTED EFFECT ON LINKING
+- AC-1 given "six is entered" — unchanged, stays linked to "number ready" (score 10).
+- AC-1 when "halve six" — becomes a plain instance of "halve" ("Halve the entered number once"): an action step that halves the entered number once, expected to clear the threshold of 9.
+- AC-1 then "three is displayed" — unchanged, stays linked to "number result" (score 10).
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

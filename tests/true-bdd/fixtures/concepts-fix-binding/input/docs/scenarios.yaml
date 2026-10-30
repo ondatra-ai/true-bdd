@@ -8,8 +8,8 @@ scenarios:
       scenario_id: greet-001
     merged_steps:
       given:
-      - the greeting is configured
+      - the greeting "Hello Alice" is configured in greeter.yaml
       when:
-      - the greeting is requested
+      - the greeting is requested for person "Alice" with loud omitted
       then:
-      - the greeting is logged
+      - the greeted log record has greeting "Hello Alice"

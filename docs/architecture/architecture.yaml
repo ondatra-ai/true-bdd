@@ -75,7 +75,7 @@ architecture:
         Structured: &structured >-
           Run boolean from the resolved role model CLI: true for both supported CLIs, claude and codex. Validation and generation pass the same populated data to both templates; appliers never receive this field.
         Subject: >-
-          Subject is StoryRefineData with the loaded Story inlined and TermDocuments excluded from YAML. toYaml is yaml.v3 Marshal, returning its string including the final newline, not TrimSpace and not wrapped in story:. Serialised field order is id, feature (omitted when empty), title, as_a, i_want, so_that, status, acceptance_criteria. Each criterion is id, description, steps (omitted when empty); each step emits given, when, then in that order, omitting empty blocks. A statement is a scalar when its Type is empty, else a one-key and/but map. Strings and block chomping follow yaml.v3; default indentation is four spaces. Empty acceptance_criteria is retained (as []); TermDocuments never serialises. Marshal failure becomes "# Error marshaling to YAML: <error>".
+          Subject is StoryRefineData with the loaded Story inlined and TermDocuments, ConceptLinks and ConceptLinkPassed excluded from YAML. toYaml is yaml.v3 Marshal, returning its string including the final newline, not TrimSpace and not wrapped in story:. Serialised field order is id, feature (omitted when empty), title, as_a, i_want, so_that, status, acceptance_criteria. Each criterion is id, description, steps (omitted when empty); each step emits given, when, then in that order, omitting empty blocks. A statement is a scalar when its Type is empty, else a one-key and/but map. Strings and block chomping follow yaml.v3; default indentation is four spaces. Empty acceptance_criteria is retained (as []); TermDocuments and per-walk link evidence never serialise. Marshal failure becomes "# Error marshaling to YAML: <error>".
     checklist_system:
       rendering: *prompt-rendering
       fields: &checklist-system-fields
@@ -88,7 +88,7 @@ architecture:
         SubjectID: >-
           Selected Story id, unchanged.
         FailedCheck.Judgement: >-
-          The structured Q protocol from with.concepts: link or bindings, empty for ordinary Q and D prompts. Selects concept repair wording; no earlier link is trusted.
+          The structured Q protocol from with.concepts: link, bindings or words, empty for ordinary Q and D prompts. Selects concept repair wording; no earlier link is trusted.
         DocPaths: &docpaths >-
           Failed check effective docs resolved to config path strings by the same resolver as Docs. Duplicate keys collapse; resolution errors warn and skip; template ranges lexically by key, displaying keys unchanged. Empty map renders no Read lines; paths retain configured ./ and are not made absolute.
         FailedCheck.ActualAnswer: &failedcheck-actualanswer >-
@@ -98,7 +98,7 @@ architecture:
         FailedCheck.Context: &failedcheck-context >-
           Failed result observation strings in original list order, without trimming or joining; built-in checks supply their finding lines. Template prefixes each with "- "; an empty list produces no findings.
         FailedCheck.FixPrompt: &failedcheck-fixprompt >-
-          Failed model result fix_prompt is TrimSpace after JSON/YAML decoding; pass discards it. Built-in failure uses TrimSpace of F; the template inserts it unchanged, even if empty.
+          Failed model result fix_prompt is TrimSpace after JSON/YAML decoding; pass discards it. Built-in and structured concept failures use TrimSpace of F; the template inserts it unchanged, even if empty.
         FailedCheck.Question: &failedcheck-question >-
           Evaluated Q text, including the concept-sketch replacement and embedded context when active; otherwise unchanged, including a trailing YAML block newline. For a built-in check, "D: " plus the trimmed D name.
         FailedCheck.Rationale: &failedcheck-rationale >-
@@ -146,7 +146,7 @@ architecture:
       rendering: *prompt-rendering
       fields:
         FailedCheck.Judgement: >-
-          The structured Q protocol from with.concepts: link or bindings, empty for ordinary Q and D prompts. Selects concept repair wording; no earlier link is trusted.
+          The structured Q protocol from with.concepts: link, bindings or words, empty for ordinary Q and D prompts. Selects concept repair wording; no earlier link is trusted.
         <<: &fix-generator-system-fields
           FailedCheck.Check: *failedcheck-check
           Structured: *structured
@@ -173,7 +173,7 @@ architecture:
         Subject.Status: >-
           Subject Story status scalar from the selected file's story block, YAML-decoded unchanged (no trim); empty prints blank.
         Subject.TermDocuments: &subject-termdocuments >-
-          Run working copies seeded under --fix, product then architecture_yaml, skipping absent/unresolvable documents. Empty outside fix mode. Template retains this list order, without sorting.
+          Run working copies seeded under --fix, product then architecture_yaml, skipping absent/unresolvable documents. Empty outside fix mode. Template retains this list order, without sorting; word judgements expose only the product working copy.
         Subject.TermDocuments[].Key: &subject-termdocumentsitem-key >-
           Config document key, product or architecture_yaml, unchanged.
         Subject.TermDocuments[].Path: &subject-termdocumentsitem-path >-
@@ -533,7 +533,7 @@ architecture:
       rendering: *prompt-rendering
       fields:
         FailedCheck.Judgement: >-
-          The structured Q protocol from with.concepts: link or bindings, empty for ordinary Q and D prompts. Selects concept repair wording; no earlier link is trusted.
+          The structured Q protocol from with.concepts: link, bindings or words, empty for ordinary Q and D prompts. Selects concept repair wording; no earlier link is trusted.
         Subject.ConceptForm: >-
           True when the closure check loaded concepts from the product document for this Cell; false for legacy templates. Selects concept document instructions, preserving legacy rendered bytes.
         DocPaths: *docpaths
@@ -563,7 +563,7 @@ architecture:
       rendering: *prompt-rendering
       fields:
         FailedCheck.Judgement: >-
-          The structured Q protocol from with.concepts: link or bindings, empty for ordinary Q and D prompts. Selects concept repair wording; no earlier link is trusted.
+          The structured Q protocol from with.concepts: link, bindings or words, empty for ordinary Q and D prompts. Selects concept repair wording; no earlier link is trusted.
         Subject.ConceptForm: >-
           True when the closure check loaded concepts from the product document for this Cell; false for legacy templates. Selects concept document instructions, preserving legacy rendered bytes.
         <<: *fix-generator-system-fields

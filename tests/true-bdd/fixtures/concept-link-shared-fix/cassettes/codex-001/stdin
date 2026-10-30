@@ -10,67 +10,43 @@ a document. For document edits return the requested confirmation markers.
 
 The responsible person chose apply at the menu for Scenario alpha.
 Approved fix:
-PROPOSED REPAIR — Item `alpha` (when step) — FOR MENU DECISION ONLY, NOT APPLIED
+REPAIR PROPOSAL — Item: alpha (service: calc) — DO NOT APPLY WITHOUT A MENU DECISION
 
-## Failed judgement
-- Step (when): "activate the Halve button once with the keyboard to halve six"
-- Score: {"halve": 6} against threshold 9 — no concept of `when` reaches the threshold.
-- Cause: right item and right kind of use (the Halve control, invoked once, halving the entered number), but the concept `halve` closes the means of activation to a pointer. Keyboard activation is a second means the closed prose does not admit.
+Failed judgement
+- when step "activate the Halve button once with the keyboard to halve six" reached no concept at threshold 9 (best score: "halve" = 5).
+- Cause: the when-concept "halve" names the right Public interface item (the Halve button) and the right kind of use (invoke the control once, replacing the entered number with its half), but its closed prose fixes one variation of that use — "by activating its button with a pointer". Keyboard activation of the same control is therefore not admitted, although the product description states: "The calculator has a single Halve control. A pointer click and a keyboard activation of this same control must invoke the same halving operation once."
 
-## Repair kind: widen an existing concept (one variation added)
-Justified because both the Public interface item and the kind of use already exist:
-- Item: `calc` / page `Calc` / role `button` / name `Halve` (docs/architecture/architecture.yaml, public_interface.elements).
-- Use: `halve` — invoke the control once, replacing the entered number with its half.
-- The product description already sanctions both means: "A pointer click and a keyboard activation of this same control must invoke the same halving operation once."
-So this is a new variation of an existing item and use, not a new item or use. No new concept is created.
+Chosen repair: widen the existing concept (no rewritten step, no new concept)
+- The interface item and the kind of use already exist, so the repair is one added variation in the closed prose of "halve", not a new concept.
+- No rewrite of the Item: the step already names the item ("the Halve button"), the use ("once ... to halve") and the variation ("with the keyboard"); it is the concept that is too narrow.
+- No binding change: the System Architect's binding for "halve" in docs/architecture/architecture.yaml already admits both variations ("Click Halve once for a pointer request, or focus Halve and press Enter once for a keyboard request."). It stays untouched.
 
-Owner: Product Owner (concept wording). File touched: docs/product/product.yaml only.
-No Story or Scenario rewrite is proposed — the step wording is already a faithful instance of the intended use.
-No System Architect change is proposed — the binding for `halve` in docs/architecture/architecture.yaml already covers both means ("Click Halve once for a pointer request, or focus Halve and press Enter once for a keyboard request"), so it stays byte-for-byte unchanged.
+Owner of this change: Product Owner (concept means in the product document).
 
-## Exact change — docs/product/product.yaml
-Single edit, inside `concepts.when`, the `halve` entry, field `means`.
+EXACT CHANGE — one file, one field
 
-BEFORE (lines 16-22):
-```
-    "when": [
-      {
-        "concept": "halve",
+File: docs/product/product.yaml
+Path: concepts.when[0] (concept: "halve") → means   (line 19)
+
+Before:
         "means": "Invoke the Halve control once by activating its button with a pointer, replacing the entered number with its half.",
-        "terms": []
-      }
-    ],
-```
 
-AFTER:
-```
-    "when": [
+After:
+        "means": "Invoke the Halve control once by activating its button, with a pointer or from the keyboard, replacing the entered number with its half.",
+
+Resulting concept entry in full (concept name and terms unchanged):
       {
         "concept": "halve",
-        "means": "Invoke the Halve control once, replacing the entered number with its half. The activation is one of exactly two variations: activating its button with a pointer, or activating its button with the keyboard. Both variations invoke the same single halving operation.",
+        "means": "Invoke the Halve control once by activating its button, with a pointer or from the keyboard, replacing the entered number with its half.",
         "terms": []
       }
-    ],
-```
 
-Field-level diff:
-- `concepts.when[0].means`: "Invoke the Halve control once by activating its button with a pointer, replacing the entered number with its half."
-+ `concepts.when[0].means`: "Invoke the Halve control once, replacing the entered number with its half. The activation is one of exactly two variations: activating its button with a pointer, or activating its button with the keyboard. Both variations invoke the same single halving operation."
+Unaffected and deliberately unchanged
+- Item alpha: all three steps keep their current wording (given "six is entered", when "activate the Halve button once with the keyboard to halve six", then "three is displayed").
+- Concepts "number ready" (given) and "number result" (then): unchanged; both already linked at score 10.
+- docs/architecture/architecture.yaml: unchanged.
 
-The prose stays closed: the variations are enumerated as exactly two and no other means of activation is admitted. "once" and the single halving operation are preserved, so the pointer reading of `halve` keeps its former meaning and existing pointer Items remain linked.
-
-## Explicitly unaffected (no change proposed)
-- docs/product/product.yaml: `concepts.given[0]` ("number ready"), `concepts.then[0]` ("number result"), `roles`, `glossary`, `description` — unchanged.
-- docs/architecture/architecture.yaml — unchanged in full (all three bindings and the public interface).
-- docs/scenarios.yaml — unchanged; Item `alpha` keeps all three steps verbatim, including the when step "activate the Halve button once with the keyboard to halve six". Item `beta` is untouched.
-- docs/product/stories/host-story.yaml — unchanged.
-
-## Expected effect after apply
-- given "six is entered" -> `number ready` (unchanged, 10).
-- when "activate the Halve button once with the keyboard to halve six" -> `halve`, now at or above threshold 9, because the keyboard variation is admitted by the widened prose.
-- then "three is displayed" -> `number result` (unchanged, 10).
-
-Apply only on an explicit menu decision.
+Expected effect: the when step becomes a plain instance of the widened "halve" concept — same item, same single invocation, keyboard named as an admitted variation — while the pointer variation stays admitted for any pointer-click Item.
 Working copies (edit only the approved target):
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

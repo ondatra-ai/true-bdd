@@ -25,12 +25,12 @@
     "{\n  \"item\": \"host\",\n  \"description\": \"Halve a number\",\n  \"product\": \"{\\n  \\\"roles\\\": [\\n    {\\n      \\\"name\\\": \\\"Product Owner\\\",\\n      \\\"description\\\": \\\"Owns meanings.\\\"\\n    }\\n  ],\\n  \\\"concepts\\\": {\\n    \\\"given\\\": [\\n      {\\n        \\\"concept\\\": \\\"number ready\\\",\\n        \\\"means\\\": \\\"A number is entered before the action.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ],\\n    \\\"when\\\": [\\n      {\\n        \\\"concept\\\": \\\"halve\\\",\\n        \\\"means\\\": \\\"Halve the entered number once.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ],\\n    \\\"then\\\": [\\n      {\\n        \\\"concept\\\": \\\"number result\\\",\\n        \\\"means\\\": \\\"Compare the displayed number with an expected value.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ]\\n  },\\n  \\\"glossary\\\": []\\n}\\n\",\n  \"steps\": [\n    {\n      \"key\": \"1\",\n      \"criterion\": \"AC-1\",\n      \"block\": \"given\",\n      \"text\": \"six is entered\"\n    },\n    {\n      \"key\": \"2\",\n      \"criterion\": \"AC-1\",\n      \"block\": \"when\",\n      \"text\": \"halve six\"\n    },\n    {\n      \"key\": \"3\",\n      \"criterion\": \"AC-1\",\n      \"block\": \"then\",\n      \"text\": \"three is displayed\"\n    }\n  ]\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 7796,
+  "duration_ms": 8197,
   "request_hash": "sha256:a347e771a6e0ca4647316114586c9834f5d2fce1c21c8f7c032a7d8d84fd1185",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-10-29T20:39:35Z"
+  "recorded_at": "2026-10-29T23:03:20Z"
 }

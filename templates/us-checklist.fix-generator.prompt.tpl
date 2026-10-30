@@ -13,14 +13,20 @@ Findings:
 {{ range .FailedCheck.Context }}
 - {{.}}
 {{ end }}
+{{ if eq .FailedCheck.Judgement "words" }}
+This is the Product Owner's word repair. Propose ONLY a product glossary plus
+concept terms change, or a reworded means. No Story, Scenario or architecture
+change belongs to this fix; a Word mapping is a later System Architect menu.
+{{ end }}
 Required repair policy:
 {{.FailedCheck.FixPrompt}}
 {{ with .UserAnswers }}User answers: {{. | toYaml}}{{ end }}
 Return the exact proposed changes in fix_prompt for review at the menu.
 Do not apply them. Preserve unaffected steps and concepts. A new variation
 widens an existing concept of that item and use; add one only for a new item or use.
-Return JSON with fix_prompt and questions (an empty array when no clarification
-is needed). If no schema is supplied, put the proposed fix between these markers:
+Return JSON with fix_prompt and questions. Exactly one carries content:
+a complete proposal with questions: [], or questions with fix_prompt: "".
+Never return both a proposal and questions. If no schema is supplied, put the proposed fix between these markers:
 === FILE_START: {{.ResultPath}} ===
 <exact proposed changes>
 === FILE_END: {{.ResultPath}} ===

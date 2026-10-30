@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
 applied: true
 target: tmp/{{RUN_DIR}}/product.yaml
-summary: 'Updated only the halve concept means to "Halve the entered number, either once or twice in succession." All other content preserved.'
+summary: "Applied the exact approved widening of the 'halve' concept's means prose. All other product content and Story host remain unchanged."
 === FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===

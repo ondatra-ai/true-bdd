@@ -1,0 +1,39 @@
+{
+  "roles": [
+    {
+      "name": "Product Owner",
+      "description": "Owns meanings."
+    }
+  ],
+  "concepts": {
+    "given": [
+      {
+        "concept": "number ready",
+        "means": "A number is entered before the action.",
+        "terms": []
+      }
+    ],
+    "when": [
+      {
+        "concept": "halve",
+        "means": "Halve the entered number once for the given request label, so that repeating the same label does not halve it again.",
+        "terms": []
+      }
+    ],
+    "then": [
+      {
+        "concept": "number result",
+        "means": "Compare the displayed number with an expected value.",
+        "terms": []
+      },
+      {
+        "concept": "unused",
+        "means": "The settlement ledger has a reconciled nostro balance.",
+        "terms": []
+      }
+    ]
+  },
+  "glossary": [],
+  "description": "A calculator accepts a number and a request label. Repeating a request with the same label changes the number only once.",
+  "language_policy": "Product meanings use everyday English. Describe repeated requests and their labels in ordinary words; avoid technical protocol vocabulary in the glossary."
+}

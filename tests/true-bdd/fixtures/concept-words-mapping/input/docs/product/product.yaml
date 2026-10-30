@@ -1,0 +1,46 @@
+{
+  "roles": [
+    {
+      "name": "Product Owner",
+      "description": "Owns meanings."
+    }
+  ],
+  "concepts": {
+    "given": [
+      {
+        "concept": "number ready",
+        "means": "A number is entered before the action.",
+        "terms": []
+      }
+    ],
+    "when": [
+      {
+        "concept": "halve",
+        "means": "Halve the entered number once with the supplied idempotency key.",
+        "terms": [
+          "idempotency key"
+        ]
+      }
+    ],
+    "then": [
+      {
+        "concept": "number result",
+        "means": "Compare the displayed number with an expected value.",
+        "terms": []
+      },
+      {
+        "concept": "unused",
+        "means": "The settlement ledger has a reconciled nostro balance.",
+        "terms": []
+      }
+    ]
+  },
+  "glossary": [
+    {
+      "term": "idempotency key",
+      "means": "A label identifying a requested halving; repeats with the same label must not halve the number again."
+    }
+  ],
+  "description": "A calculator accepts a number and a request label. Repeating a request with the same label changes the number only once.",
+  "language_policy": "The request label is presented to users as an idempotency key. Keep this exact domain name in the product meanings and declare it when needed."
+}

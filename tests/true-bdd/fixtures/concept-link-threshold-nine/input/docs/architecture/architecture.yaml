@@ -36,7 +36,7 @@
             }
           }
         ],
-        "does": "Enter the given number into the Number field."
+        "does": "Parse the Given step numeral as a decimal number and replace the entire Number textbox value with its decimal representation."
       },
       {
         "concept": "halve",
@@ -51,7 +51,7 @@
             }
           }
         ],
-        "does": "Press Halve once."
+        "does": "Press the declared Halve button exactly once. This action divides the standing Number value by two and rounds its result to the nearest integer in Number. Every admitted input is even, so this rounding preserves its exact half. The step definition performs no arithmetic and no separate rounding action."
       },
       {
         "concept": "number result",
@@ -66,7 +66,7 @@
             }
           }
         ],
-        "does": "Compare the displayed Number text with the expected result."
+        "does": "Read the Number textbox value, parse it as a decimal number and assert numeric equality with the expected numeral supplied by the Then step."
       }
     ],
     "terms": []
