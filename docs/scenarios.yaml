@@ -3330,19 +3330,19 @@ scenarios:
     merged_steps:
       given:
         - the "fix-loop-refine-feedback" project tree
-        - the Quality Engineer's answers are "2 / Call the number slot of the new template budget / / 1" line by line
+        - the Quality Engineer's answers are "2 / Say the client clock measures it / / 1" line by line
       when:
         - the Quality Engineer runs "scen check --fix"
       then:
         - the command exits with code 0
         - stdout matches msg="User chose fix action" rawInput=2 action=refine
-        - and: stdout matches msg="User provided refinement feedback" feedbackLength=47 feedback="Call the number slot of the new template budget"
+        - and: stdout matches msg="User provided refinement feedback" feedbackLength=32 feedback="Say the client clock measures it"
         - and: stdout matches (?s)FIX PROMPT GENERATED.*REFINE FIX PROMPT.*FIX PROMPT GENERATED
         - and: stdout matches msg="User chose fix action" rawInput=1 action=apply
         - and: stdout matches msg="Fix recorded in the document" document=product
         - and: stdout matches ALL CHECKS PASSED
         - and: the only file changed outside "tmp" is "docs/product/product.yaml"
-        - and: the file "docs/product/product.yaml" matches \{budget:number\}
+        - and: the file "docs/product/product.yaml" matches (?i)client.{0,3} clock
         - and: the engine dispatched 3 AI turns
 
   fix-loop-choices-002-own-words-answer-kept:
@@ -3357,18 +3357,18 @@ scenarios:
     merged_steps:
       given:
         - the "fix-loop-own-words" project tree
-        - the Quality Engineer's answers are "It means the round trip from sending the message to receiving its reply takes at most that many milliseconds / 1" line by line
+        - the Quality Engineer's answers are "It means the round trip from sending the message to receiving its reply, in milliseconds / 1" line by line
       when:
         - the Quality Engineer runs "scen check --fix"
       then:
         - the command exits with code 0
         - stdout matches msg="AI needs clarification" questionCount=1
-        - and: stdout matches msg="User answered clarification question" questionID=q1 question=.* answer="It means the round trip from sending the message to receiving its reply takes at most that many milliseconds"
+        - and: stdout matches msg="User answered clarification question" questionID=[^ ]+ question=.* answer="It means the round trip from sending the message to receiving its reply, in milliseconds"
         - and: stdout matches msg="User chose fix action" rawInput=1 action=apply
         - and: stdout matches msg="Fix recorded in the document" document=product
         - and: stdout matches ALL CHECKS PASSED
         - and: the only file changed outside "tmp" is "docs/product/product.yaml"
-        - and: the file "docs/product/product.yaml" matches round trip from sending the message to receiving its reply takes\s+at most
+        - and: the file "docs/product/product.yaml" matches round trip from sending the message to receiving\s+its reply
         - and: the engine dispatched 3 AI turns
 
   fix-loop-choices-003-exit-keeps-story:
@@ -3444,7 +3444,7 @@ scenarios:
         - the command exits with code 1
         - stdout matches msg="User chose fix action" rawInput=3 action=exit
         - and: stdout matches msg=Exiting\.
-        - and: 'stdout matches (?s)FIX PROMPTS.*### Fix 1: scen-check/term_closure.*Propose one catalogue entry'
+        - and: 'stdout matches (?s)FIX PROMPTS.*### Fix 1: scen-check/term_closure.*Propose one glossary entry'
         - but: stdout does not match msg="Fix recorded in the document"
         - and: the file "docs/product/product.yaml" is unchanged
         - and: no file outside "tmp" changed
@@ -5671,9 +5671,9 @@ scenarios:
       - the Quality Engineer runs "scen check --fix"
       then:
       - the command exits with code 1
-      - stdout matches What does the step "the service answers within 200 milliseconds" mean
-      - stdout matches It means its reply arrives no later than that many milliseconds after the message was sent.
-      - stdout matches It means the time from sending the message to its reply arriving is at most that many milliseconds.
+      - stdout matches In this product, what does the term "latency" mean
+      - stdout matches It means how long the MCP service takes to answer one message, measured from when the client sends it to when its reply arrives.
+      - 'stdout matches It means the delay of a reply: the time between the message being sent and its reply arriving.'
       - stdout matches a person must answer
       - stderr matches a person must answer
       - stdout does not match User answered clarification question

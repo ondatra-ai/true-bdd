@@ -1,13 +1,14 @@
-# Registry seed for `fix-loop-own-words`.
+# Registry seed for `fix-loop-unanswered-eof`.
 #
-# One Scenario a Story claims, its last step matching no catalogue phrase.
-# The fix must leave this file exactly as it is.
+# One Scenario a Story claims, its last step's concept declaring a term
+# the glossary does not define. The fix stops at its question, so this
+# file stays exactly as it is.
 
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
   version: "2.0"
   last_updated: "2026-10-21"
-  description: "One claimed scenario with a step outside the catalogue"
+  description: "One claimed scenario relying on an undefined term"
 
 scenarios:
   E2E-001:

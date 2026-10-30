@@ -49,71 +49,39 @@ Then:
 
 ## Fix Prompt to Apply
 
-# Fix Prompt for Scenario E2E-001: The service must answer a ping with a pong within 200 milliseconds
+Fix the declared-terms finding for E2E-001 (service `mcp-service`) by defining the one undefined term in the product glossary only. The then concept `reply time` declares `terms: [mcp service, reply, latency]`, and the glossary defines `mcp service` and `reply` but not `latency`.
 
-## Target
-The `product` document: `docs/product/product.yaml` — its `catalogue:` list only.
+Owner: Product Owner (product meanings).
 
-Do NOT touch the Scenario `E2E-001`, the story `docs/product/stories/ping-answers.yaml`, the generated test `tests/mcp/ping_test.go`, any step definition, the `glossary:` list, the `roles:` list, or any other document. The failing step text stays exactly as the Scenario writes it.
-
-## Failed check being closed
-`scen-check/term_closure` — D: step-phrases
-- `E2E-001: then step "the service answers within 200 milliseconds" matches no template`
-
-## Required Changes
-
-### Change #1: Add the catalogue entry that phrases the timing step
-
-**Document:** `docs/product/product.yaml`
-**Action:** Append this entry to the end of the `catalogue:` list, after the existing `the service answers "{reply}"` entry. Keep the two-space list indentation already used by the other entries.
-
-**YAML to append verbatim:**
-```yaml
-  - template: 'the service answers within {budget:number} milliseconds'
-    block: then
-    means: >-
-      The MCP service's reply to the message arrives no later than
-      {budget} milliseconds after the message was sent.
-    terms: [mcp service, reply]
-```
-
-**Equivalent exact edit** (use this if appending by hand; `old_string` is the current last entry of `catalogue:`, `new_string` is that same entry followed by the new one):
+Apply exactly one edit, to `docs/product/product.yaml`. Add the missing `latency` glossary entry, keeping the glossary's alphabetical order by placing it before `mcp service`. Per the refinement, the meaning states that the client clock measures it.
 
 old_string:
 ```
-  - template: 'the service answers "{reply}"'
-    block: then
-    means: The MCP service's reply to the message is exactly the quoted text.
-    terms: [mcp service, reply]
+glossary:
+  - term: mcp service
+    means: >-
+      The service this project builds: it takes a message from a client
+      and answers it. What every Scenario of the project observes.
 ```
 
 new_string:
 ```
-  - template: 'the service answers "{reply}"'
-    block: then
-    means: The MCP service's reply to the message is exactly the quoted text.
-    terms: [mcp service, reply]
-  - template: 'the service answers within {budget:number} milliseconds'
-    block: then
+glossary:
+  - term: latency
     means: >-
-      The MCP service's reply to the message arrives no later than
-      {budget} milliseconds after the message was sent.
-    terms: [mcp service, reply]
+      How long a reply takes to arrive, as the client clock measures it:
+      the time from when the client sends its message until the reply
+      reaches it, in milliseconds.
+  - term: mcp service
+    means: >-
+      The service this project builds: it takes a message from a client
+      and answers it. What every Scenario of the project observes.
 ```
 
-## Why this entry, and why it is safe
-
-- **Slot name:** the number slot is named `budget`, as requested — `{budget:number}` matches the `200` of this step and the digits (or the word `no`) any later Scenario writes in its place, so the millisecond figure never has to be a literal.
-- **Literal words:** `the service answers within` and `milliseconds` stay literal, because they carry the meaning (a reply, and a deadline measured in milliseconds); only the figure varies.
-- **`block: then`** matches the block the step sits in for E2E-001 (the leading `and` of `and the service answers within 200 milliseconds` is the block's conjunction, not part of the step text).
-- **No ambiguity with the existing entries:**
-  - `the service answers "{reply}"` requires a `"`-quoted slot right after `answers`; this step has `within 200 milliseconds` there, with no quotes, so it cannot match that template, and `"pong"` cannot match the new one.
-  - `the mcp service is running` (given) and `the {actor:role} sends "{message}"` (when) share no shape with it.
-  - So every step of E2E-001 still matches exactly one template: `the mcp service is running` → entry 1, `the Operator sends "ping"` → entry 2, `the service answers "pong"` → entry 3, `the service answers within 200 milliseconds` → the new entry 4.
-- **`terms`:** both `mcp service` and `reply` are already in the `glossary:` list, spelled exactly as listed there. The glossary's `reply` entry already states that a reply is "what the MCP service sends back for one message, and how long it took to arrive" and that "its content and its delay are both behaviour", which is exactly the meaning this entry leans on — so **no glossary entry needs to be added or changed**.
-
-## Done when
-`docs/product/product.yaml` has four `catalogue:` entries, the fourth being the one above with its slot named `budget`, and no other file in the repository is modified.
+Change nothing else:
+- Do not edit the Scenario E2E-001, any generated test or any step definition.
+- Do not touch `architecture.terms` or `architecture.concepts`; this check names only the glossary.
+- Do not alter the `reply time` concept's `means` or its `terms` list — `latency` is the product's own declared term and the glossary entry is what was missing.
 
 ---
 
@@ -129,7 +97,7 @@ reads as valid YAML, so a copy you leave unparseable changes nothing.
 ## Instructions
 
 1. Use the Read tool to load the working copy the fix prompt's
-   document names, and find the list it changes (`catalogue:` or
+   document names, and find the list it changes (`concepts:` or
    `glossary:`).
 2. Apply the changes described in the "Fix Prompt to Apply" section
    above with the Edit tool on that working copy: append a new entry at

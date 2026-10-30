@@ -1,14 +1,14 @@
 # Product document for `fix-loop-own-words`.
 #
-# The catalogue phrases every step of E2E-001 but its last; the fix adds
-# the entry that phrases "the service answers within 200 milliseconds",
-# its meaning as the person put it in their own words.
+# Its concepts cover every step of E2E-001, and the glossary defines
+# every term they declare but "latency"; the fix adds the entry that
+# defines it, its meaning as the person put it in their own words.
 
 title: "Fixture host project"
 
 description:
   summary: >-
-    A single MCP service, used by the bdd-cli fixtures as the host
+    A single MCP service, used by the true-bdd fixtures as the host
     project a scenario registry describes.
 
 roles:
@@ -27,21 +27,22 @@ glossary:
       What the MCP service sends back for one message, and how long it
       took to arrive. A client waits on it, so its content and its delay
       are both behaviour.
+  - term: latency
+    means: the round trip from sending the message to receiving its reply, in milliseconds
 
-catalogue:
-  - template: 'the mcp service is running'
-    block: given
-    means: The MCP service has started and accepts requests.
-    terms: [mcp service]
-  - template: 'the {actor:role} sends "{message}"'
-    block: when
-    means: That role sends the quoted message to the MCP service, once.
-    terms: [mcp service]
-  - template: 'the service answers "{reply}"'
-    block: then
-    means: The MCP service's reply to the message is exactly the quoted text.
-    terms: [mcp service, reply]
-  - template: 'the service answers within {budget:number} milliseconds'
-    block: then
-    means: the round trip from sending the message to receiving its reply takes at most {budget} milliseconds
-    terms: [reply]
+concepts:
+  given:
+    - concept: service running
+      means: The MCP service has started and accepts requests.
+      terms: [mcp service]
+  when:
+    - concept: message sent
+      means: A role sends a stated message to the MCP service, once.
+      terms: [mcp service]
+  then:
+    - concept: answer
+      means: The MCP service's reply to the message is exactly a stated text.
+      terms: [mcp service, reply]
+    - concept: reply time
+      means: The latency of the MCP service's reply to the message is at most a stated number of milliseconds.
+      terms: [mcp service, reply, latency]
