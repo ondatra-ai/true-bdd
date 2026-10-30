@@ -35,10 +35,7 @@ func (e *ChecklistEvaluator) evaluateLink(ctx context.Context, subject any, prom
 		return result, err
 	}
 
-	threshold := defaultLinkThreshold
-	if configured, ok := prompt.Prompt.With["threshold"].(int); ok {
-		threshold = configured
-	}
+	threshold := linkThreshold(prompt)
 
 	links, findings, passed, err := gradeLinks(response, steps, source.Concepts, threshold)
 
@@ -59,4 +56,12 @@ func (e *ChecklistEvaluator) evaluateLink(ctx context.Context, subject any, prom
 	e.saveConceptResult(result)
 
 	return result, nil
+}
+
+func linkThreshold(prompt checklist.PromptWithContext) int {
+	if configured, ok := prompt.Prompt.With["threshold"].(int); ok {
+		return configured
+	}
+
+	return defaultLinkThreshold
 }

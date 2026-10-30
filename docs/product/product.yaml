@@ -312,8 +312,9 @@ glossary:
       The pipeline is us refine, us apply, build tests, build steps, build code.
       build tests renders test files deterministically from the Registry, refuses
       stale files without --fix and writes them with --fix. It preserves Registry,
-      path, renderer, step-shape and Catalogue phrase refusals before rendering.
-      It runs no AI turn, fix menu or test runner. build steps reads its own
+      path, renderer and step-shape refusals before rendering, plus Catalogue phrase
+      refusals only for template hosts. Concept hosts render free text without AI.
+      It runs no AI turn, fix menu or test runner. For template hosts, build steps reads its own
       checklist, lists missing Catalogue phrase definitions per go-test suite,
       checks Step coverage in-process and exits non-zero for Items or failed checks.
       build steps --fix first writes all missing registrations and functions with
@@ -332,6 +333,25 @@ glossary:
       whichever AI CLI writes. An interface_cannot_serve writer
       verdict stops immediately, naming the phrase and missing setup or observation;
       the System Architect extends the declaration. An unfinished walk exits non-zero.
+      For concept hosts, build steps with or without --fix groups distinct texts
+      no existing definition binds, per suite and block, excluding judge: and llm:.
+      Each answer gives the best concept and score and runner-up and score.
+      With one concept, runner_up is explicit null and runner_up_score is zero.
+      Closed means admits only stated variations; the engine applies the same
+      threshold and ambiguity rule as the link pass (9 by default).
+      A step no concept reaches, or two reach at the threshold, stops before
+      any skeleton, naming every failing step and the concepts in an ambiguity.
+      A missing, repeated or unknown index, equal best and runner-up concepts,
+      a runner-up scored above the best, or an output-capped answer crashes.
+      The build-steps checklist config.grouping_batch_texts defaults to 800;
+      past it use the fewest batches with sizes differing by at most one.
+      Remeasure this default when claude-opus-5 or the answer format changes.
+      Every grouped concept and suite is one Item. All Items must have a binding
+      for the suite service, judged afresh by scen check's binding judgement;
+      a missing or ambiguous binding stops before any skeleton, naming the concept.
+      Pattern proposal is not built yet. After grouping and binding validation,
+      build steps stops with that distinct error and writes no definitions or
+      generated tests. Proposal, pattern checks and skeletons are a later slice.
       Commands print their existing upper-case command name followed
       by ` COMPLETE` on stdout only when they succeed, after finalization and
       any post-run validation. A command returning an error prints no COMPLETE
@@ -610,14 +630,17 @@ glossary:
       product: it sets up what a Given states or observes what a Then
       states. A step runs through the one definition whose pattern matches
       its whole text. The
-      engine writes their skeletons and the AI writes their bodies through build steps --fix,
-      using the declared Public interface across a process boundary. The body may extend
+      engine writes template-host skeletons and the AI writes their bodies through build steps --fix,
+      using the declared Public interface across a process boundary.
+      Concept-host pattern proposal and definitions are not built yet. The body may extend
       shared state but preserves every registration and signature. A pending body fails
       with "step not written yet" and its phrase.
 
   - term: Item
     means: >-
-      What one command walks. For build steps it is one Catalogue phrase
+      What one command walks. On a concept host, build steps groups one concept
+      and suite as an Item and rejudges its service binding before any skeleton.
+      On a template host, build steps walks one Catalogue phrase
       without a completed step definition in one go-test suite; pending engine skeletons
       resume as Items. Missing Items include
       unused Catalogue phrases mapped to the suite's service, as well as phrases used
@@ -627,11 +650,13 @@ glossary:
     means: >-
       The in-process answer to whether every step of every Registry Scenario
       binds to exactly one definition in its suite. Nonconstant or invalid
-      patterns refuse startup. Ambiguous bindings refuse the read-only command at
-      startup, or the --fix command at final whole-suite Step coverage. An absent
-      steps directory has zero definitions; missing bindings fail the command
-      and name the Scenario and step. build steps performs this check without
-      running a test or spending an AI turn.
+      patterns refuse startup. On concept hosts ambiguous concrete bindings refuse
+      startup before grouping. On template hosts ambiguous bindings refuse the
+      read-only command at startup, or --fix at final whole-suite Step coverage. An absent
+      steps directory has zero definitions; on a template host, missing bindings
+      fail the command and name the Scenario and step. build steps performs this check without
+      running a test or spending an AI turn. On a concept host its gaps feed a
+      separate model grouping pass; judge: and llm: steps get no Item.
 
   - term: red without the target
     means: >-
@@ -1316,6 +1341,16 @@ catalogue:
     block: then
     means: The first engine log record is the single INFO Engine started record, with nonempty version and commit fields containing no whitespace.
     terms: [engine, build identity, log record]
+
+  - template: the System Architect runs build steps after scen check and a binding change
+    block: when
+    means: Run scen check successfully against the initial binding, replace it with the fixture's ambiguous binding, then run build steps --fix in the same host.
+    terms: [Scenario, Concept binding, project tree]
+
+  - template: the grouping answer CLI is controlled for invalid replies
+    block: given
+    means: Only malformed or output-capped grouping answers use a controlled Claude CLI behind the recording proxy; the real model cannot supply the schema-breaking reply.
+    terms: [project tree, AI turn]
 
   - template: the link answer CLI is controlled for invalid replies
     block: given

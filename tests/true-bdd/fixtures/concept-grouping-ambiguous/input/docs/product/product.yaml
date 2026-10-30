@@ -1,0 +1,23 @@
+{
+  "roles": [
+    {
+      "name": "Owner",
+      "description": "Uses the calculator."
+    }
+  ],
+  "concepts": {
+    "when": [
+      {
+        "concept": "halve",
+        "means": "Press Halve once to halve the entered number.",
+        "terms": []
+      },
+      {
+        "concept": "cut",
+        "means": "Press Halve once to halve the entered number.",
+        "terms": []
+      }
+    ]
+  },
+  "glossary": []
+}

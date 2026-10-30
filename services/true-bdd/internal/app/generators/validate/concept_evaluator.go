@@ -42,6 +42,10 @@ func (e *ChecklistEvaluator) evaluateConcepts(ctx context.Context, subject any, 
 		return result, nil
 	}
 
+	if kind == "group" {
+		return e.evaluateGroup(ctx, subject, prompt, source, result)
+	}
+
 	if kind == "words" {
 		return e.evaluateWords(ctx, subject, prompt, source, result)
 	}

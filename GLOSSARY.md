@@ -61,7 +61,7 @@ One testable condition inside a refined user story, before it is merged into the
 _Avoid_: AC (in prose), criterion, condition
 
 **Item**:
-Whatever a single command walks — a Story for `us refine`, an Acceptance Criterion for `us apply`, a Scenario for `scen check`, a Catalogue phrase that a go-test suite's service maps or its Scenarios use and that has no written step definition there, for `build steps`.
+Whatever a single command walks — a Story for `us refine`, an Acceptance Criterion for `us apply`, a Scenario for `scen check`, a concept and suite for `build steps` on a concept host, or a Catalogue phrase that a go-test suite's service maps or its Scenarios use and that has no written step definition there on a template host. Concept Items require a fresh unambiguous service binding before any skeleton; pattern proposal is not built yet.
 _Avoid_: subject, entity, record
 
 **Prompt**:
@@ -85,7 +85,7 @@ One full traversal of every Cell in a run. A fix applied mid-walk restarts the t
 _Avoid_: pass, sweep, iteration
 
 **Step coverage**:
-The engine's own answer to which Scenarios have a step no definition binds: the Scenarios it examined, and the unbound steps among them. `examined` is the load-bearing half — an empty gap list says nothing about a Scenario nobody looked at. Answered by `build steps` in-process by parsing each suite's `steps/` package, never by running a test; a step two definitions match is a refusal rather than a gap.
+The engine's own answer to which Scenarios have a step no definition binds: the Scenarios it examined, and the unbound steps among them. `examined` is the load-bearing half — an empty gap list says nothing about a Scenario nobody looked at. Answered by `build steps` in-process by parsing each suite's `steps/` package, never by running a test; a step two definitions match is a refusal rather than a gap. On a concept host, distinct gap texts feed grouping per suite and block, excluding `judge:` and `llm:`; this separate model pass applies the link threshold and ambiguity rule.
 _Avoid_: coverage report, coverage output, step report, gap list
 
 **Red without the target**:

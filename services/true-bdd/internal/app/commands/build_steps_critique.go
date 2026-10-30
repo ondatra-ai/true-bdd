@@ -44,7 +44,7 @@ func (e *buildStepsExecution) critique(ctx context.Context, item *BuildStepsItem
 }
 
 func (e *buildStepsExecution) prepareCritique() error {
-	checklist, err := e.deps.ChecklistLoader.LoadFull("build-steps")
+	checklist, err := e.deps.ChecklistLoader.LoadFull(buildStepsChecklistName)
 	if err != nil {
 		return err
 	}

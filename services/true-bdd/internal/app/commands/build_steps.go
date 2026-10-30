@@ -17,6 +17,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/checklist"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/input"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/product"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/registry"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/stepcoverage"
 )
@@ -46,6 +47,26 @@ type BuildStepsDeps struct {
 
 // RunBuildSteps lists missing phrases or writes their bodies, then checks every Registry step.
 func RunBuildSteps(ctx context.Context, deps BuildStepsDeps, registryFile, architectureFile string, fix bool) error {
+	source, err := product.LoadCatalogue(productDocument(deps.DocResolver))
+	if err != nil {
+		return runner.RefuseStartup("build steps", err)
+	}
+
+	if source.ConceptsDeclared {
+		err = runConceptBuildSteps(ctx, deps, registryFile, architectureFile)
+		if err != nil {
+			slog.Error("Concept build steps stopped", "error", err)
+		}
+
+		return err
+	}
+
+	return runTemplateBuildSteps(ctx, deps, registryFile, architectureFile, fix)
+}
+
+func runTemplateBuildSteps(ctx context.Context, deps BuildStepsDeps,
+	registryFile, architectureFile string, fix bool,
+) error {
 	if fix {
 		return runBuildStepsFix(ctx, deps, registryFile, architectureFile)
 	}

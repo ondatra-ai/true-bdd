@@ -14,6 +14,8 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/template"
 )
 
+const noConceptName = "none"
+
 var errConceptAnswer = errors.New("invalid concept answer")
 
 type stepScores struct {
@@ -77,7 +79,7 @@ func gradeLinks(response string, steps []conceptStep, concepts []product.Concept
 			return nil, findings, false, err
 		}
 
-		if string(scores.Other) != "null" {
+		if string(scores.Other) != schemaNull {
 			selected = nil
 		}
 
@@ -119,9 +121,7 @@ func scoredConcepts(step conceptStep, scores stepScores, concepts []product.Conc
 			return nil, fmt.Errorf("%s concept %q unscored or invalid: %w", step.Block, concept.Name, errConceptAnswer)
 		}
 
-		if *score >= threshold {
-			selected = append(selected, concept.Name)
-		}
+		selected = selectConceptScore(selected, concept.Name, *score, threshold)
 	}
 
 	if len(scores.Scores) != count || strings.TrimSpace(scores.Reason) == "" || !validOther(scores.Other, step, concepts) {
@@ -132,7 +132,7 @@ func scoredConcepts(step conceptStep, scores stepScores, concepts []product.Conc
 }
 
 func validOther(raw json.RawMessage, step conceptStep, concepts []product.Concept) bool {
-	if bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
+	if bytes.Equal(bytes.TrimSpace(raw), []byte(schemaNull)) {
 		return true
 	}
 
@@ -177,7 +177,7 @@ func scoreText(scores map[string]*int) string {
 func otherConceptText(raw json.RawMessage, step conceptStep, concepts []product.Concept) string {
 	var name string
 	if json.Unmarshal(raw, &name) != nil || name == "" {
-		return "none"
+		return noConceptName
 	}
 
 	names := make([]string, 0)
@@ -189,4 +189,13 @@ func otherConceptText(raw json.RawMessage, step conceptStep, concepts []product.
 	}
 
 	return strings.Join(names, ", ")
+}
+
+// Both link protocols apply this threshold before deciding whether exactly one concept fits.
+func selectConceptScore(selected []string, name string, score, threshold int) []string {
+	if score >= threshold {
+		return append(selected, name)
+	}
+
+	return selected
 }

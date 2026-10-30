@@ -13,7 +13,7 @@ import (
 func TestWordsJudgeOnlyLinkedMeaningsAndRejectIncompleteAnswers(t *testing.T) {
 	evaluator, reply, _ := conceptRequestEvaluator(t)
 	item := &template.ScenarioCheckData{ID: linkTestConcept, Phrases: []catalogue.Step{
-		{Block: catalogue.BlockWhen, Text: "square six"},
+		{Block: catalogue.BlockWhen, Text: linkTestStepText},
 	}}
 	reply.response = `{"steps":{"1":{"scores":{"square":10,"halve":0},"reason":"Square.","other_block_concept":null}}}`
 

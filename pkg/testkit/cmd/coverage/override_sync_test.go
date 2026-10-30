@@ -247,6 +247,7 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 
 	fixtures := append(interfaceCheckFixtures(), conceptLinkFixtures()...)
 	fixtures = append(fixtures, conceptWordFixtures()...)
+	fixtures = append(fixtures, groupingOverrideFixtures()...)
 
 	for _, fixture := range fixtures {
 		allowed[fixture] = overrideChecks
@@ -521,6 +522,8 @@ func TestOverrideConfigMatchesShipped(t *testing.T) {
 		shipped := loadConfigBlock(t, filepath.Join(shippedChecklistsDir, override.Stem+".yaml"))
 		overridden := loadConfigBlock(t, override.Path)
 
+		normalizeGroupingConfig(t, override, shipped, overridden)
+
 		if !reflect.DeepEqual(shipped.Config, overridden.Config) {
 			t.Errorf("%s: config block diverges from shipped %s.yaml: shipped=%v override=%v",
 				override.Fixture, override.Stem, shipped.Config, overridden.Config)
@@ -577,4 +580,31 @@ func conceptWordFixtures() []string {
 		"concept-words-declare", "concept-words-reword", "concept-words-plain",
 		"concept-words-scenario-fail", "concept-words-mapping", "concept-words-scenario-fix",
 	}
+}
+
+// Omitted grouping_batch_texts is the engine default; only its batch Scenario changes it.
+func normalizeGroupingConfig(t *testing.T, override overrideFile, shipped, overridden configBlock) {
+	t.Helper()
+
+	if override.Stem != "build-steps" || overridden.Config == nil {
+		return
+	}
+
+	const (
+		key           = "grouping_batch_texts"
+		scenarioLimit = 4
+	)
+	if override.Fixture == groupingBatchesFixture && overridden.Config[key] != scenarioLimit {
+		t.Errorf("%s: grouping batch limit must stay %d", override.Fixture, scenarioLimit)
+	}
+
+	if _, present := overridden.Config[key]; !present || override.Fixture == groupingBatchesFixture {
+		overridden.Config[key] = shipped.Config[key]
+	}
+}
+
+const groupingBatchesFixture = "concept-grouping-batches"
+
+func groupingOverrideFixtures() []string {
+	return []string{"concept-grouping-ambiguous", "concept-grouping-binding", groupingBatchesFixture}
 }

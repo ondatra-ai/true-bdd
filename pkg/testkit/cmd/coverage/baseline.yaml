@@ -1,6 +1,6 @@
 schema_version: 1
 evidence_quality: reconstructed
-universe_sha256: 3fa29a2c82d97234f2d668b13082dfa8d0bd21435647daa199cea40059f81255
+universe_sha256: 6771e235bac7e38f092dcabbd1ef7f88549681448b5fafee55ea12901aa5f627
 covered:
     - id: build-code/test-passes/d1@d70fca66#fail
       q_sha256: d70fca66cbff910ef759fbefce94bfaff22e1bd20adaad61efe0ff5019b8c4f0
@@ -11,6 +11,10 @@ covered:
     - id: build-code/test-passes/d1@d70fca66#pass
       q_sha256: d70fca66cbff910ef759fbefce94bfaff22e1bd20adaad61efe0ff5019b8c4f0
       f_sha256: bc9bdefbe4f9ebff389442350c09f82ca71e6b4b2e67a41422b277842803f444
+    - id: build-steps/concept-grouping/q1@c001df8b#fail
+      q_sha256: c001df8b1773809b18c27346beab8580129485534a2fca9273b02f5e5ce251f5
+    - id: build-steps/concept-grouping/q1@c001df8b#pass
+      q_sha256: c001df8b1773809b18c27346beab8580129485534a2fca9273b02f5e5ce251f5
     - id: build-steps/step-coverage/d1@66068d10#fail
       q_sha256: 66068d10d19300cf98b759f4cdf8d60a042d3370ed906d2d9cc0be75fce90ba5
       f_sha256: 5f53595b8432046ab28a449529b27a7c5873964d407c271974751fefebc031ac
