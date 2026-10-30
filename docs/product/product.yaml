@@ -757,6 +757,14 @@ glossary:
       (including rate or usage limits) or empty answer warns once, preserves files
       and reruns the set, consuming the same attempt. Start failures stay fatal.
 
+  - term: codex
+    means: >-
+      The Codex CLI selected by a model tier, by default the AI CLI of every
+      apply turn (the coder tier): the writer that changes a command's files,
+      build code's service code among them. Each of its apply turns runs under
+      a home and a permission profile the engine generates for that turn,
+      holding a private copy of its authentication only while the turn runs.
+
   - term: write guard
     means: The engine's check that the build-code Claude writer runs before each tool call. It answers allow or deny with a
       reason, holding calls to the turn's write policy. File tools reach the host, declared toolchain roots and this session's
@@ -801,6 +809,12 @@ glossary:
     means: >-
       The plan or writer concludes no solution exists within the declared files, after seeking one there. A preferred undeclared change alone is insufficient. Both report impossible as a list of path and reason objects. The first nonempty list keeps edits, reruns the remaining failing set once, then fails with a distinct error naming files, reasons, remaining failures and the remedy: change the files by hand or add them to the service's writable. No further plan, writer, attempt or COMPLETE banner follows. An empty list preserves ordinary retries, including applied false.
 
+  - term: hard link
+    means: >-
+      A second name of a file in the project tree: both names reach the same
+      file, so a write through either changes both, but a file renamed over
+      one name leaves the other name with the old content.
+
   - term: hold
     means: >-
       A short advisory lock the engine takes on the directory holding a file
@@ -832,7 +846,7 @@ concepts:
         Prompt whose question holds a stated text; or holding the probes of the
         engine's atomic replacement of a whole file through a staging file, a
         private file and an old hard link to it.
-      terms: [project tree, fixture, checklist, Prompt, symbolic link, engine, staging file, command]
+      terms: [project tree, fixture, checklist, Prompt, symbolic link, engine, staging file, command, hard link]
     - concept: machine environment
       means: >-
         The machine the engine runs on is in a stated state before the run: the
@@ -840,17 +854,17 @@ concepts:
         dependencies too when the step says browser; every Library download
         goes to an empty offline source, so none succeeds; or the variables Git
         sets for its hooks point to a directory outside the project tree.
-      terms: [engine, test dependencies, Library, project tree]
+      terms: [engine, test dependencies, Library, project tree, step]
     - concept: fixture AI CLIs
       means: >-
         Before the run, an AI CLI the engine will reach is a program the
         fixture supplies, so the engine's handling of it can be observed:
-        claude, checking how the engine starts it; codex as the writer of build
-        code's changes, with the fixture's dummy authentication and programs;
+        claude, checking how the engine starts it; codex as the writer of a
+        command's changes, with the fixture's dummy authentication and programs;
         claude giving malformed answers where a Prompt asks it to link steps to
         a Concept or group them by Concept; or claude controlling which of two
         Scenarios' validation AI turns arrives first.
-      terms: [AI CLI, engine, fixture, claude, Prompt, step, Concept, Scenario, AI turn]
+      terms: [AI CLI, engine, fixture, claude, codex, command, Prompt, step, Concept, Scenario, AI turn]
     - concept: scripted answers
       means: >-
         What a role will answer at the command's questions and fix menus is set
@@ -885,8 +899,8 @@ concepts:
         engine acts on the run: another process takes a stated hold on a stated
         directory of the project tree, one that blocks the engine and is
         released within its wait, one kept beyond its wait limit, or one that
-        permits the engine's access; a stale staging file is planted as a
-        symbolic link once the run has started; the role cancels the run once a
+        permits the engine's access; the role plants a stale staging file as a
+        symbolic link and then runs the command; the role cancels the run once a
         process an AI CLI started is running; or the role runs scen check and
         then build steps with fix, a Concept binding of the architecture
         document changed in between.
@@ -923,22 +937,22 @@ concepts:
         holds a stated number of matches for a pattern; or a rewritten file
         keeps its private permissions and is a new file, its old hard link
         keeping the previous content.
-      terms: [project tree, glob, pattern, file change, engine]
+      terms: [project tree, glob, pattern, file change, engine, hard link]
     - concept: Story content
       means: >-
         The Story in a stated file of the project tree, read as a Story after
         the run: its id or its Feature; how many Acceptance Criteria it holds,
-        or that each has given, when and then steps; or whether the
-        description, or the steps, of a stated Acceptance Criterion have, or
-        have no, match for a pattern.
+        or that each has given, when and then steps; whether the description
+        of a stated Acceptance Criterion has, or has no, match for a pattern;
+        or that none of that criterion's steps has a match for a pattern.
       terms: [Story, Feature, Acceptance Criterion, step, pattern, project tree]
     - concept: Registry content
       means: >-
         The Scenarios of a stated Registry, read as Scenarios after the run: how
         many come from a stated Acceptance Criterion by their lineage; whether
         the one from it cites a stated Story, sits under a stated Scenario key,
-        or has an entry with a match for a pattern; whether two Scenarios share
-        the same steps; or whether every step of a stated Scenario is matched by
+        or has an entry with a match for a pattern; that no two Scenarios share
+        the same steps; or that every step of a stated Scenario is matched by
         exactly one step definition under a stated directory.
       terms: [Registry, Scenario, Scenario key, lineage, Acceptance Criterion, Story, step, step definition, pattern]
     - concept: engine activity
@@ -968,9 +982,9 @@ concepts:
       means: >-
         What the AI CLIs the fixture supplies observed of the engine's calls,
         after the run: a process an AI CLI started before the run was cancelled
-        has stopped; codex, as the writer of build code's changes, held the
+        has stopped; codex, as the writer of a command's changes, held the
         fixture's dummy authentication privately for its AI turn, and it was
         removed afterwards; or, when AI turns are answered from their
         recordings, the AI CLI received the validation AI turn recorded second
         before the one recorded first.
-      terms: [AI CLI, fixture, engine, AI turn]
+      terms: [AI CLI, fixture, engine, AI turn, codex, command]

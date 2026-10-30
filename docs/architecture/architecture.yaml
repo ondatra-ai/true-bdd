@@ -2065,6 +2065,21 @@ architecture:
         rerun, edits, exit and once-only failure warning. The recording wrapper
         runs real Claude unchanged before injecting a non-zero exit.
 
+    - term: codex
+      technical: >-
+        codex-cli 0.162.1 (dependencies[codex]). Every apply turn it runs gets
+        a generated CODEX_HOME under the host's tmp/codex-homes/ holding a
+        private 0600 copy of auth.json in a 0700 home, and a permission profile
+        confining its writes to that turn's roots; the copy is removed when the
+        turn ends, whatever its outcome. Plan and validation turns stay
+        read-only.
+      observed_by: >-
+        Writer-lifecycle Scenarios put the fixture's dummy auth/auth.json and
+        cli/ programs in place of the real codex; the harness's codex program
+        checks the private copy at spawn and writes a receipt, and the Then
+        reads that receipt and requires no auth.json left in the one generated
+        home after the turn.
+
     - term: write guard
       technical: claude-guard --policy reads generated JSON and the complete Claude payload. An explicit hook allow object grants
         execution; denial exits 2 with one true-bdd guard reason on stderr. Read, Glob and Grep use host/toolchain/spill roots
@@ -2112,6 +2127,16 @@ architecture:
         directory it leaves out, such as `node_modules`; a link path that is
         absolute or climbs out of the project tree fails the step.
 
+    - term: hard link
+      technical: >-
+        A filesystem hard link (link(2)): a second directory entry for the same
+        inode. A whole-file write renames a new inode over the target's name,
+        so a hard link kept beside it still holds the previous bytes.
+      observed_by: >-
+        The stale-staging When keeps tmp/original.go as a hard link to the file
+        the command rewrites, before the engine starts; the Then compares the
+        rewritten file's inode and content with those of that link.
+
     - term: hold
       technical: >-
         A POSIX advisory flock the engine's disk channel takes on the parent
@@ -2154,21 +2179,29 @@ architecture:
         - file: prompt-templates
         - file: staging-files
       does: >-
-        Lays the named fixture's input files over a fresh copy of the
+        Lays the named fixture's input/ files
+        (tests/true-bdd/fixtures/<name>/input/) over a fresh copy of the
         repository's own true-bdd/ and templates/ as the Host project the next
-        command runs in, with the fixture's recorded AI turns. A further Given
-        on the same tree changes it before the run's starting snapshot: drops
-        the named file or directory from the assembled tree, failing the run
-        when the path is not there or leads out of it; makes the named path a
-        symbolic link to the target exactly as written, relative to the link's
-        directory, through a command the fixture's preparation runs, in a
-        directory the snapshot leaves out such as node_modules, failing for an
-        absolute link path or one that climbs out of the tree; requires the
-        fixture's checklist-prompts.yaml to narrow the named checklist to
-        exactly one Prompt, the one whose question contains the quoted text;
-        or, through the fixture's preparation, makes the file the command will
-        rewrite private (0600) and keeps an old hard link to it and a sentinel
-        for the stale staging file.
+        command runs in, the fixture's recorded AI turns under its cassettes/
+        answering that run; the fixture's prep.sh, when it has one, runs in
+        that tree before the run's starting snapshot. A further Given on the
+        same tree changes it before that snapshot: removes the named file or
+        directory from the assembled tree, failing the run when the path is
+        not there or leads out of it; appends to the preparation the shell
+        command mkdir -p <the link's directory> && ln -s <target> <link>, each
+        value shell-quoted, so the named path is a symbolic link to the target
+        exactly as written, failing the step for an absolute link path or one
+        that climbs out of the tree (both snapshots refuse a link they walk
+        into, so a Scenario names a link inside a directory they skip:
+        node_modules, .git, .next, test-results or playwright-report); checks,
+        without changing any checklist, that the fixture's
+        checklist-prompts.yaml lists exactly one question snippet under the
+        named checklist's file stem and that it equals the quoted text, the
+        harness keeping only the Prompt whose question contains it when it
+        assembles the tree; or, for the atomic replacement probes, requires
+        the fixture to have a prep.sh, failing when it has none, the
+        engine-io-atomic fixture's making tests/mcp/ticket_test.go private
+        (0600) and writing the sentinel tmp/staging-target.txt.
     - concept: machine environment
       block: given
       service: true-bdd
@@ -2193,18 +2226,34 @@ architecture:
         - outgoing_call: claude
         - outgoing_call: codex
       does: >-
-        Puts programs from the named fixture's input on the next run's PATH:
-        for the observed claude, the fixture's deterministic claude-only/
-        launcher before the recording proxy in every mode, which checks the
-        claude invocation contract and refuses a wrong child environment; for
-        the codex writer, the fixture's dummy auth/auth.json and its cli/
-        programs behind the lifecycle-observing proxy; for invalid link or
-        grouping answers, the fixture's input/cli/claude behind the recording
-        proxy, allowed only for the concept-link and concept-grouping fixtures
-        sanctioned for it, refusing any other; or, for concurrent arrival, the
-        fixture's front/ launchers before the proxy and its cli/ programs
-        behind it, admitting alpha before beta while recording and beta before
-        alpha while replaying once both validation turns are outstanding.
+        The suite reaches claude and codex through its own claude and codex
+        programs first on PATH, which by the mode the suite runs in record
+        each call, replay the recorded one or pass it to the real CLI. Each
+        Given changes the next run's PATH and environment with the named
+        fixture's programs: the observed claude puts the fixture's
+        claude-only/ directory before the suite's programs in every mode, with
+        CLAUDE_CONFIG_DIR under the run's tmp/claude-state and CLAUDECODE,
+        CLAUDE_HISTORY_ROLE, CLAUDE_CODE_SAFE_MODE, CLAUDE_CODE_SIMPLE,
+        CLAUDE_RELAUNCH_SESSION_ADD_DIRS and CLAUDE_CODE_DISABLE_ADVISOR_TOOL
+        set to parent-session values the engine must not pass on, and the
+        fixture's claude refuses a call that breaks the claude invocation
+        contract; the codex writer puts the fixture's cli/ directory right
+        behind the suite's programs, sets CODEX_HOME to the fixture's auth/
+        (its dummy auth.json) and TRUE_BDD_AIPROXY_WRITER_FIXTURE to the
+        fixture, and has the suite's codex program observe the spawn even in
+        live mode, writing its receipt under the run's tmp/aiproxy-state/;
+        invalid link or grouping answers put the fixture's input/cli/
+        directory right behind the suite's programs (before every other PATH
+        entry in live mode), allowed only for the fixtures
+        concept-link-malformed, concept-link-missing-answer,
+        concept-link-incomplete, concept-grouping-missing,
+        concept-grouping-repeat, concept-grouping-rank, concept-grouping-cap,
+        concept-grouping-unknown and concept-grouping-same, the step failing
+        for any other; concurrent arrival puts the fixture's front/ launchers
+        before the suite's programs and its cli/ programs behind them, the
+        launchers admitting the alpha Scenario's validation request before
+        beta's when recording and beta's before alpha's when replaying, once
+        both are outstanding.
     - concept: scripted answers
       block: given
       service: true-bdd
@@ -2226,28 +2275,39 @@ architecture:
         - file: write-policy
         - command: claude-guard
       does: >-
-        Prepares the write policy the next claude-guard call reads with
-        --policy tmp/claude-guard-policy.json, written by the fixture's
-        preparation: adds the named directory of the project tree as a write
-        root; grants the canonical replay of the quoted test command with the
-        quoted selector flag in the named directory; writes no policy file at
-        all; writes the text invalid, which is not JSON; or writes a policy
-        whose read root is empty.
+        Records the Scenario's write policy; the write guard's When writes it.
+        That When adds to the fixture's preparation the writing of
+        tmp/claude-guard-policy.json in the project tree, so the file is there
+        before the run's starting snapshot, holding the JSON object {"replay":
+        P} and none of the write policy's other keys. P holds "read_root", the
+        project tree's absolute root, empty when the policy names no directory
+        to read; "write_roots", each named directory joined to that root, in
+        step order, an empty list when none is named; and, when a test command
+        is granted, the step's three quoted values in order: "test_command"
+        (the command), "test_selector" (the selector flag) and "test_dir" (the
+        directory joined to the root). An unreadable policy is the text
+        invalid in place of that JSON; a missing policy is no file at all,
+        claude-guard still being given --policy tmp/claude-guard-policy.json.
     - concept: tool call
       block: given
       service: true-bdd
       references:
         - command: claude-guard
       does: >-
-        Sets the hook payload the next claude-guard call reads on stdin, a JSON
-        object with tool_name, cwd and tool_input: tool_name to the named tool;
-        tool_input.file_path to the named file joined to the run's project
-        tree, or tool_input.path to the path exactly as written; or a Bash call
-        whose tool_input.command is the rest of the step, whose cwd is the
-        named directory joined to the project tree, and whose run_in_background
-        is true for background and false for foreground. A payload Given naming
-        the tool and its file or path sets both at once and wins over a tool or
-        target named separately. Without a named tool the call is Bash.
+        Records the Scenario's tool call; the When step sends it to
+        claude-guard on stdin as the JSON object {"tool_name": T, "cwd": C,
+        "tool_input": {"command": X, "run_in_background": B, "file_path": F,
+        "path": Q}}. T is the named tool, Bash when none is named. F is the
+        named file joined to the project tree's absolute root for a file of
+        the project tree, or the path exactly as written for a path named as
+        written, else empty. A hook payload Given naming the tool and a file
+        sets T and F at once; one naming the tool and a path sets T and Q, the
+        path exactly as written, and leaves F empty; either takes precedence
+        over a tool or target named separately. C is the project tree's
+        absolute root, or for a shell call its named directory joined to that
+        root; X is the shell call's command, the rest of the step, and B true
+        for background and false for foreground; both are empty and false for
+        any other call.
     - concept: a role runs a command
       block: when
       service: true-bdd
@@ -2284,21 +2344,35 @@ architecture:
         - outgoing_call: claude
         - outgoing_call: codex
       does: >-
-        Runs the quoted command as a role runs a command, behind a launch
-        barrier after the pre-run snapshot, while the harness acts on it: holds
-        a shared or exclusive flock of the named kind on the named directory,
-        releasing it only after the engine has waited on it and fails if the
-        engine returned first (blocks), keeping it until the engine has stopped
-        between nine and twelve seconds later and then releasing it (beyond its
-        wait limit), or keeping it while the engine completes (permits); plants
-        a stale .true-bdd.tmp.<basename> symlink beside the file the command
-        rewrites; or sends the engine an interrupt once a descendant process of
-        the spawned AI CLI has started and waits for it to return. For build
-        steps after scen check and a binding change, the fixture's
-        run-after-check wrapper runs scen check through the engine and the
-        recording proxy, replaces the architecture document with the fixture's
-        changed binding only after that run succeeds, then runs build steps
-        --fix the same way. Each keeps the outcome as a role runs a command does.
+        Runs the quoted command as a role runs a command, through a launcher
+        that writes the engine's process id to tmp/engine.pid of the project
+        tree, and acts on the run. For a hold the launcher waits, after the
+        run's starting snapshot, until the harness has taken a non-blocking
+        flock, shared or exclusive as the step names it, on the named
+        directory of the project tree, and then starts the engine: blocks
+        requires the engine not to have returned 300 milliseconds later, its
+        process still alive, and then releases the hold; beyond its wait limit
+        keeps the hold until the engine's process has ended, requiring that
+        between nine and twelve seconds after the engine was let start;
+        permits keeps the hold and requires the engine to return within three
+        seconds. For the stale staging file the launcher waits likewise while
+        the harness keeps tmp/original.go as an old hard link to the fixture's
+        tests/mcp/ticket_test.go, the file build tests --fix rewrites, and
+        creates tests/mcp/.true-bdd.tmp.ticket_test.go as a symbolic link to
+        ../../tmp/staging-target.txt, and then starts the engine. For
+        cancellation it puts the fixture's cli/ directory first on PATH,
+        starts the engine at once, waits up to ten seconds for the AI CLI's
+        descendant process to write its process id to tmp/descendant.pid, then
+        sends the engine SIGINT and waits for it to return. For build steps
+        after scen check and a binding change it runs the fixture's
+        input/run-after-check program in place of the engine, with
+        TRUE_BDD_GROUPING_ENGINE naming the engine: the program runs scen
+        check, stops when it fails, copies the fixture's
+        ambiguous-architecture.json over docs/architecture/architecture.yaml,
+        then runs build steps --fix. An engine still running five seconds
+        after the harness's observation ended, or one whose observation
+        failed, is killed and the step fails; otherwise the outcome is kept as
+        a role runs a command keeps it.
     - concept: the write guard is asked
       block: when
       service: true-bdd
@@ -2306,9 +2380,12 @@ architecture:
         - command: claude-guard
         - file: write-policy
       does: >-
-        Runs claude-guard --policy tmp/claude-guard-policy.json once in the
-        prepared project tree with the prepared hook payload on stdin, no AI
-        turn, keeping its exit status, stdout and stderr.
+        Adds to the fixture's preparation the writing of the recorded write
+        policy to tmp/claude-guard-policy.json of the project tree, before the
+        run's starting snapshot (nothing for a missing policy), then runs
+        claude-guard --policy tmp/claude-guard-policy.json once in the project
+        tree with the recorded tool call's hook payload on stdin, no AI turn,
+        keeping its exit status, stdout and stderr.
     - concept: exit code
       block: then
       service: true-bdd
@@ -2359,27 +2436,32 @@ architecture:
         Go regular expression taken as the rest of the step, against the named
         file's content; counts the named file's lines, a final newline closing
         the last line; requires at least one file matching the glob and every
-        such file to match the pattern, or with does not match none to, with
+        such file to match the pattern, or with does not match none to, where
         {{CWD}}, {{ENGINE}}, {{GOROOT}} and {{GOMODCACHE}} in the pattern
-        replaced by those paths, escaped for the file's JSON or TOML string
-        form and then for the regular expression; requires exactly one file
-        matching the glob and counts its non-overlapping matches of the
-        pattern, "no" meaning zero; or observes that the rewritten file has
-        mode 0600, another inode than its old hard link and other content,
-        the old link keeping the previous bytes.
+        stand for the symlink-resolved project tree root, the engine
+        executable and go env's GOROOT and GOMODCACHE, each escaped as JSON
+        string content for a file ending .json, as TOML basic string content
+        for one ending .toml, raw otherwise, and then escaped for the regular
+        expression; requires exactly one file matching the glob and counts its
+        non-overlapping matches of the pattern, "no" meaning zero; or, given
+        the rewritten file's path and its old hard link's path, both named by
+        the step, requires the rewritten file to have mode 0600, another inode
+        than the old hard link and content differing from the old hard link's.
     - concept: Story content
       block: then
       service: true-bdd
       references:
         - file: stories
       does: >-
-        Reads the Story in the one file the quoted glob matches after the run,
-        failing for none or two, and compares its id or its feature; counts its
-        Acceptance Criteria; requires at least one and each to carry a given, a
-        when and a then step; or matches the pattern against the description,
-        or requires it to match none of the step texts, of the Acceptance
-        Criterion with the named id, which must exist and, for steps, have
-        some.
+        Reads the Story in the one file of the project tree the quoted glob
+        matches after the run, failing for none or two, and compares its id or
+        its feature; counts its Acceptance Criteria and compares them with the
+        number; requires at least one and each to carry a given, a when and a
+        then step; matches the pattern against the description of the
+        Acceptance Criterion with the named id, requiring a match, or with
+        does not match no match; or requires none of that criterion's step
+        texts to match the pattern, the criterion needing steps. A criterion
+        with the named id must exist.
     - concept: Registry content
       block: then
       service: true-bdd
@@ -2387,14 +2469,18 @@ architecture:
         - file: registry
         - file: step-definitions
       does: >-
-        Reads the named Registry of the project tree after the run: counts the
-        Scenarios whose lineage names the Acceptance Criterion and compares them
-        with the number; requires exactly one from it and that its lineage
-        cites the named Story file, that it sits under the named key, or that
-        its entry written as YAML matches the pattern; requires no two
-        Scenarios to carry identical merged steps; or requires every step of
-        the named Scenario, judge: and llm: steps aside, to be matched by
-        exactly one .Step pattern under the named steps directory.
+        Reads the named Registry of the project tree after the run as YAML:
+        counts the Scenarios whose lineage (a user_stories entry) names the
+        Acceptance Criterion's lineage id and compares them with the number;
+        requires exactly one from it and that its lineage cites the named
+        Story file, that it sits under the named key, or that its whole entry
+        written back as YAML matches the pattern; requires that no two
+        Scenarios hold identical merged_steps (their given, when and then
+        lists compared as YAML), a Scenario without merged_steps sharing
+        nothing; or reads the first argument of every literal .Step(pattern,
+        function) registration in the .go files of the named steps directory
+        and requires every step of the named Scenario, judge: and llm: steps
+        aside, to be matched by exactly one of those patterns.
     - concept: engine activity
       block: then
       service: true-bdd
@@ -2409,20 +2495,26 @@ architecture:
         - log_record: applying-fix
         - outgoing_call: suite-command
       does: >-
-        Reads the run's engine log, a missing log failing: requires a Spawning
+        Reads the run's engine log, tmp/true-bdd.log.json of the project tree,
+        one JSON record per line, a missing log failing: requires a Spawning
         test runner record whose binary is the named program, or whose args
         joined by single spaces match the pattern; counts Spawning test runner
         records, all or those whose args match the pattern, and compares them
-        with the number, "no" meaning zero; counts Dispatching AI turn records,
-        all or those of the named kind and cli (validation is role prompt, fix
-        is role fix, apply is role apply), and compares them with the number;
-        requires the first record to be the only Engine started record, at
-        INFO, with nonempty version and commit holding no whitespace; or reads
-        the Cell validation started and finished records by subjectID and the
-        Check answered records, requiring two Scenarios' validations to
-        overlap, each Scenario's D: answers before its Q: Cells, no Q: Cell
-        after a failed D:, Q: Cells within a Scenario one after another, and
-        Applying fix prompt records for alpha then beta after validation ended.
+        with the number, "no" meaning zero; counts Dispatching AI turn
+        records, all or those of the named kind and cli (validation is role
+        prompt, fix is role fix, apply is role apply), and compares them with
+        the number; requires the first record to be the only Engine started
+        record, at INFO, with nonempty version and commit holding no
+        whitespace; or, for overlapping validation, walks the Check answered,
+        Cell validation started, Cell validation finished and Applying fix
+        prompt records in log order: every Cell validation started record must
+        follow a Check answered record of the same subjectID since the last
+        Applying fix prompt record and must never name gamma, the fixture's
+        Scenario whose built-in check fails; no subjectID may start a Cell
+        before its previous Cell finished; at some point two subjectIDs must
+        have started Cells not yet finished; and every Applying fix prompt
+        record must come while no Cell is unfinished, their subjectIDs reading
+        alpha then beta, the fixture's two passing-check Scenarios.
     - concept: after-run shell check
       block: then
       service: true-bdd
@@ -2449,11 +2541,18 @@ architecture:
         - outgoing_call: claude
         - outgoing_call: codex
       does: >-
-        Observes that the descendant process the cancelled AI CLI started is no
-        longer running, killing it if it is; reads the receipt the codex shim
-        writes under tmp/aiproxy-state/, requiring exactly one writer spawn that
-        held an exact private copy of the fixture's dummy authentication in a
-        protected generated home and that no authentication remained there after
-        the turn; or, in replay only, reads the recording proxy's consumed
-        claude receipt and requires its first claim to be claude-002, the
-        request recorded after claude-001 (record and live pass).
+        Observes what the fixture's AI CLI programs and the suite's claude and
+        codex programs left in the project tree after the run: reads the
+        process id the cancelled AI CLI's descendant wrote to
+        tmp/descendant.pid and requires no process with that id to exist
+        within three seconds; requires the codex program's receipt
+        tmp/aiproxy-state/writer-spawn.txt to hold exactly "fixture
+        authentication and edit roots verified" and a newline, which it writes
+        only when the one writer spawn held an exact private copy of the
+        fixture's auth.json in a private generated home, and requires exactly
+        one generated home matching tmp/codex-homes/*/*-codex-home with no
+        auth.json left in it; or, only when the suite replays, reads the
+        claude program's receipt tmp/aiproxy-state/consumed-claude, a JSON
+        list of the recorded calls it consumed in order, and requires it to
+        begin with "claude-002", the call recorded after claude-001; recording
+        or live, that observation passes.

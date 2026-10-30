@@ -203,7 +203,7 @@ extensions:
       access: write
     write-policy:
       path: the generated JSON a claude turn's --settings hook names with --policy
-      format: JSON write policy (architecture.terms[write policy]).
+      format: 'JSON write policy (architecture.terms[write policy]), one object: "replay" (an object of "read_root", "write_roots", "test_command", "test_selector" and "test_dir"), "read_roots", "excluded_roots", "protected_roots" and "library_cache"; claude-guard reads an absent key as empty.'
       access: write
     staging-files:
       path: .true-bdd.tmp.<basename> beside each whole-file write
