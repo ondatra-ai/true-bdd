@@ -1,0 +1,61 @@
+architecture:
+  services:
+  - name: calc
+    path: services/calc
+    language: go
+    public_interface:
+      kind: cli
+      document: docs/architecture/calc-cli.yaml
+  - name: neighbour
+    path: services/neighbour
+    language: go
+  testing:
+    framework: go-test
+    libraries:
+    - module: github.com/ondatra-ai/true-bdd/pkg
+      version: v0.0.0-20261027174914-58543b8e324b
+    commands:
+      record: go test -tags bdd -json -count=1 ./tests/calc/...
+      replay: go test -tags bdd -json -count=1 ./tests/calc/...
+      live: go test -tags bdd -json -count=1 ./tests/calc/...
+  terms:
+  - term: number
+    technical: The integer argument and stdout of the calculator's double and halve commands.
+    observed_by: The step runs the command as a process and compares its integer stdout
+      with the expected value.
+  - term: square
+    technical: The integer stdout of the calculator square command.
+    observed_by: The step runs square as a process and reads its integer stdout.
+  concepts:
+  - concept: installation
+    block: given
+    service: calc
+    references:
+    - command: double
+    - command: halve
+    does: Build the declared calculator commands as a program under the host's tmp directory and keep its path for the When.
+  - concept: doubling
+    block: when
+    service: calc
+    references:
+    - command: double
+    does: Run the kept calculator program's double command as a process with the step's whole number and keep its integer stdout.
+  - concept: halving
+    block: when
+    service: calc
+    references:
+    - command: halve
+    does: Run the kept calculator program's halve command as a process with the step's even whole number and keep its integer stdout.
+  - concept: squaring
+    block: when
+    service: calc
+    references:
+    - command: square
+    does: Run the kept calculator program's square command as a process with the step's whole number and keep its integer stdout.
+  - concept: result
+    block: then
+    service: calc
+    references:
+    - command: double
+    - command: halve
+    does: Compare the kept command stdout with the step's expected whole number.

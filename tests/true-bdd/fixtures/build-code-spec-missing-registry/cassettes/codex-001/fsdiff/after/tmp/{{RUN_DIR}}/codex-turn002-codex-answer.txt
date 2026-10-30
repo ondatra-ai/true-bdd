@@ -1,6 +1,8 @@
+Changed `services/calc/calc.go` to print `value * 2`. Verification remains incomplete: the granted test command failed during setup because sandbox restrictions blocked its external `bddgo` dependency. No failing-set test was observed passing.
+
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===
 applied: false
 impossible: []
-target: "services/calc"
-summary: "Changed calc.go to print value + value and ran gofmt. Attempted TestCalc001Double with the granted command; setup failed because sandbox permissions block pkg/testkit/bddgo. No tests in the failing set were observed passing. The repair remains written; verification is incomplete."
+target: "services/calc/calc.go"
+summary: "Changed stdout to print the doubled integer. TestCalc001Double was attempted, but setup failed because sandbox restrictions blocked the external bddgo dependency; no tests were observed passing. The source edit is retained."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===

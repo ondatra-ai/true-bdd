@@ -1,0 +1,27 @@
+roles:
+  - name: Owner
+    description: Uses the calculator.
+concepts:
+  given:
+    - concept: installation
+      means: The calculator program is built from its source and ready for the Owner to run.
+      terms: []
+  when:
+    - concept: doubling
+      means: The Owner doubles a whole number with the calculator.
+      terms: [number]
+    - concept: halving
+      means: The Owner halves an even whole number with the calculator.
+      terms: [number]
+    - concept: squaring
+      means: The Owner squares a whole number with the calculator.
+      terms: [square]
+  then:
+    - concept: result
+      means: The calculator prints the whole number the operation produced.
+      terms: [number]
+glossary:
+  - term: number
+    means: An integer operand whose double is its sum with itself.
+  - term: square
+    means: A whole number multiplied by itself.
