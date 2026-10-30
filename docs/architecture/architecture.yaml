@@ -398,9 +398,9 @@ architecture:
         Subject.Scenarios[].FormatSteps: >-
           All original Given, When and Then steps, in Registry order, with their block headings.
         Subject.Specification: >-
-          Union of the remaining members catalogue Specifications in discovery order. Optional unreadable or catalogue-less product leaves it undeclared without dropping matched Scenarios.
+          Union of the remaining members Specifications in discovery order: catalogue phrases on a template host, linked concepts on a concept host. Optional unreadable, catalogue-less or concept-less product leaves it empty without dropping matched Scenarios.
         Subject.Specification.Declared: >-
-          True when any remaining member has a declared catalogue.
+          True when any remaining member has a declared catalogue; false on a concept host.
         Subject.Specification.Phrases: >-
           Each reached catalogue phrase once, in first-reached order across members.
         Subject.Specification.Phrases[].Template: >-
@@ -412,7 +412,7 @@ architecture:
         Subject.Specification.Phrases[].Terms: >-
           Declared words in catalogue order, joined by comma and space, or none.
         Subject.Specification.Terms: >-
-          Each declared word once, in first-reached order across members.
+          Each declared word once, in first-reached order across members: the reached phrases' words on a template host, the linked concepts' words on a concept host.
         Subject.Specification.Terms[].Term: >-
           Declared word, unchanged.
         Subject.Specification.Terms[].Means: >-
@@ -423,6 +423,26 @@ architecture:
           Mapping technical text, unchanged.
         Subject.Specification.Terms[].Mappings[].ObservedBy: >-
           Mapping observed_by text, unchanged.
+        Subject.Specification.Concepts: >-
+          Concept host only, empty on a template host. Each concept a remaining member's Scenario links to once, in first-linked order across members: for each deterministic step in Registry order (judge: and llm: excluded), the step definition it alone binds in its Scenario's suite (stepcoverage.LoadSuite of the path's steps directory) and the //truebdd:concept record on that definition (stepskeleton.Concepts, matched by registered pattern) naming a concept the product declares under the step's block. A step binding none or two definitions, an unrecorded definition, or a record naming an undeclared or other-block concept links nothing; an unreadable suite warns and links nothing.
+        Subject.Specification.Concepts[].Concept: >-
+          Product concept name, unchanged.
+        Subject.Specification.Concepts[].Block: >-
+          The concept's block: given, when or then.
+        Subject.Specification.Concepts[].Means: >-
+          Product concept means, unchanged.
+        Subject.Specification.Concepts[].Terms: >-
+          The concept's declared terms in product order, joined by comma and space, or none.
+        Subject.Specification.Concepts[].Bindings: >-
+          Every architecture.concepts entry with the concept's name and block and the linking Scenario's service, in document order; a concept linked from several members' services joins each service's bindings once, first-seen order. Empty renders that the architecture binds it for no service of these steps.
+        Subject.Specification.Concepts[].Bindings[].Service: >-
+          Binding service, unchanged.
+        Subject.Specification.Concepts[].Bindings[].References: >-
+          Each Public interface reference as its key and value (command: halve), in binding order, joined by comma and space.
+        Subject.Specification.Concepts[].Bindings[].Does: >-
+          Binding does sentence, unchanged; rendered when no intent is given.
+        Subject.Specification.Concepts[].Bindings[].Intent: >-
+          Binding intent, unchanged; rendered instead of references and does when present.
         SubjectID: >-
           Stable Item id: discovery BuildID for a singleton, failing-set otherwise. Membership changes do not change it within the walk.
         UserAnswers: >-
@@ -479,9 +499,9 @@ architecture:
         Subject.Scenarios[].FormatSteps: >-
           All original Given, When and Then steps, in Registry order, with their block headings.
         Subject.Specification: >-
-          Union of the remaining members catalogue Specifications in discovery order. Optional unreadable or catalogue-less product leaves it undeclared without dropping matched Scenarios.
+          Union of the remaining members Specifications in discovery order: catalogue phrases on a template host, linked concepts on a concept host. Optional unreadable, catalogue-less or concept-less product leaves it empty without dropping matched Scenarios.
         Subject.Specification.Declared: >-
-          True when any remaining member has a declared catalogue.
+          True when any remaining member has a declared catalogue; false on a concept host.
         Subject.Specification.Phrases: >-
           Each reached catalogue phrase once, in first-reached order across members.
         Subject.Specification.Phrases[].Template: >-
@@ -493,7 +513,7 @@ architecture:
         Subject.Specification.Phrases[].Terms: >-
           Declared words in catalogue order, joined by comma and space, or none.
         Subject.Specification.Terms: >-
-          Each declared word once, in first-reached order across members.
+          Each declared word once, in first-reached order across members: the reached phrases' words on a template host, the linked concepts' words on a concept host.
         Subject.Specification.Terms[].Term: >-
           Declared word, unchanged.
         Subject.Specification.Terms[].Means: >-
@@ -504,6 +524,26 @@ architecture:
           Mapping technical text, unchanged.
         Subject.Specification.Terms[].Mappings[].ObservedBy: >-
           Mapping observed_by text, unchanged.
+        Subject.Specification.Concepts: >-
+          Concept host only, empty on a template host. Each concept a remaining member's Scenario links to once, in first-linked order across members: for each deterministic step in Registry order (judge: and llm: excluded), the step definition it alone binds in its Scenario's suite (stepcoverage.LoadSuite of the path's steps directory) and the //truebdd:concept record on that definition (stepskeleton.Concepts, matched by registered pattern) naming a concept the product declares under the step's block. A step binding none or two definitions, an unrecorded definition, or a record naming an undeclared or other-block concept links nothing; an unreadable suite warns and links nothing.
+        Subject.Specification.Concepts[].Concept: >-
+          Product concept name, unchanged.
+        Subject.Specification.Concepts[].Block: >-
+          The concept's block: given, when or then.
+        Subject.Specification.Concepts[].Means: >-
+          Product concept means, unchanged.
+        Subject.Specification.Concepts[].Terms: >-
+          The concept's declared terms in product order, joined by comma and space, or none.
+        Subject.Specification.Concepts[].Bindings: >-
+          Every architecture.concepts entry with the concept's name and block and the linking Scenario's service, in document order; a concept linked from several members' services joins each service's bindings once, first-seen order. Empty renders that the architecture binds it for no service of these steps.
+        Subject.Specification.Concepts[].Bindings[].Service: >-
+          Binding service, unchanged.
+        Subject.Specification.Concepts[].Bindings[].References: >-
+          Each Public interface reference as its key and value (command: halve), in binding order, joined by comma and space.
+        Subject.Specification.Concepts[].Bindings[].Does: >-
+          Binding does sentence, unchanged; rendered when no intent is given.
+        Subject.Specification.Concepts[].Bindings[].Intent: >-
+          Binding intent, unchanged; rendered instead of references and does when present.
         WriteRoots: >-
           The remaining failing set's service paths and exact writable entries, in the same order as the planner's roots. Unknown-service failures use every service. Grants are revalidated as passing members leave.
         CodexWriter: >-

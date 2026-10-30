@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/checks"
@@ -95,9 +96,35 @@ func (item *BuildCodeItem) Specification() catalogue.Specification {
 				terms[term.Term] = true
 			}
 		}
+
+		spec.Concepts = unionConcepts(spec.Concepts, test.Spec.Concepts)
 	}
 
 	return spec
+}
+
+// unionConcepts adds each concept not yet listed and, to a listed one, the
+// bindings of services it does not hold yet.
+func unionConcepts(listed, more []catalogue.ConceptSpec) []catalogue.ConceptSpec {
+	for _, concept := range more {
+		index := slices.IndexFunc(listed, func(known catalogue.ConceptSpec) bool { return known.Key() == concept.Key() })
+		if index < 0 {
+			concept.Bindings = slices.Clone(concept.Bindings)
+			listed = append(listed, concept)
+
+			continue
+		}
+
+		for _, use := range concept.Bindings {
+			if !slices.ContainsFunc(listed[index].Bindings, func(known catalogue.ConceptUse) bool {
+				return known.Service == use.Service
+			}) {
+				listed[index].Bindings = append(listed[index].Bindings, use)
+			}
+		}
+	}
+
+	return listed
 }
 
 // BuildCodeChecks supplies the engine-owned verdict over the whole failing set.
