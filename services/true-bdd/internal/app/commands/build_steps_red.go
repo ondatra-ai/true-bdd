@@ -188,6 +188,14 @@ func (e *buildStepsExecution) markGreenItems(scenario *registry.RegistryScenario
 			continue
 		}
 
+		if item.Concept != nil {
+			if conceptItemUsed(item, scenario) {
+				affected[item], found = true, true
+			}
+
+			continue
+		}
+
 		for _, step := range scenario.Phrases() {
 			for _, phrase := range compiled.Match(step.Text) {
 				if phrase.Template == item.Phrase.Template {

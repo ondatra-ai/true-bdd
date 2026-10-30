@@ -256,7 +256,7 @@ architecture:
         ResultPath: *application-result-path
     build_steps_checklist:
       rendering: >-
-        Build steps uses the shared Fix loop. Phrase and suite are loaded from the Catalogue and Registry; all skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
+        Build steps uses the shared Fix loop. On a template host, phrase and suite are loaded from the Catalogue and Registry; on a concept host, an Item is a concept and suite whose patterns the proposal Prompt supplied and the engine checked. All skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
       fields:
         Subject.Suite: Suite steps directory, relative to the Host root.
         Subject.Phrase.Template: Verbatim Catalogue template.
@@ -267,13 +267,18 @@ architecture:
         ResultPath: Result artifact path.
     build_steps_checklist_system:
       rendering: >-
-        Build steps uses the shared Fix loop. Phrase and suite are loaded from the Catalogue and Registry; all skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
+        Build steps uses the shared Fix loop. On a template host, phrase and suite are loaded from the Catalogue and Registry; on a concept host, an Item is a concept and suite whose patterns the proposal Prompt supplied and the engine checked. All skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
       fields: {}
     build_steps_fix_generator:
       rendering: >-
-        Build steps uses the shared Fix loop. Phrase and suite are loaded from the Catalogue and Registry; all skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
+        Build steps uses the shared Fix loop. On a template host, phrase and suite are loaded from the Catalogue and Registry; on a concept host, an Item is a concept and suite whose patterns the proposal Prompt supplied and the engine checked. All skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
       fields:
-        Subject.Context: Whole YAML context with phrase, service Phrase mapping, term glossary entries and Word mappings, Public interface declaration and complete named document, and every suite Scenario using the phrase. No truncation.
+        Subject.Context: Whole YAML context with phrase, service Phrase mapping, term glossary entries and Word mappings, Public interface declaration and complete named document, and every suite Scenario using the phrase. No truncation. On a concept host the whole YAML context holds instead the concept (name, block, means, terms), its binding for the service, term glossary entries and Word mappings, Public interface declaration and complete named document, each definition (function, file, pattern, the proposal's captures and served clause, and every bound step with the engine's captures), and every suite Scenario using the concept's steps. No truncation.
+        Subject.Concept: A concept Item's concept, nil on a template host; it selects the concept wording.
+        Subject.Concept.Name: Verbatim concept name.
+        Subject.Concept.Block: Concept block.
+        Subject.Concept.Means: Verbatim concept meaning.
+        Subject.Label: The concept Item's label, its block and quoted concept name.
         FailedCheck.Context: Every finding from the last per-Item compile, binding, body and critique check.
         DocPaths: Configured document paths.
         FailedCheck.ActualAnswer: Latest answer.
@@ -291,12 +296,13 @@ architecture:
         UserAnswers: Prior clarification answers.
     build_steps_fix_generator_system:
       rendering: >-
-        Build steps uses the shared Fix loop. Phrase and suite are loaded from the Catalogue and Registry; all skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
+        Build steps uses the shared Fix loop. On a template host, phrase and suite are loaded from the Catalogue and Registry; on a concept host, an Item is a concept and suite whose patterns the proposal Prompt supplied and the engine checked. All skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
       fields:
         Structured: Provider structured answer selection.
+        Subject.Concept: A concept Item's concept, nil on a template host; it selects the concept wording.
     build_steps_fix_applier:
       rendering: >-
-        Build steps uses the shared Fix loop. Phrase and suite are loaded from the Catalogue and Registry; all skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
+        Build steps uses the shared Fix loop. On a template host, phrase and suite are loaded from the Catalogue and Registry; on a concept host, an Item is a concept and suite whose patterns the proposal Prompt supplied and the engine checked. All skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
       fields:
         Subject.Context: Whole phrase context, identical to the proposal turn.
         FixPrompt: Approved proposal.
@@ -305,24 +311,33 @@ architecture:
         Subject.Service: Service name.
         Subject.Phrase.Template: Verbatim Catalogue template.
         Subject.Phrase.Means: Verbatim meaning.
+        Subject.Concept: A concept Item's concept, nil on a template host; it selects the concept wording.
+        Subject.Concept.Name: Verbatim concept name.
+        Subject.Concept.Block: Concept block.
+        Subject.Concept.Means: Verbatim concept meaning.
+        Subject.Label: The concept an interface_cannot_serve verdict names, its block and quoted name.
     build_steps_fix_applier_system:
       rendering: >-
-        Build steps uses the shared Fix loop. Phrase and suite are loaded from the Catalogue and Registry; all skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
+        Build steps uses the shared Fix loop. On a template host, phrase and suite are loaded from the Catalogue and Registry; on a concept host, an Item is a concept and suite whose patterns the proposal Prompt supplied and the engine checked. All skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
       fields:
         ResultPath: Confirmation artifact path.
         Subject.Phrase.Template: The phrase an interface_cannot_serve verdict names.
+        Subject.Concept: A concept Item's concept, nil on a template host; it selects the concept wording.
+        Subject.Label: The concept an interface_cannot_serve verdict names, its block and quoted name.
     build_steps_critique:
       rendering: >-
         After a completed apply whose compilation, binding and body checks pass, before the Item can pass, a separate read-only prompt-role turn reads the selected definition; an apply those checks fail goes back to the Fix loop without it. Claude's file and shell tools are disabled; Codex uses the standard read-only validation sandbox. Only that definition, imports and shared State may change; the existing suite shape check rejects other definition edits. All suite steps-package Go files are embedded in lexical path order, whole, with path headings, so shared State and helper context are visible even when compilation fails. The complete phrase context is identical to the writer's. Findings append to the Item's existing compile, binding and body findings and return through D: step-coverage to the same bounded Fix loop. A malformed verdict stops the walk. The build-steps checklist engine.critique_model tier overrides engine.default_prompt_model; templates and tier validate before any skeleton or runner. No prompt budget is stated. Each apply saves critique-<Item id>-<apply count>-{system,user,response}.txt under the run directory.
       fields:
         Definition: >-
-          Engine definition file path joined with :: and its function name.
-        Context: Whole YAML phrase meaning, Phrase mapping, term glossary entries and Word mappings, Public interface declaration and complete document, and every suite Scenario using the phrase. No summarising or truncation.
+          Engine definition file path joined with :: and its function name; for a concept Item, every definition of the Item so, joined with commas.
+        Context: Whole YAML phrase meaning, Phrase mapping, term glossary entries and Word mappings, Public interface declaration and complete document, and every suite Scenario using the phrase. No summarising or truncation. For a concept Item, the concept context the writer reads.
+        Concept: True for a concept Item; it selects the concept wording.
         Sources: Whole suite steps-package Go files in lexical path order with path headings, including the definition, imports, registrations and shared State.
     build_steps_critique_system:
       rendering: >-
-        Static semantic review policy and JSON verdict contract. Answer pass with no findings, or fail with at least one finding. Each finding requires a nonempty definition, category (phrase_mapping, phrase_meaning or computes_assertion) and finding. The mapping criterion follows the phrase block: when calls its operation, given sets up state, then observes and compares; not every definition must itself call a command. Assertion meaning and computing the asserted result are the other two criteria. The registration, pattern and signature are the engine's, derived from the template (a number slot also accepts no), and are never judged. Unusable replies are errors, never passes.
-      fields: {}
+        Static semantic review policy and JSON verdict contract. Answer pass with no findings, or fail with at least one finding. Each finding requires a nonempty definition, category (phrase_mapping, phrase_meaning or computes_assertion) and finding. The mapping criterion follows the phrase block: when calls its operation, given sets up state, then observes and compares; not every definition must itself call a command. Assertion meaning and computing the asserted result are the other two criteria. The registration, pattern and signature are the engine's, derived from the template (a number slot also accepts no), and are never judged. For a concept Item the categories are concept_binding, concept_meaning and computes_assertion, judged against the binding and each pattern's bound steps; the patterns are the engine-checked proposal's and are not judged. Unusable replies are errors, never passes.
+      fields:
+        Concept: True for a concept Item; it selects the concept policy and categories.
     build_code_checklist:
       rendering: *prompt-rendering
       fields: {}

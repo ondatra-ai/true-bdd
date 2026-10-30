@@ -35,7 +35,9 @@ type buildStepsExecution struct {
 	green            []string
 }
 
-func runBuildStepsFix(ctx context.Context, deps BuildStepsDeps, registryFile, architectureFile string) error {
+func runBuildStepsFix(ctx context.Context, deps BuildStepsDeps, registryFile, architectureFile string,
+	concepts bool,
+) error {
 	execution := &buildStepsExecution{deps: deps, registryFile: registryFile, architectureFile: architectureFile,
 		compiler: testrunner.NewGoTestRunner(testrunner.NewArtifacts(deps.TmpDir))}
 
@@ -44,12 +46,17 @@ func runBuildStepsFix(ctx context.Context, deps BuildStepsDeps, registryFile, ar
 		return runner.RefuseStartup("build steps", err)
 	}
 
+	load := execution.prepare
+	if concepts {
+		load = execution.prepareConcepts
+	}
+
 	return runner.Run(ctx, runner.Spec[*BuildStepsItem]{
 		Name: "build steps", ChecklistName: buildStepsChecklistName, Fix: true, ConfineClaudeWriter: true,
-		LoadItems: execution.prepare, BeforeEvaluate: execution.beforeEvaluate,
+		OmitConceptJudgements: concepts, LoadItems: load, BeforeEvaluate: execution.beforeEvaluate,
 		PostFix: execution.postFix, PostNotApplied: execution.postNotApplied,
 		Finalize: execution.finalize, CheckConvergence: execution.checkConvergence,
-		GetSubject: func(item *BuildStepsItem) (string, string) { return item.subjectID, item.Phrase.Template },
+		GetSubject: func(item *BuildStepsItem) (string, string) { return item.subjectID, item.Label() },
 		Checks:     checks.Set[*BuildStepsItem]{"step-coverage": {Run: stepBodyVerdict}},
 
 		Evaluator: deps.Evaluator, FixGenerator: deps.FixGenerator, FixApplier: deps.FixApplier,
@@ -63,9 +70,9 @@ func (e *buildStepsExecution) beforeEvaluate(_ context.Context, item *BuildSteps
 		return false, nil
 	}
 
-	shape, err := stepskeleton.Shape(item.Suite, item.Definition.Function)
+	shape, err := stepskeleton.Shape(item.Suite, item.functions()...)
 	if err != nil {
-		return false, fmt.Errorf("read the shape of %s before its apply: %w", item.Definition.Function, err)
+		return false, fmt.Errorf("read the shape of %s before its apply: %w", item.Label(), err)
 	}
 
 	e.active, e.shape = item, shape
@@ -82,10 +89,17 @@ func (e *buildStepsExecution) postFix(ctx context.Context, item *BuildStepsItem,
 		e.compiler.CompileDefinitions(e.command),
 		VerifyGeneratedTests(e.plan, "."),
 		e.preserveOtherBodies(item),
-		item.Definition.Intact(item.Suite),
-		item.Definition.Written(),
-		stepDefinitionBinding(item),
 	}
+	for _, definition := range item.definitions() {
+		findings = append(findings, definition.Intact(item.Suite), definition.Written())
+	}
+
+	if item.Concept != nil {
+		findings = append(findings, conceptDefinitionBinding(item), conceptRecorded(item))
+	} else {
+		findings = append(findings, stepDefinitionBinding(item))
+	}
+
 	for _, finding := range findings {
 		if finding != nil {
 			item.Findings = append(item.Findings, finding.Error())
@@ -107,16 +121,16 @@ func (e *buildStepsExecution) postFix(ctx context.Context, item *BuildStepsItem,
 			failure = ErrScenarioGreen
 		}
 
-		return item, fmt.Errorf("%w: phrase %s", failure, item.Phrase.Template)
+		return item, fmt.Errorf("%w: phrase %s", failure, item.Label())
 	}
 
-	slog.Info("Step body checked", "phrase", item.Phrase.Template, "findings", item.Findings)
+	slog.Info("Step body checked", "phrase", item.Label(), "findings", item.Findings)
 
 	return item, nil
 }
 
 func (e *buildStepsExecution) preserveOtherBodies(item *BuildStepsItem) error {
-	shape, err := stepskeleton.Shape(item.Suite, item.Definition.Function)
+	shape, err := stepskeleton.Shape(item.Suite, item.functions()...)
 	if err != nil {
 		return err
 	}

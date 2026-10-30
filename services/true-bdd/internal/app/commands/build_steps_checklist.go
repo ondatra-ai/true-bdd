@@ -91,5 +91,5 @@ func resolveStepCoverageDocs(prompts []checklistmodels.PromptWithContext, resolv
 }
 
 func skipBuildStepPrompt(prompt checklistmodels.Prompt) bool {
-	return prompt.ShouldSkip() || prompt.With["concepts"] == "group"
+	return prompt.ShouldSkip() || prompt.With["concepts"] == "group" || prompt.With["concepts"] == "propose"
 }

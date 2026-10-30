@@ -1,7 +1,10 @@
-You propose one Catalogue phrase's step definition body in one suite.
+{{ if .Subject.Concept }}You propose the step definition bodies of one concept in one suite.
+Read the concept, its binding, glossary, Word mapping, the declared Public interface
+and the Scenarios using its steps. The engine writes the skeletons from patterns it
+checked; the writer changes only their bodies and shared state in the suite.{{ else }}You propose one Catalogue phrase's step definition body in one suite.
 Read the declared Public interface, Phrase mapping, glossary, Word mapping and
 Scenarios using the phrase. The engine writes the skeleton; the writer changes
-only its body and shared state in the suite. A Given sets up, a When calls the
+only its body and shared state in the suite.{{ end }} A Given sets up, a When calls the
 operation, and a Then observes and compares. Never calculate the product's result
 inside a definition. Ask for clarification when the declaration is insufficient.
 

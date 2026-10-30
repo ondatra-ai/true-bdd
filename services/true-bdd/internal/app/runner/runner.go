@@ -46,6 +46,9 @@ type Spec[I any] struct {
 	DeferCompletion bool
 	// RecoverWriterFailures lets build code rerun files left by a failed writer.
 	RecoverWriterFailures bool
+	// OmitConceptJudgements walks no concept judgement: build steps answers
+	// its grouping and proposals before the walk, on Items of their own.
+	OmitConceptJudgements bool
 	// ConfineClaudeWriter runs a Claude applier as the guarded writer, held to
 	// the applier's write roots; build steps' writer may write only the tests.
 	ConfineClaudeWriter bool
@@ -200,7 +203,7 @@ func validateSpec[I any](spec Spec[I]) (
 		return nil, nil, RefuseStartup(spec.Name, fmt.Errorf("failed to load checklist: %w", err))
 	}
 
-	prompts := conceptPrompts(flattenChecklistPrompts(doc, spec.ChecklistName), spec.DocResolver)
+	prompts := walkedPrompts(spec, doc)
 
 	err = validateChecklistHasPrompts(spec.ChecklistName, prompts)
 	if err != nil {
@@ -240,6 +243,16 @@ func validateSpec[I any](spec Spec[I]) (
 	}
 
 	return doc, prompts, validateCommandTemplates(spec)
+}
+
+// walkedPrompts are the checklist's Prompts this command's walk answers.
+func walkedPrompts[I any](spec Spec[I], doc *checklistmodels.Checklist) []checklistmodels.PromptWithContext {
+	prompts := conceptPrompts(flattenChecklistPrompts(doc, spec.ChecklistName), spec.DocResolver)
+	if spec.OmitConceptJudgements {
+		return withoutConceptJudgements(prompts)
+	}
+
+	return prompts
 }
 
 // loadAndPrepare sources the items and lets the command narrow or

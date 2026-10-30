@@ -31,14 +31,15 @@ func (e *buildStepsExecution) critique(ctx context.Context, item *BuildStepsItem
 	artifact := filepath.Join(e.deps.TmpDir, fmt.Sprintf("critique-%s-%d", item.subjectID, e.attempts[item]))
 
 	findings, err := e.deps.Critic.Critique(ctx, validate.StepCritiqueData{
-		Definition: item.Definition.File + "::" + item.Definition.Function, Context: item.Context, Sources: sources.String(),
+		Definition: definitionLabels(item), Context: item.Context, Sources: sources.String(),
+		Concept: item.Concept != nil,
 	}, e.critiqueTier, artifact)
 	if err != nil {
 		return err
 	}
 
 	item.Findings = append(item.Findings, findings...)
-	slog.Info("Step definition critiqued", "definition", item.Definition.Function, "findings", findings)
+	slog.Info("Step definition critiqued", "definition", strings.Join(item.functions(), ","), "findings", findings)
 
 	return nil
 }

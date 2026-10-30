@@ -184,7 +184,7 @@ func conceptPromptDocs(prompt *checklistmodels.PromptWithContext) error {
 	}
 
 	required := []string{"product"}
-	if kind == "bindings" || kind == "sketch" {
+	if kind == "bindings" || kind == "sketch" || kind == "propose" {
 		required = append(required, "architecture_yaml")
 	}
 

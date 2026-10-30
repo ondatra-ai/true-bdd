@@ -82,8 +82,8 @@ func TestConceptGroupingBalancesDistinctUnboundTextsBeforeBindingJudgement(t *te
 	reply := &groupingReplies{}
 	deps.Evaluator = validate.NewChecklistEvaluator(reply, cfg, models)
 
-	err = commands.RunBuildSteps(t.Context(), deps, "docs/scenarios.yaml", "docs/architecture/architecture.yaml", true)
-	if !errors.Is(err, commands.ErrPatternProposalPending) {
+	err = commands.RunBuildSteps(t.Context(), deps, "docs/scenarios.yaml", "docs/architecture/architecture.yaml", false)
+	if !errors.Is(err, commands.ErrMissingStepDefinitions) {
 		t.Fatal(err)
 	}
 

@@ -26,42 +26,84 @@ var ErrConceptGrouping = errors.New("concept grouping failed before any skeleton
 // ErrConceptBinding stops Items without an unambiguous service binding.
 var ErrConceptBinding = errors.New("concept binding failed before any skeleton")
 
-// ErrPatternProposalPending marks the deliberately unfinished concept writer.
-var ErrPatternProposalPending = errors.New("concept pattern proposal is not built yet; no skeletons written")
+func runConceptBuildSteps(ctx context.Context, deps BuildStepsDeps, registryFile, architectureFile string,
+	fix bool,
+) error {
+	if fix {
+		return runBuildStepsFix(ctx, deps, registryFile, architectureFile, true)
+	}
 
-func runConceptBuildSteps(ctx context.Context, deps BuildStepsDeps, registryFile, architectureFile string) error {
+	discovery, err := discoverConceptItems(ctx, deps, registryFile, architectureFile)
+	if err != nil {
+		return err
+	}
+
+	return listConceptItems(deps, discovery)
+}
+
+// conceptDiscovery is what a concept walk starts from: the Registry, its
+// unbound steps, and one Item per concept and suite, grouped or resumed.
+type conceptDiscovery struct {
+	scenarios []*registry.RegistryScenario
+	answer    *stepcoverage.Answer
+	items     []*BuildStepsItem
+	steps     map[string][]catalogue.SuiteStep
+}
+
+func discoverConceptItems(ctx context.Context, deps BuildStepsDeps, registryFile, architectureFile string,
+) (*conceptDiscovery, error) {
 	scenarios, err := deps.RegistryLoader.Load(registryFile)
 	if err != nil {
-		return runner.RefuseStartup("build steps", err)
+		return nil, runner.RefuseStartup("build steps", err)
 	}
 
 	arch, err := architecture.Load(architectureFile)
 	if err != nil {
-		return runner.RefuseStartup("build steps", err)
+		return nil, runner.RefuseStartup("build steps", err)
 	}
 
 	root, err := os.Getwd()
 	if err != nil {
-		return fmt.Errorf("locate concept host: %w", err)
+		return nil, fmt.Errorf("locate concept host: %w", err)
 	}
 
 	_, err = scenariogen.BuildPlan(scenarios, arch, root, registryFile)
 	if err != nil {
-		return runner.RefuseStartup("build steps", err)
+		return nil, runner.RefuseStartup("build steps", err)
 	}
 
 	answer, err := stepcoverage.Scan(scenarios, root)
 	if err != nil {
-		return runner.RefuseStartup("build steps", err)
+		return nil, runner.RefuseStartup("build steps", err)
 	}
 
-	return groupAndJudgeConceptSuites(ctx, deps, unboundConceptSuites(scenarios, answer))
+	suites := unboundConceptSuites(scenarios, answer)
+
+	groups, err := groupConceptSuites(ctx, deps, suites)
+	if err != nil {
+		return nil, err
+	}
+
+	discovery := &conceptDiscovery{scenarios: scenarios, answer: answer}
+
+	err = discovery.collect(suites, groups)
+	if err != nil {
+		return nil, err
+	}
+
+	err = judgeConceptSuites(ctx, deps, suites)
+	if err != nil {
+		return nil, err
+	}
+
+	return discovery, nil
 }
 
-func groupAndJudgeConceptSuites(ctx context.Context, deps BuildStepsDeps, suites []*template.ScenarioCheckData) error {
+func groupConceptSuites(ctx context.Context, deps BuildStepsDeps, suites []*template.ScenarioCheckData,
+) (map[string]map[catalogue.Step]string, error) {
 	document, err := deps.ChecklistLoader.LoadFull(buildStepsChecklistName)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	limit := defaultGroupingBatchTexts
@@ -70,38 +112,34 @@ func groupAndJudgeConceptSuites(ctx context.Context, deps BuildStepsDeps, suites
 	}
 
 	if limit < 1 {
-		return runner.RefuseStartup("build steps", errGroupingBatchSize)
+		return nil, runner.RefuseStartup("build steps", errGroupingBatchSize)
 	}
 
 	prompt, err := conceptBuildPrompt(document, "group")
 	if err != nil {
-		return runner.RefuseStartup("build steps", err)
+		return nil, runner.RefuseStartup("build steps", err)
 	}
 
 	slog.Info("Loaded prompts", "command", "build steps", "items", len(suites), "prompts", 1)
 
-	return groupAndJudgeConceptItems(ctx, deps, suites, prompt, limit)
-}
-
-func groupAndJudgeConceptItems(ctx context.Context, deps BuildStepsDeps, suites []*template.ScenarioCheckData,
-	prompt checklist.PromptWithContext, limit int,
-) error {
 	findings := make([]string, 0)
+	groups := make(map[string]map[catalogue.Step]string)
 
 	for _, suite := range suites {
-		failed, err := groupConceptSuite(ctx, deps, suite, prompt, limit)
+		failed, grouped, err := groupConceptSuite(ctx, deps, suite, prompt, limit)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		findings = append(findings, failed...)
+		groups[suite.ID] = grouped
 	}
 
 	if len(findings) > 0 {
-		return fmt.Errorf("%w:\n%s", ErrConceptGrouping, strings.Join(findings, "\n"))
+		return nil, fmt.Errorf("%w:\n%s", ErrConceptGrouping, strings.Join(findings, "\n"))
 	}
 
-	return judgeConceptSuites(ctx, deps, suites)
+	return groups, nil
 }
 
 func judgeConceptSuites(ctx context.Context, deps BuildStepsDeps, suites []*template.ScenarioCheckData) error {
@@ -130,7 +168,7 @@ func judgeConceptSuites(ctx context.Context, deps BuildStepsDeps, suites []*temp
 		}
 	}
 
-	return ErrPatternProposalPending
+	return nil
 }
 
 func unboundConceptSuites(scenarios []*registry.RegistryScenario,
@@ -198,8 +236,10 @@ var errGroupingBatchSize = errors.New("grouping_batch_texts must be positive")
 
 func groupConceptSuite(ctx context.Context, deps BuildStepsDeps, suite *template.ScenarioCheckData,
 	prompt checklist.PromptWithContext, limit int,
-) ([]string, error) {
+) ([]string, map[catalogue.Step]string, error) {
 	findings := make([]string, 0)
+	grouped := make(map[catalogue.Step]string)
+
 	for _, block := range []catalogue.Block{catalogue.BlockGiven, catalogue.BlockWhen, catalogue.BlockThen} {
 		steps := make([]catalogue.Step, 0)
 
@@ -216,10 +256,16 @@ func groupConceptSuite(ctx context.Context, deps BuildStepsDeps, suite *template
 
 			result, err := deps.Evaluator.EvaluateOne(ctx, item, item.ID, prompt, deps.TmpDir)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 
 			findings = append(findings, result.Context...)
+
+			if len(item.ConceptLinks) == len(batch) {
+				for index, step := range batch {
+					grouped[step] = item.ConceptLinks[index].Concept
+				}
+			}
 
 			for _, link := range item.ConceptLinks {
 				if !slices.Contains(suite.ConceptLinks, link) {
@@ -231,7 +277,7 @@ func groupConceptSuite(ctx context.Context, deps BuildStepsDeps, suite *template
 
 	suite.ConceptLinkPassed = len(findings) == 0
 
-	return findings, nil
+	return findings, grouped, nil
 }
 
 func equalStepBatches(steps []catalogue.Step, limit int) [][]catalogue.Step {
@@ -254,4 +300,38 @@ func equalStepBatches(steps []catalogue.Step, limit int) [][]catalogue.Step {
 	}
 
 	return batches
+}
+
+// listConceptItems answers a bare run: every concept Item still to write,
+// and the Step coverage of the whole Registry.
+func listConceptItems(deps BuildStepsDeps, discovery *conceptDiscovery) error {
+	prompts, err := buildStepsPrompts(deps.ChecklistLoader, deps.DocResolver)
+	if err != nil {
+		return runner.RefuseStartup("build steps", err)
+	}
+
+	for _, item := range discovery.items {
+		slog.Error("Missing step definition", "suite", item.Suite, "concept", item.Label(),
+			"steps", len(item.Concept.Steps), "resumed", item.Concept.Resumed)
+	}
+
+	findings := stepCoverageFindings(discovery.answer)
+	for _, finding := range findings {
+		slog.Error("Step coverage failed", "finding", finding)
+	}
+
+	err = recordStepCoverage(deps.TmpDir, prompts, findings, len(discovery.items))
+	if err != nil {
+		return err
+	}
+
+	if len(discovery.items) > 0 || len(findings) > 0 {
+		return fmt.Errorf("%w: %d Item(s), %d uncovered step(s)", ErrMissingStepDefinitions,
+			len(discovery.items), len(findings))
+	}
+
+	slog.Info("Step coverage passed", "examined", len(discovery.answer.Examined))
+	slog.Info("BUILD STEPS COMPLETE")
+
+	return nil
 }

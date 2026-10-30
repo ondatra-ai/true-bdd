@@ -36,6 +36,22 @@ const stepCritiqueSchema = `{
  },"required":["answer","findings"]
 }`
 
+// conceptCritiqueSchema names a concept Item's categories: its binding, not a Phrase mapping.
+const conceptCritiqueSchema = `{
+ "type":"object", "additionalProperties":false,
+ "properties": {
+  "answer":{"type":"string","enum":["pass","fail"]},
+  "findings":{"type":"array","items":{
+   "type":"object","additionalProperties":false,
+   "properties":{
+    "definition":{"type":"string","minLength":1},
+    "category":{"type":"string","enum":["concept_binding","concept_meaning","computes_assertion"]},
+    "finding":{"type":"string","minLength":1}
+   },"required":["definition","category","finding"]
+  }}
+ },"required":["answer","findings"]
+}`
+
 // ParseStepCritique routes a valid failure to named findings and a pass to none.
 func ParseStepCritique(response string) ([]string, error) {
 	var answer stepCritiqueAnswer
@@ -64,5 +80,6 @@ func ParseStepCritique(response string) ([]string, error) {
 }
 
 func validCritiqueCategory(category string) bool {
-	return category == "phrase_mapping" || category == "phrase_meaning" || category == "computes_assertion"
+	return category == "phrase_mapping" || category == "phrase_meaning" || category == "computes_assertion" ||
+		category == "concept_binding" || category == "concept_meaning"
 }
