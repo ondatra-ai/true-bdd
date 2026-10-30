@@ -131,7 +131,7 @@ var (
 			Name: "BDD cli coverage guards",
 			Command: []string{
 				goBin, testVerb, tagsFlag, bddTag, countOnce, "-run",
-				"^Test(ScenarioCoverage|FixtureTreesArePaired|FixtureTemplateOverlays)$",
+				"^Test(ScenarioCoverage|FixtureTreesArePaired|FixtureTemplateOverlays|FixtureCommentsNameNoVerdict)$",
 				"./tests/true-bdd/",
 			},
 			Globs: []string{registry, "tests/true-bdd/**", templatesGlob, testkitGlob},
