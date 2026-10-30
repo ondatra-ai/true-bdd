@@ -1,7 +1,7 @@
 # Product document for `scen-check-fix-records-mapping`.
 #
-# The catalogue phrases every step of E2E-001 and the glossary defines
-# every term those phrases declare; only the architecture lacks one.
+# Its concepts cover every step of E2E-001 and the glossary defines
+# every term they declare; only the architecture lacks one.
 
 title: "Fixture host project"
 
@@ -30,16 +30,16 @@ glossary:
       What the MCP service sends back for one message. A client waits on
       it, so its content is behaviour.
 
-catalogue:
-  - template: 'the mcp service is running'
-    block: given
-    means: The MCP service has started and accepts requests.
-    terms: [mcp service]
-  - template: 'the {actor:role} sends "{message}"'
-    block: when
-    means: That role sends the quoted message to the MCP service, once.
-    terms: [mcp service, message]
-  - template: 'the service answers "{reply}"'
-    block: then
-    means: The MCP service's reply to the message is exactly the quoted text.
-    terms: [mcp service, reply]
+concepts:
+  given:
+    - concept: service running
+      means: The MCP service has started and accepts requests.
+      terms: [mcp service]
+  when:
+    - concept: message sent
+      means: A role sends a stated message to the MCP service, once.
+      terms: [mcp service, message]
+  then:
+    - concept: answer
+      means: The MCP service's reply to the message is exactly a stated text.
+      terms: [mcp service, reply]

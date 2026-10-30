@@ -23,4 +23,4 @@ scenarios:
       when:
         - the Operator runs "greet Ada"
       then:
-        - 'stdout matches ^Hello Ada$'
+        - the standard output has a line matching "Hello Ada"

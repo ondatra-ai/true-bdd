@@ -48,78 +48,35 @@ Then:
 
 ## Fix Prompt to Apply
 
-=== FILE_START: tmp/{{RUN_DIR}}/01-E2E-001-fix-prompts.md ===
-# Fix Prompt for Scenario E2E-001: The service must answer a ping with a pong
+Fix the undefined term declared by the `then` concept `answer` in the product document. The Product Owner owns this change: the only edit is one new glossary entry in `docs/product/product.yaml`. Do not touch the Scenario E2E-001, any generated test, any step definition, `architecture.terms`, or `architecture.concepts` — the check is `declared-terms`, so the concept's `terms: [mcp service, reply]` list stays exactly as written and the glossary gains the missing definition.
 
-## Target
-The `product` document: `docs/product/product.yaml` — its `glossary:` list, and nothing else.
+Finding addressed: E2E-001 / mcp-service / declared-terms — "then concept 'answer'" declares "reply", which the glossary does not define.
 
-## Finding being fixed
-- `E2E-001`: the catalogue entry `the service answers "{reply}"` (block `then`, `terms: [mcp service, reply]`) declares the term `reply`, which the glossary does not define. Check: `scen-check/term_closure` (D: declared-terms).
+Confirmed meaning from the owner: "The text the MCP service answers a message with: one reply per message, as text."
 
-## What the fix must and must not touch
-- Add exactly ONE new glossary entry, for the term `reply`.
-- Spell the term exactly `reply` (lower case, no quotes, no plural) — that is how `catalogue[2].terms` declares it.
-- Do NOT touch the `catalogue:` list. The entry `the service answers "{reply}"` stays exactly as written.
-- Do NOT touch the existing glossary entries `mcp service` or `message`; the findings do not name them.
-- Do NOT touch `roles:`, `title:`, `description:`, the Scenario `E2E-001`, the generated test `tests/mcp/ping_test.go`, any step definition, or any file under `docs/product/stories/`.
-- Change no other file.
+Apply exactly one edit to `docs/product/product.yaml`. The glossary is ordered alphabetically (`mcp service`, `message`), so insert `reply` after `message` to keep that order:
 
-## Required Changes
-
-### Change #1: Define the term `reply` in the product glossary
-**Document:** product (`docs/product/product.yaml`)
-**Action:** Append the new entry to the end of the `glossary:` list, immediately after the `message` entry and immediately before the blank line that precedes `catalogue:`. Keep the existing two-space list indentation and the `>-` folded-block style used by the neighbouring entries.
-
-**YAML of the new entry (copy verbatim):**
-```yaml
-  - term: reply
-    means: >-
-      The text the MCP service sends back in answer to one message —
-      any answer, success or failure. There is exactly one reply per
-      message, and a Scenario reads it as the whole answer, character
-      for character: it is what the Operator watches to judge the
-      service.
+old_string:
 ```
-
-**Exact edit — replace this `old_string`:**
-```yaml
   - term: message
     means: >-
       One request a client sends the MCP service, as text. The service
       answers each message on its own.
-
-catalogue:
 ```
 
-**with this `new_string`:**
-```yaml
+new_string:
+```
   - term: message
     means: >-
       One request a client sends the MCP service, as text. The service
       answers each message on its own.
   - term: reply
     means: >-
-      The text the MCP service sends back in answer to one message —
-      any answer, success or failure. There is exactly one reply per
-      message, and a Scenario reads it as the whole answer, character
-      for character: it is what the Operator watches to judge the
-      service.
-
-catalogue:
+      The text the MCP service answers a message with: one reply per
+      message, as text.
 ```
 
-## Why this definition
-- It reads true for the only catalogue entry declaring `reply` (`means: The MCP service's reply to the message is exactly the quoted text.`): "exactly the quoted text" is the "character for character" whole answer.
-- It covers failure answers too, so later error Scenarios reuse `the service answers "{reply}"` without a second, narrower meaning.
-- It stays in product words — what the reply is and why a reader cares — and says nothing about how the service is implemented.
-- It collides with no existing entry: the glossary defines only `mcp service` and `message`, and `reply` is defined once after this change.
-
-## Done when
-- `docs/product/product.yaml` has three glossary entries: `mcp service`, `message`, `reply`.
-- `scen-check/term_closure` for `E2E-001` passes: every term declared by a matching catalogue entry (`mcp service`, `message`, `reply`) is defined exactly once.
-- `git diff` shows changes only inside the `glossary:` list of `docs/product/product.yaml`.
-=== FILE_END: tmp/{{RUN_DIR}}/01-E2E-001-fix-prompts.md ===
+After the edit, every term declared by the `given`, `when` and `then` concepts (`mcp service`, `message`, `reply`) resolves to a glossary entry, and the `declared-terms` check for E2E-001 passes. No bindings or Public interface declarations change, because no reference was added.
 
 ---
 
@@ -135,7 +92,7 @@ reads as valid YAML, so a copy you leave unparseable changes nothing.
 ## Instructions
 
 1. Use the Read tool to load the working copy the fix prompt's
-   document names, and find the list it changes (`catalogue:` or
+   document names, and find the list it changes (`concepts:` or
    `glossary:`).
 2. Apply the changes described in the "Fix Prompt to Apply" section
    above with the Edit tool on that working copy: append a new entry at

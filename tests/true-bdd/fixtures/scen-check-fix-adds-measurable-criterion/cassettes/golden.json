@@ -5,9 +5,9 @@
     {
       "path": "docs/scenarios.yaml",
       "kind": "modified",
-      "size": 804,
-      "sha256": "4d848cc3d7d125a7e0bd9be318c1ce331e3a472927f959ed01a28eecd1f6d1b4",
-      "text": "# Registry seed for `scen-check-fix-adds-measurable-criterion`.\n#\n# One Scenario that names no exact message, count, code or threshold\n# anywhere: the greeter \"greets\" the person, and nothing says with what.\n# The fix asks which criterion, then adds it to this entry.\n\nmetadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-10-21\"\n  description: \"One scenario with no measurable criterion\"\n\nscenarios:\n  E2E-001:\n    description: The greeter must greet the person whose name it is given\n    service: greeter\n    path: tests/greeter/greet_test.go\n    user_stories: []\n    merged_steps:\n      given:\n        - the greeting is configured\n      when:\n        - the Operator runs the greeter with a name\n      then:\n        - stdout matches \"^Hello, Alice$\"\n"
+      "size": 815,
+      "sha256": "141631414fec77bbe4e42f3c438e36980d9886791b2efb6f200d8b73dd87f06d",
+      "text": "# Registry seed for `scen-check-fix-adds-measurable-criterion`.\n#\n# One Scenario that names no exact message, count, code or threshold\n# anywhere: the greeter \"greets\" the person, and nothing says with what.\n# The fix asks which criterion, then adds it to this entry.\n\nmetadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-10-21\"\n  description: \"One scenario with no measurable criterion\"\n\nscenarios:\n  E2E-001:\n    description: The greeter must greet the person whose name it is given\n    service: greeter\n    path: tests/greeter/greet_test.go\n    user_stories: []\n    merged_steps:\n      given:\n        - the greeting is configured\n      when:\n        - the Operator runs the greeter with a name\n      then:\n        - the greeter prints the line \"Hello, Alice\"\n"
     }
   ]
 }

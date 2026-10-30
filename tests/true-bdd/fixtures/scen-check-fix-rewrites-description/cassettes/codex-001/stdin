@@ -49,50 +49,27 @@ Then:
 
 ## Fix Prompt to Apply
 
-# Fix Prompt for Scenario E2E-001: Greeting a name prints the configured greeting followed by that name, and the greeter exits with code 0
+Proposal for the Product Owner — one change, to the Scenario's registry entry description only. Show this at the menu and apply only after apply.
 
-## Target
-The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry: `tmp/{{RUN_DIR}}/scenarios_yaml.yaml`). Only its `description:` field changes. Do not touch the product document, any step, any other Scenario, the generated test `tests/greeter/greet_test.go`, or any step definition.
+Finding: E2E-001 — missing must/should — "Greeting a name prints the configured greeting followed by that name, and the greeter exits with code 0". The description narrates what happens instead of stating the rule it pins.
 
-## Finding being fixed
-`scen-check/scenario_quality` reported:
-- `E2E-001: missing rule keyword (no "must" or "should") — "Greeting a name prints the configured greeting followed by that name, and the greeter exits with code 0"`
+Nothing is missing from the documents, so no owner question is needed to settle the meaning:
+- docs/product/product.yaml already defines greeting, command, exit code and standard output, and declares the four concepts the steps use.
+- docs/architecture/architecture.yaml already maps all four terms and binds all four concepts for service greeter.
+- docs/greeter-cli.yaml already declares command `greet` and extension file `greeting-config`, the only references those bindings name, so no Public interface addition is proposed.
+The rule is therefore read off what the entry already specifies: the configured greeting, then the given name, and exit code 0.
 
-The description states what happens but pins no rule. It must become one sentence carrying `must`, with no Gherkin Given/When/Then text.
+Exact change — file docs/scenarios.yaml
 
-## Required Changes
+old_string:
+    description: Greeting a name prints the configured greeting followed by that name, and the greeter exits with code 0
 
-### Change #1: State the description as a rule with "must"
-**Document:** scenarios_yaml
-**Field:** `scenarios.E2E-001.description`
-**Current text:**
-```
-Greeting a name prints the configured greeting followed by that name, and the greeter exits with code 0
-```
-**New text:**
-```
-The greeter must print the configured greeting followed by the name it is run with, and must exit with code 0
-```
+new_string:
+    description: Greeting a name must print the configured greeting followed by that name and exit with code 0
 
-Write it as the same plain (unquoted) YAML scalar on one line, exactly as the current value is written:
-```yaml
-  E2E-001:
-    description: The greeter must print the configured greeting followed by the name it is run with, and must exit with code 0
-```
+Why this satisfies the check: one sentence; carries the keyword "must"; no Given/When/Then text; keeps both things the entry specifies (the configured greeting followed by the name, and the exit code 0, which remains the measurable criterion); uses "print" and "exit", the observable verbs the product document names as replacements, and no forbidden qualifier.
 
-## Why this replacement satisfies the check
-- Carries the rule keyword `must` (twice, both clauses bound by it).
-- One sentence, no semicolons and no second independent statement beyond the single coordinated clause.
-- Contains no Gherkin text: the words `given`, `when` and `then` do not appear (the name is referred to as "the name it is run with", never "the given name", and the two outcomes are joined with `and`, never `then`).
-- Keeps every bit of behaviour the Scenario specifies: the greeting comes from configuration (the `given` step's `the greeting is configured as "Hello"`), it is printed followed by the name the command was run with (the `then` step's `stdout matches ^Hello Ada$`), and the exit code is 0 (the `then` step's `the command exits with code 0`). Nothing is added and no assertion is dropped.
-- Stays inside the product vocabulary: it uses the glossary terms `greeting` and `exit code`, names observable actions (`print`, `exit`), and uses none of the forbidden qualifiers (properly, correctly, appropriate, appropriately, user-friendly, fast, quickly, helpful) or forbidden action verbs (handle, process, parse).
-
-## Must not change
-- `scenarios.E2E-001.service` (`greeter`), `path` (`tests/greeter/greet_test.go`) and `user_stories:` (the `docs/product/stories/greet-by-name.yaml` / `greet-by-name-001-prints-greeting` lineage with its `merge_date`) stay exactly as they are.
-- `merged_steps.given`, `merged_steps.when` and `merged_steps.then` stay byte-for-byte as they are, including the `and:` form of the last `then` step.
-- `metadata:` and every other entry of the registry stay as they are.
-- The product document's `catalogue:`, `glossary:`, `roles:` and `vocabulary:` are not edited by this fix; no catalogue `means` is named in the findings.
-- Do not run or edit anything else; `true-bdd build tests --fix` re-renders the generated test from the registry afterwards.
+Out of scope for this fix, and not proposed: no change to the product glossary, to architecture.terms, or to architecture.concepts — the check names none, and a Scenario is never rewritten to repair a concept, term or binding. The Given, When and Then steps of E2E-001 are untouched, as are tests/greeter/greet_test.go and every step definition.
 
 ---
 

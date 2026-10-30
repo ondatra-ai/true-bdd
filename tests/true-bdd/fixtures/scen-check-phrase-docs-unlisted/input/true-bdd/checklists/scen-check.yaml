@@ -1,8 +1,9 @@
 # Fixture checklist for `scen-check-phrase-docs-unlisted`.
 #
-# The step-phrase check reads the product document, but this Prompt does
-# not list it under `docs:`. Run as written, the check would see no
-# catalogue and pass every Scenario unchecked; the engine refuses it.
+# The declared-term check reads the product document, but this Prompt
+# does not list it under `docs:`. Run as written, the check would read
+# no product document and pass every Scenario unchecked; the engine
+# refuses it.
 
 version: "1.0"
 last_updated: "2026-10-21"
@@ -11,5 +12,5 @@ sections:
   - id: term_closure
     name: "Term Closure"
     validation_prompts:
-      - D: step-phrases
-        rationale: "A step outside the catalogue has no stated meaning, so no step definition follows from the spec."
+      - D: declared-terms
+        rationale: "A phrase whose meaning relies on an undefined word still has no stated meaning, so no step definition follows from the spec."

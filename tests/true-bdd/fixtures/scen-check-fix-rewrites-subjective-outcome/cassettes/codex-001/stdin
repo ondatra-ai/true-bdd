@@ -51,18 +51,30 @@ Then:
 # Fix Prompt for Scenario E2E-001: The greeter must greet the person whose name it is given so that they feel welcome
 
 ## Target
-The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry). No catalogue entry's `means` needs changing: the replacement step reuses the existing `then` template `stdout matches {expected:pattern}` as it already reads.
+The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry). No catalogue entry is named by the finding, so the `product` document is **not** edited by this fix.
 
-## What the finding objects to
-The reviewer's line:
+## What the finding says
+`scen-check/scenario_quality` failed with:
 
-> E2E-001: subjective — 'Then step asserts "Ada feels welcomed by what the greeter prints": an emotional state with no stated output that counts as correct, so two reviewers can disagree and both be right'
+> E2E-001: subjective — 'Then step asserts "Ada feels welcomed by what the greeter prints", an emotional reaction with no stated criterion for which printed output counts as correct; description repeats it as "so that they feel welcome"'
 
-The user has settled what counts as correct: the whole printed line is the configured greeting, a single space, then the name — `^Hello Ada$` for the "Hello"/"Ada" values already in this entry's Given and When steps. Only the one subjective Then step is replaced (nothing is added alongside it), and the description is reworded at behaviour level.
+Two places in the `E2E-001` entry state the outcome as a feeling: the `description` and the single `then` step. Both are replaced below with the criterion the user settled: a line of standard output matches the whole-line pattern `^Hello Ada$` — the configured greeting, one space, the given name, and nothing else.
 
 ## Required Changes
 
-### Change #1: Replace the subjective Then step with the stdout assertion
+### Change #1: State the outcome in the description as printed output, not a feeling
+**Document:** scenarios_yaml
+**Field:** `scenarios.E2E-001.description`
+**Current text:**
+```
+The greeter must greet the person whose name it is given so that they feel welcome
+```
+**New text:**
+```
+The greeter must print the configured greeting followed by the name it is given, so the Operator reads both on one line
+```
+
+### Change #2: Replace the subjective Then step with the whole-line pattern a reviewer can check
 **Document:** scenarios_yaml
 **Field:** `scenarios.E2E-001.merged_steps.then`
 **Current text:**
@@ -73,34 +85,20 @@ The user has settled what counts as correct: the whole printed line is the confi
 **New text:**
 ```
       then:
-        - stdout matches ^Hello Ada$
+        - a line of standard output matches "^Hello Ada$"
 ```
-Notes for the applier:
-- The `then` block keeps exactly one step. Do not add an exit-code step or any other assertion.
-- The new step fills the existing catalogue `then` template `stdout matches {expected:pattern}`, whose `{expected:pattern}` slot takes the rest of the step verbatim and unquoted — write `stdout matches ^Hello Ada$`, not `stdout matches "^Hello Ada$"`.
-- The pattern is anchored at both ends on purpose: the whole printed line is the configured greeting (`Hello`, from the Given step), one space, then the name (`Ada`, from the `greet Ada` command in the When step). Do not drop `^` or `$`, and do not change `Hello` or `Ada`.
 
-### Change #2: Reword the description so it states the observable outcome
-**Document:** scenarios_yaml
-**Field:** `scenarios.E2E-001.description`
-**Current text:**
-```
-    description: The greeter must greet the person whose name it is given so that they feel welcome
-```
-**New text:**
-```
-    description: The greeter must print the configured greeting followed by the name it is given
-```
 Notes for the applier:
-- Keep it on one line, as a plain scalar, exactly as above. The trailing "so that they feel welcome" rationale is removed because it is the subjective part the finding names.
-- The description stays behaviour-level — it does not mention `Hello`, `Ada` or the regular expression — so it still covers the behaviour the steps instantiate.
+- Keep exactly one `then` step. The user chose to assert only the printed output, so the rewrite changes no coverage: the same single assertion, now with a stated criterion.
+- The new step's wording sits inside the `product` document's `then` concept `standard output` ("A line the command printed on its standard output has a match for a stated pattern, a regular expression"), with the pattern carried as the quoted run `"^Hello Ada$"`. The entry's lineage is empty (`user_stories: []`) and the product document declares no `catalogue:`, so no catalogue template has to be matched.
+- The pattern is whole-line and anchored on purpose (`^` … `$`): the greeting `Hello` from the `given` step, one space, the name `Ada` from the `when` command, and nothing else on that line. Do not drop the anchors or the quotes.
+- No forbidden qualifier (`properly`, `correctly`, `appropriate`, `appropriately`, `user-friendly`, `fast`, `quickly`, `helpful`) and no forbidden action (`handle`, `process`, `parse`) appears in either replacement; keep it that way if you reflow the text.
 
-## What must not change
-- The `E2E-001` key, `service: greeter`, `path: tests/greeter/greet_test.go` and `user_stories: []` stay byte-for-byte as they are.
-- The Given step `the greeting is configured as "Hello"` and the When step `the Operator runs "greet Ada"` stay byte-for-byte as they are.
-- The `metadata:` block, the file's leading comments and every other Scenario stay as they are.
-- Do not edit `tests/greeter/greet_test.go` — `true-bdd build tests --fix` re-renders it from the registry once this entry reads correctly.
-- Do not edit any step definition, and do not edit the `product` document: no catalogue `means` and no glossary term is named by this finding.
+## What must stay untouched
+- `scenarios.E2E-001.service` (`greeter`), `scenarios.E2E-001.path` (`tests/greeter/greet_test.go`), `scenarios.E2E-001.user_stories` (`[]`) and the scenario id `E2E-001` itself.
+- `scenarios.E2E-001.merged_steps.given` (`the greeting is configured as "Hello"`) and `merged_steps.when` (`the Operator runs "greet Ada"`) — the finding does not object to them.
+- Every other scenario in the registry, and the `metadata:` block (including `last_updated`).
+- The `product` document, the generated test `tests/greeter/greet_test.go` (it is re-rendered by `true-bdd build tests --fix` once the entry reads correctly) and every step definition.
 
 ---
 

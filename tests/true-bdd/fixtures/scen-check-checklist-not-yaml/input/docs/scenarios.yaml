@@ -1,7 +1,7 @@
 # Registry seed for `scen-check-checklist-not-yaml`.
 #
-# One claimed scenario, sound in every respect: every step matches
-# one catalogue phrase whose words are defined and mapped.
+# One claimed scenario, sound in every respect: every step falls
+# under one concept whose words are defined and mapped.
 #
 # The run never reads it: the `scen-check` checklist is not valid
 # YAML.

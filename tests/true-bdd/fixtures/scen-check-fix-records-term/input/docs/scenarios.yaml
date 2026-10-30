@@ -1,6 +1,6 @@
 # Registry seed for `scen-check-fix-records-term`.
 #
-# One Scenario a Story claims, its Then step's phrase relying on a term
+# One Scenario a Story claims, its Then step's concept relying on a term
 # the glossary does not define. The fix must leave this file exactly as
 # it is.
 

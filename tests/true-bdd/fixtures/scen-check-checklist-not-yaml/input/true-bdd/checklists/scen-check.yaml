@@ -11,13 +11,14 @@ last_updated: "2026-10-22"
 sections:
   - id: term_closure
     name: "Term Closure"
-    description: "Every step of a Scenario a Story claims must match one catalogue phrase."
+    description: "Every term a declared concept relies on must be defined in the product glossary and mapped in the architecture."
     validation_prompts:
-      - D: step-phrases
-        rationale: "A step outside the catalogue has no stated meaning."
-        docs:
-          - product
       - D: declared-terms
-       rationale: "A phrase relying on an undefined word has no stated meaning."
+        rationale: "A concept relying on an undefined word has no stated meaning."
         docs:
           - product
+      - D: term-mappings
+       rationale: "A concept relying on an unmapped word says nothing of how a step definition builds it."
+        docs:
+          - product
+          - architecture_yaml

@@ -5,9 +5,9 @@
     {
       "path": "docs/scenarios.yaml",
       "kind": "modified",
-      "size": 842,
-      "sha256": "836fb154dc08933bd7eb5220cc0513cd2298f1d92143c9804936d3bf9df5906a",
-      "text": "# Registry seed for `scen-check-fix-adds-missing-step`.\n#\n# One Scenario with no then step, though its description pins the\n# outcome: the greeting and the name printed, and exit code 0. The fix\n# adds the missing step to this entry.\n\nmetadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-10-21\"\n  description: \"One scenario missing its then step\"\n\nscenarios:\n  E2E-001:\n    description: The greeter must print the configured greeting followed by the name it is given, and exit with code 0\n    service: greeter\n    path: tests/greeter/greet_test.go\n    user_stories: []\n    merged_steps:\n      given:\n        - the greeting is configured as \"Hello\"\n      when:\n        - the Operator runs \"greet Ada\"\n      then:\n        - stdout matches ^Hello Ada$\n        - the command exits with code 0\n"
+      "size": 867,
+      "sha256": "a6bca7ba196b6a6cd111a0ecd0b0eb73af830e693eb891b6924d87c2c78750d0",
+      "text": "# Registry seed for `scen-check-fix-adds-missing-step`.\n#\n# One Scenario with no then step, though its description pins the\n# outcome: the greeting and the name printed, and exit code 0. The fix\n# adds the missing step to this entry.\n\nmetadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-10-21\"\n  description: \"One scenario missing its then step\"\n\nscenarios:\n  E2E-001:\n    description: The greeter must print the configured greeting followed by the name it is given, and exit with code 0\n    service: greeter\n    path: tests/greeter/greet_test.go\n    user_stories: []\n    merged_steps:\n      given:\n        - the greeting is configured as \"Hello\"\n      when:\n        - the Operator runs \"greet Ada\"\n      then:\n        - the standard output has a line matching \"Hello Ada\"\n        - the command exits with code 0\n"
     }
   ]
 }

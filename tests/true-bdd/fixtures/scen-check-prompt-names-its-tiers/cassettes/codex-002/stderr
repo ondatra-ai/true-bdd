@@ -7,7 +7,7 @@ approval: never
 sandbox: read-only
 reasoning effort: medium
 reasoning summaries: none
-session id: 01a172ff-7398-7820-a5c8-ad8177c7bad1
+session id: 01a18d4f-0f6d-7f23-b2ee-57b3b1a5f3a6
 --------
 user
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
@@ -223,15 +223,16 @@ codex
 I’ll read the product document and use the timing criterion in the steps to replace “quickly.”
 
 exec
-/bin/zsh -lc 'cat docs/product/product.yaml' in {{CWD}}
- succeeded in 0ms:
+/bin/zsh -lc 'cat docs/agents/domain.md docs/product/product.yaml' in {{CWD}}
+ exited 1 in 0ms:
+cat: docs/agents/domain.md: No such file or directory
 # Product document for the greeter, the host project of the scen-check
 # fixtures that walk the shipped checklist.
 #
-# Its catalogue phrases every step of the claimed Scenario, and its
-# glossary defines every term those phrases declare; the architecture
-# document maps each of them. The vocabulary is what the quality
-# prompts rule against.
+# Its concepts cover every step of the claimed Scenario, and its
+# glossary defines every term they declare; the architecture document
+# maps each term and binds each concept. The vocabulary is what the
+# quality prompts rule against.
 
 title: "Greeter"
 
@@ -288,34 +289,32 @@ glossary:
       The lines the command prints for its user, its answer and its log
       records alike. It is the greeter's only visible output.
 
-catalogue:
-  - template: 'the greeting is configured as "{greeting}"'
-    block: given
-    means: >-
-      The project's config file sets the greeting, the word the greeter
-      prints before a name, to the quoted text.
-    terms: [greeting]
-  - template: 'the {actor:role} runs "{command}"'
-    block: when
-    means: >-
-      That role runs the quoted command line once, in the project
-      directory, and waits for it to exit.
-    terms: [command]
-  - template: 'the command exits with code {code:number}'
-    block: then
-    means: >-
-      The command that role ran ended with that exit code; 0 means it
-      succeeded.
-    terms: [command, exit code]
-  - template: 'stdout matches {expected:pattern}'
-    block: then
-    means: >-
-      A line the command printed to its standard output matches the
-      pattern, a regular expression: either the answer line the command
-      prints for its user, or a log record's message or fields.
-    terms: [command, standard output]
+concepts:
+  given:
+    - concept: configured greeting
+      means: >-
+        The project's config file sets the greeting to a stated text
+        before the command runs.
+      terms: [greeting, command]
+  when:
+    - concept: a role runs a command
+      means: >-
+        A role runs one stated command line once, in the project
+        directory, and waits for it to exit.
+      terms: [command]
+  then:
+    - concept: exit code
+      means: >-
+        The command the role ran ended with a stated exit code; 0 means
+        it succeeded.
+      terms: [command, exit code]
+    - concept: standard output
+      means: >-
+        A line the command printed on its standard output has a match for
+        a stated pattern, a regular expression.
+      terms: [command, standard output]
 
 codex
-{"fix_prompt":"# Fix Prompt for Scenario E2E-001\n\n## Target\nThe `E2E-001` entry of the `scenarios_yaml` document (the scenario registry).\n\n## Required Changes\n### Change #1: Replace the vague timing qualifier with the criterion stated in the steps\n**Document:** scenarios_yaml\n**Field:** description\n**Current text:**\n```\nThe greeter must print the configured greeting followed by the name it is given quickly\n```\n**New text:**\n```\nThe greeter must print the configured greeting followed by the name it is given and exit within 100 milliseconds\n```\n\nChange only this description. Leave all steps, the Scenario's id, service, path and user_stories, and every other Scenario unchanged. Do not edit the product document, generated tests or step definitions.","questions":[]}
+{"fix_prompt":"# Fix Prompt for Scenario E2E-001\n\n## Target\nThe `E2E-001` entry of the `scenarios_yaml` document (the scenario registry).\n\n## Required Changes\n### Change #1: Replace the forbidden qualifier with the timing criterion stated in the steps\n**Document:** scenarios_yaml\n**Field:** description\n**Current text:**\n```\nThe greeter must print the configured greeting followed by the name it is given quickly\n```\n**New text:**\n```\nThe greeter must print the configured greeting followed by the name it is given within 100 milliseconds\n```\n\nChange only this description. Preserve every step, the Scenario's id, service, path and user_stories, and every other Scenario. Do not edit the product document, generated test or step definitions.","questions":[]}
 tokens used
-19,010
+19,393

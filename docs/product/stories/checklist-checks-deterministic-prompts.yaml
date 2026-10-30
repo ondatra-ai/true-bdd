@@ -112,7 +112,7 @@ story:
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns
         - id: 007-unlisted-document-refused
-          description: A `D:` Prompt naming a check that reads a document must be refused at startup when its `docs:` does not list that document, because the check would otherwise find no catalogue and pass every Scenario unchecked
+          description: A `D:` Prompt naming a check that reads a document must be refused at startup when its `docs:` does not list that document, because the check would otherwise read no product document and pass every Scenario unchecked
           steps:
             - given:
                 - the "scen-check-phrase-docs-unlisted" project tree
@@ -121,7 +121,7 @@ story:
             - then:
                 - the command exits with code 1
                 - stdout matches level=ERROR msg="Refusing to start" command="scen check"
-                - 'stdout matches scen-check/term_closure #1 D: step-phrases reads the product document, so its docs: must list product'
+                - 'stdout matches scen-check/term_closure #1 D: declared-terms reads the product document, so its docs: must list product'
                 - but: stdout does not match SCEN CHECK
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns
