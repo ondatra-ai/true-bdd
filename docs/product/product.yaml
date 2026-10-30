@@ -362,7 +362,23 @@ glossary:
       past them the run stops writing nothing. Each accepted pattern gets a
       skeleton that records its concept, identified by concept, suite and
       pattern; a later walk resumes the pending skeletons it finds. Bodies,
-      the critique and the whole-suite checks then run as for templates.
+      the critique and the whole-suite checks then run as for templates, the
+      body turns and the critique reading the concept, its binding, its terms'
+      glossary entries and Word mappings, the Public interface, each pattern's
+      captures and bound steps, every Scenario using the concept's steps, and
+      the fixture inputs of those Scenarios. The critique's context carries no
+      Catalogue, no Phrase mapping and no template Word mapping. It judges each
+      pattern and its captures as well as each body: a pattern capturing the
+      wrong part of a step, leaving a meaningful alternative uncaptured or
+      binding steps its body cannot serve is a finding against the pattern; a
+      body not doing what its binding says, or requiring anything beyond its
+      binding and those fixture inputs, a body asserting something else than
+      a step means, or one computing what it asserts, is a finding against the
+      body. A finding against a pattern sends the Item back to the proposal
+      with the findings: the engine checks the new patterns as before, removes
+      the skeletons of the patterns it dropped, keeps unchanged ones with their
+      bodies and writes the new ones, whose bodies go back to the writer. A
+      finding against a body sends that body back.
       Commands print their existing upper-case command name followed
       by ` COMPLETE` on stdout only when they succeed, after finalization and
       any post-run validation. A command returning an error prints no COMPLETE
@@ -647,7 +663,23 @@ glossary:
       recording its concept, and the AI writes its body the same way. The body may extend
       shared state but preserves every registration and signature. A pending body fails
       with "step not written yet" and its phrase, or on a concept host its
-      concept and pattern.
+      concept and pattern. On a concept host scen check's step-definitions
+      built-in check holds every step a Scenario binds, judge: and llm: steps
+      aside, to one definition, which records a concept the product document
+      declares under that step's block; a step two definitions bind, or a
+      definition recording no concept, another block's or an undeclared one,
+      fails the Scenario. A step no definition binds yet is build steps' gap.
+
+  - term: fixture
+    means: >-
+      A directory under a suite's fixtures/, beside its steps/, holding what a
+      Scenario that names it, by a quoted value of one of its steps, starts
+      from: files, programs standing in for the tools the service is run with,
+      and their preparation. Its fixture inputs are its files other than the
+      recordings under cassettes/. build steps --fix embeds the fixture inputs
+      of the Scenarios a concept's steps are used in, whole, in its body turns
+      and its critique, since a step definition may meet a contract only a
+      fixture input states, such as an environment variable its program reads.
 
   - term: Item
     means: >-
