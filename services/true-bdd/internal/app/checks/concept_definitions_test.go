@@ -60,7 +60,7 @@ func TestConceptStepDefinitionsCheck(t *testing.T) {
 		{"unbound yet", []catalogue.Step{{Block: catalogue.BlockWhen, Text: "the Owner triples 6"}}, true,
 			"1 step unbound yet"},
 		{"bound twice", []catalogue.Step{{Block: catalogue.BlockThen, Text: "the result is 3"}}, false,
-			`then step "the result is 3" binds 2 step definitions`},
+			`then step "the result is 3" binds to 2 step definitions`},
 		{"another block's concept", []catalogue.Step{{Block: catalogue.BlockWhen, Text: "the Owner doubles 6"}},
 			false, `records then concept "halving", which is not a declared when concept`},
 		{"no record", []catalogue.Step{{Block: catalogue.BlockWhen, Text: "the Owner squares 6"}}, false,

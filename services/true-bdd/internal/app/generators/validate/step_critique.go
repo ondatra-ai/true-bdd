@@ -62,9 +62,9 @@ const (
 
 // CritiqueFinding is one discrepancy the critique names in one definition.
 type CritiqueFinding struct {
-	Definition string
-	Category   string
-	Finding    string
+	Definition string `json:"definition"`
+	Category   string `json:"category"`
+	Finding    string `json:"finding"`
 }
 
 // Pattern reports a finding against the definition's pattern, which sends

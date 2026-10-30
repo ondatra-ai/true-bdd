@@ -57,13 +57,13 @@ func reviewConceptSteps(steps []catalogue.Step, suite *stepcoverage.Suite,
 
 		switch bound := suite.Bind(step.Text); len(bound) {
 		case 0:
-			unbound = append(unbound, fmt.Sprintf("%s step %q is unbound yet", step.Block, step.Text))
+			unbound = append(unbound, fmt.Sprintf("%s step %q binds to no step definition yet", step.Block, step.Text))
 		case 1:
 			if finding := conceptRecordFinding(step, bound[0], recorded, concepts); finding != "" {
 				findings = append(findings, finding)
 			}
 		default:
-			findings = append(findings, fmt.Sprintf("%s step %q binds %d step definitions: %s",
+			findings = append(findings, fmt.Sprintf("%s step %q binds to %d step definitions: %s",
 				step.Block, step.Text, len(bound), definitionPatterns(bound)))
 		}
 	}
@@ -75,8 +75,8 @@ func reviewConceptSteps(steps []catalogue.Step, suite *stepcoverage.Suite,
 func conceptRecordFinding(step catalogue.Step, definition catalogue.StepDefinition,
 	recorded []stepskeleton.ConceptDefinition, concepts []product.Concept,
 ) string {
-	where := fmt.Sprintf("%s step %q binds %s (%s:%d)", step.Block, step.Text, definition.Pattern,
-		definition.File, definition.Line)
+	where := fmt.Sprintf("%s step %q binds to the step definition %s (%s:%d)", step.Block, step.Text,
+		definition.Pattern, definition.File, definition.Line)
 
 	index := slices.IndexFunc(recorded, func(record stepskeleton.ConceptDefinition) bool {
 		return record.Pattern == definition.Pattern
@@ -102,5 +102,5 @@ func definitionPatterns(bound []catalogue.StepDefinition) string {
 		patterns = append(patterns, fmt.Sprintf("%s (%s:%d)", definition.Pattern, definition.File, definition.Line))
 	}
 
-	return strings.Join(patterns, " | ")
+	return strings.Join(patterns, "; ")
 }
