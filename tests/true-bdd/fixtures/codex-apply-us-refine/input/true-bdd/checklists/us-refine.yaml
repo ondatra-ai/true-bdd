@@ -1,9 +1,6 @@
 # Fixture checklist for `codex-apply-us-refine`.
 #
 # The shipped concept-link Prompt alone, copied verbatim, with its fix.
-# AC-2's description requires the offer its last step states, so the fix
-# that closes it is a wider or new concept in the product document rather
-# than a rewritten step.
 
 version: "1.0"
 last_updated: "2026-10-30"

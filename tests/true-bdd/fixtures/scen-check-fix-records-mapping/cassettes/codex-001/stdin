@@ -48,25 +48,22 @@ Then:
 
 ## Fix Prompt to Apply
 
-Proposal for the System Architect (owner of Word mappings) — one addition to `docs/architecture/architecture.yaml`. Nothing else changes: the product glossary already defines "reply", the `then` concept `answer` already declares it, and no Scenario, generated test or step definition is touched.
+For the System Architect (owner of Word mappings and bindings).
 
-Finding addressed: E2E-001, mcp-service, term-mappings — then concept 'answer': "reply" has no mapping in the architecture.
+Finding: E2E-001, service mcp-service, check term-mappings — the Then concept `answer` (product.yaml `concepts.then`) uses the term `reply`, declared in the product glossary, but `architecture.terms` has mappings only for `mcp service` and `message`. The term `reply` therefore has no Word mapping.
 
-The answers supplied the missing meaning and operation, so the mapping can be written verbatim: `technical` says the reply is the JSON-RPC response whose `result` field carries the answer text, and `observed_by` is prose for how a Then step reads the response the When step kept and compares it. Neither field is a reference object. The new entry is appended last so architecture.terms keeps the glossary's order (mcp service, message, reply).
+Fix: add one `architecture.terms` entry for `reply`, using the technical meaning and observation you gave. Nothing in the Scenario, the generated test, or any step definition changes; the product glossary already declares `reply`, so it stays untouched.
 
 File: ./docs/architecture/architecture.yaml
 
 old_string:
-```
     - term: message
       technical: >-
         One JSON-RPC request whose params carry the text, posted to /mcp.
       observed_by: >-
         Post the request to /mcp and keep the response for the steps after.
-```
 
 new_string:
-```
     - term: message
       technical: >-
         One JSON-RPC request whose params carry the text, posted to /mcp.
@@ -74,19 +71,15 @@ new_string:
         Post the request to /mcp and keep the response for the steps after.
     - term: reply
       technical: >-
-        The JSON-RPC response the mcp-service returns for the request
-        posted to /mcp, whose result field carries the answer text.
+        The JSON-RPC response body returned by POST /mcp, whose result
+        carries the answer text as a string.
       observed_by: >-
-        Read the response the When step kept, decode its JSON-RPC result
-        and compare that text to the one the step states.
-```
+        Read the result text out of the response the send step kept, and
+        compare it with the stated text.
 
-Notes for review before apply:
-- `term` is the product's verbatim glossary word "reply"; `technical` and `observed_by` are both nonempty prose strings.
-- `observed_by` describes a Then operation — it observes and compares, it does not set up or call, which matches the only concept that declares the term (`then: answer`).
-- No change is needed to architecture.concepts or to any Public interface document for this finding; the check names only the missing Word mapping.
+Why this shape: `term` is the glossary word verbatim (`reply`), `technical` states what the word is in the implementation (the JSON-RPC response body from POST /mcp carrying the answer text), and `observed_by` is prose for how a step definition observes it — reading the result text out of the response the When step kept and comparing it with the stated text, which is what a Then does (observe and compare). All three are nonempty strings and none is a reference object.
 
-Apply only after the System Architect approves this exact text.
+No other document needs editing: this is a term-mappings finding, so `architecture.concepts` bindings and the service's Public interface declarations are unaffected.
 
 ---
 

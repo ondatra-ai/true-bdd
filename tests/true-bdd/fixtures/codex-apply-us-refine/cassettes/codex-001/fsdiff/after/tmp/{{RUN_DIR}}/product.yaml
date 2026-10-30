@@ -1,7 +1,3 @@
-# Product document for `codex-apply-us-refine`: the concepts the Story
-# doc-outline's steps link to. The link Prompt reads this file whole, so
-# this comment names no verdict.
-
 title: "MCP Google Docs Editor (BDD fixture stub)"
 summary: "Synthetic product document for BDD fixtures — deliberately minimal."
 
@@ -51,6 +47,5 @@ concepts:
       means: >-
         Claude's reply in the conversation either lists exactly a stated
         number of headings, in document order, is exactly a stated
-        message, or offers to summarise the Google Doc instead of
-        outlining it.
+        message, or offers to summarise the Google Doc instead.
       terms: [Google Doc, outline]

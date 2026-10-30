@@ -1,9 +1,3 @@
-# Product document for `scen-check-validation-fails`: the greeter, as
-# its other fixtures carry it.
-#
-# Its concepts cover E2E-002's steps, and the glossary defines every term
-# they declare. E2E-001's defective steps fall under none of them.
-
 title: "Greeter"
 
 description:

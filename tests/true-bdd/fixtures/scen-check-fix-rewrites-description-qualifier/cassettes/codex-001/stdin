@@ -52,45 +52,38 @@ Then:
 # Fix Prompt for Scenario E2E-001: The greeter must print the configured greeting followed by the name it is given quickly
 
 ## Target
-The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry). Only its `description:` field changes. No catalogue entry in the `product` document is involved (the product document declares no `catalogue:`, and this Scenario has no Story lineage).
+The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry, `docs/scenarios.yaml`). Only the `description:` field of that entry changes. No other field, no other Scenario, and no other document is touched.
 
-## Background
-The scen-check `scenario_quality` reviewer reported:
-
-- `E2E-001: contains 'quickly'`
-
-`quickly` is listed under `vocabulary.forbidden_qualifiers` in `./docs/product/product.yaml`. The measurable criterion it stands for is already stated by the Scenario's own Then steps:
-
-- `the command exits with code 0 within 100 milliseconds`
-
-So the vague qualifier is replaced by that stated bound. No question needs to be asked, and no step changes.
+## Finding being fixed
+- scen-check/scenario_quality: `E2E-001: contains 'quickly'`
+- `quickly` is listed in `vocabulary.forbidden_qualifiers` of the product document (`docs/product/product.yaml`).
+- The measurable criterion the word stands for is already stated in the Scenario's own Then steps: `the command exits with code 0 within 100 milliseconds`. No clarification is needed; the replacement is taken verbatim from that step's timing bound.
 
 ## Required Changes
 
-### Change #1: Replace the forbidden qualifier 'quickly' in the description with the measurable criterion from the Then steps
+### Change #1: Replace the forbidden qualifier 'quickly' with the 100-millisecond bound the steps already state
 **Document:** scenarios_yaml
-**Field:** description (of the Scenario whose id is `E2E-001`)
+**Field:** description (of scenario `E2E-001`)
 **Current text:**
 ```
 The greeter must print the configured greeting followed by the name it is given quickly
 ```
 **New text:**
 ```
-The greeter must print the configured greeting followed by the name it is given, exiting with code 0 within 100 milliseconds
+The greeter must print the configured greeting followed by the name it is given and exit with code 0 within 100 milliseconds
 ```
 
 ## Constraints for the applier
-- Change nothing but the `description:` of the `E2E-001` entry.
-- Leave `E2E-001`'s `id`, `service: greeter`, `path: tests/greeter/greet_test.go` and `user_stories:` exactly as they are.
-- Leave every step of `E2E-001` exactly as it is — in particular keep `the greeting is configured as "Hello"`, `the Operator runs "greet Ada"`, `the command exits with code 0 within 100 milliseconds` and `and stdout matches ^Hello Ada$` byte-for-byte. The fix template for this finding forbids changing any step.
-- Leave every other Scenario in the registry untouched.
-- Do not edit `./docs/product/product.yaml` — no catalogue `means` was named by the findings.
-- Do not edit `tests/greeter/greet_test.go` or any step definition. Re-render the test with `true-bdd build tests --fix` after the registry entry reads correctly.
+- Change nothing but that one `description:` value. Leave `E2E-001`'s id, `service: greeter`, `path: tests/greeter/greet_test.go` and `user_stories: []` exactly as they are.
+- Change no step. `merged_steps.given`, `merged_steps.when` and `merged_steps.then` stay byte-for-byte as they are, including `the command exits with code 0 within 100 milliseconds` and `and: stdout matches ^Hello Ada$`.
+- Do not edit `docs/product/product.yaml`: the finding is about this Scenario's wording, not about what a catalogue phrase means.
+- Do not edit the generated test `tests/greeter/greet_test.go` or any step definition. Re-render the test with `true-bdd build tests --fix` after the registry entry reads correctly.
+- Leave `metadata:` in the registry (including its `description:` line) untouched.
+- The behaviour asserted is unchanged: the same greeting-plus-name output on stdout, the same exit code 0, the same 100 ms bound — the description now names the bound instead of calling it 'quickly'.
 
-## Acceptance
-- The `E2E-001` description contains none of the words in `vocabulary.forbidden_qualifiers` (`properly`, `correctly`, `appropriate`, `appropriately`, `user-friendly`, `fast`, `quickly`, `helpful`) and none of the `forbidden_actions` names (`handle`, `process`, `parse`).
-- The description still asserts the same behaviour as the steps: the configured greeting followed by the given name on stdout, with exit code 0 inside a 100 millisecond bound.
-- `git diff` touches only the `description:` line(s) of the `E2E-001` registry entry.
+## Verification after the edit
+- `E2E-001`'s description contains none of the words in `vocabulary.forbidden_qualifiers` (`properly`, `correctly`, `appropriate`, `appropriately`, `user-friendly`, `fast`, `quickly`, `helpful`) and none of the `forbidden_actions` names (`handle`, `process`, `parse`).
+- `git diff docs/scenarios.yaml` shows exactly one changed line, line 9.
 
 ---
 

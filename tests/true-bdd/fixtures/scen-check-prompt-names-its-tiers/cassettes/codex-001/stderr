@@ -7,7 +7,7 @@ approval: never
 sandbox: read-only
 reasoning effort: medium
 reasoning summaries: none
-session id: 01a18d4e-ea1f-7363-83a2-b3e8e04b2c71
+session id: 01a18dea-7d6b-7e62-9e20-83506bdf0495
 --------
 user
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
@@ -154,18 +154,11 @@ markdown fences. Reasoning before the object is fine and is ignored.
 
 
 codex
-I’ll read the product document’s forbidden qualifiers and check the scenario description against them.
+I’ll read the product document and check the description against its forbidden qualifiers.
+
 exec
 /bin/zsh -lc 'cat ./docs/product/product.yaml' in {{CWD}}
  succeeded in 0ms:
-# Product document for the greeter, the host project of the scen-check
-# fixtures that walk the shipped checklist.
-#
-# Its concepts cover every step of the claimed Scenario, and its
-# glossary defines every term they declare; the architecture document
-# maps each term and binds each concept. The vocabulary is what the
-# quality prompts rule against.
-
 title: "Greeter"
 
 description:
@@ -247,6 +240,9 @@ concepts:
       terms: [command, standard output]
 
 codex
+The description contains “quickly,” which the product document lists as a forbidden qualifier.
+
+codex
 {"answer":"fail","context":["E2E-001: contains 'quickly'"],"fix_prompt":"Replace each forbidden qualifier in this Scenario's description, in its registry entry, with the measurable criterion it stands for, taken from the Scenario's steps, asking for that criterion first when the steps do not state it. Change no step."}
 tokens used
-18,375
+18,408
