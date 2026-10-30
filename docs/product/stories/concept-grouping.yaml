@@ -92,12 +92,12 @@ story:
     - given:
       - the "concept-grouping-batches" project tree
     - when:
-      - the System Architect runs "build steps --fix"
+      - the System Architect runs "build steps"
     - then:
       - the command exits with code 1
       - stdout matches batch=1 texts=3
       - stdout matches batch=2 texts=2
-      - stdout matches pattern proposal is not built yet
+      - stdout matches step definitions are missing
       - no file outside "tmp" changed
       - the engine spawned no test runners
   - id: 008-changed-binding
@@ -130,10 +130,10 @@ story:
     - given:
       - the "concept-grouping-prefix" project tree
     - when:
-      - the System Architect runs "build steps --fix"
+      - the System Architect runs "build steps"
     - then:
-      - the command exits with code 1
-      - stdout matches pattern proposal is not built yet
+      - the command exits with code 0
+      - stdout matches BUILD STEPS COMPLETE
       - no file outside "tmp" changed
       - the engine spawned no test runners
       - the engine dispatched no AI turns

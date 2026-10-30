@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "fixture": "concept-steps-extend",
+  "files": [
+    {
+      "path": "tests/calc/steps/concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb.go",
+      "kind": "created",
+      "size": 477,
+      "sha256": "dc6b907f77a866831de4eb1fb0ce64fce8c49e159fe4e4163cc945e51323730b",
+      "text": "package steps\n\nimport (\"fmt\"; \"os/exec\"; \"strconv\"; \"strings\")\n\n//truebdd:concept when \"halving\"\nfunc concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb(state *State, args []string) error {\n\tcmd := exec.Command(\"go\", \"run\", \"./services/calc\", \"halve\", args[0])\n\tcmd.Dir = \"../..\"\n\tout, err := cmd.Output()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"halve %s: %w\", args[0], err)\n\t}\n\tstate.Result, err = strconv.Atoi(strings.TrimSpace(string(out)))\n\treturn err\n}\n"
+    },
+    {
+      "path": "tests/calc/steps/register.go",
+      "kind": "modified",
+      "size": 262,
+      "sha256": "7324c3f0d97ee4de4563983b6a727b7a5c2990e181e4b4c38c68f1ace091f2b8",
+      "text": "package steps\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the Owner halves (\\d+)$`, halving)\n\tsuite.Step(`^the result is (-?\\d+)$`, result)\n\n\tsuite.Step(\"^the Owner halves (-\\\\d+)$\", concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb)\n}\n"
+    }
+  ]
+}

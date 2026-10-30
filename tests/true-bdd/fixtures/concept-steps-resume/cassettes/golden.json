@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "concept-steps-resume",
+  "files": [
+    {
+      "path": "tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go",
+      "kind": "modified",
+      "size": 1039,
+      "sha256": "6e13723a67415637901155e046379d3ac01c59f75d8076eed9279fde146eb63d",
+      "text": "package steps\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"halving\"\nfunc concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {\n\tconst hostRoot = \"../..\"\n\n\tnumber, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn fmt.Errorf(\"step number %q is not a whole number: %w\", args[0], err)\n\t}\n\n\tcmd := exec.Command(\"go\", \"run\", \"./services/calc\", \"halve\", strconv.Itoa(number))\n\tcmd.Dir = hostRoot\n\n\tstdout, err := cmd.Output()\n\tif err != nil {\n\t\tvar exit *exec.ExitError\n\t\tif errors.As(err, \u0026exit) {\n\t\t\treturn fmt.Errorf(\n\t\t\t\t\"halve %d exited with %d: %s\",\n\t\t\t\tnumber,\n\t\t\t\texit.ExitCode(),\n\t\t\t\tstrings.TrimSpace(string(exit.Stderr)),\n\t\t\t)\n\t\t}\n\t\treturn fmt.Errorf(\"running halve %d: %w\", number, err)\n\t}\n\n\tprinted := strings.TrimSpace(string(stdout))\n\n\tresult, err := strconv.Atoi(printed)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"halve %d printed %q on stdout, want an integer: %w\", number, printed, err)\n\t}\n\n\tstate.Result = result\n\n\treturn nil\n}\n"
+    }
+  ]
+}

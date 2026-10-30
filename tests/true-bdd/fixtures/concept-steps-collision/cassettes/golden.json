@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "fixture": "concept-steps-collision",
+  "files": [
+    {
+      "path": "tests/calc/steps/concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb.go",
+      "kind": "created",
+      "size": 421,
+      "sha256": "31b73438be9cf82649a8242548cda7aca71df761c92ec23b0f7f0f6ca44fb517",
+      "text": "package steps\n\n//truebdd:concept when \"halving\"\nfunc concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb(state *State, args []string) error {\n\t// args[0] is the negative whole number, minus sign included, handed verbatim\n\t// to the declared halve command's value argument. halveNumber runs that\n\t// command as a process and keeps its integer stdout in state.Result.\n\treturn halveNumber(state, args)\n}\n"
+    },
+    {
+      "path": "tests/calc/steps/register.go",
+      "kind": "modified",
+      "size": 266,
+      "sha256": "6a0cf1b153786c2a9818a0b0d62cf80bda1aabce00f37ec5c73624ac6eb0d768",
+      "text": "package steps\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the Owner halves (\\d+)$`, halveNumber)\n\tsuite.Step(`^the result is (-?\\d+)$`, result)\n\n\tsuite.Step(\"^the Owner halves (-\\\\d+)$\", concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb)\n}\n"
+    }
+  ]
+}

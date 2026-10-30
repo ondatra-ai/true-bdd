@@ -1,0 +1,15 @@
+scenarios:
+  calc-001-halve:
+    description: Halving an even number
+    service: calc
+    path: tests/calc/calc_test.go
+    merged_steps:
+      when: ["the Owner halves 6"]
+      then: ["the result is 3"]
+  calc-002-halve:
+    description: Halving a negative odd number rounds toward zero
+    service: calc
+    path: tests/calc/calc_test.go
+    merged_steps:
+      when: ["the Owner halves -7"]
+      then: ["the result is -3"]

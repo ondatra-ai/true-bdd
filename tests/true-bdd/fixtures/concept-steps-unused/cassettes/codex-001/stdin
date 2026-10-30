@@ -1,0 +1,234 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You apply the approved bodies of one concept's step definitions in one suite.
+Preserve the engine's registrations, patterns, signatures and //truebdd:concept
+records. Modify only those bodies and the suite's shared state. Use the declared
+Public interface and the concept's binding; never implement the product's
+operation inside a step definition.
+
+**Output Requirements:**
+- After your Write/Edit calls succeed, output a YAML confirmation
+  inside FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other content in the target file — only write the
+  selected body and extend shared State as needed.
+
+**Output Format:**
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply-when-halving-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-when-halving-iter1-result.yaml ===
+```
+
+If the declared Public interface cannot set up or observe the concept, stop without
+inventing an operation. Return the same confirmation markers with:
+```yaml
+applied: false
+interface_cannot_serve:
+  phrase: "when concept \"halving\""
+  lacks: "<what the interface offers no way to set up or observe>"
+```
+
+Author solely from the supplied Specification and the suite's state and helpers.
+Do not read service implementation code. Do not execute Scenarios, replay the
+suite against the target, or require a Scenario to pass: the target may be absent
+or not built yet. The engine owns compilation and the whole-suite checks. If you
+compile the steps package while writing, preserve the inherited Go cache and
+temporary-directory environment; never create a separate build cache.
+
+Keep every new constant and local helper value inside the selected function body.
+Do not add package-level constants, variables, helper functions or types; only
+shared State fields and the selected file's imports may change outside that body.
+
+
+### TASK
+
+# Apply step definition bodies
+
+Suite: tests/calc/steps
+Service: calc
+Concept: halving (when)
+Meaning: The Owner halves a whole number, positive, zero or negative, with the calculator, which rounds an odd number's half toward zero.
+
+## Complete concept context
+concept:
+    concept: halving
+    block: when
+    means: The Owner halves a whole number, positive, zero or negative, with the calculator, which rounds an odd number's half toward zero.
+    terms:
+        - number
+binding:
+    concept: halving
+    block: when
+    service: calc
+    references:
+        - command: halve
+    does: Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result.
+glossary:
+    - term: number
+      means: A whole number, positive, zero or negative.
+word_mapping:
+    - term: number
+      technical: The integer argument and stdout of the calculator halve command.
+      observed_by: The step runs halve as a process and compares its integer stdout with the expected value.
+public_interface:
+    kind: cli
+    document: docs/architecture/calc-cli.yaml
+interface_document: |
+    opencli: 0.1
+    info:
+      title: Calculator CLI
+      version: '1.0'
+    commands:
+      halve:
+        description: Run go run ./services/calc halve VALUE from the host root; stdout
+          is VALUE halved and rounded toward zero, as an integer, and a newline.
+        parameters:
+        - name: value
+          in: argument
+          required: true
+          schema:
+            type: integer
+        responses:
+          '0':
+            description: Halved integer on stdout
+          '1':
+            description: Invalid arguments
+definitions:
+    - function: concept6ac0aa0a415cecc00e2fb53aee3eb1fb378819d8a71108ae58475b7f0ebbe4ea
+      file: tests/calc/steps/concept6ac0aa0a415cecc00e2fb53aee3eb1fb378819d8a71108ae58475b7f0ebbe4ea.go
+      pattern: ^the Owner halves[\x{00A0} ](-?\d+)$
+      captures:
+        - name: number
+          means: The whole number the Owner halves, positive, zero or negative, with an optional leading minus sign; the body passes it as the value argument of the halve command.
+      serves: 'Serves "Run the declared halve command as a process with the step''s whole number and keep its integer stdout as the result": the single capture is the step''s whole number, the only argument the halve command takes, so the body runs the declared halve command with it and keeps the command''s integer stdout as the result. The separator after "halves" is a non-capturing character class accepting the suite''s non-breaking space or an ordinary space, a typographic variant that changes nothing the body does.'
+      steps:
+        - text: the Owner halves 6
+          captures:
+            - "6"
+        - text: the Owner halves -7
+          captures:
+            - "-7"
+scenarios:
+    - id: calc-001-halve
+      description: Halving an even number
+      service: calc
+      path: tests/calc/calc_test.go
+      steps: |
+        When:
+          - the Owner halves 6
+        Then:
+          - the result is 3
+    - id: calc-002-halve
+      description: Halving a negative odd number rounds toward zero
+      service: calc
+      path: tests/calc/calc_test.go
+      steps: |
+        When:
+          - the Owner halves -7
+        Then:
+          - the result is -3
+
+
+# Fix Prompt for Item when-halving: when concept "halving"
+
+## Target
+`tests/calc/steps` — only the one unwritten body.
+
+## Scope
+- Edit **only** `tests/calc/steps/concept6ac0aa0a415cecc00e2fb53aee3eb1fb378819d8a71108ae58475b7f0ebbe4ea.go`: its `import` declaration and the body of the existing function.
+- Keep the `//truebdd:concept when "halving"` record, the function name and the `(state *State, args []string) error` signature exactly as they are.
+- Do **not** touch `tests/calc/steps/register.go`, `tests/calc/steps/definitions.go`, `tests/calc/steps/state.go`, `tests/calc/scenarios/scenarios.go`, `tests/calc/calc_test.go`, the Specification or `services/calc`.
+
+## Shared state
+No change needed. `State.Result int` in `tests/calc/steps/state.go` already carries the result that the existing `result` Then-definition observes, so the When body only has to store the command's integer stdout there. Add no new fields.
+
+## Required change
+Replace the whole content of `tests/calc/steps/concept6ac0aa0a415cecc00e2fb53aee3eb1fb378819d8a71108ae58475b7f0ebbe4ea.go` with exactly this:
+
+```go
+package steps
+
+import (
+	"bytes"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strconv"
+	"strings"
+)
+
+//truebdd:concept when "halving"
+func concept6ac0aa0a415cecc00e2fb53aee3eb1fb378819d8a71108ae58475b7f0ebbe4ea(state *State, args []string) error {
+	value := args[0]
+	if _, err := strconv.Atoi(value); err != nil {
+		return fmt.Errorf("halve: step number %q is not a whole number: %w", value, err)
+	}
+
+	// The declared halve command runs from the host root; the suite runs from
+	// tests/calc, so climb to the directory holding the module's go.mod.
+	root, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("halve %s: locating the host root: %w", value, err)
+	}
+	for {
+		if _, statErr := os.Stat(filepath.Join(root, "go.mod")); statErr == nil {
+			break
+		}
+		parent := filepath.Dir(root)
+		if parent == root {
+			return fmt.Errorf("halve %s: no host root with go.mod above the suite directory", value)
+		}
+		root = parent
+	}
+
+	cmd := exec.Command("go", "run", "./services/calc", "halve", value)
+	cmd.Dir = root
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if runErr := cmd.Run(); runErr != nil {
+		return fmt.Errorf("halve %s: %w: %s", value, runErr, strings.TrimSpace(stderr.String()))
+	}
+
+	halved, err := strconv.Atoi(strings.TrimSpace(stdout.String()))
+	if err != nil {
+		return fmt.Errorf("halve %s: stdout %q is not an integer: %w", value, stdout.String(), err)
+	}
+
+	state.Result = halved
+	return nil
+}
+```
+
+## Why this serves the binding
+- The binding says: run the declared `halve` command as a process with the step's whole number and keep its integer stdout as the result. The body runs `go run ./services/calc halve VALUE` from the host root, exactly as `docs/architecture/calc-cli.yaml` documents the command, and passes the single capture as the required `value` argument (a leading minus is safe: `go run` hands every argument after the package path to the program).
+- The body never halves anything itself and never derives the expected value: it parses the capture only to reject a non-integer step argument, then stores the command's stdout verbatim (trimmed of its documented trailing newline) in `state.Result`. The `the result is N` Then-definition in `definitions.go` does the comparison.
+- A non-zero exit (the interface's `'1': Invalid arguments`) fails the step with the command's stderr instead of silently leaving `state.Result` at its zero value.
+- Every constant and the host-root lookup live inside the function body; no package-level constants, variables, helper functions or types are introduced.
+
+Read existing state and helpers first. Write only the bodies of the definitions the
+context lists and shared state. Preserve the engine's patterns, registrations,
+signatures and //truebdd:concept records. Reach the service through its declared
+Public interface. Preserve generated tests, the
+Specification and service code. Report the changes in the confirmation below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-when-halving-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path of the file you wrote/edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-when-halving-iter1-result.yaml ===
+
+If the declared Public interface cannot set up or observe the concept, stop without
+inventing an operation. Return the same confirmation markers with:
+```yaml
+applied: false
+interface_cannot_serve:
+  phrase: "when concept \"halving\""
+  lacks: "<what the interface offers no way to set up or observe>"
+```

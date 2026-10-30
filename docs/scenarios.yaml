@@ -7914,12 +7914,12 @@ scenarios:
       given:
       - the "concept-grouping-batches" project tree
       when:
-      - the System Architect runs "build steps --fix"
+      - the System Architect runs "build steps"
       then:
       - the command exits with code 1
       - stdout matches batch=1 texts=3
       - stdout matches batch=2 texts=2
-      - stdout matches pattern proposal is not built yet
+      - stdout matches step definitions are missing
       - no file outside "tmp" changed
       - the engine spawned no test runners
   concept-grouping-008-changed-binding:
@@ -7973,10 +7973,10 @@ scenarios:
       given:
       - the "concept-grouping-prefix" project tree
       when:
-      - the System Architect runs "build steps --fix"
+      - the System Architect runs "build steps"
       then:
-      - the command exits with code 1
-      - stdout matches pattern proposal is not built yet
+      - the command exits with code 0
+      - stdout matches BUILD STEPS COMPLETE
       - no file outside "tmp" changed
       - the engine spawned no test runners
       - the engine dispatched no AI turns
@@ -8038,3 +8038,117 @@ scenarios:
       - stdout matches grouping answer malformed
       - no file outside "tmp" changed
       - the engine spawned no test runners
+  concept-steps-001-collision:
+    description: A proposed pattern that also binds a step another definition binds goes back
+      to the proposal with the engine's findings
+    service: true-bdd
+    path: tests/true-bdd/concept_steps_test.go
+    timeout: 20m
+    user_stories:
+    - story: docs/product/stories/concept-steps.yaml
+      scenario_id: concept-steps-001-collision
+      merge_date: '2026-10-30'
+    merged_steps:
+      given:
+      - the "concept-steps-collision" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches Pattern proposal refused.*attempt=1.*also binds when step
+      - stdout matches Pattern proposal accepted.*attempt=2
+      - stdout matches BUILD STEPS COMPLETE
+      - the file "tests/calc/steps/definitions.go" is unchanged
+      - no file outside "tmp" and "tests" changed
+  concept-steps-002-unused-pattern:
+    description: A proposed pattern that binds no step of the suite goes back to the proposal
+    service: true-bdd
+    path: tests/true-bdd/concept_steps_test.go
+    timeout: 20m
+    user_stories:
+    - story: docs/product/stories/concept-steps.yaml
+      scenario_id: concept-steps-002-unused-pattern
+      merge_date: '2026-10-30'
+    merged_steps:
+      given:
+      - the "concept-steps-unused" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches Pattern proposal refused.*binds no step of the suite
+      - stdout matches Pattern proposal accepted
+      - stdout matches BUILD STEPS COMPLETE
+      - no file outside "tmp" and "tests" changed
+  concept-steps-003-negative-operand:
+    description: The proposed pattern captures a negative operand
+    service: true-bdd
+    path: tests/true-bdd/concept_steps_test.go
+    timeout: 20m
+    user_stories:
+    - story: docs/product/stories/concept-steps.yaml
+      scenario_id: concept-steps-003-negative-operand
+      merge_date: '2026-10-30'
+    merged_steps:
+      given:
+      - the "concept-steps-negative" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches Concept pattern binds.*step="the Owner halves -7" captures=-7
+      - stdout matches Concept pattern binds.*step="the Owner halves 6" captures=6
+      - stdout matches BUILD STEPS COMPLETE
+      - no file outside "tmp" and "tests" changed
+  concept-steps-004-resume:
+    description: An interrupted walk resumes from the skeletons it finds, writing the pending
+      body without grouping or proposing again
+    service: true-bdd
+    path: tests/true-bdd/concept_steps_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/concept-steps.yaml
+      scenario_id: concept-steps-004-resume
+      merge_date: '2026-10-30'
+    merged_steps:
+      given:
+      - the "concept-steps-resume" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches Concept Item resumed.*halving
+      - stdout does not match Grouping batch
+      - stdout does not match Pattern proposal
+      - stdout matches BUILD STEPS COMPLETE
+      - the file "tests/calc/steps/register.go" is unchanged
+      - the file "tests/calc/steps/definitions.go" is unchanged
+      - exactly no files matching "tests/calc/steps/*.go" are created
+  concept-steps-005-new-step:
+    description: A new step of an already implemented concept is covered without changing the
+      definitions that bind its earlier steps
+    service: true-bdd
+    path: tests/true-bdd/concept_steps_test.go
+    timeout: 20m
+    user_stories:
+    - story: docs/product/stories/concept-steps.yaml
+      scenario_id: concept-steps-005-new-step
+      merge_date: '2026-10-30'
+    merged_steps:
+      given:
+      - the "concept-steps-extend" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches BUILD STEPS COMPLETE
+      - the file "tests/calc/steps/halving.go" is unchanged
+      - the file "tests/calc/steps/definitions.go" is unchanged
+      - exactly 1 file matching "tests/calc/steps/concept*.go" is created
+      - every file matching "tests/calc/steps/register.go" matches halves \(\\d\+\)\$., halving\)
+      - no file outside "tmp" and "tests" changed

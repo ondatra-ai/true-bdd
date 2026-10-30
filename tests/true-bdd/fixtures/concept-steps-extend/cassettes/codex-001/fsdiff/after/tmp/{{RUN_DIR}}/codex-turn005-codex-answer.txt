@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-when-halving-iter1-result.yaml ===
+applied: true
+target: "tests/calc/steps/concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb.go"
+summary: "Updated halving to forward the signed argument to the declared CLI and store integer stdout in State.Result."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-when-halving-iter1-result.yaml ===
