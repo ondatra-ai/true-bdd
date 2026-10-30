@@ -44,7 +44,8 @@ func (c *StepCritic) Validate(tier string) error {
 }
 
 // Critique returns findings for the Fix loop; unusable replies stop the walk.
-func (c *StepCritic) Critique(ctx context.Context, data StepCritiqueData, tier, artifact string) ([]string, error) {
+func (c *StepCritic) Critique(ctx context.Context, data StepCritiqueData, tier, artifact string,
+) ([]CritiqueFinding, error) {
 	model, err := c.models.ResolveRole(provider.RolePrompt, tier)
 	if err != nil {
 		return nil, fmt.Errorf("critique model: %w", err)

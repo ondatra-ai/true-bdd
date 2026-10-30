@@ -45,6 +45,11 @@ func (e *buildStepsExecution) prepareConcepts(ctx context.Context) ([]*BuildStep
 		return nil, err
 	}
 
+	err = e.prepareConceptRun(discovery, arch)
+	if err != nil {
+		return nil, err
+	}
+
 	err = e.proposeConcepts(ctx, discovery)
 	if err != nil {
 		return nil, err
@@ -64,9 +69,11 @@ func (e *buildStepsExecution) skeletonsBeforeBodies(discovery *conceptDiscovery,
 
 	slog.Info("All step skeletons written", "items", len(discovery.items))
 
-	err = e.describeConcepts(discovery, arch)
-	if err != nil {
-		return err
+	for _, item := range discovery.items {
+		err = describeConceptItem(item, arch, e.concepts.specification, discovery)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = e.compiler.CompileDefinitions(e.command)
@@ -94,21 +101,6 @@ func conceptInterfaces(items []*BuildStepsItem, arch *architecture.Architecture)
 }
 
 func (e *buildStepsExecution) proposeConcepts(ctx context.Context, discovery *conceptDiscovery) error {
-	document, err := e.deps.ChecklistLoader.LoadFull(buildStepsChecklistName)
-	if err != nil {
-		return err
-	}
-
-	prompt, err := conceptBuildPrompt(document, "propose")
-	if err != nil {
-		return err
-	}
-
-	attempts := defaultProposalAttempts
-	if document.Config != nil && document.Config.MaxApplyAttempts > 0 {
-		attempts = document.Config.MaxApplyAttempts
-	}
-
 	for _, item := range discovery.items {
 		subject := &template.ConceptProposalData{ID: conceptKey(item.Concept.Block, item.Concept.Name),
 			Suite: item.Suite, Service: item.Service, Block: item.Concept.Block, Concept: item.Concept.Name,
@@ -127,7 +119,7 @@ func (e *buildStepsExecution) proposeConcepts(ctx context.Context, discovery *co
 			continue
 		}
 
-		err = e.proposeConcept(ctx, prompt, attempts, item, subject)
+		err := e.proposeConcept(ctx, e.concepts.proposal, e.concepts.attempts, item, subject, "proposal")
 		if err != nil {
 			return err
 		}
@@ -139,10 +131,10 @@ func (e *buildStepsExecution) proposeConcepts(ctx context.Context, discovery *co
 const defaultProposalAttempts = 5
 
 func (e *buildStepsExecution) proposeConcept(ctx context.Context, prompt checklist.PromptWithContext, attempts int,
-	item *BuildStepsItem, subject *template.ConceptProposalData,
+	item *BuildStepsItem, subject *template.ConceptProposalData, label string,
 ) error {
 	for attempt := 1; ; attempt++ {
-		id := fmt.Sprintf("%s %s proposal %d", item.Suite, subject.ID, attempt)
+		id := fmt.Sprintf("%s %s %s %d", item.Suite, subject.ID, label, attempt)
 
 		result, err := e.deps.Evaluator.EvaluateOne(ctx, subject, id, prompt, e.deps.TmpDir)
 		if err != nil {

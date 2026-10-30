@@ -22,6 +22,7 @@ type conceptItemContext struct {
 	Document    string                        `yaml:"interface_document"`
 	Definitions []conceptDefinitionContext    `yaml:"definitions"`
 	Scenarios   []stepScenarioContext         `yaml:"scenarios"`
+	Fixtures    []conceptFixture              `yaml:"fixture_inputs,omitempty"`
 }
 
 type conceptMeaning struct {
@@ -53,36 +54,6 @@ type conceptSpecification struct {
 	bindings    []architecture.ConceptBinding
 }
 
-func (e *buildStepsExecution) describeConcepts(discovery *conceptDiscovery, arch *architecture.Architecture) error {
-	file := productDocument(e.deps.DocResolver)
-
-	source, err := product.LoadCatalogue(file)
-	if err != nil {
-		return err
-	}
-
-	_, definitions, mappings, err := compileStepSpecification(source, file, e.architectureFile)
-	if err != nil {
-		return err
-	}
-
-	bindings, err := architecture.LoadConceptBindings(e.architectureFile)
-	if err != nil {
-		return err
-	}
-
-	specification := conceptSpecification{source.Concepts, definitions, mappings, bindings}
-
-	for _, item := range discovery.items {
-		err = describeConceptItem(item, arch, specification, discovery)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func describeConceptItem(item *BuildStepsItem, arch *architecture.Architecture, spec conceptSpecification,
 	discovery *conceptDiscovery,
 ) error {
@@ -107,6 +78,11 @@ func describeConceptItem(item *BuildStepsItem, arch *architecture.Architecture, 
 
 	context.Definitions = conceptDefinitionContexts(item)
 	context.Scenarios = conceptScenarios(item, discovery)
+
+	context.Fixtures, err = conceptFixtures(item, discovery.scenarios)
+	if err != nil {
+		return err
+	}
 
 	rendered, err := yaml.Marshal(context)
 	if err != nil {

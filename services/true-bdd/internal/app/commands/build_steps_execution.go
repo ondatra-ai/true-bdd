@@ -33,6 +33,7 @@ type buildStepsExecution struct {
 	critiqueTier     string
 	redChecked       bool
 	green            []string
+	concepts         *conceptRun
 }
 
 func runBuildStepsFix(ctx context.Context, deps BuildStepsDeps, registryFile, architectureFile string,
@@ -109,7 +110,12 @@ func (e *buildStepsExecution) postFix(ctx context.Context, item *BuildStepsItem,
 	// The critique reads only a body that compiles, binds and is written:
 	// one that fails those checks already returns to the Fix loop.
 	if len(item.Findings) == 0 {
-		err := e.critique(ctx, item)
+		findings, err := e.critique(ctx, item)
+		if err != nil {
+			return item, err
+		}
+
+		err = e.applyCritique(ctx, item, findings)
 		if err != nil {
 			return item, err
 		}

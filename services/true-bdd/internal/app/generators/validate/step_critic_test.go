@@ -14,14 +14,16 @@ import (
 type critiqueAI struct {
 	model  provider.ModelRef
 	role   provider.Role
+	system string
 	user   string
+	schema string
 	answer string
 }
 
-func (a *critiqueAI) ExecutePromptWithSystem(_ context.Context, role provider.Role, _, user string,
-	model provider.ModelRef, _ provider.ExecutionMode, _ string, _ ...provider.TurnOptions,
+func (a *critiqueAI) ExecutePromptWithSystem(_ context.Context, role provider.Role, system, user string,
+	model provider.ModelRef, _ provider.ExecutionMode, schema string, _ ...provider.TurnOptions,
 ) (string, error) {
-	a.model, a.role, a.user = model, role, user
+	a.model, a.role, a.system, a.user, a.schema = model, role, system, user, schema
 
 	return a.answer, nil
 }
@@ -76,5 +78,72 @@ func checkCriticRoute(t *testing.T, models *provider.Registry, tier, want string
 	if client.model.Model != want || client.role != provider.RolePrompt ||
 		!strings.Contains(client.user, "whole specification\nwhole source") {
 		t.Fatalf("wrong request: %+v", client)
+	}
+}
+
+// A concept host's critique judges each AI-proposed pattern as well as the
+// body, against the binding and the fixture inputs; a template host keeps
+// its rule that the engine's pattern is never judged.
+func TestConceptCritiqueJudgesPatternsAndFixtureContracts(t *testing.T) {
+	t.Parallel()
+
+	concept, phrase := critiqueRequest(t, true), critiqueRequest(t, false)
+	requireTerms(t, concept.system, "pattern_captures", "pattern_scope", "fixture inputs")
+	requireTerms(t, concept.schema, "pattern_captures", "pattern_scope")
+	requireTerms(t, concept.user, "fixture inputs")
+
+	if strings.Contains(concept.system, "Never judge them") || !strings.Contains(phrase.system, "Never judge them") {
+		t.Errorf("only a template host keeps the engine's pattern out of the critique:\n%s", concept.system)
+	}
+
+	for _, leak := range []string{"Catalogue", "Phrase mapping", "template"} {
+		if strings.Contains(concept.system+concept.user, leak) {
+			t.Errorf("concept critique carries the template form %q", leak)
+		}
+	}
+
+	if concept.schema == phrase.schema || strings.Contains(phrase.schema, "pattern_") {
+		t.Errorf("template schema changed or concept schema lacks pattern categories:\n%s", phrase.schema)
+	}
+}
+
+// critiqueRequest renders the shipped critique templates for one host form.
+func critiqueRequest(t *testing.T, concept bool) *critiqueAI {
+	t.Helper()
+
+	repository, err := filepath.Abs("../../../../../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	models, err := provider.NewRegistry(map[string]string{linkTestTier: "claude:default"},
+		map[provider.Role]string{provider.RolePrompt: linkTestTier, provider.RoleFix: linkTestTier,
+			provider.RoleApply: linkTestTier})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	client := &critiqueAI{answer: `{"answer":"pass","findings":[]}`}
+	critic := validate.NewStepCritic(client, models,
+		filepath.Join(repository, "templates/build-steps.critique.system.prompt.tpl"),
+		filepath.Join(repository, "templates/build-steps.critique.prompt.tpl"))
+
+	_, err = critic.Critique(context.Background(), validate.StepCritiqueData{
+		Definition: "halving", Context: "context", Sources: "sources", Concept: concept,
+	}, "", filepath.Join(t.TempDir(), "turn"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return client
+}
+
+func requireTerms(t *testing.T, text string, terms ...string) {
+	t.Helper()
+
+	for _, term := range terms {
+		if !strings.Contains(text, term) {
+			t.Errorf("lacks %q:\n%s", term, text)
+		}
 	}
 }

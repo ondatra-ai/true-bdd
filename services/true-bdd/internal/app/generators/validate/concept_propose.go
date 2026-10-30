@@ -106,8 +106,9 @@ func (e *ChecklistEvaluator) proposalRequest(item *template.ConceptProposalData,
 		Concept:  map[string]any{"concept": concept.Name, "means": concept.Means, "terms": concept.Terms},
 		Glossary: glossary, Binding: matches[0], PublicInterface: interfaceContext,
 		ExistingDefinitions: append([]string{}, item.Existing...), Steps: item.Steps}
-	if len(item.Findings) > 0 {
-		request.Refused = &proposalRefusal{Patterns: item.Previous, Findings: item.Findings}
+	if len(item.Findings) > 0 || len(item.Critique) > 0 {
+		request.Refused = &proposalRefusal{Patterns: item.Previous,
+			Findings: append(append([]string{}, item.Findings...), item.Critique...)}
 	}
 
 	return request, nil
