@@ -1323,9 +1323,9 @@ architecture:
         go to the System Architect at the menu and apply writes architecture.concepts
         and any approved missing Public interface declaration, never a Scenario.
         The existing fix ledger restores documents when a walk fails. The link and means word judgements run in us refine and scen check.
-        build steps reuses the binding judgement after suite grouping; pattern
-        proposal is not built yet. step-phrases and step-definitions still report
-        concept hosts unchecked.
+        build steps reuses the binding judgement after suite grouping, and its
+        proposal turn reads the binding before the engine checks the patterns.
+        step-phrases and step-definitions still report concept hosts unchecked.
     - term: Phrase mapping
       technical: >-
         architecture.phrases is an optional list of template and service pairs for template
@@ -1426,7 +1426,7 @@ architecture:
     - term: Item
       technical: >-
         For a template host, BuildStepsItem carries one Catalogue Entry, service name and suite steps directory. Discovery orders suites by the first Registry Scenario id and phrases by Catalogue order, deduplicating each phrase and suite. Inventory includes phrases mapped to the suite's service or used by its Scenarios, including mapped unused phrases. The read-only command reports whole-Registry coverage with subject id registry. Under --fix the Item includes its skeleton location, complete YAML Specification context and latest per-Item findings, and uses a stable phrase hash as its artifact id, prefixed by the suite directory when multiple suites write the same phrase.
-        For a concept host, unboundConceptSuites deduplicates gap texts by suite and block, excluding judge: and llm:. Each linked concept and suite is an Item; all service bindings are judged before any skeleton, by the same binding Prompt loaded from scen-check and the same evaluator. The group protocol uses best and runner-up scores with the shared link threshold selector and ambiguity verdict. Malformed completeness or ranking, and output caps, crash. config.grouping_batch_texts defaults to 800 for claude-opus-5 and this format; equalStepBatches uses the fewest batches and sizes differ by at most one. After these passes ErrPatternProposalPending stops without definitions or generated tests; proposal and skeletons follow in another slice.
+        For a concept host, unboundConceptSuites deduplicates gap texts by suite and block, excluding judge: and llm:. Each linked concept and suite is an Item; all service bindings are judged before any skeleton, by the same binding Prompt loaded from scen-check and the same evaluator. The group protocol uses best and runner-up scores with the shared link threshold selector and ambiguity verdict. Malformed completeness or ranking, and output caps, crash. config.grouping_batch_texts defaults to 800 for claude-opus-5 and this format; equalStepBatches uses the fewest batches and sizes differ by at most one. A bare run then lists the Items. Under --fix the propose Q answers each Item's patterns, pattern, captures and serves, as schema-bound data from the concept, its terms' glossary entries, its binding, the Public interface, the concept's existing definition patterns and the grouped steps; catalogue.CheckPatterns holds it to every deterministic suite step in every block (compiles, one capture per name, each grouped step one pattern, no foreign step, no unused pattern), and a refusal is resent with the refused patterns and findings up to max_apply_attempts proposals, else ErrPatternProposal. Accepted patterns become stepskeleton.WriteConcept skeletons named from concept, suite and pattern, recording //truebdd:concept; stepskeleton.Concepts reads them back so pending ones resume as Items.
       observed_by: >-
         build-steps-list-001 observes the phrase and suite in each missing-definition log record. build-steps-writing-001 through 007 and the restored term-document, exit and codex-apply Scenarios pin body writing, verification and confinement.
 

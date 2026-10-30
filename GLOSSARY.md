@@ -61,7 +61,7 @@ One testable condition inside a refined user story, before it is merged into the
 _Avoid_: AC (in prose), criterion, condition
 
 **Item**:
-Whatever a single command walks — a Story for `us refine`, an Acceptance Criterion for `us apply`, a Scenario for `scen check`, a concept and suite for `build steps` on a concept host, or a Catalogue phrase that a go-test suite's service maps or its Scenarios use and that has no written step definition there on a template host. Concept Items require a fresh unambiguous service binding before any skeleton; pattern proposal is not built yet.
+Whatever a single command walks — a Story for `us refine`, an Acceptance Criterion for `us apply`, a Scenario for `scen check`, a concept and suite for `build steps` on a concept host, or a Catalogue phrase that a go-test suite's service maps or its Scenarios use and that has no written step definition there on a template host. Concept Items require a fresh unambiguous service binding before any skeleton; each one's patterns are proposed by the AI and checked by the engine against every step of the suite, and a pending concept skeleton a walk finds is resumed as its concept's Item.
 _Avoid_: subject, entity, record
 
 **Prompt**:
