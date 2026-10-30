@@ -127,7 +127,7 @@ func TestBuildStepsRefusals001EmptyChecklistRefused(t *testing.T) {
 func TestBuildStepsWriting001NewBody(t *testing.T) {
 	s := scenarios.New(t, "build-steps-writing-001-new-body")
 	s.Given(`the "build-steps-new" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches BUILD STEPS COMPLETE`)
@@ -151,7 +151,7 @@ func TestBuildStepsWriting001NewBody(t *testing.T) {
 func TestBuildStepsWriting002AllSkeletonsFirst(t *testing.T) {
 	s := scenarios.New(t, "build-steps-writing-002-all-skeletons-first")
 	s.Given(`the "build-steps-many" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches BUILD STEPS COMPLETE`)
@@ -170,7 +170,7 @@ func TestBuildStepsWriting002AllSkeletonsFirst(t *testing.T) {
 func TestBuildStepsWriting003SlotOrder(t *testing.T) {
 	s := scenarios.New(t, "build-steps-writing-003-slot-order")
 	s.Given(`the "build-steps-slots" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches BUILD STEPS COMPLETE`)
@@ -187,7 +187,7 @@ func TestBuildStepsWriting003SlotOrder(t *testing.T) {
 func TestBuildStepsWriting004InterfaceCannotServe(t *testing.T) {
 	s := scenarios.New(t, "build-steps-writing-004-interface-cannot-serve")
 	s.Given(`the "build-steps-interface" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches public interface cannot serve phrase`)
@@ -203,7 +203,7 @@ func TestBuildStepsWriting004InterfaceCannotServe(t *testing.T) {
 func TestBuildStepsWriting005OutsideTestsRefused(t *testing.T) {
 	s := scenarios.New(t, "build-steps-writing-005-outside-tests-refused")
 	s.Given(`the "build-steps-outside" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches BUILD STEPS COMPLETE`)
@@ -235,7 +235,7 @@ func TestBuildStepsWriting006BringupIsNotRed(t *testing.T) {
 func TestBuildStepsWriting007GreenBodyRepaired(t *testing.T) {
 	s := scenarios.New(t, "build-steps-writing-007-green-body-repaired")
 	s.Given(`the "build-steps-green" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches Scenario green without target.*TestCalc001Double`)
@@ -251,7 +251,7 @@ func TestBuildStepsWriting007GreenBodyRepaired(t *testing.T) {
 func TestCodexApply002BuildStepsWritesProtectedTests(t *testing.T) {
 	s := scenarios.New(t, "codex-apply-002-build-steps-writes-protected-tests")
 	s.Given(`the "codex-apply-build-steps" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches BUILD STEPS COMPLETE`)
@@ -295,7 +295,7 @@ func TestEngineTermDocuments006MappingNotAListRefusesBuildStepsFix(t *testing.T)
 func TestFixLoopChoices006ExitFailsBuildSteps(t *testing.T) {
 	s := scenarios.New(t, "fix-loop-choices-006-exit-fails-build-steps")
 	s.Given(`the "build-steps-exit" project tree`)
-	s.And(`the System Architect answers "3" to every question`)
+	s.And(`the System Architect's answer to every question is "3"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches action=exit`)

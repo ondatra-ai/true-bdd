@@ -13,7 +13,7 @@ story:
     - given:
       - the "claude-guard-selection" project tree
       - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - claude pipes a "foreground" shell call in directory "." with command go test ./... -run '^TestOne$'
+      - the tool call is a "foreground" shell call in directory "." with command go test ./... -run '^TestOne$'
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -24,7 +24,7 @@ story:
     - given:
       - the "claude-guard-noncanonical" project tree
       - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - claude pipes a "foreground" shell call in directory "." with command go test ./...; pwd
+      - the tool call is a "foreground" shell call in directory "." with command go test ./...; pwd
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -36,7 +36,7 @@ story:
     - given:
       - the "claude-guard-background" project tree
       - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - claude pipes a "background" shell call in directory "." with command go test ./...
+      - the tool call is a "background" shell call in directory "." with command go test ./...
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -48,7 +48,7 @@ story:
     - given:
       - the "claude-guard-directory" project tree
       - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - claude pipes a "foreground" shell call in directory "../other" with command go test ./...
+      - the tool call is a "foreground" shell call in directory "../other" with command go test ./...
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -59,7 +59,7 @@ story:
     steps:
     - given:
       - the "build-code-claude-replay" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:
@@ -78,7 +78,7 @@ story:
     steps:
     - given:
       - the "build-code-claude-failure" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:
@@ -99,7 +99,7 @@ story:
     steps:
     - given:
       - the "build-code-unrepresentable-replay" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:

@@ -12,7 +12,7 @@ story:
     steps:
     - given:
       - the "build-steps-critique-operation" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build steps --fix"
     - then:
@@ -32,7 +32,7 @@ story:
     steps:
     - given:
       - the "build-steps-critique-assertion" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build steps --fix"
     - then:
@@ -52,7 +52,7 @@ story:
     steps:
     - given:
       - the "build-steps-critique-correct" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build steps --fix"
     - then:

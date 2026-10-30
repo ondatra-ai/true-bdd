@@ -12,7 +12,7 @@ story:
     steps:
     - given:
       - the "writer-config-codex" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:
@@ -26,7 +26,7 @@ story:
     steps:
     - given:
       - the "writer-config-claude" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:

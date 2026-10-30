@@ -2,6 +2,7 @@ package steps
 
 import "regexp"
 
+//truebdd:concept then "engine activity"
 func assertBuildIdentityLogged(state *State, _ []string) error {
 	records, err := readEngineLog(state)
 	if err != nil {

@@ -132,11 +132,13 @@ func recordedConcept(doc *ast.CommentGroup) (string, string, bool) {
 	return "", "", false
 }
 
+// registeredPatterns reads every literal registration of the package, as the
+// resolver binds them, wherever Register's helpers make them.
 func registeredPatterns(functions []*ast.FuncDecl) map[string]string {
 	patterns := make(map[string]string)
 
 	for _, fun := range functions {
-		if fun.Name.Name != registerFunction {
+		if fun.Body == nil {
 			continue
 		}
 

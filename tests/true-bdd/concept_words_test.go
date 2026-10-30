@@ -26,7 +26,7 @@ import (
 func TestConceptWords001Declare(t *testing.T) {
 	s := scenarios.New(t, "concept-words-001-declare")
 	s.Given(`the "concept-words-declare" project tree`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine host --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches undeclared domain word idempotency key`)
@@ -42,7 +42,7 @@ func TestConceptWords001Declare(t *testing.T) {
 func TestConceptWords002Reword(t *testing.T) {
 	s := scenarios.New(t, "concept-words-002-reword")
 	s.Given(`the "concept-words-reword" project tree`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine host --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches undeclared domain word idempotency key`)
@@ -86,7 +86,7 @@ func TestConceptWords004ScenarioFail(t *testing.T) {
 func TestConceptWords005Mapping(t *testing.T) {
 	s := scenarios.New(t, "concept-words-005-mapping")
 	s.Given(`the "concept-words-mapping" project tree`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "scen check --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches check=term-mappings.*answer=fail`)
@@ -102,7 +102,7 @@ func TestConceptWords005Mapping(t *testing.T) {
 func TestConceptWords006ScenarioFix(t *testing.T) {
 	s := scenarios.New(t, "concept-words-006-scenario-fix")
 	s.Given(`the "concept-words-scenario-fix" project tree`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "scen check --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches judgement=words answer=fail`)

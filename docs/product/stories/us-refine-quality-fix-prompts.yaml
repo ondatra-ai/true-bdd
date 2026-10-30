@@ -13,7 +13,7 @@ story:
     - given:
       - the "us-refine-fix-count" project tree
       - and: the "us-refine" checklist is narrowed to its "Count the total number of acceptance criteria" prompt
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
     - when:
       - the Product Owner runs "us refine halve-negative --fix"
     - then:
@@ -31,7 +31,7 @@ story:
     - given:
       - the "us-refine-fix-implementation" project tree
       - and: the "us-refine" checklist is narrowed to its "whether it describes implementation" prompt
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
     - when:
       - the Product Owner runs "us refine halve-negative --fix"
     - then:
@@ -49,7 +49,7 @@ story:
     - given:
       - the "us-refine-fix-happy-path" project tree
       - and: the "us-refine" checklist is narrowed to its "whether it describes the happy path" prompt
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
     - when:
       - the Product Owner runs "us refine divide-integers --fix"
     - then:
@@ -67,7 +67,7 @@ story:
     - given:
       - the "us-refine-fix-failure-mode" project tree
       - and: the "us-refine" checklist is narrowed to its "Identify every failure mode" prompt
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
     - when:
       - the Product Owner runs "us refine divide-integers --fix"
     - then:
@@ -86,7 +86,7 @@ story:
     - given:
       - the "us-refine-fix-measurable" project tree
       - and: the "us-refine" checklist is narrowed to its "whether it includes specific measurable criteria" prompt
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
     - when:
       - the Product Owner runs "us refine summary-views --fix"
     - then:
@@ -104,7 +104,7 @@ story:
     - given:
       - the "us-refine-fix-binary" project tree
       - and: the "us-refine" checklist is narrowed to its "whether it has a binary pass/fail outcome" prompt
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
     - when:
       - the Product Owner runs "us refine halve-negative --fix"
     - then:
@@ -122,7 +122,7 @@ story:
     - given:
       - the "us-refine-fix-sketch" project tree
       - and: the "us-refine" checklist is narrowed to its "attempt to draft a runnable test sketch" prompt
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
     - when:
       - the Product Owner runs "us refine halve-negative --fix"
     - then:

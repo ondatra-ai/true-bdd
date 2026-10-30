@@ -26,7 +26,7 @@ import (
 func TestConceptBodies001ThreeCases(t *testing.T) {
 	s := scenarios.New(t, "concept-bodies-001-three-cases")
 	s.Given(`the "concept-bodies-cases" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches Concept pattern binds.*step="the calculator's output does not match .*captures="does not`)
@@ -42,7 +42,7 @@ func TestConceptBodies001ThreeCases(t *testing.T) {
 func TestConceptBodies002FixturePrompt(t *testing.T) {
 	s := scenarios.New(t, "concept-bodies-002-fixture-prompt")
 	s.Given(`the "concept-bodies-prompt" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches CALC_REAL_GO must name the real go`)
@@ -57,7 +57,7 @@ func TestConceptBodies002FixturePrompt(t *testing.T) {
 func TestConceptBodies003FixtureContract(t *testing.T) {
 	s := scenarios.New(t, "concept-bodies-003-fixture-contract")
 	s.Given(`the "concept-bodies-contract" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches Step definition critiqued.*findings=\[\]`)
@@ -72,7 +72,7 @@ func TestConceptBodies003FixtureContract(t *testing.T) {
 func TestConceptBodies004ExtraRequirement(t *testing.T) {
 	s := scenarios.New(t, "concept-bodies-004-extra-requirement")
 	s.Given(`the "concept-bodies-extra" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches Step definition critiqued.*concept_binding`)
@@ -89,7 +89,7 @@ func TestConceptBodies004ExtraRequirement(t *testing.T) {
 func TestConceptBodies005WrongCapture(t *testing.T) {
 	s := scenarios.New(t, "concept-bodies-005-wrong-capture")
 	s.Given(`the "concept-bodies-capture" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches Step definition critiqued.*pattern_captures`)

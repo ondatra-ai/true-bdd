@@ -164,3 +164,29 @@ func requireBindings(t *testing.T, dir string, want map[string]int) {
 		}
 	}
 }
+
+// A hand-written suite may register its definitions from helpers Register
+// calls; their records count as the resolver counts their registrations.
+func TestConceptRecordsRegisteredOutsideRegisterAreRead(t *testing.T) {
+	t.Parallel()
+
+	dir := filepath.Join(t.TempDir(), "steps")
+	source := "package steps\n\n" +
+		"func Register(suite *Suite) {\n\tregisterGuard(suite)\n}\n\n" +
+		"func registerGuard(suite *Suite) {\n\tsuite.Step(`^the guard allows the tool call$`, allows)\n}\n\n" +
+		"//truebdd:concept then \"guard answer\"\nfunc allows(*State, []string) error { return nil }\n"
+
+	err := disk.Write(filepath.Join(dir, "steps.go"), []byte(source), disk.Shared)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	found, err := stepskeleton.Concepts(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(found) != 1 || found[0].Concept != "guard answer" || found[0].Pattern != `^the guard allows the tool call$` {
+		t.Fatalf("concept records registered by a helper: %+v", found)
+	}
+}

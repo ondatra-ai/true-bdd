@@ -85,7 +85,7 @@ story:
           steps:
           - given:
             - the "build-code-spec-scenario" project tree
-            - the System Architect answers "1" to every question
+            - the System Architect's answer to every question is "1"
           - when:
             - the System Architect runs "build code --fix"
           - then:
@@ -115,7 +115,7 @@ story:
           steps:
           - given:
             - the "build-code-spec-missing-product" project tree
-            - the System Architect answers "1" to every question
+            - the System Architect's answer to every question is "1"
           - when:
             - the System Architect runs "build code --fix"
           - then:
@@ -131,7 +131,7 @@ story:
           steps:
           - given:
             - the "build-code-spec-missing-registry" project tree
-            - the System Architect answers "1" to every question
+            - the System Architect's answer to every question is "1"
           - when:
             - the System Architect runs "build code --fix"
           - then:
@@ -147,7 +147,7 @@ story:
           steps:
           - given:
             - the "build-code-spec-concepts" project tree
-            - the System Architect answers "1" to every question
+            - the System Architect's answer to every question is "1"
           - when:
             - the System Architect runs "build code --fix"
           - then:

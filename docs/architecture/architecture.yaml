@@ -1,6 +1,6 @@
 # Architectural spec for this repository (the TrueBDD engine itself).
 #
-# Two sections read by the build pipeline, and one by `scen check`:
+# Two sections read by the build pipeline, and two by `scen check`:
 #   testing:  — the suites `build code` walks and `build tests` writes
 #               into. One section for the whole repository, because how
 #               a project runs its tests is a property of the project,
@@ -8,6 +8,8 @@
 #   services: — source paths and exact additional writable paths for build code.
 #   terms:    — the word mapping: how each product glossary word is built
 #               and how a step definition observes it (`D: term-mappings`).
+#   concepts: — the Concept bindings: what a step definition of each product
+#               concept does through the Public interface (`D: phrase-mappings`).
 #
 # Path resolved from `documents.architecture_yaml` in true-bdd/true-bdd.yaml.
 #
@@ -1325,9 +1327,9 @@ architecture:
                 and usage survive errors. Start failures and pre-spawn refusals
                 stay fatal. Other roles retain fatal provider-error handling.
 
-  # How each product word the catalogue declares is built and observed, in
+  # How each product word the concepts declare is built and observed, in
   # words naming no code identifier, so the steps can be rebuilt from it.
-  # It maps every word the catalogue declares, one entry per word.
+  # It maps every word the concepts declare, one entry per word.
   terms:
     - term: Concept
       technical: >-
@@ -2063,6 +2065,21 @@ architecture:
         rerun, edits, exit and once-only failure warning. The recording wrapper
         runs real Claude unchanged before injecting a non-zero exit.
 
+    - term: codex
+      technical: >-
+        codex-cli 0.162.1 (dependencies[codex]). Every apply turn it runs gets
+        a generated CODEX_HOME under the host's tmp/codex-homes/ holding a
+        private 0600 copy of auth.json in a 0700 home, and a permission profile
+        confining its writes to that turn's roots; the copy is removed when the
+        turn ends, whatever its outcome. Plan and validation turns stay
+        read-only.
+      observed_by: >-
+        Writer-lifecycle Scenarios put the fixture's dummy auth/auth.json and
+        cli/ programs in place of the real codex; the harness's codex program
+        checks the private copy at spawn and writes a receipt, and the Then
+        reads that receipt and requires no auth.json left in the one generated
+        home after the turn.
+
     - term: write guard
       technical: claude-guard --policy reads generated JSON and the complete Claude payload. An explicit hook allow object grants
         execution; denial exits 2 with one true-bdd guard reason on stderr. Read, Glob and Grep use host/toolchain/spill roots
@@ -2110,527 +2127,432 @@ architecture:
         directory it leaves out, such as `node_modules`; a link path that is
         absolute or climbs out of the project tree fails the step.
 
-  # The Phrase mapping (ADR-0032): what each Catalogue phrase's step does
-  # through docs/architecture/true-bdd-cli.yaml, by block (#243).
-  phrases:
-    - template: replay consumes the recorded validation requests in reverse order
-      service: true-bdd
-      references:
-      - outgoing_call: claude
-      does: Read the recording proxy consumed request receipts; in replay the first claim must name claude-002, recorded after claude-001. The ordinary cassette census independently requires every recorded request to be consumed.
-    - template: Scenario validation overlaps with ordered gates and fix menus
-      service: true-bdd
-      references:
-      - file: engine-log
-      does: Read Cell validation started and Cell validation finished records by subjectID and Check answered records, asserting overlap, gate precedence and Applying fix prompt order alpha,beta after validation.
-    - template: the System Architect runs build steps after scen check and a binding change
-      service: true-bdd
-      references:
-      - command: scen check
-      - command: build steps
-      - file: project-tree
-      does: The fixture wrapper runs scen check through the engine and recording proxy, replaces the binding document only after success, then runs build steps --fix through the same engine and proxy.
-    - template: the grouping answer CLI is controlled for invalid replies
-      service: true-bdd
-      references:
-      - outgoing_call: claude
-      does: Select the fixture Claude CLI behind the proxy only for malformed or output-capped grouping answers; reject any other opt-in.
-    - template: the link answer CLI is controlled for invalid replies
-      service: true-bdd
-      references:
-      - outgoing_call: claude
-      does: Select the fixture Claude CLI behind the recording proxy only for malformed, missing and incomplete link answers; reject any other fixture's opt-in.
-    - template: the validation CLIs are controlled for concurrent arrival
-      service: true-bdd
-      references:
-      - outgoing_call: claude
-      does: Select fixture-controlled launchers before the proxy, controlling first validation request arrival in both record and replay, with deterministic Claude programs behind it.
-    - template: the System Architect runs "{command}" while a "{kind}" hold blocks "{directory}" beyond its
-        wait limit
-      service: true-bdd
-      references:
-      - &id001
-        command: us refine
-      - &id002
-        command: us apply
-      - &id003
-        command: scen check
-      - &id004
-        command: build tests
-      - &id005
-        command: build steps
-      - &id006
-        command: build code
-      - &id007
-        command: init
-      - &id008
-        command: version
-      - file: project-tree
-      - file: staging-files
-      does: Runs the named command while the harness holds an exclusive or shared advisory lock on the directory
-        past the engine's ten-second wait (owned_io holds), keeping the run's outcome for the Then steps.
-    - template: the engine uses an observed fixture Claude CLI
-      service: true-bdd
-      references:
-      - outgoing_call: claude
-      does: Puts a fixture-owned deterministic Claude launcher before the recording proxy, so the next run's
-        claude calls reach an observed stand-in that checks the invocation contract.
-    - template: the System Architect runs "{command}" after planting a stale staging symlink
-      service: true-bdd
-      references:
-      - *id001
-      - *id002
-      - *id003
-      - *id004
-      - *id005
-      - *id006
-      - *id007
-      - *id008
-      - file: staging-files
-      does: Plants a stale .true-bdd.tmp.<basename> staging symlink after the pre-run snapshot, then runs
-        the named command and keeps its outcome.
-    - template: the System Architect runs "{command}" while a "{kind}" hold permits "{directory}"
-      service: true-bdd
-      references:
-      - *id001
-      - *id002
-      - *id003
-      - *id004
-      - *id005
-      - *id006
-      - *id007
-      - *id008
-      - file: project-tree
-      - file: staging-files
-      does: Runs the named command while the harness holds a compatible advisory lock on the directory, keeping
-        the outcome to show the lock does not block it.
-    - template: the project prepares atomic replacement probes
-      service: true-bdd
-      references:
-      - file: staging-files
-      does: Prepares an old hard link and a private file in the project tree for the atomic-replacement probes
-        of the next run.
-    - template: the rewritten file "{path}" keeps private permissions and replaces its old hard link "{original}"
-      service: true-bdd
-      references:
-      - file: staging-files
-      - file: project-tree
-      does: Observes that the rewritten file keeps its 0600 mode and is a new inode, its old hard link still
-        holding the previous bytes.
-    - template: the System Architect cancels "{command}" after a CLI descendant starts
-      service: true-bdd
-      references:
-      - *id001
-      - *id002
-      - *id003
-      - *id004
-      - *id005
-      - *id006
-      - *id007
-      - *id008
-      - outgoing_call: claude
-      - outgoing_call: codex
-      does: Runs the named command and interrupts it once a descendant of the spawned AI CLI has started,
-        keeping the outcome.
-    - template: the CLI descendant has stopped
-      service: true-bdd
-      references:
-      - outgoing_call: claude
-      - outgoing_call: codex
-      does: Observes that the descendant process the cancelled CLI started is no longer running.
-    - template: Git hook variables point outside the project
-      service: true-bdd
-      references:
-      - outgoing_call: go-toolchain
-      does: Sets the repository-local Git variables of the next run's environment to a directory outside the
-        project.
-    - template: the System Architect runs "{command}" while a "{kind}" hold blocks "{directory}"
-      service: true-bdd
-      references:
-      - *id001
-      - *id002
-      - *id003
-      - *id004
-      - *id005
-      - *id006
-      - *id007
-      - *id008
-      - file: project-tree
-      - file: staging-files
-      does: Runs the named command while the harness holds a conflicting advisory lock on the directory, then
-        releases it within the wait, keeping the outcome.
-    - template: library downloads use an empty offline proxy
-      service: true-bdd
-      references:
-      - outgoing_call: go-toolchain
-      does: Points the next run's Go module downloads at an empty file proxy, so a library download fails
-        deterministically.
-    - template: the "{tree}" project tree
-      service: true-bdd
-      references:
-      - file: project-tree
-      - file: configuration
-      does: Lays the named fixture's input over the repository's true-bdd/ and templates/ as the Host project
-        the next command runs in, with its recorded AI turns.
-    - template: the codex writer uses fixture-controlled authentication and CLIs
-      service: true-bdd
-      references:
-      - outgoing_call: codex
-      does: Gives the next run's codex writer the fixture's dummy authentication and deterministic CLI stand-ins.
-    - template: the codex writer provisioned and removed its fixture authentication
-      service: true-bdd
-      references:
-      - outgoing_call: codex
-      does: Observes the codex writer's receipt that it provisioned the dummy authentication privately and
-        removed it after the turn.
-    - template: the {actor:role} answers "{answer}" to every question
-      service: true-bdd
-      references: &id009
-      - command: us refine
-      - command: us apply
-      - command: scen check
-      - command: build steps
-      - command: build code
-      does: Queues the answer, repeated, as the next run's stdin for every fix menu and clarifying question.
-    - template: the {actor:role} answers "{lines}" line by line
-      service: true-bdd
-      references: *id009
-      does: Queues the given lines, in turn and nothing after them, as the next run's stdin.
-    - template: the "{checklist}" checklist is narrowed to its "{prompt}" prompt
-      service: true-bdd
-      references:
-      - file: checklists
-      does: Narrows the named checklist of the next run to the one named Prompt, and checks the fixture selects
-        exactly that Prompt.
-    - template: the project tree has no "{file}"
-      service: true-bdd
-      references:
-      - file: project-tree
-      does: Removes the named file from the assembled project tree before the next run.
-    - template: the project's [browser ]test dependencies are installed
-      service: true-bdd
-      references:
-      - file: project-tree
-      does: Requires the fixture to declare the install of the project's test dependencies, which its prep
-        runs while the project tree is assembled for the next run.
-    - template: the {actor:role} runs "{command}"
-      service: true-bdd
-      references: &id010
-      - *id001
-      - *id002
-      - *id003
-      - *id004
-      - *id005
-      - *id006
-      - *id007
-      - *id008
-      does: Runs the named command of the engine once in the prepared project tree, keeping its exit code,
-        stdout, stderr and file changes for the Then steps.
-    - template: the command exits with code {code:number}
-      service: true-bdd
-      references: *id010
-      does: Compares the kept exit status of the run with the number, as each command's responses declare
-        it.
-    - template: stdout matches {expected:pattern}
-      service: true-bdd
-      references:
-      - log_record: stdout-text
-      does: Matches the pattern anywhere in the kept stdout of the run, its answer lines and text log records.
-    - template: stdout does not match {unexpected:pattern}
-      service: true-bdd
-      references:
-      - log_record: stdout-text
-      does: Requires that the pattern matches nowhere in the kept stdout of the run.
-    - template: stderr matches {expected:pattern}
-      service: true-bdd
-      references:
-      - log_record: stderr-error
-      does: Matches the pattern anywhere in the kept stderr of the run.
-    - template: stderr does not match {unexpected:pattern}
-      service: true-bdd
-      references:
-      - log_record: stderr-error
-      does: Requires that the pattern matches nowhere in the kept stderr of the run.
-    - template: no file changed
-      service: true-bdd
-      references:
-      - file: project-tree
-      does: Requires an empty diff of the project tree between the pre-run and post-run snapshots, tmp included.
-    - template: no file outside "{dir}" changed
-      service: true-bdd
-      references:
-      - file: project-tree
-      does: Requires that every changed path of the run lies inside the directory.
-    - template: no file outside "{dir}" and "{other_dir}" changed
-      service: true-bdd
-      references:
-      - file: project-tree
-      does: Requires that every changed path of the run lies inside one of the two directories.
-    - template: the only file changed outside "{dir}" is "{file}"
-      service: true-bdd
-      references:
-      - file: project-tree
-      does: Requires that the named file is the only path the run changed outside the directory.
-    - template: the file "{file}" is created
-      service: true-bdd
-      references:
-      - file: project-tree
-      does: Observes that the run created the named file.
-    - template: the file "{file}" is modified
-      service: true-bdd
-      references:
-      - file: project-tree
-      does: Observes that the run modified the named file.
-    - template: the file "{file}" is unchanged
-      service: true-bdd
-      references:
-      - file: project-tree
-      does: Observes that the run left the named file unchanged.
-    - template: the file "{file}" has exactly {lines:number} line[s]
-      service: true-bdd
-      references:
-      - file: project-tree
-      does: Counts the lines of the named file after the run and compares them with the number.
-    - template: the file "{file}" matches {expected:pattern}
-      service: true-bdd
-      references:
-      - file: project-tree
-      does: Matches the pattern against the named file's content after the run.
-    - template: every file matching "{glob}" [matches|does not match] {expected:pattern}
-      service: true-bdd
-      references:
-      - file: project-tree
-      does: Requires every file matching the glob after the run to match, or not to match, the pattern.
-    - template: exactly {count:number} file[s] matching "{glob}" [is|are] created
-      service: true-bdd
-      references:
-      - file: project-tree
-      does: Counts the files matching the glob that the run created and compares them with the number.
-    - template: no file[s] matching "{glob}" [is|are] created
-      service: true-bdd
-      references:
-      - file: project-tree
-      does: Requires that the run created no file matching the glob.
-    - template: the story "{story_file}" has id "{id}"
-      service: true-bdd
-      references:
-      - file: stories
-      does: Reads the named Story file after the run and compares its id.
-    - template: the story "{story_file}" has feature "{feature}"
-      service: true-bdd
-      references:
-      - file: stories
-      does: Reads the named Story file after the run and compares its feature.
-    - template: the story "{story_file}" has {count:number} acceptance criteria
-      service: true-bdd
-      references:
-      - file: stories
-      does: Counts the named Story's Acceptance Criteria after the run.
-    - template: every acceptance criterion in the story "{story_file}" has given, when and then steps
-      service: true-bdd
-      references:
-      - file: stories
-      does: Requires every Acceptance Criterion of the named Story to carry given, when and then steps.
-    - template: the description of acceptance criterion "{criterion}" of the story "{story_file}" matches
-        {expected:pattern}
-      service: true-bdd
-      references:
-      - file: stories
-      does: Matches the pattern against the description of the named Acceptance Criterion of the Story.
-    - template: the description of acceptance criterion "{criterion}" of the story "{story_file}" does not
-        match {unexpected:pattern}
-      service: true-bdd
-      references:
-      - file: stories
-      does: Requires the pattern to match nowhere in the description of the named Acceptance Criterion.
-    - template: the steps of acceptance criterion "{criterion}" of the story "{story_file}" do not match {unexpected:pattern}
-      service: true-bdd
-      references:
-      - file: stories
-      does: Requires the pattern to match none of the steps of the named Acceptance Criterion.
-    - template: every step of scenario "{scenario}" in "{registry}" is matched by a step definition under
-        "{steps_dir}"
-      service: true-bdd
-      references:
-      - file: registry
-      - file: step-definitions
-      does: Requires every step of the named Scenario in the Registry to be matched by exactly one step definition
-        pattern under the directory.
-    - template: exactly {count:number} scenario[s] in "{registry}" come[s] from acceptance criterion "{criterion}"
-      service: true-bdd
-      references:
-      - file: registry
-      does: Counts the Registry Scenarios whose lineage names the Acceptance Criterion and compares them with
-        the number.
-    - template: the scenario from acceptance criterion "{criterion}" in "{registry}" cites the story "{story_file}"
-      service: true-bdd
-      references:
-      - file: registry
-      does: Requires the Registry Scenario from the Acceptance Criterion to cite the named Story in its lineage.
-    - template: the scenario from acceptance criterion "{criterion}" in "{registry}" is keyed "{key}"
-      service: true-bdd
-      references:
-      - file: registry
-      does: Compares the key of the Registry Scenario from the Acceptance Criterion with the named key.
-    - template: the scenario from acceptance criterion "{criterion}" in "{registry}" matches {expected:pattern}
-      service: true-bdd
-      references:
-      - file: registry
-      does: Matches the pattern against the Registry entry of the Scenario from the Acceptance Criterion.
-    - template: no two scenarios in "{registry}" share the same steps
-      service: true-bdd
-      references:
-      - file: registry
-      does: Requires that no two Registry Scenarios carry the same merged steps.
-    - template: the engine spawned the test runner "{program}"
-      service: true-bdd
-      references:
-      - log_record: spawning-test-runner
-      - outgoing_call: suite-command
-      does: Requires a Spawning test runner record in the engine log whose binary is the named program.
-    - template: the engine spawned a test runner with arguments matching {expected:pattern}
-      service: true-bdd
-      references:
-      - log_record: spawning-test-runner
-      - outgoing_call: suite-command
-      does: Requires a Spawning test runner record whose args, joined by single spaces, match the pattern.
-    - template: the engine spawned exactly {count:number} test runner[s]
-      service: true-bdd
-      references:
-      - log_record: spawning-test-runner
-      - outgoing_call: suite-command
-      does: Counts the Spawning test runner records in the engine log and compares them with the number.
-    - template: the engine spawned exactly {count:number} test runner[s] with arguments matching {expected:pattern}
-      service: true-bdd
-      references:
-      - log_record: spawning-test-runner
-      - outgoing_call: suite-command
-      does: Counts the Spawning test runner records whose args match the pattern and compares them with the
-        number.
-    - template: the engine spawned no test runner[s]
-      service: true-bdd
-      references:
-      - log_record: spawning-test-runner
-      - outgoing_call: suite-command
-      does: Requires no Spawning test runner record in the engine log.
-    - template: the engine dispatched {turns:number} AI turn[s]
-      service: true-bdd
-      references:
-      - log_record: dispatching-ai-turn
-      - file: engine-log
-      does: Counts the Dispatching AI turn records in the engine log and compares them with the number; a
-        missing log fails.
-    - template: the engine dispatched {turns:number} [validation|fix|apply] AI turn[s] to "{cli}"
-      service: true-bdd
-      references:
-      - log_record: dispatching-ai-turn
-      - file: engine-log
-      does: Counts the Dispatching AI turn records of the named role (prompt, fix or apply) and CLI and compares
-        them with the number.
-    - template: the shell command "{shell_command}" run in "{dir}" exits with code {code:number}
-      service: true-bdd
-      references:
-      - file: project-tree
-      does: Runs the shell command in the directory of the project tree after the run and compares its exit
-        status with the number.
-    - template: claude's write policy lets the turn write under "{dir}"
-      service: true-bdd
-      references:
-      - file: write-policy
-      - command: claude-guard
-      does: Writes the write policy the guard will read, granting writes under the directory.
-    - template: claude hands the guard no write policy
-      service: true-bdd
-      references:
-      - command: claude-guard
-      does: Has the guard run with no --policy file.
-    - template: claude hands the guard an unreadable write policy
-      service: true-bdd
-      references:
-      - file: write-policy
-      - command: claude-guard
-      does: Writes an invalid JSON write policy for the guard.
-    - template: claude hands the guard a write policy with no read root
-      service: true-bdd
-      references:
-      - file: write-policy
-      - command: claude-guard
-      does: Writes a write policy whose read root is empty.
-    - template: claude pipes the hook payload naming the tool "{tool}" and the path "{path}"
-      service: true-bdd
-      references:
-      - command: claude-guard
-      does: Sets the hook payload the guard reads on stdin to name the tool and the literal path.
-    - template: claude names the tool "{tool}"
-      service: true-bdd
-      references:
-      - command: claude-guard
-      does: Sets the tool_name of the hook payload.
-    - template: claude names the file "{file}" of the project tree
-      service: true-bdd
-      references:
-      - command: claude-guard
-      does: Sets the hook payload's path to the named file joined to the project tree.
-    - template: claude names the path "{path}" as written
-      service: true-bdd
-      references:
-      - command: claude-guard
-      does: Sets the hook payload's path to the path exactly as written.
-    - template: claude pipes the hook payload naming the tool "{tool}" and the file "{file}"
-      service: true-bdd
-      references:
-      - command: claude-guard
-      does: Sets the hook payload to name the tool and the named file of the project tree.
-    - template: the project tree's "{link}" is a symbolic link to "{target}"
-      service: true-bdd
-      references:
-      - file: project-tree
-      does: Has the fixture create the symbolic link in the project tree before the pre-run snapshot.
-    - template: the guard allows the tool call
-      service: true-bdd
-      references:
-      - command: claude-guard
-      does: Requires the guard's kept exit status to be 0, its allow.
-    - template: the guard denies the tool call
-      service: true-bdd
-      references:
-      - command: claude-guard
-      does: Requires the guard's kept exit status to be 2, its denial.
-    - template: the guard's reason matches {expected:pattern}
-      service: true-bdd
-      references:
-      - command: claude-guard
-      does: Matches the pattern against the guard's denial reason on stderr.
-    - template: the file matching "{glob}" has exactly {count:number} match[es] for {expected:pattern}
-      service: true-bdd
-      references:
-      - file: project-tree
-      does: Counts the matches of the pattern in the one file matching the glob and compares them with the
-        number.
-    - template: claude's write policy grants the test command "{command}" with selector "{flag}" in "{dir}"
-      service: true-bdd
-      references:
-      - file: write-policy
-      - command: claude-guard
-      does: Writes a write policy granting the canonical test command with the selector flag in the suite
-        directory.
-    - template: claude pipes a "{mode}" shell call in directory "{dir}" with command {command:pattern}
-      service: true-bdd
-      references:
-      - command: claude-guard
-      does: Sets the hook payload to a Bash call with the command, run in the foreground or background, in
-        the directory.
-    - template: claude asks the guard about the tool call
-      service: true-bdd
-      references:
-      - command: claude-guard
-      - file: write-policy
-      does: Runs claude-guard --policy once with the prepared payload on stdin, keeping its exit status, stdout
-        and stderr.
-    - template: the engine logged its build identity once at start
-      service: true-bdd
-      references:
-      - log_record: engine-started
-      - file: engine-log
-      does: Requires the engine log's first record to be the only Engine started record, with nonempty version
-        and commit.
+    - term: hard link
+      technical: >-
+        A filesystem hard link (link(2)): a second directory entry for the same
+        inode. A whole-file write renames a new inode over the target's name,
+        so a hard link kept beside it still holds the previous bytes.
+      observed_by: >-
+        The stale-staging When keeps tmp/original.go as a hard link to the file
+        the command rewrites, before the engine starts; the Then compares the
+        rewritten file's inode and content with those of that link.
+
+    - term: hold
+      technical: >-
+        A POSIX advisory flock the engine's disk channel takes on the parent
+        directory of the file it reads or writes, shared for a read and
+        exclusive for a mutation, closed before the operation returns. A
+        conflicting hold is polled every 5ms for up to 10s, after which the
+        operation fails with directory lock not released and the parent path
+        (services[true-bdd].patterns.owned_io).
+      observed_by: >-
+        The When step runs the command behind a launch barrier while the
+        harness holds a shared or exclusive flock on the named directory of
+        the project tree, opened as a directory descriptor after the pre-run
+        snapshot: released while the engine still waits, kept until the engine
+        has stopped, or held beside a compatible read. The Then steps read the
+        exit code, stdout and file changes the run left.
+
+    - term: staging file
+      technical: >-
+        .true-bdd.tmp.<basename> beside the target of a whole-file write: a
+        stale one is removed without following a symbolic link, then the new
+        one is created exclusively, written, closed and renamed over the
+        target, keeping the target's existing permissions
+        (services[true-bdd].patterns.owned_io).
+      observed_by: >-
+        The When step plants a stale staging symlink beside the file the
+        command rewrites once the run has started, after the pre-run snapshot;
+        the Then steps read the rewritten file, its permissions and inode, and
+        the old hard link the project tree's probes kept.
+
+  # Concept bindings (ADR-0035): what a step definition of each product
+  # concept does through docs/architecture/true-bdd-cli.yaml, by block.
+  concepts:
+    - concept: project tree
+      block: given
+      service: true-bdd
+      references:
+        - file: project-tree
+        - file: configuration
+        - file: checklists
+        - file: prompt-templates
+        - file: staging-files
+      does: >-
+        Lays the named fixture's input/ files
+        (tests/true-bdd/fixtures/<name>/input/) over a fresh copy of the
+        repository's own true-bdd/ and templates/ as the Host project the next
+        command runs in, the fixture's recorded AI turns under its cassettes/
+        answering that run; the fixture's prep.sh, when it has one, runs in
+        that tree before the run's starting snapshot. A further Given on the
+        same tree changes it before that snapshot: removes the named file or
+        directory from the assembled tree, failing the run when the path is
+        not there or leads out of it; appends to the preparation the shell
+        command mkdir -p <the link's directory> && ln -s <target> <link>, each
+        value shell-quoted, so the named path is a symbolic link to the target
+        exactly as written, failing the step for an absolute link path or one
+        that climbs out of the tree (both snapshots refuse a link they walk
+        into, so a Scenario names a link inside a directory they skip:
+        node_modules, .git, .next, test-results or playwright-report); checks,
+        without changing any checklist, that the fixture's
+        checklist-prompts.yaml lists exactly one question snippet under the
+        named checklist's file stem and that it equals the quoted text, the
+        harness keeping only the Prompt whose question contains it when it
+        assembles the tree; or, for the atomic replacement probes, requires
+        the fixture to have a prep.sh, failing when it has none, the
+        engine-io-atomic fixture's making tests/mcp/ticket_test.go private
+        (0600) and writing the sentinel tmp/staging-target.txt.
+    - concept: machine environment
+      block: given
+      service: true-bdd
+      references:
+        - file: project-tree
+        - outgoing_call: go-toolchain
+      does: >-
+        Sets the next run's machine: requires the fixture to declare a
+        preparation, which installs the project's test dependencies (and with
+        browser its browser, through playwright install) while the tree is
+        assembled, the step failing when the fixture declares none, or with
+        browser none running playwright install; points Go module downloads at
+        an empty local file proxy under the run directory, with GOSUMDB=off,
+        GONOPROXY=none and an empty GOPRIVATE, so an uncached Library download
+        fails; or sets GIT_DIR and GIT_INDEX_FILE to paths outside the project
+        and TRUE_BDD_REAL_GO to the genuine go on PATH, which the fixture's Go
+        programs call once they have checked the Git variables.
+    - concept: fixture AI CLIs
+      block: given
+      service: true-bdd
+      references:
+        - outgoing_call: claude
+        - outgoing_call: codex
+      does: >-
+        The suite reaches claude and codex through its own claude and codex
+        programs first on PATH, which by the mode the suite runs in record
+        each call, replay the recorded one or pass it to the real CLI. Each
+        Given changes the next run's PATH and environment with the named
+        fixture's programs: the observed claude puts the fixture's
+        claude-only/ directory before the suite's programs in every mode, with
+        CLAUDE_CONFIG_DIR under the run's tmp/claude-state and CLAUDECODE,
+        CLAUDE_HISTORY_ROLE, CLAUDE_CODE_SAFE_MODE, CLAUDE_CODE_SIMPLE,
+        CLAUDE_RELAUNCH_SESSION_ADD_DIRS and CLAUDE_CODE_DISABLE_ADVISOR_TOOL
+        set to parent-session values the engine must not pass on, and the
+        fixture's claude refuses a call that breaks the claude invocation
+        contract; the codex writer puts the fixture's cli/ directory right
+        behind the suite's programs, sets CODEX_HOME to the fixture's auth/
+        (its dummy auth.json) and TRUE_BDD_AIPROXY_WRITER_FIXTURE to the
+        fixture, and has the suite's codex program observe the spawn even in
+        live mode, writing its receipt under the run's tmp/aiproxy-state/;
+        invalid link or grouping answers put the fixture's input/cli/
+        directory right behind the suite's programs (before every other PATH
+        entry in live mode), allowed only for the fixtures
+        concept-link-malformed, concept-link-missing-answer,
+        concept-link-incomplete, concept-grouping-missing,
+        concept-grouping-repeat, concept-grouping-rank, concept-grouping-cap,
+        concept-grouping-unknown and concept-grouping-same, the step failing
+        for any other; concurrent arrival puts the fixture's front/ launchers
+        before the suite's programs and its cli/ programs behind them, the
+        launchers admitting the alpha Scenario's validation request before
+        beta's when recording and beta's before alpha's when replaying, once
+        both are outstanding.
+    - concept: scripted answers
+      block: given
+      service: true-bdd
+      references:
+        - command: us refine
+        - command: us apply
+        - command: scen check
+        - command: build steps
+        - command: build code
+      does: >-
+        Queues the next run's stdin: the quoted answer on its own line, repeated
+        64 times, for every question and fix menu; or the quoted text split at
+        each "/", each piece trimmed of surrounding spaces and written on its
+        own line in order, with nothing after the last.
+    - concept: write policy
+      block: given
+      service: true-bdd
+      references:
+        - file: write-policy
+        - command: claude-guard
+      does: >-
+        Records the Scenario's write policy; the write guard's When writes it.
+        That When adds to the fixture's preparation the writing of
+        tmp/claude-guard-policy.json in the project tree, so the file is there
+        before the run's starting snapshot, holding the JSON object {"replay":
+        P} and none of the write policy's other keys. P holds "read_root", the
+        project tree's absolute root, empty when the policy names no directory
+        to read; "write_roots", each named directory joined to that root, in
+        step order, an empty list when none is named; and, when a test command
+        is granted, the step's three quoted values in order: "test_command"
+        (the command), "test_selector" (the selector flag) and "test_dir" (the
+        directory joined to the root). An unreadable policy is the text
+        invalid in place of that JSON; a missing policy is no file at all,
+        claude-guard still being given --policy tmp/claude-guard-policy.json.
+    - concept: tool call
+      block: given
+      service: true-bdd
+      references:
+        - command: claude-guard
+      does: >-
+        Records the Scenario's tool call; the When step sends it to
+        claude-guard on stdin as the JSON object {"tool_name": T, "cwd": C,
+        "tool_input": {"command": X, "run_in_background": B, "file_path": F,
+        "path": Q}}. T is the named tool, Bash when none is named. F is the
+        named file joined to the project tree's absolute root for a file of
+        the project tree, or the path exactly as written for a path named as
+        written, else empty. A hook payload Given naming the tool and a file
+        sets T and F at once; one naming the tool and a path sets T and Q, the
+        path exactly as written, and leaves F empty; either takes precedence
+        over a tool or target named separately. C is the project tree's
+        absolute root, or for a shell call its named directory joined to that
+        root; X is the shell call's command, the rest of the step, and B true
+        for background and false for foreground; both are empty and false for
+        any other call.
+    - concept: a role runs a command
+      block: when
+      service: true-bdd
+      references:
+        - command: us refine
+        - command: us apply
+        - command: scen check
+        - command: build tests
+        - command: build steps
+        - command: build code
+        - command: init
+        - command: version
+      does: >-
+        Runs the engine once with the quoted command line, {{CWD}} standing for
+        the run directory, in the prepared project tree with the queued stdin,
+        and keeps its exit code, stdout, stderr, engine log and file changes for
+        the Then steps; the role names who wants the behaviour and changes
+        nothing the run does.
+    - concept: a command runs under interference
+      block: when
+      service: true-bdd
+      references:
+        - command: us refine
+        - command: us apply
+        - command: scen check
+        - command: build tests
+        - command: build steps
+        - command: build code
+        - command: init
+        - command: version
+        - file: project-tree
+        - file: staging-files
+        - file: architecture-document
+        - outgoing_call: claude
+        - outgoing_call: codex
+      does: >-
+        Runs the quoted command as a role runs a command, through a launcher
+        that writes the engine's process id to tmp/engine.pid of the project
+        tree, and acts on the run. For a hold the launcher waits, after the
+        run's starting snapshot, until the harness has taken a non-blocking
+        flock, shared or exclusive as the step names it, on the named
+        directory of the project tree, and then starts the engine: blocks
+        requires the engine not to have returned 300 milliseconds later, its
+        process still alive, and then releases the hold; beyond its wait limit
+        keeps the hold until the engine's process has ended, requiring that
+        between nine and twelve seconds after the engine was let start;
+        permits keeps the hold and requires the engine to return within three
+        seconds. For the stale staging file the launcher waits likewise while
+        the harness keeps tmp/original.go as an old hard link to the fixture's
+        tests/mcp/ticket_test.go, the file build tests --fix rewrites, and
+        creates tests/mcp/.true-bdd.tmp.ticket_test.go as a symbolic link to
+        ../../tmp/staging-target.txt, and then starts the engine. For
+        cancellation it puts the fixture's cli/ directory first on PATH,
+        starts the engine at once, waits up to ten seconds for the AI CLI's
+        descendant process to write its process id to tmp/descendant.pid, then
+        sends the engine SIGINT and waits for it to return. For build steps
+        after scen check and a binding change it runs the fixture's
+        input/run-after-check program in place of the engine, with
+        TRUE_BDD_GROUPING_ENGINE naming the engine: the program runs scen
+        check, stops when it fails, copies the fixture's
+        ambiguous-architecture.json over docs/architecture/architecture.yaml,
+        then runs build steps --fix. An engine still running five seconds
+        after the harness's observation ended, or one whose observation
+        failed, is killed and the step fails; otherwise the outcome is kept as
+        a role runs a command keeps it.
+    - concept: the write guard is asked
+      block: when
+      service: true-bdd
+      references:
+        - command: claude-guard
+        - file: write-policy
+      does: >-
+        Adds to the fixture's preparation the writing of the recorded write
+        policy to tmp/claude-guard-policy.json of the project tree, before the
+        run's starting snapshot (nothing for a missing policy), then runs
+        claude-guard --policy tmp/claude-guard-policy.json once in the project
+        tree with the recorded tool call's hook payload on stdin, no AI turn,
+        keeping its exit status, stdout and stderr.
+    - concept: exit code
+      block: then
+      service: true-bdd
+      references:
+        - command: us refine
+        - command: us apply
+        - command: scen check
+        - command: build tests
+        - command: build steps
+        - command: build code
+        - command: init
+        - command: version
+      does: Compares the kept exit status of the run with the number, "no" meaning zero.
+    - concept: console output
+      block: then
+      service: true-bdd
+      references:
+        - log_record: stdout-text
+        - log_record: stderr-error
+      does: >-
+        Matches the pattern, a Go regular expression taken as the rest of the
+        step, anywhere in the kept stdout or the kept stderr of the run, as the
+        step names the stream, and requires a match, or with does not match no
+        match.
+    - concept: file changes
+      block: then
+      service: true-bdd
+      references:
+        - file: project-tree
+      does: >-
+        Compares the pre-run and post-run snapshots of the project tree, tmp
+        included: requires an empty diff; or every changed path inside the one
+        named directory, or inside one of the two; or the named file as the
+        only change outside the directory; or the named file created, modified,
+        or present and unchanged (a path naming no file fails); or counts the
+        created files whose path matches the glob and compares them with the
+        number, "no" meaning zero, a malformed glob failing the step.
+    - concept: file content
+      block: then
+      service: true-bdd
+      references:
+        - file: project-tree
+        - file: engine-log
+        - file: run-artifacts
+        - file: staging-files
+      does: >-
+        Reads files of the project tree after the run: matches the pattern, a
+        Go regular expression taken as the rest of the step, against the named
+        file's content; counts the named file's lines, a final newline closing
+        the last line; requires at least one file matching the glob and every
+        such file to match the pattern, or with does not match none to, where
+        {{CWD}}, {{ENGINE}}, {{GOROOT}} and {{GOMODCACHE}} in the pattern
+        stand for the symlink-resolved project tree root, the engine
+        executable and go env's GOROOT and GOMODCACHE, each escaped as JSON
+        string content for a file ending .json, as TOML basic string content
+        for one ending .toml, raw otherwise, and then escaped for the regular
+        expression; requires exactly one file matching the glob and counts its
+        non-overlapping matches of the pattern, "no" meaning zero; or, given
+        the rewritten file's path and its old hard link's path, both named by
+        the step, requires the rewritten file to have mode 0600, another inode
+        than the old hard link and content differing from the old hard link's.
+    - concept: Story content
+      block: then
+      service: true-bdd
+      references:
+        - file: stories
+      does: >-
+        Reads the Story in the one file of the project tree the quoted glob
+        matches after the run, failing for none or two, and compares its id or
+        its feature; counts its Acceptance Criteria and compares them with the
+        number; requires at least one and each to carry a given, a when and a
+        then step; matches the pattern against the description of the
+        Acceptance Criterion with the named id, requiring a match, or with
+        does not match no match; or requires none of that criterion's step
+        texts to match the pattern, the criterion needing steps. A criterion
+        with the named id must exist.
+    - concept: Registry content
+      block: then
+      service: true-bdd
+      references:
+        - file: registry
+        - file: step-definitions
+      does: >-
+        Reads the named Registry of the project tree after the run as YAML:
+        counts the Scenarios whose lineage (a user_stories entry) names the
+        Acceptance Criterion's lineage id and compares them with the number;
+        requires exactly one from it and that its lineage cites the named
+        Story file, that it sits under the named key, or that its whole entry
+        written back as YAML matches the pattern; requires that no two
+        Scenarios hold identical merged_steps (their given, when and then
+        lists compared as YAML), a Scenario without merged_steps sharing
+        nothing; or reads the first argument of every literal .Step(pattern,
+        function) registration in the .go files of the named steps directory
+        and requires every step of the named Scenario, judge: and llm: steps
+        aside, to be matched by exactly one of those patterns.
+    - concept: engine activity
+      block: then
+      service: true-bdd
+      references:
+        - file: engine-log
+        - log_record: spawning-test-runner
+        - log_record: dispatching-ai-turn
+        - log_record: engine-started
+        - log_record: cell-validation-started
+        - log_record: cell-validation-finished
+        - log_record: check-answered
+        - log_record: applying-fix
+        - outgoing_call: suite-command
+      does: >-
+        Reads the run's engine log, tmp/true-bdd.log.json of the project tree,
+        one JSON record per line, a missing log failing: requires a Spawning
+        test runner record whose binary is the named program, or whose args
+        joined by single spaces match the pattern; counts Spawning test runner
+        records, all or those whose args match the pattern, and compares them
+        with the number, "no" meaning zero; counts Dispatching AI turn
+        records, all or those of the named kind and cli (validation is role
+        prompt, fix is role fix, apply is role apply), and compares them with
+        the number; requires the first record to be the only Engine started
+        record, at INFO, with nonempty version and commit holding no
+        whitespace; or, for overlapping validation, walks the Check answered,
+        Cell validation started, Cell validation finished and Applying fix
+        prompt records in log order: every Cell validation started record must
+        follow a Check answered record of the same subjectID since the last
+        Applying fix prompt record and must never name gamma, the fixture's
+        Scenario whose built-in check fails; no subjectID may start a Cell
+        before its previous Cell finished; at some point two subjectIDs must
+        have started Cells not yet finished; and every Applying fix prompt
+        record must come while no Cell is unfinished, their subjectIDs reading
+        alpha then beta, the fixture's two passing-check Scenarios.
+    - concept: after-run shell check
+      block: then
+      service: true-bdd
+      references:
+        - file: project-tree
+      does: >-
+        Runs the quoted shell command, split at whitespace, in the named
+        directory of the project tree after the run, with GOWORK=off and
+        CLAUDECODE removed from its environment, and compares its exit status
+        with the number, "no" meaning zero.
+    - concept: write guard's answer
+      block: then
+      service: true-bdd
+      references:
+        - command: claude-guard
+      does: >-
+        Requires the guard's kept exit status to be 0 for allows or 2 for
+        denies, or matches the pattern, taken as the rest of the step, against
+        the reason on its kept stderr.
+    - concept: AI CLI observations
+      block: then
+      service: true-bdd
+      references:
+        - outgoing_call: claude
+        - outgoing_call: codex
+      does: >-
+        Observes what the fixture's AI CLI programs and the suite's claude and
+        codex programs left in the project tree after the run: reads the
+        process id the cancelled AI CLI's descendant wrote to
+        tmp/descendant.pid and requires no process with that id to exist
+        within three seconds; requires the codex program's receipt
+        tmp/aiproxy-state/writer-spawn.txt to hold exactly "fixture
+        authentication and edit roots verified" and a newline, which it writes
+        only when the one writer spawn held an exact private copy of the
+        fixture's auth.json in a private generated home, and requires exactly
+        one generated home matching tmp/codex-homes/*/*-codex-home with no
+        auth.json left in it; or, only when the suite replays, reads the
+        claude program's receipt tmp/aiproxy-state/consumed-claude, a JSON
+        list of the recorded calls it consumed in order, and requires it to
+        begin with "claude-002", the call recorded after claude-001; recording
+        or live, that observation passes.

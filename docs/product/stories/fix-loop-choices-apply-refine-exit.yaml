@@ -29,7 +29,7 @@ story:
           steps:
             - given:
                 - the "fix-loop-refine-feedback" project tree
-                - the Quality Engineer answers "2 / Call the number slot of the new template budget / / 1" line by line
+                - the Quality Engineer's answers are "2 / Call the number slot of the new template budget / / 1" line by line
             - when:
                 - the Quality Engineer runs "scen check --fix"
             - then:
@@ -48,7 +48,7 @@ story:
           steps:
             - given:
                 - the "fix-loop-own-words" project tree
-                - the Quality Engineer answers "It means the round trip from sending the message to receiving its reply takes at most that many milliseconds / 1" line by line
+                - the Quality Engineer's answers are "It means the round trip from sending the message to receiving its reply takes at most that many milliseconds / 1" line by line
             - when:
                 - the Quality Engineer runs "scen check --fix"
             - then:
@@ -67,7 +67,7 @@ story:
             - given:
                 - the "fix-loop-exit-story" project tree
                 - and: the "us-refine" checklist is narrowed to its "whether its description field contains a vague word" prompt
-                - the Product Owner answers "3" to every question
+                - the Product Owner's answer to every question is "3"
             - when:
                 - the Product Owner runs "us refine 97.1 --fix"
             - then:
@@ -85,7 +85,7 @@ story:
             - given:
                 - the "fix-loop-exit-registry" project tree
                 - and: the "us-apply" checklist is narrowed to its "already appear as a scenario in the registry" prompt
-                - the Product Owner answers "3" to every question
+                - the Product Owner's answer to every question is "3"
             - when:
                 - the Product Owner runs "us apply 98.1 --fix"
             - then:
@@ -104,7 +104,7 @@ story:
           steps:
             - given:
                 - the "fix-loop-exit-terms" project tree
-                - the Quality Engineer answers "3" to every question
+                - the Quality Engineer's answer to every question is "3"
             - when:
                 - the Quality Engineer runs "scen check --fix"
             - then:
@@ -121,7 +121,7 @@ story:
           steps:
           - given:
             - the "build-steps-exit" project tree
-            - the System Architect answers "3" to every question
+            - the System Architect's answer to every question is "3"
           - when:
             - the System Architect runs "build steps --fix"
           - then:

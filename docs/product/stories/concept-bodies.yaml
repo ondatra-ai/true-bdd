@@ -16,7 +16,7 @@ story:
     steps:
     - given:
       - the "concept-bodies-cases" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when: &id001
       - the System Architect runs "build steps --fix"
     - then:
@@ -33,7 +33,7 @@ story:
     steps:
     - given:
       - the "concept-bodies-prompt" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when: *id001
     - then:
       - the command exits with code 0
@@ -48,7 +48,7 @@ story:
     steps:
     - given:
       - the "concept-bodies-contract" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when: *id001
     - then:
       - the command exits with code 0
@@ -63,7 +63,7 @@ story:
     steps:
     - given:
       - the "concept-bodies-extra" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when: *id001
     - then:
       - the command exits with code 0
@@ -80,7 +80,7 @@ story:
     steps:
     - given:
       - the "concept-bodies-capture" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when: *id001
     - then:
       - the command exits with code 0

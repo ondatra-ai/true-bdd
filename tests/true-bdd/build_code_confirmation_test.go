@@ -26,7 +26,7 @@ import (
 func TestBuildCodeConfirmation001Passes(t *testing.T) {
 	s := scenarios.New(t, "build-code-confirmation-001-passes")
 	s.Given(`the "build-code-no-confirmation-passes" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches level=WARN msg="Writer confirmation missing".*apply-failing-set-iter1-result.yaml`)
@@ -47,7 +47,7 @@ func TestBuildCodeConfirmation001Passes(t *testing.T) {
 func TestBuildCodeConfirmation002Retries(t *testing.T) {
 	s := scenarios.New(t, "build-code-confirmation-002-retries")
 	s.Given(`the "build-code-no-confirmation-retries" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches level=WARN msg="Writer confirmation missing".*apply-failing-set-iter1-result.yaml`)
@@ -70,7 +70,7 @@ func TestBuildCodeConfirmation002Retries(t *testing.T) {
 func TestBuildCodeConfirmation003Bound(t *testing.T) {
 	s := scenarios.New(t, "build-code-confirmation-003-bound")
 	s.Given(`the "build-code-no-confirmation-bound" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=WARN msg="Writer confirmation missing".*apply-failing-set-iter1-result.yaml`)

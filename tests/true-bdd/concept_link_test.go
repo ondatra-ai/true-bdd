@@ -26,7 +26,7 @@ import (
 func TestConceptLink001AddConcept(t *testing.T) {
 	s := scenarios.New(t, "concept-link-001-add-concept")
 	s.Given(`the "concept-link-add-concept" project tree`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine host --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches no concept of when`)
@@ -63,7 +63,7 @@ func TestConceptLink003MissingBinding(t *testing.T) {
 func TestConceptLink004FixBinding(t *testing.T) {
 	s := scenarios.New(t, "concept-link-004-fix-binding")
 	s.Given(`the "concept-link-fix-binding" project tree`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "scen check --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches action=apply`)
@@ -112,7 +112,7 @@ func TestConceptLink007Incomplete(t *testing.T) {
 func TestConceptLink008SharedFix(t *testing.T) {
 	s := scenarios.New(t, "concept-link-008-shared-fix")
 	s.Given(`the "concept-link-shared-fix" project tree`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "scen check --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches action=apply`)
@@ -159,7 +159,7 @@ func TestConceptLink011Ambiguous(t *testing.T) {
 func TestConceptLink012Widen(t *testing.T) {
 	s := scenarios.New(t, "concept-link-012-widen")
 	s.Given(`the "concept-link-widen" project tree`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine host --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches no concept of when`)
@@ -174,7 +174,7 @@ func TestConceptLink012Widen(t *testing.T) {
 func TestConceptLink013Rewrite(t *testing.T) {
 	s := scenarios.New(t, "concept-link-013-rewrite")
 	s.Given(`the "concept-link-rewrite" project tree`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine host --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches action=apply`)
@@ -200,7 +200,7 @@ func TestConceptLink014JudgeIntent(t *testing.T) {
 func TestConceptLink015AmbiguousBinding(t *testing.T) {
 	s := scenarios.New(t, "concept-link-015-ambiguous-binding")
 	s.Given(`the "concept-link-ambiguous-binding" project tree`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "scen check --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches binding is ambiguous`)

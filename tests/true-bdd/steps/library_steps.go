@@ -6,6 +6,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
 )
 
+//truebdd:concept given "machine environment"
 func useOfflineLibraryProxy(state *State, _ []string) error {
 	if state.Fixture == nil {
 		return state.fail("%w", ErrNoTreePrepared)

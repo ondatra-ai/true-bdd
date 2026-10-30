@@ -13,7 +13,7 @@ story:
     steps:
     - given:
       - the "codex-apply-us-refine" project tree
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
     - when:
       - the Product Owner runs "us refine doc-outline --fix"
     - then:
@@ -37,7 +37,7 @@ story:
     steps:
     - given:
       - the "codex-apply-build-steps" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build steps --fix"
     - then:

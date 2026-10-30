@@ -89,7 +89,7 @@ func TestPhraseMappings005Intent(t *testing.T) {
 func TestPhraseMappings006Fix(t *testing.T) {
 	s := scenarios.New(t, "phrase-mappings-006-fix")
 	s.Given(`the "phrase-mappings-fix" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "scen check --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches msg="AI needs clarification"`)
@@ -105,7 +105,7 @@ func TestPhraseMappings006Fix(t *testing.T) {
 func TestPhraseMappings007Exit(t *testing.T) {
 	s := scenarios.New(t, "phrase-mappings-007-exit")
 	s.Given(`the "phrase-mappings-exit" project tree`)
-	s.And(`the System Architect answers "Call greet once with the literal person Ada, without the loud flag or any outgoing call." to every question`)
+	s.And(`the System Architect's answer to every question is "Call greet once with the literal person Ada, without the loud flag or any outgoing call."`)
 	s.When(`the System Architect runs "scen check --fix"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches msg="AI needs clarification"`)
@@ -121,7 +121,7 @@ func TestPhraseMappings007Exit(t *testing.T) {
 func TestPhraseMappings008AddsOperation(t *testing.T) {
 	s := scenarios.New(t, "phrase-mappings-008-adds-operation")
 	s.Given(`the "phrase-mappings-fix-operation" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "scen check --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches msg="AI needs clarification"`)

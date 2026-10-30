@@ -103,7 +103,7 @@ func TestConcepts006Templates(t *testing.T) {
 func TestConcepts007FixBinding(t *testing.T) {
 	s := scenarios.New(t, "concepts-007-fix-binding")
 	s.Given(`the "concepts-fix-binding" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "scen check --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches FIX PROMPT GENERATED`)

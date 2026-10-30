@@ -16,6 +16,7 @@ func registerConcurrentValidationSteps(suite *bddgo.Suite[State]) {
 	suite.Step(`^the validation CLIs are controlled for concurrent arrival$`, controlConcurrentArrival)
 }
 
+//truebdd:concept given "fixture AI CLIs"
 func controlConcurrentArrival(state *State, _ []string) error {
 	fixture, err := filepath.Abs(state.Fixture.Dir)
 	if err != nil {
@@ -46,6 +47,7 @@ func controlConcurrentArrival(state *State, _ []string) error {
 	return nil
 }
 
+//truebdd:concept then "engine activity"
 func assertConcurrentValidation(state *State, _ []string) error {
 	records, err := readEngineLog(state)
 	if err != nil {
@@ -67,6 +69,7 @@ func assertConcurrentValidation(state *State, _ []string) error {
 	return nil
 }
 
+//truebdd:concept then "AI CLI observations"
 func assertReverseRequests(state *State, _ []string) error {
 	if state.Harness.Modes.Services != runner.ProxyModeReplay {
 		return nil

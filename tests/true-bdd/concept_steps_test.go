@@ -26,7 +26,7 @@ import (
 func TestConceptSteps001Collision(t *testing.T) {
 	s := scenarios.New(t, "concept-steps-001-collision")
 	s.Given(`the "concept-steps-collision" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches Pattern proposal refused.*attempt=1.*also binds when step`)
@@ -41,7 +41,7 @@ func TestConceptSteps001Collision(t *testing.T) {
 func TestConceptSteps002UnusedPattern(t *testing.T) {
 	s := scenarios.New(t, "concept-steps-002-unused-pattern")
 	s.Given(`the "concept-steps-unused" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches Pattern proposal refused.*binds no step of the suite`)
@@ -55,7 +55,7 @@ func TestConceptSteps002UnusedPattern(t *testing.T) {
 func TestConceptSteps003NegativeOperand(t *testing.T) {
 	s := scenarios.New(t, "concept-steps-003-negative-operand")
 	s.Given(`the "concept-steps-negative" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches Concept pattern binds.*step="the Owner halves -7" captures=-7`)
@@ -69,7 +69,7 @@ func TestConceptSteps003NegativeOperand(t *testing.T) {
 func TestConceptSteps004Resume(t *testing.T) {
 	s := scenarios.New(t, "concept-steps-004-resume")
 	s.Given(`the "concept-steps-resume" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches Concept Item resumed.*halving`)
@@ -86,7 +86,7 @@ func TestConceptSteps004Resume(t *testing.T) {
 func TestConceptSteps005NewStep(t *testing.T) {
 	s := scenarios.New(t, "concept-steps-005-new-step")
 	s.Given(`the "concept-steps-extend" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches BUILD STEPS COMPLETE`)
