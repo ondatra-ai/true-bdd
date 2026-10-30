@@ -117,7 +117,7 @@ A specification document holding declared meanings and their implementation: the
 _Avoid_: vocabulary file, dictionary
 
 **Closure check**:
-One of the six Built-in checks over a Scenario and its Term documents. With templates, these hold its Public interface, step phrases, declared terms, Word mappings, Phrase mappings and step definitions to their declarations; the five about templates pass unclaimed Scenarios or hosts without a Catalogue unchecked. With concepts, declared-terms and term-mappings check every declared concept, and phrase-mappings checks all Concept bindings, independently of Story claims; template matching and definition correspondence stay unchecked, while model Prompts link steps and judge their service bindings. The Public interface check always runs. Both forms answer without an AI turn.
+One of the six Built-in checks over a Scenario and its Term documents. With templates, these hold its Public interface, step phrases, declared terms, Word mappings, Phrase mappings and step definitions to their declarations; the five about templates pass unclaimed Scenarios or hosts without a Catalogue unchecked. With concepts, declared-terms and term-mappings check every declared concept, phrase-mappings checks all Concept bindings, and step-definitions holds each step of every Scenario to one step definition recording a declared concept of the step's block, independently of Story claims; template matching and the templates' correspondence to definitions stay unchecked, while model Prompts link steps and judge their service bindings. The Public interface check always runs. Both forms answer without an AI turn.
 _Avoid_: spec check, term check
 
 **Services**:
