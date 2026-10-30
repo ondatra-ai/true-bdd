@@ -122,7 +122,7 @@ func TestConceptLink008SharedFix(t *testing.T) {
 	s.Done()
 }
 
-// concept-link-009-threshold-nine: A borderline score of eight must fail at threshold nine
+// concept-link-009-threshold-nine: A real-model near miss scored seven fails at threshold nine; the engine threshold test pins the same-answer boundary
 func TestConceptLink009ThresholdNine(t *testing.T) {
 	s := scenarios.New(t, "concept-link-009-threshold-nine")
 	s.Given(`the "concept-link-threshold-nine" project tree`)
@@ -133,7 +133,7 @@ func TestConceptLink009ThresholdNine(t *testing.T) {
 	s.Done()
 }
 
-// concept-link-010-threshold-eight: A borderline score of eight must pass at threshold eight
+// concept-link-010-threshold-eight: A real-model borderline score of eight links at threshold eight; the engine threshold test pins rejection of that same score at nine and the default
 func TestConceptLink010ThresholdEight(t *testing.T) {
 	s := scenarios.New(t, "concept-link-010-threshold-eight")
 	s.Given(`the "concept-link-threshold-eight" project tree`)

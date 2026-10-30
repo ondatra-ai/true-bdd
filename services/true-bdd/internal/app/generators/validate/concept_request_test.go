@@ -97,8 +97,8 @@ func shippedConceptPrompt(t *testing.T, repository, kind string) checklist.Promp
 
 func TestConceptLinkRequestHasClosedMeaningsAndRequiredBlockScores(t *testing.T) {
 	evaluator, reply, repository := conceptRequestEvaluator(t)
-	item := &template.ScenarioCheckData{ID: linkTestConcept, Service: "calc", Phrases: []catalogue.Step{
-		{Block: catalogue.BlockWhen, Text: "square six"},
+	item := &template.ScenarioCheckData{ID: linkTestConcept, Service: linkTestService, Phrases: []catalogue.Step{
+		{Block: catalogue.BlockWhen, Text: linkTestStepText},
 		{Block: catalogue.BlockThen, Text: "36 is displayed"},
 		{Block: catalogue.BlockThen, Text: "judge: the explanation is clear"},
 	}}

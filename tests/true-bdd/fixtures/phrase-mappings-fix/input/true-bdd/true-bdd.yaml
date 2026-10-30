@@ -5,7 +5,7 @@ engine:
   models:
     xhigh: "claude:claude-fable-5"
     high: "claude:claude-opus-5"
-    coder: "claude:claude-sonnet-5-5"
+    coder: "codex:gpt-6.1-sol"
     # Pinned FULL id, never an alias: the BDD harness's judge resolves
     # its model here, and a floating alias silently migrates every
     # future verdict out from under the recordings it is compared to.

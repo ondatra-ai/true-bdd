@@ -198,7 +198,7 @@ func (e *buildStepsExecution) initializeItems(items []*BuildStepsItem) error {
 	e.attempts = make(map[*BuildStepsItem]int)
 	e.maxAttempts = defaultAttempts
 
-	checklist, err := e.deps.ChecklistLoader.LoadFull("build-steps")
+	checklist, err := e.deps.ChecklistLoader.LoadFull(buildStepsChecklistName)
 	if err != nil {
 		return err
 	}

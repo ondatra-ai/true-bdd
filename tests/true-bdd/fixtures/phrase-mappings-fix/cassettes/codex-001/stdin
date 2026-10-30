@@ -1,0 +1,53 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+The user has already chosen Apply at the engine menu, authorizing this turn.
+Apply the approved Phrase mapping now to the architecture working copy, and any
+declaration it adds to the working copy of the Public interface document it names,
+without asking for another choice. Menu reminders inside the approved proposal are
+satisfied. Do not edit any other file, including the Registry, product, tests or step
+definitions. Read each working copy and replace the exact text the fix provides.
+
+
+### TASK
+
+Service: greeter
+The menu action was apply. Perform the approved fix now.
+Approved fix:
+Apply one edit to `docs/architecture/architecture.yaml` only. Do not edit `docs/greeter-cli.yaml` (it already declares the `greet` command, so the answers name nothing new), and do not edit the Scenario or any other file.
+
+The clarification answers from the System Architect were:
+- when-operation: the declared command `greet`
+- invocation-shape: run `greet` exactly once with the `person` argument, no flags
+- extra-references: only the command — no other references
+
+Add the missing `architecture.phrases` entry for host-001's when phrase, using the Catalogue template verbatim (`the greeting is requested`), the Scenario's service (`greeter`), a single `command` reference with exactly one selector, and a `does` sentence written as a when block — it calls the operation. Insert it between the given and then entries so the block order reads given, when, then. Change nothing else: keep the existing entries, the leading comment line, and all surrounding formatting and indentation exactly as they are.
+
+File: docs/architecture/architecture.yaml
+
+old_string:
+    does: Write the expected greeting to the configuration file before running greet.
+  - template: the greeting is logged
+
+new_string:
+    does: Write the expected greeting to the configuration file before running greet.
+  - template: the greeting is requested
+    service: greeter
+    references:
+    - command: greet
+    does: Run the greet command once with the person argument and no flags.
+  - template: the greeting is logged
+
+No other edits. In particular: no `intent` key (greeter is a CLI service, not a UI service, and `intent` is refused for non-UI services until `llm:` support lands), no additional references, no Go identifiers, and no link from the phrase to any step definition.
+Architecture working copy:
+
+Edit `tmp/{{RUN_DIR}}/architecture_yaml.yaml`, the working copy of `./docs/architecture/architecture.yaml`.
+Public interface working copies:
+
+Edit `tmp/{{RUN_DIR}}/interface-1-greeter-cli.yaml`, the working copy of `docs/greeter-cli.yaml`, only where the approved fix changes that document.
+
+After editing, return:
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===
+applied: true
+target: "<architecture working copy>"
+summary: "Mapped the phrase to the service's Public interface"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===

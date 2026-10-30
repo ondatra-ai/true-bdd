@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "concept-grouping-binding",
+  "files": [
+    {
+      "path": "docs/architecture/architecture.yaml",
+      "kind": "modified",
+      "size": 1674,
+      "sha256": "86a5c164f78b82dc9450f38a059a13eb460558e93f5dc42d3e92e5884ba8beaa",
+      "text": "{\n  \"architecture\": {\n    \"services\": [\n      {\n        \"name\": \"calc\",\n        \"path\": \"services/calc\",\n        \"language\": \"go\",\n        \"public_interface\": {\n          \"kind\": \"ui\",\n          \"elements\": [\n            {\n              \"page\": \"Calc\",\n              \"role\": \"button\",\n              \"name\": \"Halve\"\n            },\n            {\n              \"page\": \"Calc\",\n              \"role\": \"textbox\",\n              \"name\": \"Number\"\n            },\n            {\n              \"page\": \"Calc\",\n              \"role\": \"button\",\n              \"name\": \"Double\"\n            }\n          ]\n        }\n      }\n    ],\n    \"concepts\": [\n      {\n        \"concept\": \"halve\",\n        \"block\": \"when\",\n        \"service\": \"calc\",\n        \"references\": [\n          {\n            \"element\": {\n              \"page\": \"Calc\",\n              \"role\": \"button\",\n              \"name\": \"Halve\"\n            }\n          }\n        ],\n        \"does\": \"Choose any number of presses of any button; the author decides what result to expect.\"\n      },\n      {\n        \"concept\": \"double\",\n        \"block\": \"when\",\n        \"service\": \"calc\",\n        \"references\": [\n          {\n            \"element\": {\n              \"page\": \"Calc\",\n              \"role\": \"button\",\n              \"name\": \"Double\"\n            }\n          }\n        ],\n        \"does\": \"Press Double exactly once; do not compute the result.\"\n      }\n    ],\n    \"terms\": [],\n    \"testing\": {\n      \"framework\": \"go-test\",\n      \"commands\": {\n        \"record\": \"go test -tags bdd -json ./tests/calc/...\",\n        \"replay\": \"go test -tags bdd -json ./tests/calc/...\",\n        \"live\": \"go test -tags bdd -json ./tests/calc/...\"\n      }\n    }\n  }\n}\n"
+    }
+  ]
+}

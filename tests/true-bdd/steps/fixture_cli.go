@@ -12,7 +12,9 @@ import (
 // The recording proxy stays first so its replies are recorded normally.
 func useInvalidLinkCLI(state *State, _ []string) error {
 	switch state.Fixture.Name {
-	case "concept-link-malformed", "concept-link-missing-answer", "concept-link-incomplete":
+	case "concept-link-malformed", "concept-link-missing-answer", "concept-link-incomplete",
+		"concept-grouping-missing", "concept-grouping-repeat", "concept-grouping-rank",
+		"concept-grouping-cap", "concept-grouping-unknown", "concept-grouping-same":
 	default:
 		return state.fail("invalid link replies are not sanctioned for %q", state.Fixture.Name)
 	}

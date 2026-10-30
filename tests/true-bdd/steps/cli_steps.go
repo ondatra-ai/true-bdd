@@ -128,6 +128,8 @@ func registerEngineLogSteps(suite *bddgo.Suite[State]) {
 // from and the preconditions the fixture establishes on it.
 func registerGivenSteps(suite *bddgo.Suite[State]) {
 	suite.Step(`^the link answer CLI is controlled for invalid replies$`, useInvalidLinkCLI)
+	suite.Step(`^the grouping answer CLI is controlled for invalid replies$`, useInvalidLinkCLI)
+	suite.Step(`^the System Architect runs build steps after scen check and a binding change$`, runGroupingChangedBinding)
 	suite.Step(`^library downloads use an empty offline proxy$`, useOfflineLibraryProxy)
 	suite.Step(`^the "([^"]+)" project tree$`, prepareTree)
 	// Given preconditions the scenario states and the fixture materialises
@@ -318,6 +320,10 @@ func runEngine(state *State, command string, extraEnv ...string) error {
 		return state.fail("%w", engineErr)
 	}
 
+	return executeEngine(state, command, state.Harness.BinPath, extraEnv...)
+}
+
+func executeEngine(state *State, command, binary string, extraEnv ...string) error {
 	timeout := state.runTimeout()
 
 	state.T.Logf("running %q (%s, timeout %s) — this can take several minutes",
@@ -326,7 +332,7 @@ func runEngine(state *State, command string, extraEnv ...string) error {
 	env := append(slices.Clone(state.Proxy.Env), extraEnv...)
 
 	result, err := runner.Execute(context.Background(), state.Fixture,
-		state.Harness.BinPath, state.Harness.SessionRoot, timeout, env...)
+		binary, state.Harness.SessionRoot, timeout, env...)
 
 	// Observed before the branch: a run that errored still has a diff
 	// worth recording, and the tmpdir path is what makes it findable.

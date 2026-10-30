@@ -9,6 +9,8 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/product"
 )
 
+const schemaNull = "null"
+const schemaInteger = "integer"
 const schemaType = "type"
 const schemaString = "string"
 const schemaMinLength = "minLength"
@@ -35,13 +37,13 @@ func linkSchema(steps []conceptStep, concepts []product.Concept) (string, error)
 
 		for _, concept := range concepts {
 			if concept.Block == step.Block {
-				scores[concept.Name] = answerSchema{schemaType: "integer", "minimum": 0, "maximum": maxConceptScore}
+				scores[concept.Name] = answerSchema{schemaType: schemaInteger, "minimum": 0, "maximum": maxConceptScore}
 			}
 		}
 
 		properties[step.Key] = requiredObject(answerSchema{
 			"scores": requiredObject(scores), schemaReason: answerSchema{schemaType: schemaString, schemaMinLength: 1},
-			"other_block_concept": answerSchema{schemaType: []string{schemaString, "null"}},
+			"other_block_concept": answerSchema{schemaType: []string{schemaString, schemaNull}},
 		})
 	}
 

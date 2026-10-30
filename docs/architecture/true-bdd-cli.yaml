@@ -87,9 +87,13 @@ commands:
   build steps:
     description: >-
       Lists each Catalogue phrase a go-test suite has no step definition for
-      and checks Step coverage. With --fix it writes every skeleton, then each
+      and checks Step coverage on template hosts. With --fix it writes every skeleton, then each
       body through the Fix loop, and checks compilation, binding, coverage, the
       test list and that every Scenario is red without the target.
+      On concept hosts, both forms group distinct unbound texts per suite and block,
+      rejudge service bindings and then stop: pattern proposal is not built yet.
+      Missing or ambiguous concepts and bindings stop before any skeleton; malformed
+      grouping answers and output caps crash. No definitions or generated tests are written.
     parameters:
       - {name: fix, in: flag, schema: {type: boolean}}
       - {name: architecture, in: option, description: Path to the architecture document., schema: {type: string}}
@@ -97,7 +101,7 @@ commands:
       - {name: model, in: option, description: 'Repeatable <tier>=<cli>:<model> override.', schema: {type: string}}
     responses:
       '0': {description: No phrase lacks a definition and every check passes; under --fix stdout ends with BUILD STEPS COMPLETE.}
-      '1': {description: A missing definition without --fix, a failed check, a phrase the Public interface cannot serve, or a walk that ends incomplete.}
+      '1': {description: A missing definition without --fix, a failed check, a phrase the Public interface cannot serve, an incomplete walk, or a concept host stopping before pattern proposal.}
   build code:
     description: >-
       Runs the architecture's declared replay command, walks the failing set,
@@ -180,7 +184,7 @@ extensions:
       access: read-write
     step-definitions:
       path: <suite>/steps/*.go
-      format: Go step definitions; build steps --fix writes the skeleton and the body, under the protected test paths only.
+      format: Go step definitions; build steps --fix writes template-host skeletons and bodies under protected test paths. Concept-host proposal and definitions are not built yet.
       access: read-write
     service-code:
       path: each architecture service's path and its writable entries

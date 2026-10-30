@@ -30,8 +30,8 @@ func repoRoot(t *testing.T) string {
 	}
 }
 
-// TestUniverseCensus pins the verified shipped inventory: 38 prompts,
-// 38 Fs, 114 branches. Step coverage has its body-writing F.
+// TestUniverseCensus pins the verified shipped inventory: 39 prompts,
+// 38 Fs, 116 branches. Step coverage has its body-writing F.
 func TestUniverseCensus(t *testing.T) {
 	t.Parallel()
 
@@ -40,8 +40,8 @@ func TestUniverseCensus(t *testing.T) {
 		t.Fatalf("loading universe: %v", err)
 	}
 
-	if got := len(uni.Prompts); got != 38 {
-		t.Errorf("prompts: got %d, want 38", got)
+	if got := len(uni.Prompts); got != 39 {
+		t.Errorf("prompts: got %d, want 39", got)
 	}
 
 	fCount := 0
@@ -56,8 +56,8 @@ func TestUniverseCensus(t *testing.T) {
 		t.Errorf("F templates: got %d, want 38", fCount)
 	}
 
-	if got := len(uni.Branches); got != 114 {
-		t.Errorf("branches: got %d, want 114", got)
+	if got := len(uni.Branches); got != 116 {
+		t.Errorf("branches: got %d, want 116", got)
 	}
 
 	if len(uni.Diagnostics) != 0 {
