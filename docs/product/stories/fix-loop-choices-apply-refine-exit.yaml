@@ -128,5 +128,5 @@ story:
             - the command exits with code 1
             - stdout matches action=exit
             - stdout does not match BUILD STEPS COMPLETE
-            - the engine dispatched 1 AI turn
+            - the engine dispatched 4 AI turns
             - no file outside "tmp" and "tests" changed

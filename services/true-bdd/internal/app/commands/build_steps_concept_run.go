@@ -20,14 +20,28 @@ type conceptRun struct {
 // prepareConceptRun loads the proposal Prompt, its attempts and the
 // Specification every concept Item's context reads.
 func (e *buildStepsExecution) prepareConceptRun(discovery *conceptDiscovery, arch *architecture.Architecture) error {
-	document, err := e.deps.ChecklistLoader.LoadFull(buildStepsChecklistName)
+	run, err := e.loadConceptRun()
 	if err != nil {
 		return err
 	}
 
+	run.discovery, run.arch = discovery, arch
+	e.concepts = run
+
+	return nil
+}
+
+// loadConceptRun reads them before any turn, so a malformed term list is
+// refused before grouping, as a template host's is.
+func (e *buildStepsExecution) loadConceptRun() (*conceptRun, error) {
+	document, err := e.deps.ChecklistLoader.LoadFull(buildStepsChecklistName)
+	if err != nil {
+		return nil, err
+	}
+
 	prompt, err := conceptBuildPrompt(document, "propose")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	attempts := defaultProposalAttempts
@@ -39,22 +53,20 @@ func (e *buildStepsExecution) prepareConceptRun(discovery *conceptDiscovery, arc
 
 	source, err := product.LoadCatalogue(file)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	_, definitions, mappings, err := compileStepSpecification(source, file, e.architectureFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	bindings, err := architecture.LoadConceptBindings(e.architectureFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	e.concepts = &conceptRun{discovery: discovery, arch: arch, proposal: prompt, attempts: attempts,
+	return &conceptRun{proposal: prompt, attempts: attempts,
 		specification: conceptSpecification{source.Concepts, definitions, mappings, bindings},
-		rounds:        make(map[*BuildStepsItem]int)}
-
-	return nil
+		rounds:        make(map[*BuildStepsItem]int)}, nil
 }

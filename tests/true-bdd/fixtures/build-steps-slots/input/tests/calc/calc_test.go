@@ -25,8 +25,8 @@ import (
 // calc-001-double: Doubling a number returns twice its value
 func TestCalc001Double(t *testing.T) {
 	s := scenarios.New(t, "calc-001-double")
-	s.Given(`the number is 99`)
-	s.When(`the command "double" doubles 3`)
+	s.Given(`the calculator is installed`)
+	s.When(`the Owner runs "double" on 3`)
 	s.Then(`the result is 6`)
 	s.Done()
 }

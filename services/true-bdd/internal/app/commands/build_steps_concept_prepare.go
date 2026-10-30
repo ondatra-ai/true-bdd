@@ -20,6 +20,11 @@ var ErrPatternProposal = errors.New("pattern proposal refused before any skeleto
 // prepareConcepts groups, judges and proposes before writing any skeleton,
 // then writes every skeleton and compiles the suite before any body.
 func (e *buildStepsExecution) prepareConcepts(ctx context.Context) ([]*BuildStepsItem, error) {
+	run, err := e.loadConceptRun()
+	if err != nil {
+		return nil, err
+	}
+
 	discovery, err := discoverConceptItems(ctx, e.deps, e.registryFile, e.architectureFile)
 	if err != nil {
 		return nil, err
@@ -45,10 +50,8 @@ func (e *buildStepsExecution) prepareConcepts(ctx context.Context) ([]*BuildStep
 		return nil, err
 	}
 
-	err = e.prepareConceptRun(discovery, arch)
-	if err != nil {
-		return nil, err
-	}
+	run.discovery, run.arch = discovery, arch
+	e.concepts = run
 
 	err = e.proposeConcepts(ctx, discovery)
 	if err != nil {

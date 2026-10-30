@@ -8,7 +8,7 @@ story:
   status: IMPLEMENTED
   acceptance_criteria:
   - id: 001-new-body
-    description: A missing phrase gets an engine skeleton and an AI body that executes the declared CLI command
+    description: A missing concept's steps get an engine skeleton from the proposed pattern and an AI body that executes the declared CLI command
     steps:
     - given:
       - the "build-steps-new" project tree
@@ -25,14 +25,14 @@ story:
       - stdout matches Red without target passed.*scenarios=2
       - the engine spawned exactly 1 test runner with arguments matching -count=1$
       - no file outside "tmp" and "tests" changed
-      - the engine dispatched 1 validation AI turn to "claude"
+      - the engine dispatched 4 validation AI turns to "claude"
       - the engine spawned exactly 1 test runner with arguments matching -list \.
-      - 'every file matching "tmp/*/*fix-iter*-user.txt" matches phrase_mapping:'
+      - 'every file matching "tmp/*/*fix-iter*-user.txt" matches binding:'
       - 'every file matching "tmp/*/apply-*-user.txt" matches interface_document:'
       - every file matching "tmp/*/apply-*-user.txt" matches calc-001-double
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   - id: 002-all-skeletons-first
-    description: All missing phrases get compilable skeletons before the first AI turn and each body is written in one walk; whole-suite checks run once
+    description: Every missing concept's skeletons compile before the first body turn and each body is written in one walk; whole-suite checks run once
     steps:
     - given:
       - the "build-steps-many" project tree
@@ -46,12 +46,12 @@ story:
       - stdout matches Scenario list passed
       - no file outside "tmp" and "tests" changed
       - stdout matches All step skeletons written.*items=3
-      - the engine dispatched 3 validation AI turns to "claude"
+      - the engine dispatched 10 validation AI turns to "claude"
       - the engine spawned exactly 1 test runner with arguments matching -list \.
       - the engine spawned exactly 1 test runner with arguments matching -run \^\(Test
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   - id: 003-slot-order
-    description: The quoted operation and numeric value are passed to the written definition in template slot order
+    description: The quoted command and the number are passed to the written definition in the proposed pattern's capture order
     steps:
     - given:
       - the "build-steps-slots" project tree
@@ -64,7 +64,7 @@ story:
       - stdout matches Step coverage passed
       - stdout matches Scenario list passed
       - no file outside "tmp" and "tests" changed
-      - the engine dispatched 1 validation AI turn to "claude"
+      - the engine dispatched 4 validation AI turns to "claude"
       - the engine spawned exactly 1 test runner with arguments matching -list \.
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   - id: 004-interface-cannot-serve
@@ -99,7 +99,7 @@ story:
       - the engine spawned exactly 1 test runner with arguments matching -list \.
       - no file outside "tmp" and "tests" changed
       - stdout matches msg="Tool calls were denied; this turn did less than it was asked to".*role=apply
-      - the engine dispatched 1 validation AI turn to "claude"
+      - the engine dispatched 4 validation AI turns to "claude"
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   - id: 006-bringup-is-not-red
     description: Harness bring-up failure without the target fails the red check and names the Scenario

@@ -91,7 +91,7 @@ func TestCodeFailureEmbedsLinkedConcepts(t *testing.T) {
 			"  scenarios_yaml: docs/scenarios.yaml\n",
 		"docs/product/product.yaml": conceptCodeProduct,
 		repairArchitecture:          conceptCodeArchitecture,
-		"docs/scenarios.yaml": `scenarios:
+		conceptRegistry: `scenarios:
   calc-001-double:
     service: calc
     path: tests/calc/calc_test.go
