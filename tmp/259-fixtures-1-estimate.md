@@ -37,3 +37,18 @@ A concept turn costs $0.05 to $0.09 in the existing concept-link recordings, so 
 ## Not re-recorded
 
 The 14 migrated fixtures that run no AI turn are replayed only; their goldens stay empty unless the run changes a file.
+
+## Actual, after recording
+
+| Fixture | Turns | Published $ | Attempts |
+|---|---|---|---|
+| scen-check-happy-path | 13 | 1.51 | 1 |
+| scen-check-validation-fails | 11 | 1.32 | 1 |
+| scen-check-fix-rewrites-description | 32 | 2.67 | 2: the first, $2.83, was rejected on its assertion of 31 turns, the link asking before the description fails |
+| the seven quality fixes | 5 or 6 each | 3.86 | 1 each |
+| scen-check-fix-records-term | 3 | 0.15 | 1 |
+| scen-check-fix-records-mapping | 3 | 0.28 | 1 |
+| scen-check-prompt-names-its-tiers | 5 | 0.18 | 1 |
+| scen-check-claude-turn-fails, scen-check-codex-turn-fails | 1 each | 0.00 | 1 each |
+
+Published $9.97, $12.80 across all attempts, against $8.80 estimated for one attempt each and $11 to $14 expected.
