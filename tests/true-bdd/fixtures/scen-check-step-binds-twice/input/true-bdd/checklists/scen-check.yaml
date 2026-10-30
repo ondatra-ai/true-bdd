@@ -8,7 +8,7 @@ last_updated: "2026-10-21"
 sections:
   - id: term_closure
     name: "Term Closure"
-    description: "Every catalogue template a claimed Scenario's steps match must bind to one step definition, and every such definition be reached by one template."
+    description: "Every step a Scenario binds must bind one step definition, which records a declared concept of the step's block."
     validation_prompts:
       - D: step-definitions
         rationale: "A template bound to two step definitions, or a definition two templates reach, means the catalogue and the steps disagree on what a phrase is, so no step definition follows from the spec."

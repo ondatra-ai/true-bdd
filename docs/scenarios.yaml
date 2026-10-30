@@ -1644,7 +1644,7 @@ scenarios:
       - and: the file "docs/product/product.yaml" matches the service answers within
       - and: the engine dispatched 3 AI turns
   checklist-checks-007-unlisted-document-refused:
-    description: A `D:` Prompt naming a check that reads a document must be refused at startup when its `docs:` does not list that document, because the check would otherwise find no catalogue and pass every Scenario unchecked
+    description: A `D:` Prompt naming a check that reads a document must be refused at startup when its `docs:` does not list that document, because the check would otherwise read no product document and pass every Scenario unchecked
     service: true-bdd
     path: tests/true-bdd/scen_check_test.go
     user_stories:
@@ -1659,7 +1659,7 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches level=ERROR msg="Refusing to start" command="scen check"
-        - 'stdout matches scen-check/term_closure #1 D: step-phrases reads the product document, so its docs: must list product'
+        - 'stdout matches scen-check/term_closure #1 D: declared-terms reads the product document, so its docs: must list product'
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
@@ -1707,7 +1707,7 @@ scenarios:
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
   scen-check-terms-003-term-defined-twice-fails:
-    description: A term the glossary defines more than once must fail every Scenario a Story claims that relies on it, naming the term and how many times it is defined, because a word with two meanings has none a reader can rely on
+    description: A term a concept declares, which the glossary defines more than once, must fail every Scenario, naming the concept, the term and how many times it is defined, because a word with two meanings has none a reader can rely on
     service: true-bdd
     path: tests/true-bdd/scen_check_test.go
     user_stories:
@@ -1721,7 +1721,7 @@ scenarios:
         - the Quality Engineer runs "scen check"
       then:
         - the command exits with code 1
-        - 'stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: the glossary defines \\"reply\\" 2 times\]"'
+        - 'stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: then concept ''answer'': the glossary defines \\"reply\\" 2 times\]"'
         - and: stdout matches Validation failed
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
@@ -1814,7 +1814,7 @@ scenarios:
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
   scen-check-mappings-003-term-mapped-twice-fails:
-    description: A term the architecture maps more than once must fail every Scenario a Story claims that relies on it, naming the term and how many times it is mapped, because a word built two ways has no one way a step definition can follow
+    description: A term a concept declares, which the architecture maps more than once, must fail every Scenario, naming the concept, the term and how many times it is mapped, because a word built two ways has no one way a step definition can follow
     service: true-bdd
     path: tests/true-bdd/scen_check_test.go
     user_stories:
@@ -1828,7 +1828,7 @@ scenarios:
         - the Quality Engineer runs "scen check"
       then:
         - the command exits with code 1
-        - 'stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: the architecture maps \\"reply\\" 2 times\]"'
+        - 'stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: then concept ''answer'': the architecture maps \\"reply\\" 2 times\]"'
         - and: stdout matches Validation failed
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
@@ -1888,12 +1888,12 @@ scenarios:
         - the Quality Engineer runs "scen check"
       then:
         - the command exits with code 1
-        - 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: when step \\"the Operator sends \\"ping\\"\\" binds to 2 step definitions: \^the \(Operator\|Client Developer\) sends \\"\(\[\^\\"\]\+\)\\"\$ \(mcp_steps\.go:23\); \^the Operator sends \\"ping\\"\$ \(mcp_steps\.go:24\)\]"'
+        - 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: when step \\"the Operator sends \\\\\\"ping\\\\\\"\\" binds to 2 step definitions: \^the \(Operator\|Client Developer\) sends \\"\(\[\^\\"\]\+\)\\"\$ \(mcp_steps\.go:23\); \^the Operator sends \\"ping\\"\$ \(mcp_steps\.go:24\)\]"'
         - and: stdout matches Validation failed
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
   scen-check-step-definitions-004-one-to-one-passes:
-    description: A Scenario a Story claims must pass the step-definition check when each template its steps match binds to one step definition of its suite that no other template reaches, naming the suite, while a step no definition binds yet is reported as a gap rather than a failure, a step a model runs is exempt, and a Scenario no Story claims passes unchecked
+    description: A Scenario must pass the step-definition check when each of its steps binds one step definition of its suite, which records a declared concept of the step's block, naming the suite, while a step no definition binds yet is reported as a gap rather than a failure, a step a model runs is exempt, and a Scenario no Story claims is checked like the others
     service: true-bdd
     path: tests/true-bdd/scen_check_test.go
     user_stories:
@@ -1907,9 +1907,9 @@ scenarios:
         - the Quality Engineer runs "scen check"
       then:
         - the command exits with code 0
-        - 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: each template binds to one step definition in tests/mcp/steps\]"'
-        - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=1 answer=pass context="\[E2E-002: each template binds to one step definition in tests/mcp/steps; 1 step unbound yet E2E-002: then step \\"the service logs \\"greeted\\"\\" binds to no step definition yet\]"'
-        - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-003 promptIndex=1 answer=pass context="\[E2E-003: not checked: no Story claims this Scenario yet\]"'
+        - 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: each step binds one step definition, which records a declared concept of its block, in tests/mcp/steps\]"'
+        - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=1 answer=pass context="\[E2E-002: each step binds one step definition, which records a declared concept of its block, in tests/mcp/steps; 1 step unbound yet E2E-002: then step \\"the service logs \\\\\\"greeted\\\\\\"\\" binds to no step definition yet\]"'
+        - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-003 promptIndex=1 answer=pass context="\[E2E-003: each step binds one step definition, which records a declared concept of its block, in tests/mcp/steps\]"'
         - and: stdout matches ALL CHECKS PASSED
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
@@ -3820,7 +3820,7 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches level=ERROR msg="Refusing to start" command="scen check"
-        - and: 'stdout matches checklist true-bdd/checklists/scen-check\.yaml: D: step-phrases carries a with: that is a list, but with: takes a mapping of check parameters'
+        - and: 'stdout matches checklist true-bdd/checklists/scen-check\.yaml: D: declared-terms carries a with: that is a list, but with: takes a mapping of check parameters'
         - but: stdout does not match interface
         - and: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed

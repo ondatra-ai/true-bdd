@@ -1,7 +1,7 @@
 # Registry seed for `scen-check-architecture-not-yaml`.
 #
-# One claimed scenario, sound in every respect: every step matches
-# one catalogue phrase whose words are defined and mapped.
+# One claimed scenario, sound in every respect: every step falls
+# under one concept whose words are defined and mapped.
 #
 # The walk stops at its term-mapping check: the architecture
 # document is not valid YAML.

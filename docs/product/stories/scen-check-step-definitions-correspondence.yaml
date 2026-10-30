@@ -8,6 +8,9 @@
 # `scen-check`; the other closure checks are scen-check-phrases,
 # scen-check-terms and scen-check-mappings.
 #
+# Criteria 003 to 005 run on a host declaring concepts, where every
+# Scenario is checked, a Story claiming it or not (#259).
+#
 # Each criterion's id is the second half of its Scenario's Registry key,
 # `scen-check-step-definitions-<id>` (ADR 0014), and its steps are that
 # Scenario's steps.
@@ -17,7 +20,7 @@ story:
     feature: scen-check
     title: Hold the catalogue and the step definitions one to one with scen check
     as_a: Quality Engineer
-    i_want: scen check to verify, with no AI turn, that across the Scenarios a Story claims that share one suite each catalogue template binds to one step definition and each step definition is reached by one template, naming every template, step and definition that breaks it and the file and line where that definition is written
+    i_want: scen check to verify, with no AI turn, that across the Scenarios a Story claims that share one suite each catalogue template binds to one step definition and each step definition is reached by one template, naming every template, step and definition that breaks it and the file and line where that definition is written; on a host declaring concepts, that every step of every Scenario binds one step definition, which records a declared concept of the step's block
     so_that: the catalogue and the step definitions never drift apart, and each step definition follows from the one catalogue entry whose steps it binds
     status: IMPLEMENTED
     acceptance_criteria:
@@ -59,12 +62,12 @@ story:
                 - the Quality Engineer runs "scen check"
             - then:
                 - the command exits with code 1
-                - 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: when step \\"the Operator sends \\"ping\\"\\" binds to 2 step definitions: \^the \(Operator\|Client Developer\) sends \\"\(\[\^\\"\]\+\)\\"\$ \(mcp_steps\.go:23\); \^the Operator sends \\"ping\\"\$ \(mcp_steps\.go:24\)\]"'
+                - 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: when step \\"the Operator sends \\\\\\"ping\\\\\\"\\" binds to 2 step definitions: \^the \(Operator\|Client Developer\) sends \\"\(\[\^\\"\]\+\)\\"\$ \(mcp_steps\.go:23\); \^the Operator sends \\"ping\\"\$ \(mcp_steps\.go:24\)\]"'
                 - and: stdout matches Validation failed
                 - and: the engine dispatched no AI turns
                 - and: no file outside "tmp" changed
         - id: 004-one-to-one-passes
-          description: A Scenario a Story claims must pass the step-definition check when each template its steps match binds to one step definition of its suite that no other template reaches, naming the suite, while a step no definition binds yet is reported as a gap rather than a failure, a step a model runs is exempt, and a Scenario no Story claims passes unchecked
+          description: A Scenario must pass the step-definition check when each of its steps binds one step definition of its suite, which records a declared concept of the step's block, naming the suite, while a step no definition binds yet is reported as a gap rather than a failure, a step a model runs is exempt, and a Scenario no Story claims is checked like the others
           steps:
             - given:
                 - the "scen-check-definitions-correspond" project tree
@@ -72,9 +75,9 @@ story:
                 - the Quality Engineer runs "scen check"
             - then:
                 - the command exits with code 0
-                - 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: each template binds to one step definition in tests/mcp/steps\]"'
-                - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=1 answer=pass context="\[E2E-002: each template binds to one step definition in tests/mcp/steps; 1 step unbound yet E2E-002: then step \\"the service logs \\"greeted\\"\\" binds to no step definition yet\]"'
-                - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-003 promptIndex=1 answer=pass context="\[E2E-003: not checked: no Story claims this Scenario yet\]"'
+                - 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: each step binds one step definition, which records a declared concept of its block, in tests/mcp/steps\]"'
+                - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=1 answer=pass context="\[E2E-002: each step binds one step definition, which records a declared concept of its block, in tests/mcp/steps; 1 step unbound yet E2E-002: then step \\"the service logs \\\\\\"greeted\\\\\\"\\" binds to no step definition yet\]"'
+                - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-003 promptIndex=1 answer=pass context="\[E2E-003: each step binds one step definition, which records a declared concept of its block, in tests/mcp/steps\]"'
                 - and: stdout matches ALL CHECKS PASSED
                 - and: the engine dispatched no AI turns
                 - and: no file outside "tmp" changed
