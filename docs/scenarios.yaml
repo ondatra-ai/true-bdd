@@ -1762,11 +1762,11 @@ scenarios:
       then:
         - the command exits with code 0
         - stdout matches CHECK FAILED
-        - and: 'stdout matches E2E-001: "the service answers "\{reply\}"" declares "reply", which the glossary does not define'
+        - and: 'stdout matches E2E-001: then concept ''answer'': "then concept ''answer''" declares "reply", which the glossary does not define'
         - and: stdout matches msg="AI needs clarification"
         - and: stdout matches FIX PROMPT GENERATED
         - and: stdout matches msg="Fix recorded in the document" document=product
-        - and: 'stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: every declared term is defined: mcp service, message, reply\]"'
+        - and: 'stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: every concept''s declared terms are defined\]"'
         - and: stdout matches ALL CHECKS PASSED
         - and: the only file changed outside "tmp" is "docs/product/product.yaml"
         - and: 'the file "docs/product/product.yaml" matches (?m)^ +- term: .?reply.?$'
@@ -1972,11 +1972,11 @@ scenarios:
       then:
         - the command exits with code 0
         - stdout matches CHECK FAILED
-        - and: 'stdout matches E2E-001: "reply" has no mapping in the architecture'
+        - and: 'stdout matches E2E-001: then concept ''answer'': "reply" has no mapping in the architecture'
         - and: stdout matches msg="AI needs clarification"
         - and: stdout matches FIX PROMPT GENERATED
         - and: stdout matches msg="Fix recorded in the document" document=architecture_yaml
-        - and: 'stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: every declared term is mapped: mcp service, message, reply\]"'
+        - and: 'stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: every concept''s declared terms are mapped\]"'
         - and: stdout matches ALL CHECKS PASSED
         - and: the only file changed outside "tmp" is "docs/architecture/architecture.yaml"
         - and: 'the file "docs/architecture/architecture.yaml" matches (?m)^ +- term: .?reply.?$'
@@ -2341,7 +2341,7 @@ scenarios:
       - story: docs/product/stories/scen-check-verifier.yaml
         scenario_id: scen-check-001-claimed-scenario-passes
         merge_date: '2026-10-21'
-    timeout: 20m
+    timeout: 25m
     merged_steps:
       given:
         - the "scen-check-happy-path" project tree
@@ -2350,14 +2350,16 @@ scenarios:
       then:
         - the command exits with code 0
         - stdout matches SCEN CHECK
-        - and: stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass
         - and: stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=2 answer=pass
         - and: stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=3 answer=pass
         - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=4 answer=pass
-        - and: 'stdout matches PASS: 16 '
+        - and: stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=17 judgement=link answer=pass
+        - and: stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=18 judgement=bindings answer=pass
+        - and: stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=19 judgement=words answer=pass
+        - and: 'stdout matches PASS: 19 '
         - and: stdout matches ALL CHECKS PASSED!
         - and: stdout matches SCEN CHECK COMPLETE
-        - and: the engine dispatched 10 AI turns
+        - and: the engine dispatched 13 AI turns
         - and: no file outside "tmp" changed
 
   scen-check-002-failed-scenario-exits-1:
@@ -2368,7 +2370,7 @@ scenarios:
       - story: docs/product/stories/scen-check-verifier.yaml
         scenario_id: scen-check-002-failed-scenario-exits-1
         merge_date: '2026-10-21'
-    timeout: 20m
+    timeout: 25m
     merged_steps:
       given:
         - the "scen-check-validation-fails" project tree
@@ -2377,13 +2379,14 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches SCEN CHECK
-        - and: stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass
-        - and: 'stdout matches msg="Check answered" check=step-phrases subjectID=E2E-002 promptIndex=1 answer=fail context="\[E2E-002: then step \\"the greeter prints \\"Hello Ada\\" on one line\\" matches no template\]"'
+        - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=4 answer=pass
+        - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=4 answer=fail context="\[E2E-002: then step \\"the greeter prints \\\\\\"Hello Ada\\\\\\" on one line\\" binds to the step definition \^the greeter prints \\"\(\[\^\\"\]\+\)\\" on one line\$ \(greet_steps\.go:23\), which records no concept\]"'
+        - and: stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=17 judgement=link answer=fail
         - and: stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=15
-        - and: 'stdout matches SKIP: 10\n'
+        - and: 'stdout matches SKIP: 13\n'
         - and: stdout matches Validation failed
         - but: stdout does not match ALL CHECKS PASSED
-        - and: the engine dispatched 10 AI turns
+        - and: the engine dispatched 11 AI turns
         - and: no file outside "tmp" changed
 
   scen-check-fix-007-whole-checklist-fixes-description:
@@ -2394,7 +2397,7 @@ scenarios:
       - story: docs/product/stories/scen-check-fix-clarification-loop.yaml
         scenario_id: scen-check-fix-007-whole-checklist-fixes-description
         merge_date: '2026-10-21'
-    timeout: 40m
+    timeout: 50m
     merged_steps:
       given:
         - the "scen-check-fix-rewrites-description" project tree
@@ -2409,12 +2412,12 @@ scenarios:
         - and: stdout matches FIX PROMPT GENERATED
         - and: stdout matches msg="Fix recorded in the document" document=scenarios_yaml
         - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=4 answer=pass
-        - and: 'stdout matches PASS: 16 '
+        - and: 'stdout matches PASS: 19 '
         - and: stdout matches ALL CHECKS PASSED
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
         - and: 'the file "docs/scenarios.yaml" matches (?m)^    description: [^\n]*\b(must|should)\b'
-        - and: the engine dispatched 25 AI turns
+        - and: the engine dispatched 32 AI turns
 
   scen-check-003-unknown-id-refused:
     description: An id naming no scenario in the registry must be refused before the first prompt, never walked as an empty selection

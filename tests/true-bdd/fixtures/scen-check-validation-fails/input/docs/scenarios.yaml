@@ -2,11 +2,12 @@
 #
 # Two Scenarios a Story claims, walked against the shipped checklist.
 #
-# E2E-001 passes every structural check, its steps all phrased by the
-# catalogue, and carries a designed defect for every model question:
+# E2E-001 passes every structural check, none of its steps bound to a
+# step definition yet, and carries a designed defect for every model
+# question that rules on it:
 #
-#   phrase meaning   two of its phrases only restate their templates
-#   phrase use       its stdout pattern names a function, not output
+#   concept link     its when step and its first then step fall under
+#                    no concept of their block
 #   1 description is two sentences with neither must nor should
 #   2 no given step
 #   3 "quickly" in the description
@@ -16,9 +17,10 @@
 #   7 no measurable criterion anywhere
 #   8 "shown properly" cannot be decided without taste
 #
-# E2E-002's last step matches no catalogue phrase, so it fails a check
-# and its model questions are skipped, costing no turn. The walk reports
-# both and the CLI exits 1, so a bare `scen check` gates a change.
+# E2E-002's last step binds a step definition that records no concept,
+# so it fails the step-definition check and its model questions are
+# skipped, costing no turn. The walk reports both and the CLI exits 1,
+# so a bare `scen check` gates a change.
 
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"

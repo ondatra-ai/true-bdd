@@ -12,7 +12,7 @@ metadata:
 
 scenarios:
   E2E-001:
-    description: The greeter must print the configured greeting followed by the name it is given
+    description: The greeter must print the configured greeting followed by the name it is given, so the Operator reads both on one line
     service: greeter
     path: tests/greeter/greet_test.go
     user_stories: []
@@ -22,4 +22,4 @@ scenarios:
       when:
         - the Operator runs "greet Ada"
       then:
-        - stdout matches ^Hello Ada$
+        - a line of standard output matches "^Hello Ada$"

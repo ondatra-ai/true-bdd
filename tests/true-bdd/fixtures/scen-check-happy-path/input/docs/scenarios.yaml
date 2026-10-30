@@ -2,11 +2,12 @@
 #
 # One Scenario a Story claims, written to pass every prompt of the
 # shipped scen-check checklist, so one un-narrowed walk observes all of
-# them passing: every step matches one catalogue phrase whose terms the
-# glossary defines and the architecture maps, each phrase's meaning says
-# what is observed and the steps use it in that meaning, and the
-# description is a one-sentence `must` rule with a measurable, binary
-# outcome in the product's vocabulary.
+# them passing: every step links to one concept of its block whose terms
+# the glossary defines and the architecture maps, whose binding says what
+# its steps do through the greeter's Public interface and whose meaning
+# relies only on those terms and plain English, and the description is a
+# one-sentence `must` rule with a measurable, binary outcome in the
+# product's vocabulary.
 
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"

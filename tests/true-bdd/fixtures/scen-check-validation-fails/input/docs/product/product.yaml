@@ -1,9 +1,8 @@
-# Product document for `scen-check-validation-fails`: the greeter, with
-# two catalogue phrases more than its other fixtures carry.
+# Product document for `scen-check-validation-fails`: the greeter, as
+# its other fixtures carry it.
 #
-# Those two phrase the defective steps of E2E-001, so the structural
-# checks pass it and every model question rules on it; their meanings
-# only restate their templates. E2E-002's last step matches no phrase.
+# Its concepts cover E2E-002's steps, and the glossary defines every term
+# they declare. E2E-001's defective steps fall under none of them.
 
 title: "Greeter"
 
@@ -60,37 +59,27 @@ glossary:
       The lines the command prints for its user, its answer and its log
       records alike. It is the greeter's only visible output.
 
-catalogue:
-  - template: 'the greeting is configured as "{greeting}"'
-    block: given
-    means: >-
-      The project's config file sets the greeting, the word the greeter
-      prints before a name, to the quoted text.
-    terms: [greeting]
-  - template: 'the {actor:role} runs "{command}"'
-    block: when
-    means: >-
-      That role runs the quoted command line once, in the project
-      directory, and waits for it to exit.
-    terms: [command]
-  - template: 'the command exits with code {code:number}'
-    block: then
-    means: >-
-      The command that role ran ended with that exit code; 0 means it
-      succeeded.
-    terms: [command, exit code]
-  - template: 'stdout matches {expected:pattern}'
-    block: then
-    means: >-
-      A line the command printed to its standard output matches the
-      pattern, a regular expression: either the answer line the command
-      prints for its user, or a log record's message or fields.
-    terms: [command, standard output]
-  - template: 'the {actor:role} processes the name "{name}"'
-    block: when
-    means: That role processes the name.
-    terms: [command]
-  - template: 'the greeting is shown properly'
-    block: then
-    means: The greeting is shown properly.
-    terms: [greeting]
+concepts:
+  given:
+    - concept: configured greeting
+      means: >-
+        The project's config file sets the greeting to a stated text
+        before the command runs.
+      terms: [greeting, command]
+  when:
+    - concept: a role runs a command
+      means: >-
+        A role runs one stated command line once, in the project
+        directory, and waits for it to exit.
+      terms: [command]
+  then:
+    - concept: exit code
+      means: >-
+        The command the role ran ended with a stated exit code; 0 means
+        it succeeded.
+      terms: [command, exit code]
+    - concept: standard output
+      means: >-
+        A line the command printed on its standard output has a match for
+        a stated pattern, a regular expression.
+      terms: [command, standard output]

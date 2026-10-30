@@ -6,6 +6,9 @@
 # last criterion runs `--fix` over the whole shipped checklist. The fixes
 # of the scenario_quality group are the Story scen-check-quality-fix.
 #
+# Criteria 002, 003 and 007 run on a host declaring concepts, the others
+# on one declaring a Catalogue (#259).
+#
 # Each criterion's id is the second half of its Scenario's Registry key,
 # `scen-check-fix-<id>` (ADR 0014), and its steps are that Scenario's steps.
 
@@ -49,11 +52,11 @@ story:
             - then:
                 - the command exits with code 0
                 - stdout matches CHECK FAILED
-                - and: 'stdout matches E2E-001: "the service answers "\{reply\}"" declares "reply", which the glossary does not define'
+                - and: 'stdout matches E2E-001: then concept ''answer'': "then concept ''answer''" declares "reply", which the glossary does not define'
                 - and: stdout matches msg="AI needs clarification"
                 - and: stdout matches FIX PROMPT GENERATED
                 - and: stdout matches msg="Fix recorded in the document" document=product
-                - and: 'stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: every declared term is defined: mcp service, message, reply\]"'
+                - and: 'stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: every concept''s declared terms are defined\]"'
                 - and: stdout matches ALL CHECKS PASSED
                 - and: the only file changed outside "tmp" is "docs/product/product.yaml"
                 - and: 'the file "docs/product/product.yaml" matches (?m)^ +- term: .?reply.?$'
@@ -69,11 +72,11 @@ story:
             - then:
                 - the command exits with code 0
                 - stdout matches CHECK FAILED
-                - and: 'stdout matches E2E-001: "reply" has no mapping in the architecture'
+                - and: 'stdout matches E2E-001: then concept ''answer'': "reply" has no mapping in the architecture'
                 - and: stdout matches msg="AI needs clarification"
                 - and: stdout matches FIX PROMPT GENERATED
                 - and: stdout matches msg="Fix recorded in the document" document=architecture_yaml
-                - and: 'stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: every declared term is mapped: mcp service, message, reply\]"'
+                - and: 'stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: every concept''s declared terms are mapped\]"'
                 - and: stdout matches ALL CHECKS PASSED
                 - and: the only file changed outside "tmp" is "docs/architecture/architecture.yaml"
                 - and: 'the file "docs/architecture/architecture.yaml" matches (?m)^ +- term: .?reply.?$'
@@ -151,9 +154,9 @@ story:
                 - and: stdout matches FIX PROMPT GENERATED
                 - and: stdout matches msg="Fix recorded in the document" document=scenarios_yaml
                 - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=4 answer=pass
-                - and: 'stdout matches PASS: 16 '
+                - and: 'stdout matches PASS: 19 '
                 - and: stdout matches ALL CHECKS PASSED
                 - but: stdout does not match Hit max apply attempts
                 - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
                 - and: 'the file "docs/scenarios.yaml" matches (?m)^    description: [^\n]*\b(must|should)\b'
-                - and: the engine dispatched 25 AI turns
+                - and: the engine dispatched 32 AI turns

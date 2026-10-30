@@ -5,9 +5,9 @@
     {
       "path": "docs/scenarios.yaml",
       "kind": "modified",
-      "size": 867,
-      "sha256": "bc63041159815d38f5f177ce8e56da20d7ba4c402c2b5be5911617e8d4244ada",
-      "text": "# Registry seed for `scen-check-fix-rewrites-implementation`.\n#\n# One Scenario whose then step names a function the greeter calls, an\n# internal detail no user sees, where its description says what is\n# observed: the greeting and the name printed. The fix rewrites the step\n# in this entry as that output.\n\nmetadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-10-21\"\n  description: \"One scenario asserting an implementation detail\"\n\nscenarios:\n  E2E-001:\n    description: The greeter must print the configured greeting followed by the name it is given\n    service: greeter\n    path: tests/greeter/greet_test.go\n    user_stories: []\n    merged_steps:\n      given:\n        - the greeting is configured as \"Hello\"\n      when:\n        - the Operator runs \"greet Ada\"\n      then:\n        - 'stdout matches ^Hello Ada$'\n"
+      "size": 890,
+      "sha256": "fe691aadb0a8c585ca250e85784f196ae1ee91ca98476406691395b44d7f7220",
+      "text": "# Registry seed for `scen-check-fix-rewrites-implementation`.\n#\n# One Scenario whose then step names a function the greeter calls, an\n# internal detail no user sees, where its description says what is\n# observed: the greeting and the name printed. The fix rewrites the step\n# in this entry as that output.\n\nmetadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-10-21\"\n  description: \"One scenario asserting an implementation detail\"\n\nscenarios:\n  E2E-001:\n    description: The greeter must print the configured greeting followed by the name it is given\n    service: greeter\n    path: tests/greeter/greet_test.go\n    user_stories: []\n    merged_steps:\n      given:\n        - the greeting is configured as \"Hello\"\n      when:\n        - the Operator runs \"greet Ada\"\n      then:\n        - the standard output has a line matching \"Hello Ada\"\n"
     }
   ]
 }

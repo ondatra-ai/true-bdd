@@ -51,52 +51,72 @@ Then:
 # Fix Prompt for Scenario E2E-001: The greeter must print the configured greeting followed by the name it is given
 
 ## Target
-The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry). No catalogue entry's `means` changes, and no other document changes.
+The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry).
 
-## Background for the applier
+Do not touch any other Scenario, and do not touch the `product` document — no
+catalogue entry is named by the findings, and the product document declares no
+`catalogue:` at all.
 
-The scen-check finding is:
+Leave `E2E-001`'s `description:`, `service: greeter`, `path: tests/greeter/greet_test.go`
+and `user_stories: []` exactly as they are. The `description` already states the
+observable behaviour ("must print the configured greeting followed by the name it
+is given") and is not what the finding objects to.
 
-- `E2E-001: implementation — 'the formatGreeting function is called with "Hello" and "Ada"'`
-
-That Then step names an internal detail (a Go function and its arguments) instead of what a person observes from outside the greeter. The behaviour the Scenario specifies is already stated in its own description — "print the configured greeting followed by the name it is given" — and in the product document's summary: "given a name, it prints the greeting its config file sets, followed by that name." The observable form of that assertion is the line the command prints to standard output: with the greeting configured as `Hello` and the command `greet Ada`, stdout carries the line `Hello Ada`.
-
-The product document declares a `catalogue:`, and it already has a Then template for exactly this observation:
-
-- `stdout matches {expected:pattern}` (block: `then`) — "A line the command printed to its standard output matches the pattern, a regular expression: either the answer line the command prints for its user, or a log record's message or fields."
-
-The rewritten step below fills that template's `{expected:pattern}` slot (the rest of the step, verbatim, unquoted), so the Scenario stays in the catalogue's words.
+Do not edit `tests/greeter/greet_test.go` or any step definition. `true-bdd build
+tests --fix` re-renders the test from the registry once this entry reads correctly.
 
 ## Required Changes
 
-### Change #1: Replace the Then step that names the `formatGreeting` function with the stdout line a person reads
+### Change #1: Replace the then step that names an internal function with the output a person reads
 
 **Document:** scenarios_yaml
-**Field:** merged_steps.then (the single entry of the `then` block of Scenario `E2E-001`)
+**Field:** `scenarios.E2E-001.merged_steps.then`
+
 **Current text:**
 ```
-the formatGreeting function is called with "Hello" and "Ada"
+      then:
+        - the formatGreeting function is called with "Hello" and "Ada"
 ```
+
 **New text:**
 ```
-stdout matches ^Hello Ada$
+      then:
+        - the standard output has a line matching "Hello Ada"
 ```
 
-Notes for the applier:
-- Replace the step in place; the `then` block still holds exactly one step. Do not add a step, and do not drop one.
-- The new text must be used verbatim, including the `^` and `$` anchors. The anchored pattern keeps the original step's strength: the greeting `Hello` followed by the name `Ada`, and nothing else on that line.
-- Keep the existing YAML quoting style of the surrounding step entries. If the entry is written as a plain (unquoted) scalar, the `^` leading character requires quoting — write it as a single-quoted scalar: `'stdout matches ^Hello Ada$'`.
+## Why this is the replacement
 
-## What must NOT change
+- `formatGreeting` is an internal function of the greeter; no Operator can watch it
+  being called. It is the exact phrase the reviewer quoted
+  (`E2E-001: implementation — 'the formatGreeting function is called with "Hello" and "Ada"'`).
+- The behaviour is unchanged. The `given` step configures the greeting as `"Hello"`
+  and the `when` step runs `"greet Ada"`; the old step asserted that those two values
+  were combined into a greeting. The new step asserts the same combination at the
+  product's boundary — the line `Hello Ada` on standard output — which is precisely
+  what the Scenario's own description says the greeter must print. No assertion is
+  dropped and no new assertion is added.
+- The new step is the product document's `then` concept `standard output`: "A line
+  the command printed on its standard output has a match for a stated pattern, a
+  regular expression." `Hello Ada` is that pattern, and it draws on the glossary terms
+  `command` and `standard output`. It uses none of the forbidden qualifiers and none
+  of the forbidden actions (`handle`, `process`, `parse`) — `prints` / `standard
+  output` is the observable action the vocabulary asks for.
+- The `then` block keeps exactly one step. The old step was the Scenario's only
+  assertion, so it is rewritten rather than dropped — dropping it would leave the
+  Scenario specifying nothing.
 
-- **The description stays exactly as it is:** `The greeter must print the configured greeting followed by the name it is given`. It already describes observable behaviour (what the program prints) and the finding does not name it.
-- The Given step stays exactly as it is: `the greeting is configured as "Hello"`.
-- The When step stays exactly as it is: `the Operator runs "greet Ada"`.
-- The Scenario's `id` (`E2E-001`), `service:` (`greeter`), `path:` (`tests/greeter/greet_test.go`) and `user_stories:` (empty — no story claims this Scenario) stay exactly as they are.
-- Every other Scenario in the registry stays byte-for-byte as it is.
-- Do not edit `tests/greeter/greet_test.go` — it is re-rendered from the registry by `true-bdd build tests --fix` once this entry reads correctly.
-- Do not edit any step definition.
-- Do not edit `docs/product/product.yaml`: the catalogue, the glossary, the roles and the vocabulary all stay as they are.
+## Steps left unchanged (for the applier's reference — do not edit)
+
+```
+      given:
+        - the greeting is configured as "Hello"
+      when:
+        - the Operator runs "greet Ada"
+```
+
+Both already describe what a person sets up and does from outside the program
+(`configured greeting` and `a role runs a command` in the product's concepts), and
+neither was named by the findings.
 
 ---
 

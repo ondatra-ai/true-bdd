@@ -1,8 +1,10 @@
 # Architectural spec for the greeter, the host project of the
 # scen-check fixtures that walk the shipped checklist.
 #
-# The word mapping says how each product word the catalogue declares is
-# built, and how a step definition sets it up or observes it.
+# The word mapping says how each product word the concepts declare is
+# built, and how a step definition sets it up or observes it; the
+# Concept bindings say what each concept's steps do through the
+# greeter's Public interface.
 
 architecture:
   testing:
@@ -47,24 +49,41 @@ architecture:
         Hold the kept standard output, line by line, against the step's
         regular expression; any matching line passes.
 
-  phrases:
-    - template: the greeting is configured as "{greeting}"
+  concepts:
+    - concept: configured greeting
+      block: given
       service: greeter
       references:
       - file: greeting-config
-      does: Write the quoted greeting to the declared configuration file.
-    - template: the {actor:role} runs "{command}"
+      does: >-
+        Write the declared greeting configuration file, greeter.yaml in
+        the run directory, as a YAML mapping whose greeting is the step's
+        quoted text, before the command runs.
+    - concept: a role runs a command
+      block: when
       service: greeter
       references:
       - command: greet
-      does: Call the declared greet command with the quoted arguments and keep the result.
-    - template: the command exits with code {code:number}
+      does: >-
+        Run the declared greet command as a process once in the run
+        directory, with the words of the step's quoted command line after
+        its first word, greet, as its arguments, and keep its exit code
+        and its standard output lines.
+    - concept: exit code
+      block: then
       service: greeter
       references:
       - command: greet
-      does: Compare the kept greet exit code with the expected number.
-    - template: stdout matches {expected:pattern}
+      does: >-
+        Compare the kept exit code of the greet command with the step's
+        whole number.
+    - concept: standard output
+      block: then
       service: greeter
       references:
       - command: greet
-      does: Compare the kept greet standard output lines with the expected pattern.
+      does: >-
+        Match the step's pattern, a regular expression taken as the rest
+        of the step after "stdout matches", against each kept standard
+        output line of the greet command; the step passes when any line
+        matches.
