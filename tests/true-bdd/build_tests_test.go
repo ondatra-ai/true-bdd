@@ -440,14 +440,14 @@ func TestBuildTestsSteps002TestNamedAfterKey(t *testing.T) {
 	s.Done()
 }
 
-// build-tests-steps-007-unreadable-catalogue-refused: `build tests --fix` must refuse a product document whose catalogue it cannot read, before it writes a generated test and before any AI turn, rather than author steps blind to the spec the host declared
+// build-tests-steps-007-unreadable-catalogue-refused: `build tests --fix` must refuse a product document whose concepts it cannot read, before it writes a generated test and before any AI turn, rather than author steps blind to the spec the host declared
 func TestBuildTestsSteps007UnreadableCatalogueRefused(t *testing.T) {
 	s := scenarios.New(t, "build-tests-steps-007-unreadable-catalogue-refused")
 	s.Given(`the "build-tests-fix-unreadable-catalogue" project tree`)
 	s.When(`the System Architect runs "build tests --fix"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
-	s.And(`stdout matches read the catalogue: product document \./docs/product/product\.yaml: catalogue: must hold a list of phrases`)
+	s.And(`stdout matches product document \./docs/product/product\.yaml: concepts: requires given, when or then lists with concept, means and terms`)
 	s.And(`the engine dispatched no AI turns`)
 	s.But(`no file outside "tmp" changed`)
 	s.Done()

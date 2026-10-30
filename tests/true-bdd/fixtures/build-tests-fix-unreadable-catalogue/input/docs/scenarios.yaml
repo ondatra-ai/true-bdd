@@ -2,8 +2,8 @@
 #
 # One scenario whose steps bind to nothing, so `build tests --fix` must
 # read what the spec says about them, from a product document whose
-# `catalogue:` is not a list. The run is refused before codegen and
-# before any AI turn.
+# `concepts:` is not a mapping of block lists. The run is refused before
+# codegen and before any AI turn.
 
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
