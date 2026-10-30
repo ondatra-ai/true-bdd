@@ -11,16 +11,15 @@ import (
 )
 
 // stepDefinitions passes a Scenario every template of which binds to one
-// step definition of its suite, each reached by that template alone,
-// over the steps of every checked Scenario sharing the suite.
+// definition of its suite, reached by that template alone over the suite's
+// checked steps; on a concept host, each step to one recording its concept.
 func stepDefinitions() Check[*template.ScenarioCheckData] {
 	return closureCheck([]string{docs.KeyProduct},
 		func(item *template.ScenarioCheckData, _ Input, source product.Catalogue) (Verdict, error) {
-			if source.ConceptsDeclared {
-				return notChecked(item.ID, "concept definitions belong to build steps per concept"), nil
-			}
-
 			dir := stepcoverage.StepsDir(item.Path)
+			if source.ConceptsDeclared {
+				return reviewConceptDefinitions(item, source, dir)
+			}
 
 			suite, err := stepcoverage.LoadSuite(dir)
 			if err != nil {

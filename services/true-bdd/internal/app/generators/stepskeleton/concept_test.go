@@ -114,3 +114,53 @@ func TestConceptSkeletonWithAWrittenBodyIsNoLongerPending(t *testing.T) {
 		t.Fatalf("written concept definition: %+v", found)
 	}
 }
+
+// A pattern the critique sent back is replaced: its skeleton file and its
+// registration go, every other definition of the suite stays as it was.
+func TestRemovedConceptSkeletonLeavesNoRegistrationAndKeepsOthers(t *testing.T) {
+	t.Parallel()
+
+	dir := filepath.Join(t.TempDir(), "steps")
+
+	wrong, err := stepskeleton.WriteConcept(dir, "when", "halve", `^the Owner halves (-?\d)\d*$`)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	kept, err := stepskeleton.WriteConcept(dir, "then", "result", `^the result is (-?\d+)$`)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = stepskeleton.RemoveConcept(dir, wrong)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	requireBindings(t, dir, map[string]int{"the Owner halves 64": 0, "the result is 32": 1})
+
+	found, err := stepskeleton.Concepts(dir)
+	if err != nil || len(found) != 1 || found[0].Function != kept.Function || kept.Intact(dir) != nil {
+		t.Fatalf("concept records after removal: %+v, %v", found, err)
+	}
+
+	_, err = disk.Read(wrong.File)
+	if err == nil {
+		t.Fatal("the removed skeleton's file remains")
+	}
+}
+
+func requireBindings(t *testing.T, dir string, want map[string]int) {
+	t.Helper()
+
+	suite, err := stepcoverage.LoadSuite(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for text, count := range want {
+		if bound := suite.Bind(text); len(bound) != count {
+			t.Errorf("%q binds %v, want %d", text, bound, count)
+		}
+	}
+}

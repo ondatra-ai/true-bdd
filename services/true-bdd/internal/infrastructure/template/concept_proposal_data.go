@@ -15,5 +15,6 @@ type ConceptProposalData struct {
 	Suites   []catalogue.SuiteStep       // every deterministic step of the suite, every block
 	Previous []catalogue.ProposedPattern // the refused proposal the findings name
 	Findings []string
+	Critique []string                    // the critique's findings against the patterns being replaced
 	Patterns []catalogue.ProposedPattern // the proposal the engine accepted
 }

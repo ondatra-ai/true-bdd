@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "binary": "claude",
+  "argv": [
+    "--setting-sources",
+    "",
+    "--strict-mcp-config",
+    "--safe-mode",
+    "--allowedTools",
+    "Read(**),Write(./tmp/**),Glob(**),Grep(**)",
+    "--disallowed-tools",
+    "Bash,Edit(**),MultiEdit(**),Agent,Task",
+    "--model",
+    "claude-opus-5",
+    "--system-prompt",
+    "Propose the step definition patterns of one concept for one suite,\nas data. A pattern is a Go regular expression (RE2: no lookaround,\nno backreferences) matched against a step's whole text. Each capture\ngroup becomes an argument of the definition, in order. The engine\nwrites each skeleton from your pattern and another turn writes its\nbody from the concept's binding, so the captures are everything the\nbody will know about the step.\nAnchor every pattern from ^ to $. Capture every value the body needs\nto do what the binding says: a quoted value, without its quotes; a\nnumber, together with the word \"no\" where the steps use it for zero;\na role; a pattern or other free text that ends the step; and every\nalternative that changes what the body must do, such as a negation\n(matches or does not match), a kind out of a set (validation, fix or\napply), or an optional word that changes the meaning. A grammatical\nvariant that changes nothing the body does (a plural s, is or are)\nis a non-capturing group (?:...).\nA pattern is as general as the binding allows, so a new step of the\nsame shape binds it without a new pattern, but it states the words\nthat make it this concept: a pattern that would bind any text, such\nas ^(.+)$, is wrong. Propose one pattern per distinct thing the\nbinding says a definition does, not one per step.\nThe engine checks your patterns against every step of the suite in\nevery block, and refuses them unless every supplied step binds\nexactly one pattern among yours and the existing definitions, no\npattern of yours binds any other step of the suite, and every\npattern of yours binds at least one step. Never repeat or change an\nexisting definition.\nFor each pattern, name and explain each capture in order, and say\nwhich clause of the binding's does it serves. When refused is\nsupplied, the engine refused those patterns with those findings:\npropose again so that none of them holds. Change nothing.\n\nAnswer only the JSON object described by the supplied schema. Change nothing.\n",
+    "--permission-mode",
+    "acceptEdits",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--json-schema",
+    "{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"patterns\"],\"properties\":{\n\"patterns\":{\"type\":\"array\",\"minItems\":1,\"items\":{\"type\":\"object\",\"additionalProperties\":false,\n\"required\":[\"pattern\",\"captures\",\"serves\"],\"properties\":{\n\"pattern\":{\"type\":\"string\",\"minLength\":1},\n\"captures\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"name\",\"means\"],\n\"properties\":{\"name\":{\"type\":\"string\",\"minLength\":1},\"means\":{\"type\":\"string\",\"minLength\":1}}}},\n\"serves\":{\"type\":\"string\",\"minLength\":1}}}}}}",
+    "-p",
+    "{\n  \"suite\": \"tests/calc/steps\",\n  \"service\": \"calc\",\n  \"block\": \"when\",\n  \"concept\": {\n    \"concept\": \"operation\",\n    \"means\": \"The Owner halves or doubles a whole number, positive, zero or negative, with the calculator. Halving rounds an odd number's half toward zero, unless the Owner halves exactly, which keeps the half.\",\n    \"terms\": [\n      \"number\"\n    ]\n  },\n  \"glossary\": [\n    {\n      \"means\": \"A whole number, positive, zero or negative.\",\n      \"term\": \"number\"\n    }\n  ],\n  \"binding\": {\n    \"Concept\": \"operation\",\n    \"Block\": \"when\",\n    \"Service\": \"calc\",\n    \"References\": [\n      {\n        \"Command\": \"halve\",\n        \"File\": \"\",\n        \"LogRecord\": \"\",\n        \"OutgoingCall\": \"\",\n        \"OperationID\": \"\",\n        \"Element\": null\n      },\n      {\n        \"Command\": \"double\",\n        \"File\": \"\",\n        \"LogRecord\": \"\",\n        \"OutgoingCall\": \"\",\n        \"OperationID\": \"\",\n        \"Element\": null\n      }\n    ],\n    \"Does\": \"Run the declared halve or double command, as the step names the operation, as a process with the step's whole number, passing --exact to halve when the step says exactly, and keep its stdout as the output.\",\n    \"Intent\": \"\"\n  },\n  \"public_interface\": {\n    \"declaration\": {\n      \"Kind\": \"cli\",\n      \"Document\": \"docs/architecture/calc-cli.yaml\",\n      \"Elements\": null\n    },\n    \"docs/architecture/calc-cli.yaml\": \"opencli: 0.1\\ninfo:\\n  title: Calculator CLI\\n  version: '1.0'\\ncommands:\\n  halve:\\n    description: Run go run ./services/calc halve [--exact] VALUE from the host root;\\n      stdout is VALUE halved and a newline. Without --exact the half is rounded\\n      toward zero and printed as an integer; with --exact an odd VALUE's half is\\n      printed with one decimal digit.\\n    parameters:\\n    - name: exact\\n      in: flag\\n      schema:\\n        type: boolean\\n    - name: value\\n      in: argument\\n      required: true\\n      schema:\\n        type: integer\\n    responses:\\n      '0':\\n        description: The half on stdout\\n      '1':\\n        description: Invalid arguments\\n  double:\\n    description: Run go run ./services/calc double VALUE from the host root; stdout\\n      is VALUE doubled, as an integer, and a newline.\\n    parameters:\\n    - name: value\\n      in: argument\\n      required: true\\n      schema:\\n        type: integer\\n    responses:\\n      '0':\\n        description: Doubled integer on stdout\\n      '1':\\n        description: Invalid arguments\\n\"\n  },\n  \"existing_definitions\": [],\n  \"steps\": [\n    \"the Owner halves 6\",\n    \"the Owner doubles 6\",\n    \"the Owner halves 7\",\n    \"the Owner exactly halves 7\"\n  ]\n}"
+  ],
+  "exit_code": 0,
+  "duration_ms": 16205,
+  "request_hash": "sha256:e172ec46ce27c6c4cc368f19e66418a453a95d492f5db806206b4b0ff3c20dc2",
+  "fsdiff": {
+    "created": [],
+    "modified": [],
+    "deleted": []
+  },
+  "recorded_at": "2026-10-30T07:09:10Z"
+}

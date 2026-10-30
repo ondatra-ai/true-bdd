@@ -1,0 +1,30 @@
+story:
+  id: concept-definitions
+  feature: scen-check
+  title: Hold a concept host's step definitions to their recorded concepts
+  as_a: Quality Engineer
+  i_want: every step a Scenario binds to bind one step definition, which records a declared concept of
+    its block
+  so_that: no step runs a definition written for another concept, or two definitions at once
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 001-closure
+    description: On a concept host the step-definitions check fails a definition recording no declared
+      concept of its step's block and a step binding two definitions, and passes a Scenario whose every
+      step binds one definition recording its concept
+    steps:
+    - given:
+      - the "concept-definitions-closure" project tree
+    - when:
+      - the Quality Engineer runs "scen check"
+    - then:
+      - the command exits with code 1
+      - stdout matches check=step-definitions subjectID=calc-001-halve promptIndex=1 answer=fail context=.*the
+        Owner halves 6.*which records no concept
+      - stdout matches check=step-definitions subjectID=calc-002-double promptIndex=1 answer=fail context=.*the
+        Owner doubles 6.* binds to 2 step definitions
+      - stdout matches check=step-definitions subjectID=calc-004-even promptIndex=1 answer=fail context=.*the
+        result is even.*halving.*, which is not a declared then concept
+      - stdout matches check=step-definitions subjectID=calc-003-double promptIndex=1 answer=pass
+      - the engine dispatched no AI turns
+      - no file outside "tmp" changed

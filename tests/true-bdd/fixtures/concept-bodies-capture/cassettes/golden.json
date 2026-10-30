@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "fixture": "concept-bodies-capture",
+  "files": [
+    {
+      "path": "tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go",
+      "kind": "created",
+      "size": 869,
+      "sha256": "3a784ab1978c0199d8282e7e01692f748df07efbd6f4c69dd44e743916abb731",
+      "text": "package steps\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"halving\"\nfunc concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {\n\tconst (\n\t\thostRoot    = \"../..\"\n\t\tcalcPackage = \"./services/calc\"\n\t)\n\n\tnumber := args[0]\n\n\tcmd := exec.Command(\"go\", \"run\", calcPackage, \"halve\", number)\n\tcmd.Dir = hostRoot\n\n\tstdout, err := cmd.Output()\n\tif err != nil {\n\t\tvar exit *exec.ExitError\n\t\tif errors.As(err, \u0026exit) {\n\t\t\treturn fmt.Errorf(\"halve %s: %w: %s\", number, err, strings.TrimSpace(string(exit.Stderr)))\n\t\t}\n\t\treturn fmt.Errorf(\"halve %s: %w\", number, err)\n\t}\n\n\thalved, err := strconv.Atoi(strings.TrimSpace(string(stdout)))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"halve %s: stdout %q is not an integer: %w\", number, string(stdout), err)\n\t}\n\n\tstate.Result = halved\n\treturn nil\n}\n"
+    },
+    {
+      "path": "tests/calc/steps/concept8c83e3012dd37395db8aad8a8fafef5f14ca67ae936908b0e63bff4b60526148.go",
+      "kind": "deleted",
+      "size": 0,
+      "sha256": ""
+    },
+    {
+      "path": "tests/calc/steps/register.go",
+      "kind": "modified",
+      "size": 215,
+      "sha256": "eb877a9b021b276ce8ea2a384915a360f9103f120a9ec2c9ab7dd5110f047024",
+      "text": "package steps\n\nfunc Register(suite Registrar) {\n\tsuite.Step(\"^the result is (-?\\\\d+)$\", result)\n\n\tsuite.Step(\"^the Owner halves (-?\\\\d+)$\", concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87)\n}\n"
+    }
+  ]
+}

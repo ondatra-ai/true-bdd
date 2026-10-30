@@ -1,6 +1,11 @@
 package steps
 
-import ("fmt"; "os/exec"; "strconv"; "strings")
+import (
+	"fmt"
+	"os/exec"
+	"strconv"
+	"strings"
+)
 
 //truebdd:concept when "halving"
 func concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb(state *State, args []string) error {
@@ -11,5 +16,8 @@ func concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb(sta
 		return fmt.Errorf("halve %s: %w", args[0], err)
 	}
 	state.Result, err = strconv.Atoi(strings.TrimSpace(string(out)))
-	return err
+	if err != nil {
+		return fmt.Errorf("halve %s: unexpected stdout %q: %w", args[0], strings.TrimSpace(string(out)), err)
+	}
+	return nil
 }

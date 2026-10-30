@@ -1,0 +1,216 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You apply the approved bodies of one concept's step definitions in one suite.
+Preserve the engine's registrations, patterns, signatures and //truebdd:concept
+records. Modify only those bodies and the suite's shared state. Use the declared
+Public interface and the concept's binding; never implement the product's
+operation inside a step definition.
+
+**Output Requirements:**
+- After your Write/Edit calls succeed, output a YAML confirmation
+  inside FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other content in the target file — only write the
+  selected body and extend shared State as needed.
+
+**Output Format:**
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply-when-halving-iter2-result.yaml ===
+applied: true
+target: "<repo-relative path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-when-halving-iter2-result.yaml ===
+```
+
+If the declared Public interface cannot set up or observe the concept, stop without
+inventing an operation. Return the same confirmation markers with:
+```yaml
+applied: false
+interface_cannot_serve:
+  phrase: "when concept \"halving\""
+  lacks: "<what the interface offers no way to set up or observe>"
+```
+
+Author solely from the supplied Specification and the suite's state and helpers.
+Do not read service implementation code. Do not execute Scenarios, replay the
+suite against the target, or require a Scenario to pass: the target may be absent
+or not built yet. The engine owns compilation and the whole-suite checks. If you
+compile the steps package while writing, preserve the inherited Go cache and
+temporary-directory environment; never create a separate build cache.
+
+Keep every new constant and local helper value inside the selected function body.
+Do not add package-level constants, variables, helper functions or types; only
+shared State fields and the selected file's imports may change outside that body.
+
+
+### TASK
+
+# Apply step definition bodies
+
+Suite: tests/calc/steps
+Service: calc
+Concept: halving (when)
+Meaning: The Owner halves a whole number, positive, zero or negative, with the calculator.
+
+## Complete concept context
+concept:
+    concept: halving
+    block: when
+    means: The Owner halves a whole number, positive, zero or negative, with the calculator.
+    terms:
+        - number
+binding:
+    concept: halving
+    block: when
+    service: calc
+    references:
+        - command: halve
+    does: Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result.
+glossary:
+    - term: number
+      means: A whole number, positive, zero or negative.
+word_mapping:
+    - term: number
+      technical: The integer argument and stdout of the calculator halve command.
+      observed_by: The step runs halve as a process and compares its integer stdout with the expected value.
+public_interface:
+    kind: cli
+    document: docs/architecture/calc-cli.yaml
+interface_document: |
+    opencli: 0.1
+    info:
+      title: Calculator CLI
+      version: '1.0'
+    commands:
+      halve:
+        description: Run go run ./services/calc halve VALUE from the host root; stdout
+          is VALUE halved and rounded toward zero, as an integer, and a newline.
+        parameters:
+        - name: value
+          in: argument
+          required: true
+          schema:
+            type: integer
+        responses:
+          '0':
+            description: Halved integer on stdout
+          '1':
+            description: Invalid arguments
+definitions:
+    - function: concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87
+      file: tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go
+      pattern: ^the Owner halves (-?\d+)$
+      steps:
+        - text: the Owner halves 6
+          captures:
+            - "6"
+        - text: the Owner halves -7
+          captures:
+            - "-7"
+scenarios:
+    - id: calc-001-halve
+      description: Halving an even number
+      service: calc
+      path: tests/calc/calc_test.go
+      steps: |
+        When:
+          - the Owner halves 6
+        Then:
+          - the result is 3
+    - id: calc-002-halve
+      description: Halving a negative odd number rounds toward zero
+      service: calc
+      path: tests/calc/calc_test.go
+      steps: |
+        When:
+          - the Owner halves -7
+        Then:
+          - the result is -3
+
+
+# Fix Prompt for Item when-halving: when concept "halving"
+
+## Target
+tests/calc/steps
+
+## Problem
+`tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go` delegates to the suite helper `State.Halve`, which refuses to run unless `CALC_LICENCE` is set. No licence or environment variable appears in the binding ("Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result"), in the declared Public interface for `halve` (one required integer `value` argument; exit code 0 with the halved integer on stdout, exit code 1 for invalid arguments), or in the fixture inputs of calc-001-halve / calc-002-halve. The body must therefore run the declared command itself and must not require anything the declaration does not state.
+
+## Required Changes
+
+### 1. Replace the body of the selected definition (only this file)
+
+File: `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go`
+
+Overwrite the whole file with exactly this content. The `//truebdd:concept when "halving"` record, the function name and the `(state *State, args []string) error` signature are unchanged; only the body and this file's imports change.
+
+```go
+package steps
+
+import (
+	"bytes"
+	"fmt"
+	"os/exec"
+	"strconv"
+	"strings"
+)
+
+//truebdd:concept when "halving"
+func concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {
+	const hostRoot = "../.."
+	number := args[0]
+	cmd := exec.Command("go", "run", "./services/calc", "halve", number)
+	cmd.Dir = hostRoot
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		if message := strings.TrimSpace(stderr.String()); message != "" {
+			return fmt.Errorf("halve %s: %w: %s", number, err, message)
+		}
+		return fmt.Errorf("halve %s: %w", number, err)
+	}
+	result, err := strconv.Atoi(strings.TrimSpace(stdout.String()))
+	if err != nil {
+		return fmt.Errorf("halve %s: stdout %q is not an integer: %w", number, stdout.String(), err)
+	}
+	state.Result = result
+	return nil
+}
+```
+
+Notes on why this is shaped this way:
+- It runs the declared command exactly as the interface document states (`go run ./services/calc halve VALUE` from the host root) and keeps only its integer stdout. The step never halves the number itself; `state.Result` is whatever the process printed.
+- `cmd.Dir = "../.."` reaches the host root from the scenario package `tests/calc`, matching the path the interface document declares the command is run from (this is the same working directory the existing suite helper used).
+- No environment variable is consulted, so the step can only fail for reasons the declaration names: the command failing (exit code 1 / not runnable) or stdout not being an integer.
+- The constant `hostRoot` stays inside the function body; no package-level constants, variables, helpers or types are added.
+
+### 2. Do not change anything else
+
+- Leave `tests/calc/steps/register.go` untouched: the pattern `^the Owner halves (-?\d+)$` and its registration already point at this function.
+- Leave `tests/calc/steps/definitions.go` (the `then "result"` definition) untouched.
+- Leave `State` in `tests/calc/steps/state.go` as it is: the existing `Result int` field is the only shared state this concept needs, so no new State fields are required. Do not delete or rewrite the `State.Halve` helper as part of this item — the selected body simply no longer delegates to it; an unused method still compiles, and `errors`, `os`, `os/exec`, `strconv` and `strings` all remain in use there.
+- Do not touch generated scenario tests, the Specification or `services/calc`.
+
+Read existing state and helpers first. Write only the bodies of the definitions the
+context lists and shared state. Preserve the engine's patterns, registrations,
+signatures and //truebdd:concept records. Reach the service through its declared
+Public interface. Preserve generated tests, the
+Specification and service code. Report the changes in the confirmation below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-when-halving-iter2-result.yaml ===
+applied: true
+target: "<repo-relative path of the file you wrote/edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-when-halving-iter2-result.yaml ===
+
+If the declared Public interface cannot set up or observe the concept, stop without
+inventing an operation. Return the same confirmation markers with:
+```yaml
+applied: false
+interface_cannot_serve:
+  phrase: "when concept \"halving\""
+  lacks: "<what the interface offers no way to set up or observe>"
+```

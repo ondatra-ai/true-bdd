@@ -104,8 +104,8 @@ definitions:
       pattern: ^the Owner halves (-?\d+)$
       captures:
         - name: number
-          means: The whole number the Owner halves, positive, zero or negative, with an optional leading minus sign kept so the body can pass it verbatim as the halve command's value argument.
-      serves: 'Serves the whole does clause: it is the one thing the binding says a definition does — run the declared halve command as a process with the step''s whole number and keep its integer stdout as the result. The captured number is the process argument; the words "the Owner halves" state the halving concept so the pattern binds only halving steps.'
+          means: The whole number the Owner halves, optionally signed with a leading minus, passed verbatim as the value argument of the declared halve command.
+      serves: 'Serves the whole does clause: it names the halving words "the Owner halves" and captures the step''s whole number, the only value the body needs to run the declared halve command as a process with that number and keep its integer stdout as the result.'
       steps:
         - text: the Owner halves 6
           captures:
@@ -134,26 +134,23 @@ scenarios:
           - the result is -3
 
 
-# Fix Prompt for Item when-halving: when concept "halving"
-
 ## Target
-tests/calc/steps
+`tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go`
 
-## Required Changes
+This is the only file to change. Do **not** touch `register.go`, `definitions.go`, `state.go`, `tests/calc/calc_test.go`, the Specification or any service code.
 
-Edit exactly one file: `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go`.
+## Shared state
+No change required. `State.Result int` in `tests/calc/steps/state.go` already carries the calculator's integer result, and the existing `result` Then-definition in `definitions.go` compares against it. Leave `state.go` exactly as it is.
 
-Keep the `//truebdd:concept when "halving"` record, the function name and the signature exactly as they are. Replace only the import block and the function body. No shared-state change is needed: `State.Result int` in `tests/calc/steps/state.go` already carries the observed value that the existing `result` Then definition compares, and no other file changes.
+## Required change
 
-The body runs the declared `halve` command of the `calc` CLI (`docs/architecture/calc-cli.yaml`) as a process, exactly as the binding's `does` clause states: `go run ./services/calc halve VALUE` from the host root, with the captured number passed verbatim as the `value` argument (the capture keeps any leading minus sign, so it needs no parsing before it is handed to the process). The test binary runs in `tests/calc`, so the host root is `../..`. The body never halves anything itself — it only starts the process and keeps its integer stdout in `state.Result`.
-
-Write the file as:
+Replace the whole contents of `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go` with the following. The `//truebdd:concept` record, the function name and the `(state *State, args []string) error` signature are preserved verbatim; only the import list and the body change.
 
 ```go
 package steps
 
 import (
-	"errors"
+	"bytes"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -163,36 +160,46 @@ import (
 //truebdd:concept when "halving"
 func concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {
 	const (
-		hostRoot = "../.."
-		pkg      = "./services/calc"
-		command  = "halve"
+		hostRoot    = "../.."
+		packagePath = "./services/calc"
+		commandName = "halve"
 	)
 	number := args[0]
-	cmd := exec.Command("go", "run", pkg, command, number)
+	if _, err := strconv.Atoi(number); err != nil {
+		return fmt.Errorf("%s: captured number %q is not a whole number: %w", commandName, number, err)
+	}
+	var stdout, stderr bytes.Buffer
+	cmd := exec.Command("go", "run", packagePath, commandName, number)
 	cmd.Dir = hostRoot
-	stdout, err := cmd.Output()
-	if err != nil {
-		var exit *exec.ExitError
-		if errors.As(err, &exit) {
-			return fmt.Errorf("go run %s %s %s: %w: %s", pkg, command, number, err, strings.TrimSpace(string(exit.Stderr)))
-		}
-		return fmt.Errorf("go run %s %s %s: %w", pkg, command, number, err)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%s %s: %w: %s", commandName, number, err, strings.TrimSpace(stderr.String()))
 	}
-	printed := strings.TrimSpace(string(stdout))
-	halved, err := strconv.Atoi(printed)
+	value, err := strconv.Atoi(strings.TrimSpace(stdout.String()))
 	if err != nil {
-		return fmt.Errorf("%s %s printed %q, not an integer: %w", command, number, printed, err)
+		return fmt.Errorf("%s %s: stdout %q is not an integer: %w", commandName, number, stdout.String(), err)
 	}
-	state.Result = halved
+	state.Result = value
 	return nil
 }
 ```
 
-## Notes
-- All constants and locals stay inside the function body; no package-level constants, variables, helpers or types are added.
-- The capture is handed to the process verbatim, so negative values (`-7`) reach the CLI's `value` argument unchanged; the body performs no arithmetic and derives the result only from the command's stdout.
-- `cmd.Output()` captures stdout for the result and the process's stderr for the failure message, so a non-zero exit (response `'1'`, invalid arguments) fails the step with the CLI's own diagnostic instead of a bare exit status.
-- Do not touch `tests/calc/steps/register.go`, `tests/calc/steps/definitions.go`, `tests/calc/steps/state.go`, the generated tests, the Specification or `services/calc`.
+## Why this body
+
+- The binding says: run the declared `halve` command as a process with the step's whole number and keep its integer stdout as the result. The body does exactly that and nothing else.
+- The declared Public interface (`docs/architecture/calc-cli.yaml`) spells the invocation out: `go run ./services/calc halve VALUE` from the host root; stdout is the halved integer plus a newline, exit `0` on success and `1` on invalid arguments. `cmd.Dir = "../.."` is the host root relative to the suite's working directory `tests/calc` (the same base `scenarios.New` already uses for `../../docs/scenarios.yaml`).
+- The capture is passed verbatim as the `value` argument, including a leading minus, as the capture's `means` requires. The `strconv.Atoi` guard before the call only rejects a malformed capture; it does not alter the value handed to the command.
+- No halving arithmetic, no rounding rule and no sign handling appears in the body — the product computes the result; the step only records the command's stdout. The comparison against the expected value stays in the existing `result` Then-definition.
+- A non-zero exit or non-integer stdout fails the step with the command's stderr, so a broken or absent target reports a step failure rather than a silent pass.
+- `cmd.Run` with explicit `Stdout`/`Stderr` buffers is used instead of `cmd.Output()`, because `Output()` errors when `Stderr` is already set.
+- Every constant (`hostRoot`, `packagePath`, `commandName`) is declared inside the function body. No package-level constants, variables, helper functions or types are added.
+
+## Verification for the applier
+
+- Confirm `tests/calc/steps/register.go` still reads `suite.Step("^the Owner halves (-?\\d+)$", concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87)` — unchanged.
+- Confirm the `//truebdd:concept when "halving"` line is present immediately above the function.
+- Do not run a Scenario; the engine owns compilation and the whole-suite checks. If you do compile the steps package, keep the inherited `GOCACHE`/`TMPDIR` environment and never create a separate build cache.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists and shared state. Preserve the engine's patterns, registrations,

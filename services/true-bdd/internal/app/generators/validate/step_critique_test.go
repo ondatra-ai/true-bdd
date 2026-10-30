@@ -47,10 +47,43 @@ func TestStepCritiqueVerdict(t *testing.T) {
 				t.Fatalf("findings=%v", findings)
 			}
 
-			if testCase.wantFail && (!strings.Contains(findings[0], "double") ||
-				!strings.Contains(findings[0], "phrase_") && !strings.Contains(findings[0], "computes_assertion")) {
+			if testCase.wantFail && (!strings.Contains(findings[0].String(), "double") ||
+				!strings.Contains(findings[0].String(), "phrase_") &&
+					!strings.Contains(findings[0].String(), "computes_assertion")) {
 				t.Fatalf("finding lost definition/category: %v", findings)
 			}
 		})
+	}
+}
+
+// A concept critique's pattern categories are findings against the
+// pattern, which the engine sends back to the proposal; every other
+// category is a finding against the body, which goes back to the writer.
+func TestConceptCritiqueFindingNamesItsTarget(t *testing.T) {
+	t.Parallel()
+
+	findings, err := validate.ParseStepCritique(`{"answer":"fail","findings":[
+ {"definition":"halving","category":"pattern_captures","finding":"captures only the first digit"},
+ {"definition":"halving","category":"pattern_scope","finding":"binds a doubling step too"},
+ {"definition":"halving","category":"concept_binding","finding":"requires CALC_LICENCE"},
+ {"definition":"halving","category":"concept_meaning","finding":"doubles instead"},
+ {"definition":"halving","category":"computes_assertion","finding":"halves locally"}]}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := []bool{true, true, false, false, false}
+	if len(findings) != len(want) {
+		t.Fatalf("findings=%v", findings)
+	}
+
+	for index, finding := range findings {
+		if finding.Pattern() != want[index] {
+			t.Errorf("%s: against the pattern = %v, want %v", finding, finding.Pattern(), want[index])
+		}
+	}
+
+	if findings[0].String() != "halving: pattern_captures: captures only the first digit" {
+		t.Fatalf("finding text: %q", findings[0].String())
 	}
 }

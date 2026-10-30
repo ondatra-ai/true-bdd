@@ -1,0 +1,9 @@
+scenarios:
+  calc-001-halve:
+    description: Halving an even number on the offline toolchain
+    service: calc
+    path: tests/calc/calc_test.go
+    merged_steps:
+      given: ["the calculator runs on the \"offline\" toolchain"]
+      when: ["the Owner halves 6"]
+      then: ["the result is 3"]

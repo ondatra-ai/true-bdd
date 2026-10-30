@@ -11,10 +11,10 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/disk"
 )
 
-func (e *buildStepsExecution) critique(ctx context.Context, item *BuildStepsItem) error {
+func (e *buildStepsExecution) critique(ctx context.Context, item *BuildStepsItem) ([]validate.CritiqueFinding, error) {
 	paths, err := filepath.Glob(filepath.Join(item.Suite, "*.go"))
 	if err != nil {
-		return fmt.Errorf("list definition sources: %w", err)
+		return nil, fmt.Errorf("list definition sources: %w", err)
 	}
 
 	var sources strings.Builder
@@ -22,7 +22,7 @@ func (e *buildStepsExecution) critique(ctx context.Context, item *BuildStepsItem
 	for _, path := range paths {
 		content, err := disk.Read(path)
 		if err != nil {
-			return fmt.Errorf("read definition source: %w", err)
+			return nil, fmt.Errorf("read definition source: %w", err)
 		}
 
 		fmt.Fprintf(&sources, "\n--- %s ---\n%s\n", path, content)
@@ -35,13 +35,12 @@ func (e *buildStepsExecution) critique(ctx context.Context, item *BuildStepsItem
 		Concept: item.Concept != nil,
 	}, e.critiqueTier, artifact)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	item.Findings = append(item.Findings, findings...)
 	slog.Info("Step definition critiqued", "definition", strings.Join(item.functions(), ","), "findings", findings)
 
-	return nil
+	return findings, nil
 }
 
 func (e *buildStepsExecution) prepareCritique() error {

@@ -36,7 +36,8 @@ const stepCritiqueSchema = `{
  },"required":["answer","findings"]
 }`
 
-// conceptCritiqueSchema names a concept Item's categories: its binding, not a Phrase mapping.
+// conceptCritiqueSchema names a concept Item's categories: its patterns, which
+// an AI proposed, and its bodies against the binding, not a Phrase mapping.
 const conceptCritiqueSchema = `{
  "type":"object", "additionalProperties":false,
  "properties": {
@@ -45,15 +46,40 @@ const conceptCritiqueSchema = `{
    "type":"object","additionalProperties":false,
    "properties":{
     "definition":{"type":"string","minLength":1},
-    "category":{"type":"string","enum":["concept_binding","concept_meaning","computes_assertion"]},
+    "category":{"type":"string","enum":["pattern_captures","pattern_scope",
+     "concept_binding","concept_meaning","computes_assertion"]},
     "finding":{"type":"string","minLength":1}
    },"required":["definition","category","finding"]
   }}
  },"required":["answer","findings"]
 }`
 
+// The categories of a finding against a concept definition's pattern.
+const (
+	critiquePatternCaptures = "pattern_captures"
+	critiquePatternScope    = "pattern_scope"
+)
+
+// CritiqueFinding is one discrepancy the critique names in one definition.
+type CritiqueFinding struct {
+	Definition string `json:"definition"`
+	Category   string `json:"category"`
+	Finding    string `json:"finding"`
+}
+
+// Pattern reports a finding against the definition's pattern, which sends
+// a concept Item back to its proposal; any other finding is against the
+// body, which goes back to the writer.
+func (f CritiqueFinding) Pattern() bool {
+	return f.Category == critiquePatternCaptures || f.Category == critiquePatternScope
+}
+
+func (f CritiqueFinding) String() string {
+	return fmt.Sprintf("%s: %s: %s", f.Definition, f.Category, f.Finding)
+}
+
 // ParseStepCritique routes a valid failure to named findings and a pass to none.
-func ParseStepCritique(response string) ([]string, error) {
+func ParseStepCritique(response string) ([]CritiqueFinding, error) {
 	var answer stepCritiqueAnswer
 
 	err := json.Unmarshal([]byte(response), &answer)
@@ -66,14 +92,14 @@ func ParseStepCritique(response string) ([]string, error) {
 		return nil, ErrStepCritiqueAnswer
 	}
 
-	findings := make([]string, 0, len(answer.Findings))
+	findings := make([]CritiqueFinding, 0, len(answer.Findings))
 	for _, finding := range answer.Findings {
 		if strings.TrimSpace(finding.Definition) == "" || strings.TrimSpace(finding.Finding) == "" ||
 			!validCritiqueCategory(finding.Category) {
 			return nil, ErrStepCritiqueAnswer
 		}
 
-		findings = append(findings, fmt.Sprintf("%s: %s: %s", finding.Definition, finding.Category, finding.Finding))
+		findings = append(findings, CritiqueFinding(finding))
 	}
 
 	return findings, nil
@@ -81,5 +107,6 @@ func ParseStepCritique(response string) ([]string, error) {
 
 func validCritiqueCategory(category string) bool {
 	return category == "phrase_mapping" || category == "phrase_meaning" || category == "computes_assertion" ||
-		category == "concept_binding" || category == "concept_meaning"
+		category == "concept_binding" || category == "concept_meaning" ||
+		category == critiquePatternCaptures || category == critiquePatternScope
 }

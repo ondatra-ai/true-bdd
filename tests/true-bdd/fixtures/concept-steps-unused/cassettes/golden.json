@@ -3,18 +3,18 @@
   "fixture": "concept-steps-unused",
   "files": [
     {
-      "path": "tests/calc/steps/concept6ac0aa0a415cecc00e2fb53aee3eb1fb378819d8a71108ae58475b7f0ebbe4ea.go",
+      "path": "tests/calc/steps/conceptec8b881314b929394828fe6c21c7db729a95bc1a93ad8abf8ec578b93a9e83f2.go",
       "kind": "created",
-      "size": 1443,
-      "sha256": "edf5c0ded19ccfe6b990c659f48224109b69942cd6ad21aab84f0056325c749b",
-      "text": "package steps\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"os\"\n\t\"os/exec\"\n\t\"path/filepath\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"halving\"\nfunc concept6ac0aa0a415cecc00e2fb53aee3eb1fb378819d8a71108ae58475b7f0ebbe4ea(state *State, args []string) error {\n\tvalue := args[0]\n\tif _, err := strconv.Atoi(value); err != nil {\n\t\treturn fmt.Errorf(\"halve: step number %q is not a whole number: %w\", value, err)\n\t}\n\n\t// The declared halve command runs from the host root; the suite runs from\n\t// tests/calc, so climb to the directory holding the module's go.mod.\n\troot, err := os.Getwd()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"halve %s: locating the host root: %w\", value, err)\n\t}\n\tfor {\n\t\tif _, statErr := os.Stat(filepath.Join(root, \"go.mod\")); statErr == nil {\n\t\t\tbreak\n\t\t}\n\t\tparent := filepath.Dir(root)\n\t\tif parent == root {\n\t\t\treturn fmt.Errorf(\"halve %s: no host root with go.mod above the suite directory\", value)\n\t\t}\n\t\troot = parent\n\t}\n\n\tcmd := exec.Command(\"go\", \"run\", \"./services/calc\", \"halve\", value)\n\tcmd.Dir = root\n\tvar stdout, stderr bytes.Buffer\n\tcmd.Stdout = \u0026stdout\n\tcmd.Stderr = \u0026stderr\n\tif runErr := cmd.Run(); runErr != nil {\n\t\treturn fmt.Errorf(\"halve %s: %w: %s\", value, runErr, strings.TrimSpace(stderr.String()))\n\t}\n\n\thalved, err := strconv.Atoi(strings.TrimSpace(stdout.String()))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"halve %s: stdout %q is not an integer: %w\", value, stdout.String(), err)\n\t}\n\n\tstate.Result = halved\n\treturn nil\n}\n"
+      "size": 871,
+      "sha256": "a357ffcd8a388e5c5e8933f52807002d1669fcd492b1b8461b18fcc8be3870b3",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"halving\"\nfunc conceptec8b881314b929394828fe6c21c7db729a95bc1a93ad8abf8ec578b93a9e83f2(state *State, args []string) error {\n\tconst (\n\t\thostRoot    = \"../..\"\n\t\tservicePath = \"./services/calc\"\n\t\tcommandName = \"halve\"\n\t)\n\tnumber := args[0]\n\tcmd := exec.Command(\"go\", \"run\", servicePath, commandName, number)\n\tcmd.Dir = hostRoot\n\tvar stdout, stderr strings.Builder\n\tcmd.Stdout = \u0026stdout\n\tcmd.Stderr = \u0026stderr\n\tif err := cmd.Run(); err != nil {\n\t\treturn fmt.Errorf(\"%s %s: %w: %s\", commandName, number, err, strings.TrimSpace(stderr.String()))\n\t}\n\tprinted := strings.TrimSpace(stdout.String())\n\thalved, err := strconv.Atoi(printed)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"%s %s: stdout %q is not an integer: %w\", commandName, number, printed, err)\n\t}\n\tstate.Result = halved\n\treturn nil\n}\n"
     },
     {
       "path": "tests/calc/steps/register.go",
       "kind": "modified",
       "size": 225,
-      "sha256": "5ca045fcd14de457c97b95ce2127eec525810a35b89a8301e71b5bf63bce5efe",
-      "text": "package steps\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the result is (-?\\d+)$`, result)\n\n\tsuite.Step(\"^the Owner halves[\\\\x{00A0} ](-?\\\\d+)$\", concept6ac0aa0a415cecc00e2fb53aee3eb1fb378819d8a71108ae58475b7f0ebbe4ea)\n}\n"
+      "sha256": "41923fcf05407123bb5361670ba23bad51f449d7d72ec7e184913f8f995fc03a",
+      "text": "package steps\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the result is (-?\\d+)$`, result)\n\n\tsuite.Step(\"^the Owner halves[ \\\\x{00A0}](-?\\\\d+)$\", conceptec8b881314b929394828fe6c21c7db729a95bc1a93ad8abf8ec578b93a9e83f2)\n}\n"
     }
   ]
 }

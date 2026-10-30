@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "concept-bodies-contract",
+  "files": [
+    {
+      "path": "tests/calc/steps/concept47f741283eda70d7a0d1d2aaa90ad59f9b70d6cc753b4652aced0fd106d24dd9.go",
+      "kind": "modified",
+      "size": 1717,
+      "sha256": "86ec55d38325f11478dc50463d644c49efe5615941173a51f0c06f35cbdcd7fa",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"os\"\n\t\"os/exec\"\n\t\"path/filepath\"\n)\n\n//truebdd:concept given \"toolchain\"\nfunc concept47f741283eda70d7a0d1d2aaa90ad59f9b70d6cc753b4652aced0fd106d24dd9(state *State, args []string) error {\n\tname := args[0]\n\n\t// The named fixture's Go stand-in, run in place of go. Step bodies run\n\t// from the suite directory (tests/calc), the same assumption the\n\t// registry path \"../../docs/scenarios.yaml\" already makes, so the\n\t// fixture lives at fixtures/\u003cname\u003e/bin/go. Absolute, because the\n\t// halving step runs the tool from the host root (cmd.Dir = \"../..\").\n\tstandIn, err := filepath.Abs(filepath.Join(\"fixtures\", name, \"bin\", \"go\"))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"the %q toolchain: resolving its Go stand-in: %w\", name, err)\n\t}\n\tinfo, err := os.Stat(standIn)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"the %q toolchain: its Go stand-in %s: %w\", name, standIn, err)\n\t}\n\tif info.IsDir() {\n\t\treturn fmt.Errorf(\"the %q toolchain: its Go stand-in %s is a directory\", name, standIn)\n\t}\n\tif info.Mode().Perm()\u00260o111 == 0 {\n\t\tif err := os.Chmod(standIn, info.Mode().Perm()|0o111); err != nil {\n\t\t\treturn fmt.Errorf(\"the %q toolchain: making its Go stand-in %s runnable: %w\", name, standIn, err)\n\t\t}\n\t}\n\n\t// The stand-in runs the installed toolchain, which it reads from\n\t// CALC_REAL_GO. Carry the inherited environment through unchanged so\n\t// the Go build cache and temporary directory stay as the suite found\n\t// them, and add only that one name.\n\trealGo, err := exec.LookPath(\"go\")\n\tif err != nil {\n\t\treturn fmt.Errorf(\"the %q toolchain: locating the installed go for CALC_REAL_GO: %w\", name, err)\n\t}\n\n\tstate.Go = standIn\n\tstate.Env = append(os.Environ(), \"CALC_REAL_GO=\"+realGo)\n\treturn nil\n}\n"
+    }
+  ]
+}

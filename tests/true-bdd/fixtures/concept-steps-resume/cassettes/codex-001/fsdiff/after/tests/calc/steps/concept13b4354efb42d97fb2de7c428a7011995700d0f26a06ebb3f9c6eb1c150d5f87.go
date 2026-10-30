@@ -1,47 +1,57 @@
 package steps
 
 import (
-	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
 
 //truebdd:concept when "halving"
 func concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {
-	const hostRoot = "../.."
-
-	number, err := strconv.Atoi(args[0])
-	if err != nil {
-		return fmt.Errorf("step number %q is not a whole number: %w", args[0], err)
+	if len(args) != 1 {
+		return fmt.Errorf("the Owner halves: expected 1 capture, got %d", len(args))
+	}
+	value := args[0]
+	if _, err := strconv.Atoi(value); err != nil {
+		return fmt.Errorf("the Owner halves %q: not a whole number: %w", value, err)
 	}
 
-	cmd := exec.Command("go", "run", "./services/calc", "halve", strconv.Itoa(number))
-	cmd.Dir = hostRoot
-
-	stdout, err := cmd.Output()
+	// The declared CLI runs `go run ./services/calc halve VALUE` from the
+	// host root; the suite's working directory is the scenario package, so
+	// walk up to the directory holding go.mod.
+	hostRoot, err := os.Getwd()
 	if err != nil {
-		var exit *exec.ExitError
-		if errors.As(err, &exit) {
-			return fmt.Errorf(
-				"halve %d exited with %d: %s",
-				number,
-				exit.ExitCode(),
-				strings.TrimSpace(string(exit.Stderr)),
-			)
+		return fmt.Errorf("the Owner halves %s: working directory: %w", value, err)
+	}
+	for {
+		if _, statErr := os.Stat(filepath.Join(hostRoot, "go.mod")); statErr == nil {
+			break
 		}
-		return fmt.Errorf("running halve %d: %w", number, err)
+		parent := filepath.Dir(hostRoot)
+		if parent == hostRoot {
+			return fmt.Errorf("the Owner halves %s: host root with go.mod not found above the suite directory", value)
+		}
+		hostRoot = parent
 	}
 
-	printed := strings.TrimSpace(string(stdout))
+	cmd := exec.Command("go", "run", "./services/calc", "halve", value)
+	cmd.Dir = hostRoot
+	var stdout, stderr strings.Builder
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if runErr := cmd.Run(); runErr != nil {
+		return fmt.Errorf("the Owner halves %s: go run ./services/calc halve %s in %s: %w: %s",
+			value, value, hostRoot, runErr, strings.TrimSpace(stderr.String()))
+	}
 
-	result, err := strconv.Atoi(printed)
+	out := strings.TrimSpace(stdout.String())
+	halved, err := strconv.Atoi(out)
 	if err != nil {
-		return fmt.Errorf("halve %d printed %q on stdout, want an integer: %w", number, printed, err)
+		return fmt.Errorf("the Owner halves %s: stdout %q is not an integer: %w", value, out, err)
 	}
-
-	state.Result = result
-
+	state.Result = halved
 	return nil
 }
