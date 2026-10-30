@@ -99,6 +99,10 @@ The calculator must return 0 when the Calculator User halves -1.
 ## Instructions
 Apply the following changes to the acceptance criteria for this story.
 
+Change ONLY what the failed check requires (`us-refine/acceptance_criteria` — every AC must have a binary pass/fail outcome). Exactly one AC is subjective: `001-even`. ACs `002-odd` and `003-near-zero` already assert exact integer results and MUST be reproduced byte for byte, descriptions and steps unchanged.
+
+Preserve all other Story fields unchanged: `id`, `feature`, `title`, `as_a` ("Calculator User"), `i_want`, `so_that`, `status`. Keep the AC ids and their current order.
+
 ## Original Acceptance Criteria
 1. 001-even: The calculator must return a satisfying result when the Calculator User halves -6. [has steps]
 2. 002-odd: The calculator must return -3 when the Calculator User halves -7. [has steps]
@@ -106,70 +110,64 @@ Apply the following changes to the acceptance criteria for this story.
 
 ## Required Changes
 
-Change ONLY what the failed check requires. ACs `002-odd` and `003-near-zero` are already binary and must be reproduced exactly as they stand — same description, same steps, word for word.
-
 ### Change #1: 001-even
 **Before:** The calculator must return a satisfying result when the Calculator User halves -6.
 
-**Issue:** The Then step `the result is satisfying` is declared in the Catalogue as "A subjective judgement with no objective pass/fail oracle", so a reviewer cannot decide pass or fail without subjective judgement. The description inherits the same vagueness ("a satisfying result"). The product document states that negative input -6 produces -3, so an objective expected value is already available and must not be invented.
+**Issue:** The description ("a satisfying result") and the Then step ("the result is satisfying") carry no objective expected value, so a reviewer must judge correctness subjectively. The oracle is already defined by the product document (`docs/product/product.yaml`: "Negative inputs -6, -7 and -1 produce -3, -3 and 0 respectively"), and the then-concept "result" means the halve command succeeds and prints exactly a stated integer, the half rounded toward zero. Halving -6 rounded toward zero is -3 — no oracle is invented here.
 
 **After (description):** The calculator must return -3 when the Calculator User halves -6.
 
-**After (steps):**
+**After (steps):** Keep the Given and When steps exactly as they are, and keep the phrasing identical to sibling ACs 002-odd and 003-near-zero ("the number is \"<value>\"", "the Calculator User halves the number", "the result is \"<value>\""). Only the Then step changes, from "the result is satisfying" to "the result is \"-3\"".
+
 ```yaml
 - given:
-    - "the number is \"-6\""
+    - 'the number is "-6"'
 - when:
     - "the Calculator User halves the number"
 - then:
-    - "the result is \"-3\""
+    - 'the result is "-3"'
 ```
 
-No new ACs are added, no ACs are merged, and no ACs are removed.
+### Unchanged: 002-odd, 003-near-zero
+Both already state an exact integer outcome and are binary. Do not reword their descriptions or steps.
 
-### Catalogue follow-up (not part of this story file)
-The subjective phrase `the result is satisfying` (block: `then`) is no longer used by this Story's steps. If no other Story uses it, remove it from the Catalogue in `docs/product/product.yaml` through the catalogue fix rather than editing it inline. Do not alter the three phrases that remain in use: `the number is "{value}"` (given), `the Calculator User halves the number` (when), `the result is "{value}"` (then).
+No new ACs are added, none are removed, and none are merged. 001-even and 002-odd both expect -3 but from different inputs (-6 and -7), so they are distinct scenarios, not duplicates.
+
+No Catalogue of step phrases is declared for this Story, so no new phrase shapes are introduced — the rewrite reuses the existing sibling-AC phrasings. If a needed phrase were missing, it would have to be proposed through the step-phrases fix, never invented inside a Story step.
 
 ## Complete Fixed Acceptance Criteria
 
 ```yaml
-- ac_id: 001-even
-  description: "The calculator must return -3 when the Calculator User halves -6."
+- id: 001-even
+  description: The calculator must return -3 when the Calculator User halves -6.
   steps:
     - given:
-        - "the number is \"-6\""
+        - 'the number is "-6"'
     - when:
         - "the Calculator User halves the number"
     - then:
-        - "the result is \"-3\""
+        - 'the result is "-3"'
 
-- ac_id: 002-odd
-  description: "The calculator must return -3 when the Calculator User halves -7."
+- id: 002-odd
+  description: The calculator must return -3 when the Calculator User halves -7.
   steps:
     - given:
-        - "the number is \"-7\""
+        - 'the number is "-7"'
     - when:
         - "the Calculator User halves the number"
     - then:
-        - "the result is \"-3\""
+        - 'the result is "-3"'
 
-- ac_id: 003-near-zero
-  description: "The calculator must return 0 when the Calculator User halves -1."
+- id: 003-near-zero
+  description: The calculator must return 0 when the Calculator User halves -1.
   steps:
     - given:
-        - "the number is \"-1\""
+        - 'the number is "-1"'
     - when:
         - "the Calculator User halves the number"
     - then:
-        - "the result is \"0\""
+        - 'the result is "0"'
 ```
-
-## Verification
-- Every Then step now names an exact integer, so each AC yields a binary pass/fail observation: `001-even` → `-3`, `002-odd` → `-3`, `003-near-zero` → `0`.
-- All expected values come from the product document ("Negative inputs -6, -7 and -1 produce -3, -3 and 0 respectively"); none were invented.
-- All steps use declared Catalogue phrases in their declared blocks.
-- The role "Calculator User" from the Story's `as_a` clause is used verbatim in every When step.
-- Story fields other than AC `001-even`'s description and Then step are unchanged.
 
 === FILE_END: tmp/{{RUN_DIR}}/01-halve-negative-fix-prompts.md ===
 

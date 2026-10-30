@@ -6221,7 +6221,7 @@ scenarios:
       - the only file changed outside "tmp" is "docs/architecture/architecture.yaml"
       - the file "docs/scenarios.yaml" is unchanged
   us-refine-quality-fix-001-count-proposes-criteria:
-    description: A Story with two criteria must get a count-fix proposal at the menu, and apply must save a third criterion using Catalogue phrases
+    description: A Story with two criteria must get a count-fix proposal at the menu, and apply must save a third criterion worded in the product's concepts
     service: true-bdd
     path: tests/true-bdd/us_refine_test.go
     user_stories:
@@ -6244,7 +6244,7 @@ scenarios:
       - and: the story "docs/product/stories/halve-negative-cases.yaml" has 3 acceptance criteria
       - and: every acceptance criterion in the story "docs/product/stories/halve-negative-cases.yaml" has given, when and then steps
       - and: the only file changed outside "tmp" is "docs/product/stories/halve-negative-cases.yaml"
-      - and: 'judge: The count proposal adds the missing -1 to 0 boundary criterion, retains both original criteria and uses only the three Catalogue phrases with filled slots.'
+      - and: 'judge: The count proposal adds the missing -1 to 0 boundary criterion, retains both original criteria, and words every step as a supplied number, the halving or the printed result.'
   us-refine-quality-fix-002-implementation-rewritten:
     description: Implementation details must be rewritten as observable behaviour through the menu
     service: true-bdd
@@ -6269,7 +6269,7 @@ scenarios:
       - and: the story "docs/product/stories/halve-negative-cases.yaml" has 3 acceptance criteria
       - and: every acceptance criterion in the story "docs/product/stories/halve-negative-cases.yaml" has given, when and then steps
       - and: the only file changed outside "tmp" is "docs/product/stories/halve-negative-cases.yaml"
-      - and: 'judge: The first criterion now describes the observable -6 to -3 result instead of SQL persistence; all three original inputs and results survive and every step uses a Catalogue phrase.'
+      - and: 'judge: The first criterion now describes the observable -6 to -3 result instead of SQL persistence; all three original inputs and results survive, and every step states a supplied number, the halving or the printed result.'
   us-refine-quality-fix-003-happy-path-added:
     description: A Story containing only failures must get a success criterion through the menu
     service: true-bdd
@@ -6294,7 +6294,7 @@ scenarios:
       - and: the story "docs/product/stories/divide-integers-cases.yaml" has 4 acceptance criteria
       - and: every acceptance criterion in the story "docs/product/stories/divide-integers-cases.yaml" has given, when and then steps
       - and: the only file changed outside "tmp" is "docs/product/stories/divide-integers-cases.yaml"
-      - and: 'judge: A new success criterion divides 6 by 2 and observes 3 while retaining the three zero-divisor criteria. Every step uses only Catalogue phrases.'
+      - and: 'judge: A new success criterion divides 6 by 2 and observes 3 while retaining the three zero-divisor criteria. Every step states a supplied dividend or divisor, the division, or the command''s result or error.'
   us-refine-shipped-003-no-own-failure-passes:
     description: A Story with no failure mode of its own must pass the error-scenario Prompt with a context line saying why
     service: true-bdd
@@ -6344,7 +6344,7 @@ scenarios:
       - and: every acceptance criterion in the story "docs/product/stories/divide-integers-cases.yaml" has given, when and then steps
       - and: the only file changed outside "tmp" is "docs/product/stories/divide-integers-cases.yaml"
       - and: 'judge: The proposal and saved Story add exactly one criterion for the real zero-divisor failure, asserting the declared error; all three original successful divisions remain. No invented failure
-          or new Story field is added. Every step uses only Catalogue phrases.'
+          or new Story field is added. Every step states a supplied dividend or divisor, the division, or the command''s result or error.'
   us-refine-quality-fix-005-criteria-made-measurable:
     description: Unmeasurable criteria must get concrete thresholds from the product through the menu
     service: true-bdd
@@ -6369,7 +6369,7 @@ scenarios:
       - and: the story "docs/product/stories/summary-views-cases.yaml" has 3 acceptance criteria
       - and: every acceptance criterion in the story "docs/product/stories/summary-views-cases.yaml" has given, when and then steps
       - and: the only file changed outside "tmp" is "docs/product/stories/summary-views-cases.yaml"
-      - and: 'judge: At least two criteria replace an unmeasurable concise summary with the declared limit of at most 150 words. All three views remain and every step uses only Catalogue phrases.'
+      - and: 'judge: At least two criteria replace an unmeasurable concise summary with the declared limit of at most 150 words. All three views remain, and every step states the selected document, the requested view or the summary''s word count.'
   us-refine-quality-fix-006-outcome-made-binary:
     description: A subjective outcome must become a binary observation through the menu
     service: true-bdd
@@ -6394,9 +6394,9 @@ scenarios:
       - and: the story "docs/product/stories/halve-negative-cases.yaml" has 3 acceptance criteria
       - and: every acceptance criterion in the story "docs/product/stories/halve-negative-cases.yaml" has given, when and then steps
       - and: the only file changed outside "tmp" is "docs/product/stories/halve-negative-cases.yaml"
-      - and: 'judge: The first criterion now asserts the objective -6 to -3 result with a runnable CLI observation, retaining the other two criteria and using only Catalogue phrases.'
+      - and: 'judge: The first criterion now asserts the objective -6 to -3 result with a runnable CLI observation, retaining the other two criteria, and every step states a supplied number, the halving or the printed result.'
   us-refine-quality-fix-007-test-sketch-made-runnable:
-    description: A criterion without an objective runnable sketch must be rewritten using the declared interface and test helpers through the menu
+    description: A criterion without an objective runnable sketch must be rewritten through the menu using the product's concepts and the service's declared kind of Public interface
     service: true-bdd
     path: tests/true-bdd/us_refine_test.go
     user_stories:
@@ -6419,16 +6419,16 @@ scenarios:
       - and: the story "docs/product/stories/halve-negative-cases.yaml" has 3 acceptance criteria
       - and: every acceptance criterion in the story "docs/product/stories/halve-negative-cases.yaml" has given, when and then steps
       - and: the only file changed outside "tmp" is "docs/product/stories/halve-negative-cases.yaml"
-      - and: 'judge: The first criterion now asserts the objective -6 to -3 result with a runnable CLI observation, retaining the other two criteria and using only Catalogue phrases.'
+      - and: 'judge: The first criterion now asserts the objective -6 to -3 result with a runnable CLI observation, retaining the other two criteria, and every step states a supplied number, the halving or the printed result.'
   us-refine-shipped-001-shipped-checklist-reaches-menu:
-    description: The full shipped checklist must reach a fix proposal, and exit at the menu must leave the Story and Catalogue unchanged
+    description: The full shipped checklist must reach a fix proposal, and exit at the menu must leave the Story and the product document unchanged
     service: true-bdd
     path: tests/true-bdd/us_refine_test.go
     user_stories:
     - story: docs/product/stories/us-refine-shipped-checklist.yaml
       scenario_id: us-refine-shipped-001-shipped-checklist-reaches-menu
       merge_date: '2026-10-28'
-    timeout: 35m
+    timeout: 10m
     merged_steps:
       given:
       - the "us-refine-shipped-menu-exit" project tree
@@ -6445,14 +6445,14 @@ scenarios:
       - and: the file "docs/product/stories/halve-negative-cases.yaml" is unchanged
       - and: the file "docs/product/product.yaml" is unchanged
   us-refine-shipped-002-shipped-checklist-adds-phrase:
-    description: The full shipped checklist must add a missing Catalogue phrase only after apply and retain the Story words
+    description: The full shipped checklist must add a missing concept only after apply and retain the Story words
     service: true-bdd
     path: tests/true-bdd/us_refine_test.go
     user_stories:
     - story: docs/product/stories/us-refine-shipped-checklist.yaml
       scenario_id: us-refine-shipped-002-shipped-checklist-adds-phrase
       merge_date: '2026-10-28'
-    timeout: 35m
+    timeout: 45m
     merged_steps:
       given:
       - the "us-refine-shipped-catalogue" project tree
@@ -6471,7 +6471,7 @@ scenarios:
       - and: the file "docs/product/product.yaml" is modified
       - and: the file "docs/product/stories/halve-negative-cases.yaml" matches the Calculator User halves the number
       - and: no file outside "tmp" and "docs/product" changed
-      - and: 'judge: The menu proposal adds a Catalogue entry for the existing halving action. The Story keeps all of its original descriptions and step words; no substitute action, error criterion or new
+      - and: 'judge: The menu proposal adds a product concept for the existing halving action. The Story keeps all of its original descriptions and step words; no substitute action, error criterion or new
           Story field is introduced.'
   phrase-mappings-001-missing:
     description: A claimed Scenario with a missing Phrase mapping must fail naming its phrase without an AI turn
