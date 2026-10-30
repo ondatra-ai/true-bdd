@@ -21,8 +21,11 @@ const defaultLinkThreshold = 9
 type answerSchema map[string]any
 
 func requiredObject(properties answerSchema) answerSchema {
+	// A JSON Schema's required must be an array: claude refuses null (a block declaring no concept).
+	required := append([]string{}, slices.Sorted(maps.Keys(properties))...)
+
 	return answerSchema{schemaType: "object", "properties": properties,
-		"required": slices.Sorted(maps.Keys(properties)), "additionalProperties": false}
+		"required": required, "additionalProperties": false}
 }
 
 func linkSchema(steps []conceptStep, concepts []product.Concept) (string, error) {

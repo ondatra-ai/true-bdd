@@ -123,6 +123,48 @@ func TestConceptLinkRequestHasClosedMeaningsAndRequiredBlockScores(t *testing.T)
 	assertRequiredBlockScores(t, reply.schema)
 }
 
+func TestConceptLinkFailsAStepOfABlockWithoutConceptsUnderAValidSchema(t *testing.T) {
+	evaluator, reply, repository := conceptRequestEvaluator(t)
+	reply.response = `{"steps":{"1":{"scores":{},"reason":"No given concept is declared.","other_block_concept":null}}}`
+	item := &template.ScenarioCheckData{ID: linkTestConcept, Service: linkTestService, Phrases: []catalogue.Step{
+		{Block: catalogue.BlockGiven, Text: "six is entered"},
+	}}
+
+	result, err := evaluator.EvaluateOne(context.Background(), item, item.ID,
+		shippedConceptPrompt(t, repository, linkJudgement), t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var contract struct {
+		Properties struct {
+			Steps struct {
+				Properties map[string]struct {
+					Properties struct {
+						Scores struct {
+							Required *[]string `json:"required"`
+						} `json:"scores"`
+					} `json:"properties"`
+				} `json:"properties"`
+			} `json:"steps"`
+		} `json:"properties"`
+	}
+
+	err = json.Unmarshal([]byte(reply.schema), &contract)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if contract.Properties.Steps.Properties["1"].Properties.Scores.Required == nil {
+		t.Fatalf("a block without concepts must require an empty list of scores, never null: %s", reply.schema)
+	}
+
+	if result.Status != checklist.StatusFail ||
+		!strings.Contains(strings.Join(result.Context, "\n"), "no concept of given reaches the threshold") {
+		t.Fatalf("a step of a block without concepts must fail the link: %+v", result)
+	}
+}
+
 func assertRequiredBlockScores(t *testing.T, schema string) {
 	t.Helper()
 

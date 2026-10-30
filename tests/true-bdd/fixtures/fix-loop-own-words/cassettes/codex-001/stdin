@@ -49,93 +49,37 @@ Then:
 
 ## Fix Prompt to Apply
 
-# Fix Prompt for Scenario E2E-001: The service must answer a ping with a pong within 200 milliseconds
+Proposal for the System Architect's sign-off is not needed here: this is a product meaning, so it goes to the **Product Owner**.
 
-## Target
-The `product` document: `docs/product/product.yaml` — its `catalogue:` list only.
+Check: `declared-terms` — E2E-001, service `mcp-service`. The `then` concept `reply time` declares the term `latency`, which `docs/product/product.yaml` glossary does not define. The owner's answer to the one question asked (`latency-meaning`) is copied into `means` verbatim, with only the introductory "It means" removed, kept on one YAML scalar line.
 
-Do NOT touch anything else. Specifically: do not edit the Scenario
-(registry entry E2E-001), the generated test `tests/mcp/ping_test.go`, any
-step definition, the story `docs/product/stories/ping-answers.yaml`, the
-`glossary:` list, the `roles:` list, or the three catalogue entries that
-already exist. The step text stays exactly as the Scenario writes it.
+One edit, to the product document only. No Scenario, generated test or step definition is touched, and no concept, binding or Word mapping changes.
 
-## Why
-scen-check/term_closure (D: step-phrases) reported:
-- E2E-001: then step "the service answers within 200 milliseconds" matches no template
+File: `docs/product/product.yaml`
 
-The three existing entries phrase every other step of E2E-001
-(`the mcp service is running`, `the {actor:role} sends "{message}"`,
-`the service answers "{reply}"`). Only the timing step has no template, so
-exactly one new entry is needed.
-
-The meaning is the one the person gave in their own words:
-
-> It means the round trip from sending the message to receiving its reply takes at most that many milliseconds
-
-It is copied into `means` verbatim, with only the introductory "It means"
-removed and "that many" replaced by the template's number slot `{budget}`.
-Their wording and pronouns are preserved — "its reply" stays "its reply".
-
-## Required Changes
-
-### Change #1: Add the catalogue entry that phrases the timing step
-
-**Document:** `docs/product/product.yaml`
-**Action:** Append this entry to the end of the `catalogue:` list (after the
-`the service answers "{reply}"` entry, which is currently the last one).
-Copy the YAML exactly as written below — do not re-wrap `means`, it must
-stay on one YAML scalar line.
-
-**YAML:**
-```yaml
-  - template: 'the service answers within {budget:number} milliseconds'
-    block: then
-    means: the round trip from sending the message to receiving its reply takes at most {budget} milliseconds
-    terms: [reply]
+old_string:
+```
+  - term: reply
+    means: >-
+      What the MCP service sends back for one message, and how long it
+      took to arrive. A client waits on it, so its content and its delay
+      are both behaviour.
 ```
 
-**Exact edit** — replace:
-
+new_string:
 ```
-  - template: 'the service answers "{reply}"'
-    block: then
-    means: The MCP service's reply to the message is exactly the quoted text.
-    terms: [mcp service, reply]
-```
-
-with:
-
-```
-  - template: 'the service answers "{reply}"'
-    block: then
-    means: The MCP service's reply to the message is exactly the quoted text.
-    terms: [mcp service, reply]
-  - template: 'the service answers within {budget:number} milliseconds'
-    block: then
-    means: the round trip from sending the message to receiving its reply takes at most {budget} milliseconds
-    terms: [reply]
+  - term: reply
+    means: >-
+      What the MCP service sends back for one message, and how long it
+      took to arrive. A client waits on it, so its content and its delay
+      are both behaviour.
+  - term: latency
+    means: the round trip from sending the message to receiving its reply, in milliseconds
 ```
 
-(The file currently ends after the `terms: [mcp service, reply]` line; keep
-the trailing newline.)
+This adds the glossary entry `latency` after `reply`, so every term `reply time` declares (`mcp service`, `reply`, `latency`) is defined. The person's wording and pronouns are preserved exactly — "its reply" is left as they wrote it, not expanded.
 
-## Notes for the applier
-- `template` is single-quoted so `{budget:number}` is copied literally.
-- `block: then` matches the step's block in E2E-001.
-- The step as the Scenario writes it is `and the service answers within 200
-  milliseconds`; the leading `and ` is the block's continuation marker, not
-  part of the step text, so the template must NOT include it.
-- No ambiguity is introduced: `the service answers "{reply}"` requires a
-  double-quoted run immediately after `answers`, while the new template
-  requires the literal word `within`, so no step matches both. The two
-  `given`/`when` entries are untouched and keep matching their steps.
-- `{budget:number}` accepts digits (or the word `no`), so `200` matches and
-  future Scenarios can reuse the entry with any budget.
-- `terms: [reply]` lists the one glossary term the meaning leans on ("its
-  reply", whose content and delay the glossary already calls behaviour).
-  Spell it exactly `reply`, as the glossary spells it. Do not add a new
-  glossary term and do not edit the existing ones.
+Apply this edit only after the Product Owner approves it at the menu.
 
 ---
 
@@ -151,7 +95,7 @@ reads as valid YAML, so a copy you leave unparseable changes nothing.
 ## Instructions
 
 1. Use the Read tool to load the working copy the fix prompt's
-   document names, and find the list it changes (`catalogue:` or
+   document names, and find the list it changes (`concepts:` or
    `glossary:`).
 2. Apply the changes described in the "Fix Prompt to Apply" section
    above with the Edit tool on that working copy: append a new entry at

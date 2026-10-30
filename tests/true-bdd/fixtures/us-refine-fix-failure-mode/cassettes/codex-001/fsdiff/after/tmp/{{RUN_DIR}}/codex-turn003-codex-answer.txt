@@ -13,7 +13,7 @@ acceptance_criteria:
           - 'the dividend is "6"'
           - 'the divisor is "2"'
       - when:
-          - "the Calculator User divides the numbers"
+          - 'the Calculator User divides the numbers'
       - then:
           - 'the result is "3"'
 
@@ -24,7 +24,7 @@ acceptance_criteria:
           - 'the dividend is "9"'
           - 'the divisor is "3"'
       - when:
-          - "the Calculator User divides the numbers"
+          - 'the Calculator User divides the numbers'
       - then:
           - 'the result is "3"'
 
@@ -35,18 +35,20 @@ acceptance_criteria:
           - 'the dividend is "0"'
           - 'the divisor is "2"'
       - when:
-          - "the Calculator User divides the numbers"
+          - 'the Calculator User divides the numbers'
       - then:
           - 'the result is "0"'
 
   - id: 004-division
-    description: The calculator must report the error "Cannot divide by zero" when the divisor is zero.
+    description: The calculator must exit 1 with stderr "Cannot divide by zero" and print no result when the divisor is zero.
     steps:
       - given:
           - 'the dividend is "6"'
           - 'the divisor is "0"'
       - when:
-          - "the Calculator User divides the numbers"
+          - 'the Calculator User divides the numbers'
       - then:
-          - 'the error is "Cannot divide by zero"'
+          - 'the command exits 1'
+          - 'the error message is "Cannot divide by zero"'
+          - 'no result is printed'
 === FILE_END: tmp/{{RUN_DIR}}/apply-divide-integers-iter1-result.yaml ===

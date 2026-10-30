@@ -93,6 +93,7 @@ The calculator must return 0 when dividing 0 by 2.
 
 ## Fix Prompt to Apply
 
+=== FILE_START: tmp/{{RUN_DIR}}/01-divide-integers-fix-prompts.md ===
 # Fix Prompt for Story divide-integers: Divide integers
 
 ## Instructions
@@ -103,39 +104,71 @@ Apply the following changes to the acceptance criteria for this story.
 2. 002-division: The calculator must return 3 when dividing 9 by 3. [has steps]
 3. 003-division: The calculator must return 0 when dividing 0 by 2. [has steps]
 
+## Failure Mode Coverage (from Story + product.yaml + architecture.yaml)
+- Failure mode: zero divisor (divide command exits 1, stderr "Cannot divide by zero", no result printed) — missing AC → added as 004-division below.
+- Not this Story's failure modes: missing operand and non-integer input. product.yaml assigns these to the calculator-input Story ("Missing or non-integer input errors belong to calculator-input"), and architecture.yaml repeats it ("Other input errors belong to calculator-input"). Do NOT add ACs for them here.
+
 ## Required Changes
 
-Change ONLY what the failed check requires. The three existing criteria are success paths, they are not faulted by the failed check, and they are reproduced below exactly as they stand — same descriptions, same steps, word for word. Do not rewrite, reorder, merge or "improve" them. 001-division and 002-division both produce 3, but they exercise different validated inputs (6 / 2 and 9 / 3) and both are named as required successes in docs/product/product.yaml, so neither is a duplicate and neither may be removed.
+Change ONLY what the failed check requires. ACs 001-division, 002-division and
+003-division are valid success scenarios that the check does not fault — reproduce
+them exactly as they stand, same description, same steps, word for word. Note that
+003-division (0 / 2 = 0) is a zero *dividend* success case and is NOT a substitute
+for the zero-divisor error AC; leave it untouched.
 
-The failed check reports exactly one gap:
-- Failure mode: zero divisor — missing AC
-- Failure modes owned by the calculator-input Story (missing input, non-integer input) — NOT this Story's, do not add ACs for them
+### Change #1: 001-division
+**Before:** The calculator must return 3 when dividing 6 by 2.
+**Issue:** None. The failed check does not fault this AC. Reproduce unchanged.
+**After (description):** The calculator must return 3 when dividing 6 by 2.
+**After (steps):** unchanged (see complete block below).
 
-### Change #1: NEW AC 004-division (add after 003-division)
-**Before:** (no acceptance criterion covers the zero-divisor failure mode)
-**Issue:** The Story's behaviour has one real failure mode of its own — a zero divisor. Both `docs/architecture/architecture.yaml` (the calculator service: "exit 1 and stderr \"Cannot divide by zero\" for a zero divisor") and `docs/product/product.yaml` ("Its only failure mode is a zero divisor, which must exit 1 with stderr \"Cannot divide by zero\" and no result") require it, and no existing AC exercises it. Every other AC is a success path.
-**After (description):** The calculator must report the error "Cannot divide by zero" when the divisor is zero.
+### Change #2: 002-division
+**Before:** The calculator must return 3 when dividing 9 by 3.
+**Issue:** None. The failed check does not fault this AC. Reproduce unchanged.
+**After (description):** The calculator must return 3 when dividing 9 by 3.
+**After (steps):** unchanged (see complete block below).
+
+### Change #3: 003-division
+**Before:** The calculator must return 0 when dividing 0 by 2.
+**Issue:** None. The failed check does not fault this AC. Reproduce unchanged.
+**After (description):** The calculator must return 0 when dividing 0 by 2.
+**After (steps):** unchanged (see complete block below).
+
+### Change #4: 004-division (NEW — the only change)
+**Before:** (did not exist)
+**Issue:** The Story's one real failure mode — a zero divisor — has no AC of its own.
+architecture.yaml specifies the calculator CLI exits 1 and writes stderr
+"Cannot divide by zero" for a zero divisor, and product.yaml confirms this is the
+divide Story's only failure mode and that it produces no result. Without this AC the
+error outcome is unspecified and untestable.
+**After (description):** The calculator must exit 1 with stderr "Cannot divide by zero" and print no result when the divisor is zero.
 **After (steps):**
 ```yaml
 - given:
     - 'the dividend is "6"'
     - 'the divisor is "0"'
 - when:
-    - "the Calculator User divides the numbers"
+    - 'the Calculator User divides the numbers'
 - then:
-    - 'the error is "Cannot divide by zero"'
+    - 'the command exits 1'
+    - 'the error message is "Cannot divide by zero"'
+    - 'no result is printed'
 ```
 
-Notes on this new AC:
-- The trigger is a divisor of `"0"`; the observable outcome is the catalogue-defined phrase `the error is "{message}"`, which means exit 1 with exactly that stderr message and no result.
-- Only existing Catalogue phrases from `docs/product/product.yaml` are used, each in its declared block: `the dividend is "{value}"` and `the divisor is "{value}"` in given, `the Calculator User divides the numbers` in when, `the error is "{message}"` in then. No new phrase has to be proposed through the step-phrases fix.
-- The when step uses the exact role from the Story's `as_a` clause: "Calculator User".
-- Add this one AC only. Do not duplicate the zero-divisor failure to raise the AC count, and do not invent any further failures.
-- All other Story fields (id, title, as_a, i_want, so_that) stay unchanged.
+Do not invent additional failures. Do not duplicate the zero-divisor failure across
+multiple ACs to meet a count, and do not add any Story field.
+
+Step-phrase note: no step-phrase Catalogue is declared in the reference documents, so
+the new Given/When phrases reuse the existing ACs' phrasing verbatim ("the dividend
+is ...", "the divisor is ...", "the Calculator User divides the numbers"), and the new
+Then phrases are aligned with the product.yaml "outcome" concept: the command either
+exits 0 printing exactly a stated integer on stdout, or exits 1 with exactly a stated
+message on stderr and prints no result. If a Catalogue is later declared, use only its
+phrases with filled slots in their declared blocks, including any phrases already added
+by the step-phrases fix; a missing phrase must be proposed through that fix, never
+invented in a Story step.
 
 ## Complete Fixed Acceptance Criteria
-
-This block replaces the whole acceptance-criteria list. The first three criteria are byte-for-byte the originals; 004-division is the single addition.
 
 ```yaml
 - id: 001-division
@@ -145,7 +178,7 @@ This block replaces the whole acceptance-criteria list. The first three criteria
         - 'the dividend is "6"'
         - 'the divisor is "2"'
     - when:
-        - "the Calculator User divides the numbers"
+        - 'the Calculator User divides the numbers'
     - then:
         - 'the result is "3"'
 
@@ -156,7 +189,7 @@ This block replaces the whole acceptance-criteria list. The first three criteria
         - 'the dividend is "9"'
         - 'the divisor is "3"'
     - when:
-        - "the Calculator User divides the numbers"
+        - 'the Calculator User divides the numbers'
     - then:
         - 'the result is "3"'
 
@@ -167,24 +200,28 @@ This block replaces the whole acceptance-criteria list. The first three criteria
         - 'the dividend is "0"'
         - 'the divisor is "2"'
     - when:
-        - "the Calculator User divides the numbers"
+        - 'the Calculator User divides the numbers'
     - then:
         - 'the result is "0"'
 
 - id: 004-division
-  description: The calculator must report the error "Cannot divide by zero" when the divisor is zero.
+  description: The calculator must exit 1 with stderr "Cannot divide by zero" and print no result when the divisor is zero.
   steps:
     - given:
         - 'the dividend is "6"'
         - 'the divisor is "0"'
     - when:
-        - "the Calculator User divides the numbers"
+        - 'the Calculator User divides the numbers'
     - then:
-        - 'the error is "Cannot divide by zero"'
+        - 'the command exits 1'
+        - 'the error message is "Cannot divide by zero"'
+        - 'no result is printed'
 ```
 
-## Expected check result after the fix
-- Failure mode: zero divisor — covered by 004-division
+## Apply Gate
+Present this proposal at the fix menu; apply it only after the Product Owner answers apply.
+
+=== FILE_END: tmp/{{RUN_DIR}}/01-divide-integers-fix-prompts.md ===
 
 ---
 

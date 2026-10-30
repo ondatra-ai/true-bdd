@@ -31,16 +31,16 @@ func TestCodexApply001UsRefineWritesScratch(t *testing.T) {
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches msg="Codex turn sandboxed" label=codex-turn[0-9]+ sandbox=writer`)
 	s.But(`stdout does not match sandbox=workspace-write`)
-	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=doc-outline promptIndex=1 answer=fail`)
-	s.And(`stdout matches AC-2: then step \\"Claude offers to summarise the document instead\\" matches no template`)
+	s.And(`stdout matches msg="Concept judgement answered" subjectID=doc-outline promptIndex=1 judgement=link answer=fail`)
+	s.And(`stdout matches AC-2 then step .Claude offers to summarise the document instead.: no concept of then reaches the threshold`)
 	s.And(`stdout matches FIX PROMPT GENERATED`)
 	s.And(`stdout matches msg="Fix recorded in the document" document=product`)
-	s.And(`stdout matches check=step-phrases subjectID=doc-outline promptIndex=1 answer=pass`)
+	s.And(`stdout matches msg="Concept judgement answered" subjectID=doc-outline promptIndex=1 judgement=link answer=pass`)
 	s.And(`stdout matches ALL CHECKS PASSED!`)
 	s.And(`stdout matches msg="Story saved"`)
 	s.And(`no file outside "tmp" and "docs/product" changed`)
 	s.And(`the file "docs/product/product.yaml" is modified`)
-	s.And(`the file "docs/product/product.yaml" matches Claude offers to`)
+	s.And(`the file "docs/product/product.yaml" matches (?is)concepts:.*(offer|summari[sz])`)
 	s.And(`the story "docs/product/stories/doc-outline-catalogued.yaml" has 3 acceptance criteria`)
 	s.And(`the file "docs/product/stories/doc-outline-catalogued.yaml" matches Claude offers to summarise the document instead`)
 	s.Done()
@@ -312,7 +312,7 @@ func TestUsRefineFix007StepOutsideCatalogueGetsPhrase(t *testing.T) {
 	s.Done()
 }
 
-// us-refine-quality-fix-001-count-proposes-criteria: A Story with two criteria must get a count-fix proposal at the menu, and apply must save a third criterion using Catalogue phrases
+// us-refine-quality-fix-001-count-proposes-criteria: A Story with two criteria must get a count-fix proposal at the menu, and apply must save a third criterion worded in the product's concepts
 func TestUsRefineQualityFix001CountProposesCriteria(t *testing.T) {
 	s := scenarios.New(t, "us-refine-quality-fix-001-count-proposes-criteria")
 	s.Given(`the "us-refine-fix-count" project tree`)
@@ -326,7 +326,7 @@ func TestUsRefineQualityFix001CountProposesCriteria(t *testing.T) {
 	s.And(`the story "docs/product/stories/halve-negative-cases.yaml" has 3 acceptance criteria`)
 	s.And(`every acceptance criterion in the story "docs/product/stories/halve-negative-cases.yaml" has given, when and then steps`)
 	s.And(`the only file changed outside "tmp" is "docs/product/stories/halve-negative-cases.yaml"`)
-	s.And(`judge: The count proposal adds the missing -1 to 0 boundary criterion, retains both original criteria and uses only the three Catalogue phrases with filled slots.`)
+	s.And(`judge: The count proposal adds the missing -1 to 0 boundary criterion, retains both original criteria, and words every step as a supplied number, the halving or the printed result.`)
 	s.Done()
 }
 
@@ -344,7 +344,7 @@ func TestUsRefineQualityFix002ImplementationRewritten(t *testing.T) {
 	s.And(`the story "docs/product/stories/halve-negative-cases.yaml" has 3 acceptance criteria`)
 	s.And(`every acceptance criterion in the story "docs/product/stories/halve-negative-cases.yaml" has given, when and then steps`)
 	s.And(`the only file changed outside "tmp" is "docs/product/stories/halve-negative-cases.yaml"`)
-	s.And(`judge: The first criterion now describes the observable -6 to -3 result instead of SQL persistence; all three original inputs and results survive and every step uses a Catalogue phrase.`)
+	s.And(`judge: The first criterion now describes the observable -6 to -3 result instead of SQL persistence; all three original inputs and results survive, and every step states a supplied number, the halving or the printed result.`)
 	s.Done()
 }
 
@@ -362,7 +362,7 @@ func TestUsRefineQualityFix003HappyPathAdded(t *testing.T) {
 	s.And(`the story "docs/product/stories/divide-integers-cases.yaml" has 4 acceptance criteria`)
 	s.And(`every acceptance criterion in the story "docs/product/stories/divide-integers-cases.yaml" has given, when and then steps`)
 	s.And(`the only file changed outside "tmp" is "docs/product/stories/divide-integers-cases.yaml"`)
-	s.And(`judge: A new success criterion divides 6 by 2 and observes 3 while retaining the three zero-divisor criteria. Every step uses only Catalogue phrases.`)
+	s.And(`judge: A new success criterion divides 6 by 2 and observes 3 while retaining the three zero-divisor criteria. Every step states a supplied dividend or divisor, the division, or the command's result or error.`)
 	s.Done()
 }
 
@@ -380,7 +380,7 @@ func TestUsRefineQualityFix004UncoveredFailureAdded(t *testing.T) {
 	s.And(`the story "docs/product/stories/divide-integers-cases.yaml" has 4 acceptance criteria`)
 	s.And(`every acceptance criterion in the story "docs/product/stories/divide-integers-cases.yaml" has given, when and then steps`)
 	s.And(`the only file changed outside "tmp" is "docs/product/stories/divide-integers-cases.yaml"`)
-	s.And(`judge: The proposal and saved Story add exactly one criterion for the real zero-divisor failure, asserting the declared error; all three original successful divisions remain. No invented failure or new Story field is added. Every step uses only Catalogue phrases.`)
+	s.And(`judge: The proposal and saved Story add exactly one criterion for the real zero-divisor failure, asserting the declared error; all three original successful divisions remain. No invented failure or new Story field is added. Every step states a supplied dividend or divisor, the division, or the command's result or error.`)
 	s.Done()
 }
 
@@ -398,7 +398,7 @@ func TestUsRefineQualityFix005CriteriaMadeMeasurable(t *testing.T) {
 	s.And(`the story "docs/product/stories/summary-views-cases.yaml" has 3 acceptance criteria`)
 	s.And(`every acceptance criterion in the story "docs/product/stories/summary-views-cases.yaml" has given, when and then steps`)
 	s.And(`the only file changed outside "tmp" is "docs/product/stories/summary-views-cases.yaml"`)
-	s.And(`judge: At least two criteria replace an unmeasurable concise summary with the declared limit of at most 150 words. All three views remain and every step uses only Catalogue phrases.`)
+	s.And(`judge: At least two criteria replace an unmeasurable concise summary with the declared limit of at most 150 words. All three views remain, and every step states the selected document, the requested view or the summary's word count.`)
 	s.Done()
 }
 
@@ -416,11 +416,11 @@ func TestUsRefineQualityFix006OutcomeMadeBinary(t *testing.T) {
 	s.And(`the story "docs/product/stories/halve-negative-cases.yaml" has 3 acceptance criteria`)
 	s.And(`every acceptance criterion in the story "docs/product/stories/halve-negative-cases.yaml" has given, when and then steps`)
 	s.And(`the only file changed outside "tmp" is "docs/product/stories/halve-negative-cases.yaml"`)
-	s.And(`judge: The first criterion now asserts the objective -6 to -3 result with a runnable CLI observation, retaining the other two criteria and using only Catalogue phrases.`)
+	s.And(`judge: The first criterion now asserts the objective -6 to -3 result with a runnable CLI observation, retaining the other two criteria, and every step states a supplied number, the halving or the printed result.`)
 	s.Done()
 }
 
-// us-refine-quality-fix-007-test-sketch-made-runnable: A criterion without an objective runnable sketch must be rewritten using the declared interface and test helpers through the menu
+// us-refine-quality-fix-007-test-sketch-made-runnable: A criterion without an objective runnable sketch must be rewritten through the menu using the product's concepts and the service's declared kind of Public interface
 func TestUsRefineQualityFix007TestSketchMadeRunnable(t *testing.T) {
 	s := scenarios.New(t, "us-refine-quality-fix-007-test-sketch-made-runnable")
 	s.Given(`the "us-refine-fix-sketch" project tree`)
@@ -434,7 +434,7 @@ func TestUsRefineQualityFix007TestSketchMadeRunnable(t *testing.T) {
 	s.And(`the story "docs/product/stories/halve-negative-cases.yaml" has 3 acceptance criteria`)
 	s.And(`every acceptance criterion in the story "docs/product/stories/halve-negative-cases.yaml" has given, when and then steps`)
 	s.And(`the only file changed outside "tmp" is "docs/product/stories/halve-negative-cases.yaml"`)
-	s.And(`judge: The first criterion now asserts the objective -6 to -3 result with a runnable CLI observation, retaining the other two criteria and using only Catalogue phrases.`)
+	s.And(`judge: The first criterion now asserts the objective -6 to -3 result with a runnable CLI observation, retaining the other two criteria, and every step states a supplied number, the halving or the printed result.`)
 	s.Done()
 }
 
@@ -563,7 +563,7 @@ func TestUsRefineRefusals007SharedPrefixReadsOwnFile(t *testing.T) {
 	s.Done()
 }
 
-// us-refine-shipped-001-shipped-checklist-reaches-menu: The full shipped checklist must reach a fix proposal, and exit at the menu must leave the Story and Catalogue unchanged
+// us-refine-shipped-001-shipped-checklist-reaches-menu: The full shipped checklist must reach a fix proposal, and exit at the menu must leave the Story and the product document unchanged
 func TestUsRefineShipped001ShippedChecklistReachesMenu(t *testing.T) {
 	s := scenarios.New(t, "us-refine-shipped-001-shipped-checklist-reaches-menu")
 	s.Given(`the "us-refine-shipped-menu-exit" project tree`)
@@ -580,7 +580,7 @@ func TestUsRefineShipped001ShippedChecklistReachesMenu(t *testing.T) {
 	s.Done()
 }
 
-// us-refine-shipped-002-shipped-checklist-adds-phrase: The full shipped checklist must add a missing Catalogue phrase only after apply and retain the Story words
+// us-refine-shipped-002-shipped-checklist-adds-phrase: The full shipped checklist must add a missing concept only after apply and retain the Story words
 func TestUsRefineShipped002ShippedChecklistAddsPhrase(t *testing.T) {
 	s := scenarios.New(t, "us-refine-shipped-002-shipped-checklist-adds-phrase")
 	s.Given(`the "us-refine-shipped-catalogue" project tree`)
@@ -597,7 +597,7 @@ func TestUsRefineShipped002ShippedChecklistAddsPhrase(t *testing.T) {
 	s.And(`the file "docs/product/product.yaml" is modified`)
 	s.And(`the file "docs/product/stories/halve-negative-cases.yaml" matches the Calculator User halves the number`)
 	s.And(`no file outside "tmp" and "docs/product" changed`)
-	s.And(`judge: The menu proposal adds a Catalogue entry for the existing halving action. The Story keeps all of its original descriptions and step words; no substitute action, error criterion or new Story field is introduced.`)
+	s.And(`judge: The menu proposal adds a product concept for the existing halving action. The Story keeps all of its original descriptions and step words; no substitute action, error criterion or new Story field is introduced.`)
 	s.Done()
 }
 

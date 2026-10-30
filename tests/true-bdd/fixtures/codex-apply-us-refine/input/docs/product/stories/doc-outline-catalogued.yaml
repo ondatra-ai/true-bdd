@@ -1,8 +1,8 @@
-# Story seed for the `us-refine-fix-records-phrase` BDD fixture.
+# Story seed for the `codex-apply-us-refine` BDD fixture.
 #
-# Every step matches one catalogue phrase of the fixture's product
-# document but AC-2's last then step, which matches none. The fix phrases
-# it in the catalogue and leaves the Story's steps as they are.
+# Every step links to one concept of the fixture's product document but
+# AC-2's last then step, which links to none. The fix widens or adds a
+# concept in the product document and leaves the Story's steps as they are.
 
 story:
     id: doc-outline
