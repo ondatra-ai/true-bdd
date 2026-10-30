@@ -1,16 +1,3 @@
-# Seed registry for the `us-apply-reordered-criteria` BDD fixture.
-#
-# Exactly what `us apply mcp-endpoint --fix` wrote when the story still
-# listed 001 before 002: one entry per criterion, each keyed by its lineage
-# id. The story now lists 002 first. Walking it again through the SHIPPED
-# us-apply checklist, every cell must pass:
-#
-#   - "present?" PASSES for both: each lineage id is cited here.
-#   - "duplicate?" PASSES for both: each is cited exactly once.
-#
-# No fix runs, the walk converges, and the scratch copy committed over
-# this file is byte-identical to it.
-
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
   version: "2.0"
