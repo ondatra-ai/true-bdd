@@ -3,18 +3,18 @@
   "fixture": "build-steps-slots",
   "files": [
     {
-      "path": "tests/calc/steps/phraseea05442478437a9ebf104cd94361efb2d093e818ac43814680607d44d8456069.go",
+      "path": "tests/calc/steps/concept76ffa07526da010d7eb36bc0572fcc5df5846eaa082ddf0cfb58443ec34d7418.go",
       "kind": "created",
-      "size": 1142,
-      "sha256": "c2c1618081dd53066e2479b68fb18efdee1ce25660666327884c28fb80bf7c89",
-      "text": "package steps\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\nfunc phraseea05442478437a9ebf104cd94361efb2d093e818ac43814680607d44d8456069(state *State, args []string) error {\n\tif len(args) \u003c 2 {\n\t\treturn fmt.Errorf(\"the command %q doubles %v: expected an operation and an operand, got %d argument(s)\", \"double\", args, len(args))\n\t}\n\toperation := args[0]\n\toperand := args[1]\n\tif _, err := strconv.Atoi(operand); err != nil {\n\t\treturn fmt.Errorf(\"operand %q is not an integer: %w\", operand, err)\n\t}\n\n\tconst hostRoot = \"../..\"\n\tconst commandPackage = \"./services/calc\"\n\n\tcmd := exec.Command(\"go\", \"run\", commandPackage, operation, operand)\n\tcmd.Dir = hostRoot\n\tvar stdout, stderr bytes.Buffer\n\tcmd.Stdout = \u0026stdout\n\tcmd.Stderr = \u0026stderr\n\tif err := cmd.Run(); err != nil {\n\t\treturn fmt.Errorf(\"go run %s %s %s: %w: %s\", commandPackage, operation, operand, err, strings.TrimSpace(stderr.String()))\n\t}\n\n\tobserved, err := strconv.Atoi(strings.TrimSpace(stdout.String()))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"stdout %q of %s %s is not an integer: %w\", stdout.String(), operation, operand, err)\n\t}\n\tstate.Value = observed\n\treturn nil\n}\n"
+      "size": 706,
+      "sha256": "6f510454773df10e8350ed516ffe021098cd0d500408678462987d4943b4800d",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"running\"\nfunc concept76ffa07526da010d7eb36bc0572fcc5df5846eaa082ddf0cfb58443ec34d7418(state *State, args []string) error {\n\tif state.Program == \"\" {\n\t\treturn fmt.Errorf(\"the calculator is not installed\")\n\t}\n\tcommand := exec.Command(state.Program, args[0], args[1])\n\tcommand.Dir = \"../..\"\n\toutput, err := command.Output()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"run the calculator %q on %s: %w\", args[0], args[1], err)\n\t}\n\tvalue, err := strconv.Atoi(strings.TrimSpace(string(output)))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"read the calculator stdout %q: %w\", string(output), err)\n\t}\n\tstate.Value = value\n\treturn nil\n}\n"
     },
     {
       "path": "tests/calc/steps/register.go",
       "kind": "modified",
-      "size": 657,
-      "sha256": "a2cf84800d581d659e4154762c587e8c05aaf115e3f0a80ec46de75977ed3615",
-      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"strconv\"\n)\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the number is (\\d+)$`, number)\n\tsuite.Step(`^the result is (\\d+)$`, result)\n\n\tsuite.Step(\"\\\\Athe command \\\"([^\\\"]+)\\\" doubles ((?:[0-9]+|no))\\\\z\", phraseea05442478437a9ebf104cd94361efb2d093e818ac43814680607d44d8456069)\n}\nfunc number(state *State, args []string) error {\n\tvalue, err := strconv.Atoi(args[0])\n\tstate.Value = value\n\treturn err\n}\nfunc result(state *State, args []string) error {\n\twant, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn err\n\t}\n\tif state.Value != want {\n\t\treturn fmt.Errorf(\"expected %d, got %d\", want, state.Value)\n\t}\n\treturn nil\n}\n"
+      "size": 1133,
+      "sha256": "76bdf29827593b51650a9086820b10032d71a12b689aee7346d0c970f1d6f957",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"os\"\n\t\"os/exec\"\n\t\"path/filepath\"\n\t\"strconv\"\n)\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the calculator is installed$`, installed)\n\tsuite.Step(`^the result is (-?\\d+)$`, result)\n\n\tsuite.Step(\"^the Owner runs \\\"([^\\\"]*)\\\" on (-?\\\\d+)$\", concept76ffa07526da010d7eb36bc0572fcc5df5846eaa082ddf0cfb58443ec34d7418)\n}\n\n//truebdd:concept given \"installation\"\nfunc installed(state *State, _ []string) error {\n\tprogram, err := filepath.Abs(\"../../tmp/calc-program/calc\")\n\tif err != nil {\n\t\treturn err\n\t}\n\tif err = os.MkdirAll(filepath.Dir(program), 0o755); err != nil {\n\t\treturn err\n\t}\n\tcommand := exec.Command(\"go\", \"build\", \"-o\", program, \"./services/calc\")\n\tcommand.Dir = \"../..\"\n\tif output, err := command.CombinedOutput(); err != nil {\n\t\treturn fmt.Errorf(\"install the calculator: %w: %s\", err, output)\n\t}\n\tstate.Program = program\n\treturn nil\n}\n\n//truebdd:concept then \"result\"\nfunc result(state *State, args []string) error {\n\twant, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn err\n\t}\n\tif state.Value != want {\n\t\treturn fmt.Errorf(\"expected %d, got %d\", want, state.Value)\n\t}\n\treturn nil\n}\n"
     }
   ]
 }

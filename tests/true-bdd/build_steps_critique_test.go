@@ -22,7 +22,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
-// build-steps-critique-001-operation: A when omitting its mapped operation fails critique and returns to the Fix loop
+// build-steps-critique-001-operation: A when omitting its bound operation fails critique and returns to the Fix loop
 func TestBuildStepsCritique001Operation(t *testing.T) {
 	s := scenarios.New(t, "build-steps-critique-001-operation")
 	s.Given(`the "build-steps-critique-operation" project tree`)
@@ -31,18 +31,18 @@ func TestBuildStepsCritique001Operation(t *testing.T) {
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches BUILD STEPS COMPLETE`)
 	s.And(`stdout matches Step definition critiqued`)
-	s.And(`stdout matches phrase_mapping.*does not call the mapped double operation`)
-	s.And(`the engine dispatched 6 AI turns`)
-	s.And(`the engine dispatched 2 validation AI turns to "claude"`)
+	s.And(`stdout matches concept_binding.*does not call the bound double operation`)
+	s.And(`the engine dispatched 9 AI turns`)
+	s.And(`the engine dispatched 5 validation AI turns to "claude"`)
 	s.And(`no file outside "tmp" and "tests" changed`)
-	s.And(`every file matching "tmp/*/critique-*-user.txt" matches phrase_mapping:`)
+	s.And(`every file matching "tmp/*/critique-*-user.txt" matches binding:`)
 	s.And(`every file matching "tmp/*/critique-*-user.txt" matches interface_document:`)
 	s.And(`every file matching "tmp/*/critique-*-user.txt" matches calc-002-double`)
 	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
 	s.Done()
 }
 
-// build-steps-critique-002-assertion: An assertion contradicting the phrase fails critique and returns to the Fix loop
+// build-steps-critique-002-assertion: An assertion contradicting the step's concept fails critique and returns to the Fix loop
 func TestBuildStepsCritique002Assertion(t *testing.T) {
 	s := scenarios.New(t, "build-steps-critique-002-assertion")
 	s.Given(`the "build-steps-critique-assertion" project tree`)
@@ -51,18 +51,18 @@ func TestBuildStepsCritique002Assertion(t *testing.T) {
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches BUILD STEPS COMPLETE`)
 	s.And(`stdout matches Step definition critiqued`)
-	s.And(`stdout matches phrase_meaning.*assertion contradicts the phrase`)
-	s.And(`the engine dispatched 6 AI turns`)
-	s.And(`the engine dispatched 2 validation AI turns to "claude"`)
+	s.And(`stdout matches concept_meaning.*assertion contradicts the step`)
+	s.And(`the engine dispatched 9 AI turns`)
+	s.And(`the engine dispatched 5 validation AI turns to "claude"`)
 	s.And(`no file outside "tmp" and "tests" changed`)
-	s.And(`every file matching "tmp/*/critique-*-user.txt" matches phrase_mapping:`)
+	s.And(`every file matching "tmp/*/critique-*-user.txt" matches binding:`)
 	s.And(`every file matching "tmp/*/critique-*-user.txt" matches interface_document:`)
 	s.And(`every file matching "tmp/*/critique-*-user.txt" matches calc-002-double`)
 	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
 	s.Done()
 }
 
-// build-steps-critique-003-correct: A correct given that stores its input passes critique and completes
+// build-steps-critique-003-correct: A correct given that puts its state in place passes critique and completes
 func TestBuildStepsCritique003Correct(t *testing.T) {
 	s := scenarios.New(t, "build-steps-critique-003-correct")
 	s.Given(`the "build-steps-critique-correct" project tree`)
@@ -71,11 +71,11 @@ func TestBuildStepsCritique003Correct(t *testing.T) {
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches BUILD STEPS COMPLETE`)
 	s.And(`stdout matches Step definition critiqued`)
-	s.And(`the engine dispatched 3 AI turns`)
-	s.And(`the engine dispatched 1 validation AI turn to "claude"`)
+	s.And(`the engine dispatched 6 AI turns`)
+	s.And(`the engine dispatched 4 validation AI turns to "claude"`)
 	s.And(`stdout matches role=prompt cli=claude model=claude-sonnet-5`)
 	s.And(`no file outside "tmp" and "tests" changed`)
-	s.And(`every file matching "tmp/*/critique-*-user.txt" matches phrase_mapping:`)
+	s.And(`every file matching "tmp/*/critique-*-user.txt" matches binding:`)
 	s.And(`every file matching "tmp/*/critique-*-user.txt" matches interface_document:`)
 	s.And(`every file matching "tmp/*/critique-*-user.txt" matches calc-002-double`)
 	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)

@@ -427,7 +427,7 @@ func TestBuildCodeSpec004NoReplayCommandRefused(t *testing.T) {
 	s.Done()
 }
 
-// build-code-spec-005-matched-scenario-embedded: A failing generated Go test must hand both fix turns its Scenario and the catalogue meanings of its steps
+// build-code-spec-005-matched-scenario-embedded: A failing generated Go test must hand both fix turns its Scenario and the concept meanings of its steps
 func TestBuildCodeSpec005MatchedScenarioEmbedded(t *testing.T) {
 	s := scenarios.New(t, "build-code-spec-005-matched-scenario-embedded")
 	s.Given(`the "build-code-spec-scenario" project tree`)
@@ -438,16 +438,16 @@ func TestBuildCodeSpec005MatchedScenarioEmbedded(t *testing.T) {
 	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Scenario ID:\*\* calc-001-double`)
 	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Service:\*\* calc`)
 	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches tests/calc/calc_test.go`)
-	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches the number is doubled`)
-	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches The calculator doubles the supplied number.`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches the Owner doubles 3`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches The Owner doubles a whole number with the calculator.`)
 	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches An integer operand whose double is its sum with itself.`)
 	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches The integer argument and stdout of the calculator double command.`)
 	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches The step runs double as a process and compares its integer stdout`)
 	s.And(`every file matching "tmp/*/apply-*-user.txt" matches \*\*Scenario ID:\*\* calc-001-double`)
 	s.And(`every file matching "tmp/*/apply-*-user.txt" matches \*\*Service:\*\* calc`)
 	s.And(`every file matching "tmp/*/apply-*-user.txt" matches tests/calc/calc_test.go`)
-	s.And(`every file matching "tmp/*/apply-*-user.txt" matches the number is doubled`)
-	s.And(`every file matching "tmp/*/apply-*-user.txt" matches The calculator doubles the supplied number.`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches the Owner doubles 3`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches The Owner doubles a whole number with the calculator.`)
 	s.And(`every file matching "tmp/*/apply-*-user.txt" matches An integer operand whose double is its sum with itself.`)
 	s.And(`every file matching "tmp/*/apply-*-user.txt" matches The integer argument and stdout of the calculator double command.`)
 	s.And(`every file matching "tmp/*/apply-*-user.txt" matches The step runs double as a process and compares its integer stdout`)
@@ -491,6 +491,41 @@ func TestBuildCodeSpec007UnreadableRegistryWarned(t *testing.T) {
 	s.And(`the engine dispatched no validation AI turns to "claude"`)
 	s.And(`the engine dispatched 2 AI turns`)
 	s.And(`the engine spawned exactly 3 test runners`)
+	s.Done()
+}
+
+// build-code-spec-008-linked-concepts-embedded: On a concept host both fix turns must embed each concept the failing Scenarios link to, with its meaning, its words and its binding, and no concept they do not link
+func TestBuildCodeSpec008LinkedConceptsEmbedded(t *testing.T) {
+	s := scenarios.New(t, "build-code-spec-008-linked-concepts-embedded")
+	s.Given(`the "build-code-spec-concepts" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build code --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Scenario ID:\*\* calc-002-halve`)
+	s.And("every file matching \"tmp/*/*fix-iter*-user.txt\" matches `installation` \\(given concept\\): The calculator program is built from its source and ready for the Owner to run\\.")
+	s.And("every file matching \"tmp/*/*fix-iter*-user.txt\" matches `doubling` \\(when concept\\): The Owner doubles a whole number with the calculator\\.")
+	s.And("every file matching \"tmp/*/*fix-iter*-user.txt\" matches `halving` \\(when concept\\): The Owner halves an even whole number with the calculator\\.")
+	s.And("every file matching \"tmp/*/*fix-iter*-user.txt\" matches `result` \\(then concept\\): The calculator prints the whole number the operation produced\\.")
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches Bound for calc through command: double, command: halve: Build the declared calculator commands`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches Bound for calc through command: halve: Run the kept calculator program's halve command`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches An integer operand whose double is its sum with itself\.`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches The integer argument and stdout of the calculator's double and halve commands\.`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" does not match The Owner squares a whole number`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" does not match \#\#\# Phrases`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches \*\*Scenario ID:\*\* calc-002-halve`)
+	s.And("every file matching \"tmp/*/apply-*-user.txt\" matches `installation` \\(given concept\\): The calculator program is built from its source and ready for the Owner to run\\.")
+	s.And("every file matching \"tmp/*/apply-*-user.txt\" matches `doubling` \\(when concept\\): The Owner doubles a whole number with the calculator\\.")
+	s.And("every file matching \"tmp/*/apply-*-user.txt\" matches `halving` \\(when concept\\): The Owner halves an even whole number with the calculator\\.")
+	s.And("every file matching \"tmp/*/apply-*-user.txt\" matches `result` \\(then concept\\): The calculator prints the whole number the operation produced\\.")
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches Bound for calc through command: double, command: halve: Build the declared calculator commands`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches Bound for calc through command: halve: Run the kept calculator program's halve command`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches An integer operand whose double is its sum with itself\.`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches The integer argument and stdout of the calculator's double and halve commands\.`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" does not match The Owner squares a whole number`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" does not match \#\#\# Phrases`)
+	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
+	s.And(`the engine dispatched no validation AI turns to "claude"`)
 	s.Done()
 }
 

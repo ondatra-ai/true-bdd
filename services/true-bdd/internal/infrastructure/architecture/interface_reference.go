@@ -2,6 +2,7 @@ package architecture
 
 import (
 	"fmt"
+	"strings"
 )
 
 // InterfaceReference names one command, extension, HTTP operation or scoped UI element.
@@ -16,6 +17,9 @@ type InterfaceReference struct {
 
 // String names the reference in a finding, including malformed combinations.
 func (r InterfaceReference) String() string { return fmt.Sprint(r.selectors()) }
+
+// Selector names the reference as its document key and value, as in "command: halve".
+func (r InterfaceReference) Selector() string { return strings.Join(r.selectors(), ", ") }
 
 // Declares checks a reference against the loaded declaration and document.
 func (p *PublicInterface) Declares(reference InterfaceReference) bool {

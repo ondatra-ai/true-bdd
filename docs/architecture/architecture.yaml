@@ -398,9 +398,9 @@ architecture:
         Subject.Scenarios[].FormatSteps: >-
           All original Given, When and Then steps, in Registry order, with their block headings.
         Subject.Specification: >-
-          Union of the remaining members catalogue Specifications in discovery order. Optional unreadable or catalogue-less product leaves it undeclared without dropping matched Scenarios.
+          Union of the remaining members Specifications in discovery order: catalogue phrases on a template host, linked concepts on a concept host. Optional unreadable, catalogue-less or concept-less product leaves it empty without dropping matched Scenarios.
         Subject.Specification.Declared: >-
-          True when any remaining member has a declared catalogue.
+          True when any remaining member has a declared catalogue; false on a concept host.
         Subject.Specification.Phrases: >-
           Each reached catalogue phrase once, in first-reached order across members.
         Subject.Specification.Phrases[].Template: >-
@@ -412,7 +412,7 @@ architecture:
         Subject.Specification.Phrases[].Terms: >-
           Declared words in catalogue order, joined by comma and space, or none.
         Subject.Specification.Terms: >-
-          Each declared word once, in first-reached order across members.
+          Each declared word once, in first-reached order across members: the reached phrases' words on a template host, the linked concepts' words on a concept host.
         Subject.Specification.Terms[].Term: >-
           Declared word, unchanged.
         Subject.Specification.Terms[].Means: >-
@@ -423,6 +423,26 @@ architecture:
           Mapping technical text, unchanged.
         Subject.Specification.Terms[].Mappings[].ObservedBy: >-
           Mapping observed_by text, unchanged.
+        Subject.Specification.Concepts: >-
+          Concept host only, empty on a template host. Each concept a remaining member's Scenario links to once, in first-linked order across members: for each deterministic step in Registry order (judge: and llm: excluded), the step definition it alone binds in its Scenario's suite (stepcoverage.LoadSuite of the path's steps directory) and the //truebdd:concept record on that definition (stepskeleton.Concepts, matched by registered pattern) naming a concept the product declares under the step's block. A step binding none or two definitions, an unrecorded definition, or a record naming an undeclared or other-block concept links nothing; an unreadable suite warns and links nothing.
+        Subject.Specification.Concepts[].Concept: >-
+          Product concept name, unchanged.
+        Subject.Specification.Concepts[].Block: >-
+          The concept's block: given, when or then.
+        Subject.Specification.Concepts[].Means: >-
+          Product concept means, unchanged.
+        Subject.Specification.Concepts[].Terms: >-
+          The concept's declared terms in product order, joined by comma and space, or none.
+        Subject.Specification.Concepts[].Bindings: >-
+          Every architecture.concepts entry with the concept's name and block and the linking Scenario's service, in document order; a concept linked from several members' services joins each service's bindings once, first-seen order. Empty renders that the architecture binds it for no service of these steps.
+        Subject.Specification.Concepts[].Bindings[].Service: >-
+          Binding service, unchanged.
+        Subject.Specification.Concepts[].Bindings[].References: >-
+          Each Public interface reference as its key and value (command: halve), in binding order, joined by comma and space.
+        Subject.Specification.Concepts[].Bindings[].Does: >-
+          Binding does sentence, unchanged; rendered when no intent is given.
+        Subject.Specification.Concepts[].Bindings[].Intent: >-
+          Binding intent, unchanged; rendered instead of references and does when present.
         SubjectID: >-
           Stable Item id: discovery BuildID for a singleton, failing-set otherwise. Membership changes do not change it within the walk.
         UserAnswers: >-
@@ -479,9 +499,9 @@ architecture:
         Subject.Scenarios[].FormatSteps: >-
           All original Given, When and Then steps, in Registry order, with their block headings.
         Subject.Specification: >-
-          Union of the remaining members catalogue Specifications in discovery order. Optional unreadable or catalogue-less product leaves it undeclared without dropping matched Scenarios.
+          Union of the remaining members Specifications in discovery order: catalogue phrases on a template host, linked concepts on a concept host. Optional unreadable, catalogue-less or concept-less product leaves it empty without dropping matched Scenarios.
         Subject.Specification.Declared: >-
-          True when any remaining member has a declared catalogue.
+          True when any remaining member has a declared catalogue; false on a concept host.
         Subject.Specification.Phrases: >-
           Each reached catalogue phrase once, in first-reached order across members.
         Subject.Specification.Phrases[].Template: >-
@@ -493,7 +513,7 @@ architecture:
         Subject.Specification.Phrases[].Terms: >-
           Declared words in catalogue order, joined by comma and space, or none.
         Subject.Specification.Terms: >-
-          Each declared word once, in first-reached order across members.
+          Each declared word once, in first-reached order across members: the reached phrases' words on a template host, the linked concepts' words on a concept host.
         Subject.Specification.Terms[].Term: >-
           Declared word, unchanged.
         Subject.Specification.Terms[].Means: >-
@@ -504,6 +524,26 @@ architecture:
           Mapping technical text, unchanged.
         Subject.Specification.Terms[].Mappings[].ObservedBy: >-
           Mapping observed_by text, unchanged.
+        Subject.Specification.Concepts: >-
+          Concept host only, empty on a template host. Each concept a remaining member's Scenario links to once, in first-linked order across members: for each deterministic step in Registry order (judge: and llm: excluded), the step definition it alone binds in its Scenario's suite (stepcoverage.LoadSuite of the path's steps directory) and the //truebdd:concept record on that definition (stepskeleton.Concepts, matched by registered pattern) naming a concept the product declares under the step's block. A step binding none or two definitions, an unrecorded definition, or a record naming an undeclared or other-block concept links nothing; an unreadable suite warns and links nothing.
+        Subject.Specification.Concepts[].Concept: >-
+          Product concept name, unchanged.
+        Subject.Specification.Concepts[].Block: >-
+          The concept's block: given, when or then.
+        Subject.Specification.Concepts[].Means: >-
+          Product concept means, unchanged.
+        Subject.Specification.Concepts[].Terms: >-
+          The concept's declared terms in product order, joined by comma and space, or none.
+        Subject.Specification.Concepts[].Bindings: >-
+          Every architecture.concepts entry with the concept's name and block and the linking Scenario's service, in document order; a concept linked from several members' services joins each service's bindings once, first-seen order. Empty renders that the architecture binds it for no service of these steps.
+        Subject.Specification.Concepts[].Bindings[].Service: >-
+          Binding service, unchanged.
+        Subject.Specification.Concepts[].Bindings[].References: >-
+          Each Public interface reference as its key and value (command: halve), in binding order, joined by comma and space.
+        Subject.Specification.Concepts[].Bindings[].Does: >-
+          Binding does sentence, unchanged; rendered when no intent is given.
+        Subject.Specification.Concepts[].Bindings[].Intent: >-
+          Binding intent, unchanged; rendered instead of references and does when present.
         WriteRoots: >-
           The remaining failing set's service paths and exact writable entries, in the same order as the planner's roots. Unknown-service failures use every service. Grants are revalidated as passing members leave.
         CodexWriter: >-
@@ -1427,7 +1467,7 @@ architecture:
     - term: Item
       technical: >-
         For a template host, BuildStepsItem carries one Catalogue Entry, service name and suite steps directory. Discovery orders suites by the first Registry Scenario id and phrases by Catalogue order, deduplicating each phrase and suite. Inventory includes phrases mapped to the suite's service or used by its Scenarios, including mapped unused phrases. The read-only command reports whole-Registry coverage with subject id registry. Under --fix the Item includes its skeleton location, complete YAML Specification context and latest per-Item findings, and uses a stable phrase hash as its artifact id, prefixed by the suite directory when multiple suites write the same phrase.
-        For a concept host, unboundConceptSuites deduplicates gap texts by suite and block, excluding judge: and llm:. Each linked concept and suite is an Item; all service bindings are judged before any skeleton, by the same binding Prompt loaded from scen-check and the same evaluator. The group protocol uses best and runner-up scores with the shared link threshold selector and ambiguity verdict. Malformed completeness or ranking, and output caps, crash. config.grouping_batch_texts defaults to 800 for claude-opus-5 and this format; equalStepBatches uses the fewest batches and sizes differ by at most one. A bare run then lists the Items. Under --fix the propose Q answers each Item's patterns, pattern, captures and serves, as schema-bound data from the concept, its terms' glossary entries, its binding, the Public interface, the concept's existing definition patterns and the grouped steps; catalogue.CheckPatterns holds it to every deterministic suite step in every block (compiles, one capture per name, each grouped step one pattern, no foreign step, no unused pattern), and a refusal is resent with the refused patterns and findings up to max_apply_attempts proposals, else ErrPatternProposal. Accepted patterns become stepskeleton.WriteConcept skeletons named from concept, suite and pattern, recording //truebdd:concept; stepskeleton.Concepts reads them back so pending ones resume as Items. conceptFixtures embeds the bound Scenarios' fixture inputs in the Item's context. A critique pattern finding (validate.CritiqueFinding.Pattern) runs the same propose Q again with the Item's own steps as its own, its own patterns refused and the critique's findings; stepskeleton.RemoveConcept deletes a dropped engine skeleton's file and literal registration before the new ones are written.
+        For a concept host, unboundConceptSuites deduplicates gap texts by suite and block, excluding judge: and llm:. Each linked concept and suite is an Item; all service bindings are judged before any skeleton, by the same binding Prompt loaded from scen-check and the same evaluator. The group protocol uses best and runner-up scores with the shared link threshold selector and ambiguity verdict. Malformed completeness or ranking, and output caps, crash. config.grouping_batch_texts defaults to 800 for claude-opus-5 and this format; equalStepBatches uses the fewest batches and sizes differ by at most one. A bare run then lists the Items. Under --fix the propose Q answers each Item's patterns, pattern, captures and serves, as schema-bound data from the concept, its terms' glossary entries, its binding, the Public interface, the concept's existing definition patterns and the grouped steps; catalogue.CheckPatterns holds it to every deterministic suite step in every block (compiles, one capture per name, each grouped step one pattern, no foreign step, no unused pattern), and a refusal is resent with the refused patterns and findings up to max_apply_attempts proposals, else ErrPatternProposal. Accepted patterns become stepskeleton.WriteConcept skeletons named from concept, suite and pattern, recording //truebdd:concept; stepskeleton.Concepts reads them back so pending ones resume as Items. conceptFixtures embeds the bound Scenarios' fixture inputs in the Item's context. A critique pattern finding (validate.CritiqueFinding.Pattern) runs the same propose Q again with the Item's own steps as its own, its own patterns refused and the critique's findings; stepskeleton.RemoveConcept deletes a dropped engine skeleton's file and literal registration before the new ones are written. Under --fix, loadConceptRun reads the propose Q, the product's concepts, glossary, Word mapping and Concept bindings before unboundConceptSuites' grouping, so a malformed term list stops before any turn. For build code on a concept host, codeConceptSpecifications gives each matched Scenario the concepts its deterministic steps link to: the //truebdd:concept record (stepskeleton.Concepts) of the one definition stepcoverage.LoadSuite binds the step to, naming a declared concept of the step's block, with that concept's binding for the Scenario's service; catalogue.SpecifyConcepts adds the glossary entries and Word mappings of their terms, and BuildCodeItem.Specification lists each concept once across the failing set.
       observed_by: >-
         build-steps-list-001 observes the phrase and suite in each missing-definition log record. build-steps-writing-001 through 007 and the restored term-document, exit and codex-apply Scenarios pin body writing, verification and confinement. concept-bodies-001 through 005 pin #248's three cases, the fixture inputs in the body turns and the critique, a body requiring more than its binding sent back, and a pattern repaired through a new proposal.
 
@@ -1719,7 +1759,7 @@ architecture:
         picking that suggestion. An optional `Your answer: ` prompt follows
         the options before the read; the original engine prints it, with
         indentation and blank lines, and labels Other as `0) Other (type custom answer)`.
-        For build code the Item is the whole failing set, zero Items when discovery is green. Its tests-pass D: Prompt passes exactly when every remaining member passed its latest run; failing findings group every still-failing id beside the whole first output using runtime-failure normalization. No validation model runs. The unchanged walker allowance counts applies on that set Item, including applied false, successful responses missing the confirmation, and started codex writers that exit non-zero or answer empty, and started Claude writer turns that exit non-zero, return error results or answer empty; allowance two still permits three applies before stopping. Each missing confirmation warns once with the result path and follows the not-applied rerun. Each started writer failure logs one WARN and follows the same rerun, preserving its files. Start failures, engine refusals before spawning, failures in other roles stay fatal. The next plan sees the rerun's remaining set and rebuilt grouped evidence, including build failures. The terminal attempt is rerun but still stops at the bound even if it passed. The proposed repair plan names changes, files and served tests. The writer gets the same set, Specification, edit roots and codex and Claude command forms, implements the service, tests each part and the whole set, then reports changes and observed passes without a stated time, turn, token or cost budget. The proposed
+        For build code the Item is the whole failing set, zero Items when discovery is green. Its tests-pass D: Prompt passes exactly when every remaining member passed its latest run; failing findings group every still-failing id beside the whole first output using runtime-failure normalization. No validation model runs. The unchanged walker allowance counts applies on that set Item, including applied false, successful responses missing the confirmation, and started codex writers that exit non-zero or answer empty, and started Claude writer turns that exit non-zero, return error results or answer empty; allowance two still permits three applies before stopping. Each missing confirmation warns once with the result path and follows the not-applied rerun. Each started writer failure logs one WARN and follows the same rerun, preserving its files. Start failures, engine refusals before spawning, failures in other roles stay fatal. The next plan sees the rerun's remaining set and rebuilt grouped evidence, including build failures. The terminal attempt is rerun but still stops at the bound even if it passed. The proposed repair plan names changes, files and served tests. The plan and the writer get the matched Scenarios and what the Specification says their steps mean: the reached Catalogue phrases and their words on a template host, unchanged; on a concept host the concepts the steps' definitions record, with means, terms, binding and words. The writer gets the same set, Specification, edit roots and codex and Claude command forms, implements the service, tests each part and the whole set, then reports changes and observed passes without a stated time, turn, token or cost budget. The proposed
         fix is then followed by `[1] Apply this fix to working copy`, `[2]
         Refine the fix prompt` and `[3] Exit without applying`, on separate
         lines in that order. An optional `Your choice (1/2/3): ` prompt

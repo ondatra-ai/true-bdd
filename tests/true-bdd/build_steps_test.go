@@ -123,7 +123,7 @@ func TestBuildStepsRefusals001EmptyChecklistRefused(t *testing.T) {
 	s.Done()
 }
 
-// build-steps-writing-001-new-body: A missing phrase gets an engine skeleton and an AI body that executes the declared CLI command
+// build-steps-writing-001-new-body: A missing concept's steps get an engine skeleton from the proposed pattern and an AI body that executes the declared CLI command
 func TestBuildStepsWriting001NewBody(t *testing.T) {
 	s := scenarios.New(t, "build-steps-writing-001-new-body")
 	s.Given(`the "build-steps-new" project tree`)
@@ -138,16 +138,16 @@ func TestBuildStepsWriting001NewBody(t *testing.T) {
 	s.And(`stdout matches Red without target passed.*scenarios=2`)
 	s.And(`the engine spawned exactly 1 test runner with arguments matching -count=1$`)
 	s.And(`no file outside "tmp" and "tests" changed`)
-	s.And(`the engine dispatched 1 validation AI turn to "claude"`)
+	s.And(`the engine dispatched 4 validation AI turns to "claude"`)
 	s.And(`the engine spawned exactly 1 test runner with arguments matching -list \.`)
-	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches phrase_mapping:`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches binding:`)
 	s.And(`every file matching "tmp/*/apply-*-user.txt" matches interface_document:`)
 	s.And(`every file matching "tmp/*/apply-*-user.txt" matches calc-001-double`)
 	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
 	s.Done()
 }
 
-// build-steps-writing-002-all-skeletons-first: All missing phrases get compilable skeletons before the first AI turn and each body is written in one walk; whole-suite checks run once
+// build-steps-writing-002-all-skeletons-first: Every missing concept's skeletons compile before the first body turn and each body is written in one walk; whole-suite checks run once
 func TestBuildStepsWriting002AllSkeletonsFirst(t *testing.T) {
 	s := scenarios.New(t, "build-steps-writing-002-all-skeletons-first")
 	s.Given(`the "build-steps-many" project tree`)
@@ -159,14 +159,14 @@ func TestBuildStepsWriting002AllSkeletonsFirst(t *testing.T) {
 	s.And(`stdout matches Scenario list passed`)
 	s.And(`no file outside "tmp" and "tests" changed`)
 	s.And(`stdout matches All step skeletons written.*items=3`)
-	s.And(`the engine dispatched 3 validation AI turns to "claude"`)
+	s.And(`the engine dispatched 10 validation AI turns to "claude"`)
 	s.And(`the engine spawned exactly 1 test runner with arguments matching -list \.`)
 	s.And(`the engine spawned exactly 1 test runner with arguments matching -run \^\(Test`)
 	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
 	s.Done()
 }
 
-// build-steps-writing-003-slot-order: The quoted operation and numeric value are passed to the written definition in template slot order
+// build-steps-writing-003-slot-order: The quoted command and the number are passed to the written definition in the proposed pattern's capture order
 func TestBuildStepsWriting003SlotOrder(t *testing.T) {
 	s := scenarios.New(t, "build-steps-writing-003-slot-order")
 	s.Given(`the "build-steps-slots" project tree`)
@@ -177,7 +177,7 @@ func TestBuildStepsWriting003SlotOrder(t *testing.T) {
 	s.And(`stdout matches Step coverage passed`)
 	s.And(`stdout matches Scenario list passed`)
 	s.And(`no file outside "tmp" and "tests" changed`)
-	s.And(`the engine dispatched 1 validation AI turn to "claude"`)
+	s.And(`the engine dispatched 4 validation AI turns to "claude"`)
 	s.And(`the engine spawned exactly 1 test runner with arguments matching -list \.`)
 	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
 	s.Done()
@@ -212,7 +212,7 @@ func TestBuildStepsWriting005OutsideTestsRefused(t *testing.T) {
 	s.And(`the engine spawned exactly 1 test runner with arguments matching -list \.`)
 	s.And(`no file outside "tmp" and "tests" changed`)
 	s.And(`stdout matches msg="Tool calls were denied; this turn did less than it was asked to".*role=apply`)
-	s.And(`the engine dispatched 1 validation AI turn to "claude"`)
+	s.And(`the engine dispatched 4 validation AI turns to "claude"`)
 	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
 	s.Done()
 }
@@ -241,7 +241,7 @@ func TestBuildStepsWriting007GreenBodyRepaired(t *testing.T) {
 	s.And(`stdout matches Scenario green without target.*TestCalc001Double`)
 	s.And(`stdout matches Red without target passed`)
 	s.And(`stdout matches BUILD STEPS COMPLETE`)
-	s.And(`the engine dispatched 6 AI turns`)
+	s.And(`the engine dispatched 9 AI turns`)
 	s.And(`no file outside "tmp" and "tests" changed`)
 	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
 	s.Done()
@@ -260,7 +260,7 @@ func TestCodexApply002BuildStepsWritesProtectedTests(t *testing.T) {
 	s.And(`the engine spawned exactly 1 test runner with arguments matching -list \.`)
 	s.And(`no file outside "tmp" and "tests" changed`)
 	s.And(`stdout matches msg="Codex turn sandboxed" label=codex-turn[0-9]+ sandbox=writer`)
-	s.And(`the engine dispatched 1 validation AI turn to "claude"`)
+	s.And(`the engine dispatched 4 validation AI turns to "claude"`)
 	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
 	s.Done()
 }
@@ -300,7 +300,7 @@ func TestFixLoopChoices006ExitFailsBuildSteps(t *testing.T) {
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches action=exit`)
 	s.And(`stdout does not match BUILD STEPS COMPLETE`)
-	s.And(`the engine dispatched 1 AI turn`)
+	s.And(`the engine dispatched 4 AI turns`)
 	s.And(`no file outside "tmp" and "tests" changed`)
 	s.Done()
 }

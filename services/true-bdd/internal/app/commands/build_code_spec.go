@@ -80,6 +80,10 @@ func codeStepSpecifications(
 		return specs
 	}
 
+	if source.ConceptsDeclared {
+		return codeConceptSpecifications(source, file, architectureFile, scenarios)
+	}
+
 	if !source.Declared {
 		return specs
 	}

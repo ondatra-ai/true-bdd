@@ -1,13 +1,14 @@
 package catalogue
 
 // Specification is what the spec says about the steps one fix binds: the
-// templates each of the Item's own steps matches, the phrases they reach,
-// and the terms those declare. Declared is false for a host with no catalogue.
+// templates its steps match, the phrases they reach and the terms those declare,
+// or, on a concept host (Declared false), the concepts its steps link to.
 type Specification struct {
 	Declared bool
 	Steps    []PhrasedStep
 	Phrases  []Entry
 	Terms    []TermSpec
+	Concepts []ConceptSpec
 }
 
 // PhrasedStep is one step beside the template of every phrase it
@@ -79,33 +80,42 @@ func (c *Catalogue) reached(steps []Step) []Entry {
 // declaredTerms lists every term the phrases declare, once, in the order
 // they declare it, beside its glossary definitions and its mappings.
 func declaredTerms(phrases []Entry, definitions []Definition, mappings []Mapping) []TermSpec {
+	terms := make([]string, 0)
+	for _, phrase := range phrases {
+		terms = append(terms, phrase.Terms...)
+	}
+
+	return termSpecs(terms, definitions, mappings)
+}
+
+// termSpecs lists each term once, in order, beside every glossary
+// definition and mapping naming it.
+func termSpecs(terms []string, definitions []Definition, mappings []Mapping) []TermSpec {
 	listed := make(map[string]bool)
 	found := make([]TermSpec, 0)
 
-	for _, phrase := range phrases {
-		for _, term := range phrase.Terms {
-			if listed[term] {
-				continue
-			}
-
-			listed[term] = true
-
-			word := TermSpec{Term: term, Means: make([]string, 0, 1), Mappings: make([]Mapping, 0, 1)}
-
-			for _, definition := range definitions {
-				if definition.Term == term {
-					word.Means = append(word.Means, definition.Means)
-				}
-			}
-
-			for _, mapping := range mappings {
-				if mapping.Term == term {
-					word.Mappings = append(word.Mappings, mapping)
-				}
-			}
-
-			found = append(found, word)
+	for _, term := range terms {
+		if listed[term] {
+			continue
 		}
+
+		listed[term] = true
+
+		word := TermSpec{Term: term, Means: make([]string, 0, 1), Mappings: make([]Mapping, 0, 1)}
+
+		for _, definition := range definitions {
+			if definition.Term == term {
+				word.Means = append(word.Means, definition.Means)
+			}
+		}
+
+		for _, mapping := range mappings {
+			if mapping.Term == term {
+				word.Mappings = append(word.Mappings, mapping)
+			}
+		}
+
+		found = append(found, word)
 	}
 
 	return found

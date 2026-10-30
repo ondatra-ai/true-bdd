@@ -4047,7 +4047,7 @@ scenarios:
       - and: the file "services/calc/prepared-second.txt" matches ^prepared
       - but: the file "tests/suite/calc_test.go" is unchanged
   build-code-spec-005-matched-scenario-embedded:
-    description: A failing generated Go test must hand both fix turns its Scenario and the catalogue meanings of its steps
+    description: A failing generated Go test must hand both fix turns its Scenario and the concept meanings of its steps
     service: true-bdd
     path: tests/true-bdd/build_code_test.go
     user_stories:
@@ -4067,16 +4067,16 @@ scenarios:
       - every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Scenario ID:\*\* calc-001-double
       - every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Service:\*\* calc
       - every file matching "tmp/*/*fix-iter*-user.txt" matches tests/calc/calc_test.go
-      - every file matching "tmp/*/*fix-iter*-user.txt" matches the number is doubled
-      - every file matching "tmp/*/*fix-iter*-user.txt" matches The calculator doubles the supplied number.
+      - every file matching "tmp/*/*fix-iter*-user.txt" matches the Owner doubles 3
+      - every file matching "tmp/*/*fix-iter*-user.txt" matches The Owner doubles a whole number with the calculator.
       - every file matching "tmp/*/*fix-iter*-user.txt" matches An integer operand whose double is its sum with itself.
       - every file matching "tmp/*/*fix-iter*-user.txt" matches The integer argument and stdout of the calculator double command.
       - every file matching "tmp/*/*fix-iter*-user.txt" matches The step runs double as a process and compares its integer stdout
       - every file matching "tmp/*/apply-*-user.txt" matches \*\*Scenario ID:\*\* calc-001-double
       - every file matching "tmp/*/apply-*-user.txt" matches \*\*Service:\*\* calc
       - every file matching "tmp/*/apply-*-user.txt" matches tests/calc/calc_test.go
-      - every file matching "tmp/*/apply-*-user.txt" matches the number is doubled
-      - every file matching "tmp/*/apply-*-user.txt" matches The calculator doubles the supplied number.
+      - every file matching "tmp/*/apply-*-user.txt" matches the Owner doubles 3
+      - every file matching "tmp/*/apply-*-user.txt" matches The Owner doubles a whole number with the calculator.
       - every file matching "tmp/*/apply-*-user.txt" matches An integer operand whose double is its sum with itself.
       - every file matching "tmp/*/apply-*-user.txt" matches The integer argument and stdout of the calculator double command.
       - every file matching "tmp/*/apply-*-user.txt" matches The step runs double as a process and compares its integer stdout
@@ -4134,6 +4134,48 @@ scenarios:
       - the engine dispatched no validation AI turns to "claude"
       - the engine dispatched 2 AI turns
       - the engine spawned exactly 3 test runners
+  build-code-spec-008-linked-concepts-embedded:
+    description: On a concept host both fix turns must embed each concept the failing Scenarios link to, with its meaning, its words and its binding, and no concept they do not link
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-spec-refusals.yaml
+      scenario_id: build-code-spec-008-linked-concepts-embedded
+      merge_date: '2026-10-30'
+    timeout: 10m
+    merged_steps:
+      given:
+      - the "build-code-spec-concepts" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build code --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches BUILD CODE COMPLETE
+      - every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Scenario ID:\*\* calc-002-halve
+      - 'every file matching "tmp/*/*fix-iter*-user.txt" matches `installation` \(given concept\): The calculator program is built from its source and ready for the Owner to run\.'
+      - 'every file matching "tmp/*/*fix-iter*-user.txt" matches `doubling` \(when concept\): The Owner doubles a whole number with the calculator\.'
+      - 'every file matching "tmp/*/*fix-iter*-user.txt" matches `halving` \(when concept\): The Owner halves an even whole number with the calculator\.'
+      - 'every file matching "tmp/*/*fix-iter*-user.txt" matches `result` \(then concept\): The calculator prints the whole number the operation produced\.'
+      - 'every file matching "tmp/*/*fix-iter*-user.txt" matches Bound for calc through command: double, command: halve: Build the declared calculator commands'
+      - 'every file matching "tmp/*/*fix-iter*-user.txt" matches Bound for calc through command: halve: Run the kept calculator program''s halve command'
+      - every file matching "tmp/*/*fix-iter*-user.txt" matches An integer operand whose double is its sum with itself\.
+      - every file matching "tmp/*/*fix-iter*-user.txt" matches The integer argument and stdout of the calculator's double and halve commands\.
+      - every file matching "tmp/*/*fix-iter*-user.txt" does not match The Owner squares a whole number
+      - 'every file matching "tmp/*/*fix-iter*-user.txt" does not match \#\#\# Phrases'
+      - every file matching "tmp/*/apply-*-user.txt" matches \*\*Scenario ID:\*\* calc-002-halve
+      - 'every file matching "tmp/*/apply-*-user.txt" matches `installation` \(given concept\): The calculator program is built from its source and ready for the Owner to run\.'
+      - 'every file matching "tmp/*/apply-*-user.txt" matches `doubling` \(when concept\): The Owner doubles a whole number with the calculator\.'
+      - 'every file matching "tmp/*/apply-*-user.txt" matches `halving` \(when concept\): The Owner halves an even whole number with the calculator\.'
+      - 'every file matching "tmp/*/apply-*-user.txt" matches `result` \(then concept\): The calculator prints the whole number the operation produced\.'
+      - 'every file matching "tmp/*/apply-*-user.txt" matches Bound for calc through command: double, command: halve: Build the declared calculator commands'
+      - 'every file matching "tmp/*/apply-*-user.txt" matches Bound for calc through command: halve: Run the kept calculator program''s halve command'
+      - every file matching "tmp/*/apply-*-user.txt" matches An integer operand whose double is its sum with itself\.
+      - every file matching "tmp/*/apply-*-user.txt" matches The integer argument and stdout of the calculator's double and halve commands\.
+      - every file matching "tmp/*/apply-*-user.txt" does not match The Owner squares a whole number
+      - 'every file matching "tmp/*/apply-*-user.txt" does not match \#\#\# Phrases'
+      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+      - the engine dispatched no validation AI turns to "claude"
   build-code-set-001-partial-repair:
     description: A partial repair removes the passing member from the next plan
     service: true-bdd
@@ -6761,7 +6803,7 @@ scenarios:
       - and: the engine spawned no test runners
       - and: no file outside "tmp" changed
   build-steps-writing-001-new-body:
-    description: A missing phrase gets an engine skeleton and an AI body that executes the declared CLI command
+    description: A missing concept's steps get an engine skeleton from the proposed pattern and an AI body that executes the declared CLI command
     service: true-bdd
     path: tests/true-bdd/build_steps_test.go
     user_stories:
@@ -6785,21 +6827,21 @@ scenarios:
       - stdout matches Red without target passed.*scenarios=2
       - the engine spawned exactly 1 test runner with arguments matching -count=1$
       - no file outside "tmp" and "tests" changed
-      - the engine dispatched 1 validation AI turn to "claude"
+      - the engine dispatched 4 validation AI turns to "claude"
       - the engine spawned exactly 1 test runner with arguments matching -list \.
-      - 'every file matching "tmp/*/*fix-iter*-user.txt" matches phrase_mapping:'
+      - 'every file matching "tmp/*/*fix-iter*-user.txt" matches binding:'
       - 'every file matching "tmp/*/apply-*-user.txt" matches interface_document:'
       - every file matching "tmp/*/apply-*-user.txt" matches calc-001-double
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   build-steps-writing-002-all-skeletons-first:
-    description: All missing phrases get compilable skeletons before the first AI turn and each body is written in one walk; whole-suite checks run once
+    description: Every missing concept's skeletons compile before the first body turn and each body is written in one walk; whole-suite checks run once
     service: true-bdd
     path: tests/true-bdd/build_steps_test.go
     user_stories:
     - story: docs/product/stories/build-steps-writing.yaml
       scenario_id: build-steps-writing-002-all-skeletons-first
       merge_date: '2026-10-29'
-    timeout: 25m
+    timeout: 30m
     merged_steps:
       given:
       - the "build-steps-many" project tree
@@ -6813,12 +6855,12 @@ scenarios:
       - stdout matches Scenario list passed
       - no file outside "tmp" and "tests" changed
       - stdout matches All step skeletons written.*items=3
-      - the engine dispatched 3 validation AI turns to "claude"
+      - the engine dispatched 10 validation AI turns to "claude"
       - the engine spawned exactly 1 test runner with arguments matching -list \.
       - the engine spawned exactly 1 test runner with arguments matching -run \^\(Test
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   build-steps-writing-003-slot-order:
-    description: The quoted operation and numeric value are passed to the written definition in template slot order
+    description: The quoted command and the number are passed to the written definition in the proposed pattern's capture order
     service: true-bdd
     path: tests/true-bdd/build_steps_test.go
     user_stories:
@@ -6838,7 +6880,7 @@ scenarios:
       - stdout matches Step coverage passed
       - stdout matches Scenario list passed
       - no file outside "tmp" and "tests" changed
-      - the engine dispatched 1 validation AI turn to "claude"
+      - the engine dispatched 4 validation AI turns to "claude"
       - the engine spawned exactly 1 test runner with arguments matching -list \.
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   build-steps-writing-004-interface-cannot-serve:
@@ -6883,7 +6925,7 @@ scenarios:
       - the command exits with code 1
       - stdout matches action=exit
       - stdout does not match BUILD STEPS COMPLETE
-      - the engine dispatched 1 AI turn
+      - the engine dispatched 4 AI turns
       - no file outside "tmp" and "tests" changed
   engine-term-documents-005-glossary-not-a-list-refuses-build-steps-fix:
     description: The body writer refuses a malformed term list before skeletons, runners or AI
@@ -6948,7 +6990,7 @@ scenarios:
       - the engine spawned exactly 1 test runner with arguments matching -list \.
       - no file outside "tmp" and "tests" changed
       - stdout matches msg="Codex turn sandboxed" label=codex-turn[0-9]+ sandbox=writer
-      - the engine dispatched 1 validation AI turn to "claude"
+      - the engine dispatched 4 validation AI turns to "claude"
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   build-steps-writing-005-outside-tests-refused:
     description: The confined body writer refuses writes to the service and Specification while completing the test body
@@ -6973,7 +7015,7 @@ scenarios:
       - the engine spawned exactly 1 test runner with arguments matching -list \.
       - no file outside "tmp" and "tests" changed
       - stdout matches msg="Tool calls were denied; this turn did less than it was asked to".*role=apply
-      - the engine dispatched 1 validation AI turn to "claude"
+      - the engine dispatched 4 validation AI turns to "claude"
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   build-steps-writing-006-bringup-is-not-red:
     description: Harness bring-up failure without the target fails the red check and names the Scenario
@@ -7016,12 +7058,12 @@ scenarios:
       - stdout matches Scenario green without target.*TestCalc001Double
       - stdout matches Red without target passed
       - stdout matches BUILD STEPS COMPLETE
-      - the engine dispatched 6 AI turns
+      - the engine dispatched 9 AI turns
       - no file outside "tmp" and "tests" changed
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
 
   build-steps-critique-001-operation:
-    description: A when omitting its mapped operation fails critique and returns to the Fix loop
+    description: A when omitting its bound operation fails critique and returns to the Fix loop
     service: true-bdd
     path: tests/true-bdd/build_steps_critique_test.go
     user_stories:
@@ -7039,16 +7081,16 @@ scenarios:
       - the command exits with code 0
       - stdout matches BUILD STEPS COMPLETE
       - stdout matches Step definition critiqued
-      - stdout matches phrase_mapping.*does not call the mapped double operation
-      - the engine dispatched 6 AI turns
-      - the engine dispatched 2 validation AI turns to "claude"
+      - stdout matches concept_binding.*does not call the bound double operation
+      - the engine dispatched 9 AI turns
+      - the engine dispatched 5 validation AI turns to "claude"
       - no file outside "tmp" and "tests" changed
-      - 'every file matching "tmp/*/critique-*-user.txt" matches phrase_mapping:'
+      - 'every file matching "tmp/*/critique-*-user.txt" matches binding:'
       - 'every file matching "tmp/*/critique-*-user.txt" matches interface_document:'
       - every file matching "tmp/*/critique-*-user.txt" matches calc-002-double
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   build-steps-critique-002-assertion:
-    description: An assertion contradicting the phrase fails critique and returns to the Fix loop
+    description: An assertion contradicting the step's concept fails critique and returns to the Fix loop
     service: true-bdd
     path: tests/true-bdd/build_steps_critique_test.go
     user_stories:
@@ -7066,16 +7108,16 @@ scenarios:
       - the command exits with code 0
       - stdout matches BUILD STEPS COMPLETE
       - stdout matches Step definition critiqued
-      - stdout matches phrase_meaning.*assertion contradicts the phrase
-      - the engine dispatched 6 AI turns
-      - the engine dispatched 2 validation AI turns to "claude"
+      - stdout matches concept_meaning.*assertion contradicts the step
+      - the engine dispatched 9 AI turns
+      - the engine dispatched 5 validation AI turns to "claude"
       - no file outside "tmp" and "tests" changed
-      - 'every file matching "tmp/*/critique-*-user.txt" matches phrase_mapping:'
+      - 'every file matching "tmp/*/critique-*-user.txt" matches binding:'
       - 'every file matching "tmp/*/critique-*-user.txt" matches interface_document:'
       - every file matching "tmp/*/critique-*-user.txt" matches calc-002-double
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   build-steps-critique-003-correct:
-    description: A correct given that stores its input passes critique and completes
+    description: A correct given that puts its state in place passes critique and completes
     service: true-bdd
     path: tests/true-bdd/build_steps_critique_test.go
     user_stories:
@@ -7093,11 +7135,11 @@ scenarios:
       - the command exits with code 0
       - stdout matches BUILD STEPS COMPLETE
       - stdout matches Step definition critiqued
-      - the engine dispatched 3 AI turns
-      - the engine dispatched 1 validation AI turn to "claude"
+      - the engine dispatched 6 AI turns
+      - the engine dispatched 4 validation AI turns to "claude"
       - stdout matches role=prompt cli=claude model=claude-sonnet-5
       - no file outside "tmp" and "tests" changed
-      - 'every file matching "tmp/*/critique-*-user.txt" matches phrase_mapping:'
+      - 'every file matching "tmp/*/critique-*-user.txt" matches binding:'
       - 'every file matching "tmp/*/critique-*-user.txt" matches interface_document:'
       - every file matching "tmp/*/critique-*-user.txt" matches calc-002-double
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0

@@ -53,6 +53,28 @@ Tests: {{ join ", " .IDs }}
 {{ else }}- The architecture's word mapping does not map it.
 {{ end }}
 {{ end }}
+{{ else if .Concepts }}
+## What the spec says these steps mean
+
+### Concepts
+{{ range .Concepts }}
+- `{{ .Concept }}` ({{ .Block }} concept): {{ .Means }}
+  Words: {{ if .Terms }}{{ join ", " .Terms }}{{ else }}none{{ end }}
+{{ range .Bindings }}  Bound for {{ .Service }} {{ if .Intent }}by intent: {{ .Intent }}{{ else }}through {{ join ", " .References }}: {{ .Does }}{{ end }}
+{{ else }}  The architecture binds it for no service of these steps.
+{{ end }}{{ end }}
+
+### Words
+{{ range .Terms }}
+#### {{ .Term }}
+{{ range .Means }}- Means: {{ . }}
+{{ else }}- The glossary does not define it.
+{{ end }}
+{{ range .Mappings }}- In the implementation: {{ .Technical }}
+- Observed by: {{ .ObservedBy }}
+{{ else }}- The architecture's word mapping does not map it.
+{{ end }}
+{{ end }}
 {{ end }}
 {{ end }}
 

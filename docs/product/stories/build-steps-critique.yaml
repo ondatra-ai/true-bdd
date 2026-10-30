@@ -8,7 +8,7 @@ story:
   status: IMPLEMENTED
   acceptance_criteria:
   - id: 001-operation
-    description: A when omitting its mapped operation fails critique and returns to the Fix loop
+    description: A when omitting its bound operation fails critique and returns to the Fix loop
     steps:
     - given:
       - the "build-steps-critique-operation" project tree
@@ -19,16 +19,16 @@ story:
       - the command exits with code 0
       - stdout matches BUILD STEPS COMPLETE
       - stdout matches Step definition critiqued
-      - stdout matches phrase_mapping.*does not call the mapped double operation
-      - the engine dispatched 6 AI turns
-      - the engine dispatched 2 validation AI turns to "claude"
+      - stdout matches concept_binding.*does not call the bound double operation
+      - the engine dispatched 9 AI turns
+      - the engine dispatched 5 validation AI turns to "claude"
       - no file outside "tmp" and "tests" changed
-      - 'every file matching "tmp/*/critique-*-user.txt" matches phrase_mapping:'
+      - 'every file matching "tmp/*/critique-*-user.txt" matches binding:'
       - 'every file matching "tmp/*/critique-*-user.txt" matches interface_document:'
       - every file matching "tmp/*/critique-*-user.txt" matches calc-002-double
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   - id: 002-assertion
-    description: An assertion contradicting the phrase fails critique and returns to the Fix loop
+    description: An assertion contradicting the step's concept fails critique and returns to the Fix loop
     steps:
     - given:
       - the "build-steps-critique-assertion" project tree
@@ -39,16 +39,16 @@ story:
       - the command exits with code 0
       - stdout matches BUILD STEPS COMPLETE
       - stdout matches Step definition critiqued
-      - stdout matches phrase_meaning.*assertion contradicts the phrase
-      - the engine dispatched 6 AI turns
-      - the engine dispatched 2 validation AI turns to "claude"
+      - stdout matches concept_meaning.*assertion contradicts the step
+      - the engine dispatched 9 AI turns
+      - the engine dispatched 5 validation AI turns to "claude"
       - no file outside "tmp" and "tests" changed
-      - 'every file matching "tmp/*/critique-*-user.txt" matches phrase_mapping:'
+      - 'every file matching "tmp/*/critique-*-user.txt" matches binding:'
       - 'every file matching "tmp/*/critique-*-user.txt" matches interface_document:'
       - every file matching "tmp/*/critique-*-user.txt" matches calc-002-double
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   - id: 003-correct
-    description: A correct given that stores its input passes critique and completes
+    description: A correct given that puts its state in place passes critique and completes
     steps:
     - given:
       - the "build-steps-critique-correct" project tree
@@ -59,11 +59,11 @@ story:
       - the command exits with code 0
       - stdout matches BUILD STEPS COMPLETE
       - stdout matches Step definition critiqued
-      - the engine dispatched 3 AI turns
-      - the engine dispatched 1 validation AI turn to "claude"
+      - the engine dispatched 6 AI turns
+      - the engine dispatched 4 validation AI turns to "claude"
       - stdout matches role=prompt cli=claude model=claude-sonnet-5
       - no file outside "tmp" and "tests" changed
-      - 'every file matching "tmp/*/critique-*-user.txt" matches phrase_mapping:'
+      - 'every file matching "tmp/*/critique-*-user.txt" matches binding:'
       - 'every file matching "tmp/*/critique-*-user.txt" matches interface_document:'
       - every file matching "tmp/*/critique-*-user.txt" matches calc-002-double
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
