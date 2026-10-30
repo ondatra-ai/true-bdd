@@ -1,7 +1,7 @@
 package steps
 
 import (
-	"errors"
+	"bytes"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -11,26 +11,26 @@ import (
 //truebdd:concept when "halving"
 func concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {
 	const (
-		hostRoot = "../.."
-		pkg      = "./services/calc"
-		command  = "halve"
+		hostRoot    = "../.."
+		packagePath = "./services/calc"
+		commandName = "halve"
 	)
 	number := args[0]
-	cmd := exec.Command("go", "run", pkg, command, number)
+	if _, err := strconv.Atoi(number); err != nil {
+		return fmt.Errorf("%s: captured number %q is not a whole number: %w", commandName, number, err)
+	}
+	var stdout, stderr bytes.Buffer
+	cmd := exec.Command("go", "run", packagePath, commandName, number)
 	cmd.Dir = hostRoot
-	stdout, err := cmd.Output()
-	if err != nil {
-		var exit *exec.ExitError
-		if errors.As(err, &exit) {
-			return fmt.Errorf("go run %s %s %s: %w: %s", pkg, command, number, err, strings.TrimSpace(string(exit.Stderr)))
-		}
-		return fmt.Errorf("go run %s %s %s: %w", pkg, command, number, err)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%s %s: %w: %s", commandName, number, err, strings.TrimSpace(stderr.String()))
 	}
-	printed := strings.TrimSpace(string(stdout))
-	halved, err := strconv.Atoi(printed)
+	value, err := strconv.Atoi(strings.TrimSpace(stdout.String()))
 	if err != nil {
-		return fmt.Errorf("%s %s printed %q, not an integer: %w", command, number, printed, err)
+		return fmt.Errorf("%s %s: stdout %q is not an integer: %w", commandName, number, stdout.String(), err)
 	}
-	state.Result = halved
+	state.Result = value
 	return nil
 }

@@ -1,0 +1,17 @@
+roles:
+  - name: Owner
+    description: Uses the calculator.
+concepts:
+  when:
+    - concept: operation
+      means: The Owner halves or doubles a whole number, positive, zero or negative, with the calculator. Halving rounds an odd number's half toward zero, unless the Owner halves exactly, which keeps the half.
+      terms: [number]
+  then:
+    - concept: output
+      means: What the calculator printed for the operation has, or has no, match for a pattern.
+      terms: [pattern]
+glossary:
+  - term: number
+    means: A whole number, positive, zero or negative.
+  - term: pattern
+    means: A regular expression a printed text is matched against.

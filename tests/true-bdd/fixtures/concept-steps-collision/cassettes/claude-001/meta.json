@@ -25,12 +25,12 @@
     "{\n  \"suite\": \"tests/calc-when-1\",\n  \"service\": \"calc\",\n  \"product\": \"roles:\\n  - name: Owner\\n    description: Uses the calculator.\\nconcepts:\\n  when:\\n    - concept: halving\\n      means: The Owner halves a whole number, positive, zero or negative, with the calculator, which rounds an odd number's half toward zero.\\n      terms: [number]\\n  then:\\n    - concept: result\\n      means: The calculator prints the whole number the halving produced.\\n      terms: [number]\\nglossary:\\n  - term: number\\n    means: A whole number, positive, zero or negative.\\n\",\n  \"steps\": [\n    {\n      \"key\": \"1\",\n      \"block\": \"when\",\n      \"text\": \"the Owner halves -7\"\n    }\n  ]\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 6352,
+  "duration_ms": 4781,
   "request_hash": "sha256:fdbe8c5508ab41229986abaf0f9c0085f48e9e7dee3857d5d45b60701f201b90",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-10-30T05:17:54Z"
+  "recorded_at": "2026-10-30T07:38:06Z"
 }

@@ -1,0 +1,39 @@
+opencli: 0.1
+info:
+  title: Calculator CLI
+  version: '1.0'
+commands:
+  halve:
+    description: Run go run ./services/calc halve [--exact] VALUE from the host root;
+      stdout is VALUE halved and a newline. Without --exact the half is rounded
+      toward zero and printed as an integer; with --exact an odd VALUE's half is
+      printed with one decimal digit.
+    parameters:
+    - name: exact
+      in: flag
+      schema:
+        type: boolean
+    - name: value
+      in: argument
+      required: true
+      schema:
+        type: integer
+    responses:
+      '0':
+        description: The half on stdout
+      '1':
+        description: Invalid arguments
+  double:
+    description: Run go run ./services/calc double VALUE from the host root; stdout
+      is VALUE doubled, as an integer, and a newline.
+    parameters:
+    - name: value
+      in: argument
+      required: true
+      schema:
+        type: integer
+    responses:
+      '0':
+        description: Doubled integer on stdout
+      '1':
+        description: Invalid arguments

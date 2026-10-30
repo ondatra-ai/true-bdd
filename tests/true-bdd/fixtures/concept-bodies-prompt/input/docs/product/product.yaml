@@ -1,0 +1,21 @@
+roles:
+  - name: Owner
+    description: Uses the calculator.
+concepts:
+  given:
+    - concept: toolchain
+      means: The calculator runs on a named toolchain of the suite's fixtures before the Owner acts.
+      terms: [toolchain]
+  when:
+    - concept: halving
+      means: The Owner halves a whole number, positive, zero or negative, with the calculator.
+      terms: [number]
+  then:
+    - concept: result
+      means: The calculator prints the whole number the halving produced.
+      terms: [number]
+glossary:
+  - term: number
+    means: A whole number, positive, zero or negative.
+  - term: toolchain
+    means: The Go tool a halving is run with, a named fixture's stand-in or the installed one.

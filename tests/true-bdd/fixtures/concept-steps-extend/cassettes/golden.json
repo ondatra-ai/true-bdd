@@ -5,9 +5,9 @@
     {
       "path": "tests/calc/steps/concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb.go",
       "kind": "created",
-      "size": 477,
-      "sha256": "dc6b907f77a866831de4eb1fb0ce64fce8c49e159fe4e4163cc945e51323730b",
-      "text": "package steps\n\nimport (\"fmt\"; \"os/exec\"; \"strconv\"; \"strings\")\n\n//truebdd:concept when \"halving\"\nfunc concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb(state *State, args []string) error {\n\tcmd := exec.Command(\"go\", \"run\", \"./services/calc\", \"halve\", args[0])\n\tcmd.Dir = \"../..\"\n\tout, err := cmd.Output()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"halve %s: %w\", args[0], err)\n\t}\n\tstate.Result, err = strconv.Atoi(strings.TrimSpace(string(out)))\n\treturn err\n}\n"
+      "size": 604,
+      "sha256": "03c9c4202508bace1c328336ceb67658ecfbe096ed2ef95325defa3d600181a3",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"halving\"\nfunc concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb(state *State, args []string) error {\n\tcmd := exec.Command(\"go\", \"run\", \"./services/calc\", \"halve\", args[0])\n\tcmd.Dir = \"../..\"\n\tout, err := cmd.Output()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"halve %s: %w\", args[0], err)\n\t}\n\tstate.Result, err = strconv.Atoi(strings.TrimSpace(string(out)))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"halve %s: unexpected stdout %q: %w\", args[0], strings.TrimSpace(string(out)), err)\n\t}\n\treturn nil\n}\n"
     },
     {
       "path": "tests/calc/steps/register.go",

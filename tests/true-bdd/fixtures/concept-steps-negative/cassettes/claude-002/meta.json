@@ -25,12 +25,12 @@
     "{\n  \"product\": \"roles:\\n  - name: Owner\\n    description: Uses the calculator.\\nconcepts:\\n  when:\\n    - concept: halving\\n      means: The Owner halves a whole number, positive, zero or negative, with the calculator, which rounds an odd number's half toward zero.\\n      terms: [number]\\n  then:\\n    - concept: result\\n      means: The calculator prints the whole number the halving produced.\\n      terms: [number]\\nglossary:\\n  - term: number\\n    means: A whole number, positive, zero or negative.\\n\",\n  \"steps\": [\n    {\n      \"key\": \"1\",\n      \"block\": \"when\",\n      \"text\": \"the Owner halves 6\"\n    },\n    {\n      \"key\": \"2\",\n      \"block\": \"when\",\n      \"text\": \"the Owner halves -7\"\n    }\n  ],\n  \"service\": \"calc\",\n  \"bindings\": {\n    \"when:halving\": {\n      \"concept\": {\n        \"Name\": \"halving\",\n        \"Means\": \"The Owner halves a whole number, positive, zero or negative, with the calculator, which rounds an odd number's half toward zero.\",\n        \"Terms\": [\n          \"number\"\n        ],\n        \"Block\": \"when\"\n      },\n      \"binding\": {\n        \"Concept\": \"halving\",\n        \"Block\": \"when\",\n        \"Service\": \"calc\",\n        \"References\": [\n          {\n            \"Command\": \"halve\",\n            \"File\": \"\",\n            \"LogRecord\": \"\",\n            \"OutgoingCall\": \"\",\n            \"OperationID\": \"\",\n            \"Element\": null\n          }\n        ],\n        \"Does\": \"Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result.\",\n        \"Intent\": \"\"\n      }\n    }\n  },\n  \"public_interface\": {\n    \"declaration\": {\n      \"Kind\": \"cli\",\n      \"Document\": \"docs/architecture/calc-cli.yaml\",\n      \"Elements\": null\n    },\n    \"docs/architecture/calc-cli.yaml\": \"opencli: 0.1\\ninfo:\\n  title: Calculator CLI\\n  version: '1.0'\\ncommands:\\n  halve:\\n    description: Run go run ./services/calc halve VALUE from the host root; stdout\\n      is VALUE halved and rounded toward zero, as an integer, and a newline.\\n    parameters:\\n    - name: value\\n      in: argument\\n      required: true\\n      schema:\\n        type: integer\\n    responses:\\n      '0':\\n        description: Halved integer on stdout\\n      '1':\\n        description: Invalid arguments\\n\"\n  }\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 28146,
+  "duration_ms": 28331,
   "request_hash": "sha256:4744294974ea23b3fe1485eb52ce595077ffc68b85d9bff785eba90238e9e1be",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-10-30T05:15:21Z"
+  "recorded_at": "2026-10-30T07:44:03Z"
 }

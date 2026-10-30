@@ -8152,3 +8152,151 @@ scenarios:
       - exactly 1 file matching "tests/calc/steps/concept*.go" is created
       - every file matching "tests/calc/steps/register.go" matches halves \(\\d\+\)\$., halving\)
       - no file outside "tmp" and "tests" changed
+  concept-bodies-001-three-cases:
+    description: A suite whose steps include matches and does not match, a set of operations and an optional
+      word with meaning under their concepts gets patterns capturing each alternative and bodies that tell
+      them apart
+    service: true-bdd
+    path: tests/true-bdd/concept_bodies_test.go
+    timeout: 25m
+    user_stories:
+    - story: docs/product/stories/concept-bodies.yaml
+      scenario_id: concept-bodies-001-three-cases
+      merge_date: '2026-10-30'
+    merged_steps:
+      given:
+      - the "concept-bodies-cases" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches Concept pattern binds.*step="the calculator's output does not match .*captures="does
+        not
+      - stdout matches Concept pattern binds.*step="the Owner doubles 6" captures=.*doubl
+      - stdout matches Concept pattern binds.*step="the Owner exactly halves 7" captures=.*exactly
+      - stdout matches BUILD STEPS COMPLETE
+      - no file outside "tmp" and "tests" changed
+      - the shell command "go test -tags bdd -count=1 ./tests/calc/..." run in "." exits with code 0
+  concept-bodies-002-fixture-prompt:
+    description: The body turn's saved prompts hold the fixture input of a Scenario the pattern binds
+    service: true-bdd
+    path: tests/true-bdd/concept_bodies_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/concept-bodies.yaml
+      scenario_id: concept-bodies-002-fixture-prompt
+      merge_date: '2026-10-30'
+    merged_steps:
+      given:
+      - the "concept-bodies-prompt" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - the command exits with code 0
+      - every file matching "tmp/*/*fix-iter*-user.txt" matches CALC_REAL_GO must name the real go
+      - every file matching "tmp/*/apply-*-user.txt" matches CALC_REAL_GO must name the real go
+      - 'every file matching "tmp/*/apply-*-user.txt" matches fixture: tests/calc/fixtures/offline'
+      - stdout matches BUILD STEPS COMPLETE
+      - no file outside "tmp" and "tests" changed
+  concept-bodies-003-fixture-contract:
+    description: The critique passes a body that meets a contract a bound Scenario's fixture input states
+      and its binding does not
+    service: true-bdd
+    path: tests/true-bdd/concept_bodies_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/concept-bodies.yaml
+      scenario_id: concept-bodies-003-fixture-contract
+      merge_date: '2026-10-30'
+    merged_steps:
+      given:
+      - the "concept-bodies-contract" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches Step definition critiqued.*findings=\[\]
+      - every file matching "tests/calc/steps/concept*.go" matches CALC_REAL_GO
+      - stdout matches BUILD STEPS COMPLETE
+      - no file outside "tmp" and "tests" changed
+      - the shell command "go test -tags bdd -count=1 ./tests/calc/..." run in "." exits with code 0
+  concept-bodies-004-extra-requirement:
+    description: The critique fails a body that requires more than its binding and its fixture inputs state,
+      and the body goes back to its writer
+    service: true-bdd
+    path: tests/true-bdd/concept_bodies_test.go
+    timeout: 20m
+    user_stories:
+    - story: docs/product/stories/concept-bodies.yaml
+      scenario_id: concept-bodies-004-extra-requirement
+      merge_date: '2026-10-30'
+    merged_steps:
+      given:
+      - the "concept-bodies-extra" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches Step definition critiqued.*concept_binding
+      - stdout matches Step definition critiqued.*findings=\[\]
+      - stdout does not match Critique sent the patterns back
+      - every file matching "tests/calc/steps/concept*.go" does not match CALC_LICENCE|\.Halve\(
+      - stdout matches BUILD STEPS COMPLETE
+      - no file outside "tmp" and "tests" changed
+      - the shell command "go test -tags bdd -count=1 ./tests/calc/..." run in "." exits with code 0
+  concept-bodies-005-wrong-capture:
+    description: The critique fails a pattern that captures the wrong part of a step, and the Item is repaired
+      through a new proposal the engine checks before rewriting its skeleton
+    service: true-bdd
+    path: tests/true-bdd/concept_bodies_test.go
+    timeout: 20m
+    user_stories:
+    - story: docs/product/stories/concept-bodies.yaml
+      scenario_id: concept-bodies-005-wrong-capture
+      merge_date: '2026-10-30'
+    merged_steps:
+      given:
+      - the "concept-bodies-capture" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches Step definition critiqued.*pattern_captures
+      - stdout matches Critique sent the patterns back to the proposal
+      - stdout matches Pattern proposal accepted
+      - stdout matches Concept skeletons rewritten.*removed=1
+      - stdout matches Concept pattern binds.*step="the Owner halves 64" captures=64
+      - stdout matches BUILD STEPS COMPLETE
+      - no file outside "tmp" and "tests" changed
+      - the shell command "go test -tags bdd -count=1 ./tests/calc/..." run in "." exits with code 0
+  concept-definitions-001-closure:
+    description: On a concept host the step-definitions check fails a definition recording no declared concept
+      of its step's block and a step binding two definitions, and passes a Scenario whose every step binds
+      one definition recording its concept
+    service: true-bdd
+    path: tests/true-bdd/concept_definitions_test.go
+    user_stories:
+    - story: docs/product/stories/concept-definitions.yaml
+      scenario_id: concept-definitions-001-closure
+      merge_date: '2026-10-30'
+    merged_steps:
+      given:
+      - the "concept-definitions-closure" project tree
+      when:
+      - the Quality Engineer runs "scen check"
+      then:
+      - the command exits with code 1
+      - stdout matches check=step-definitions subjectID=calc-001-halve promptIndex=1 answer=fail context=.*the
+        Owner halves 6.*which records no concept
+      - stdout matches check=step-definitions subjectID=calc-002-double promptIndex=1 answer=fail context=.*the
+        Owner doubles 6.* binds to 2 step definitions
+      - stdout matches check=step-definitions subjectID=calc-004-even promptIndex=1 answer=fail context=.*the
+        result is even.*halving.*, which is not a declared then concept
+      - stdout matches check=step-definitions subjectID=calc-003-double promptIndex=1 answer=pass
+      - the engine dispatched no AI turns
+      - no file outside "tmp" changed
