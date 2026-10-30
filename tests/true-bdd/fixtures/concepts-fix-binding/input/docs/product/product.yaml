@@ -9,7 +9,7 @@ concepts:
     - greeting
   when:
   - concept: request greeting
-    means: Call greet once.
+    means: Call greet once for the named person with the optional loud flag omitted.
     terms:
     - greeting
   then:

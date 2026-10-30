@@ -7434,7 +7434,7 @@ scenarios:
       - the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "msg":"Cell validation started","subjectID":"alpha","promptIndex":1
       - the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "msg":"Cell validation started","subjectID":"beta","promptIndex":1
   concept-link-009-threshold-nine:
-    description: A near miss must fail at threshold nine
+    description: A real-model near miss scored seven fails at threshold nine; the engine threshold test pins the same-answer boundary
     service: true-bdd
     path: tests/true-bdd/concept_link_test.go
     timeout: 10m
@@ -7452,7 +7452,7 @@ scenarios:
       - stdout matches threshold 9
       - stdout matches no concept of when
   concept-link-010-threshold-eight:
-    description: A borderline score of eight must pass at threshold eight
+    description: A real-model borderline score of eight links at threshold eight; the engine threshold test pins rejection of that same score at nine and the default
     service: true-bdd
     path: tests/true-bdd/concept_link_test.go
     timeout: 10m
