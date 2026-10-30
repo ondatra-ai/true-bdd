@@ -109,13 +109,13 @@ Apply the following changes to the acceptance criteria for this story.
 
 ## Required Changes
 
-Only AC-1 is faulted by the failed check. AC-2, AC-3 and AC-4 already use concrete, observable verbs (`displays`, `states`) and are reproduced below unchanged.
+Only AC-1 is faulted by the failed check. AC-2, AC-3, and AC-4 contain no forbidden action verbs and are reproduced below exactly as they stand — same description, same steps, word for word. Do not alter them.
 
 ### Change #1: AC-1
 **Before (then step):** "Claude handles the summary request and displays a summary of 150 words or fewer in the conversation"
-**Issue:** The step uses the forbidden action verb 'handle' from the product document's `vocabulary.forbidden_actions` — it "hides what the system observably does with the input." The clause "Claude handles the summary request and" adds no observable outcome beyond the display that the same step already states, so it is dropped rather than replaced with another verb. The description already names the observable action (`display`) and needs no change.
-**After (description):** "Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc."
-**After (steps):**
+**Issue:** The `then` step uses the forbidden action verb 'handle' (`forbidden_actions` entry: name 'handle', reason "Hides what the system observably does with the input.", replacement "Name the observable action: displays, returns, lists, rejects."). The clause "handles the summary request" hides the interaction mechanism, and the observable action — displaying the summary — is already stated in the same step. The product document declares no `catalogue:`, so the `replacement` guidance alone applies: drop the 'handles the summary request' clause and keep only the observable action.
+**After (description):** unchanged — "Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc." (the description contains no forbidden verb)
+**After (steps):** the `given` and `when` steps already comply and stay unchanged; only the `then` step is rewritten:
 ```yaml
 - given:
     - "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
@@ -125,7 +125,7 @@ Only AC-1 is faulted by the failed check. AC-2, AC-3 and AC-4 already use concre
     - "Claude displays a summary of 150 words or fewer in the conversation"
 ```
 
-No acceptance criteria are added, merged or removed.
+No new acceptance criteria are added, and none are merged or removed — the failed check is limited to forbidden action verbs in existing steps. The role wording "Claude User" from the story's as_a clause is preserved exactly in every Given/When/Then step.
 
 ## Complete Fixed Acceptance Criteria
 

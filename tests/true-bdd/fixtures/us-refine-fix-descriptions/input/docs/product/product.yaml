@@ -1,8 +1,3 @@
-# Product document (BDD test fixture stub).
-# Read by checklist prompts as the product reference. The engine reads
-# only its `catalogue:`, which it does not declare, so `us refine`'s
-# step-phrase check passes every Story as not checked.
-
 title: "MCP Google Docs Editor (BDD fixture stub)"
 summary: "Synthetic product document for BDD fixtures — deliberately minimal."
 
