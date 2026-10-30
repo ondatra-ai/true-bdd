@@ -49,32 +49,34 @@ Then:
 
 ## Fix Prompt to Apply
 
-Fix the declared-terms finding for E2E-001 / mcp-service by defining the one undefined term in the product glossary. The then concept `reply time` already declares `latency` in its `terms` list; only the glossary entry is missing, so nothing else changes.
+Product Owner — one product glossary entry is missing. Scenario E2E-001 (service mcp-service, check declared-terms) binds the Then concept 'reply time', whose declaration at docs/product/product.yaml lists terms [mcp service, reply, latency]. The glossary defines "mcp service" and "reply" but not "latency", so the concept names an undefined term.
 
-Owner: Product Owner (product meanings).
+The meaning is already fixed by the product document itself, so no new meaning is invented: the "reply" entry says a reply is "What the MCP service sends back for one message, and how long it took to arrive … its content and its delay are both behaviour", and the 'reply time' concept means "The latency of the MCP service's reply to the message is at most a stated number of milliseconds." Latency is therefore the reply's delay, measured in milliseconds.
 
-Apply exactly one edit, to `docs/product/product.yaml`. Insert the new entry at the head of `glossary:` so the entries stay in alphabetical order (latency, mcp service, reply). The meaning is taken verbatim in substance from the product's own `reply` glossary entry ("and how long it took to arrive ... its delay [is] behaviour") and from the `reply time` concept's `means` ("at most a stated number of milliseconds") — not from any Internal code.
+Propose one glossary entry appended after the "reply" entry in docs/product/product.yaml. Nothing else changes: the Scenario, the 'reply time' concept declaration (including its terms list), architecture.terms and architecture.concepts all stay exactly as they are.
 
-Edit(`docs/product/product.yaml`)
+File: docs/product/product.yaml
 
 old_string:
-```
-glossary:
-  - term: mcp service
-```
+  - term: reply
+    means: >-
+      What the MCP service sends back for one message, and how long it
+      took to arrive. A client waits on it, so its content and its delay
+      are both behaviour.
 
 new_string:
-```
-glossary:
+  - term: reply
+    means: >-
+      What the MCP service sends back for one message, and how long it
+      took to arrive. A client waits on it, so its content and its delay
+      are both behaviour.
   - term: latency
     means: >-
-      How long a reply takes to arrive: the delay between a client
-      sending its message to the MCP service and that message's reply
-      reaching the client, measured in milliseconds.
-  - term: mcp service
-```
+      How long a reply took to arrive: the delay from the moment a role
+      sends the message to the moment the MCP service's reply is back,
+      measured in milliseconds.
 
-Do not touch anything else: no change to the `reply time` concept, no change to `architecture.terms` or `architecture.concepts` (this check is declared-terms only), and no change to any Scenario, generated test or step definition.
+Apply this at the menu only after you confirm the wording of the meaning.
 
 ---
 

@@ -1,9 +1,3 @@
-# Product document for `fix-loop-refine-feedback`.
-#
-# Its concepts cover every step of E2E-001, and the glossary defines
-# every term they declare but "latency"; the refined fix adds the entry
-# that defines it, shaped as the feedback asks.
-
 title: "Fixture host project"
 
 description:
@@ -18,11 +12,6 @@ roles:
     definition: Writes the clients that send the MCP service its requests.
 
 glossary:
-  - term: latency
-    means: >-
-      How long a reply takes to arrive, as the client clock measures it:
-      the time from when the client sends its message until the reply
-      reaches it, in milliseconds.
   - term: mcp service
     means: >-
       The service this project builds: it takes a message from a client
@@ -32,6 +21,11 @@ glossary:
       What the MCP service sends back for one message, and how long it
       took to arrive. A client waits on it, so its content and its delay
       are both behaviour.
+  - term: latency
+    means: >-
+      How long a reply takes to arrive, as the client's clock measures
+      it: from the moment the client sends the message to the moment the
+      reply arrives back at the client, in milliseconds.
 
 concepts:
   given:

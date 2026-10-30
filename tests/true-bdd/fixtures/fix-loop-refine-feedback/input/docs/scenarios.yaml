@@ -1,9 +1,3 @@
-# Registry seed for `fix-loop-refine-feedback`.
-#
-# One Scenario a Story claims, its last step's concept declaring a term
-# the glossary does not define. The refined fix must leave this file
-# exactly as it is.
-
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
   version: "2.0"

@@ -49,13 +49,17 @@ Then:
 
 ## Fix Prompt to Apply
 
-Proposal for the System Architect's sign-off is not needed here: this is a product meaning, so it goes to the **Product Owner**.
+Proposal for the Product Owner — one glossary entry in the product document, nothing else.
 
-Check: `declared-terms` — E2E-001, service `mcp-service`. The `then` concept `reply time` declares the term `latency`, which `docs/product/product.yaml` glossary does not define. The owner's answer to the one question asked (`latency-meaning`) is copied into `means` verbatim, with only the introductory "It means" removed, kept on one YAML scalar line.
+Check: declared-terms, Scenario E2E-001, service mcp-service.
+Finding: the `then` concept 'reply time' declares the term "latency", which the glossary in `docs/product/product.yaml` does not define.
+Answer received for `latency-meaning`: "It means the round trip from sending the message to receiving its reply, in milliseconds".
 
-One edit, to the product document only. No Scenario, generated test or step definition is touched, and no concept, binding or Word mapping changes.
+Owner: Product Owner (product meaning). No binding, `architecture.terms`, `architecture.concepts`, Public interface, Scenario, generated test or step definition changes are needed — the concept 'reply time' and its `terms: [mcp service, reply, latency]` list stay exactly as written.
 
-File: `docs/product/product.yaml`
+Apply exactly this single edit:
+
+File: docs/product/product.yaml
 
 old_string:
 ```
@@ -64,6 +68,8 @@ old_string:
       What the MCP service sends back for one message, and how long it
       took to arrive. A client waits on it, so its content and its delay
       are both behaviour.
+
+concepts:
 ```
 
 new_string:
@@ -75,11 +81,13 @@ new_string:
       are both behaviour.
   - term: latency
     means: the round trip from sending the message to receiving its reply, in milliseconds
+
+concepts:
 ```
 
-This adds the glossary entry `latency` after `reply`, so every term `reply time` declares (`mcp service`, `reply`, `latency`) is defined. The person's wording and pronouns are preserved exactly — "its reply" is left as they wrote it, not expanded.
+Notes on the wording: `means` is the answer copied verbatim with only the introductory "It means" removed; the person's wording and pronouns are preserved ("its reply" is left as-is, not expanded), and `means` stays on one YAML scalar line. The entry is appended as the last glossary entry, matching the order the concept's `terms` list uses (mcp service, reply, latency).
 
-Apply this edit only after the Product Owner approves it at the menu.
+Confirm at the menu before applying.
 
 ---
 
