@@ -128,6 +128,6 @@ story:
       - stdout matches Scenario green without target.*TestCalc001Double
       - stdout matches Red without target passed
       - stdout matches BUILD STEPS COMPLETE
-      - the engine dispatched 6 AI turns
+      - the engine dispatched 9 AI turns
       - no file outside "tmp" and "tests" changed
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0

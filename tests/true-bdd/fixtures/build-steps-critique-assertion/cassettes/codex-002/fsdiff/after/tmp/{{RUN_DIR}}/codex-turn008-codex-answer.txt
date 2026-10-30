@@ -1,0 +1,7 @@
+Changed `==` to `!=`; all other content is unchanged. The steps package compiles successfully.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-then-result-iter2-result.yaml ===
+applied: true
+target: "tests/calc/steps/concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e.go"
+summary: "Repaired the result assertion to fail on mismatch and pass on equality."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-then-result-iter2-result.yaml ===

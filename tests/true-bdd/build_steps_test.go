@@ -241,7 +241,7 @@ func TestBuildStepsWriting007GreenBodyRepaired(t *testing.T) {
 	s.And(`stdout matches Scenario green without target.*TestCalc001Double`)
 	s.And(`stdout matches Red without target passed`)
 	s.And(`stdout matches BUILD STEPS COMPLETE`)
-	s.And(`the engine dispatched 6 AI turns`)
+	s.And(`the engine dispatched 9 AI turns`)
 	s.And(`no file outside "tmp" and "tests" changed`)
 	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
 	s.Done()
