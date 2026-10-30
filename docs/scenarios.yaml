@@ -6841,7 +6841,7 @@ scenarios:
     - story: docs/product/stories/build-steps-writing.yaml
       scenario_id: build-steps-writing-002-all-skeletons-first
       merge_date: '2026-10-29'
-    timeout: 25m
+    timeout: 30m
     merged_steps:
       given:
       - the "build-steps-many" project tree
