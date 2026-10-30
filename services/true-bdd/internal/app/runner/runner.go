@@ -49,6 +49,9 @@ type Spec[I any] struct {
 	// OmitConceptJudgements walks no concept judgement: build steps answers
 	// its grouping and proposals before the walk, on Items of their own.
 	OmitConceptJudgements bool
+	// PromptsLogged means LoadItems logged the run's one "Loaded prompts"
+	// record, which the coverage census reads as the start of a run's log.
+	PromptsLogged bool
 	// ConfineClaudeWriter runs a Claude applier as the guarded writer, held to
 	// the applier's write roots; build steps' writer may write only the tests.
 	ConfineClaudeWriter bool
@@ -142,12 +145,14 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 		maxAttempts = doc.Config.MaxApplyAttempts
 	}
 
-	slog.Info("Loaded prompts",
-		"command", spec.Name,
-		"items", len(items),
-		"prompts", len(prompts),
-		"max_apply_attempts", maxAttempts,
-	)
+	if !spec.PromptsLogged {
+		slog.Info("Loaded prompts",
+			"command", spec.Name,
+			"items", len(items),
+			"prompts", len(prompts),
+			"max_apply_attempts", maxAttempts,
+		)
+	}
 
 	builder := newReportBuilder()
 	eng := buildSpecEngine(spec, builder, items, maxAttempts)

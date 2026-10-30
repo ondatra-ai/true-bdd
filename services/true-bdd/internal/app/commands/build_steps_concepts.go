@@ -320,7 +320,8 @@ func listConceptItems(deps BuildStepsDeps, discovery *conceptDiscovery) error {
 		slog.Error("Step coverage failed", "finding", finding)
 	}
 
-	err = recordStepCoverage(deps.TmpDir, prompts, findings, len(discovery.items))
+	// Grouping logged this run's one "Loaded prompts" record already.
+	err = recordStepCoverage(deps.TmpDir, prompts, findings, len(discovery.items), false)
 	if err != nil {
 		return err
 	}

@@ -90,7 +90,7 @@ func runTemplateBuildSteps(ctx context.Context, deps BuildStepsDeps,
 		slog.Error("Step coverage failed", "finding", finding)
 	}
 
-	err = recordStepCoverage(deps.TmpDir, prompts, findings, len(items))
+	err = recordStepCoverage(deps.TmpDir, prompts, findings, len(items), true)
 	if err != nil {
 		return err
 	}

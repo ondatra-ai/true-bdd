@@ -53,7 +53,7 @@ func runBuildStepsFix(ctx context.Context, deps BuildStepsDeps, registryFile, ar
 
 	return runner.Run(ctx, runner.Spec[*BuildStepsItem]{
 		Name: "build steps", ChecklistName: buildStepsChecklistName, Fix: true, ConfineClaudeWriter: true,
-		OmitConceptJudgements: concepts, LoadItems: load, BeforeEvaluate: execution.beforeEvaluate,
+		OmitConceptJudgements: concepts, PromptsLogged: concepts, LoadItems: load, BeforeEvaluate: execution.beforeEvaluate,
 		PostFix: execution.postFix, PostNotApplied: execution.postNotApplied,
 		Finalize: execution.finalize, CheckConvergence: execution.checkConvergence,
 		GetSubject: func(item *BuildStepsItem) (string, string) { return item.subjectID, item.Label() },
