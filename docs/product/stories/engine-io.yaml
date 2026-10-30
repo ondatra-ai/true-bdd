@@ -41,7 +41,7 @@ story:
       - the codex writer uses fixture-controlled authentication and CLIs
       - the engine uses an observed fixture Claude CLI
       - Git hook variables point outside the project
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:
@@ -105,7 +105,7 @@ story:
     steps:
     - given:
       - the "engine-io-atomic" project tree
-      - the project prepares atomic replacement probes
+      - the project tree holds atomic replacement probes
     - when:
       - the System Architect runs "build tests --fix" after planting a stale staging symlink
     - then:
@@ -130,7 +130,7 @@ story:
     - given:
       - the "engine-io-claude-writer" project tree
       - the engine uses an observed fixture Claude CLI
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:

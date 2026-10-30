@@ -23,7 +23,7 @@ story:
           steps:
             - given:
                 - the "scen-check-fix-records-phrase" project tree
-                - the Quality Engineer answers "1" to every question
+                - the Quality Engineer's answer to every question is "1"
             - when:
                 - the Quality Engineer runs "scen check --fix"
             - then:
@@ -43,7 +43,7 @@ story:
           steps:
             - given:
                 - the "scen-check-fix-records-term" project tree
-                - the Quality Engineer answers "1" to every question
+                - the Quality Engineer's answer to every question is "1"
             - when:
                 - the Quality Engineer runs "scen check --fix"
             - then:
@@ -63,7 +63,7 @@ story:
           steps:
             - given:
                 - the "scen-check-fix-records-mapping" project tree
-                - the Quality Engineer answers "1" to every question
+                - the Quality Engineer's answer to every question is "1"
             - when:
                 - the Quality Engineer runs "scen check --fix"
             - then:
@@ -83,7 +83,7 @@ story:
           steps:
             - given:
                 - the "scen-check-fix-merges-phrases" project tree
-                - the Quality Engineer answers "1" to every question
+                - the Quality Engineer's answer to every question is "1"
             - when:
                 - the Quality Engineer runs "scen check --fix"
             - then:
@@ -104,7 +104,7 @@ story:
             - given:
                 - the "scen-check-fix-rewrites-phrase-meaning" project tree
                 - and: the "scen-check" checklist is narrowed to its "whether each catalogue phrase this scenario's steps use" prompt
-                - the Quality Engineer answers "1" to every question
+                - the Quality Engineer's answer to every question is "1"
             - when:
                 - the Quality Engineer runs "scen check --fix"
             - then:
@@ -122,7 +122,7 @@ story:
             - given:
                 - the "scen-check-fix-rewrites-phrase-use" project tree
                 - and: the "scen-check" checklist is narrowed to its "whether this scenario uses each catalogue phrase" prompt
-                - the Quality Engineer answers "1" to every question
+                - the Quality Engineer's answer to every question is "1"
             - when:
                 - the Quality Engineer runs "scen check --fix"
             - then:
@@ -140,7 +140,7 @@ story:
           steps:
             - given:
                 - the "scen-check-fix-rewrites-description" project tree
-                - the Quality Engineer answers "1" to every question
+                - the Quality Engineer's answer to every question is "1"
             - when:
                 - the Quality Engineer runs "scen check --fix"
             - then:

@@ -13,8 +13,8 @@ story:
     - given:
       - the "claude-guard-read-outside" project tree
       - claude's write policy lets the turn write under "tests"
-      - claude names the tool "Read"
-      - claude names the path "/true-bdd-neighbour/secrets.txt" as written
+      - the tool call names the tool "Read"
+      - the tool call names the path "/true-bdd-neighbour/secrets.txt" as written
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -26,7 +26,7 @@ story:
     - given:
       - the "claude-guard-read-relative-escape" project tree
       - claude's write policy lets the turn write under "tests"
-      - claude pipes the hook payload naming the tool "Glob" and the path "../neighbour"
+      - the hook payload names the tool "Glob" and the path "../neighbour"
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -39,8 +39,8 @@ story:
       - the "claude-guard-read-symlink-escape" project tree
       - claude's write policy lets the turn write under "tests"
       - the project tree's "node_modules/shared" is a symbolic link to "../../"
-      - claude names the tool "Grep"
-      - claude names the file "node_modules/shared/notes.md" of the project tree
+      - the tool call names the tool "Grep"
+      - the tool call names the file "node_modules/shared/notes.md" of the project tree
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -52,7 +52,7 @@ story:
     - given:
       - the "claude-guard-read-unnamed-path" project tree
       - claude's write policy lets the turn write under "tests"
-      - claude names the tool "Read"
+      - the tool call names the tool "Read"
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -63,9 +63,9 @@ story:
     - given:
       - the "claude-guard-read-missing-root" project tree
       - claude's write policy lets the turn write under "tests"
-      - claude hands the guard a write policy with no read root
-      - claude names the tool "Read"
-      - claude names the file "docs/README.md" of the project tree
+      - claude's write policy names no directory to read
+      - the tool call names the tool "Read"
+      - the tool call names the file "docs/README.md" of the project tree
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -77,8 +77,8 @@ story:
     - given:
       - the "claude-guard-read-relative-path" project tree
       - claude's write policy lets the turn write under "tests"
-      - claude names the tool "Read"
-      - claude names the path "docs/README.md" as written
+      - the tool call names the tool "Read"
+      - the tool call names the path "docs/README.md" as written
     - when:
       - claude asks the guard about the tool call
     - then:

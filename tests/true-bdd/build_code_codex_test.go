@@ -26,7 +26,7 @@ import (
 func TestBuildCodeCodex001Selection(t *testing.T) {
 	s := scenarios.New(t, "build-code-codex-001-selection")
 	s.Given(`the "build-code-codex-selection" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout does not match msg="Writer turn failed"`)
@@ -48,7 +48,7 @@ func TestBuildCodeCodex001Selection(t *testing.T) {
 func TestBuildCodeCodex002Nonzero(t *testing.T) {
 	s := scenarios.New(t, "build-code-codex-002-nonzero")
 	s.Given(`the "build-code-codex-nonzero" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches level=WARN msg="Writer turn failed" outcome="non-zero exit"`)
@@ -71,7 +71,7 @@ func TestBuildCodeCodex002Nonzero(t *testing.T) {
 func TestBuildCodeCodex003MissingRoot(t *testing.T) {
 	s := scenarios.New(t, "build-code-codex-003-missing-root")
 	s.Given(`the "build-code-codex-missing-root" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout does not match msg="Writer turn failed"`)

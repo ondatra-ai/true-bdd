@@ -12,7 +12,7 @@ story:
     steps:
     - given:
       - the "build-code-partial" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:
@@ -30,7 +30,7 @@ story:
     steps:
     - given:
       - the "build-code-grouped" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:
@@ -47,7 +47,7 @@ story:
     steps:
     - given:
       - the "build-code-mixed-build" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:
@@ -63,7 +63,7 @@ story:
     steps:
     - given:
       - the "build-code-missing-member" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:
@@ -78,7 +78,7 @@ story:
     steps:
     - given:
       - the "build-code-shrinking-bound" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:
@@ -94,7 +94,7 @@ story:
     steps:
     - given:
       - the "build-code-no-test-files" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:

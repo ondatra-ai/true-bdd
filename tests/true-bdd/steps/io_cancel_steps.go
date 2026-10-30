@@ -19,6 +19,7 @@ func registerIOCancelSteps(suite *bddgo.Suite[State]) {
 	suite.Step(`^the CLI descendant has stopped$`, assertDescendantStopped)
 }
 
+//truebdd:concept when "a command runs under interference"
 func cancelActiveCLI(state *State, args []string) error {
 	fixture, err := filepath.Abs(state.Fixture.Dir)
 	if err != nil {
@@ -70,6 +71,7 @@ func readIOPID(path string) (int, error) {
 	return pid, nil
 }
 
+//truebdd:concept then "AI CLI observations"
 func assertDescendantStopped(state *State, _ []string) error {
 	pid, err := readIOPID(filepath.Join(state.Result.TmpDir, "tmp/descendant.pid"))
 	if err != nil {

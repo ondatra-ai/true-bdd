@@ -25,7 +25,7 @@ story:
             - given:
                 - the "us-refine-fix-desc-qualifier" project tree
                 - and: the "us-refine" checklist is narrowed to its "whether its description field contains a vague word" prompt
-                - the Product Owner answers "1" to every question
+                - the Product Owner's answer to every question is "1"
             - when:
                 - the Product Owner runs "us refine 96.6 --fix"
             - then:
@@ -46,7 +46,7 @@ story:
             - given:
                 - the "us-refine-fix-descriptions" project tree
                 - and: the "us-refine" checklist is narrowed to its "whether its description field follows the rule-based format" prompt
-                - the Product Owner answers "1" to every question
+                - the Product Owner's answer to every question is "1"
             - when:
                 - the Product Owner runs "us refine 96.2 --fix"
             - then:
@@ -68,7 +68,7 @@ story:
             - given:
                 - the "us-refine-fix-forbidden-verb" project tree
                 - and: the "us-refine" checklist is narrowed to its "use action verbs from the forbidden_actions list" prompt
-                - the Product Owner answers "1" to every question
+                - the Product Owner's answer to every question is "1"
             - when:
                 - the Product Owner runs "us refine 96.8 --fix"
             - then:
@@ -89,7 +89,7 @@ story:
             - given:
                 - the "us-refine-fix-step-qualifier" project tree
                 - and: the "us-refine" checklist is narrowed to its "whether its steps field contains a vague word" prompt
-                - the Product Owner answers "1" to every question
+                - the Product Owner's answer to every question is "1"
             - when:
                 - the Product Owner runs "us refine 96.7 --fix"
             - then:
@@ -110,7 +110,7 @@ story:
             - given:
                 - the "us-refine-fix-steps" project tree
                 - and: the "us-refine" checklist is narrowed to its "whether its steps field follows the Given/When/Then format" prompt
-                - the Product Owner answers "1" to every question
+                - the Product Owner's answer to every question is "1"
             - when:
                 - the Product Owner runs "us refine 96.5 --fix"
             - then:
@@ -130,7 +130,7 @@ story:
             - given:
                 - the "us-refine-fix-keeps-feature" project tree
                 - and: the "us-refine" checklist is narrowed to its "whether its description field contains a vague word" prompt
-                - the Product Owner answers "1" to every question
+                - the Product Owner's answer to every question is "1"
             - when:
                 - the Product Owner runs "us refine doc-summary --fix"
             - then:
@@ -149,7 +149,7 @@ story:
           steps:
             - given:
                 - the "us-refine-fix-records-phrase" project tree
-                - the Product Owner answers "1" to every question
+                - the Product Owner's answer to every question is "1"
             - when:
                 - the Product Owner runs "us refine doc-outline --fix"
             - then:

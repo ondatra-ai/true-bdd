@@ -2,6 +2,7 @@ package steps
 
 import "path/filepath"
 
+//truebdd:concept when "a command runs under interference"
 func runGroupingChangedBinding(state *State, _ []string) error {
 	if state.Fixture == nil {
 		return state.fail("%w", ErrNoTreePrepared)

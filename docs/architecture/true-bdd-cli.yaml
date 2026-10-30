@@ -18,7 +18,7 @@
 #     .invocation for claude and codex;
 #   - the prompt templates' inputs: architecture.prompt_data;
 #   - the exit status rule: architecture.terms[exit code].
-# The Phrase mapping (architecture.phrases) references the names declared
+# The Concept bindings (architecture.concepts) reference the names declared
 # below: a command by its path, an extension by its key.
 
 opencli: "1.0.0"
@@ -163,7 +163,7 @@ extensions:
       access: read-write
     product-document:
       path: docs/product/product.yaml
-      format: The product document (documents.product); us refine --fix and scen check --fix add Catalogue and glossary entries.
+      format: The product document (documents.product); us refine --fix and scen check --fix add concepts, or Catalogue entries on a template host, and glossary entries.
       access: read-write
     stories:
       path: docs/product/stories/<story-id>-*.yaml
@@ -171,7 +171,7 @@ extensions:
       access: read-write
     architecture-document:
       path: docs/architecture/architecture.yaml
-      format: The architecture document (documents.architecture_yaml); scen check --fix writes Word mappings, Public interface declarations and Phrase mapping entries.
+      format: The architecture document (documents.architecture_yaml); scen check --fix writes Word mappings, Public interface declarations and Concept bindings, or Phrase mapping entries on a template host.
       access: read-write
     interface-documents:
       path: the documents the architecture's public_interface declarations name

@@ -12,7 +12,7 @@ story:
     steps:
     - given:
       - the "concept-steps-collision" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build steps --fix"
     - then:
@@ -27,7 +27,7 @@ story:
     steps:
     - given:
       - the "concept-steps-unused" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build steps --fix"
     - then:
@@ -41,7 +41,7 @@ story:
     steps:
     - given:
       - the "concept-steps-negative" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build steps --fix"
     - then:
@@ -55,7 +55,7 @@ story:
     steps:
     - given:
       - the "concept-steps-resume" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build steps --fix"
     - then:
@@ -72,7 +72,7 @@ story:
     steps:
     - given:
       - the "concept-steps-extend" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build steps --fix"
     - then:

@@ -25,7 +25,7 @@ story:
             - given:
                 - the "us-apply-rewalk-converges" project tree
                 - and: the "us-apply" checklist is narrowed to its "already appear as a scenario in the registry" prompt
-                - the Product Owner answers "1" to every question
+                - the Product Owner's answer to every question is "1"
             - when:
                 - the Product Owner runs "us apply 99.3 --fix"
             - then:
@@ -51,7 +51,7 @@ story:
           steps:
             - given:
                 - the "us-apply-duplicate-collapse" project tree
-                - the Product Owner answers "1" to every question
+                - the Product Owner's answer to every question is "1"
             - when:
                 - the Product Owner runs "us apply 95.1 --fix"
             - then:
@@ -75,7 +75,7 @@ story:
           steps:
             - given:
                 - the "us-apply-reordered-criteria" project tree
-                - the Product Owner answers "1" to every question
+                - the Product Owner's answer to every question is "1"
             - when:
                 - the Product Owner runs "us apply mcp-endpoint --fix"
             - then:

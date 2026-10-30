@@ -24,7 +24,7 @@ story:
           steps:
             - given:
                 - the "fix-loop-attempts-exhausted" project tree
-                - the Product Owner answers "1" to every question
+                - the Product Owner's answer to every question is "1"
             - when:
                 - the Product Owner runs "us refine 97.2 --fix"
             - then:
@@ -43,7 +43,7 @@ story:
           steps:
             - given:
                 - the "fix-loop-refix-stops" project tree
-                - the Product Owner answers "1" to every question
+                - the Product Owner's answer to every question is "1"
             - when:
                 - the Product Owner runs "us refine 97.3 --fix"
             - then:
@@ -60,7 +60,7 @@ story:
           steps:
             - given:
                 - the "fix-loop-unsettled" project tree
-                - the Product Owner answers "I have not decided yet" to every question
+                - the Product Owner's answer to every question is "I have not decided yet"
             - when:
                 - the Product Owner runs "us refine 97.4 --fix"
             - then:
@@ -80,7 +80,7 @@ story:
           steps:
             - given:
                 - the "fix-loop-walks-exhausted-terms" project tree
-                - the Quality Engineer answers "1" to every question
+                - the Quality Engineer's answer to every question is "1"
             - when:
                 - the Quality Engineer runs "scen check --fix"
             - then:

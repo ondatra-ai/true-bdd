@@ -13,12 +13,11 @@ import (
 )
 
 func registerIOHoldSteps(suite *bddgo.Suite[State]) {
-	suite.Step(`^the System Architect runs "([^"]+)" `+
-		`while a "(exclusive|shared)" hold blocks "([^"]+)" beyond its wait limit$`,
+	suite.Step(
+		`^the System Architect runs "([^"]+)" while a "(exclusive|shared)" hold blocks "([^"]+)" beyond its wait limit$`,
 		runWithHoldExpiry)
 	suite.Step(`^Git hook variables point outside the project$`, poisonGitEnvironment)
-	// One definition per Catalogue phrase (ADR-0032): blocks and permits are
-	// two phrases, so each has its own registration.
+	// Blocks and permits ask different things of the hold, so each has its own definition.
 	suite.Step(`^the System Architect runs "([^"]+)" while a "(exclusive|shared)" hold blocks "([^"]+)"$`,
 		runWithBlockingHold)
 	suite.Step(`^the System Architect runs "([^"]+)" while a "(exclusive|shared)" hold permits "([^"]+)"$`,
@@ -31,10 +30,12 @@ const (
 	holdPermits = "permits"
 )
 
+//truebdd:concept when "a command runs under interference"
 func runWithBlockingHold(state *State, args []string) error {
 	return runWithHold(state, []string{args[0], args[1], holdBlocks, args[2]})
 }
 
+//truebdd:concept when "a command runs under interference"
 func runWithPermittingHold(state *State, args []string) error {
 	return runWithHold(state, []string{args[0], args[1], holdPermits, args[2]})
 }
@@ -98,6 +99,7 @@ func observeHold(state *State, ended <-chan struct{}, effect string) error {
 	}
 }
 
+//truebdd:concept given "machine environment"
 func poisonGitEnvironment(state *State, _ []string) error {
 	realGo, err := cli.Find("go")
 	if err != nil {
@@ -110,6 +112,7 @@ func poisonGitEnvironment(state *State, _ []string) error {
 	return nil
 }
 
+//truebdd:concept when "a command runs under interference"
 func runWithHoldExpiry(state *State, args []string) error {
 	return runWithHold(state, []string{args[0], args[1], "expires", args[2]})
 }

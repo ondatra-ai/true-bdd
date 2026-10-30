@@ -13,7 +13,7 @@ story:
     - given:
       - the "writer-lifecycle-success" project tree
       - the codex writer uses fixture-controlled authentication and CLIs
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:
@@ -30,7 +30,7 @@ story:
     - given:
       - the "writer-lifecycle-failure" project tree
       - the codex writer uses fixture-controlled authentication and CLIs
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:

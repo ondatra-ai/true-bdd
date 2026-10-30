@@ -122,7 +122,7 @@ func TestBuildCodeFrameworks002JestFixRerunsTestByName(t *testing.T) {
 	s := scenarios.New(t, "build-code-frameworks-002-jest-fix-reruns-test-by-name")
 	s.Given(`the "build-code-jest-fix-named-test" project tree`)
 	s.And(`the project's test dependencies are installed`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches msg="Suite failures" failures=1 framework=jest`)
@@ -146,7 +146,7 @@ func TestBuildCodeFrameworks003PlaywrightFixRerunsTestByGrep(t *testing.T) {
 	s := scenarios.New(t, "build-code-frameworks-003-playwright-fix-reruns-test-by-grep")
 	s.Given(`the "build-code-playwright-failing-assertion" project tree`)
 	s.And(`the project's browser test dependencies are installed`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches msg="Suite failures" failures=1 framework=playwright`)
@@ -167,7 +167,7 @@ func TestBuildCodeFrameworks003PlaywrightFixRerunsTestByGrep(t *testing.T) {
 func TestBuildCodeFrameworks004GoPackageNotCompilingRerunUnfiltered(t *testing.T) {
 	s := scenarios.New(t, "build-code-frameworks-004-go-package-not-compiling-rerun-unfiltered")
 	s.Given(`the "build-code-go-package-does-not-compile" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches msg="Suite failures" failures=1 framework=go-test`)
@@ -188,7 +188,7 @@ func TestBuildCodeFrameworks004GoPackageNotCompilingRerunUnfiltered(t *testing.T
 func TestBuildCodeFrameworks005NotAppliedRevalidated(t *testing.T) {
 	s := scenarios.New(t, "build-code-frameworks-005-not-applied-revalidated")
 	s.Given(`the "build-code-not-applied" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches BUILD CODE COMPLETE`)
@@ -209,7 +209,7 @@ func TestBuildCodeFrameworks005NotAppliedRevalidated(t *testing.T) {
 func TestBuildCodeFrameworks006NotAppliedHitsFixBound(t *testing.T) {
 	s := scenarios.New(t, "build-code-frameworks-006-not-applied-hits-fix-bound")
 	s.Given(`the "build-code-not-applied-bound" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 1`)
 	s.But(`stdout does not match BUILD CODE COMPLETE`)
@@ -281,7 +281,7 @@ func TestBuildCodeRun003FailingTestExits1(t *testing.T) {
 func TestBuildCodeRun004FixRerunsFixedTest(t *testing.T) {
 	s := scenarios.New(t, "build-code-run-004-fix-reruns-fixed-test")
 	s.Given(`the "build-code-fix-named-test" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches msg="Running tests" framework=go-test`)
@@ -305,7 +305,7 @@ func TestBuildCodeRun005PlaywrightFixLoopConverges(t *testing.T) {
 	s := scenarios.New(t, "build-code-run-005-playwright-fix-loop-converges")
 	s.Given(`the "build-code-playwright-nextjs" project tree`)
 	s.And(`the project's browser test dependencies are installed`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches msg="Running tests" framework=playwright`)
@@ -326,7 +326,7 @@ func TestBuildCodeRun005PlaywrightFixLoopConverges(t *testing.T) {
 func TestBuildCodeRun006SharedFixSkipsGreenPeer(t *testing.T) {
 	s := scenarios.New(t, "build-code-run-006-shared-fix-skips-green-peer")
 	s.Given(`the "build-code-shared-fix" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches BUILD CODE COMPLETE`)
@@ -352,7 +352,7 @@ func TestBuildCodeRun006SharedFixSkipsGreenPeer(t *testing.T) {
 func TestBuildCodeRun007NextWalkFindsRegression(t *testing.T) {
 	s := scenarios.New(t, "build-code-run-007-next-walk-finds-regression")
 	s.Given(`the "build-code-cross-walk" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches BUILD CODE COMPLETE`)
@@ -431,7 +431,7 @@ func TestBuildCodeSpec004NoReplayCommandRefused(t *testing.T) {
 func TestBuildCodeSpec005MatchedScenarioEmbedded(t *testing.T) {
 	s := scenarios.New(t, "build-code-spec-005-matched-scenario-embedded")
 	s.Given(`the "build-code-spec-scenario" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches BUILD CODE COMPLETE`)
@@ -462,7 +462,7 @@ func TestBuildCodeSpec005MatchedScenarioEmbedded(t *testing.T) {
 func TestBuildCodeSpec006UnreadableProductWarned(t *testing.T) {
 	s := scenarios.New(t, "build-code-spec-006-unreadable-product-warned")
 	s.Given(`the "build-code-spec-missing-product" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches BUILD CODE COMPLETE`)
@@ -480,7 +480,7 @@ func TestBuildCodeSpec006UnreadableProductWarned(t *testing.T) {
 func TestBuildCodeSpec007UnreadableRegistryWarned(t *testing.T) {
 	s := scenarios.New(t, "build-code-spec-007-unreadable-registry-warned")
 	s.Given(`the "build-code-spec-missing-registry" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches BUILD CODE COMPLETE`)
@@ -498,7 +498,7 @@ func TestBuildCodeSpec007UnreadableRegistryWarned(t *testing.T) {
 func TestBuildCodeSpec008LinkedConceptsEmbedded(t *testing.T) {
 	s := scenarios.New(t, "build-code-spec-008-linked-concepts-embedded")
 	s.Given(`the "build-code-spec-concepts" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches BUILD CODE COMPLETE`)
@@ -577,7 +577,7 @@ func TestEngineDocuments006DirectoryDocumentRefused(t *testing.T) {
 func TestEngineRoutes001CodexSandboxPerTurn(t *testing.T) {
 	s := scenarios.New(t, "engine-routes-001-codex-sandbox-per-turn")
 	s.Given(`the "build-code-fix-by-codex" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches BUILD CODE COMPLETE`)

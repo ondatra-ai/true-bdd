@@ -8,8 +8,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
 )
 
-// Invalid-answer Scenarios explicitly select a schema-breaking external CLI.
-// The recording proxy stays first so its replies are recorded normally.
+// The recording proxy stays first, so the schema-breaking CLI's replies are recorded normally.
+//
+//truebdd:concept given "fixture AI CLIs"
 func useInvalidLinkCLI(state *State, _ []string) error {
 	switch state.Fixture.Name {
 	case "concept-link-malformed", "concept-link-missing-answer", "concept-link-incomplete",

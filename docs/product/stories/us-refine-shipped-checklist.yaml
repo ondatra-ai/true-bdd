@@ -29,7 +29,7 @@ story:
     steps:
     - given:
       - the "us-refine-shipped-menu-exit" project tree
-      - the Product Owner answers "3" to every question
+      - the Product Owner's answer to every question is "3"
     - when:
       - the Product Owner runs "us refine halve-negative --fix"
     - then:
@@ -46,7 +46,7 @@ story:
     steps:
     - given:
       - the "us-refine-shipped-catalogue" project tree
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
     - when:
       - the Product Owner runs "us refine halve-negative --fix"
     - then:

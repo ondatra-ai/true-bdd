@@ -121,7 +121,7 @@ scenarios:
     merged_steps:
       given:
         - the "build-code-fix-named-test" project tree
-        - the System Architect answers "1" to every question
+        - the System Architect's answer to every question is "1"
       when:
         - the System Architect runs "build code --fix"
       then:
@@ -261,7 +261,7 @@ scenarios:
       given:
         - the "build-code-playwright-nextjs" project tree
         - and: the project's browser test dependencies are installed
-        - the System Architect answers "1" to every question
+        - the System Architect's answer to every question is "1"
       when:
         - the System Architect runs "build code --fix"
       then:
@@ -382,7 +382,7 @@ scenarios:
       given:
         - the "build-code-jest-fix-named-test" project tree
         - and: the project's test dependencies are installed
-        - the System Architect answers "1" to every question
+        - the System Architect's answer to every question is "1"
       when:
         - the System Architect runs "build code --fix"
       then:
@@ -415,7 +415,7 @@ scenarios:
       given:
         - the "build-code-playwright-failing-assertion" project tree
         - and: the project's browser test dependencies are installed
-        - the System Architect answers "1" to every question
+        - the System Architect's answer to every question is "1"
       when:
         - the System Architect runs "build code --fix"
       then:
@@ -443,7 +443,7 @@ scenarios:
     merged_steps:
       given:
         - the "build-code-go-package-does-not-compile" project tree
-        - the System Architect answers "1" to every question
+        - the System Architect's answer to every question is "1"
       when:
         - the System Architect runs "build code --fix"
       then:
@@ -579,7 +579,7 @@ scenarios:
     merged_steps:
       given:
         - the "us-apply-duplicate-collapse" project tree
-        - the Product Owner answers "1" to every question
+        - the Product Owner's answer to every question is "1"
       when:
         - the Product Owner runs "us apply 95.1 --fix"
       then:
@@ -655,7 +655,7 @@ scenarios:
     merged_steps:
       given:
         - the "us-apply-relocated-registry" project tree
-        - the Product Owner answers "1" to every question
+        - the Product Owner's answer to every question is "1"
       when:
         - the Product Owner runs "us apply 95.2 --fix"
       then:
@@ -687,7 +687,7 @@ scenarios:
       given:
         - the "us-apply-rewalk-converges" project tree
         - and: the "us-apply" checklist is narrowed to its "already appear as a scenario in the registry" prompt
-        - the Product Owner answers "1" to every question
+        - the Product Owner's answer to every question is "1"
       when:
         - the Product Owner runs "us apply 99.3 --fix"
       then:
@@ -768,7 +768,7 @@ scenarios:
       given:
         - the "us-refine-fix-desc-qualifier" project tree
         - and: the "us-refine" checklist is narrowed to its "whether its description field contains a vague word" prompt
-        - the Product Owner answers "1" to every question
+        - the Product Owner's answer to every question is "1"
       when:
         - the Product Owner runs "us refine 96.6 --fix"
       then:
@@ -796,7 +796,7 @@ scenarios:
       given:
         - the "us-refine-fix-descriptions" project tree
         - and: the "us-refine" checklist is narrowed to its "whether its description field follows the rule-based format" prompt
-        - the Product Owner answers "1" to every question
+        - the Product Owner's answer to every question is "1"
       when:
         - the Product Owner runs "us refine 96.2 --fix"
       then:
@@ -825,7 +825,7 @@ scenarios:
       given:
         - the "us-refine-fix-forbidden-verb" project tree
         - and: the "us-refine" checklist is narrowed to its "use action verbs from the forbidden_actions list" prompt
-        - the Product Owner answers "1" to every question
+        - the Product Owner's answer to every question is "1"
       when:
         - the Product Owner runs "us refine 96.8 --fix"
       then:
@@ -853,7 +853,7 @@ scenarios:
       given:
         - the "us-refine-fix-step-qualifier" project tree
         - and: the "us-refine" checklist is narrowed to its "whether its steps field contains a vague word" prompt
-        - the Product Owner answers "1" to every question
+        - the Product Owner's answer to every question is "1"
       when:
         - the Product Owner runs "us refine 96.7 --fix"
       then:
@@ -881,7 +881,7 @@ scenarios:
       given:
         - the "us-refine-fix-steps" project tree
         - and: the "us-refine" checklist is narrowed to its "whether its steps field follows the Given/When/Then format" prompt
-        - the Product Owner answers "1" to every question
+        - the Product Owner's answer to every question is "1"
       when:
         - the Product Owner runs "us refine 96.5 --fix"
       then:
@@ -1099,7 +1099,7 @@ scenarios:
       given:
         - the "us-refine-fix-keeps-feature" project tree
         - and: the "us-refine" checklist is narrowed to its "whether its description field contains a vague word" prompt
-        - the Product Owner answers "1" to every question
+        - the Product Owner's answer to every question is "1"
       when:
         - the Product Owner runs "us refine doc-summary --fix"
       then:
@@ -1125,7 +1125,7 @@ scenarios:
     merged_steps:
       given:
         - the "us-refine-fix-records-phrase" project tree
-        - the Product Owner answers "1" to every question
+        - the Product Owner's answer to every question is "1"
       when:
         - the Product Owner runs "us refine doc-outline --fix"
       then:
@@ -1283,7 +1283,7 @@ scenarios:
     merged_steps:
       given:
         - the "us-apply-reordered-criteria" project tree
-        - the Product Owner answers "1" to every question
+        - the Product Owner's answer to every question is "1"
       when:
         - the Product Owner runs "us apply mcp-endpoint --fix"
       then:
@@ -1628,7 +1628,7 @@ scenarios:
     merged_steps:
       given:
       - the "scen-check-fix-records-phrase" project tree
-      - the Quality Engineer answers "1" to every question
+      - the Quality Engineer's answer to every question is "1"
       when:
       - the Quality Engineer runs "scen check --fix"
       then:
@@ -1756,7 +1756,7 @@ scenarios:
     merged_steps:
       given:
         - the "scen-check-fix-records-term" project tree
-        - the Quality Engineer answers "1" to every question
+        - the Quality Engineer's answer to every question is "1"
       when:
         - the Quality Engineer runs "scen check --fix"
       then:
@@ -1966,7 +1966,7 @@ scenarios:
     merged_steps:
       given:
         - the "scen-check-fix-records-mapping" project tree
-        - the Quality Engineer answers "1" to every question
+        - the Quality Engineer's answer to every question is "1"
       when:
         - the Quality Engineer runs "scen check --fix"
       then:
@@ -1994,7 +1994,7 @@ scenarios:
       given:
         - the "scen-check-fix-adds-missing-step" project tree
         - and: the "scen-check" checklist is narrowed to its "whether this scenario's steps carry all three" prompt
-        - the Quality Engineer answers "1" to every question
+        - the Quality Engineer's answer to every question is "1"
       when:
         - the Quality Engineer runs "scen check --fix"
       then:
@@ -2020,7 +2020,7 @@ scenarios:
       given:
         - the "scen-check-fix-rewrites-description-qualifier" project tree
         - and: the "scen-check" checklist is narrowed to its "whether this scenario's description contains a vague word" prompt
-        - the Quality Engineer answers "1" to every question
+        - the Quality Engineer's answer to every question is "1"
       when:
         - the Quality Engineer runs "scen check --fix"
       then:
@@ -2046,7 +2046,7 @@ scenarios:
       given:
         - the "scen-check-fix-rewrites-step-qualifier" project tree
         - and: the "scen-check" checklist is narrowed to its "whether any of this scenario's steps contains a vague" prompt
-        - the Quality Engineer answers "1" to every question
+        - the Quality Engineer's answer to every question is "1"
       when:
         - the Quality Engineer runs "scen check --fix"
       then:
@@ -2072,7 +2072,7 @@ scenarios:
       given:
         - the "scen-check-fix-rewrites-forbidden-verb" project tree
         - and: the "scen-check" checklist is narrowed to its "whether any of this scenario's steps uses an action verb" prompt
-        - the Quality Engineer answers "1" to every question
+        - the Quality Engineer's answer to every question is "1"
       when:
         - the Quality Engineer runs "scen check --fix"
       then:
@@ -2097,7 +2097,7 @@ scenarios:
       given:
         - the "scen-check-fix-rewrites-implementation" project tree
         - and: the "scen-check" checklist is narrowed to its "whether this scenario describes observable behaviour" prompt
-        - the Quality Engineer answers "1" to every question
+        - the Quality Engineer's answer to every question is "1"
       when:
         - the Quality Engineer runs "scen check --fix"
       then:
@@ -2122,7 +2122,7 @@ scenarios:
       given:
         - the "scen-check-fix-adds-measurable-criterion" project tree
         - and: the "scen-check" checklist is narrowed to its "whether this scenario includes at least one specific" prompt
-        - the Quality Engineer answers "1" to every question
+        - the Quality Engineer's answer to every question is "1"
       when:
         - the Quality Engineer runs "scen check --fix"
       then:
@@ -2148,7 +2148,7 @@ scenarios:
       given:
         - the "scen-check-fix-rewrites-subjective-outcome" project tree
         - and: the "scen-check" checklist is narrowed to its "whether this scenario has a binary pass/fail outcome" prompt
-        - the Quality Engineer answers "1" to every question
+        - the Quality Engineer's answer to every question is "1"
       when:
         - the Quality Engineer runs "scen check --fix"
       then:
@@ -2174,7 +2174,7 @@ scenarios:
       given:
         - the "scen-check-fix-rewrites-phrase-meaning" project tree
         - and: the "scen-check" checklist is narrowed to its "whether each catalogue phrase this scenario's steps use" prompt
-        - the Quality Engineer answers "1" to every question
+        - the Quality Engineer's answer to every question is "1"
       when:
         - the Quality Engineer runs "scen check --fix"
       then:
@@ -2199,7 +2199,7 @@ scenarios:
       given:
         - the "scen-check-fix-rewrites-phrase-use" project tree
         - and: the "scen-check" checklist is narrowed to its "whether this scenario uses each catalogue phrase" prompt
-        - the Quality Engineer answers "1" to every question
+        - the Quality Engineer's answer to every question is "1"
       when:
         - the Quality Engineer runs "scen check --fix"
       then:
@@ -2224,7 +2224,7 @@ scenarios:
     merged_steps:
       given:
         - the "scen-check-fix-merges-phrases" project tree
-        - the Quality Engineer answers "1" to every question
+        - the Quality Engineer's answer to every question is "1"
       when:
         - the Quality Engineer runs "scen check --fix"
       then:
@@ -2398,7 +2398,7 @@ scenarios:
     merged_steps:
       given:
         - the "scen-check-fix-rewrites-description" project tree
-        - the Quality Engineer answers "1" to every question
+        - the Quality Engineer's answer to every question is "1"
       when:
         - the Quality Engineer runs "scen check --fix"
       then:
@@ -3327,7 +3327,7 @@ scenarios:
     merged_steps:
       given:
         - the "fix-loop-refine-feedback" project tree
-        - the Quality Engineer answers "2 / Call the number slot of the new template budget / / 1" line by line
+        - the Quality Engineer's answers are "2 / Call the number slot of the new template budget / / 1" line by line
       when:
         - the Quality Engineer runs "scen check --fix"
       then:
@@ -3354,7 +3354,7 @@ scenarios:
     merged_steps:
       given:
         - the "fix-loop-own-words" project tree
-        - the Quality Engineer answers "It means the round trip from sending the message to receiving its reply takes at most that many milliseconds / 1" line by line
+        - the Quality Engineer's answers are "It means the round trip from sending the message to receiving its reply takes at most that many milliseconds / 1" line by line
       when:
         - the Quality Engineer runs "scen check --fix"
       then:
@@ -3381,7 +3381,7 @@ scenarios:
       given:
         - the "fix-loop-exit-story" project tree
         - and: the "us-refine" checklist is narrowed to its "whether its description field contains a vague word" prompt
-        - the Product Owner answers "3" to every question
+        - the Product Owner's answer to every question is "3"
       when:
         - the Product Owner runs "us refine 97.1 --fix"
       then:
@@ -3407,7 +3407,7 @@ scenarios:
       given:
         - the "fix-loop-exit-registry" project tree
         - and: the "us-apply" checklist is narrowed to its "already appear as a scenario in the registry" prompt
-        - the Product Owner answers "3" to every question
+        - the Product Owner's answer to every question is "3"
       when:
         - the Product Owner runs "us apply 98.1 --fix"
       then:
@@ -3434,7 +3434,7 @@ scenarios:
     merged_steps:
       given:
         - the "fix-loop-exit-terms" project tree
-        - the Quality Engineer answers "3" to every question
+        - the Quality Engineer's answer to every question is "3"
       when:
         - the Quality Engineer runs "scen check --fix"
       then:
@@ -3459,7 +3459,7 @@ scenarios:
     merged_steps:
       given:
         - the "fix-loop-walks-exhausted-terms" project tree
-        - the Quality Engineer answers "1" to every question
+        - the Quality Engineer's answer to every question is "1"
       when:
         - the Quality Engineer runs "scen check --fix"
       then:
@@ -3484,7 +3484,7 @@ scenarios:
     merged_steps:
       given:
         - the "fix-loop-attempts-exhausted" project tree
-        - the Product Owner answers "1" to every question
+        - the Product Owner's answer to every question is "1"
       when:
         - the Product Owner runs "us refine 97.2 --fix"
       then:
@@ -3511,7 +3511,7 @@ scenarios:
     merged_steps:
       given:
         - the "fix-loop-refix-stops" project tree
-        - the Product Owner answers "1" to every question
+        - the Product Owner's answer to every question is "1"
       when:
         - the Product Owner runs "us refine 97.3 --fix"
       then:
@@ -3536,7 +3536,7 @@ scenarios:
     merged_steps:
       given:
         - the "fix-loop-unsettled" project tree
-        - the Product Owner answers "I have not decided yet" to every question
+        - the Product Owner's answer to every question is "I have not decided yet"
       when:
         - the Product Owner runs "us refine 97.4 --fix"
       then:
@@ -3564,7 +3564,7 @@ scenarios:
     merged_steps:
       given:
         - the "build-code-fix-by-codex" project tree
-        - the System Architect answers "1" to every question
+        - the System Architect's answer to every question is "1"
       when:
         - the System Architect runs "build code --fix"
       then:
@@ -3594,7 +3594,7 @@ scenarios:
     merged_steps:
       given:
       - the "scen-check-prompt-names-its-tiers" project tree
-      - the Quality Engineer answers "1" to every question
+      - the Quality Engineer's answer to every question is "1"
       when:
       - the Quality Engineer runs "scen check --fix"
       then:
@@ -3939,7 +3939,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-shared-fix" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -3973,7 +3973,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-cross-walk" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -4001,7 +4001,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-not-applied" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -4030,7 +4030,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-not-applied-bound" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -4058,7 +4058,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-spec-scenario" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -4096,7 +4096,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-spec-missing-product" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -4121,7 +4121,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-spec-missing-registry" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -4146,7 +4146,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-spec-concepts" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -4188,7 +4188,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-partial" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -4213,7 +4213,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-grouped" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -4237,7 +4237,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-mixed-build" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -4260,7 +4260,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-missing-member" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -4282,7 +4282,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-shrinking-bound" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -4305,7 +4305,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-no-confirmation-passes" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -4333,7 +4333,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-no-confirmation-retries" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -4364,7 +4364,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-no-confirmation-bound" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -4394,7 +4394,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-writer-nonzero" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -4424,7 +4424,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-writer-empty" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -4452,7 +4452,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-writer-bound" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -4483,7 +4483,7 @@ scenarios:
       - the "claude-guard-selection" project tree
       - claude's write policy grants the test command "go test ./..." with selector
         "-run" in "."
-      - claude pipes a "foreground" shell call in directory "." with command go test ./...
+      - the tool call is a "foreground" shell call in directory "." with command go test ./...
         -run '^TestOne$'
       when:
       - claude asks the guard about the tool call
@@ -4502,7 +4502,7 @@ scenarios:
       - the "claude-guard-noncanonical" project tree
       - claude's write policy grants the test command "go test ./..." with selector
         "-run" in "."
-      - claude pipes a "foreground" shell call in directory "." with command go test ./...;
+      - the tool call is a "foreground" shell call in directory "." with command go test ./...;
         pwd
       when:
       - claude asks the guard about the tool call
@@ -4522,7 +4522,7 @@ scenarios:
       - the "claude-guard-background" project tree
       - claude's write policy grants the test command "go test ./..." with selector
         "-run" in "."
-      - claude pipes a "background" shell call in directory "." with command go test ./...
+      - the tool call is a "background" shell call in directory "." with command go test ./...
       when:
       - claude asks the guard about the tool call
       then:
@@ -4541,7 +4541,7 @@ scenarios:
       - the "claude-guard-directory" project tree
       - claude's write policy grants the test command "go test ./..." with selector
         "-run" in "."
-      - claude pipes a "foreground" shell call in directory "../other" with command go
+      - the tool call is a "foreground" shell call in directory "../other" with command go
         test ./...
       when:
       - claude asks the guard about the tool call
@@ -4560,7 +4560,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-claude-replay" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -4589,7 +4589,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-claude-failure" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -4621,7 +4621,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-codex-selection" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -4651,7 +4651,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-codex-nonzero" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -4681,7 +4681,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-codex-missing-root" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -4823,8 +4823,8 @@ scenarios:
       given:
       - the "claude-guard-read-only-tool" project tree
       - claude's write policy lets the turn write under "tests"
-      - claude names the tool "Read"
-      - claude names the file "docs/README.md" of the project tree
+      - the tool call names the tool "Read"
+      - the tool call names the file "docs/README.md" of the project tree
       when:
       - claude asks the guard about the tool call
       then:
@@ -4842,7 +4842,7 @@ scenarios:
       given:
       - the "claude-guard-shell-denied" project tree
       - claude's write policy lets the turn write under "tests"
-      - claude names the tool "Bash"
+      - the tool call names the tool "Bash"
       when:
       - claude asks the guard about the tool call
       then:
@@ -4861,8 +4861,8 @@ scenarios:
       given:
       - the "claude-guard-unknown-tool" project tree
       - claude's write policy lets the turn write under "tests"
-      - claude names the tool "rename"
-      - claude names the file "tests/notes.md" of the project tree
+      - the tool call names the tool "rename"
+      - the tool call names the file "tests/notes.md" of the project tree
       when:
       - claude asks the guard about the tool call
       then:
@@ -4879,9 +4879,9 @@ scenarios:
     merged_steps:
       given:
       - the "claude-guard-missing-policy" project tree
-      - claude hands the guard no write policy
-      - claude names the tool "Read"
-      - claude names the file "docs/README.md" of the project tree
+      - claude's write policy is missing
+      - the tool call names the tool "Read"
+      - the tool call names the file "docs/README.md" of the project tree
       when:
       - claude asks the guard about the tool call
       then:
@@ -4899,9 +4899,9 @@ scenarios:
     merged_steps:
       given:
       - the "claude-guard-unreadable-policy" project tree
-      - claude hands the guard an unreadable write policy
-      - claude names the tool "Read"
-      - claude names the file "docs/README.md" of the project tree
+      - claude's write policy is unreadable
+      - the tool call names the tool "Read"
+      - the tool call names the file "docs/README.md" of the project tree
       when:
       - claude asks the guard about the tool call
       then:
@@ -4920,7 +4920,7 @@ scenarios:
       given:
       - the "claude-guard-hook-payload" project tree
       - claude's write policy lets the turn write under "tests"
-      - claude pipes the hook payload naming the tool "Write" and the file "tests/notes.md"
+      - the hook payload names the tool "Write" and the file "tests/notes.md"
       when:
       - claude asks the guard about the tool call
       then:
@@ -4937,8 +4937,8 @@ scenarios:
       given:
       - the "claude-guard-write-inside-root" project tree
       - claude's write policy lets the turn write under "tests"
-      - claude names the tool "Write"
-      - claude names the file "tests/notes.md" of the project tree
+      - the tool call names the tool "Write"
+      - the tool call names the file "tests/notes.md" of the project tree
       when:
       - claude asks the guard about the tool call
       then:
@@ -4956,8 +4956,8 @@ scenarios:
       - the "claude-guard-write-outside-roots" project tree
       - claude's write policy lets the turn write under "tests"
       - and: claude's write policy lets the turn write under "services"
-      - claude names the tool "Write"
-      - claude names the file "docs/notes.md" of the project tree
+      - the tool call names the tool "Write"
+      - the tool call names the file "docs/notes.md" of the project tree
       when:
       - claude asks the guard about the tool call
       then:
@@ -4977,8 +4977,8 @@ scenarios:
       - the "claude-guard-symlink-escape" project tree
       - the project tree's "tests/node_modules/shared" is a symbolic link to "../../docs"
       - claude's write policy lets the turn write under "tests"
-      - claude names the tool "Write"
-      - claude names the file "tests/node_modules/shared/README.md" of the project tree
+      - the tool call names the tool "Write"
+      - the tool call names the file "tests/node_modules/shared/README.md" of the project tree
       when:
       - claude asks the guard about the tool call
       then:
@@ -4996,8 +4996,8 @@ scenarios:
       given:
       - the "claude-guard-shared-prefix" project tree
       - claude's write policy lets the turn write under "tests"
-      - claude names the tool "Write"
-      - claude names the file "tests-old/notes.md" of the project tree
+      - the tool call names the tool "Write"
+      - the tool call names the file "tests-old/notes.md" of the project tree
       when:
       - claude asks the guard about the tool call
       then:
@@ -5015,7 +5015,7 @@ scenarios:
       given:
       - the "claude-guard-unnamed-path" project tree
       - claude's write policy lets the turn write under "tests"
-      - claude names the tool "Write"
+      - the tool call names the tool "Write"
       when:
       - claude asks the guard about the tool call
       then:
@@ -5033,8 +5033,8 @@ scenarios:
       given:
       - the "claude-guard-read-outside" project tree
       - claude's write policy lets the turn write under "tests"
-      - claude names the tool "Read"
-      - claude names the path "/true-bdd-neighbour/secrets.txt" as written
+      - the tool call names the tool "Read"
+      - the tool call names the path "/true-bdd-neighbour/secrets.txt" as written
       when:
       - claude asks the guard about the tool call
       then:
@@ -5052,7 +5052,7 @@ scenarios:
       given:
       - the "claude-guard-read-relative-escape" project tree
       - claude's write policy lets the turn write under "tests"
-      - claude pipes the hook payload naming the tool "Glob" and the path "../neighbour"
+      - the hook payload names the tool "Glob" and the path "../neighbour"
       when:
       - claude asks the guard about the tool call
       then:
@@ -5071,8 +5071,8 @@ scenarios:
       - the "claude-guard-read-symlink-escape" project tree
       - claude's write policy lets the turn write under "tests"
       - the project tree's "node_modules/shared" is a symbolic link to "../../"
-      - claude names the tool "Grep"
-      - claude names the file "node_modules/shared/notes.md" of the project tree
+      - the tool call names the tool "Grep"
+      - the tool call names the file "node_modules/shared/notes.md" of the project tree
       when:
       - claude asks the guard about the tool call
       then:
@@ -5090,7 +5090,7 @@ scenarios:
       given:
       - the "claude-guard-read-unnamed-path" project tree
       - claude's write policy lets the turn write under "tests"
-      - claude names the tool "Read"
+      - the tool call names the tool "Read"
       when:
       - claude asks the guard about the tool call
       then:
@@ -5107,9 +5107,9 @@ scenarios:
       given:
       - the "claude-guard-read-missing-root" project tree
       - claude's write policy lets the turn write under "tests"
-      - claude hands the guard a write policy with no read root
-      - claude names the tool "Read"
-      - claude names the file "docs/README.md" of the project tree
+      - claude's write policy names no directory to read
+      - the tool call names the tool "Read"
+      - the tool call names the file "docs/README.md" of the project tree
       when:
       - claude asks the guard about the tool call
       then:
@@ -5127,8 +5127,8 @@ scenarios:
       given:
       - the "claude-guard-read-relative-path" project tree
       - claude's write policy lets the turn write under "tests"
-      - claude names the tool "Read"
-      - claude names the path "docs/README.md" as written
+      - the tool call names the tool "Read"
+      - the tool call names the path "docs/README.md" as written
       when:
       - claude asks the guard about the tool call
       then:
@@ -5145,7 +5145,7 @@ scenarios:
       given:
       - the "claude-replay-whole-command" project tree
       - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - claude pipes a "foreground" shell call in directory "." with command go test ./...
+      - the tool call is a "foreground" shell call in directory "." with command go test ./...
       when:
       - claude asks the guard about the tool call
       then:
@@ -5162,7 +5162,7 @@ scenarios:
       given:
       - the "claude-replay-selected-command" project tree
       - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - claude pipes a "foreground" shell call in directory "." with command go test ./... -run '^TestSlow$'
+      - the tool call is a "foreground" shell call in directory "." with command go test ./... -run '^TestSlow$'
       when:
       - claude asks the guard about the tool call
       then:
@@ -5179,7 +5179,7 @@ scenarios:
       given:
       - the "claude-replay-shell-operator" project tree
       - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - claude pipes a "foreground" shell call in directory "." with command go test ./...; cat /etc/passwd
+      - the tool call is a "foreground" shell call in directory "." with command go test ./...; cat /etc/passwd
       when:
       - claude asks the guard about the tool call
       then:
@@ -5197,7 +5197,7 @@ scenarios:
       given:
       - the "claude-replay-assignment" project tree
       - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - claude pipes a "foreground" shell call in directory "." with command X=1 go test ./...
+      - the tool call is a "foreground" shell call in directory "." with command X=1 go test ./...
       when:
       - claude asks the guard about the tool call
       then:
@@ -5215,7 +5215,7 @@ scenarios:
       given:
       - the "claude-replay-another-program" project tree
       - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - claude pipes a "foreground" shell call in directory "." with command cat /etc/passwd
+      - the tool call is a "foreground" shell call in directory "." with command cat /etc/passwd
       when:
       - claude asks the guard about the tool call
       then:
@@ -5233,7 +5233,7 @@ scenarios:
       given:
       - the "claude-replay-extra-flag" project tree
       - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - claude pipes a "foreground" shell call in directory "." with command go test ./... -v
+      - the tool call is a "foreground" shell call in directory "." with command go test ./... -v
       when:
       - claude asks the guard about the tool call
       then:
@@ -5251,7 +5251,7 @@ scenarios:
       given:
       - the "claude-replay-double-quotes" project tree
       - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - claude pipes a "foreground" shell call in directory "." with command go test ./... -run "^TestSlow$"
+      - the tool call is a "foreground" shell call in directory "." with command go test ./... -run "^TestSlow$"
       when:
       - claude asks the guard about the tool call
       then:
@@ -5269,7 +5269,7 @@ scenarios:
       given:
       - the "claude-replay-wrong-directory" project tree
       - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - claude pipes a "foreground" shell call in directory "tests" with command go test ./...
+      - the tool call is a "foreground" shell call in directory "tests" with command go test ./...
       when:
       - claude asks the guard about the tool call
       then:
@@ -5286,7 +5286,7 @@ scenarios:
     merged_steps:
       given:
       - the "claude-replay-no-command" project tree
-      - claude pipes a "foreground" shell call in directory "." with command go test ./...
+      - the tool call is a "foreground" shell call in directory "." with command go test ./...
       when:
       - claude asks the guard about the tool call
       then:
@@ -5303,7 +5303,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-unrepresentable-replay" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -5327,7 +5327,7 @@ scenarios:
     merged_steps:
       given:
       - the "codex-apply-us-refine" project tree
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
       when:
       - the Product Owner runs "us refine doc-outline --fix"
       then:
@@ -5358,7 +5358,7 @@ scenarios:
     merged_steps:
       given:
       - the "writer-config-codex" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -5379,7 +5379,7 @@ scenarios:
     merged_steps:
       given:
       - the "writer-config-claude" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -5402,7 +5402,7 @@ scenarios:
       given:
       - the "writer-lifecycle-success" project tree
       - the codex writer uses fixture-controlled authentication and CLIs
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -5427,7 +5427,7 @@ scenarios:
       given:
       - the "writer-lifecycle-failure" project tree
       - the codex writer uses fixture-controlled authentication and CLIs
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -5638,7 +5638,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-no-test-files" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -5733,7 +5733,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-writable-allowed" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -5759,7 +5759,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-writable-plan" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -5784,7 +5784,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-code-writable-writer" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -5852,7 +5852,7 @@ scenarios:
       given:
         - the "build-code-jest-load" project tree
         - and: the project's test dependencies are installed
-        - the System Architect answers "1" to every question
+        - the System Architect's answer to every question is "1"
       when:
         - the System Architect runs "build code --fix"
       then:
@@ -5940,7 +5940,7 @@ scenarios:
       - the codex writer uses fixture-controlled authentication and CLIs
       - the engine uses an observed fixture Claude CLI
       - Git hook variables point outside the project
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -6029,7 +6029,7 @@ scenarios:
     merged_steps:
       given:
       - the "engine-io-atomic" project tree
-      - the project prepares atomic replacement probes
+      - the project tree holds atomic replacement probes
       when:
       - the System Architect runs "build tests --fix" after planting a stale staging symlink
       then:
@@ -6068,7 +6068,7 @@ scenarios:
       given:
       - the "engine-io-claude-writer" project tree
       - the engine uses an observed fixture Claude CLI
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build code --fix"
       then:
@@ -6207,7 +6207,7 @@ scenarios:
     merged_steps:
       given:
       - the "public-interface-fix" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "scen check --fix"
       then:
@@ -6230,7 +6230,7 @@ scenarios:
       given:
       - the "us-refine-fix-count" project tree
       - and: the "us-refine" checklist is narrowed to its "Count the total number of acceptance criteria" prompt
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
       when:
       - the Product Owner runs "us refine halve-negative --fix"
       then:
@@ -6255,7 +6255,7 @@ scenarios:
       given:
       - the "us-refine-fix-implementation" project tree
       - and: the "us-refine" checklist is narrowed to its "whether it describes implementation" prompt
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
       when:
       - the Product Owner runs "us refine halve-negative --fix"
       then:
@@ -6280,7 +6280,7 @@ scenarios:
       given:
       - the "us-refine-fix-happy-path" project tree
       - and: the "us-refine" checklist is narrowed to its "whether it describes the happy path" prompt
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
       when:
       - the Product Owner runs "us refine divide-integers --fix"
       then:
@@ -6329,7 +6329,7 @@ scenarios:
       given:
       - the "us-refine-fix-failure-mode" project tree
       - and: the "us-refine" checklist is narrowed to its "Identify every failure mode" prompt
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
       when:
       - the Product Owner runs "us refine divide-integers --fix"
       then:
@@ -6355,7 +6355,7 @@ scenarios:
       given:
       - the "us-refine-fix-measurable" project tree
       - and: the "us-refine" checklist is narrowed to its "whether it includes specific measurable criteria" prompt
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
       when:
       - the Product Owner runs "us refine summary-views --fix"
       then:
@@ -6380,7 +6380,7 @@ scenarios:
       given:
       - the "us-refine-fix-binary" project tree
       - and: the "us-refine" checklist is narrowed to its "whether it has a binary pass/fail outcome" prompt
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
       when:
       - the Product Owner runs "us refine halve-negative --fix"
       then:
@@ -6405,7 +6405,7 @@ scenarios:
       given:
       - the "us-refine-fix-sketch" project tree
       - and: the "us-refine" checklist is narrowed to its "attempt to draft a runnable test sketch" prompt
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
       when:
       - the Product Owner runs "us refine halve-negative --fix"
       then:
@@ -6429,7 +6429,7 @@ scenarios:
     merged_steps:
       given:
       - the "us-refine-shipped-menu-exit" project tree
-      - the Product Owner answers "3" to every question
+      - the Product Owner's answer to every question is "3"
       when:
       - the Product Owner runs "us refine halve-negative --fix"
       then:
@@ -6453,7 +6453,7 @@ scenarios:
     merged_steps:
       given:
       - the "us-refine-shipped-catalogue" project tree
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
       when:
       - the Product Owner runs "us refine halve-negative --fix"
       then:
@@ -6575,7 +6575,7 @@ scenarios:
     merged_steps:
       given:
       - the "phrase-mappings-fix" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "scen check --fix"
       then:
@@ -6598,7 +6598,7 @@ scenarios:
     merged_steps:
       given:
       - the "phrase-mappings-exit" project tree
-      - the System Architect answers "Call greet once with the literal person Ada, without the loud flag or any outgoing call." to every question
+      - the System Architect's answer to every question is "Call greet once with the literal person Ada, without the loud flag or any outgoing call."
       when:
       - the System Architect runs "scen check --fix"
       then:
@@ -6621,7 +6621,7 @@ scenarios:
     merged_steps:
       given:
       - the "phrase-mappings-fix-operation" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "scen check --fix"
       then:
@@ -6814,7 +6814,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-steps-new" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build steps --fix"
       then:
@@ -6845,7 +6845,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-steps-many" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build steps --fix"
       then:
@@ -6871,7 +6871,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-steps-slots" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build steps --fix"
       then:
@@ -6895,7 +6895,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-steps-interface" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build steps --fix"
       then:
@@ -6918,7 +6918,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-steps-exit" project tree
-      - the System Architect answers "3" to every question
+      - the System Architect's answer to every question is "3"
       when:
       - the System Architect runs "build steps --fix"
       then:
@@ -6979,7 +6979,7 @@ scenarios:
     merged_steps:
       given:
       - the "codex-apply-build-steps" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build steps --fix"
       then:
@@ -7004,7 +7004,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-steps-outside" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build steps --fix"
       then:
@@ -7050,7 +7050,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-steps-green" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build steps --fix"
       then:
@@ -7074,7 +7074,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-steps-critique-operation" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build steps --fix"
       then:
@@ -7101,7 +7101,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-steps-critique-assertion" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build steps --fix"
       then:
@@ -7128,7 +7128,7 @@ scenarios:
     merged_steps:
       given:
       - the "build-steps-critique-correct" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build steps --fix"
       then:
@@ -7268,7 +7268,7 @@ scenarios:
     merged_steps:
       given:
       - the "concepts-fix-binding" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "scen check --fix"
       then:
@@ -7290,7 +7290,7 @@ scenarios:
       given:
         - "the \"scen-check-concurrent\" project tree"
         - "the validation CLIs are controlled for concurrent arrival"
-        - "the Quality Engineer answers \"1/1/3\" line by line"
+        - "the Quality Engineer's answers are \"1/1/3\" line by line"
       when:
         - "the Quality Engineer runs \"scen check --fix\""
       then:
@@ -7310,7 +7310,7 @@ scenarios:
       given:
         - "the \"scen-check-reverse\" project tree"
         - "the validation CLIs are controlled for concurrent arrival"
-        - "the Quality Engineer answers \"1/1/3\" line by line"
+        - "the Quality Engineer's answers are \"1/1/3\" line by line"
       when:
         - "the Quality Engineer runs \"scen check --fix\""
       then:
@@ -7331,7 +7331,7 @@ scenarios:
     merged_steps:
       given:
       - the "concept-link-add-concept" project tree
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
       when:
       - the Product Owner runs "us refine host --fix"
       then:
@@ -7389,7 +7389,7 @@ scenarios:
     merged_steps:
       given:
       - the "concept-link-fix-binding" project tree
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
       when:
       - the Product Owner runs "scen check --fix"
       then:
@@ -7466,7 +7466,7 @@ scenarios:
     merged_steps:
       given:
       - the "concept-link-shared-fix" project tree
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
       when:
       - the Product Owner runs "scen check --fix"
       then:
@@ -7541,7 +7541,7 @@ scenarios:
     merged_steps:
       given:
       - the "concept-link-widen" project tree
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
       when:
       - the Product Owner runs "us refine host --fix"
       then:
@@ -7563,7 +7563,7 @@ scenarios:
     merged_steps:
       given:
       - the "concept-link-rewrite" project tree
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
       when:
       - the Product Owner runs "us refine host --fix"
       then:
@@ -7603,7 +7603,7 @@ scenarios:
     merged_steps:
       given:
       - the "concept-link-ambiguous-binding" project tree
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
       when:
       - the Product Owner runs "scen check --fix"
       then:
@@ -7696,7 +7696,7 @@ scenarios:
     merged_steps:
       given:
       - the "concept-words-declare" project tree
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
       when:
       - the Product Owner runs "us refine host --fix"
       then:
@@ -7719,7 +7719,7 @@ scenarios:
     merged_steps:
       given:
       - the "concept-words-reword" project tree
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
       when:
       - the Product Owner runs "us refine host --fix"
       then:
@@ -7784,7 +7784,7 @@ scenarios:
     merged_steps:
       given:
       - the "concept-words-mapping" project tree
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
       when:
       - the Product Owner runs "scen check --fix"
       then:
@@ -7807,7 +7807,7 @@ scenarios:
     merged_steps:
       given:
       - the "concept-words-scenario-fix" project tree
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
       when:
       - the Product Owner runs "scen check --fix"
       then:
@@ -8093,7 +8093,7 @@ scenarios:
     merged_steps:
       given:
       - the "concept-steps-collision" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build steps --fix"
       then:
@@ -8115,7 +8115,7 @@ scenarios:
     merged_steps:
       given:
       - the "concept-steps-unused" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build steps --fix"
       then:
@@ -8136,7 +8136,7 @@ scenarios:
     merged_steps:
       given:
       - the "concept-steps-negative" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build steps --fix"
       then:
@@ -8158,7 +8158,7 @@ scenarios:
     merged_steps:
       given:
       - the "concept-steps-resume" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build steps --fix"
       then:
@@ -8183,7 +8183,7 @@ scenarios:
     merged_steps:
       given:
       - the "concept-steps-extend" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build steps --fix"
       then:
@@ -8208,7 +8208,7 @@ scenarios:
     merged_steps:
       given:
       - the "concept-bodies-cases" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build steps --fix"
       then:
@@ -8232,7 +8232,7 @@ scenarios:
     merged_steps:
       given:
       - the "concept-bodies-prompt" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build steps --fix"
       then:
@@ -8255,7 +8255,7 @@ scenarios:
     merged_steps:
       given:
       - the "concept-bodies-contract" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build steps --fix"
       then:
@@ -8278,7 +8278,7 @@ scenarios:
     merged_steps:
       given:
       - the "concept-bodies-extra" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build steps --fix"
       then:
@@ -8303,7 +8303,7 @@ scenarios:
     merged_steps:
       given:
       - the "concept-bodies-capture" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build steps --fix"
       then:

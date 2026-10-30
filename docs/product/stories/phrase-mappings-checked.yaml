@@ -90,7 +90,7 @@ story:
         steps:
         -   given:
             - the "phrase-mappings-fix" project tree
-            - the System Architect answers "1" to every question
+            - the System Architect's answer to every question is "1"
         -   when:
             - the System Architect runs "scen check --fix"
         -   then:
@@ -106,8 +106,8 @@ story:
         steps:
         -   given:
             - the "phrase-mappings-exit" project tree
-            - the System Architect answers "Call greet once with the literal person Ada, without the loud flag or any outgoing
-                call." to every question
+            - the System Architect's answer to every question is "Call greet once with the literal person Ada, without the loud
+                flag or any outgoing call."
         -   when:
             - the System Architect runs "scen check --fix"
         -   then:
@@ -123,7 +123,7 @@ story:
         steps:
         -   given:
             - the "phrase-mappings-fix-operation" project tree
-            - the System Architect answers "1" to every question
+            - the System Architect's answer to every question is "1"
         -   when:
             - the System Architect runs "scen check --fix"
         -   then:

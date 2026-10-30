@@ -13,7 +13,7 @@ story:
         - given:
             - "the \"scen-check-concurrent\" project tree"
             - "the validation CLIs are controlled for concurrent arrival"
-            - "the Quality Engineer answers \"1/1/3\" line by line"
+            - "the Quality Engineer's answers are \"1/1/3\" line by line"
         - when:
             - "the Quality Engineer runs \"scen check --fix\""
         - then:
@@ -27,7 +27,7 @@ story:
         - given:
             - "the \"scen-check-reverse\" project tree"
             - "the validation CLIs are controlled for concurrent arrival"
-            - "the Quality Engineer answers \"1/1/3\" line by line"
+            - "the Quality Engineer's answers are \"1/1/3\" line by line"
         - when:
             - "the Quality Engineer runs \"scen check --fix\""
         - then:

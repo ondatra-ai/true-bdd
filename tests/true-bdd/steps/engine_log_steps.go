@@ -98,9 +98,9 @@ func countEngineLog(records []engineLogRecord, msg string) int {
 	return count
 }
 
-// assertTestRunnerSpawned pins that the engine spawned a named framework
-// runner at least once — e.g. the "Cannot run …" case, where the spawn
-// record is the only proof the binary was reached before the fork failed.
+// The spawn record is the only proof the binary was reached when its start then failed.
+//
+//truebdd:concept then "engine activity"
 func assertTestRunnerSpawned(state *State, args []string) error {
 	want := args[0]
 
@@ -127,9 +127,9 @@ func assertTestRunnerSpawned(state *State, args []string) error {
 		"expected the engine to spawn test runner %q, but it spawned %v", want, spawned)
 }
 
-// assertTestRunnerArgs pins the argv a spawned runner carried: passes
-// when any spawn record's args, space-joined, match the given regexp —
-// proof the engine ran the exact command declared, not merely *a* runner.
+// Proof the engine ran the exact command declared, not merely a runner.
+//
+//truebdd:concept then "engine activity"
 func assertTestRunnerArgs(state *State, args []string) error {
 	pattern, err := regexp.Compile(args[0])
 	if err != nil {
@@ -161,9 +161,9 @@ func assertTestRunnerArgs(state *State, args []string) error {
 		args[0], seen)
 }
 
-// assertTestRunnerCount pins how many framework runners the engine
-// spawned — what separates "discovery failed and stopped" (one) from
-// "it went on to rerun a fixed test" (another).
+// Tells a discovery that failed and stopped (one spawn) from one that reran a fixed test.
+//
+//truebdd:concept then "engine activity"
 func assertTestRunnerCount(state *State, args []string) error {
 	want, err := numberSlot(args[0])
 	if err != nil {
@@ -184,9 +184,9 @@ func assertTestRunnerCount(state *State, args []string) error {
 	return nil
 }
 
-// assertNoTestRunnerSpawned pins that the engine spawned NO framework
-// runner — the startup-refusal case. The engine still wrote a log (its
-// "Refusing to start" record), so this passes on zero spawns, not a missing file.
+// A refused start still writes its log, so this passes on zero spawns, not on a missing log.
+//
+//truebdd:concept then "engine activity"
 func assertNoTestRunnerSpawned(state *State, _ []string) error {
 	records, err := readEngineLog(state)
 	if err != nil {
@@ -210,9 +210,9 @@ func assertNoTestRunnerSpawned(state *State, _ []string) error {
 	return nil
 }
 
-// assertAITurnCount pins how many model turns the engine dispatched,
-// counted at the router's dispatch record so it is one number regardless
-// of which CLI a tier named. Zero is the read-only walk that never fixes.
+// Counted at the router's dispatch record, whatever CLI a tier named.
+//
+//truebdd:concept then "engine activity"
 func assertAITurnCount(state *State, args []string) error {
 	want, err := numberSlot(args[0])
 	if err != nil {
@@ -233,9 +233,9 @@ func assertAITurnCount(state *State, args []string) error {
 	return nil
 }
 
-// assertAITurnsTo pins how many turns of one kind (validation, fix or
-// apply) the engine dispatched to one AI CLI, read off the dispatch
-// record's `role` and `cli`: proof of where a tier routed each turn.
+// Read off the dispatch record's role and cli: where a tier routed each kind of turn.
+//
+//truebdd:concept then "engine activity"
 func assertAITurnsTo(state *State, args []string) error {
 	want, err := numberSlot(args[0])
 	if err != nil {
@@ -278,6 +278,7 @@ func assertAITurnsTo(state *State, args []string) error {
 	return nil
 }
 
+//truebdd:concept then "engine activity"
 func assertTestRunnerMatchingCount(state *State, args []string) error {
 	want, err := numberSlot(args[0])
 	if err != nil {

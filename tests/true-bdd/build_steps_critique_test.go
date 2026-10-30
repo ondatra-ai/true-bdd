@@ -26,7 +26,7 @@ import (
 func TestBuildStepsCritique001Operation(t *testing.T) {
 	s := scenarios.New(t, "build-steps-critique-001-operation")
 	s.Given(`the "build-steps-critique-operation" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches BUILD STEPS COMPLETE`)
@@ -46,7 +46,7 @@ func TestBuildStepsCritique001Operation(t *testing.T) {
 func TestBuildStepsCritique002Assertion(t *testing.T) {
 	s := scenarios.New(t, "build-steps-critique-002-assertion")
 	s.Given(`the "build-steps-critique-assertion" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches BUILD STEPS COMPLETE`)
@@ -66,7 +66,7 @@ func TestBuildStepsCritique002Assertion(t *testing.T) {
 func TestBuildStepsCritique003Correct(t *testing.T) {
 	s := scenarios.New(t, "build-steps-critique-003-correct")
 	s.Given(`the "build-steps-critique-correct" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches BUILD STEPS COMPLETE`)
