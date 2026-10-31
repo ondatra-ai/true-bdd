@@ -222,16 +222,16 @@ type applyResultYAML struct {
 }
 
 // interfaceCannotServeYAML is build steps' verdict that the declared Public
-// interface cannot set up or observe a phrase.
+// interface cannot set up or observe the concept its Item writes.
 type interfaceCannotServeYAML struct {
-	Phrase string `yaml:"phrase"`
-	Lacks  string `yaml:"lacks"`
+	Concept string `yaml:"concept"`
+	Lacks   string `yaml:"lacks"`
 }
 
-// nonempty holds the verdict to a named phrase or lack: an empty
+// nonempty holds the verdict to a named concept or lack: an empty
 // `interface_cannot_serve:` key stops nothing.
 func (v *interfaceCannotServeYAML) nonempty() bool {
-	return v != nil && (strings.TrimSpace(v.Phrase) != "" || strings.TrimSpace(v.Lacks) != "")
+	return v != nil && (strings.TrimSpace(v.Concept) != "" || strings.TrimSpace(v.Lacks) != "")
 }
 
 // checkFixApplied returns an error when the applier explicitly reported
@@ -247,7 +247,7 @@ func checkFixApplied(content string) error {
 	}
 
 	if result.InterfaceCannotServe.nonempty() {
-		return pkgerrors.InterfaceCannotServe(result.InterfaceCannotServe.Phrase, result.InterfaceCannotServe.Lacks)
+		return pkgerrors.InterfaceCannotServe(result.InterfaceCannotServe.Concept, result.InterfaceCannotServe.Lacks)
 	}
 
 	if len(result.Impossible) > 0 {

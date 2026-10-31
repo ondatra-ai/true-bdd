@@ -176,21 +176,26 @@ func TestCheckFixAppliedRejectsFencedFalse(t *testing.T) {
 	}
 }
 
-// Only a named phrase or lack is build steps' architectural stop: an empty
-// `interface_cannot_serve:` key must leave an ordinary confirmation alone.
+// Only a named concept or lack is build steps' architectural stop, and the
+// stop names both; an empty `interface_cannot_serve:` key must leave an
+// ordinary confirmation alone.
 func TestCheckFixAppliedStopsOnlyOnANonemptyInterfaceVerdict(t *testing.T) {
 	t.Parallel()
 
-	named := "interface_cannot_serve:\n  phrase: \"the number is halved\"\n  lacks: \"no halve command\"\n"
+	named := "interface_cannot_serve:\n  concept: \"when concept \\\"halving\\\"\"\n  lacks: \"no halve command\"\n"
 
 	err := checkFixApplied(named)
 	if !errors.Is(err, pkgerrors.ErrInterfaceCannotServe) {
 		t.Fatalf("checkFixApplied(named) error = %v, want ErrInterfaceCannotServe", err)
 	}
 
+	if want := `cannot serve when concept "halving": no halve command`; !strings.Contains(err.Error(), want) {
+		t.Errorf("checkFixApplied(named) error = %q, want it to contain %q", err, want)
+	}
+
 	for _, content := range []string{
 		"interface_cannot_serve:\napplied: true\n",
-		"interface_cannot_serve:\n  phrase: \"\"\n  lacks: \" \"\napplied: true\n",
+		"interface_cannot_serve:\n  concept: \"\"\n  lacks: \" \"\napplied: true\n",
 	} {
 		err = checkFixApplied(content)
 		if err != nil {
