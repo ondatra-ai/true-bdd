@@ -1,13 +1,3 @@
-# Registry seed for `scen-check-happy-path`.
-#
-# One Scenario a Story claims, written to pass every prompt of the
-# shipped scen-check checklist, so one un-narrowed walk observes all of
-# them passing: every step matches one catalogue phrase whose terms the
-# glossary defines and the architecture maps, each phrase's meaning says
-# what is observed and the steps use it in that meaning, and the
-# description is a one-sentence `must` rule with a measurable, binary
-# outcome in the product's vocabulary.
-
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
   version: "2.0"

@@ -2,7 +2,7 @@ opencli: 0.1
 info: {title: Calculator CLI, version: '1.0'}
 commands:
   double:
-    description: Run go run ./services/calc double VALUE from the host root; stdout is the doubled integer and a newline.
+    description: The calculator program, built with go build from ./services/calc at the host root; calc double VALUE prints the doubled integer and a newline.
     parameters:
       - {name: value, in: argument, required: true, schema: {type: integer}}
     responses:

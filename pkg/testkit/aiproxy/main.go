@@ -13,9 +13,8 @@
 //   - replay: never touch the real CLI — apply the cassette's fs-diff,
 //     emit the recorded stdout verbatim, exit with the recorded code.
 //
-// Cassettes are matched by arrival order per binary name (claude-001,
-// claude-002, codex-001, …); a normalized request hash verifies each
-// match and fails loudly on drift instead of replaying garbage.
+// Replay claims unconsumed cassettes by normalized request hash per binary.
+// Identical requests consume occurrences in recorded-number order.
 package main
 
 import (

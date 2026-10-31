@@ -1,0 +1,35 @@
+{
+  "roles": [
+    {
+      "name": "Product Owner",
+      "description": "Owns meanings."
+    }
+  ],
+  "concepts": {
+    "given": [
+      {
+        "concept": "number ready",
+        "means": "A number is entered before the action.",
+        "terms": []
+      }
+    ],
+    "when": [
+      {
+        "concept": "halve",
+        "means": "Halve the entered number once.",
+        "terms": []
+      }
+    ],
+    "then": [
+      {
+        "concept": "number result",
+        "means": "Compare the displayed number with an expected value.",
+        "terms": []
+      }
+    ]
+  },
+  "glossary": [],
+  "description": {
+    "summary": "The calculator offers separate Halve and Square controls. Halve divides the entered number by two; Square multiplies the entered number by itself."
+  }
+}

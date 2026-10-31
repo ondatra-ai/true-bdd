@@ -77,7 +77,7 @@ func promptProblem[I any](command string, set checks.Set[I], promptCtx *checklis
 	}
 
 	if !prompt.IsCheck() {
-		return nil
+		return conceptPromptDocs(promptCtx)
 	}
 
 	check, known := set[prompt.Check]
@@ -144,18 +144,49 @@ func describeParams(params []string) string {
 	return strings.Join(params, ", ")
 }
 
-// walkOrder puts every `D:` prompt before any `Q:` one, each kind in file
-// order, so a failed check can spare its item the model turns.
+const (
+	phaseCheck = iota
+	phaseLink
+	phaseModel
+)
+
+// walkOrder answers D prompts, then concept links, then the other Q prompts.
+// Each group keeps file order and every Cell keeps its original artifact index.
 func walkOrder(prompts []checklistmodels.PromptWithContext) []checklistmodels.PromptWithContext {
 	ordered := make([]checklistmodels.PromptWithContext, 0, len(prompts))
-
-	for _, wantCheck := range []bool{true, false} {
-		for idx := range prompts {
-			if prompts[idx].Prompt.IsCheck() == wantCheck {
-				ordered = append(ordered, prompts[idx])
+	for _, phase := range []int{phaseCheck, phaseLink, phaseModel} {
+		for index := range prompts {
+			if promptPhase(&prompts[index]) == phase {
+				ordered = append(ordered, prompts[index])
 			}
 		}
 	}
 
 	return ordered
+}
+
+func promptPhase(prompt *checklistmodels.PromptWithContext) int {
+	if prompt.Prompt.IsCheck() {
+		return phaseCheck
+	}
+
+	if prompt.Prompt.With["concepts"] == linkJudgement {
+		return phaseLink
+	}
+
+	return phaseModel
+}
+
+func conceptPromptDocs(prompt *checklistmodels.PromptWithContext) error {
+	kind, configured := prompt.Prompt.With["concepts"]
+	if !configured {
+		return nil
+	}
+
+	required := []string{"product"}
+	if kind == "bindings" || kind == "sketch" || kind == "propose" {
+		required = append(required, "architecture_yaml")
+	}
+
+	return uncitedDoc(prompt, required)
 }

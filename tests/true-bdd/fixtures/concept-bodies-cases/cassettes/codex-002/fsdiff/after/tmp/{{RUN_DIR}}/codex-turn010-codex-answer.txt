@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-then-output-iter2-result.yaml ===
+applied: true
+target: "tests/calc/steps/concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e.go"
+summary: "Applied the supplied output regex matching body and grouped imports; all other files unchanged."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-then-output-iter2-result.yaml ===

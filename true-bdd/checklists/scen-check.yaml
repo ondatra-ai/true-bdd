@@ -6,15 +6,13 @@
 # prompt carries an `F:`, so `--fix` walks the whole checklist.
 #
 # term_closure holds a scenario's words to the documents that define
-# them. Its six `D:` prompts are answered by the engine's own checks,
+# them. Its five `D:` prompts are answered by the engine's own checks,
 # with no AI turn, before any `Q:`; a scenario failing one skips its
 # `Q:` prompts until it is fixed. Their fixes write the product or the
-# architecture document, never the scenario. Its two `Q:` prompts ask a
-# model what no check can settle: whether a phrase's meaning says
-# something, and whether the scenario uses the phrase in that meaning.
-# The five phrase/term checks pass a scenario no Story claims, or a host
-# whose product document declares no catalogue, as "not checked". The
-# public-interface check holds every Scenario to its service declaration.
+# architecture document, never the scenario. The four concept checks
+# pass every scenario of a host whose product document declares no
+# concepts as "not checked". The public-interface check holds every
+# Scenario to its service declaration.
 #
 # scenario_quality holds the eight questions of the `us-refine`
 # acceptance-criteria checklist that still mean something applied to a
@@ -28,16 +26,10 @@ last_updated: "2026-10-21"
 sections:
   - id: term_closure
     name: "Term Closure"
-    description: "Every step of a Scenario a Story claims must match one catalogue phrase whose words are defined, mapped and observed by one step definition, and mean what the Scenario uses them for."
+    description: "Every concept's words must be defined and mapped, every binding must name a declared concept and its service's Public interface, and every step must bind one step definition recording a declared concept of its block."
     validation_prompts:
-      - D: step-phrases
-        rationale: "A step outside the catalogue has no stated meaning, so no step definition follows from the spec."
-        docs:
-          - product
-        F: "Propose one catalogue entry (template, block, means, terms) for the failing step, asking what it means first. Write it to the product document, never to the Scenario."
-
       - D: declared-terms
-        rationale: "A phrase whose meaning relies on an undefined word still has no stated meaning, so no step definition follows from the spec."
+        rationale: "A concept whose meaning relies on an undefined word still has no stated meaning, so no step definition follows from the spec."
         docs:
           - product
         F: "Propose one glossary entry (term, means) for each undefined term, asking what it means first. Write it to the product document's glossary, never to the Scenario."
@@ -50,87 +42,10 @@ sections:
         F: "Propose one architecture.terms entry (term, technical, observed_by) for each unmapped term, asking how it is built and observed first. Write it to the architecture document, never to the Scenario."
 
       - D: step-definitions
-        rationale: "A template bound to two step definitions, or a definition two templates reach, means the catalogue and the steps disagree on what a phrase is, so no step definition follows from the spec."
+        rationale: "A step bound to two step definitions, or to one recording no declared concept of its block, leaves what runs for it to chance, so no step definition follows from the spec."
         docs:
           - product
-        F: "Split or merge catalogue entries so each template binds to one step definition and each definition is reached by one template, asking what the phrases mean first. Write it to the product document's catalogue, never to the Scenario or a step definition."
-
-      - Q: |
-          Decide whether each catalogue phrase this scenario's steps use
-          states an adequate meaning. Read the product document's
-          `catalogue:`, `glossary:` and `roles:`, and the architecture
-          document's `architecture.terms:`. For every step that does not
-          open with `llm:` or `judge:`, find the one catalogue entry
-          whose template matches it (a leading "and" or "but" is the
-          step's keyword, not its text), and judge that entry's `means`.
-          A meaning is inadequate when any of:
-          - it only restates the template's words, so a reader learns
-            nothing the step's own text did not already say
-          - it names nothing a person could set up or observe from
-            outside the product
-          - it relies on a word the glossary does not define, or uses a
-            term the entry declares against that term's glossary meaning
-            or its architecture mapping
-          - the template ends in a pattern slot and the meaning does not
-            say which product output the pattern is held against: a line
-            the program prints as its answer, or a log record's message
-            or fields
-
-          When the product document declares no `catalogue:`, or no
-          Story claims this scenario (its lineage is empty), pass
-          without judging.
-
-          Pass when every entry the steps use states an adequate meaning.
-          Fail when any entry does not.
-
-          Context: emit one line per entry the steps use, or the one
-          "not checked" line.
-            - "<scenario id>: not checked: <the product document declares no catalogue | no Story claims this scenario yet>"
-            - "<scenario id>: '<template>' — ok"
-            - "<scenario id>: '<template>' — <what its meaning lacks>"
-        rationale: "A phrase whose meaning names nothing observable leaves its step definition to guesswork, so the spec does not determine the test."
-        docs:
-          - product
-          - architecture_yaml
-        F: "Rewrite the means of each catalogue entry the findings name, in the product document, so it says what a step of that shape sets up or observes from outside the product, in the glossary's words, asking what the phrase is meant to observe first when the documents do not say. Change only those entries' means, never a template, and never the Scenario."
-
-      - Q: |
-          Decide whether this scenario uses each catalogue phrase in the
-          meaning its entry states. Read the product document's
-          `catalogue:` and `glossary:`, and the architecture document's
-          `architecture.terms:`. For every step that does not open with
-          `llm:` or `judge:`, find the one catalogue entry whose template
-          matches it (a leading "and" or "but" is the step's keyword, not
-          its text), read its `means` with the step's own slot values in
-          place, and judge the step as this scenario uses it. A violation
-          is any of:
-          - the step, read through its entry's meaning, sets up or
-            asserts something other than what this scenario's
-            description needs from it
-          - a pattern slot's value names no observable product output:
-            it is held against neither a line the program prints as its
-            answer nor a log record's message or fields, but an internal
-            name, a code identifier or a file the user never sees
-          - a quoted or number slot carries a value the entry's meaning
-            rules out
-
-          When the product document declares no `catalogue:`, or no
-          Story claims this scenario (its lineage is empty), pass
-          without judging.
-
-          Pass when every step uses its phrase in the phrase's meaning.
-          Fail when any step does not.
-
-          Context: emit one line per violating step, or one line when
-          there is none.
-            - "<scenario id>: not checked: <the product document declares no catalogue | no Story claims this scenario yet>"
-            - "<scenario id>: ok"
-            - "<scenario id>: <given|when|then> step '<step text>' — <how it departs from '<template>'>"
-        rationale: "A step that borrows a phrase for another meaning passes every structural check while its step definition tests something the scenario never meant."
-        docs:
-          - product
-          - architecture_yaml
-        F: "Rewrite each step the findings name, in this Scenario's registry entry, so it uses a catalogue phrase in that phrase's meaning and still matches exactly one template: change its slot value, or reword it into the shape of the entry whose meaning fits. Keep what the Scenario specifies; change nothing else."
+        F: "Ask what each named step means first, then propose the concept of its block that its one step definition records, declared in the product document's concepts. Write it to the product document, never to the Scenario or a step definition; a step bound to two definitions is the suite's to repair."
 
       - D: public-interface
         rationale: "A Scenario must observe what its service offers across a process boundary, declared before the code is built."
@@ -138,12 +53,12 @@ sections:
           - architecture_yaml
         F: "Ask the System Architect what this service offers across its process boundary, then propose its public_interface declaration in the architecture document: cli names an OpenCLI-like document with named extensions, http names an OpenAPI 3 document, ui lists elements by role and accessible name within a page or region. Write the architecture document, and a document it names where the answers say it lacks what the service offers, never the Scenario."
 
-      - D: phrase-mappings
-        rationale: "A phrase without a Public interface operation leaves its step definition to invent what to do."
+      - D: concept-bindings
+        rationale: "A binding naming no declared concept, bound twice, or referencing what its service's Public interface does not declare leaves its step definitions to invent what to do."
         docs:
           - product
           - architecture_yaml
-        F: "Ask the System Architect what a step of this shape does through the service's Public interface, by block: a when calls an operation, a given sets up state, a then observes and compares. Propose one architecture.phrases entry with the verbatim template, service, references and does sentence, or intent for a UI service, and add to the Public interface document what the answers name that it does not declare yet. Write the architecture and that document only after apply, never the Scenario."
+        F: "Ask the System Architect what a step of the concept does through the service's Public interface, by block: a when calls an operation, a given sets up state, a then observes and compares. Propose architecture.concepts with the declared concept name and block, service, references and does, or intent for a UI service, and add to the Public interface document what the answers name that it does not declare yet. Write the architecture and that document only after apply, never the Scenario."
 
   - id: scenario_quality
     name: "Scenario Quality"
@@ -280,3 +195,105 @@ sections:
             - "<scenario id>: subjective — '<reason>'"
         rationale: "A scenario a reviewer must interpret is a scenario two runs can disagree about while both being right."
         F: "Rewrite the subjective outcome in this Scenario's registry entry, in its description and the step that asserts it, as one a reviewer decides without judgement, asking what counts as correct first. Keep the behaviour."
+
+  - id: concept_link
+    name: "Concept Link"
+    description: "Every free-text step links to exactly one concept of its own block."
+    validation_prompts:
+      - Q: |
+          Link every step of this Item to a product concept of its own block.
+          Given is a state before the behaviour, When an action or event,
+          Then an observable outcome. A concept is one Public interface item
+          and kind of use, as the wording fixes it; an argument's target
+          does not change the concept. Read the product roles and glossary.
+          Score EVERY concept of the step's block, from 0 to 10:
+          10: a plain instance; 9: an instance in other words without doubt;
+          7 or 8: related but partly outside its meaning, or another fits as well;
+          1 to 6: not this concept; 0: unrelated.
+          Read means as CLOSED: it admits only the variations its prose states,
+          never everything in the same area. An unstated variation scores at most 8.
+          A step of the wrong kind for its block scores at most 4 for every
+          concept of that block. Name the other block's concept it is an instance
+          of in other_block_concept, or null if none. For a right-kind step use null.
+          Give a reason for the highest score, or why none fits.
+          judge: clauses are unlinked: omit them from the answer.
+          llm: steps link by their intent; strip the prefix when judging meaning.
+          Answer steps by their supplied keys, with every concept a required
+          key of scores, a reason and other_block_concept. Change nothing.
+        with:
+          concepts: link
+          threshold: 9
+        rationale: "A step without one closed meaning cannot yield an unambiguous definition."
+        docs: [product]
+        F: |
+          Offer the Product Owner a rewritten step applied to the Story or
+          Scenario, a wider concept when its Public interface item and kind of
+          use already exist, or else a new concept for the new item or use.
+          Concepts have concept, means and terms, with variations in closed prose.
+          Apply concept changes only to the product document and a rewrite only
+          to the Item. Show the exact change at the menu and wait for apply.
+
+  - id: concept_bindings
+    name: "Concept Bindings"
+    description: "Every concept linked by this Scenario is bound for its service and unambiguous."
+    validation_prompts:
+      - Q: |
+          Judge every supplied linked concept's binding for this Scenario's service.
+          Given its closed means, the binding's does, its references and the
+          complete declared Public interface, is it unambiguous enough for an
+          LLM to write a step definition from? A Given puts the state in place;
+          a When calls; a Then observes and compares. All admitted variations
+          need explicit instructions, inputs and an objective observable result.
+          An intent binding must say the intent an llm: step performs through
+          the UI, with no guessed behaviour or hidden implementation dependency.
+          Answer every binding by its supplied key with unambiguous (boolean)
+          and a reason. Never infer absent instructions or silently pass an
+          ambiguous binding. Change nothing.
+        with:
+          concepts: bindings
+        rationale: "A linked meaning needs one usable implementation contract for its service."
+        docs: [product, architecture_yaml]
+        F: |
+          Offer the System Architect a binding for every missing or ambiguous
+          linked concept, for this Scenario's service: concept, block, service,
+          references and does, or intent for a UI step performed by a model.
+          Judge against the declared Public interface and extend it only where
+          needed. If the meaning needs repair, offer the Product Owner a wider
+          or corrected concept in the product document. Show each exact change
+          at the menu; apply only the approved change after apply.
+
+  - id: concept_words
+    name: "Concept Words"
+    description: "Linked meanings rely only on declared terms and plain English."
+    validation_prompts:
+      - Q: |
+          Judge the means of EVERY supplied linked concept, using the product
+          document's glossary for its declared terms. Name every domain word
+          or expression its means relies on that is neither declared in THAT
+          concept's terms nor readable as plain English in that means's context.
+          A glossary entry alone does not declare a term for a concept.
+          Plain English that already defines the word in this context passes;
+          do not demand glossary entries for ordinary words or infer a special
+          domain meaning without evidence. Judge means, not the concept's name,
+          steps, bindings or unrelated concepts. Trust no earlier judgement.
+          Judge each concept independently. Every word in undeclared_words
+          must occur in THAT concept's means; never carry a word from another
+          verdict. Keep the list consistent with the reason: if none is
+          undeclared, return exactly an empty array.
+          For every supplied concept key return undeclared_words (the exact
+          words, or an empty array when none) and a nonempty reason explaining
+          the verdict. Omit no concept. Change nothing.
+        with:
+          concepts: words
+        rationale: "An undeclared domain word leaves a linked meaning open to interpretation."
+        docs: [product]
+        F: |
+          Offer the Product Owner a declared term (a glossary entry with term and
+          means fields, and the word as a string in the affected concept's terms),
+          or reword that concept's means in product words and plain English without
+          a new term. Use the product document's schema, never a meaning field.
+          Preserve the meaning and unrelated concepts. Propose exact YAML for
+          the product document only. Show the change at the menu and apply only
+          after apply. Do not edit the Story, Scenario or architecture. A newly
+          declared term's Word mapping is the System Architect's later work
+          through scen check's D: term-mappings; refinement never waits for it.

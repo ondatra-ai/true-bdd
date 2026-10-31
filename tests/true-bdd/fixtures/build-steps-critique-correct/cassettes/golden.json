@@ -3,18 +3,18 @@
   "fixture": "build-steps-critique-correct",
   "files": [
     {
-      "path": "tests/calc/steps/phrase7c963587b98a9c9fa59fafbd25518c3af0d8d428753a4c888f114e5a06aa3242.go",
+      "path": "tests/calc/steps/concept08bdc8ba20fbc17f8cbea598ca6da5bdbc121817e637f18277eb83c75896fcf3.go",
       "kind": "created",
-      "size": 251,
-      "sha256": "3aa9b94b8417126b4319b96d1e3010172b53a3fa72b110ffca8f0c0dc980ef14",
-      "text": "package steps\n\nimport \"strconv\"\n\nfunc phrase7c963587b98a9c9fa59fafbd25518c3af0d8d428753a4c888f114e5a06aa3242(state *State, args []string) error {\n\tvalue, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn err\n\t}\n\tstate.Value = value\n\treturn nil\n}\n"
+      "size": 614,
+      "sha256": "221d923993ed851030a8783695ceb7556aadfa6e8b7ce44bd5ae257f2619b445",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"os/exec\"\n\t\"path/filepath\"\n)\n\n//truebdd:concept given \"installation\"\nfunc concept08bdc8ba20fbc17f8cbea598ca6da5bdbc121817e637f18277eb83c75896fcf3(state *State, args []string) error {\n\tprogram, err := filepath.Abs(\"../../tmp/calc-program/calc\")\n\tif err != nil {\n\t\treturn fmt.Errorf(\"resolve calculator program path: %w\", err)\n\t}\n\n\tbuild := exec.Command(\"go\", \"build\", \"-o\", program, \"./services/calc\")\n\tbuild.Dir = \"../..\"\n\toutput, err := build.CombinedOutput()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"build calculator: %w: %s\", err, output)\n\t}\n\n\tstate.Program = program\n\treturn nil\n}\n"
     },
     {
       "path": "tests/calc/steps/register.go",
       "kind": "modified",
-      "size": 519,
-      "sha256": "8bcd4eac2859cb7798fed80bba23f3580a937e50e84308f12bd9013502e74584",
-      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"strconv\"\n)\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the number is doubled$`, double)\n\tsuite.Step(`^the result is (\\d+)$`, result)\n\n\tsuite.Step(\"\\\\Athe number is ((?:[0-9]+|no))\\\\z\", phrase7c963587b98a9c9fa59fafbd25518c3af0d8d428753a4c888f114e5a06aa3242)\n}\nfunc result(state *State, args []string) error {\n\twant, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn err\n\t}\n\tif state.Value != want {\n\t\treturn fmt.Errorf(\"expected %d, got %d\", want, state.Value)\n\t}\n\treturn nil\n}\n"
+      "size": 1034,
+      "sha256": "d175f801eca7160f8b03de0dbfec35636f3caf80545020ca3831ef8dc8c223f2",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the Owner doubles (-?\\d+)$`, doubling)\n\tsuite.Step(`^the result is (-?\\d+)$`, result)\n\n\tsuite.Step(\"^the calculator is installed$\", concept08bdc8ba20fbc17f8cbea598ca6da5bdbc121817e637f18277eb83c75896fcf3)\n}\n\n//truebdd:concept when \"doubling\"\nfunc doubling(state *State, args []string) error {\n\tif state.Program == \"\" {\n\t\treturn fmt.Errorf(\"the calculator is not installed\")\n\t}\n\tcommand := exec.Command(state.Program, \"double\", args[0])\n\tcommand.Dir = \"../..\"\n\toutput, err := command.CombinedOutput()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"calculator double: %w: %s\", err, output)\n\t}\n\tstate.Value, err = strconv.Atoi(strings.TrimSpace(string(output)))\n\treturn err\n}\n\n//truebdd:concept then \"result\"\nfunc result(state *State, args []string) error {\n\twant, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn err\n\t}\n\tif state.Value != want {\n\t\treturn fmt.Errorf(\"expected %d, got %d\", want, state.Value)\n\t}\n\treturn nil\n}\n"
     }
   ]
 }

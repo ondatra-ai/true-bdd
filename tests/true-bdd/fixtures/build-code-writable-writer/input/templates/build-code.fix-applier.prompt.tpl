@@ -33,14 +33,16 @@ Tests: {{ join ", " .IDs }}
 {{ end }}
 
 {{ with .Subject.Specification }}
-{{ if .Declared }}
+{{ if .Concepts }}
 ## What the spec says these steps mean
 
-### Phrases
-{{ range .Phrases }}
-- `{{ .Template }}` ({{ .Block }} step): {{ .Means }}
+### Concepts
+{{ range .Concepts }}
+- `{{ .Concept }}` ({{ .Block }} concept): {{ .Means }}
   Words: {{ if .Terms }}{{ join ", " .Terms }}{{ else }}none{{ end }}
-{{ end }}
+{{ range .Bindings }}  Bound for {{ .Service }} {{ if .Intent }}by intent: {{ .Intent }}{{ else }}through {{ join ", " .References }}: {{ .Does }}{{ end }}
+{{ else }}  The architecture binds it for no service of these steps.
+{{ end }}{{ end }}
 
 ### Words
 {{ range .Terms }}

@@ -1,0 +1,44 @@
+# Fixture checklist for `concept-link-unquoted-confirmation`.
+#
+# The shipped concept-link Prompt alone, copied verbatim, with its fix.
+
+version: "1.0"
+last_updated: "2026-10-30"
+
+sections:
+  - id: concept_link
+    name: "Concept Link"
+    description: "Every free-text step links to exactly one concept of its own block."
+    validation_prompts:
+      - Q: |
+          Link every step of this Item to a product concept of its own block.
+          Given is a state before the behaviour, When an action or event,
+          Then an observable outcome. A concept is one Public interface item
+          and kind of use, as the wording fixes it; an argument's target
+          does not change the concept. Read the product roles and glossary.
+          Score EVERY concept of the step's block, from 0 to 10:
+          10: a plain instance; 9: an instance in other words without doubt;
+          7 or 8: related but partly outside its meaning, or another fits as well;
+          1 to 6: not this concept; 0: unrelated.
+          Read means as CLOSED: it admits only the variations its prose states,
+          never everything in the same area. An unstated variation scores at most 8.
+          A step of the wrong kind for its block scores at most 4 for every
+          concept of that block. Name the other block's concept it is an instance
+          of in other_block_concept, or null if none. For a right-kind step use null.
+          Give a reason for the highest score, or why none fits.
+          judge: clauses are unlinked: omit them from the answer.
+          llm: steps link by their intent; strip the prefix when judging meaning.
+          Answer steps by their supplied keys, with every concept a required
+          key of scores, a reason and other_block_concept. Change nothing.
+        with:
+          concepts: link
+          threshold: 9
+        rationale: "A step without one closed meaning cannot yield an unambiguous definition."
+        docs: [product]
+        F: |
+          Offer the Product Owner a rewritten step applied to the Story or
+          Scenario, a wider concept when its Public interface item and kind of
+          use already exist, or else a new concept for the new item or use.
+          Concepts have concept, means and terms, with variations in closed prose.
+          Apply concept changes only to the product document and a rewrite only
+          to the Item. Show the exact change at the menu and wait for apply.

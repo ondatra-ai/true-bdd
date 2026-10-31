@@ -7,30 +7,30 @@ so_that: "I can scan a document"
 status: "PLANNED"
 acceptance_criteria:
   - id: "001-brief"
-    description: 'The viewer must display a summary of at most 150 words when the Calculator User requests the brief view.'
+    description: "The viewer must display a summary of at most 150 words when the Calculator User requests the brief view."
     steps:
       - given:
-          - 'a shared document is selected'
+          - "a shared document is selected"
       - when:
-          - 'the Calculator User requests the "brief" view'
+          - "the Calculator User requests the \"brief\" view"
       - then:
-          - 'the summary has at most 150 words'
+          - "the displayed summary contains at most 150 words"
   - id: "002-overview"
-    description: 'The viewer must display a summary of at most 150 words when the Calculator User requests the overview view.'
+    description: "The viewer must display a summary of at most 150 words when the Calculator User requests the overview view."
     steps:
       - given:
-          - 'a shared document is selected'
+          - "a shared document is selected"
       - when:
-          - 'the Calculator User requests the "overview" view'
+          - "the Calculator User requests the \"overview\" view"
       - then:
-          - 'the summary has at most 150 words'
+          - "the displayed summary contains at most 150 words"
   - id: "003-preview"
-    description: 'The viewer must display a summary of at most 150 words when the Calculator User requests the preview view.'
+    description: "The viewer must display a summary of at most 150 words when the Calculator User requests the preview view."
     steps:
       - given:
-          - 'a shared document is selected'
+          - "a shared document is selected"
       - when:
-          - 'the Calculator User requests the "preview" view'
+          - "the Calculator User requests the \"preview\" view"
       - then:
-          - 'the summary has at most 150 words'
+          - "the displayed summary contains at most 150 words"
 === FILE_END: tmp/{{RUN_DIR}}/apply-summary-views-iter1-result.yaml ===

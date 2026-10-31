@@ -10,22 +10,23 @@ import (
 
 func registerClaudeGuardSteps(suite *bddgo.Suite[State]) {
 	suite.Step(`^claude's write policy lets the turn write under "([^"]+)"$`, grantWriteRoot)
-	suite.Step(`^claude hands the guard no write policy$`, withholdPolicy)
-	suite.Step(`^claude hands the guard an unreadable write policy$`, garblePolicy)
-	suite.Step(`^claude hands the guard a write policy with no read root$`, omitReadRoot)
-	suite.Step(`^claude pipes the hook payload naming the tool "([^"]+)" and the path "([^"]+)"$`, pipePathPayload)
-	suite.Step(`^claude names the tool "([^"]+)"$`, nameTool)
-	suite.Step(`^claude names the file "([^"]+)" of the project tree$`, nameTreeFile)
-	suite.Step(`^claude names the path "([^"]+)" as written$`, nameLiteralPath)
-	suite.Step(`^claude pipes the hook payload naming the tool "([^"]+)" and the file "([^"]+)"$`, pipePayload)
+	suite.Step(`^claude's write policy is missing$`, withholdPolicy)
+	suite.Step(`^claude's write policy is unreadable$`, garblePolicy)
+	suite.Step(`^claude's write policy names no directory to read$`, omitReadRoot)
+	suite.Step(`^the hook payload names the tool "([^"]+)" and the path "([^"]+)"$`, pipePathPayload)
+	suite.Step(`^the tool call names the tool "([^"]+)"$`, nameTool)
+	suite.Step(`^the tool call names the file "([^"]+)" of the project tree$`, nameTreeFile)
+	suite.Step(`^the tool call names the path "([^"]+)" as written$`, nameLiteralPath)
+	suite.Step(`^the hook payload names the tool "([^"]+)" and the file "([^"]+)"$`, pipePayload)
 
 	suite.Step(`^claude's write policy grants the test command "([^"]+)" with selector "([^"]+)" in "([^"]+)"$`,
 		grantTestCommand)
-	suite.Step(`^claude pipes a "(foreground|background)" shell call in directory "([^"]+)" with command (.+)$`,
+	suite.Step(`^the tool call is a "(foreground|background)" shell call in directory "([^"]+)" with command (.+)$`,
 		pipeClaudeShell)
 	suite.Step(`^claude asks the guard about the tool call$`, askClaudeGuard)
 }
 
+//truebdd:concept given "tool call"
 func pipeClaudeShell(state *State, args []string) error {
 	call := state.guard()
 	call.background = args[0] == "background"
@@ -34,6 +35,7 @@ func pipeClaudeShell(state *State, args []string) error {
 	return nil
 }
 
+//truebdd:concept when "the write guard is asked"
 func askClaudeGuard(state *State, _ []string) error {
 	if state.Fixture == nil {
 		return state.fail("%w", ErrNoTreePrepared)

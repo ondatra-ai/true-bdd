@@ -5,9 +5,9 @@
     {
       "path": "docs/scenarios.yaml",
       "kind": "modified",
-      "size": 1189,
-      "sha256": "f910df8ba4052a4799303258cce48ca00e8413d711171b2f1d358f24032bbdb0",
-      "text": "# Registry seed for `scen-check-fix-rewrites-description`.\n#\n# The happy path's claimed Scenario with one defect, walked with --fix\n# against the whole shipped checklist: its description states what\n# happens but no rule, with neither must nor should. Every other prompt\n# passes it. The fix rewrites the description here, in this entry, and\n# the re-walk asks every prompt about the Scenario as it now reads.\n\nmetadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-10-21\"\n  description: \"One claimed scenario whose description is not a rule\"\n\nscenarios:\n  E2E-001:\n    description: The greeter must print the configured greeting followed by the name it is run with, and must exit with code 0\n    service: greeter\n    path: tests/greeter/greet_test.go\n    user_stories:\n      - story: docs/product/stories/greet-by-name.yaml\n        scenario_id: greet-by-name-001-prints-greeting\n        merge_date: \"2026-10-21\"\n    merged_steps:\n      given:\n        - the greeting is configured as \"Hello\"\n      when:\n        - the Operator runs \"greet Ada\"\n      then:\n        - the command exits with code 0\n        - and: stdout matches ^Hello Ada$\n"
+      "size": 775,
+      "sha256": "a360a0128551096e5b8dd82223d048b5c62930f2a9eca4024176f2b73a12f936",
+      "text": "metadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-10-21\"\n  description: \"One claimed scenario whose description is not a rule\"\n\nscenarios:\n  E2E-001:\n    description: The greeter must print the configured greeting followed by the name it was given and must exit with code 0\n    service: greeter\n    path: tests/greeter/greet_test.go\n    user_stories:\n      - story: docs/product/stories/greet-by-name.yaml\n        scenario_id: greet-by-name-001-prints-greeting\n        merge_date: \"2026-10-21\"\n    merged_steps:\n      given:\n        - the greeting is configured as \"Hello\"\n      when:\n        - the Operator runs \"greet Ada\"\n      then:\n        - the command exits with code 0\n        - and: stdout matches ^Hello Ada$\n"
     }
   ]
 }

@@ -1,0 +1,67 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+Apply only the exact concept, binding or step repair approved at the menu.
+Edit only the listed working copies. Preserve every unaffected entry.
+For a Story step rewrite, return the complete Story YAML instead of editing
+a document. For document edits return the requested confirmation markers.
+
+
+### TASK
+
+The responsible person chose apply at the menu for Scenario alpha.
+Approved fix:
+REPAIR PROPOSAL — Item: alpha (service: calc) — DO NOT APPLY WITHOUT A MENU DECISION
+
+Failed judgement
+- when step "activate the Halve button once with the keyboard to halve six" reached no concept at threshold 9 (best score: "halve" = 5).
+- Cause: the when-concept "halve" names the right Public interface item (the Halve button) and the right kind of use (invoke the control once, replacing the entered number with its half), but its closed prose fixes one variation of that use — "by activating its button with a pointer". Keyboard activation of the same control is therefore not admitted, although the product description states: "The calculator has a single Halve control. A pointer click and a keyboard activation of this same control must invoke the same halving operation once."
+
+Chosen repair: widen the existing concept (no rewritten step, no new concept)
+- The interface item and the kind of use already exist, so the repair is one added variation in the closed prose of "halve", not a new concept.
+- No rewrite of the Item: the step already names the item ("the Halve button"), the use ("once ... to halve") and the variation ("with the keyboard"); it is the concept that is too narrow.
+- No binding change: the System Architect's binding for "halve" in docs/architecture/architecture.yaml already admits both variations ("Click Halve once for a pointer request, or focus Halve and press Enter once for a keyboard request."). It stays untouched.
+
+Owner of this change: Product Owner (concept means in the product document).
+
+EXACT CHANGE — one file, one field
+
+File: docs/product/product.yaml
+Path: concepts.when[0] (concept: "halve") → means   (line 19)
+
+Before:
+        "means": "Invoke the Halve control once by activating its button with a pointer, replacing the entered number with its half.",
+
+After:
+        "means": "Invoke the Halve control once by activating its button, with a pointer or from the keyboard, replacing the entered number with its half.",
+
+Resulting concept entry in full (concept name and terms unchanged):
+      {
+        "concept": "halve",
+        "means": "Invoke the Halve control once by activating its button, with a pointer or from the keyboard, replacing the entered number with its half.",
+        "terms": []
+      }
+
+Unaffected and deliberately unchanged
+- Item alpha: all three steps keep their current wording (given "six is entered", when "activate the Halve button once with the keyboard to halve six", then "three is displayed").
+- Concepts "number ready" (given) and "number result" (then): unchanged; both already linked at score 10.
+- docs/architecture/architecture.yaml: unchanged.
+
+Expected effect: the when step becomes a plain instance of the widened "halve" concept — same item, same single invocation, keyboard named as an admitted variation — while the pointer variation stays admitted for any pointer-click Item.
+Working copies (edit only the approved target):
+
+- `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
+
+- `architecture_yaml`: edit `tmp/{{RUN_DIR}}/architecture_yaml.yaml`, the working copy of `./docs/architecture/architecture.yaml`
+
+
+- `scenarios_yaml`: edit `tmp/{{RUN_DIR}}/scenarios_yaml.yaml`, the working copy of `./docs/scenarios.yaml`
+
+
+Concept changes belong only to product, bindings to architecture_yaml and
+needed Public interface working copies, step rewrites to this Scenario's
+Registry entry. Preserve all unrelated entries. Return confirmation:
+=== FILE_START: tmp/{{RUN_DIR}}/apply-alpha-iter1-result.yaml ===
+applied: true
+target: "<working copy edited>"
+summary: "<approved change applied>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-alpha-iter1-result.yaml ===

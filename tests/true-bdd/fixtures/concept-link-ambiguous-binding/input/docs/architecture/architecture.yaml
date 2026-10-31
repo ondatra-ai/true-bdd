@@ -1,0 +1,65 @@
+{
+  "architecture": {
+    "services": [
+      {
+        "name": "calc",
+        "path": "services/calc",
+        "language": "go",
+        "public_interface": {
+          "kind": "ui",
+          "elements": [
+            {
+              "page": "Calc",
+              "role": "button",
+              "name": "Halve"
+            },
+            {
+              "page": "Calc",
+              "role": "textbox",
+              "name": "Number"
+            }
+          ]
+        }
+      }
+    ],
+    "concepts": [
+      {
+        "concept": "number ready",
+        "block": "given",
+        "service": "calc",
+        "references": [
+          {
+            "element": {
+              "page": "Calc",
+              "role": "textbox",
+              "name": "Number"
+            }
+          }
+        ],
+        "does": "Parse the Given step’s numeral as a decimal number, replace the entire Number textbox value with its decimal representation, and leave it set before the action."
+      },
+      {
+        "concept": "halve",
+        "block": "when",
+        "service": "calc",
+        "intent": "Do whatever is appropriate with the entered number."
+      },
+      {
+        "concept": "number result",
+        "block": "then",
+        "service": "calc",
+        "references": [
+          {
+            "element": {
+              "page": "Calc",
+              "role": "textbox",
+              "name": "Number"
+            }
+          }
+        ],
+        "does": "Read the Number textbox value, parse it as a decimal number and assert numeric equality with the expected numeral supplied by the Then step."
+      }
+    ],
+    "terms": []
+  }
+}

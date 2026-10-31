@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===
+applied: true
+target: "tmp/{{RUN_DIR}}/architecture_yaml.yaml"
+summary: "Applied the exact approved halve binding replacement: removed intent, added the Halve button reference and exactly-once does instruction. All unrelated content preserved."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===

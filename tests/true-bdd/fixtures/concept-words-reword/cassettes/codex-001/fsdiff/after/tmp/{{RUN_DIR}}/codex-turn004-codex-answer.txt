@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
+applied: true
+target: "product"
+summary: "Reworded host when:halve means to describe halving once per request label, with repeated labels having no further effect. All unrelated content preserved."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===

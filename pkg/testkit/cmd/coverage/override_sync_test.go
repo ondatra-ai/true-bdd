@@ -43,30 +43,30 @@ type declaredSelection struct {
 // via checklist_prompts, with the shipped prompt it must select.
 func declaredSelections() map[string]declaredSelection {
 	return map[string]declaredSelection{
-		"engine-claude-minimal":                  {Stem: scenCheckStem, QShort: "30469152", RequireF: false},
-		"engine-model-dispatch":                  {Stem: scenCheckStem, QShort: "30469152", RequireF: false},
-		"us-refine-fix-count":                    {Stem: usRefineStem, QShort: "895981ea", RequireF: true},
-		"us-refine-fix-failure-mode":             {Stem: usRefineStem, QShort: "bff23596", RequireF: true},
-		"us-refine-shipped-no-failure":           {Stem: usRefineStem, QShort: "bff23596", RequireF: true},
-		"us-refine-fix-implementation":           {Stem: usRefineStem, QShort: "0372c4be", RequireF: true},
-		"us-refine-fix-happy-path":               {Stem: usRefineStem, QShort: "5b2f20ef", RequireF: true},
-		"us-refine-fix-measurable":               {Stem: usRefineStem, QShort: "9f77fac8", RequireF: true},
-		"us-refine-fix-binary":                   {Stem: usRefineStem, QShort: "8ed91a7d", RequireF: true},
-		"us-refine-fix-sketch":                   {Stem: usRefineStem, QShort: "1fa8ce2c", RequireF: true},
-		"us-refine-fix-descriptions":             {Stem: usRefineStem, QShort: "800eb66b", RequireF: true},
-		"us-refine-fix-steps":                    {Stem: usRefineStem, QShort: "fa3f00d3", RequireF: true},
-		"us-refine-fix-desc-qualifier":           {Stem: usRefineStem, QShort: vagueDescriptionQ, RequireF: true},
-		"us-refine-fix-keeps-feature":            {Stem: usRefineStem, QShort: vagueDescriptionQ, RequireF: true},
-		"us-refine-fix-step-qualifier":           {Stem: usRefineStem, QShort: "882442b9", RequireF: true},
-		"us-refine-fix-forbidden-verb":           {Stem: usRefineStem, QShort: "3929749d", RequireF: true},
-		"us-apply-rewalk-converges":              {Stem: usApplyStem, QShort: presenceQ, RequireF: true},
-		"us-apply-key-apart-from-lineage":        {Stem: usApplyStem, QShort: presenceQ, RequireF: true},
-		"fix-loop-exit-story":                    {Stem: usRefineStem, QShort: vagueDescriptionQ, RequireF: true},
-		"fix-loop-exit-registry":                 {Stem: usApplyStem, QShort: presenceQ, RequireF: true},
-		"scen-check-id-filter":                   {Stem: scenCheckStem, QShort: "30469152", RequireF: false},
-		"scen-check-fix-rewrites-phrase-meaning": {Stem: scenCheckStem, QShort: "3e039823", RequireF: true},
-		"scen-check-fix-rewrites-phrase-use":     {Stem: scenCheckStem, QShort: "5dfd2b61", RequireF: true},
-		"scen-check-fix-adds-missing-step":       {Stem: scenCheckStem, QShort: "45c4a3a0", RequireF: true},
+		"engine-claude-minimal":            {Stem: scenCheckStem, QShort: "30469152", RequireF: false},
+		"engine-model-dispatch":            {Stem: scenCheckStem, QShort: "30469152", RequireF: false},
+		"us-refine-fix-count":              {Stem: usRefineStem, QShort: "895981ea", RequireF: true},
+		"us-refine-fix-failure-mode":       {Stem: usRefineStem, QShort: "bff23596", RequireF: true},
+		"us-refine-shipped-no-failure":     {Stem: usRefineStem, QShort: "bff23596", RequireF: true},
+		"us-refine-fix-implementation":     {Stem: usRefineStem, QShort: "1d63534f", RequireF: true},
+		"us-refine-fix-happy-path":         {Stem: usRefineStem, QShort: "5b2f20ef", RequireF: true},
+		"us-refine-fix-measurable":         {Stem: usRefineStem, QShort: "9f77fac8", RequireF: true},
+		"us-refine-fix-binary":             {Stem: usRefineStem, QShort: "8ed91a7d", RequireF: true},
+		"us-refine-fix-sketch":             {Stem: usRefineStem, QShort: "1fa8ce2c", RequireF: true},
+		"us-refine-fix-descriptions":       {Stem: usRefineStem, QShort: "800eb66b", RequireF: true},
+		"us-refine-fix-steps":              {Stem: usRefineStem, QShort: "fa3f00d3", RequireF: true},
+		"us-refine-fix-desc-qualifier":     {Stem: usRefineStem, QShort: vagueDescriptionQ, RequireF: true},
+		"us-refine-fix-keeps-feature":      {Stem: usRefineStem, QShort: vagueDescriptionQ, RequireF: true},
+		"us-refine-fix-step-qualifier":     {Stem: usRefineStem, QShort: "882442b9", RequireF: true},
+		"us-refine-fix-forbidden-verb":     {Stem: usRefineStem, QShort: "3929749d", RequireF: true},
+		"us-apply-rewalk-converges":        {Stem: usApplyStem, QShort: presenceQ, RequireF: true},
+		"us-apply-key-apart-from-lineage":  {Stem: usApplyStem, QShort: presenceQ, RequireF: true},
+		"us-apply-names-service":           {Stem: usApplyStem, QShort: presenceQ, RequireF: true},
+		"us-apply-undeclared-service":      {Stem: usApplyStem, QShort: presenceQ, RequireF: true},
+		"fix-loop-exit-story":              {Stem: usRefineStem, QShort: vagueDescriptionQ, RequireF: true},
+		"fix-loop-exit-registry":           {Stem: usApplyStem, QShort: presenceQ, RequireF: true},
+		"scen-check-id-filter":             {Stem: scenCheckStem, QShort: "30469152", RequireF: false},
+		"scen-check-fix-adds-missing-step": {Stem: scenCheckStem, QShort: "45c4a3a0", RequireF: true},
 		"scen-check-fix-rewrites-description-qualifier": {
 			Stem: scenCheckStem, QShort: "6fd4a11c", RequireF: true,
 		},
@@ -177,6 +177,8 @@ const (
 func allowedOverrideFixtures() map[string]overridePurpose {
 	allowed := map[string]overridePurpose{
 		"init-existing":                           overridePreserved,
+		"scen-check-concurrent":                   overrideChecks,
+		"scen-check-reverse":                      overrideChecks,
 		"start-invalid-checklist":                 overrideRefused,
 		"build-steps-critique-correct":            overrideTiers,
 		"build-steps-critique-operation":          overrideTiers,
@@ -204,33 +206,19 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"scen-check-check-with-not-a-mapping":     overrideRefused,
 		"scen-check-skip-not-boolean":             overrideRefused,
 		"scen-check-failed-check-skips-questions": overrideChecks,
-		"scen-check-phrase-unmatched":             overrideChecks,
-		"scen-check-phrase-ambiguous":             overrideChecks,
-		"scen-check-phrase-wrong-block":           overrideChecks,
-		"scen-check-phrase-malformed":             overrideChecks,
-		"scen-check-phrase-closed":                overrideChecks,
-		"scen-check-phrase-unclaimed":             overrideChecks,
-		"scen-check-phrase-no-catalogue":          overrideChecks,
-		"scen-check-fix-records-phrase":           overrideChecks,
-		"scen-check-term-undefined":               overrideChecks,
-		"scen-check-terms-defined":                overrideChecks,
 		"scen-check-term-defined-twice":           overrideChecks,
 		"scen-check-terms-no-catalogue":           overrideChecks,
 		"scen-check-fix-records-term":             overrideChecks,
-		"scen-check-term-unmapped":                overrideChecks,
-		"scen-check-terms-mapped":                 overrideChecks,
+		"scen-check-fix-records-concept":          overrideChecks,
 		"scen-check-term-mapped-twice":            overrideChecks,
-		"scen-check-template-binds-twice":         overrideChecks,
-		"scen-check-definition-reached-twice":     overrideChecks,
 		"scen-check-step-binds-twice":             overrideChecks,
 		"scen-check-definitions-correspond":       overrideChecks,
 		"scen-check-definitions-unreadable":       overrideChecks,
 		"scen-check-closure-no-catalogue":         overrideChecks,
+		"concept-definitions-closure":             overrideChecks,
 		"scen-check-fix-records-mapping":          overrideChecks,
-		"scen-check-fix-merges-phrases":           overrideChecks,
 		"scen-check-skipped-prompt":               overrideChecks,
 		"us-refine-fix-unfixable-checklist":       overrideRefused,
-		"us-refine-fix-records-phrase":            overrideChecks,
 		"codex-apply-us-refine":                   overrideChecks,
 		"scen-check-prompt-names-its-tiers":       overrideTiers,
 		"fix-loop-refine-feedback":                overrideFixLoop,
@@ -243,7 +231,11 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"fix-loop-unsettled":                      overrideFixLoop,
 	}
 
-	for _, fixture := range interfaceCheckFixtures() {
+	fixtures := append(interfaceCheckFixtures(), conceptLinkFixtures()...)
+	fixtures = append(fixtures, conceptWordFixtures()...)
+	fixtures = append(fixtures, groupingOverrideFixtures()...)
+
+	for _, fixture := range fixtures {
 		allowed[fixture] = overrideChecks
 	}
 
@@ -251,12 +243,11 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 }
 
 // interfaceCheckFixtures narrow scen check to its public-interface and
-// phrase-mappings checks (#239, #240).
+// concept-bindings checks and concept document closure (#239, #256, #259).
 func interfaceCheckFixtures() []string {
 	return []string{
-		"phrase-mappings-missing", "phrase-mappings-undeclared", "phrase-mappings-valid",
-		"phrase-mappings-duplicate", "phrase-mappings-intent", "phrase-mappings-fix",
-		"phrase-mappings-fix-operation", "phrase-mappings-exit",
+		"concepts-valid", "concepts-catalogue-retired", "concepts-undefined-term", "concepts-unmapped-term",
+		"concepts-bindings", "concepts-phrases-retired", "concepts-fix-binding", "concepts-fix-operation",
 		"public-interface-missing", "public-interface-missing-document", "public-interface-malformed-document",
 		"public-interface-valid", "public-interface-unsupported", "public-interface-fix",
 	}
@@ -514,6 +505,8 @@ func TestOverrideConfigMatchesShipped(t *testing.T) {
 		shipped := loadConfigBlock(t, filepath.Join(shippedChecklistsDir, override.Stem+".yaml"))
 		overridden := loadConfigBlock(t, override.Path)
 
+		normalizeGroupingConfig(t, override, shipped, overridden)
+
 		if !reflect.DeepEqual(shipped.Config, overridden.Config) {
 			t.Errorf("%s: config block diverges from shipped %s.yaml: shipped=%v override=%v",
 				override.Fixture, override.Stem, shipped.Config, overridden.Config)
@@ -538,4 +531,64 @@ func loadConfigBlock(t *testing.T, path string) configBlock {
 	}
 
 	return block
+}
+
+func conceptLinkFixtures() []string {
+	return []string{
+		"concept-link-add-concept",
+		"concept-link-ambiguous",
+		"concept-link-ambiguous-binding",
+		"concept-link-fix-binding",
+		"concept-link-incomplete",
+		"concept-link-judge-intent",
+		"concept-link-llm-needs-intent",
+		"concept-link-malformed",
+		"concept-link-missing-answer",
+		"concept-link-missing-binding",
+		"concept-link-refine-before-binding",
+		"concept-link-rewrite",
+		"concept-link-shared-fix",
+		"concept-link-threshold-eight",
+		"concept-link-threshold-nine",
+		"concept-link-unfixed",
+		"concept-link-unquoted-confirmation",
+		"concept-link-unrelated-unbound",
+		"concept-link-widen",
+		"concept-link-wrong-block",
+	}
+}
+
+// Concept word fixtures isolate the link, word verdict and term-mapping handoff.
+func conceptWordFixtures() []string {
+	return []string{
+		"concept-words-declare", "concept-words-reword", "concept-words-plain",
+		"concept-words-scenario-fail", "concept-words-mapping", "concept-words-scenario-fix",
+	}
+}
+
+// Omitted grouping_batch_texts is the engine default; only its batch Scenario changes it.
+func normalizeGroupingConfig(t *testing.T, override overrideFile, shipped, overridden configBlock) {
+	t.Helper()
+
+	if override.Stem != "build-steps" || overridden.Config == nil {
+		return
+	}
+
+	const (
+		key           = "grouping_batch_texts"
+		scenarioLimit = 4
+	)
+	if override.Fixture == groupingBatchesFixture && overridden.Config[key] != scenarioLimit {
+		t.Errorf("%s: grouping batch limit must stay %d", override.Fixture, scenarioLimit)
+	}
+
+	if _, present := overridden.Config[key]; !present || override.Fixture == groupingBatchesFixture {
+		overridden.Config[key] = shipped.Config[key]
+	}
+}
+
+const groupingBatchesFixture = "concept-grouping-batches"
+
+func groupingOverrideFixtures() []string {
+	return []string{"concept-grouping-ambiguous", "concept-grouping-binding", groupingBatchesFixture}
 }

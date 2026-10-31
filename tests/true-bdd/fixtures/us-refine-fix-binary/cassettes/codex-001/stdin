@@ -97,7 +97,7 @@ The calculator must return 0 when the Calculator User halves -1.
 # Fix Prompt for Story halve-negative: Halve negative integers
 
 ## Instructions
-Apply the following changes to the acceptance criteria for this story.
+Apply the following changes to the acceptance criteria for this story. Only one criterion is faulted by the failed check (`us-refine/acceptance_criteria` — binary pass/fail outcome). Change that one and reproduce the other two exactly as they stand.
 
 ## Original Acceptance Criteria
 1. 001-even: The calculator must return a satisfying result when the Calculator User halves -6. [has steps]
@@ -106,70 +106,72 @@ Apply the following changes to the acceptance criteria for this story.
 
 ## Required Changes
 
-Change ONLY what the failed check requires. ACs `002-odd` and `003-near-zero` are already binary and must be reproduced exactly as they stand — same description, same steps, word for word.
-
 ### Change #1: 001-even
-**Before:** The calculator must return a satisfying result when the Calculator User halves -6.
-
-**Issue:** The Then step `the result is satisfying` is declared in the Catalogue as "A subjective judgement with no objective pass/fail oracle", so a reviewer cannot decide pass or fail without subjective judgement. The description inherits the same vagueness ("a satisfying result"). The product document states that negative input -6 produces -3, so an objective expected value is already available and must not be invented.
-
+**Before (description):** The calculator must return a satisfying result when the Calculator User halves -6.
+**Before (then step):** the result is "satisfying"
+**Issue:** "satisfying" is a subjective judgement — a reviewer cannot decide pass or fail without personal interpretation, because no expected value is stated. It also violates the `then` concept "result" in `./docs/product/product.yaml`, whose closed means requires that the halve command "succeeds and prints exactly a stated integer, the half rounded toward zero". The oracle is not invented here: the product document states "Negative inputs -6, -7 and -1 produce -3, -3 and 0 respectively", so halving -6 produces -3.
 **After (description):** The calculator must return -3 when the Calculator User halves -6.
-
 **After (steps):**
 ```yaml
 - given:
-    - "the number is \"-6\""
+    - 'the number is "-6"'
 - when:
-    - "the Calculator User halves the number"
+    - 'the Calculator User halves the number'
 - then:
-    - "the result is \"-3\""
+    - 'the result is "-3"'
 ```
 
-No new ACs are added, no ACs are merged, and no ACs are removed.
+Each step stays an instance of one concept of its block, within the variations its closed means allows: the Given step instantiates "number supplied" (a stated, already validated integer, -6), the When step instantiates "halving" (the Calculator User runs the halve command once with the supplied integer), and the Then step instantiates "result" (the command succeeds and prints exactly the stated integer -3). No step needs a variation no concept states, so no wider concept and no new concept is required.
 
-### Catalogue follow-up (not part of this story file)
-The subjective phrase `the result is satisfying` (block: `then`) is no longer used by this Story's steps. If no other Story uses it, remove it from the Catalogue in `docs/product/product.yaml` through the catalogue fix rather than editing it inline. Do not alter the three phrases that remain in use: `the number is "{value}"` (given), `the Calculator User halves the number` (when), `the result is "{value}"` (then).
+### Not changed: 002-odd and 003-near-zero
+Both already state an unambiguous expected integer (-3 and 0) in their description and Then step, so the failed check does not fault them. Reproduce their description and steps word for word. Do not reword them, do not renumber them, and do not merge them — they cover distinct inputs (-7 odd magnitude, -1 rounding toward zero) and are not duplicates of each other or of 001-even.
+
+### No new ACs
+The failed check is about subjectivity in an existing criterion, not about missing coverage. Do not add or remove acceptance criteria.
+
+## Preserve unaffected Story fields
+Keep `id: halve-negative`, `feature`, `title`, `as_a: Calculator User`, `i_want`, `so_that` and `status` exactly as they are. Use the exact role "Calculator User" from the story's as_a clause in every step. Keep each AC's existing `id` value (`001-even`, `002-odd`, `003-near-zero`) and the one-sentence must-form description.
 
 ## Complete Fixed Acceptance Criteria
 
 ```yaml
-- ac_id: 001-even
-  description: "The calculator must return -3 when the Calculator User halves -6."
+- id: 001-even
+  description: The calculator must return -3 when the Calculator User halves -6.
   steps:
     - given:
-        - "the number is \"-6\""
+        - 'the number is "-6"'
     - when:
-        - "the Calculator User halves the number"
+        - 'the Calculator User halves the number'
     - then:
-        - "the result is \"-3\""
+        - 'the result is "-3"'
 
-- ac_id: 002-odd
-  description: "The calculator must return -3 when the Calculator User halves -7."
+- id: 002-odd
+  description: The calculator must return -3 when the Calculator User halves -7.
   steps:
     - given:
-        - "the number is \"-7\""
+        - 'the number is "-7"'
     - when:
-        - "the Calculator User halves the number"
+        - 'the Calculator User halves the number'
     - then:
-        - "the result is \"-3\""
+        - 'the result is "-3"'
 
-- ac_id: 003-near-zero
-  description: "The calculator must return 0 when the Calculator User halves -1."
+- id: 003-near-zero
+  description: The calculator must return 0 when the Calculator User halves -1.
   steps:
     - given:
-        - "the number is \"-1\""
+        - 'the number is "-1"'
     - when:
-        - "the Calculator User halves the number"
+        - 'the Calculator User halves the number'
     - then:
-        - "the result is \"0\""
+        - 'the result is "0"'
 ```
 
-## Verification
-- Every Then step now names an exact integer, so each AC yields a binary pass/fail observation: `001-even` → `-3`, `002-odd` → `-3`, `003-near-zero` → `0`.
-- All expected values come from the product document ("Negative inputs -6, -7 and -1 produce -3, -3 and 0 respectively"); none were invented.
-- All steps use declared Catalogue phrases in their declared blocks.
-- The role "Calculator User" from the Story's `as_a` clause is used verbatim in every When step.
-- Story fields other than AC `001-even`'s description and Then step are unchanged.
+If the story file currently writes the step blocks in scalar form (`- given: "the number is \"-6\""`) rather than the list form shown above, keep the file's existing form for 002-odd and 003-near-zero byte for byte and apply only the wording change to 001-even in that same form.
+
+## Expected check outcome after the fix
+- 001-even: binary
+- 002-odd: binary
+- 003-near-zero: binary
 
 === FILE_END: tmp/{{RUN_DIR}}/01-halve-negative-fix-prompts.md ===
 

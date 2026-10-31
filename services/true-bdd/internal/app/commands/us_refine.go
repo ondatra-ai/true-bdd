@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/checks"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/validate"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/runner"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/checklist"
@@ -49,13 +48,11 @@ func RunRefine(ctx context.Context, deps RefineDeps, storyID string, fix bool) e
 		StoryID:       storyID,
 		Fix:           fix,
 
-		LoadItems:    loadItems,
-		PostFix:      refinePostFix(versionMgr),
-		PostCheckFix: refinePostCheckFix,
-		Finalize:     refineFinalize(runner.StoryFinalize(deps.StoriesDir, storyID, versionMgr, fix)),
-		GetSubject:   refineSubject,
+		LoadItems:  loadItems,
+		PostFix:    refinePostFix(versionMgr),
+		Finalize:   refineFinalize(runner.StoryFinalize(deps.StoriesDir, storyID, versionMgr, fix)),
+		GetSubject: refineSubject,
 
-		Checks:       checks.ForStories(),
 		Evaluator:    deps.Evaluator,
 		FixGenerator: deps.FixGenerator,
 		FixApplier:   deps.FixApplier,

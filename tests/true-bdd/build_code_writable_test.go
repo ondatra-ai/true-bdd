@@ -26,7 +26,7 @@ import (
 func TestBuildCodeWritable001Manifests(t *testing.T) {
 	s := scenarios.New(t, "build-code-writable-001-manifests")
 	s.Given(`the "build-code-writable-allowed" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches BUILD CODE COMPLETE`)
@@ -45,7 +45,7 @@ func TestBuildCodeWritable001Manifests(t *testing.T) {
 func TestBuildCodeWritable002PlanImpossible(t *testing.T) {
 	s := scenarios.New(t, "build-code-writable-002-plan-impossible")
 	s.Given(`the "build-code-writable-plan" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches repair is impossible within`)
@@ -63,7 +63,7 @@ func TestBuildCodeWritable002PlanImpossible(t *testing.T) {
 func TestBuildCodeWritable003WriterImpossible(t *testing.T) {
 	s := scenarios.New(t, "build-code-writable-003-writer-impossible")
 	s.Given(`the "build-code-writable-writer" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches repair is impossible within`)

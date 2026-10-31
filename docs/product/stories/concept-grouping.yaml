@@ -1,0 +1,176 @@
+story:
+  id: concept-grouping
+  feature: build-steps
+  title: Group unbound steps before writing concept definitions
+  as_a: System Architect
+  i_want: unbound suite steps grouped into concepts with usable bindings
+  so_that: no skeleton starts from a missing or ambiguous meaning
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 001-no-concept
+    description: A step outside every closed concept stops before skeletons
+    steps:
+    - given:
+      - the "concept-grouping-none" project tree
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - the command exits with code 1
+      - stdout matches concept grouping failed
+      - stdout matches send an email to Ada
+      - stdout matches no concept of when
+      - no file outside "tmp" changed
+      - the engine spawned no test runners
+  - id: 002-ambiguous
+    description: Two identical meanings reaching the configured threshold of seven stop grouping as ambiguous
+    steps:
+    - given:
+      - the "concept-grouping-ambiguous" project tree
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - the command exits with code 1
+      - stdout matches ambiguous:.*halve.*cut|ambiguous:.*cut.*halve
+      - no file outside "tmp" changed
+      - the engine spawned no test runners
+  - id: 003-missing-text
+    description: A missing grouping text is a crash
+    steps:
+    - given:
+      - the "concept-grouping-missing" project tree
+      - the grouping answer CLI is controlled for invalid replies
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - the command exits with code 1
+      - stdout matches grouping answer malformed
+      - no file outside "tmp" changed
+      - the engine spawned no test runners
+  - id: 004-repeated-text
+    description: A repeated grouping text is a crash
+    steps:
+    - given:
+      - the "concept-grouping-repeat" project tree
+      - the grouping answer CLI is controlled for invalid replies
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - the command exits with code 1
+      - stdout matches grouping answer malformed
+      - no file outside "tmp" changed
+      - the engine spawned no test runners
+  - id: 005-runner-rank
+    description: A runner-up above the best is a crash
+    steps:
+    - given:
+      - the "concept-grouping-rank" project tree
+      - the grouping answer CLI is controlled for invalid replies
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - the command exits with code 1
+      - stdout matches grouping answer malformed
+      - no file outside "tmp" changed
+      - the engine spawned no test runners
+  - id: 006-cut-off
+    description: An output-capped grouping answer is a crash
+    steps:
+    - given:
+      - the "concept-grouping-cap" project tree
+      - the grouping answer CLI is controlled for invalid replies
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - the command exits with code 1
+      - stdout matches output cap reached
+      - no file outside "tmp" changed
+      - the engine spawned no test runners
+  - id: 007-balanced-batches
+    description: Five distinct texts use the fewest balanced batches under a limit
+      of three
+    steps:
+    - given:
+      - the "concept-grouping-batches" project tree
+    - when:
+      - the System Architect runs "build steps"
+    - then:
+      - the command exits with code 1
+      - stdout matches batch=1 texts=3
+      - stdout matches batch=2 texts=2
+      - stdout matches step definitions are missing
+      - no file outside "tmp" changed
+      - the engine spawned no test runners
+  - id: 008-changed-binding
+    description: A changed ambiguous binding is judged again before skeletons
+    steps:
+    - given:
+      - the "concept-grouping-binding" project tree
+    - when:
+      - the System Architect runs build steps after scen check and a binding change
+    - then:
+      - the command exits with code 1
+      - 'stdout matches halve: binding is ambiguous'
+      - the only file changed outside "tmp" is "docs/architecture/architecture.yaml"
+      - the engine spawned no test runners
+  - id: 009-missing-binding
+    description: A grouped concept needs a binding for its suite service
+    steps:
+    - given:
+      - the "concept-grouping-unbound" project tree
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - the command exits with code 1
+      - stdout matches concept.*halve.*has 0 Concept bindings
+      - no file outside "tmp" changed
+      - the engine spawned no test runners
+  - id: 010-model-steps
+    description: Model-run steps produce no concept Item
+    steps:
+    - given:
+      - the "concept-grouping-prefix" project tree
+    - when:
+      - the System Architect runs "build steps"
+    - then:
+      - the command exits with code 0
+      - stdout matches BUILD STEPS COMPLETE
+      - no file outside "tmp" changed
+      - the engine spawned no test runners
+      - the engine dispatched no AI turns
+  - id: 011-build-tests
+    description: build tests renders a concept host's free-text steps without matching them against anything
+    steps:
+    - given:
+      - the "concept-grouping-render" project tree
+    - when:
+      - the System Architect runs "build tests --fix"
+    - then:
+      - the command exits with code 0
+      - the file "tests/calc/number_test.go" is created
+      - the engine dispatched no AI turns
+  - id: 012-unknown-index
+    description: An unknown grouping index is a crash
+    steps:
+    - given:
+      - the "concept-grouping-unknown" project tree
+      - the grouping answer CLI is controlled for invalid replies
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - the command exits with code 1
+      - stdout matches grouping answer malformed
+      - no file outside "tmp" changed
+      - the engine spawned no test runners
+  - id: 013-same-runner
+    description: A runner-up equal to the best concept is a crash
+    steps:
+    - given:
+      - the "concept-grouping-same" project tree
+      - the grouping answer CLI is controlled for invalid replies
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - the command exits with code 1
+      - stdout matches grouping answer malformed
+      - no file outside "tmp" changed
+      - the engine spawned no test runners

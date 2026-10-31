@@ -1,150 +1,125 @@
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
 
-You are a Term Document Editor applying an approved fix to the working
-copy of the product document: its step-phrase catalogue.
-
-**Your Task:**
-1. Read the working copy the fix names.
-2. Read the fix prompt instructions.
-3. Apply the changes EXACTLY as described, with the Edit tool on the
-   working copy.
-4. Emit a short YAML confirmation block.
-
-**Tool Usage:**
-- Use Read to inspect the working copy before editing.
-- Use Edit to change it: append an entry at the end of its list, at the
-  list's own indentation, or replace an old_string verbatim.
-- Do NOT touch the document the working copy stands for: the engine
-  replaces it with your copy once the copy parses.
-- Do NOT touch the Story. A phrase is defined where every Story reads
-  it, never in the Story that lacked it.
-
-**Output Requirements:**
-- After your Edit calls succeed, output a YAML confirmation inside
-  FILE_START/FILE_END markers:
-  - `applied: true` (or `false` on failure)
-  - `target:` — the working copy you edited (QUOTED)
-  - `summary:` — one line on what changed
+Apply only the exact concept, binding or step repair approved at the menu.
+Edit only the listed working copies. Preserve every unaffected entry.
+For a Story step rewrite, return the complete Story YAML instead of editing
+a document. For document edits return the requested confirmation markers.
 
 
 ### TASK
 
-## Story
+The Product Owner chose apply at the menu for Story halve-negative.
+Approved fix:
+Repair for failed judgement on Item `halve-negative` (owner: Product Owner — concept addition to the product document only).
 
-**ID:** halve-negative
-**Title:** Halve negative integers
+## Diagnosis
 
-The Story is shown for context only. This fix never edits it.
+All three acceptance criteria fail on the same judgement, and only on the When block:
 
----
+- `001-even` when step "the Calculator User halves the number" — no concept of when reaches the threshold; scores `{}`
+- `002-odd` when step "the Calculator User halves the number" — no concept of when reaches the threshold; scores `{}`
+- `003-near-zero` when step "the Calculator User halves the number" — no concept of when reaches the threshold; scores `{}`
 
-## Fix Prompt to Apply
+The scores are empty, not low: `docs/product/product.yaml` declares `concepts.given` and `concepts.then` but no `concepts.when` block, so there is nothing for the When steps to be scored against. Each finding also records that the step is of the right kind — the `Calculator User` role from `roles` performing the halve action — so the step wording is sound and must not be rewritten. The Given steps (`number supplied`, 10) and Then steps (`result`, 10) already pass and stay untouched.
 
-# Fix Prompt for Story halve-negative: Halve negative integers
+Because the `when` kind of use has no concept for this Public interface item at all, this is a new item-and-use, so a new concept is added. It is not a variation: a variation only widens a concept that already exists for that item and use.
 
-## Target
-The `product` document: `./docs/product/product.yaml`, its `catalogue:` list — and nothing else.
+## Proposed change — exactly one file, exactly one addition
 
-Do **not** edit the Story `halve-negative` (or any other document). Its steps stay word for word as written.
+File: `docs/product/product.yaml`
 
-## Context
+Insert a `when:` section into `concepts`, between the existing `given:` and `then:` sections. Add nothing else; change no existing line.
 
-All three acceptance criteria (001-even, 002-odd, 003-near-zero) fail the same way: the `when` step
+Before (lines 16-24):
 
-```text
-the Calculator User halves the number
-```
-
-matches no catalogue template. The catalogue currently holds only two entries (`the number is "{value}"` / given, `the result is "{value}"` / then) — there is no `when` entry at all. One new entry, with a role slot, closes all three findings at once.
-
-Per the user's clarification:
-- the step means the role invokes the calculator's halve operation on the number supplied by the `given` step, dividing it by two toward zero;
-- the resulting value is asserted by the `then` step, not by this step;
-- the actor is a `{actor:role}` slot, so the single entry covers every role the product declares.
-
-## Required Changes
-
-### Change #1: add the missing `when` entry for halving the number
-
-**Document:** product (`./docs/product/product.yaml`)
-**Action:** Append this entry to the end of the `catalogue:` list, at the same indentation as the existing entries (`- template:` at column 0).
-
-**YAML to add (copy verbatim):**
 ```yaml
-- template: 'the {actor:role} halves the number'
-  block: when
-  means: The {actor:role} invokes the calculator's halve operation on the number supplied by the given step; the operation divides that number by two toward zero. The resulting value is asserted by the then step, not by this step.
-  terms: []
+concepts:
+  given:
+    - concept: number supplied
+      means: The calculator is supplied a stated, already validated integer.
+      terms: []
+  then:
+    - concept: result
+      means: The halve command succeeds and prints exactly a stated integer, the half rounded toward zero.
+      terms: []
 ```
 
-**Exact edit (old_string / new_string):**
+After:
 
-old_string:
-```
-- template: the result is "{value}"
-  block: then
-  means: The command succeeds and prints exactly that integer, rounded toward zero.
-  terms: []
-```
-
-new_string:
-```
-- template: the result is "{value}"
-  block: then
-  means: The command succeeds and prints exactly that integer, rounded toward zero.
-  terms: []
-- template: 'the {actor:role} halves the number'
-  block: when
-  means: The {actor:role} invokes the calculator's halve operation on the number supplied by the given step; the operation divides that number by two toward zero. The resulting value is asserted by the then step, not by this step.
-  terms: []
+```yaml
+concepts:
+  given:
+    - concept: number supplied
+      means: The calculator is supplied a stated, already validated integer.
+      terms: []
+  when:
+    - concept: number halved
+      means: The Calculator User halves the number supplied to the calculator.
+      terms: []
+  then:
+    - concept: result
+      means: The halve command succeeds and prints exactly a stated integer, the half rounded toward zero.
+      terms: []
 ```
 
-Note: the `means` value above contains an apostrophe (`calculator's`) and is written as a plain (unquoted) YAML scalar, which is valid — do not wrap it in single quotes without doubling the apostrophe. The `template` value **is** single-quoted so the braces are read as literal template syntax.
+## Why this closes the judgement
 
-## Why this entry and not another shape
+The single concept `number halved` covers all three When steps, which are identical in wording ("the Calculator User halves the number"). Its `means` is closed prose naming the `Calculator User` role and the halve action over the number already supplied by the `number supplied` Given concept, so each When step is a plain instance of it and clears the threshold of 9. No forbidden qualifier from `vocabulary.forbidden_qualifiers` (`properly`, `correctly`, `appropriate`, `fast`) appears, and `forbidden_actions` is empty.
 
-- `{actor:role}` matches exactly one `roles[].name`; the product declares `Calculator User`, so `the Calculator User halves the number` matches, and any role added later is covered without a second entry.
-- The words carrying the meaning (`halves the number`) stay literal, so other Stories saying the same thing reuse this entry instead of adding a near-duplicate.
-- `terms: []` because `glossary` is empty — introduce no glossary term here.
+## Explicitly unchanged
 
-## Verification after applying
+- Story `halve-negative`: all nine steps, the three acceptance criteria, `title`, `as_a`, `i_want`, `so_that` and `status: PLANNED` stay exactly as written. No rewrite is proposed, because the failure is a missing concept, not step wording.
+- Product document: `title`, `description.summary`, `roles`, `vocabulary`, `glossary`, the `given` concept `number supplied` and the `then` concept `result` are all left byte-for-byte as they are.
+- No concept bindings are touched, so nothing here falls to the System Architect.
 
-1. `catalogue` has exactly three entries; no two share a `template`.
-2. The new template is in block `when`, matching the block of the failing steps.
-3. Each Story step still matches exactly one template:
-   - `the number is "-6"` / `"-7"` / `"-1"` → `the number is "{value}"` (given) — unaffected; the new template begins with `the {actor:role} ` and requires the literal ` halves the number`, so it cannot also match these.
-   - `the Calculator User halves the number` → the new entry (when) only.
-   - `the result is "-3"` / `"0"` → `the result is "{value}"` (then) — unaffected.
-4. The Story file `halve-negative` is byte-identical to before the fix.
+Nothing has been applied. Awaiting an explicit apply decision at the menu.
+Product working copy:
 
----
-
-## Where to write
-
-Each term document has a working copy in this run's tmp directory. Edit
-the working copy, never the document itself:
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
-- `architecture_yaml`: edit `tmp/{{RUN_DIR}}/architecture_yaml.yaml`, the working copy of `./docs/architecture/architecture.yaml`
 
-The engine replaces each document with its working copy once the copy
-reads as valid YAML, so a copy you leave unparseable changes nothing.
-
-## Instructions
-
-1. Use the Read tool to load the working copy of the `product` document
-   and find its `catalogue:` list.
-2. Apply the changes described in the "Fix Prompt to Apply" section
-   above with the Edit tool on that working copy: append a new entry at
-   the end of the list, at the list's own indentation, or replace the
-   old_string verbatim.
-3. Copy each entry's YAML exactly as the fix prompt gives it. Keep a
-   template single-quoted: it carries `{`, `[` and `"` of its own.
-4. You MAY only edit the working copies listed above. The documents
-   themselves and the Story are out of bounds.
-5. After the edits succeed, output the confirmation block below.
-
+If the approved fix changes a concept, edit only that product working copy
+and return this confirmation inside these markers:
 === FILE_START: tmp/{{RUN_DIR}}/apply-halve-negative-iter1-result.yaml ===
 applied: true
-target: "<path of the working copy you edited>"
-summary: "<one-line summary of what changed>"
+target: "product"
+summary: "<approved concept repair>"
 === FILE_END: tmp/{{RUN_DIR}}/apply-halve-negative-iter1-result.yaml ===
+If it rewrites a step, return instead the COMPLETE updated Story body inside
+those markers, preserving every other field and criterion. Do not edit
+concepts for a step rewrite. Current Story:
+id: halve-negative
+feature: calculator
+title: Halve negative integers
+as_a: Calculator User
+i_want: to halve an already validated negative integer, rounding toward zero
+so_that: I can calculate half its value
+status: PLANNED
+acceptance_criteria:
+    - id: 001-even
+      description: The calculator must return -3 when the Calculator User halves -6.
+      steps:
+        - given:
+            - the number is "-6"
+        - when:
+            - the Calculator User halves the number
+        - then:
+            - the result is "-3"
+    - id: 002-odd
+      description: The calculator must return -3 when the Calculator User halves -7.
+      steps:
+        - given:
+            - the number is "-7"
+        - when:
+            - the Calculator User halves the number
+        - then:
+            - the result is "-3"
+    - id: 003-near-zero
+      description: The calculator must return 0 when the Calculator User halves -1.
+      steps:
+        - given:
+            - the number is "-1"
+        - when:
+            - the Calculator User halves the number
+        - then:
+            - the result is "0"
+

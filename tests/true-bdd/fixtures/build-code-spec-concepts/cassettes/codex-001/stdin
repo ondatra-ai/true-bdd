@@ -1,0 +1,283 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are the production writer repairing a whole failing set. Read the Specification, harness and service source, then implement the proposed plan using your own investigation. Change the service as a whole. After each part, run the tests it serves and fix what fails; run every test of the failing set before reporting. Tests outside the set are not your subject.
+
+Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. Find a solution within the declared service path and exact writable paths first. If no solution exists there, report impossible as a list of {path, reason} for the required undeclared files. Keep files already written. A preferred undeclared change is not impossible. For ordinary unfinished work, report applied: false and impossible: [].
+
+Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, impossible, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
+
+
+### TASK
+
+## Subject — Failing Set
+
+
+**Test ID:** /go-test/go-test:fixture.stepsrun.tests.calc::TestCalc001Double
+**Service:** calc
+**Suite:** go-test
+**Framework:** go-test
+**Test Name:** fixture/stepsrun/tests/calc::TestCalc001Double
+**Source File:** fixture/stepsrun/tests/calc
+
+**Test ID:** /go-test/go-test:fixture.stepsrun.tests.calc::TestCalc002Halve
+**Service:** calc
+**Suite:** go-test
+**Framework:** go-test
+**Test Name:** fixture/stepsrun/tests/calc::TestCalc002Halve
+**Source File:** fixture/stepsrun/tests/calc
+
+
+### Failure groups
+
+Tests: /go-test/go-test:fixture.stepsrun.tests.calc::TestCalc001Double
+```
+=== RUN   TestCalc001Double
+    calc_test.go:31: calc-001-double
+          step 3/3 failed: Then the result is 6
+          expected 6, got 3
+          not run: (none)
+--- FAIL: TestCalc001Double (0.00s)
+
+```
+
+Tests: /go-test/go-test:fixture.stepsrun.tests.calc::TestCalc002Halve
+```
+=== RUN   TestCalc002Halve
+    calc_test.go:40: calc-002-halve
+          step 3/3 failed: Then the result is 4
+          expected 4, got 8
+          not run: (none)
+--- FAIL: TestCalc002Halve (0.00s)
+
+```
+
+
+### Specification documents
+
+- Read(`./docs/architecture/architecture.yaml`) — architecture_yaml
+
+- Read(`./docs/product/product.yaml`) — product
+
+- Read(`./docs/scenarios.yaml`) — scenarios_yaml
+
+
+
+### Registry Scenario
+**Scenario ID:** calc-001-double
+**Description:** Doubling a number returns twice its value
+**Service:** calc
+**Path:** tests/calc/calc_test.go
+
+Given:
+  - the calculator is installed
+When:
+  - the Owner doubles 3
+Then:
+  - the result is 6
+
+
+### Registry Scenario
+**Scenario ID:** calc-002-halve
+**Description:** Halving an even number returns half its value
+**Service:** calc
+**Path:** tests/calc/calc_test.go
+
+Given:
+  - the calculator is installed
+When:
+  - the Owner halves 8
+Then:
+  - the result is 4
+
+
+
+
+
+## What the spec says these steps mean
+
+### Concepts
+
+- `installation` (given concept): The calculator program is built from its source and ready for the Owner to run.
+  Words: none
+  Bound for calc through command: double, command: halve: Build the declared calculator commands as a program under the host's tmp directory and keep its path for the When.
+
+- `doubling` (when concept): The Owner doubles a whole number with the calculator.
+  Words: number
+  Bound for calc through command: double: Run the kept calculator program's double command as a process with the step's whole number and keep its integer stdout.
+
+- `result` (then concept): The calculator prints the whole number the operation produced.
+  Words: number
+  Bound for calc through command: double, command: halve: Compare the kept command stdout with the step's expected whole number.
+
+- `halving` (when concept): The Owner halves an even whole number with the calculator.
+  Words: number
+  Bound for calc through command: halve: Run the kept calculator program's halve command as a process with the step's even whole number and keep its integer stdout.
+
+
+### Words
+
+#### number
+- Means: An integer operand whose double is its sum with itself.
+
+- In the implementation: The integer argument and stdout of the calculator's double and halve commands.
+- Observed by: The step runs the command as a process and compares its integer stdout with the expected value.
+
+
+
+
+
+## Proposed repair plan
+# Repair plan for failing-set
+
+## Root cause
+
+`services/calc/calc.go` implements the CLI's `double` and `halve` commands as a
+single shared switch branch that prints the operand back unchanged:
+
+```
+case "double", "halve": fmt.Println(value)
+```
+
+No doubling and no halving arithmetic exists in the program. The harness
+(`tests/calc/steps/register.go`) builds the real binary with
+`go build -o <host tmp>/calc-program/calc ./services/calc`, runs it as a
+process, parses its trimmed stdout as an integer into `state.Value`, and the
+`result` step compares that against the scenario's expected number. So the
+observed failures are purely production arithmetic:
+
+- `calc double 3` prints `3` → `expected 6, got 3` (TestCalc001Double)
+- `calc halve 8` prints `8` → `expected 4, got 8` (TestCalc002Halve)
+
+The steps, the generated test file, the CLI document and the registry all agree
+with each other; nothing outside the service needs to change.
+
+## Scope
+
+Single file, inside the declared edit root:
+
+- `services/calc/calc.go`
+
+No test, step-definition, `_test.go`, or document file is touched. No assertion
+is weakened, skipped or removed.
+
+## Part 1 — give `double` its own arithmetic
+
+**File:** `services/calc/calc.go`
+
+Split the combined `case "double", "halve":` branch so that `double` no longer
+shares an implementation with `halve`, and make the `double` branch print twice
+the operand.
+
+Contract the writer must satisfy, taken from `docs/architecture/calc-cli.yaml`
+(`commands.double`) and the glossary entry for `number` in
+`docs/product/product.yaml` ("An integer operand whose double is its sum with
+itself"):
+
+- `calc double VALUE` writes the operand added to itself — i.e. `value * 2` /
+  `value + value` — to stdout, followed by a newline, and exits `0`.
+- Output must stay a bare decimal integer with nothing else on stdout, because
+  the `doubling` step does `strconv.Atoi(strings.TrimSpace(output))` on the
+  combined output and any extra text makes the parse fail.
+- Negative operands must keep working: the step regex is `(-?\d+)`, so
+  `double -3` must print `-6`. Doubling is sign-safe, so no special handling is
+  needed beyond the multiplication itself.
+
+**Serves:** `/go-test/go-test:fixture.stepsrun.tests.calc::TestCalc001Double`
+(scenario `calc-001-double`: `the Owner doubles 3` → `the result is 6`).
+
+## Part 2 — give `halve` its own arithmetic
+
+**File:** `services/calc/calc.go`
+
+Add a distinct `halve` branch that prints half the operand.
+
+Contract, from `commands.halve` in `docs/architecture/calc-cli.yaml` ("prints
+half of the even integer and a newline") and the `halving` concept in
+`docs/architecture/architecture.yaml` ("the step's even whole number"):
+
+- `calc halve VALUE` writes `value / 2` to stdout followed by a newline, exit
+  `0`.
+- The documented domain is even integers, so plain Go integer division of the
+  parsed `int` is the intended implementation — do not introduce floats,
+  rounding helpers, or string formatting that could emit a decimal point, since
+  the step parses stdout with `strconv.Atoi`.
+- Do not add a new rejection path for odd operands. The CLI document only
+  defines exit `1` for invalid arguments, the concept declares even numbers as
+  the operand domain, and no scenario in this set exercises an odd operand.
+  Keep the change limited to the arithmetic.
+- Negative even operands must behave sensibly: Go truncates toward zero, so
+  `halve -8` prints `-4`, which is correct for the even domain.
+
+**Serves:** `/go-test/go-test:fixture.stepsrun.tests.calc::TestCalc002Halve`
+(scenario `calc-002-halve`: `the Owner halves 8` → `the result is 4`).
+
+## Part 3 — preserve the surrounding CLI contract (no regressions)
+
+**File:** `services/calc/calc.go`
+
+While restructuring the switch, keep the rest of the program's documented
+behaviour byte-for-byte identical:
+
+- `square` must keep printing `value * value`. It is declared in
+  `docs/architecture/calc-cli.yaml` and backed by the `squaring` concept in the
+  architecture; it has no scenario in this failing set, so it must neither
+  change nor be removed.
+- Keep the arity guard: anything other than exactly one command plus one value
+  argument exits `1` (`responses: '1': Invalid arguments`).
+- Keep the `strconv.Atoi` parse failure exiting `1`.
+- Keep the unknown-command default exiting `1`.
+- Keep emitting the trailing newline (`fmt.Println`, not `fmt.Print`), as every
+  command's response description specifies "and a newline".
+- Keep the program as `package main` with the same entry point so the harness's
+  `go build ./services/calc` keeps producing a runnable binary at the path the
+  `installed` step chose.
+
+**Serves:** both tests in the set indirectly — the `installation` given step
+fails the whole scenario if the build or the binary's invocation contract
+breaks.
+
+## Verification
+
+Run the suite's recorded command from the host root:
+
+```
+go test -tags bdd -json -count=1 ./tests/calc/...
+```
+
+Both `TestCalc001Double` and `TestCalc002Halve` must pass. The harness rebuilds
+the binary into the host tmp directory on every `the calculator is installed`
+step, so the stale artifact already at `tmp/calc-program/calc` is overwritten
+and needs no manual cleanup. A quick manual sanity check of the three commands
+(`double 3` → `6`, `halve 8` → `4`, `square 5` → `25`) confirms Part 3 held.
+
+## Edit roots
+
+- `services/calc`
+
+Never modify tests or step definitions. Never weaken, skip or remove assertions.
+
+
+## Test commands
+Run in `{{CWD}}` using exactly one of these forms:
+- Whole suite: `go test -tags bdd -count=1 ./tests/calc/...`
+- Selection: `go test -tags bdd -count=1 ./tests/calc/... -run '<selection>'`
+The selection is a nonempty framework regular expression. Keep the command in the foreground; if the tool returns a process/session id, poll that process with your native process tool until it completes.
+
+
+## How to work
+1. Read the Specification and the harness first to understand the service's contract.
+2. Change the service as a whole, using the plan and your investigation.
+3. After each part, run the tests that part serves and fix what fails.
+4. Run every test of the failing set before reporting. Tests outside the failing set are not your subject.
+5. Make all changes during this turn, then report what changed and which tests of the set you saw pass.
+
+End your final message with the confirmation block below, written in the message itself. The result path in its heading names where the engine saves it; never write that path yourself.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
+applied: true
+impossible: []
+target: "<repo-relative service path>"
+summary: "<what changed and which tests of the set you saw pass>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
+
+Only when no solution exists inside the declared edit roots, fill impossible with a list of {path, reason} for required undeclared files. Keep any edits already made and report their outcome. Otherwise leave impossible empty; applied: false by itself permits another attempt.

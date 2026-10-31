@@ -1,13 +1,8 @@
-# Registry seed for `fix-loop-exit-terms`.
-#
-# One Scenario a Story claims, its last step matching no catalogue phrase.
-# The person exits the fix loop, so this file stays exactly as it is.
-
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
   version: "2.0"
   last_updated: "2026-10-21"
-  description: "One claimed scenario with a step outside the catalogue"
+  description: "One claimed scenario relying on an undefined term"
 
 scenarios:
   E2E-001:

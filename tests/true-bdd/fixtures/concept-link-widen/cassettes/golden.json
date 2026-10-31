@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "concept-link-widen",
+  "files": [
+    {
+      "path": "docs/product/product.yaml",
+      "kind": "modified",
+      "size": 969,
+      "sha256": "104f110d4735c55f84967d35521edd598328e9a39d1e9b6fdd2fd0fbe5a2dfc5",
+      "text": "{\n  \"roles\": [\n    {\n      \"name\": \"Product Owner\",\n      \"description\": \"Owns meanings.\"\n    }\n  ],\n  \"concepts\": {\n    \"given\": [\n      {\n        \"concept\": \"number ready\",\n        \"means\": \"A number is entered before the action.\",\n        \"terms\": []\n      }\n    ],\n    \"when\": [\n      {\n        \"concept\": \"halve\",\n        \"means\": \"Halve the entered number, in one request either once or twice: once halved displays half the entered number, twice halved displays its quarter. Halving three or more times is not supported.\",\n        \"terms\": []\n      }\n    ],\n    \"then\": [\n      {\n        \"concept\": \"number result\",\n        \"means\": \"Compare the displayed number with an expected value.\",\n        \"terms\": []\n      }\n    ]\n  },\n  \"glossary\": [],\n  \"description\": {\n    \"summary\": \"The calculator supports exactly one or two Halve presses per request: one displays half the entered number; two displays its quarter. Three or more presses are not supported.\"\n  }\n}\n"
+    }
+  ]
+}

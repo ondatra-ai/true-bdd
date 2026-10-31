@@ -1,130 +1,131 @@
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
 
-You are a Term Document Editor applying an approved fix to the working
-copy of the product document: its step-phrase catalogue.
-
-**Your Task:**
-1. Read the working copy the fix names.
-2. Read the fix prompt instructions.
-3. Apply the changes EXACTLY as described, with the Edit tool on the
-   working copy.
-4. Emit a short YAML confirmation block.
-
-**Tool Usage:**
-- Use Read to inspect the working copy before editing.
-- Use Edit to change it: append an entry at the end of its list, at the
-  list's own indentation, or replace an old_string verbatim.
-- Do NOT touch the document the working copy stands for: the engine
-  replaces it with your copy once the copy parses.
-- Do NOT touch the Story. A phrase is defined where every Story reads
-  it, never in the Story that lacked it.
-
-**Output Requirements:**
-- After your Edit calls succeed, output a YAML confirmation inside
-  FILE_START/FILE_END markers:
-  - `applied: true` (or `false` on failure)
-  - `target:` — the working copy you edited (QUOTED)
-  - `summary:` — one line on what changed
+Apply only the exact concept, binding or step repair approved at the menu.
+Edit only the listed working copies. Preserve every unaffected entry.
+For a Story step rewrite, return the complete Story YAML instead of editing
+a document. For document edits return the requested confirmation markers.
 
 
 ### TASK
 
-## Story
+The Product Owner chose apply at the menu for Story doc-outline.
+Approved fix:
+PROPOSED REPAIR — Item `doc-outline`, failed judgement: AC-2 then step "Claude offers to summarise the document instead"
 
-**ID:** doc-outline
-**Title:** Document Outline On Demand
+Owner of this change: **Product Owner** (concept text in the product document).
+Nothing is applied yet — apply only on an explicit menu decision.
 
-The Story is shown for context only. This fix never edits it.
+## Diagnosis
 
----
+The failed step is an outcome of Claude's reply in the conversation — the same Public
+interface item, and the same kind of use (`then`), that the existing concept `reply`
+already covers. `reply` is closed to two variations (lists exactly a stated number of
+headings in document order; is exactly a stated message), and an offer of a different
+action is neither, so no concept of `then` reaches the threshold (score 4 of 9).
 
-## Fix Prompt to Apply
+Because the item (Claude's reply in the conversation) and the kind of use (`then`)
+already exist, the repair is to **widen the existing concept `reply` with a third
+variation** — not a new concept, and not a rewrite of the Story. The AC-2 step wording
+stays exactly as written.
 
-# Fix Prompt for Story doc-outline: Document Outline On Demand
+## Change 1 of 1 — widen concept `reply` (file: `docs/product/product.yaml`)
 
-## Target
-The `product` document (`./docs/product/product.yaml`): its `catalogue:` list, and nothing else.
+Scope: product document only. No change to the Story or any other concept.
 
-Do NOT edit the Story. Its steps stay word for word as written. Do NOT touch `roles:`, `vocabulary:` or `glossary:` — the new entry relies only on the glossary term `Google Doc`, which already exists and is spelled exactly that way.
+Replace this block (lines 45-51, under `concepts:` → `then:`):
 
-## Finding being closed
-AC-2's `then` step `Claude offers to summarise the document instead` matches no catalogue template, so it has no stated meaning. One new entry phrases it in its own block (`then`).
-
-The other five steps of this Story already match exactly one template each (AC-1: 3 steps, AC-3: 3 steps, plus AC-2's first two steps) and must keep doing so. The new template below contains no quoted run and no number, and it is literal end-to-end, so it cannot also match any existing step:
-- it is not matched by `'Claude displays the message "{message}"'`, which requires literal double quotes;
-- it is not matched by `'Claude displays an outline of {count:number} heading[s]'`;
-- no existing entry matches the new template's text.
-
-## Required Changes
-
-### Change #1: Add the catalogue entry phrasing AC-2's offer step
-**Document:** product (`./docs/product/product.yaml`)
-**Action:** Append this entry to the end of the `catalogue:` list, after the `'Claude displays the message "{message}"'` entry. Keep the existing two-space list indentation.
-**YAML:**
 ```yaml
-  - template: 'Claude offers to summarise the document instead'
-    block: then
-    means: Claude's reply contains an offer to produce a summary of the Google Doc, which the Claude User can accept in the next turn; the offer's exact wording is not fixed.
-    terms: [Google Doc]
+  then:
+    - concept: reply
+      means: >-
+        Claude's reply in the conversation either lists exactly a stated
+        number of headings, in document order, or is exactly a stated
+        message.
+      terms: [outline]
 ```
 
-**Exact edit — replace this `old_string`:**
+with:
+
 ```yaml
-  - template: 'Claude displays the message "{message}"'
-    block: then
-    means: Claude's reply in the conversation is exactly the quoted message.
-    terms: []
+  then:
+    - concept: reply
+      means: >-
+        Claude's reply in the conversation either lists exactly a stated
+        number of headings, in document order, is exactly a stated
+        message, or offers to summarise the Google Doc instead.
+      terms: [Google Doc, outline]
 ```
 
-**with this `new_string`:**
-```yaml
-  - template: 'Claude displays the message "{message}"'
-    block: then
-    means: Claude's reply in the conversation is exactly the quoted message.
-    terms: []
-  - template: 'Claude offers to summarise the document instead'
-    block: then
-    means: Claude's reply contains an offer to produce a summary of the Google Doc, which the Claude User can accept in the next turn; the offer's exact wording is not fixed.
-    terms: [Google Doc]
-```
+Two edits in that block:
+1. `means`: the closed prose gains a third variation — "or offers to summarise the
+   Google Doc instead" — and the two-way "either … or" becomes a closed three-way
+   "either …, …, or …". The first two variations are unchanged word for word.
+2. `terms`: `Google Doc` is added, because the new variation names that glossed term.
+   `outline` is kept.
 
-Note on YAML quoting: the `means:` value above is an unquoted plain scalar containing an apostrophe (`Claude's`), which is valid YAML as written — do not wrap it in single quotes, and do not escape the apostrophes. The `template:` value must stay single-quoted exactly as shown.
+## No other file changes
 
-## Why this entry and not a reworded step
-The step is kept literal and specific, with no slots, per the user's decision: the step carries no quoted run and no number, so nothing in it is naturally a slot, and keeping it literal leaves room for other offer phrasings to get their own entries later. The Story's AC-2 text is unchanged.
+- `docs/product/product.yaml`: `roles`, `vocabulary`, `glossary`, the `given` concept
+  `shared document` and the `when` concept `outline request` are untouched.
+- The Story `doc-outline` is untouched: all of AC-1, AC-3, and both other AC-2 steps
+  keep their current wording, and the failed step "Claude offers to summarise the
+  document instead" is kept verbatim.
 
-## Done when
-- `catalogue:` has exactly one new entry, the one above.
-- All six steps of Story doc-outline each match exactly one catalogue template, in the matching block.
-- No other document, and no part of the product document outside `catalogue:`, is modified.
+## Expected effect after apply
 
----
+- AC-2 then step "Claude offers to summarise the document instead" links to `reply`
+  (third variation), clearing the failed judgement.
+- All ten passing judgements keep their current bindings: AC-1/AC-2/AC-3 given →
+  `shared document`; AC-1/AC-2/AC-3 when → `outline request`; AC-1 then, AC-2 then
+  message, AC-3 then → `reply` (first and second variations, unchanged).
+- No binding file is edited, so nothing here falls to the System Architect.
+Product working copy:
 
-## Where to write
-
-Each term document has a working copy in this run's tmp directory. Edit
-the working copy, never the document itself:
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
 
-The engine replaces each document with its working copy once the copy
-reads as valid YAML, so a copy you leave unparseable changes nothing.
-
-## Instructions
-
-1. Use the Read tool to load the working copy of the `product` document
-   and find its `catalogue:` list.
-2. Apply the changes described in the "Fix Prompt to Apply" section
-   above with the Edit tool on that working copy: append a new entry at
-   the end of the list, at the list's own indentation, or replace the
-   old_string verbatim.
-3. Copy each entry's YAML exactly as the fix prompt gives it. Keep a
-   template single-quoted: it carries `{`, `[` and `"` of its own.
-4. You MAY only edit the working copies listed above. The documents
-   themselves and the Story are out of bounds.
-5. After the edits succeed, output the confirmation block below.
-
+If the approved fix changes a concept, edit only that product working copy
+and return this confirmation inside these markers:
 === FILE_START: tmp/{{RUN_DIR}}/apply-doc-outline-iter1-result.yaml ===
 applied: true
-target: "<path of the working copy you edited>"
-summary: "<one-line summary of what changed>"
+target: "product"
+summary: "<approved concept repair>"
 === FILE_END: tmp/{{RUN_DIR}}/apply-doc-outline-iter1-result.yaml ===
+If it rewrites a step, return instead the COMPLETE updated Story body inside
+those markers, preserving every other field and criterion. Do not edit
+concepts for a step rewrite. Current Story:
+id: doc-outline
+title: Document Outline On Demand
+as_a: Claude User
+i_want: Claude to list the headings of a shared Google Doc when I ask for its outline
+so_that: I can see how the document is organised before I read it
+status: PLANNED
+acceptance_criteria:
+    - id: AC-1
+      description: Claude must display every heading of a shared Google Doc, in document order, when the Claude User asks for its outline.
+      steps:
+        - given:
+            - a Google Doc with 3 headings is shared with the Claude User
+        - when:
+            - the Claude User asks Claude to outline the document
+        - then:
+            - Claude displays an outline of 3 headings
+    - id: AC-2
+      description: Claude must display the message "This document has no headings" and offer a summary instead when the Claude User asks for the outline of a document without headings.
+      steps:
+        - given:
+            - a Google Doc with no headings is shared with the Claude User
+        - when:
+            - the Claude User asks Claude to outline the document
+        - then:
+            - Claude displays the message "This document has no headings"
+            - and: Claude offers to summarise the document instead
+    - id: AC-3
+      description: Claude must display the message "This document is not shared with your account" when the Claude User asks for the outline of a document they cannot open.
+      steps:
+        - given:
+            - a Google Doc that is not shared with the Claude User
+        - when:
+            - the Claude User asks Claude to outline the document
+        - then:
+            - Claude displays the message "This document is not shared with your account"
+

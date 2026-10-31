@@ -48,7 +48,7 @@ story:
     steps:
     - given:
       - the "us-apply-relocated-registry" project tree
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
     - when:
       - the Product Owner runs "us apply 95.2 --fix"
     - then:

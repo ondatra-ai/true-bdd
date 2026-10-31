@@ -81,11 +81,11 @@ story:
                 - and: the engine dispatched no AI turns
 
         - id: 005-matched-scenario-embedded
-          description: A failing generated Go test must hand both fix turns its Scenario and the catalogue meanings of its steps
+          description: A failing generated Go test must hand both fix turns its Scenario and the concept meanings of its steps
           steps:
           - given:
             - the "build-code-spec-scenario" project tree
-            - the System Architect answers "1" to every question
+            - the System Architect's answer to every question is "1"
           - when:
             - the System Architect runs "build code --fix"
           - then:
@@ -94,16 +94,16 @@ story:
             - every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Scenario ID:\*\* calc-001-double
             - every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Service:\*\* calc
             - every file matching "tmp/*/*fix-iter*-user.txt" matches tests/calc/calc_test.go
-            - every file matching "tmp/*/*fix-iter*-user.txt" matches the number is doubled
-            - every file matching "tmp/*/*fix-iter*-user.txt" matches The calculator doubles the supplied number.
+            - every file matching "tmp/*/*fix-iter*-user.txt" matches the Owner doubles 3
+            - every file matching "tmp/*/*fix-iter*-user.txt" matches The Owner doubles a whole number with the calculator.
             - every file matching "tmp/*/*fix-iter*-user.txt" matches An integer operand whose double is its sum with itself.
             - every file matching "tmp/*/*fix-iter*-user.txt" matches The integer argument and stdout of the calculator double command.
             - every file matching "tmp/*/*fix-iter*-user.txt" matches The step runs double as a process and compares its integer stdout
             - every file matching "tmp/*/apply-*-user.txt" matches \*\*Scenario ID:\*\* calc-001-double
             - every file matching "tmp/*/apply-*-user.txt" matches \*\*Service:\*\* calc
             - every file matching "tmp/*/apply-*-user.txt" matches tests/calc/calc_test.go
-            - every file matching "tmp/*/apply-*-user.txt" matches the number is doubled
-            - every file matching "tmp/*/apply-*-user.txt" matches The calculator doubles the supplied number.
+            - every file matching "tmp/*/apply-*-user.txt" matches the Owner doubles 3
+            - every file matching "tmp/*/apply-*-user.txt" matches The Owner doubles a whole number with the calculator.
             - every file matching "tmp/*/apply-*-user.txt" matches An integer operand whose double is its sum with itself.
             - every file matching "tmp/*/apply-*-user.txt" matches The integer argument and stdout of the calculator double command.
             - every file matching "tmp/*/apply-*-user.txt" matches The step runs double as a process and compares its integer stdout
@@ -115,7 +115,7 @@ story:
           steps:
           - given:
             - the "build-code-spec-missing-product" project tree
-            - the System Architect answers "1" to every question
+            - the System Architect's answer to every question is "1"
           - when:
             - the System Architect runs "build code --fix"
           - then:
@@ -131,7 +131,7 @@ story:
           steps:
           - given:
             - the "build-code-spec-missing-registry" project tree
-            - the System Architect answers "1" to every question
+            - the System Architect's answer to every question is "1"
           - when:
             - the System Architect runs "build code --fix"
           - then:
@@ -141,3 +141,39 @@ story:
             - every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Service:\*\* calc
             - 'every file matching "tmp/*/*fix-iter*-user.txt" does not match Scenario ID:'
             - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+
+        - id: 008-linked-concepts-embedded
+          description: On a concept host both fix turns must embed each concept the failing Scenarios link to, with its meaning, its words and its binding, and no concept they do not link
+          steps:
+          - given:
+            - the "build-code-spec-concepts" project tree
+            - the System Architect's answer to every question is "1"
+          - when:
+            - the System Architect runs "build code --fix"
+          - then:
+            - the command exits with code 0
+            - stdout matches BUILD CODE COMPLETE
+            - every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Scenario ID:\*\* calc-002-halve
+            - 'every file matching "tmp/*/*fix-iter*-user.txt" matches `installation` \(given concept\): The calculator program is built from its source and ready for the Owner to run\.'
+            - 'every file matching "tmp/*/*fix-iter*-user.txt" matches `doubling` \(when concept\): The Owner doubles a whole number with the calculator\.'
+            - 'every file matching "tmp/*/*fix-iter*-user.txt" matches `halving` \(when concept\): The Owner halves an even whole number with the calculator\.'
+            - 'every file matching "tmp/*/*fix-iter*-user.txt" matches `result` \(then concept\): The calculator prints the whole number the operation produced\.'
+            - 'every file matching "tmp/*/*fix-iter*-user.txt" matches Bound for calc through command: double, command: halve: Build the declared calculator commands'
+            - 'every file matching "tmp/*/*fix-iter*-user.txt" matches Bound for calc through command: halve: Run the kept calculator program''s halve command'
+            - every file matching "tmp/*/*fix-iter*-user.txt" matches An integer operand whose double is its sum with itself\.
+            - every file matching "tmp/*/*fix-iter*-user.txt" matches The integer argument and stdout of the calculator's double and halve commands\.
+            - every file matching "tmp/*/*fix-iter*-user.txt" does not match The Owner squares a whole number
+            - 'every file matching "tmp/*/*fix-iter*-user.txt" does not match \#\#\# Phrases'
+            - every file matching "tmp/*/apply-*-user.txt" matches \*\*Scenario ID:\*\* calc-002-halve
+            - 'every file matching "tmp/*/apply-*-user.txt" matches `installation` \(given concept\): The calculator program is built from its source and ready for the Owner to run\.'
+            - 'every file matching "tmp/*/apply-*-user.txt" matches `doubling` \(when concept\): The Owner doubles a whole number with the calculator\.'
+            - 'every file matching "tmp/*/apply-*-user.txt" matches `halving` \(when concept\): The Owner halves an even whole number with the calculator\.'
+            - 'every file matching "tmp/*/apply-*-user.txt" matches `result` \(then concept\): The calculator prints the whole number the operation produced\.'
+            - 'every file matching "tmp/*/apply-*-user.txt" matches Bound for calc through command: double, command: halve: Build the declared calculator commands'
+            - 'every file matching "tmp/*/apply-*-user.txt" matches Bound for calc through command: halve: Run the kept calculator program''s halve command'
+            - every file matching "tmp/*/apply-*-user.txt" matches An integer operand whose double is its sum with itself\.
+            - every file matching "tmp/*/apply-*-user.txt" matches The integer argument and stdout of the calculator's double and halve commands\.
+            - every file matching "tmp/*/apply-*-user.txt" does not match The Owner squares a whole number
+            - 'every file matching "tmp/*/apply-*-user.txt" does not match \#\#\# Phrases'
+            - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+            - the engine dispatched no validation AI turns to "claude"

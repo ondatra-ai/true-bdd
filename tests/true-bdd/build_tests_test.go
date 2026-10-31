@@ -218,38 +218,6 @@ func TestBuildTestsRefusals003UndeclaredRegistryRefused(t *testing.T) {
 	s.Done()
 }
 
-// build-tests-refusals-005-step-outside-catalogue-refused: When the product document declares a catalogue, a Registry step that does not match exactly one catalogue template of its own block must refuse `build tests` at startup, naming each such Scenario and step whether or not a Story claims that Scenario, before a generated test is written or an AI turn is spent
-func TestBuildTestsRefusals005StepOutsideCatalogueRefused(t *testing.T) {
-	s := scenarios.New(t, "build-tests-refusals-005-step-outside-catalogue-refused")
-	s.Given(`the "build-tests-step-outside-catalogue" project tree`)
-	s.When(`the System Architect runs "build tests --fix"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
-	s.And(`stdout matches registry steps outside the catalogue in \./docs/product/product\.yaml`)
-	s.And(`stdout matches INT-902: then step \\"the session is granted a ticket within 2 seconds\\" matches no template`)
-	s.And(`stdout matches INT-903: then step \\"the server answers 200\\" matches 2 templates: \\"the server answers \{code:number\}\\"; \\"the server answers 200\\"`)
-	s.And(`stdout matches INT-904: then step \\"the MCP server is running\\" matches \\"the MCP server is running\\", declared for given`)
-	s.But(`stdout does not match INT-901:`)
-	s.And(`no file outside "tmp" changed`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// build-tests-refusals-006-no-catalogue-walks-unrefused: When the product document declares no catalogue, `build tests` must say that it checks no step phrase and must render the Registry without refusing any step for its wording, so a host adopts the catalogue only by writing one
-func TestBuildTestsRefusals006NoCatalogueWalksUnrefused(t *testing.T) {
-	s := scenarios.New(t, "build-tests-refusals-006-no-catalogue-walks-unrefused")
-	s.Given(`the "build-tests-no-catalogue" project tree`)
-	s.When(`the System Architect runs "build tests --fix"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches msg="Step phrases not checked" reason="the product document declares no catalogue"`)
-	s.And(`stdout matches BUILD TESTS COMPLETE`)
-	s.But(`stdout does not match Refusing to start`)
-	s.And(`the engine dispatched no AI turns`)
-	s.And(`the file "tests/mcp/mcp_test.go" is created`)
-	s.And(`no file outside "tmp" and "tests" changed`)
-	s.Done()
-}
-
 // build-tests-render-001-renders-only: build tests --fix renders the Registry tests without definitions, AI turns or test runs
 func TestBuildTestsRender001RendersOnly(t *testing.T) {
 	s := scenarios.New(t, "build-tests-render-001-renders-only")
@@ -440,14 +408,14 @@ func TestBuildTestsSteps002TestNamedAfterKey(t *testing.T) {
 	s.Done()
 }
 
-// build-tests-steps-007-unreadable-catalogue-refused: `build tests --fix` must refuse a product document whose catalogue it cannot read, before it writes a generated test and before any AI turn, rather than author steps blind to the spec the host declared
+// build-tests-steps-007-unreadable-catalogue-refused: `build tests --fix` must refuse a product document whose concepts it cannot read, before it writes a generated test and before any AI turn, rather than author steps blind to the spec the host declared
 func TestBuildTestsSteps007UnreadableCatalogueRefused(t *testing.T) {
 	s := scenarios.New(t, "build-tests-steps-007-unreadable-catalogue-refused")
 	s.Given(`the "build-tests-fix-unreadable-catalogue" project tree`)
 	s.When(`the System Architect runs "build tests --fix"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
-	s.And(`stdout matches read the catalogue: product document \./docs/product/product\.yaml: catalogue: must hold a list of phrases`)
+	s.And(`stdout matches product document \./docs/product/product\.yaml: concepts: requires given, when or then lists with concept, means and terms`)
 	s.And(`the engine dispatched no AI turns`)
 	s.But(`no file outside "tmp" changed`)
 	s.Done()

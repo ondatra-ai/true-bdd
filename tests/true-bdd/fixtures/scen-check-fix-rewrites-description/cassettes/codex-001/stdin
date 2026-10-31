@@ -2,8 +2,7 @@
 
 You are a Registry Scenario Editor applying an approved fix to the
 working copy of one document: the scenario registry, where a
-Scenario's description or steps are rewritten, or the product
-document, where a catalogue entry's meaning is.
+Scenario's description or steps are rewritten.
 
 **Your Task:**
 1. Read the working copy the fix names.
@@ -52,47 +51,56 @@ Then:
 # Fix Prompt for Scenario E2E-001: Greeting a name prints the configured greeting followed by that name, and the greeter exits with code 0
 
 ## Target
-The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry: `tmp/{{RUN_DIR}}/scenarios_yaml.yaml`). Only its `description:` field changes. Do not touch the product document, any step, any other Scenario, the generated test `tests/greeter/greet_test.go`, or any step definition.
+The `E2E-001` entry of the `scenarios_yaml` document (the
+scenario registry), file `tmp/{{RUN_DIR}}/scenarios_yaml.yaml`.
 
-## Finding being fixed
-`scen-check/scenario_quality` reported:
-- `E2E-001: missing rule keyword (no "must" or "should") — "Greeting a name prints the configured greeting followed by that name, and the greeter exits with code 0"`
+Edit only the `description:` field of that entry. Do not touch
+`service:`, `path:`, `user_stories:`, `merged_steps:`, any other
+Scenario, the generated test `tests/greeter/greet_test.go`, or any step
+definition.
 
-The description states what happens but pins no rule. It must become one sentence carrying `must`, with no Gherkin Given/When/Then text.
+## Why
+scen-check/scenario_quality failed: the description states the
+behaviour as prose ("Greeting a name prints ... and the greeter
+exits ...") and never says what *must* hold, so it is not a rule.
+It is one sentence and carries no Given/When/Then text, so only the
+missing `must` has to be repaired.
 
 ## Required Changes
-
-### Change #1: State the description as a rule with "must"
+### Change #1: State the description as one rule sentence using "must"
 **Document:** scenarios_yaml
-**Field:** `scenarios.E2E-001.description`
+**Field:** description
 **Current text:**
 ```
 Greeting a name prints the configured greeting followed by that name, and the greeter exits with code 0
 ```
 **New text:**
 ```
-The greeter must print the configured greeting followed by the name it is run with, and must exit with code 0
+The greeter must print the configured greeting followed by the name it was given and must exit with code 0
 ```
 
-Write it as the same plain (unquoted) YAML scalar on one line, exactly as the current value is written:
-```yaml
-  E2E-001:
-    description: The greeter must print the configured greeting followed by the name it is run with, and must exit with code 0
-```
+## Constraints on the replacement
+- Keep the YAML scalar style of the existing line: a plain unquoted
+  scalar on the same `description:` key, at the same indentation
+  (4 spaces under `E2E-001:`), on one line.
+- Both assertions the Scenario pins stay: the printed line is the
+  configured greeting followed by the given name, and the exit code is
+  0. Neither may be dropped or weakened.
+- The sentence stays one sentence, contains `must`, and contains no
+  `Given`/`When`/`Then` text.
+- It uses no word from `vocabulary.forbidden_qualifiers` and no verb
+  from `vocabulary.forbidden_actions` in `product.yaml`; `print`,
+  `greeting` and `exit ... code` are the glossary's own words
+  (`greeting`, `exit code`).
+- Change no step. `merged_steps.given`, `merged_steps.when` and
+  `merged_steps.then` stay byte-for-byte as they are, so every step
+  remains an instance of its concept (`configured greeting`,
+  `a role runs a command`, `exit code`, `standard output`).
 
-## Why this replacement satisfies the check
-- Carries the rule keyword `must` (twice, both clauses bound by it).
-- One sentence, no semicolons and no second independent statement beyond the single coordinated clause.
-- Contains no Gherkin text: the words `given`, `when` and `then` do not appear (the name is referred to as "the name it is run with", never "the given name", and the two outcomes are joined with `and`, never `then`).
-- Keeps every bit of behaviour the Scenario specifies: the greeting comes from configuration (the `given` step's `the greeting is configured as "Hello"`), it is printed followed by the name the command was run with (the `then` step's `stdout matches ^Hello Ada$`), and the exit code is 0 (the `then` step's `the command exits with code 0`). Nothing is added and no assertion is dropped.
-- Stays inside the product vocabulary: it uses the glossary terms `greeting` and `exit code`, names observable actions (`print`, `exit`), and uses none of the forbidden qualifiers (properly, correctly, appropriate, appropriately, user-friendly, fast, quickly, helpful) or forbidden action verbs (handle, process, parse).
-
-## Must not change
-- `scenarios.E2E-001.service` (`greeter`), `path` (`tests/greeter/greet_test.go`) and `user_stories:` (the `docs/product/stories/greet-by-name.yaml` / `greet-by-name-001-prints-greeting` lineage with its `merge_date`) stay exactly as they are.
-- `merged_steps.given`, `merged_steps.when` and `merged_steps.then` stay byte-for-byte as they are, including the `and:` form of the last `then` step.
-- `metadata:` and every other entry of the registry stay as they are.
-- The product document's `catalogue:`, `glossary:`, `roles:` and `vocabulary:` are not edited by this fix; no catalogue `means` is named in the findings.
-- Do not run or edit anything else; `true-bdd build tests --fix` re-renders the generated test from the registry afterwards.
+## After applying
+Run `true-bdd build tests --fix` so the generated test
+`tests/greeter/greet_test.go` is re-rendered from the corrected
+registry entry. Do not hand-edit that test.
 
 ---
 
@@ -112,8 +120,7 @@ same Scenarios, so a copy you leave unparseable changes nothing.
 ## Instructions
 
 1. Use the Read tool to load the working copy the fix prompt names. In
-   the registry, find the `E2E-001:` entry under `scenarios:`;
-   in the product document, the catalogue entry the fix names.
+   the registry, find the `E2E-001:` entry under `scenarios:`.
 2. Apply each change with the Edit tool on that working copy: replace
    the current text the fix prompt gives with its new text, inside that
    entry only.

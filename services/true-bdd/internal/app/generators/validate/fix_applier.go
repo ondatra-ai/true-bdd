@@ -30,6 +30,7 @@ type FixApplierData struct {
 	SubjectID  string // Subject identifier
 	FixPrompt  string // The fix prompt to apply
 	ResultPath string // Path for FILE_START/FILE_END output
+	Judgement  string
 	// Check names the `D:` check whose finding the fix closes; empty for
 	// a model's `Q:`, so a template can tell the two kinds of fix apart.
 	Check string
@@ -42,6 +43,7 @@ type ApplyParams struct {
 	Subject      any    // Current subject to modify
 	SubjectID    string // Subject identifier
 	FixPrompt    string // The concrete fix prompt to apply
+	Judgement    string
 	Check        string // The failed `D:` check's name; "" for a `Q:` prompt
 	TmpDir       string // Run artifact directory
 	Iteration    int    // 1-based apply counter, for file naming
@@ -220,16 +222,16 @@ type applyResultYAML struct {
 }
 
 // interfaceCannotServeYAML is build steps' verdict that the declared Public
-// interface cannot set up or observe a phrase.
+// interface cannot set up or observe the concept its Item writes.
 type interfaceCannotServeYAML struct {
-	Phrase string `yaml:"phrase"`
-	Lacks  string `yaml:"lacks"`
+	Concept string `yaml:"concept"`
+	Lacks   string `yaml:"lacks"`
 }
 
-// nonempty holds the verdict to a named phrase or lack: an empty
+// nonempty holds the verdict to a named concept or lack: an empty
 // `interface_cannot_serve:` key stops nothing.
 func (v *interfaceCannotServeYAML) nonempty() bool {
-	return v != nil && (strings.TrimSpace(v.Phrase) != "" || strings.TrimSpace(v.Lacks) != "")
+	return v != nil && (strings.TrimSpace(v.Concept) != "" || strings.TrimSpace(v.Lacks) != "")
 }
 
 // checkFixApplied returns an error when the applier explicitly reported
@@ -245,7 +247,7 @@ func checkFixApplied(content string) error {
 	}
 
 	if result.InterfaceCannotServe.nonempty() {
-		return pkgerrors.InterfaceCannotServe(result.InterfaceCannotServe.Phrase, result.InterfaceCannotServe.Lacks)
+		return pkgerrors.InterfaceCannotServe(result.InterfaceCannotServe.Concept, result.InterfaceCannotServe.Lacks)
 	}
 
 	if len(result.Impossible) > 0 {
@@ -267,27 +269,56 @@ func checkFixApplied(content string) error {
 var appliedLinePattern = regexp.MustCompile(`(?mi)^\s*applied:\s*(true|false)\s*$`)
 
 // checkFixAppliedFallback salvages the verdict from unparseable content.
-// Only an explicit `applied: false` is actionable. Every status line is
-// scanned, not just the first, so a later refusal can never be masked by an earlier success.
+// Only an explicit `applied: false` is actionable.
 func checkFixAppliedFallback(content string) error {
-	matches := appliedLinePattern.FindAllStringSubmatch(stripMarkdownFences(content), -1)
-	if len(matches) == 0 {
+	applied := salvageApplied(content)
+	if applied == nil {
 		return nil
 	}
 
-	for _, match := range matches {
-		if strings.EqualFold(match[1], "false") {
-			slog.Warn("Fix applier confirmation block is not valid YAML; " +
-				"read applied: false from the raw text")
+	if !*applied {
+		slog.Warn("Fix applier confirmation block is not valid YAML; " +
+			"read applied: false from the raw text")
 
-			return pkgerrors.ErrFixNotAppliedByModel("", "")
-		}
+		return pkgerrors.ErrFixNotAppliedByModel("", "")
 	}
 
 	slog.Warn("Fix applier confirmation block is not valid YAML; " +
 		"read applied: true from the raw text")
 
 	return nil
+}
+
+// salvageApplied reads the verdict of content YAML could not decode from its
+// `applied:` lines, nil when it has none. Every line is scanned, so a later
+// refusal can never be masked by an earlier success.
+func salvageApplied(content string) *bool {
+	matches := appliedLinePattern.FindAllStringSubmatch(stripMarkdownFences(content), -1)
+	if len(matches) == 0 {
+		return nil
+	}
+
+	applied := true
+
+	for _, match := range matches {
+		if strings.EqualFold(match[1], "false") {
+			applied = false
+		}
+	}
+
+	return &applied
+}
+
+// IsConfirmation reports whether an applier's content is a confirmation
+// block, read as checkFixApplied reads it: decoded with an `applied:` key, or
+// undecodable with an `applied:` line (#267). A Story body has neither.
+func IsConfirmation(content string) bool {
+	result, ok := parseApplyResult(content)
+	if ok {
+		return result.Applied != nil
+	}
+
+	return salvageApplied(content) != nil
 }
 
 // parseApplyResult decodes an applier confirmation block. Content that is
@@ -358,7 +389,7 @@ func (a *FixApplier) execute(ctx context.Context, model provider.ModelRef, syste
 
 func (a *FixApplier) writerData(params ApplyParams, model provider.ModelRef, resultPath string) FixApplierData {
 	data := FixApplierData{WriteRoots: a.writeRoots, Subject: params.Subject, SubjectID: params.SubjectID,
-		FixPrompt: params.FixPrompt, ResultPath: resultPath, Check: params.Check,
+		FixPrompt: params.FixPrompt, ResultPath: resultPath, Check: params.Check, Judgement: params.Judgement,
 		ClaudeWriter: model.CLI == provider.CLIClaude && params.ClaudeWriter,
 		CodexWriter:  model.CLI == provider.CLICodex && params.CodexWriter}
 	if data.CodexWriter || data.ClaudeWriter {

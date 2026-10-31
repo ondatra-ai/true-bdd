@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
+applied: true
+target: "product"
+summary: "Widened the existing halve concept to cover one or two halvings per request, explicitly excluding three or more. All other entries remain unchanged."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===

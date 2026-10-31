@@ -1,27 +1,26 @@
 # Yamale schema for the product document (path from `documents.product`
 # in true-bdd.yaml, conventionally docs/product/product.yaml).
 #
-# The engine reads three parts of it as data: `catalogue` and the role
-# names, for the `D: step-phrases` check, and `glossary`, for the
-# `D: declared-terms` check. The rest reaches the checklists only as
-# prompt text, so this schema is the only thing pinning its shape.
+# The engine reads `concepts` and `glossary` for its built-in checks, and
+# refuses a document still declaring the retired `catalogue`. The rest
+# reaches the checklists only as prompt text, so this schema is the only
+# thing pinning its shape.
 # Validate it in the host project's lint step, outside the engine:
 #
 #   yamale -s true-bdd/product-schema.yaml docs/product/product.yaml
 #
-# Every field is required but `catalogue`, whose absence is how a host
-# declines it. Only `roles` and the vocabulary's own lists must carry an
-# entry; `vision` may be an empty string and `goals`, `releases`,
-# `not_goals`, `glossary` and `catalogue` empty lists, but the key must be
-# declared rather than omitted, so an empty value reads as a decision on
-# the record instead of an oversight.
+# Every field is required but `concepts`, which a host opts into. Only
+# `roles` and the vocabulary's own lists must carry an entry; `vision` may
+# be an empty string and `goals`, `releases`, `not_goals` and `glossary`
+# empty lists, but the key must be declared rather than omitted, so an
+# empty value reads as a decision on the record instead of an oversight.
 
 title: str()
 description: include('description')
 roles: list(include('role'), min=1)
 vocabulary: include('vocabulary')
 glossary: list(include('glossary_entry'))
-catalogue: list(include('phrase'), required=False)
+concepts: include('concept_blocks', required=False)
 
 ---
 # vision: why; goals: where to; releases: the next steps, each target
@@ -65,8 +64,8 @@ role:
   characteristics: list(str(), min=1)
 
 ---
-# The words `us refine` rejects in steps and AC descriptions. The allowed
-# phrases are no longer listed here: the `catalogue` states them.
+# The words `us refine` rejects in steps and AC descriptions. What a step
+# may state is the `concepts`' closed meanings.
 vocabulary:
   forbidden_qualifiers: list(str(), min=1)
   forbidden_actions: list(include('forbidden_action'), min=1)
@@ -78,17 +77,22 @@ forbidden_action:
   replacement: str()
 
 ---
-# One product word: `term` spelled exactly as the catalogue entries
-# declaring it spell it, and defined once (the D: checks hold both).
+# One product word: `term` spelled exactly as the concepts declaring it
+# spell it, and defined once (the D: checks hold both).
 glossary_entry:
   term: str()
   means: str()
 
 ---
-# One step phrase: the shape a step takes, what it means, and the glossary
-# words that meaning relies on. Grammar and matching: the D: checks, not yamale.
-phrase:
-  template: str()
-  block: enum('given', 'when', 'then')
+# Names are unique within their block; the loader refuses duplicates.
+concept_blocks:
+  given: list(include('concept'), required=False)
+  when: list(include('concept'), required=False)
+  then: list(include('concept'), required=False)
+
+---
+# Closed prose: one interface item and kind of use, with every admitted variation.
+concept:
+  concept: str()
   means: str()
   terms: list(str())

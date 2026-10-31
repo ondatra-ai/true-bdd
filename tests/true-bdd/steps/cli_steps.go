@@ -105,6 +105,7 @@ func Register(suite *bddgo.Suite[State]) {
 	registerGuardSteps(suite)
 	registerClaudeGuardSteps(suite)
 	registerWriterLifecycleSteps(suite)
+	registerConcurrentValidationSteps(suite)
 	registerIOSteps(suite)
 }
 
@@ -126,15 +127,17 @@ func registerEngineLogSteps(suite *bddgo.Suite[State]) {
 // registerGivenSteps binds the Given steps: the tree a scenario starts
 // from and the preconditions the fixture establishes on it.
 func registerGivenSteps(suite *bddgo.Suite[State]) {
+	suite.Step(`^the (?:link|grouping) answer CLI is controlled for invalid replies$`, useInvalidLinkCLI)
+	suite.Step(`^the System Architect runs build steps after scen check and a binding change$`, runGroupingChangedBinding)
 	suite.Step(`^library downloads use an empty offline proxy$`, useOfflineLibraryProxy)
 	suite.Step(`^the "([^"]+)" project tree$`, prepareTree)
 	// Given preconditions the scenario states and the fixture materialises
 	// during tmpdir assembly: the dependency install (`prep:`) and the
 	// interactive answers piped to the fix loop. Implemented below.
 	suite.Step(`^the project's (browser )?test dependencies are installed$`, assertDependenciesInstalled)
-	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" to every question$`,
+	suite.Step(`^the (Product Owner|System Architect|Quality Engineer)'s answer to every question is "([^"]+)"$`,
 		answerEveryQuestion)
-	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" line by line$`,
+	suite.Step(`^the (Product Owner|System Architect|Quality Engineer)'s answers are "([^"]+)" line by line$`,
 		answerLineByLine)
 	// A Given precondition that a checklist is narrowed to one named prompt;
 	// the fixture selects it via `checklist_prompts:`, and this step verifies
@@ -145,9 +148,9 @@ func registerGivenSteps(suite *bddgo.Suite[State]) {
 	suite.Step(`^the project tree has no "([^"]+)"$`, leaveOutOfTree)
 }
 
-// prepareTree loads the named fixture tree and resolves how this run
-// reaches the AI CLIs. Nothing is executed yet — the tmpdir is built by
-// runner.Execute, which needs the command the When step has not named.
+// runner.Execute assembles the tmpdir later, once the When step has named the command.
+//
+//truebdd:concept given "project tree"
 func prepareTree(state *State, args []string) error {
 	name := args[0]
 
@@ -292,9 +295,9 @@ func asksJudge(scenario bddgo.Scenario) bool {
 	return false
 }
 
-// runCLI executes the invocation the scenario names, once. The captured
-// role is discarded — validated by the pattern itself, with nothing else
-// for the harness to do with it.
+// The captured role names who wants the behaviour and changes nothing in the run.
+//
+//truebdd:concept when "a role runs a command"
 func runCLI(state *State, args []string) error {
 	return runEngine(state, args[1])
 }
@@ -316,6 +319,10 @@ func runEngine(state *State, command string, extraEnv ...string) error {
 		return state.fail("%w", engineErr)
 	}
 
+	return executeEngine(state, command, state.Harness.BinPath, extraEnv...)
+}
+
+func executeEngine(state *State, command, binary string, extraEnv ...string) error {
 	timeout := state.runTimeout()
 
 	state.T.Logf("running %q (%s, timeout %s) — this can take several minutes",
@@ -324,7 +331,7 @@ func runEngine(state *State, command string, extraEnv ...string) error {
 	env := append(slices.Clone(state.Proxy.Env), extraEnv...)
 
 	result, err := runner.Execute(context.Background(), state.Fixture,
-		state.Harness.BinPath, state.Harness.SessionRoot, timeout, env...)
+		binary, state.Harness.SessionRoot, timeout, env...)
 
 	// Observed before the branch: a run that errored still has a diff
 	// worth recording, and the tmpdir path is what makes it findable.
@@ -354,9 +361,13 @@ var ErrNoRun = errors.New("no When step ran the CLI")
 var ErrNoDependencyInstall = errors.New(
 	"the fixture declares no prep commands to install the project's dependencies")
 
-// assertDependenciesInstalled verifies the Given precondition is real: at
-// Given time there is no tmpdir yet to install into (prep runs later,
-// during tmpdir assembly), so this only checks the fixture declares prep.
+// ErrNoBrowserInstall means a scenario states the project's browser test
+// dependencies are installed, but the fixture's prep installs no browser.
+var ErrNoBrowserInstall = errors.New("the fixture's prep commands install no browser (playwright install)")
+
+// Prep has not run yet, so this checks the fixture declares the install the step states.
+//
+//truebdd:concept given "machine environment"
 func assertDependenciesInstalled(state *State, args []string) error {
 	if state.Fixture == nil {
 		return state.fail("%w", ErrNoTreePrepared)
@@ -370,12 +381,19 @@ func assertDependenciesInstalled(state *State, args []string) error {
 			browser, ErrNoDependencyInstall)
 	}
 
+	if browser != "" && !slices.ContainsFunc(state.Fixture.PrepCmds, func(command string) bool {
+		return strings.Contains(command, "playwright install")
+	}) {
+		return state.fail("the scenario says the project's browser test dependencies are installed, but %w",
+			ErrNoBrowserInstall)
+	}
+
 	return nil
 }
 
-// leaveOutOfTree records a path the run dir must not hold. Nothing is
-// deleted yet: the run dir is assembled when the When step runs, and
-// runner.Execute fails it if the path is outside it or not there to drop.
+// runner.Execute drops the path when it assembles the tree, failing if it is absent or outside it.
+//
+//truebdd:concept given "project tree"
 func leaveOutOfTree(state *State, args []string) error {
 	if state.Fixture == nil {
 		return state.fail("%w", ErrNoTreePrepared)
@@ -391,9 +409,9 @@ func leaveOutOfTree(state *State, args []string) error {
 // the CLI cleanly).
 const everyQuestionAnswers = 64
 
-// answerEveryQuestion sets the fixture's stdin to the given answer,
-// repeated, before the When step runs the CLI and pipes it to the
-// subprocess. The captured role is discarded — validated by the pattern.
+// The answer is queued repeatedly; the captured role changes nothing in the run.
+//
+//truebdd:concept given "scripted answers"
 func answerEveryQuestion(state *State, args []string) error {
 	if state.Fixture == nil {
 		return state.fail("%w", ErrNoTreePrepared)
@@ -412,9 +430,9 @@ func answerEveryQuestion(state *State, args []string) error {
 var ErrNoChecklistFilter = errors.New(
 	"the fixture declares no checklist_prompts selection for this checklist")
 
-// assertChecklistNarrowed verifies the Given precondition is real: at
-// Given time there is no narrowed checklist on disk yet (prep rewrites it
-// later), so this only checks the fixture selects exactly the named prompt.
+// Prep narrows the checklist later, so this checks the fixture selects exactly that prompt.
+//
+//truebdd:concept given "project tree"
 func assertChecklistNarrowed(state *State, args []string) error {
 	if state.Fixture == nil {
 		return state.fail("%w", ErrNoTreePrepared)
@@ -445,6 +463,7 @@ func assertChecklistNarrowed(state *State, args []string) error {
 	return nil
 }
 
+//truebdd:concept then "exit code"
 func assertExitCode(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -472,6 +491,7 @@ func assertExitCode(state *State, args []string) error {
 	return nil
 }
 
+//truebdd:concept then "console output"
 func assertStdout(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -494,9 +514,9 @@ func assertStdout(state *State, args []string) error {
 	return nil
 }
 
-// assertStdoutNoMatch is the negative twin of assertStdout: proves stdout
-// does NOT match a pattern. Unlike assertStdout it does not append to
-// fixture.StdoutRegexes — that list holds expected matches, not exclusions.
+// Unlike assertStdout it adds nothing to fixture.StdoutRegexes, which holds expected matches.
+//
+//truebdd:concept then "console output"
 func assertStdoutNoMatch(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -515,8 +535,9 @@ func assertStdoutNoMatch(state *State, args []string) error {
 	return nil
 }
 
-// assertStderr is assertStdout's twin over the run's stderr, printed whole
-// on a miss: what lands there is a short error, never a log stream.
+// stderr is printed whole on a miss: it holds a short error, never a log stream.
+//
+//truebdd:concept then "console output"
 func assertStderr(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -534,8 +555,9 @@ func assertStderr(state *State, args []string) error {
 	return nil
 }
 
-// assertStderrNoMatch is assertStderr's negative twin: proves stderr does
-// NOT match a pattern, such as a usage an error must not be followed by.
+// Proves stderr never matched, such as a usage an error must not be followed by.
+//
+//truebdd:concept then "console output"
 func assertStderrNoMatch(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -580,8 +602,9 @@ func changesOutside(state *State, prefixes ...string) ([]string, []string) {
 	return paths, detail
 }
 
-// assertNoChangesOutside pins a read-only invocation: nothing outside
-// the named prefix moved.
+// Pins a read-only invocation: nothing outside the named prefix moved.
+//
+//truebdd:concept then "file changes"
 func assertNoChangesOutside(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -597,9 +620,9 @@ func assertNoChangesOutside(state *State, args []string) error {
 	return nil
 }
 
-// assertNoChangesOutsideTwo is the two-prefix twin of
-// assertNoChangesOutside: nothing moved outside EITHER named prefix, e.g.
-// a `build tests --fix` run touching only "tests" and "tmp".
+// Nothing moved outside either named prefix, e.g. a build tests --fix run touching tests and tmp.
+//
+//truebdd:concept then "file changes"
 func assertNoChangesOutsideTwo(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -618,9 +641,9 @@ func assertNoChangesOutsideTwo(state *State, args []string) error {
 	return nil
 }
 
-// assertOnlyFileChangedOutside is the tighter twin of
-// assertNoChangesOutside: exactly one file changed outside the named
-// prefix, and it is the named file — e.g. the story `us refine … --fix` rewrote.
+// The named file, e.g. the story us refine --fix rewrote, is the one change outside the prefix.
+//
+//truebdd:concept then "file changes"
 func assertOnlyFileChangedOutside(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)

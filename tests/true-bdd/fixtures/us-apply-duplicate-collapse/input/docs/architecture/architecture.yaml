@@ -1,0 +1,8 @@
+architecture:
+  services:
+    - name: mcp-service
+      path: services/mcp-service
+      language: go
+    - name: web-service
+      path: services/web-service
+      language: typescript

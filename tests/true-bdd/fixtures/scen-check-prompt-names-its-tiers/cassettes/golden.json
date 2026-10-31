@@ -5,9 +5,9 @@
     {
       "path": "docs/scenarios.yaml",
       "kind": "modified",
-      "size": 1027,
-      "sha256": "66bdb7dfbf4c33214a757d376aab5ec17fcada3baf7cdc48b49130df4a71919c",
-      "text": "# Registry seed for `scen-check-prompt-names-its-tiers`.\n#\n# The seed of scen-check-fix-rewrites-description-qualifier: one Scenario\n# whose description says \"quickly\", a forbidden qualifier, where its then\n# step states the measurable criterion, 100 milliseconds. The walk's one\n# Prompt names its own tiers, so which CLI each turn went to says whose\n# tier won.\n\nmetadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-10-22\"\n  description: \"One scenario with a vague word in its description\"\n\nscenarios:\n  E2E-001:\n    description: The greeter must print the configured greeting followed by the name it is given and exit within 100 milliseconds\n    service: greeter\n    path: tests/greeter/greet_test.go\n    user_stories: []\n    merged_steps:\n      given:\n        - the greeting is configured as \"Hello\"\n      when:\n        - the Operator runs \"greet Ada\"\n      then:\n        - the command exits with code 0 within 100 milliseconds\n        - and: stdout matches ^Hello Ada$\n"
+      "size": 674,
+      "sha256": "14d2ce48a44ebc8fb3cc48c71c9e0e739c3e7801494a99c94aa970334ed2a227",
+      "text": "metadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-10-22\"\n  description: \"One scenario with a vague word in its description\"\n\nscenarios:\n  E2E-001:\n    description: The greeter must print the configured greeting followed by the name it is given and exit with code 0 within 100 milliseconds\n    service: greeter\n    path: tests/greeter/greet_test.go\n    user_stories: []\n    merged_steps:\n      given:\n        - the greeting is configured as \"Hello\"\n      when:\n        - the Operator runs \"greet Ada\"\n      then:\n        - the command exits with code 0 within 100 milliseconds\n        - and: stdout matches ^Hello Ada$\n"
     }
   ]
 }

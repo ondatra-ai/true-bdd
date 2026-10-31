@@ -35,7 +35,7 @@ type declaredID struct {
 
 // FindStoryFile resolves storyID to the one `<storyID>-*.yaml` file whose own
 // `id:` is storyID: the glob for `scen-check` also matches the Story
-// `scen-check-phrases`. `us refine` and `us apply` both find a Story here.
+// `scen-check-speed`. `us refine` and `us apply` both find a Story here.
 func FindStoryFile(storiesDir, storyID string) (StoryFile, error) {
 	matches, err := globStoryFiles(storiesDir, storyID)
 	if err != nil {

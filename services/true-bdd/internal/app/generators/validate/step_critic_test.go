@@ -14,14 +14,16 @@ import (
 type critiqueAI struct {
 	model  provider.ModelRef
 	role   provider.Role
+	system string
 	user   string
+	schema string
 	answer string
 }
 
-func (a *critiqueAI) ExecutePromptWithSystem(_ context.Context, role provider.Role, _, user string,
-	model provider.ModelRef, _ provider.ExecutionMode, _ string, _ ...provider.TurnOptions,
+func (a *critiqueAI) ExecutePromptWithSystem(_ context.Context, role provider.Role, system, user string,
+	model provider.ModelRef, _ provider.ExecutionMode, schema string, _ ...provider.TurnOptions,
 ) (string, error) {
-	a.model, a.role, a.user = model, role, user
+	a.model, a.role, a.system, a.user, a.schema = model, role, system, user, schema
 
 	return a.answer, nil
 }
@@ -56,7 +58,7 @@ func checkCriticRoute(t *testing.T, models *provider.Registry, tier, want string
 	}
 
 	client := &critiqueAI{answer: `{"answer":"fail","findings":[
- {"definition":"double","category":"phrase_mapping","finding":"missing operation"}]}`}
+ {"definition":"double","category":"concept_binding","finding":"missing operation"}]}`}
 	critic := validate.NewStepCritic(client, models, path, path)
 	data := validate.StepCritiqueData{Definition: "double", Context: "whole specification", Sources: "whole source"}
 
@@ -76,5 +78,63 @@ func checkCriticRoute(t *testing.T, models *provider.Registry, tier, want string
 	if client.model.Model != want || client.role != provider.RolePrompt ||
 		!strings.Contains(client.user, "whole specification\nwhole source") {
 		t.Fatalf("wrong request: %+v", client)
+	}
+}
+
+// The critique judges each AI-proposed pattern as well as the body, against
+// the concept's binding and the fixture inputs, and names no template form.
+func TestConceptCritiqueJudgesPatternsAndFixtureContracts(t *testing.T) {
+	t.Parallel()
+
+	concept := critiqueRequest(t)
+	requireTerms(t, concept.system, "pattern_captures", "pattern_scope", "fixture inputs")
+	requireTerms(t, concept.schema, "pattern_captures", "pattern_scope")
+	requireTerms(t, concept.user, "fixture inputs")
+
+	for _, leak := range []string{"Catalogue", "Phrase mapping", "template", "phrase_", "Never judge them"} {
+		if strings.Contains(concept.system+concept.user+concept.schema, leak) {
+			t.Errorf("the critique carries the template form %q", leak)
+		}
+	}
+}
+
+// critiqueRequest renders the shipped critique templates.
+func critiqueRequest(t *testing.T) *critiqueAI {
+	t.Helper()
+
+	repository, err := filepath.Abs("../../../../../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	models, err := provider.NewRegistry(map[string]string{linkTestTier: "claude:default"},
+		map[provider.Role]string{provider.RolePrompt: linkTestTier, provider.RoleFix: linkTestTier,
+			provider.RoleApply: linkTestTier})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	client := &critiqueAI{answer: `{"answer":"pass","findings":[]}`}
+	critic := validate.NewStepCritic(client, models,
+		filepath.Join(repository, "templates/build-steps.critique.system.prompt.tpl"),
+		filepath.Join(repository, "templates/build-steps.critique.prompt.tpl"))
+
+	_, err = critic.Critique(context.Background(), validate.StepCritiqueData{
+		Definition: "halving", Context: "context", Sources: "sources",
+	}, "", filepath.Join(t.TempDir(), "turn"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return client
+}
+
+func requireTerms(t *testing.T, text string, terms ...string) {
+	t.Helper()
+
+	for _, term := range terms {
+		if !strings.Contains(text, term) {
+			t.Errorf("lacks %q:\n%s", term, text)
+		}
 	}
 }

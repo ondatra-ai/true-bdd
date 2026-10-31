@@ -2,8 +2,7 @@
 
 You are a Registry Scenario Editor applying an approved fix to the
 working copy of one document: the scenario registry, where a
-Scenario's description or steps are rewritten, or the product
-document, where a catalogue entry's meaning is.
+Scenario's description or steps are rewritten.
 
 **Your Task:**
 1. Read the working copy the fix names.
@@ -51,88 +50,79 @@ Then:
 # Fix Prompt for Scenario E2E-001: The greeter must greet the person whose name it is given
 
 ## Target
-The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry).
-Nothing in the `product` document changes: no finding names a catalogue
-entry's `means`, and the replacement step below already matches the
-existing catalogue template `stdout matches {expected:pattern}` (block
-`then`), whose `means` reads correctly as it stands.
+The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry,
+file `tmp/{{RUN_DIR}}/scenarios_yaml.yaml`).
 
-## What the finding is
-`scen-check/scenario_quality` reported `E2E-001: not measurable` — no
-exact message, count, code or threshold appears in the description or in
-any step, so a step definition has nothing to assert on beyond the prose.
-The user's clarifications fix the criterion: the exact printed line, the
-configured greeting `Hello` followed by the given name `Alice`, on one
-line of standard output, asserted in the `then` step only.
+Edit nothing else: not `metadata:`, not any other scenario, and not
+`E2E-001`'s `service:`, `path:` or `user_stories:`. Do not touch
+`tests/greeter/greet_test.go` (it is re-rendered by
+`true-bdd build tests --fix`) and do not touch any step definition.
+
+## Why
+Check `scen-check/scenario_quality` failed with the finding
+"E2E-001: not measurable": no step and no part of the description names a
+specific measurable criterion a step definition could assert on. The user
+chose the criterion: the greeter's standard output, line pattern
+`^Hello, Alice$`.
 
 ## Required Changes
 
-### Change #1: Replace the `then` step with the exact printed line it must match
+### Change #1: Give the outcome step a measurable criterion
 **Document:** scenarios_yaml
-**Field:** merged_steps.then
+**Field:** `scenarios.E2E-001.merged_steps.then` (the single list item)
 **Current text:**
 ```
-      then:
-        - the greeter greets that person
+the greeter greets that person
 ```
 **New text:**
 ```
+the greeter's standard output has a line matching `^Hello, Alice$`
+```
+
+Replace that one list item in place, so the `then:` block reads:
+```
       then:
-        - stdout matches "^Hello, Alice$"
+        - the greeter's standard output has a line matching `^Hello, Alice$`
 ```
 
-If the applier prefers to replace the step line alone, the single-line
-form of the same edit is:
-
-**Current text:**
+## Notes for the applier
+- Change the `then` step only. Leave the `given` step
+  (`the greeting is configured`) and the `when` step
+  (`the Operator runs the greeter with a name`) exactly as they are, and
+  leave `description:` exactly as it is
+  (`The greeter must greet the person whose name it is given`).
+- The behaviour asserted is unchanged: the configured greeting printed
+  followed by the given name. The new wording states it as something a run
+  can settle instead of restating the prose.
+- Concept fit (product document `concepts.then`): the new step is an
+  instance of the concept `standard output`, whose `means` is "A line the
+  command printed on its standard output has a match for a stated pattern,
+  a regular expression." The step names the command's standard output and
+  states the pattern, so it stays inside that closed meaning; it introduces
+  no new concept and uses only the glossary terms `standard output` and
+  `command` (the greeter's command run).
+- Vocabulary: the new step uses none of the `forbidden_qualifiers`
+  (properly, correctly, appropriate, appropriately, user-friendly, fast,
+  quickly, helpful) and none of the `forbidden_actions` (handle, process,
+  parse).
+- Keep the YAML a plain scalar as shown — the backticks and `^`/`$` need no
+  quoting because the value does not begin with an indicator character.
+  Keep the existing two-space list indentation under `then:`.
+- After the edit, `scenarios.E2E-001` must read exactly:
 ```
-        - the greeter greets that person
-```
-**New text:**
-```
-        - stdout matches "^Hello, Alice$"
-```
-
-(The step is the only occurrence of that text in the document; it sits
-under `scenarios: E2E-001: merged_steps: then:`.)
-
-## Constraints the applier must hold
-- Change **only** the `then` step of `E2E-001`. Per the user's
-  clarification, the `given` step (`the greeting is configured`) and the
-  `when` step (`the Operator runs the greeter with a name`) stay
-  **exactly** as they are, byte for byte.
-- Leave `E2E-001`'s `description`
-  (`The greeter must greet the person whose name it is given`), `service:`
-  (`greeter`), `path:` (`tests/greeter/greet_test.go`) and
-  `user_stories:` (`[]`) exactly as they are.
-- Change no other Scenario, and do not touch `metadata:` or the file's
-  comment header.
-- Do not edit the `product` document, the generated test
-  `tests/greeter/greet_test.go`, or any step definition. The test is
-  re-rendered from the registry by `true-bdd build tests --fix` after
-  this edit lands.
-- Keep the behaviour: the Scenario still asserts that the greeter greets
-  the person whose name it is given. The new step says the same outcome
-  in terms a run can settle — the one line of standard output the greeter
-  prints, the configured greeting `Hello` then the given name `Alice` —
-  and asserts no less than before.
-- Preserve the file's existing YAML indentation (six spaces before the
-  `- ` of a step) and keep the double quotes around the pattern so the
-  regex anchors `^` and `$` survive as literal text.
-
-## Expected result after the fix
-`E2E-001`'s steps read:
-```
+  E2E-001:
+    description: The greeter must greet the person whose name it is given
+    service: greeter
+    path: tests/greeter/greet_test.go
+    user_stories: []
     merged_steps:
       given:
         - the greeting is configured
       when:
         - the Operator runs the greeter with a name
       then:
-        - stdout matches "^Hello, Alice$"
+        - the greeter's standard output has a line matching `^Hello, Alice$`
 ```
-and `scen-check/scenario_quality` now passes with the line
-`E2E-001: measurable — 'stdout matches "^Hello, Alice$"'`.
 
 ---
 
@@ -151,8 +141,7 @@ same Scenarios, so a copy you leave unparseable changes nothing.
 ## Instructions
 
 1. Use the Read tool to load the working copy the fix prompt names. In
-   the registry, find the `E2E-001:` entry under `scenarios:`;
-   in the product document, the catalogue entry the fix names.
+   the registry, find the `E2E-001:` entry under `scenarios:`.
 2. Apply each change with the Edit tool on that working copy: replace
    the current text the fix prompt gives with its new text, inside that
    entry only.

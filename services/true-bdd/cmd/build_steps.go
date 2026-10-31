@@ -12,7 +12,7 @@ import (
 
 func newBuildStepsCmd(provide containerProvider) *cobra.Command {
 	cmd := buildSpecCmd("steps", "Write missing step definitions and check Step coverage",
-		"List missing Catalogue phrase definitions; --fix writes bodies, verifies coverage and the test list, "+
+		"List the concept Items missing step definitions; --fix writes their bodies, verifies coverage and the test list, "+
 			"and requires every Scenario red without the target.",
 		fixFlagDescription,
 		specFlag{

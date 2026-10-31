@@ -1,0 +1,92 @@
+{
+  "architecture": {
+    "services": [
+      {
+        "name": "calc",
+        "path": "services/calc",
+        "language": "go",
+        "public_interface": {
+          "kind": "ui",
+          "elements": [
+            {
+              "page": "Calc",
+              "role": "button",
+              "name": "Halve"
+            },
+            {
+              "page": "Calc",
+              "role": "textbox",
+              "name": "Number"
+            },
+            {
+              "page": "Calc",
+              "role": "textbox",
+              "name": "Idempotency key"
+            }
+          ]
+        }
+      }
+    ],
+    "concepts": [
+      {
+        "concept": "number ready",
+        "block": "given",
+        "service": "calc",
+        "references": [
+          {
+            "element": {
+              "page": "Calc",
+              "role": "textbox",
+              "name": "Number"
+            }
+          }
+        ],
+        "does": "Enter the given number into the Number field."
+      },
+      {
+        "concept": "number result",
+        "block": "then",
+        "service": "calc",
+        "references": [
+          {
+            "element": {
+              "page": "Calc",
+              "role": "textbox",
+              "name": "Number"
+            }
+          }
+        ],
+        "does": "Compare the displayed Number text with the expected result."
+      },
+      {
+        "concept": "halve",
+        "block": "when",
+        "service": "calc",
+        "references": [
+          {
+            "element": {
+              "page": "Calc",
+              "role": "button",
+              "name": "Halve"
+            }
+          },
+          {
+            "element": {
+              "page": "Calc",
+              "role": "textbox",
+              "name": "Idempotency key"
+            }
+          }
+        ],
+        "does": "Set Idempotency key to a fresh label for the requested halving and press Halve once. For a repeated request, reuse the label and press Halve again; Number must stay unchanged."
+      }
+    ],
+    "terms": [
+      {
+        "term": "idempotency key",
+        "technical": "The text value of the \"Idempotency key\" textbox on the Calc page, submitted with the halving request as the request label",
+        "observed_by": "A step definition generates a fresh unique label for a requested halving and types it into the Idempotency key textbox before pressing Halve; for a repeated request it types the same label again"
+      }
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "us-apply-names-service",
+  "files": [
+    {
+      "path": "docs/scenarios.yaml",
+      "kind": "modified",
+      "size": 1127,
+      "sha256": "3454cfeb67741e169e4c8e2da07f69cdcd0e08d7c19e9e52adaab580eead18bd",
+      "text": "metadata:\n  title: \"Calculator Registry\"\n  version: \"2.0\"\n  last_updated: \"2026-10-31\"\n  description: \"The calculator and its neighbour\"\n\nscenarios:\n  calc-001-double:\n    description: Doubling a number returns twice its value\n    service: calc\n    path: tests/calc/calc_test.go\n    merged_steps:\n      given: [the calculator is installed]\n      when: [the Owner doubles 3]\n      then: [the result is 6]\n  neighbour-001-greets:\n    description: The neighbour greets the Owner who knocks\n    service: neighbour\n    path: tests/neighbour/neighbour_test.go\n    merged_steps:\n      given: [the neighbour is at home]\n      when: [the Owner knocks]\n      then: [the greeting is \"hello\"]\n  calc-halve-001-even:\n    description: Halving an even number returns half its value\n    service: calc\n    path: tests/calc/calc_test.go\n    last_updated: \"2026-10-31\"\n    user_stories:\n      - story: docs/product/stories/calc-halve-a-number.yaml\n        scenario_id: calc-halve-001-even\n        merge_date: \"2026-10-31\"\n    merged_steps:\n      given: [the calculator is installed]\n      when: [the Owner halves 6]\n      then: [the result is 3]\n"
+    }
+  ]
+}

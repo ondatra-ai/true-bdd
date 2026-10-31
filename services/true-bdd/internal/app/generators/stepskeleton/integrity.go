@@ -30,7 +30,7 @@ func (d Definition) Intact(dir string) error {
 			}
 		}
 
-		if fun.Name.Name == "Register" {
+		if fun.Name.Name == registerFunction {
 			registered = registered || d.registered(fun)
 		}
 	}
@@ -46,33 +46,43 @@ func (d Definition) registered(fun *ast.FuncDecl) bool {
 	found := false
 
 	ast.Inspect(fun.Body, func(node ast.Node) bool {
-		call, isCall := node.(*ast.CallExpr)
-		if !isCall || len(call.Args) != 2 {
-			return true
-		}
-
-		selector, isSelector := call.Fun.(*ast.SelectorExpr)
-		if !isSelector || selector.Sel.Name != "Step" {
-			return true
-		}
-
-		pattern, isPattern := call.Args[0].(*ast.BasicLit)
-		if !isPattern || pattern.Kind != token.STRING {
-			return true
-		}
-
-		function, isFunction := call.Args[1].(*ast.Ident)
-		if !isFunction {
-			return true
-		}
-
-		literal, _ := strconv.Unquote(pattern.Value)
-		found = found || (literal == d.Pattern && function.Name == d.Function)
+		literal, function, isStep := stepCall(node)
+		found = found || (isStep && literal == d.Pattern && function == d.Function)
 
 		return true
 	})
 
 	return found
+}
+
+// stepCall reads a literal `suite.Step(pattern, function)` registration.
+func stepCall(node ast.Node) (string, string, bool) {
+	call, isCall := node.(*ast.CallExpr)
+	if !isCall || len(call.Args) != 2 {
+		return "", "", false
+	}
+
+	selector, isSelector := call.Fun.(*ast.SelectorExpr)
+	if !isSelector || selector.Sel.Name != "Step" {
+		return "", "", false
+	}
+
+	pattern, isPattern := call.Args[0].(*ast.BasicLit)
+	if !isPattern || pattern.Kind != token.STRING {
+		return "", "", false
+	}
+
+	function, isFunction := call.Args[1].(*ast.Ident)
+	if !isFunction {
+		return "", "", false
+	}
+
+	literal, err := strconv.Unquote(pattern.Value)
+	if err != nil {
+		return "", "", false
+	}
+
+	return literal, function.Name, true
 }
 
 func intactSignature(signature *ast.FuncType) (bool, error) {

@@ -67,48 +67,46 @@ Then:
 
 ## Fix Prompt to Apply
 
-=== FILE_START: tmp/{{RUN_DIR}}/01-99.3-002-mcp-get-refused-fix-prompts.md ===
 # Fix Prompt for AC 99.3-002-mcp-get-refused: The MCP server must respond with HTTP 405 Method Not Allowed when a Claude User sends a GET request to the /mcp endpoint.
 
 ## Target
 Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 
-## Context (verified by reading the target file)
-The `scenarios:` block currently contains exactly ONE entry, `"99.3-001-mcp-initialize"`, whose `user_stories[]` references story `docs/product/stories/99.3-rewalk-fixture.yaml` with `scenario_id: "99.3-001-mcp-initialize"`. No entry anywhere in the file references lineage id `99.3-002-mcp-get-refused`, so the `us-apply/merge` "present?" check fails for AC `002-mcp-get-refused`. The fix is to ADD one new scenario entry keyed by the lineage id. Do not modify, reorder, or re-indent the existing `99.3-001-mcp-initialize` entry, and do not touch `metadata:` (leave `metadata.last_updated` as `"2026-05-14"`).
-
-`path:` REUSES the existing generated-test file `tests/mcp/mcp_test.go` from sibling scenario `99.3-001-mcp-initialize` — both ACs come from the same story and the same `/mcp` HTTP-endpoint feature family, so their Go tests belong in one file. Do not invent a new path.
-
-`service:` is `""` to match the sibling entry in this registry.
+## Context gathered
+- The registry currently holds exactly one scenario, `99.3-001-mcp-initialize`, with `service: mcp` and `path: tests/mcp/initialize_test.go`.
+- `docs/architecture/architecture.yaml` declares exactly one service: `services[].name: mcp`. So `service:` must be `mcp` (no ambiguity, no question needed).
+- Feature family: both ACs describe HTTP request handling on the `/mcp` endpoint of the same service, so REUSE the existing path `tests/mcp/initialize_test.go` rather than inventing a new file.
+- Lineage id `99.3-002-mcp-get-refused` is used verbatim as the registry key.
 
 ## Required Changes
 
 ### Change #1: Add scenario `99.3-002-mcp-get-refused` under `scenarios:`
+**Issue:** The AC `002-mcp-get-refused` (lineage `99.3-002-mcp-get-refused`) has no entry under `scenarios:` whose `user_stories[]` contains both the story path `docs/product/stories/99.3-rewalk-fixture.yaml` and the scenario id `99.3-002-mcp-get-refused`. The merge check reports "not present".
 
-**Issue:** AC `002-mcp-get-refused` (lineage `99.3-002-mcp-get-refused`) is not present in the registry — no `scenarios:` entry has a `user_stories[]` element pairing story `docs/product/stories/99.3-rewalk-fixture.yaml` with `scenario_id: 99.3-002-mcp-get-refused`.
-
-**Action:** Use the Edit tool on `tmp/{{RUN_DIR}}/scenarios.yaml` with the exact `old_string` and `new_string` below. This anchors on the tail of the existing entry (the last lines of the file) and appends the new entry immediately after it, preserving existing ordering and 2-space indentation.
+**Action:** Use the Edit tool on `tmp/{{RUN_DIR}}/scenarios.yaml` with the exact `old_string` and `new_string` below. This appends the new entry at the end of the file, after the existing `99.3-001-mcp-initialize` entry. Do not modify the `metadata:` block and do not touch the existing scenario entry.
 
 **old_string:**
 ```
       then:
         - the server returns HTTP 200
-        - and: the response body is a well-formed JSON-RPC envelope referencing the request id
+        - and the response body is a well-formed JSON-RPC envelope referencing the request id
 ```
 
 **new_string:**
 ```
       then:
         - the server returns HTTP 200
-        - and: the response body is a well-formed JSON-RPC envelope referencing the request id
-  "99.3-002-mcp-get-refused":
-    description: "The MCP server returns HTTP 405 Method Not Allowed for a GET request to /mcp."
-    service: ""
-    path: "tests/mcp/mcp_test.go"
-    last_updated: "2026-10-25"
+        - and the response body is a well-formed JSON-RPC envelope referencing the request id
+
+  99.3-002-mcp-get-refused:
+    description: "MCP server returns HTTP 405 Method Not Allowed for an HTTP GET request to /mcp"
+    service: mcp
+    path: tests/mcp/initialize_test.go
+    last_updated: "2026-10-31"
     user_stories:
-      - story: "docs/product/stories/99.3-rewalk-fixture.yaml"
-        scenario_id: "99.3-002-mcp-get-refused"
-        merge_date: "2026-10-25"
+      - story: docs/product/stories/99.3-rewalk-fixture.yaml
+        scenario_id: 99.3-002-mcp-get-refused
+        merge_date: "2026-10-31"
     merged_steps:
       given:
         - the MCP server is running on its configured port
@@ -120,12 +118,12 @@ The `scenarios:` block currently contains exactly ONE entry, `"99.3-001-mcp-init
 ```
 
 ## Verification after applying
-1. The file parses as valid YAML.
-2. `scenarios:` now has exactly two keys, in order: `"99.3-001-mcp-initialize"` then `"99.3-002-mcp-get-refused"`.
-3. The new entry's `user_stories[0]` is `{story: docs/product/stories/99.3-rewalk-fixture.yaml, scenario_id: 99.3-002-mcp-get-refused, merge_date: 2026-10-25}` — this is what makes the `us-apply/merge` check emit `AC 002-mcp-get-refused (lineage 99.3-002-mcp-get-refused): present in 99.3-002-mcp-get-refused`.
-4. `merged_steps.given` / `.when` / `.then` match the AC's steps verbatim (1 given, 1 when, 2 then).
-5. The `99.3-001-mcp-initialize` entry is byte-for-byte unchanged.
-=== FILE_END: tmp/{{RUN_DIR}}/01-99.3-002-mcp-get-refused-fix-prompts.md ===
+- `scenarios:` contains two keys: `99.3-001-mcp-initialize` (unchanged) and `99.3-002-mcp-get-refused` (new).
+- The new entry's `user_stories[0]` has `story: docs/product/stories/99.3-rewalk-fixture.yaml` and `scenario_id: 99.3-002-mcp-get-refused`, so the merge check now emits:
+  `AC 002-mcp-get-refused (lineage 99.3-002-mcp-get-refused): present in 99.3-002-mcp-get-refused`
+- `service: mcp` matches a declared `services[].name` in `docs/architecture/architecture.yaml`.
+- Indentation matches the existing entry exactly: 2 spaces for the scenario key, 4 for its fields, 6 for `merged_steps` step keys and `user_stories` list items, 8 for step list items.
+- `merged_steps` given/when/then are verbatim copies of the AC's steps.
 
 ---
 

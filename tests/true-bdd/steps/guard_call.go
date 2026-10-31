@@ -71,6 +71,7 @@ func (s *State) guard() *guardCall {
 	return s.guardCall
 }
 
+//truebdd:concept given "write policy"
 func grantWriteRoot(state *State, args []string) error {
 	call := state.guard()
 	call.roots = append(call.roots, args[0])
@@ -78,24 +79,28 @@ func grantWriteRoot(state *State, args []string) error {
 	return nil
 }
 
+//truebdd:concept given "write policy"
 func withholdPolicy(state *State, _ []string) error {
 	state.guard().withheld = true
 
 	return nil
 }
 
+//truebdd:concept given "write policy"
 func garblePolicy(state *State, _ []string) error {
 	state.guard().unreadable = true
 
 	return nil
 }
 
+//truebdd:concept given "write policy"
 func omitReadRoot(state *State, _ []string) error {
 	state.guard().noReadRoot = true
 
 	return nil
 }
 
+//truebdd:concept given "tool call"
 func pipePathPayload(state *State, args []string) error {
 	call := state.guard()
 	call.piped, call.pipedTool, call.pipedPath = true, args[0], args[1]
@@ -103,12 +108,14 @@ func pipePathPayload(state *State, args []string) error {
 	return nil
 }
 
+//truebdd:concept given "tool call"
 func nameTool(state *State, args []string) error {
 	state.guard().tool = args[0]
 
 	return nil
 }
 
+//truebdd:concept given "tool call"
 func nameTreeFile(state *State, args []string) error {
 	call := state.guard()
 	call.target, call.inTree = args[0], true
@@ -116,6 +123,7 @@ func nameTreeFile(state *State, args []string) error {
 	return nil
 }
 
+//truebdd:concept given "tool call"
 func nameLiteralPath(state *State, args []string) error {
 	call := state.guard()
 	call.target, call.inTree = args[0], false
@@ -123,6 +131,7 @@ func nameLiteralPath(state *State, args []string) error {
 	return nil
 }
 
+//truebdd:concept given "tool call"
 func pipePayload(state *State, args []string) error {
 	call := state.guard()
 	call.piped, call.pipedTool, call.pipedFile = true, args[0], args[1]
@@ -130,9 +139,9 @@ func pipePayload(state *State, args []string) error {
 	return nil
 }
 
-// plantLink makes the prep phase create the link before the pre-run
-// snapshot. The snapshot refuses a link it walks into, so the link must
-// sit in a directory it leaves out, such as node_modules.
+// The snapshot refuses a link it walks into, so the link sits where it is skipped, e.g. node_modules.
+//
+//truebdd:concept given "project tree"
 func plantLink(state *State, args []string) error {
 	if state.Fixture == nil {
 		return state.fail("%w", ErrNoTreePrepared)
@@ -193,10 +202,12 @@ func (c *guardCall) targetPath(runDir string) string {
 	return c.target
 }
 
+//truebdd:concept then "write guard's answer"
 func assertGuardAllows(state *State, _ []string) error {
 	return state.guardAnswered(0, "allow")
 }
 
+//truebdd:concept then "write guard's answer"
 func assertGuardDenies(state *State, _ []string) error {
 	return state.guardAnswered(guardDenyExitCode, "deny")
 }
@@ -222,8 +233,9 @@ func (s *State) guardAnswered(want int, verb string) error {
 	return nil
 }
 
-// assertGuardReason matches the reason the guard wrote on stderr, the
-// line claude shows for a denied tool: `stderr matches` in the guard's words.
+// The line claude shows beside a denied tool, read from the guard's stderr.
+//
+//truebdd:concept then "write guard's answer"
 func assertGuardReason(state *State, args []string) error {
 	return assertStderr(state, args)
 }
@@ -233,6 +245,7 @@ func shellQuote(word string) string {
 	return "'" + strings.ReplaceAll(word, "'", `'\''`) + "'"
 }
 
+//truebdd:concept given "write policy"
 func grantTestCommand(state *State, args []string) error {
 	call := state.guard()
 	call.testCommand, call.testSelector, call.testDir = args[0], args[1], args[2]

@@ -13,16 +13,16 @@ vocabulary:
   - fast
   forbidden_actions: []
 glossary: []
-catalogue:
-- template: the number is "{value}"
-  block: given
-  means: The calculator is supplied that already validated integer.
-  terms: []
-- template: the result is "{value}"
-  block: then
-  means: The command succeeds and prints exactly that integer, rounded toward zero.
-  terms: []
-- template: 'the {actor:role} halves the number'
-  block: when
-  means: The {actor:role} invokes the calculator's halve operation on the number supplied by the given step; the operation divides that number by two toward zero. The resulting value is asserted by the then step, not by this step.
-  terms: []
+concepts:
+  given:
+    - concept: number supplied
+      means: The calculator is supplied a stated, already validated integer.
+      terms: []
+  when:
+    - concept: number halved
+      means: The Calculator User halves the number supplied to the calculator.
+      terms: []
+  then:
+    - concept: result
+      means: The halve command succeeds and prints exactly a stated integer, the half rounded toward zero.
+      terms: []

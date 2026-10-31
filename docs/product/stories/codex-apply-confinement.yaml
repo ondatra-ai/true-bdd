@@ -13,23 +13,23 @@ story:
     steps:
     - given:
       - the "codex-apply-us-refine" project tree
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
     - when:
       - the Product Owner runs "us refine doc-outline --fix"
     - then:
       - the command exits with code 0
       - and: stdout matches msg="Codex turn sandboxed" label=codex-turn[0-9]+ sandbox=writer
       - but: stdout does not match sandbox=workspace-write
-      - stdout matches msg="Check answered" check=step-phrases subjectID=doc-outline promptIndex=1 answer=fail
-      - and: 'stdout matches AC-2: then step \\"Claude offers to summarise the document instead\\" matches no template'
+      - stdout matches msg="Concept judgement answered" subjectID=doc-outline promptIndex=1 judgement=link answer=fail
+      - and: 'stdout matches AC-2 then step .Claude offers to summarise the document instead.: no concept of then reaches the threshold'
       - and: stdout matches FIX PROMPT GENERATED
       - and: stdout matches msg="Fix recorded in the document" document=product
-      - and: stdout matches check=step-phrases subjectID=doc-outline promptIndex=1 answer=pass
+      - and: stdout matches msg="Concept judgement answered" subjectID=doc-outline promptIndex=1 judgement=link answer=pass
       - and: stdout matches ALL CHECKS PASSED!
       - and: stdout matches msg="Story saved"
       - and: no file outside "tmp" and "docs/product" changed
       - and: the file "docs/product/product.yaml" is modified
-      - and: the file "docs/product/product.yaml" matches Claude offers to
+      - and: the file "docs/product/product.yaml" matches (?is)concepts:.*(offer|summari[sz])
       - and: the story "docs/product/stories/doc-outline-catalogued.yaml" has 3 acceptance criteria
       - and: the file "docs/product/stories/doc-outline-catalogued.yaml" matches Claude offers to summarise the document instead
   - id: 002-build-steps-writes-protected-tests
@@ -37,7 +37,7 @@ story:
     steps:
     - given:
       - the "codex-apply-build-steps" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build steps --fix"
     - then:
@@ -48,5 +48,5 @@ story:
       - the engine spawned exactly 1 test runner with arguments matching -list \.
       - no file outside "tmp" and "tests" changed
       - stdout matches msg="Codex turn sandboxed" label=codex-turn[0-9]+ sandbox=writer
-      - the engine dispatched 1 validation AI turn to "claude"
+      - the engine dispatched 4 validation AI turns to "claude"
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0

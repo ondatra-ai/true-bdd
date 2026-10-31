@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "binary": "claude",
+  "argv": [
+    "--setting-sources",
+    "",
+    "--strict-mcp-config",
+    "--safe-mode",
+    "--allowedTools",
+    "Read(**),Write(./tmp/**),Glob(**),Grep(**)",
+    "--disallowed-tools",
+    "Bash,Edit(**),MultiEdit(**),Agent,Task",
+    "--model",
+    "claude-opus-5",
+    "--system-prompt",
+    "You prepare a concept or binding repair for the responsible person's menu.\nChange nothing; propose only the failed judgement's repair. Apply requires\nan explicit menu decision. The Product Owner owns concepts and Item wording,\nthe System Architect bindings. Return the required structured answer.\n",
+    "--permission-mode",
+    "acceptEdits",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--json-schema",
+    "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"fix_prompt\": {\"type\": \"string\"},\n    \"questions\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"id\": {\"type\": \"string\"},\n          \"question\": {\"type\": \"string\"},\n          \"context\": {\"type\": \"string\"},\n          \"options\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}\n        },\n        \"required\": [\"id\", \"question\", \"context\", \"options\"],\n        \"additionalProperties\": false\n      }\n    }\n  },\n  \"required\": [\"fix_prompt\", \"questions\"],\n  \"additionalProperties\": false\n}",
+    "-p",
+    "You propose a repair; change no file. The Product Owner owns concepts and\nStory or Scenario wording; the System Architect owns concept bindings.\nRead the reference documents:\n\n- Read(`./docs/architecture/architecture.yaml`) - architecture_yaml\n\n- Read(`./docs/product/product.yaml`) - product\n\nItem: host-001\n**Actual:** fail\nDescription: The number must be halved\nService: calc\nSteps:\nGiven:\n  - 6 is entered\nWhen:\n  - halve once\nThen:\n  - 3 is displayed\n\nFindings:\n\n- given:number ready: The Does names one concrete state-setting action on one declared element: parse the Given step's numeral as a decimal number and replace the entire value of the Calc page 'Number' textbox with its decimal representation, leaving it set before the action. The single reference (Page 'Calc', Role 'textbox', Name 'Number') exists in the declared UI Public interface, the numeral comes from the step text ('6 is entered'), and 'replace the entire value' removes any doubt about appending versus overwriting. An LLM can write this Given step definition with no guessing.\n\n- then:number result: The Does states an observation and an objective comparison: read the value of the declared Calc 'Number' textbox, parse it as a decimal number, and assert numeric equality with the expected numeral supplied by the Then step ('3 is displayed'). The referenced element is present in the declared UI interface, the parse rule (decimal) and the comparison rule (numeric equality, not string equality) are both explicit, so the pass/fail outcome is fully determined. No state change or hidden dependency is implied.\n\n- when:halve: The binding is intent-only with Intent 'Do whatever is appropriate with the entered number.' — it never names the intent actually performed through the UI. It does not say to activate the declared 'Halve' button (or any element), does not say the action happens exactly once as the concept 'Halve the entered number once' and step 'halve once' require, and offers no instruction for how the halving is triggered. References are null and Does is empty, so nothing compensates. Any step definition would have to invent the UI interaction, which is guessed behaviour.\n\n- when:halve: binding is ambiguous\n\n\nRequired repair policy:\nOffer the System Architect a binding for every missing or ambiguous\nlinked concept, for this Scenario's service: concept, block, service,\nreferences and does, or intent for a UI step performed by a model.\nJudge against the declared Public interface and extend it only where\nneeded. If the meaning needs repair, offer the Product Owner a wider\nor corrected concept in the product document. Show each exact change\nat the menu; apply only the approved change after apply.\n\nReturn the exact proposed changes in fix_prompt for review at the menu.\nDo not apply them. Preserve unaffected steps and concepts. A new variation\nwidens an existing concept of that item and use; add one only for a new item or use.\nReturn JSON with fix_prompt and questions. Exactly one carries content:\na complete proposal with questions: [], or questions with fix_prompt: \"\".\nNever return both a proposal and questions. If no schema is supplied, put the proposed fix between these markers:\n=== FILE_START: tmp/{{RUN_DIR}}/02-host-001-fix-prompts.md ===\n\u003cexact proposed changes\u003e\n=== FILE_END: tmp/{{RUN_DIR}}/02-host-001-fix-prompts.md ===\n"
+  ],
+  "exit_code": 0,
+  "duration_ms": 33305,
+  "request_hash": "sha256:81919dad0551083257e729a583fa0726164996c2e9601219f5f4b2240ec44f0e",
+  "fsdiff": {
+    "created": [],
+    "modified": [],
+    "deleted": []
+  },
+  "recorded_at": "2026-10-29T23:37:52Z"
+}

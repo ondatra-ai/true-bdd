@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "fixture": "concept-bodies-cases",
+  "files": [
+    {
+      "path": "tests/calc/steps/concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba.go",
+      "kind": "created",
+      "size": 1530,
+      "sha256": "29360482f2e0f0182565e2a0e0b08a6d5df20016d99b790cd20f522bd15c8003",
+      "text": "package steps\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"operation\"\nfunc concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba(state *State, args []string) error {\n\tif len(args) != 3 {\n\t\treturn fmt.Errorf(\"when operation: expected 3 captures (exact, operation, number), got %d\", len(args))\n\t}\n\texact, operation, number := args[0], args[1], args[2]\n\n\t// The Calculator CLI document declares both commands as\n\t// \"go run ./services/calc \u003ccommand\u003e ... from the host root\"; the suite's\n\t// tests run in tests/calc, so the host root is two levels up.\n\tconst hostRoot = \"../..\"\n\n\tvar command string\n\tswitch operation {\n\tcase \"halves\":\n\t\tcommand = \"halve\"\n\tcase \"doubles\":\n\t\tcommand = \"double\"\n\tdefault:\n\t\treturn fmt.Errorf(\"when operation: the step names operation %q, which is neither halves nor doubles\", operation)\n\t}\n\n\tcmdArgs := []string{\"run\", \"./services/calc\", command}\n\tif exact != \"\" {\n\t\tif command != \"halve\" {\n\t\t\treturn fmt.Errorf(\"when operation: the Calculator CLI declares --exact only for halve, not for %s\", command)\n\t\t}\n\t\tcmdArgs = append(cmdArgs, \"--exact\")\n\t}\n\tcmdArgs = append(cmdArgs, number)\n\n\tcmd := exec.Command(\"go\", cmdArgs...)\n\tcmd.Dir = hostRoot\n\tvar stdout, stderr bytes.Buffer\n\tcmd.Stdout = \u0026stdout\n\tcmd.Stderr = \u0026stderr\n\tif err := cmd.Run(); err != nil {\n\t\treturn fmt.Errorf(\"when operation: go %s: %w: %s\", strings.Join(cmdArgs, \" \"), err, strings.TrimSpace(stderr.String()))\n\t}\n\n\tstate.Output = strings.TrimRight(stdout.String(), \"\\r\\n\")\n\treturn nil\n}\n"
+    },
+    {
+      "path": "tests/calc/steps/concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e.go",
+      "kind": "created",
+      "size": 1206,
+      "sha256": "dd5e4e646c78c2e6722e9e658ea071f45c1a3ec1d6ccbe574cddf5a412e66378",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"regexp\"\n)\n\n//truebdd:concept then \"output\"\nfunc concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e(state *State, args []string) error {\n\tif len(args) != 2 {\n\t\treturn fmt.Errorf(\"then output: expected 2 captures (comparison, pattern), got %d\", len(args))\n\t}\n\tcomparison, pattern := args[0], args[1]\n\n\t// The when \"operation\" step keeps the command's stdout in state.Output with\n\t// its trailing newline already stripped; this step only observes it.\n\toutput := state.Output\n\n\texpression, err := regexp.Compile(pattern)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"then output: the step's pattern %q is not a valid regular expression: %w\", pattern, err)\n\t}\n\tmatched := expression.MatchString(output)\n\n\tswitch comparison {\n\tcase \"matches\":\n\t\tif !matched {\n\t\t\treturn fmt.Errorf(\"then output: the calculator's output %q does not match %q\", output, pattern)\n\t\t}\n\tcase \"does not match\":\n\t\tif matched {\n\t\t\treturn fmt.Errorf(\"then output: the calculator's output %q matches %q, but the step requires no match\", output, pattern)\n\t\t}\n\tdefault:\n\t\treturn fmt.Errorf(\"then output: the step says %q, which is neither matches nor does not match\", comparison)\n\t}\n\treturn nil\n}\n"
+    },
+    {
+      "path": "tests/calc/steps/register.go",
+      "kind": "modified",
+      "size": 337,
+      "sha256": "3078ae89d6a748351ef344bcb145212bd4232a6a10af4fa78472dc1de48d265f",
+      "text": "package steps\n\nfunc Register(suite Registrar) {\n\n\tsuite.Step(\"^the Owner (?:(exactly) )?(halves|doubles) (-?\\\\d+)$\", concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba)\n\n\tsuite.Step(\"^the calculator's output (matches|does not match) (.+)$\", concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e)\n}\n"
+    }
+  ]
+}

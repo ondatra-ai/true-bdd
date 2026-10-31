@@ -1,0 +1,99 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+Apply only the exact concept, binding or step repair approved at the menu.
+Edit only the listed working copies. Preserve every unaffected entry.
+For a Story step rewrite, return the complete Story YAML instead of editing
+a document. For document edits return the requested confirmation markers.
+
+
+### TASK
+
+The responsible person chose apply at the menu for Scenario host-001.
+Approved fix:
+## Repair proposal — Item host-001, failed judgement `when:halve` (binding ambiguous)
+
+**Nothing is applied.** Below is the exact change, awaiting an explicit menu decision.
+
+### Diagnosis
+
+- Product concept `when: halve` — meaning `"Halve the entered number once."` — is **correct and wide enough**: it covers the step `halve once` and the Item description `The number must be halved`. **No Product Owner change is proposed, and no new variation is needed** (the existing concept already covers this item and use).
+- The failure is confined to the **System Architect's binding**. The architecture concept `halve` is intent-only with `"Do whatever is appropriate with the entered number."`, which names no intent actually performed through the UI, names no element, and does not fix the once-only cardinality. `references` is absent and `does` is empty, so nothing compensates.
+- The declared Public interface of service `calc` **already contains** the needed element (`Page "Calc"`, `Role "button"`, `Name "Halve"`). **No extension of the Public interface is required.**
+- Because the step is a single deterministic UI activation, the binding is offered as `references` + `does` (a model-performed `intent` is not warranted).
+
+### Owner of this change
+
+**System Architect** — `docs/architecture/architecture.yaml`, `architecture.concepts[]`, the entry with `concept: "halve"`, `block: "when"`, `service: "calc"`.
+
+### Exact change — `docs/architecture/architecture.yaml`
+
+Replace this object (currently lines 41–46):
+
+```json
+      {
+        "concept": "halve",
+        "block": "when",
+        "service": "calc",
+        "intent": "Do whatever is appropriate with the entered number."
+      },
+```
+
+with:
+
+```json
+      {
+        "concept": "halve",
+        "block": "when",
+        "service": "calc",
+        "references": [
+          {
+            "element": {
+              "page": "Calc",
+              "role": "button",
+              "name": "Halve"
+            }
+          }
+        ],
+        "does": "Activate the Calc page ‘Halve’ button exactly once. Perform no other interaction, enter no value and assert nothing."
+      },
+```
+
+Note: the `intent` key is removed, since `does` now states the action.
+
+### Why this resolves the finding
+
+- **Names the real UI intent:** activating the declared `Halve` button, instead of "whatever is appropriate".
+- **One declared element, already in the Public interface:** `(Page "Calc", Role "button", Name "Halve")` — no guessing about which control performs the halving.
+- **Cardinality is explicit:** "exactly once" matches concept `"Halve the entered number once."` and step `halve once`.
+- **No hidden state or assertion:** the explicit exclusion keeps the When block free of Given-style value entry and Then-style checking, so it composes with `given: number ready` (sets the `Number` textbox to `6`) and `then: number result` (reads the `Number` textbox and asserts numeric equality with `3`).
+- An LLM can now write this When step definition with no invented behaviour.
+
+### Preserved unchanged
+
+- `architecture.concepts[]` entries `given: number ready` and `then: number result` — both passed; untouched.
+- `architecture.services[0].public_interface` — both elements untouched, nothing added.
+- `architecture.terms`, all of `docs/product/product.yaml` (roles, all three concepts, glossary) — untouched.
+- Scenario `host-001` wording (Given `6 is entered`, When `halve once`, Then `3 is displayed`) — untouched.
+
+### Menu decision requested
+
+- **Approve (System Architect):** apply the `architecture.yaml` binding replacement above, exactly as written.
+- **Reject:** leave `when:halve` ambiguous; Item host-001 stays failing.
+Working copies (edit only the approved target):
+
+- `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
+
+- `architecture_yaml`: edit `tmp/{{RUN_DIR}}/architecture_yaml.yaml`, the working copy of `./docs/architecture/architecture.yaml`
+
+
+- `scenarios_yaml`: edit `tmp/{{RUN_DIR}}/scenarios_yaml.yaml`, the working copy of `./docs/scenarios.yaml`
+
+
+Concept changes belong only to product, bindings to architecture_yaml and
+needed Public interface working copies, step rewrites to this Scenario's
+Registry entry. Preserve all unrelated entries. Return confirmation:
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===
+applied: true
+target: "<working copy edited>"
+summary: "<approved change applied>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===

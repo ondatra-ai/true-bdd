@@ -18,7 +18,7 @@
 #     .invocation for claude and codex;
 #   - the prompt templates' inputs: architecture.prompt_data;
 #   - the exit status rule: architecture.terms[exit code].
-# The Phrase mapping (architecture.phrases) references the names declared
+# The Concept bindings (architecture.concepts) reference the names declared
 # below: a command by its path, an extension by its key.
 
 opencli: "1.0.0"
@@ -49,14 +49,16 @@ commands:
       Walks every Acceptance Criterion of the Story whose id is the argument
       against the us-apply checklist. With --fix, applied fixes edit a scratch
       copy of the Registry, which replaces the Registry only when every
-      Acceptance Criterion passes every Prompt.
+      Acceptance Criterion passes every Prompt and every Scenario claiming one
+      of them is keyed by its lineage id and has a service the architecture
+      document declares.
     parameters:
       - {name: story-id, in: argument, required: true, schema: {type: string}}
       - {name: fix, in: flag, schema: {type: boolean}}
       - {name: model, in: option, description: 'Repeatable <tier>=<cli>:<model> override.', schema: {type: string}}
     responses:
       '0': {description: The walk ended, passing or failing; a failing walk leaves the Registry untouched.}
-      '1': {description: A refusal before the walk, an unusable answer, or end of stdin at a question or a fix menu.}
+      '1': {description: 'A refusal before the walk, an unusable answer, end of stdin at a question or a fix menu, or a passing walk whose Registry it refuses to write: a Scenario claiming a criterion keyed apart from its lineage id, or naming an empty service or one the architecture does not declare.'}
   scen check:
     description: >-
       Walks the Registry's Scenarios against the scen-check checklist, one cell
@@ -86,18 +88,25 @@ commands:
       '1': {description: A refusal before rendering, or a stale file without --fix.}
   build steps:
     description: >-
-      Lists each Catalogue phrase a go-test suite has no step definition for
-      and checks Step coverage. With --fix it writes every skeleton, then each
-      body through the Fix loop, and checks compilation, binding, coverage, the
-      test list and that every Scenario is red without the target.
+      Groups the distinct texts no step definition binds, per go-test suite and
+      block, into concept Items and rejudges their service bindings; without
+      --fix it lists the Items and checks Step coverage. A host declaring no
+      concepts has no Item. With --fix it writes every skeleton, then each
+      Item's bodies through the Fix loop, and checks compilation, binding,
+      coverage, the test list and that every Scenario is red without the target. With
+      --fix each Item's patterns are proposed and checked against every suite step
+      before any skeleton, a refusal going back with the findings within the
+      configured attempts; skeletons record their concept and pending ones are
+      resumed. Missing or ambiguous concepts and bindings stop before any skeleton;
+      malformed grouping or proposal answers and output caps crash.
     parameters:
       - {name: fix, in: flag, schema: {type: boolean}}
       - {name: architecture, in: option, description: Path to the architecture document., schema: {type: string}}
       - {name: requirements, in: option, description: Path to the Registry., schema: {type: string}}
       - {name: model, in: option, description: 'Repeatable <tier>=<cli>:<model> override.', schema: {type: string}}
     responses:
-      '0': {description: No phrase lacks a definition and every check passes; under --fix stdout ends with BUILD STEPS COMPLETE.}
-      '1': {description: A missing definition without --fix, a failed check, a phrase the Public interface cannot serve, or a walk that ends incomplete.}
+      '0': {description: No concept Item lacks a definition and every check passes; under --fix stdout ends with BUILD STEPS COMPLETE.}
+      '1': {description: A missing definition or concept Item without --fix, a failed check, a concept the Public interface cannot serve, a proposal still refused after the configured attempts, or an incomplete walk.}
   build code:
     description: >-
       Runs the architecture's declared replay command, walks the failing set,
@@ -112,7 +121,8 @@ commands:
       '1': {description: A test still fails after the walk, an impossible repair, or a refusal.}
   init:
     description: >-
-      Writes the missing configuration, checklists and prompt templates into
+      Writes the missing configuration, checklists, prompt templates and product,
+      architecture and Registry schemas into
       the directory it runs in, leaving every existing file untouched, and
       reports each path with a Created or Left existing record. It reads no
       configuration.
@@ -155,7 +165,7 @@ extensions:
       access: read-write
     product-document:
       path: docs/product/product.yaml
-      format: The product document (documents.product); us refine --fix and scen check --fix add Catalogue and glossary entries.
+      format: The product document (documents.product); us refine --fix and scen check --fix add concepts and glossary entries.
       access: read-write
     stories:
       path: docs/product/stories/<story-id>-*.yaml
@@ -163,7 +173,7 @@ extensions:
       access: read-write
     architecture-document:
       path: docs/architecture/architecture.yaml
-      format: The architecture document (documents.architecture_yaml); scen check --fix writes Word mappings, Public interface declarations and Phrase mapping entries.
+      format: The architecture document (documents.architecture_yaml); us apply reads the services a merged Scenario may name; scen check --fix writes Word mappings, Public interface declarations and Concept bindings.
       access: read-write
     interface-documents:
       path: the documents the architecture's public_interface declarations name
@@ -179,7 +189,7 @@ extensions:
       access: read-write
     step-definitions:
       path: <suite>/steps/*.go
-      format: Go step definitions; build steps --fix writes the skeleton and the body, under the protected test paths only.
+      format: Go step definitions; build steps --fix writes skeletons and bodies under protected test paths; a concept skeleton records its concept as //truebdd:concept <block> "<concept>".
       access: read-write
     service-code:
       path: each architecture service's path and its writable entries
@@ -195,7 +205,7 @@ extensions:
       access: write
     write-policy:
       path: the generated JSON a claude turn's --settings hook names with --policy
-      format: JSON write policy (architecture.terms[write policy]).
+      format: 'JSON write policy (architecture.terms[write policy]), one object: "replay" (an object of "read_root", "write_roots", "test_command", "test_selector" and "test_dir"), "read_roots", "excluded_roots", "protected_roots" and "library_cache"; claude-guard reads an absent key as empty.'
       access: write
     staging-files:
       path: .true-bdd.tmp.<basename> beside each whole-file write
@@ -226,6 +236,15 @@ extensions:
     check-answered:
       message: Check answered
       format: INFO per checklist cell with check, subjectID, promptIndex, answer and context.
+    cell-validation-started:
+      message: Cell validation started
+      format: INFO before a model Cell is evaluated, with subjectID and promptIndex. Different Scenarios may overlap; Prompts within a Scenario stay ordered.
+    cell-validation-finished:
+      message: Cell validation finished
+      format: INFO after the model Cell returns, including an error, with subjectID and promptIndex.
+    applying-fix:
+      message: Applying fix prompt
+      format: INFO with subjectID and iteration after the person answers apply at the fix menu. Concurrent scen check validation has joined before any fix menu.
     clarification-needed:
       message: AI needs clarification
       format: INFO before a clarifying question is asked on stdout.

@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
+applied: true
+target: "product"
+summary: Added when concept square (terms: []) meaning Square the entered number once. All other entries unchanged.
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===

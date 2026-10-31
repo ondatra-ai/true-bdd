@@ -1,9 +1,3 @@
-# Registry seed for `scen-check-fix-rewrites-forbidden-verb`.
-#
-# One Scenario whose then step says the greeter "handles" the name, a
-# verb the product document forbids and replaces with the observable
-# action it hides. The fix rewrites the step in this entry.
-
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
   version: "2.0"
@@ -22,4 +16,4 @@ scenarios:
       when:
         - the Operator runs "greet Ada"
       then:
-        - the greeter prints "Hello Ada"
+        - the command prints a line matching "Hello Ada"

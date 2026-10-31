@@ -1,6 +1,0 @@
-=== FILE_START: tmp/{{RUN_DIR}}/apply-phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df-iter1-result.yaml ===
-applied: false
-interface_cannot_serve:
-  phrase: "the number is doubled"
-  lacks: "The declared calc CLI interface (docs/architecture/calc-cli.yaml) declares only the `double` command, whose sole observable is the doubled integer on stdout. It offers no way to read the service process's private, transient heap address for a number, and no way to observe anything without running a command, so the step has no declared observation to read or compare."
-=== FILE_END: tmp/{{RUN_DIR}}/apply-phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df-iter1-result.yaml ===

@@ -4,9 +4,16 @@ package truebdd_test
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
+	"io"
 	"io/fs"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
@@ -137,6 +144,8 @@ func fixtureTemplateDeclarations() map[string]string {
 		"build-code-shrinking-bound/input/templates/build-code.fix-applier.prompt.tpl":                templateExtension,
 		"build-code-missing-member/input/templates/build-code.fix-applier.prompt.tpl":                 templateExtension,
 		"build-code-partial/input/templates/build-code.fix-applier.prompt.tpl":                        templateExtension,
+
+		"concept-link-unquoted-confirmation/input/templates/us-checklist.fix-applier.prompt.tpl": templateExtension,
 	}
 }
 
@@ -184,4 +193,192 @@ func assertTemplateExtension(t *testing.T, overlay, shipped string) {
 	} else if len(actual) == len(expected) {
 		t.Errorf("fixture template extension %s has no appended section", overlay)
 	}
+}
+
+// No document a fixture's model turns read names a Scenario beside an
+// outcome word in a comment: the link, binding and word Prompts embed it
+// whole, and a model told the verdict records it as its own (#259).
+func TestFixtureCommentsNameNoVerdict(t *testing.T) {
+	rule := newVerdictRule()
+
+	recordings, err := filepath.Glob("fixtures/*/cassettes")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, cassettes := range recordings {
+		if !makesModelTurn(t, cassettes) {
+			continue
+		}
+
+		for _, root := range []string{"input/docs", "input/true-bdd/checklists"} {
+			assertNoVerdictComments(t, filepath.Join(filepath.Dir(cassettes), root), rule)
+		}
+	}
+}
+
+// verdictRule is what the guard refuses: one comment naming a Scenario id
+// (E2E-001, or a lineage key such as 95.1-001-mcp-initialize) and an outcome
+// word. A comment with only one of the two passes.
+type verdictRule struct {
+	scenarioID *regexp.Regexp
+	outcome    *regexp.Regexp
+}
+
+func newVerdictRule() verdictRule {
+	return verdictRule{
+		scenarioID: regexp.MustCompile(`\b(?:E2E-\d+|[A-Za-z0-9][A-Za-z0-9.-]*-\d{3})\b`),
+		outcome: regexp.MustCompile(
+			`(?i)\b(?:pass(?:es|ed)?|fail(?:s|ed)?|falls? under|defect(?:s|ive)?|undefined|unmapped|cover(?:s|ed)?)\b`),
+	}
+}
+
+func (r verdictRule) refuses(comment string) bool {
+	return r.scenarioID.MatchString(comment) && r.outcome.MatchString(comment)
+}
+
+// makesModelTurn reports whether a fixture's recordings hold a claude or
+// codex turn, its services' or its judge's.
+func makesModelTurn(t *testing.T, cassettes string) bool {
+	t.Helper()
+
+	turn := regexp.MustCompile(`^(?:claude|codex)-\d+$`)
+	found := false
+
+	err := filepath.WalkDir(cassettes, func(_ string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+
+		if entry.IsDir() && turn.MatchString(entry.Name()) {
+			found = true
+
+			return fs.SkipAll
+		}
+
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return found
+}
+
+func assertNoVerdictComments(t *testing.T, root string, rule verdictRule) {
+	t.Helper()
+
+	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+
+		extension := filepath.Ext(path)
+		if entry.IsDir() || (extension != ".yaml" && extension != ".yml" && extension != ".md") {
+			return nil
+		}
+
+		for _, comment := range documentComments(t, path) {
+			if rule.refuses(comment) {
+				t.Errorf("%s: a comment names a Scenario beside an outcome, which tells a model reading it "+
+					"the verdict; keep the note in bdd-harness.md or prep.sh:\n%s", path, strings.TrimSpace(comment))
+			}
+		}
+
+		return nil
+	})
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		t.Fatal(err)
+	}
+}
+
+// documentComments returns each comment block: Markdown's HTML comments,
+// YAML's head, line and foot comments, or, where a fixture's YAML is meant
+// not to parse, its runs of whole-line comments.
+func documentComments(t *testing.T, path string) []string {
+	t.Helper()
+
+	data, err := disk.Read(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if filepath.Ext(path) == ".md" {
+		matches := regexp.MustCompile(`(?s)<!--(.*?)-->`).FindAllSubmatch(data, -1)
+
+		comments := make([]string, 0, len(matches))
+		for _, match := range matches {
+			comments = append(comments, string(match[1]))
+		}
+
+		return comments
+	}
+
+	comments, err := yamlComments(data)
+	if err != nil {
+		return wholeLineComments(data)
+	}
+
+	return comments
+}
+
+func yamlComments(data []byte) ([]string, error) {
+	var comments []string
+
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+
+	for {
+		var node yaml.Node
+
+		err := decoder.Decode(&node)
+		if errors.Is(err, io.EOF) {
+			return comments, nil
+		}
+
+		if err != nil {
+			return nil, fmt.Errorf("parsing YAML: %w", err)
+		}
+
+		comments = appendNodeComments(comments, &node)
+	}
+}
+
+func appendNodeComments(comments []string, node *yaml.Node) []string {
+	for _, comment := range []string{node.HeadComment, node.LineComment, node.FootComment} {
+		if comment != "" {
+			comments = append(comments, comment)
+		}
+	}
+
+	for _, child := range node.Content {
+		comments = appendNodeComments(comments, child)
+	}
+
+	return comments
+}
+
+func wholeLineComments(data []byte) []string {
+	var (
+		comments []string
+		block    []string
+	)
+
+	for line := range strings.SplitSeq(string(data), "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), "#") {
+			block = append(block, line)
+
+			continue
+		}
+
+		if len(block) > 0 {
+			comments = append(comments, strings.Join(block, "\n"))
+			block = nil
+		}
+	}
+
+	if len(block) > 0 {
+		comments = append(comments, strings.Join(block, "\n"))
+	}
+
+	return comments
 }

@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "binary": "claude",
+  "argv": [
+    "--setting-sources",
+    "",
+    "--strict-mcp-config",
+    "--safe-mode",
+    "--allowedTools",
+    "Read(**),Write(./tmp/**),Glob(**),Grep(**)",
+    "--disallowed-tools",
+    "Bash,Edit(**),MultiEdit(**),Agent,Task",
+    "--model",
+    "claude-opus-5",
+    "--system-prompt",
+    "You prepare a concept or binding repair for the responsible person's menu.\nChange nothing; propose only the failed judgement's repair. Apply requires\nan explicit menu decision. The Product Owner owns concepts and Item wording,\nthe System Architect bindings. Return the required structured answer.\n",
+    "--permission-mode",
+    "acceptEdits",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--json-schema",
+    "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"fix_prompt\": {\"type\": \"string\"},\n    \"questions\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"id\": {\"type\": \"string\"},\n          \"question\": {\"type\": \"string\"},\n          \"context\": {\"type\": \"string\"},\n          \"options\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}\n        },\n        \"required\": [\"id\", \"question\", \"context\", \"options\"],\n        \"additionalProperties\": false\n      }\n    }\n  },\n  \"required\": [\"fix_prompt\", \"questions\"],\n  \"additionalProperties\": false\n}",
+    "-p",
+    "You propose a repair; change no file. The Product Owner owns concepts and\nStory or Scenario wording; the System Architect owns concept bindings.\nRead the reference documents:\n\n- Read(`./docs/architecture/architecture.yaml`) - architecture_yaml\n\n- Read(`./docs/product/product.yaml`) - product\n\nItem: host-001\n**Actual:** fail\nDescription: The number must be halved\nService: calc\nSteps:\nGiven:\n  - six is entered\nWhen:\n  - halve six\nThen:\n  - three is displayed\n\nFindings:\n\n- when concept \"halve\" for service calc has 0 Concept bindings\n\n\nRequired repair policy:\nOffer the System Architect a binding for every missing or ambiguous\nlinked concept, for this Scenario's service: concept, block, service,\nreferences and does, or intent for a UI step performed by a model.\nJudge against the declared Public interface and extend it only where\nneeded. If the meaning needs repair, offer the Product Owner a wider\nor corrected concept in the product document. Show each exact change\nat the menu; apply only the approved change after apply.\n\nReturn the exact proposed changes in fix_prompt for review at the menu.\nDo not apply them. Preserve unaffected steps and concepts. A new variation\nwidens an existing concept of that item and use; add one only for a new item or use.\nReturn JSON with fix_prompt and questions. Exactly one carries content:\na complete proposal with questions: [], or questions with fix_prompt: \"\".\nNever return both a proposal and questions. If no schema is supplied, put the proposed fix between these markers:\n=== FILE_START: tmp/{{RUN_DIR}}/02-host-001-fix-prompts.md ===\n\u003cexact proposed changes\u003e\n=== FILE_END: tmp/{{RUN_DIR}}/02-host-001-fix-prompts.md ===\n"
+  ],
+  "exit_code": 0,
+  "duration_ms": 23713,
+  "request_hash": "sha256:6d063b1206c0a6fce889060f8face26ec5b12391b7055990fb8bca51045357cf",
+  "fsdiff": {
+    "created": [],
+    "modified": [],
+    "deleted": []
+  },
+  "recorded_at": "2026-10-29T23:04:51Z"
+}

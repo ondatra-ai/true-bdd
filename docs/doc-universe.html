@@ -402,10 +402,10 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <div class="row hl" id="a-product-vocab"><span class="k">vocabulary:</span> <span class="v">the words us refine rejects</span></div>
             <div class="row ind1"><span class="k">forbidden_qualifiers[]:</span> <span class="v">"properly", "fast", …</span></div>
             <div class="row ind1"><span class="k">forbidden_actions[]:</span> <span class="v">"handle" + replacement</span></div>
-            <div class="row"><span class="k">glossary[]:</span> <span class="v">term · means, one per word a catalogue entry declares (may be empty)</span></div>
-            <div class="row"><span class="k">catalogue[]:</span> <span class="v">template · block · means · terms, one per step phrase</span></div>
+            <div class="row"><span class="k">glossary[]:</span> <span class="v">term · means, one per word a concept declares (may be empty)</span></div>
+            <div class="row"><span class="k">concepts:</span> <span class="v">given · when · then lists of concept · means · terms</span></div>
           </div>
-          <div class="note">Embedded verbatim into prompts, except <code>catalogue[]</code> and the role names, which the engine reads as data for <code>D: step-phrases</code>, and <code>glossary[]</code>, which it reads for <code>D: declared-terms</code>; <code>D: term-mappings</code> holds the same terms to architecture.yaml's <code>terms[]</code>, and <code>D: step-definitions</code> holds the catalogue to the suite's step definitions. Vocabulary's home is here — <code>product-schema.yaml</code> requires the block; architecture.yaml may carry one instead, which is what the engine fixtures do today.</div>
+          <div class="note">Embedded verbatim into prompts, except <code>concepts</code>, which the engine reads as data for its concept checks, and <code>glossary[]</code>, which it reads for <code>D: declared-terms</code>; <code>D: term-mappings</code> holds the same terms to architecture.yaml's <code>terms[]</code>, <code>D: concept-bindings</code> holds architecture.yaml's <code>concepts[]</code> to them, and <code>D: step-definitions</code> holds each step to one step definition recording a declared concept of its block. Vocabulary's home is here — <code>product-schema.yaml</code> requires the block; architecture.yaml may carry one instead, which is what the engine fixtures do today.</div>
         </div>
 
         <!-- col 3 · story -->
@@ -493,7 +493,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
               <div class="row ind1"><span class="v">quality_gate.code[] · patterns · dependencies[] (optional)</span></div>
             </div>
             <div>
-              <div class="row"><span class="k">terms[]:</span> <span class="v">term · technical · observed_by, one per product word a catalogue entry declares (optional)</span></div>
+              <div class="row"><span class="k">terms[]:</span> <span class="v">term · technical · observed_by, one per product word a concept declares (optional)</span></div>
             </div>
           </div>
           <div class="note">Runtime <code>dependencies</code>: <code>protocol</code> = cli / http / redis / …; <code>scope</code> = <code>internal</code> (a service declared here) / <code>self_hosted</code> (we run the instance) / <code>third_party</code> (a vendor's service behind it, wherever the binary lives). Scope drives build-time mocking: <code>third_party</code> gets record/replay doubles, everything else runs live.</div>
@@ -547,7 +547,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <td><span class="cmd">scen check [id...]</span></td>
             <td>one <strong>registry scenario</strong> at a time — its own description, <code>service:</code>, <code>path:</code>, lineage and steps, and never the registry file itself</td>
             <td><span class="cl">scen-check.yaml</span></td>
-            <td><strong>nothing</strong>. It exits 1 when any scenario fails, so it can gate a change. With <code>--fix</code>, through a scratch copy: a failed <code>D:</code> check's fix writes only the <strong>product</strong> or <strong>architecture</strong> document, never the Scenario; a failed model question's fix writes the meaning of a <strong>product</strong> catalogue phrase, or the Scenario's own entry in <strong>scenarios.yaml</strong></td>
+            <td><strong>nothing</strong>. It exits 1 when any scenario fails, so it can gate a change. With <code>--fix</code>, through a scratch copy: a failed <code>D:</code> check's fix writes only the <strong>product</strong> or <strong>architecture</strong> document, never the Scenario; a failed model question's fix writes the Scenario's own entry in <strong>scenarios.yaml</strong></td>
           </tr>
         </tbody>
       </table>

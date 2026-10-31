@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "concept-bodies-extra",
+  "files": [
+    {
+      "path": "tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go",
+      "kind": "modified",
+      "size": 835,
+      "sha256": "f9ae90f107fefea8b03e91899edb2102981349be4af7bb39f652915e6b16378b",
+      "text": "package steps\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"halving\"\nfunc concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {\n\tconst hostRoot = \"../..\"\n\tnumber := args[0]\n\tcmd := exec.Command(\"go\", \"run\", \"./services/calc\", \"halve\", number)\n\tcmd.Dir = hostRoot\n\tvar stderr bytes.Buffer\n\tcmd.Stderr = \u0026stderr\n\tout, err := cmd.Output()\n\tif err != nil {\n\t\tif message := strings.TrimSpace(stderr.String()); message != \"\" {\n\t\t\treturn fmt.Errorf(\"halve %s: %w: %s\", number, err, message)\n\t\t}\n\t\treturn fmt.Errorf(\"halve %s: %w\", number, err)\n\t}\n\tresult, err := strconv.Atoi(strings.TrimSpace(string(out)))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"halve %s: stdout %q is not an integer\", number, string(out))\n\t}\n\tstate.Result = result\n\treturn nil\n}\n"
+    }
+  ]
+}

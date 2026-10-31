@@ -1,10 +1,3 @@
-# Registry seed for `scen-check-fix-rewrites-implementation`.
-#
-# One Scenario whose then step names a function the greeter calls, an
-# internal detail no user sees, where its description says what is
-# observed: the greeting and the name printed. The fix rewrites the step
-# in this entry as that output.
-
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
   version: "2.0"
@@ -23,4 +16,4 @@ scenarios:
       when:
         - the Operator runs "greet Ada"
       then:
-        - 'stdout matches ^Hello Ada$'
+        - the command printed a line on standard output matching "^Hello Ada$"

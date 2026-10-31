@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+"$TRUE_BDD_GROUPING_ENGINE" scen check
+cp ambiguous-architecture.json docs/architecture/architecture.yaml
+exec "$TRUE_BDD_GROUPING_ENGINE" "$@"

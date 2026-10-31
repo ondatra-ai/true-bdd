@@ -1,0 +1,94 @@
+story:
+  id: concept-bodies
+  feature: build-steps
+  title: Write and critique concept bodies with their fixture inputs
+  as_a: System Architect
+  i_want: each concept body written and critiqued with the fixture inputs of the Scenarios its patterns
+    bind, and each pattern judged too
+  so_that: a definition meets the contracts its fixtures state, requires nothing else, and captures what
+    its steps mean
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 001-three-cases
+    description: A suite whose steps include matches and does not match, a set of operations and an optional
+      word with meaning under their concepts gets patterns capturing each alternative and bodies that
+      tell them apart
+    steps:
+    - given:
+      - the "concept-bodies-cases" project tree
+      - the System Architect's answer to every question is "1"
+    - when: &id001
+      - the System Architect runs "build steps --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches Concept pattern binds.*step="the calculator's output does not match .*captures="does
+        not
+      - stdout matches Concept pattern binds.*step="the Owner doubles 6" captures=.*doubl
+      - stdout matches Concept pattern binds.*step="the Owner exactly halves 7" captures=.*exactly
+      - stdout matches BUILD STEPS COMPLETE
+      - no file outside "tmp" and "tests" changed
+      - the shell command "go test -tags bdd -count=1 ./tests/calc/..." run in "." exits with code 0
+  - id: 002-fixture-prompt
+    description: The body turn's saved prompts hold the fixture input of a Scenario the pattern binds
+    steps:
+    - given:
+      - the "concept-bodies-prompt" project tree
+      - the System Architect's answer to every question is "1"
+    - when: *id001
+    - then:
+      - the command exits with code 0
+      - every file matching "tmp/*/*fix-iter*-user.txt" matches CALC_REAL_GO must name the real go
+      - every file matching "tmp/*/apply-*-user.txt" matches CALC_REAL_GO must name the real go
+      - 'every file matching "tmp/*/apply-*-user.txt" matches fixture: tests/calc/fixtures/offline'
+      - stdout matches BUILD STEPS COMPLETE
+      - no file outside "tmp" and "tests" changed
+  - id: 003-fixture-contract
+    description: The critique passes a body that meets a contract a bound Scenario's fixture input states
+      and its binding does not
+    steps:
+    - given:
+      - the "concept-bodies-contract" project tree
+      - the System Architect's answer to every question is "1"
+    - when: *id001
+    - then:
+      - the command exits with code 0
+      - stdout matches Step definition critiqued.*findings=\[\]
+      - every file matching "tests/calc/steps/concept*.go" matches CALC_REAL_GO
+      - stdout matches BUILD STEPS COMPLETE
+      - no file outside "tmp" and "tests" changed
+      - the shell command "go test -tags bdd -count=1 ./tests/calc/..." run in "." exits with code 0
+  - id: 004-extra-requirement
+    description: The critique fails a body that requires more than its binding and its fixture inputs
+      state, and the body goes back to its writer
+    steps:
+    - given:
+      - the "concept-bodies-extra" project tree
+      - the System Architect's answer to every question is "1"
+    - when: *id001
+    - then:
+      - the command exits with code 0
+      - stdout matches Step definition critiqued.*concept_binding
+      - stdout matches Step definition critiqued.*findings=\[\]
+      - stdout does not match Critique sent the patterns back
+      - every file matching "tests/calc/steps/concept*.go" does not match CALC_LICENCE|\.Halve\(
+      - stdout matches BUILD STEPS COMPLETE
+      - no file outside "tmp" and "tests" changed
+      - the shell command "go test -tags bdd -count=1 ./tests/calc/..." run in "." exits with code 0
+  - id: 005-wrong-capture
+    description: The critique fails a pattern that captures the wrong part of a step, and the Item is
+      repaired through a new proposal the engine checks before rewriting its skeleton
+    steps:
+    - given:
+      - the "concept-bodies-capture" project tree
+      - the System Architect's answer to every question is "1"
+    - when: *id001
+    - then:
+      - the command exits with code 0
+      - stdout matches Step definition critiqued.*pattern_captures
+      - stdout matches Critique sent the patterns back to the proposal
+      - stdout matches Pattern proposal accepted
+      - stdout matches Concept skeletons rewritten.*removed=1
+      - stdout matches Concept pattern binds.*step="the Owner halves 64" captures=64
+      - stdout matches BUILD STEPS COMPLETE
+      - no file outside "tmp" and "tests" changed
+      - the shell command "go test -tags bdd -count=1 ./tests/calc/..." run in "." exits with code 0

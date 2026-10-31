@@ -11,10 +11,12 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/docs"
 )
 
+const buildStepsChecklistName = "build-steps"
+
 func buildStepsPrompts(
 	loader *checklist.ChecklistLoader, resolver *docs.Resolver,
 ) ([]checklistmodels.PromptWithContext, error) {
-	doc, err := loader.LoadFull("build-steps")
+	doc, err := loader.LoadFull(buildStepsChecklistName)
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +30,7 @@ func buildStepsPrompts(
 				return nil, err
 			}
 
-			if prompt.ShouldSkip() {
+			if skipBuildStepPrompt(prompt) {
 				continue
 			}
 
@@ -37,7 +39,7 @@ func buildStepsPrompts(
 			}
 
 			prompts = append(prompts, checklistmodels.PromptWithContext{
-				SectionID: "build-steps", CriterionID: section.ID, Index: len(prompts) + 1,
+				SectionID: buildStepsChecklistName, CriterionID: section.ID, Index: len(prompts) + 1,
 				Prompt: prompt, DefaultDocs: doc.DefaultDocs, DefaultModels: doc.Engine,
 			})
 		}
@@ -56,11 +58,13 @@ func buildStepsPrompts(
 }
 
 func recordStepCoverage(
-	tmpDir string, prompts []checklistmodels.PromptWithContext, findings []string, missing int,
+	tmpDir string, prompts []checklistmodels.PromptWithContext, findings []string, missing int, logPrompts bool,
 ) error {
-	slog.Info("Loaded prompts", "command", "build steps", "items", 1, "prompts", len(prompts))
+	if logPrompts {
+		slog.Info("Loaded prompts", "command", "build steps", "items", 1, "prompts", len(prompts))
+	}
 
-	context := append([]string{fmt.Sprintf("%d missing phrase definition(s)", missing)}, findings...)
+	context := append([]string{fmt.Sprintf("%d concept Item(s) without step definitions", missing)}, findings...)
 
 	verdict := checks.Verdict{Pass: missing == 0 && len(findings) == 0, Context: context}
 	for _, prompt := range prompts {
@@ -86,4 +90,8 @@ func resolveStepCoverageDocs(prompts []checklistmodels.PromptWithContext, resolv
 	}
 
 	return nil
+}
+
+func skipBuildStepPrompt(prompt checklistmodels.Prompt) bool {
+	return prompt.ShouldSkip() || prompt.With["concepts"] == "group" || prompt.With["concepts"] == "propose"
 }

@@ -1,0 +1,24 @@
+opencli: 0.1
+info: {title: Calculator CLI, version: '1.0'}
+commands:
+  double:
+    description: The calculator program, built with go build from ./services/calc at the host root; calc double VALUE prints the doubled integer and a newline.
+    parameters:
+      - {name: value, in: argument, required: true, schema: {type: integer}}
+    responses:
+      '0': {description: Doubled integer on stdout}
+      '1': {description: Invalid arguments}
+  halve:
+    description: calc halve VALUE prints half of the even integer and a newline.
+    parameters:
+      - {name: value, in: argument, required: true, schema: {type: integer}}
+    responses:
+      '0': {description: Halved integer on stdout}
+      '1': {description: Invalid arguments}
+  square:
+    description: calc square VALUE prints the integer multiplied by itself and a newline.
+    parameters:
+      - {name: value, in: argument, required: true, schema: {type: integer}}
+    responses:
+      '0': {description: Squared integer on stdout}
+      '1': {description: Invalid arguments}

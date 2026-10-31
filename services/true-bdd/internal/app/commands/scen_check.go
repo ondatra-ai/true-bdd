@@ -33,6 +33,7 @@ var ErrScenariosFailedCheck = errors.New("one or more scenarios failed the scen-
 
 // ScenCheckDeps bundles what `scen check` needs at the command boundary.
 type ScenCheckDeps struct {
+	ValidationConcurrency       int
 	RegistryLoader              *registry.RegistryLoader
 	ChecklistLoader             *checklist.ChecklistLoader
 	DocResolver                 *docs.Resolver
@@ -61,8 +62,9 @@ func RunScenCheck(
 		ChecklistName: "scen-check",
 		// Stays empty: it is a Story id, validated as a slug, and a
 		// scenario id is not one. Ids travel in LoadItems instead.
-		StoryID: "",
-		Fix:     fix,
+		StoryID:               "",
+		Fix:                   fix,
+		ValidationConcurrency: deps.ValidationConcurrency,
 
 		LoadItems:    loadCheckScenarios(deps, requirementsFile, ids, fix, ledger),
 		PostFix:      scenCheckPostFix(deps, requirementsFile),
@@ -266,7 +268,7 @@ func refreshScenario(item *template.ScenarioCheckData, scenario *registry.Regist
 	item.Path = scenario.Path
 	item.UserStories = stories
 	item.Steps = scenario.Steps
-	item.Phrases = scenario.Phrases()
+	item.CheckedSteps = scenario.CheckedSteps()
 }
 
 // scenCheckSubject is the GetSubject implementation: the scenario id
@@ -293,6 +295,11 @@ func scenCheckPostFix(
 		item *template.ScenarioCheckData,
 		_ string,
 	) (*template.ScenarioCheckData, error) {
+		err := commitConceptInterfaceFix(item)
+		if err != nil {
+			return nil, err
+		}
+
 		registryChanged, err := commitFixDocuments(item)
 		if err != nil {
 			return nil, err
@@ -363,7 +370,7 @@ func scenCheckPostCheckFix(
 	requirementsFile string,
 ) func(context.Context, *template.ScenarioCheckData, string) (*template.ScenarioCheckData, error) {
 	return func(ctx context.Context, item *template.ScenarioCheckData, check string) (*template.ScenarioCheckData, error) {
-		if check != checks.CheckPublicInterface && check != checks.CheckPhraseMappings {
+		if check != checks.CheckPublicInterface && check != checks.CheckConceptBindings {
 			return scenCheckPostFix(deps, requirementsFile)(ctx, item, "")
 		}
 

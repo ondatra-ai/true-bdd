@@ -1,0 +1,103 @@
+intent: |
+  #264: make `scen check` judge a whole Registry cheaper and faster than the
+  measured $1.47 and 174 s of turn time per Scenario (about $500 and 1.8 hours
+  for TrueBDD's 339 Scenarios at concurrency 10), before #259's whole-Registry
+  run. The Owner, 31 October: «Меня концерн по поводу этого, этой части.
+  Скорее всего, нужно будет попытаться вот этот сцен-чек попробовать
+  оптимизировать. То есть не делать его полностью, а попытаться оптимизировать
+  так, чтобы эта задача была, делалась дешевле и быстрее. То есть это нужно
+  вынести в какую-то отдельную подзадачу, посмотри, куда она должна
+  принадлежать. Но в целом оптимизация скин-чек должна, сцен-чек должна тоже
+  быть сделана.»
+
+log:
+  - decision_trace:
+      research:
+        - |
+          The three concept Prompts (link, bindings, words) are one Claude turn
+          each per Scenario. Every turn embeds TrueBDD's whole product document
+          (about 65 KB); the Scenario's own steps are under 1 KB; bindings adds
+          the service's bindings (6.5 KB) and Public interface (16 KB). Each
+          user message opens with the Scenario id, so no turn reuses another's
+          prompt. Code: services/true-bdd/internal/app/generators/validate/
+          concept_link.go, concept_words.go, concept_bindings.go.
+        - |
+          The word check reads only the linked concepts' means, nothing of the
+          Scenario. The shipped checklist also asks 8 scenario_quality questions
+          per Scenario; #259's sample left them out, and #259's criterion names
+          only the concept checks.
+      recommendation: |
+        (a): only the three concept Prompts, which #259's criterion and the
+        measurement cover; the 8 quality questions stay as they are.
+      settled: |
+        No scope was chosen. The Owner reframed #264 as research: find where the
+        time goes (what is slow, why there are so many operations), propose
+        strategies, discuss the plan with the Owner, then try each strategy and
+        keep what is faster at the same quality. The goal is the fastest walk
+        with the same quality; nothing is decided before the experiments.
+    question: |
+      Q1 - Что именно удешевляем в #264?: (a) только три Prompt проверки
+      concepts (link, bindings, words), которые требует критерий #259 и которые
+      дают замеренные $1.47 и 174 с на сценарий, а 8 вопросов scenario_quality
+      остаются как есть; (b) весь поставляемый checklist scen check вместе с 8
+      вопросами о качестве.
+    answer: |
+      Стой, подожди, смотри, здесь процесс должен быть по-другому. Здесь надо тестировать, то есть надо... у меня нет ответа. И вообще вся эта задача, это задача на ресерч. То есть у нее нет ответов, что мы удешевляем и так далее. То есть, скорее всего, нужно просто взять, посмотреть, поресерчить, где тратятся токены, придумать план, обсудить план со мной. Нет, даже не токены, где тратится время. Да, то есть, что делается долго, что хорошо, почему там так много операций и так далее, и так далее. И предложение, типа, давайте совместим. Ну и дальше, короче, в зависимости от этого делаем. Вещь проверяем. И после этого только сработало, не сработало. То есть наша задача, да, сделать максимально быстро с тем же самым качеством. Вот, то есть ты просто берешь, принимаешь любые шаги, вот берешь стратегию А, смотришь, что получилось. Получилось ли тоже качество или нет? А, хорошо, получилось. Получилось ли быстрее или нет? А, получилось. Вот, то же самое с Б. Да, и смотришь, что будет работать, что нет. Вот я к этому так хотел бы относиться.
+  - decision_trace:
+      research:
+        - |
+          The drill never runs `scen check`: each cut runs `build tests --fix`,
+          `build steps --fix` and `build code --fix`, and #212's three-hour limit
+          holds those commands (scripts/cmd/drill and scripts/drill name no scen
+          check; #212's body, "The cuts").
+        - |
+          A whole-Registry `scen check` of TrueBDD is needed once in the epic:
+          #259's first acceptance criterion. Today's pass (about 1.8 hours at
+          concurrency 10) fits three hours; its cost, about $500 a pass plus the
+          reruns its repairs trigger, may pass the $600 cap. #245 runs
+          `scen check --fix` only on the calculator host. No gate runs a live
+          `scen check`.
+        - |
+          `build steps` judges bindings with `scen check`'s binding Prompt, but
+          once per concept Item, not per Scenario.
+      recommendation: |
+        Let the read-only research finish (about an hour, no AI spend), then
+        decide with its numbers.
+      settled: |
+        Fact: `scen check`'s time does not block the epic's completion; it
+        bears only on #259's one whole-Registry run, as cost more than time.
+    question: |
+      The Owner, while the research ran: does `scen check`'s time block the
+      whole epic?
+    answer: |
+      Почему сцен чек надо, возможно, заниматься этим или даже, может быть, следующим шагом? Это потому, что я вижу, что если мы не сделаем эту оптимизацию, то вполне возможно, мы никогда не дойдем до полного решения поставленного задачи, поставленного эпика. Вот. То есть, потому что сейчас эта операция занимает чересчур много времени для того, чтобы протестировать ее несколько раз. Вот. Так что посмотри, блокирует ли время сцен для завершения всего эпика или нет. И на основе этого я приму дальше решение, что делать с этой задачей, брать ее сейчас или делать ее потом.
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        None asked; the Owner decided on the facts above.
+      settled: |
+        #264 moves to the very end of the task; the research run stopped (its
+        partial per-turn table stays under tmp/orchestrator/research-264/).
+    question: |
+      The Owner's decision on when #264 runs.
+    answer: |
+      Давай оставляем 264 на потом. Делаем его в самом конце.
+  - decision_trace:
+      research:
+        - |
+          #259 is blocked by #264 since 31 October; its whole-Registry run
+          would cost about $500 a pass today.
+      recommendation: |
+        At the end, after #264: #245, then #264, then #259's whole-Registry run
+        on the faster engine, then the closing review, then the PR ready. The
+        expensive run happens once and costs less, and the review covers #264.
+      settled: |
+        Order: #245's live run, #264, #259's whole-Registry run, the closing
+        review, PR #263 ready.
+    question: |
+      Q2 - #259's whole-Registry run: now at today's price, or at the end after
+      #264? Options: at the end, after #264 (recommended); now, at today's price
+      (cap $600, repairs may pass it); drop it from #259.
+    answer: |
+      At the end, after #264 (Recommended)

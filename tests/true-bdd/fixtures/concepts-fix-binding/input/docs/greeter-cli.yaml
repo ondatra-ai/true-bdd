@@ -1,0 +1,40 @@
+opencli: 1.0.0
+info:
+  title: Greeter
+  version: 1.0.0
+commands:
+  greet:
+    description: Read greeter.yaml in the working directory and print its greeting string verbatim, followed by a newline. The person argument identifies the recipient and does not interpolate or otherwise change the configured greeting. With loud omitted (false), the greeting is unchanged; with --loud, uppercase the greeting before printing and logging it. Each successful call emits one greeted log record on stderr with the supplied person and the exact greeting printed, without the trailing newline.
+    parameters:
+    - name: person
+      in: argument
+      required: true
+      schema:
+        type: string
+    - name: loud
+      in: flag
+      required: false
+      schema:
+        type: boolean
+        default: false
+    responses:
+      '0':
+        description: Greeting printed
+      '1':
+        description: Invalid input
+extensions:
+  files:
+    greeting-config:
+      path: greeter.yaml
+      format: YAML mapping with a greeting string; greet reads that string as literal text, without placeholders or person substitution
+      access: read
+  log_records:
+    greeted:
+      message: Greeting printed
+      format: logfmt on stderr with person equal to the person argument and greeting equal to the printed greeting without its trailing newline
+  outgoing_calls:
+    notify:
+      command: notifier
+      arguments:
+      - --person
+      - '{person}'

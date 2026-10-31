@@ -86,3 +86,25 @@ func assertCodexConfinement(t *testing.T, req Request, role provider.Role, cli p
 		t.Fatalf("role=%s cli=%s requested=%v: confinement=%v", role, cli, requested, req.CodexApply)
 	}
 }
+
+func TestConcurrentValidationArtifactLabelsIgnoreDispatchOrder(t *testing.T) {
+	t.Parallel()
+
+	for _, cli := range []provider.CLI{provider.CLIClaude, provider.CLICodex} {
+		target := &captureTurn{}
+
+		router := &Router{providers: map[provider.CLI]Provider{cli: target}}
+		for _, key := range []string{"validation-beta", "validation-alpha", "validation-beta"} {
+			_, err := router.ExecutePromptWithSystem(t.Context(), provider.RolePrompt, "s", "u",
+				provider.ModelRef{CLI: cli, Model: "concurrent-test"}, ExecutionMode{}, "",
+				provider.TurnOptions{ArtifactLabel: key})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if target.request.Label != key {
+				t.Fatalf("got label %s, want %s", target.request.Label, key)
+			}
+		}
+	}
+}

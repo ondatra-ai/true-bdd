@@ -10,17 +10,16 @@ import (
 )
 
 // declaredTerms passes a Scenario every term of which the product glossary
-// defines exactly once: the terms the templates its steps match declare.
-// A step matching no template, or several, is the step-phrase check's finding.
+// defines exactly once: the terms every declared concept relies on.
 func declaredTerms() Check[*template.ScenarioCheckData] {
 	return closureCheck([]string{docs.KeyProduct},
-		func(item *template.ScenarioCheckData, input Input, source product.Catalogue) (Verdict, error) {
+		func(item *template.ScenarioCheckData, input Input, source product.Document) (Verdict, error) {
 			definitions, err := product.LoadGlossary(input.Docs[docs.KeyProduct])
 			if err != nil {
 				return Verdict{}, fmt.Errorf("read the glossary: %w", err)
 			}
 
-			return reviewTerms(item.ID, item.Phrases, source, "defined",
+			return reviewTerms(item.ID, source.Concepts, "defined",
 				func(declarations []catalogue.Declaration) catalogue.TermReview {
 					return catalogue.ReviewTerms(declarations, definitions)
 				}), nil

@@ -8,6 +8,7 @@ import (
 	"go/format"
 	"go/token"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -15,8 +16,8 @@ import (
 // ErrPending identifies a body that still contains the engine's placeholder.
 var ErrPending = errors.New("step not written yet")
 
-// Shape retains everything except imports, State, and the selected function body.
-func Shape(dir, function string) (string, error) {
+// Shape retains everything except imports, State, and the selected function bodies.
+func Shape(dir string, functions ...string) (string, error) {
 	files, err := readPackage(dir)
 	if err != nil {
 		return "", err
@@ -31,7 +32,7 @@ func Shape(dir, function string) (string, error) {
 				continue
 			}
 
-			if fun, ok := declaration.(*ast.FuncDecl); ok && fun.Name.Name == function && fun.Recv == nil {
+			if fun, ok := declaration.(*ast.FuncDecl); ok && slices.Contains(functions, fun.Name.Name) && fun.Recv == nil {
 				fun.Body = nil
 			}
 

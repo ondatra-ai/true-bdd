@@ -192,9 +192,9 @@ func relToTmp(tmpDir string, paths []string) []string {
 	return rels
 }
 
-// assertStoryID pins the id the story document carries. The glob and the
-// expected id are both capture groups so one definition serves every
-// scenario naming a different story or id.
+// The glob and the id are both captured, so one definition serves every story.
+//
+//truebdd:concept then "Story content"
 func assertStoryID(state *State, args []string) error {
 	story, err := loadStory(state, args[0])
 	if err != nil {
@@ -210,8 +210,9 @@ func assertStoryID(state *State, args []string) error {
 	return nil
 }
 
-// assertStoryFeature pins the Feature label the story carries: a rewrite
-// that drops the label leaves it empty, which fails here by name.
+// A rewrite dropping the label leaves it empty, which fails here by name.
+//
+//truebdd:concept then "Story content"
 func assertStoryFeature(state *State, args []string) error {
 	story, err := loadStory(state, args[0])
 	if err != nil {
@@ -227,8 +228,9 @@ func assertStoryFeature(state *State, args []string) error {
 	return nil
 }
 
-// assertStoryCriteriaExactCount pins the EXACT criteria count, proving
-// a fix loop that rewrote the story neither dropped nor added one.
+// Proves a fix loop that rewrote the story neither dropped nor added a criterion.
+//
+//truebdd:concept then "Story content"
 func assertStoryCriteriaExactCount(state *State, args []string) error {
 	story, err := loadStory(state, args[0])
 	if err != nil {
@@ -249,9 +251,9 @@ func assertStoryCriteriaExactCount(state *State, args []string) error {
 	return nil
 }
 
-// assertStoryCriteriaHaveSteps pins that EVERY criterion carries a
-// non-empty given, when and then block; a story with no criteria fails
-// rather than passing vacuously.
+// A story with no criteria fails rather than passing vacuously.
+//
+//truebdd:concept then "Story content"
 func assertStoryCriteriaHaveSteps(state *State, args []string) error {
 	story, err := loadStory(state, args[0])
 	if err != nil {
@@ -285,8 +287,9 @@ func assertStoryCriteriaHaveSteps(state *State, args []string) error {
 	return nil
 }
 
-// assertStoryCriterionDescNoMatch pins that a NAMED criterion's
-// description does NOT match a forbidden regexp. Resolved by id; no such criterion fails.
+// Resolved by id; no such criterion fails.
+//
+//truebdd:concept then "Story content"
 func assertStoryCriterionDescNoMatch(state *State, args []string) error {
 	criterionID := args[0]
 
@@ -316,9 +319,9 @@ func assertStoryCriterionDescNoMatch(state *State, args []string) error {
 	return nil
 }
 
-// assertStoryCriterionDescMatch is the positive twin of
-// assertStoryCriterionDescNoMatch: a NAMED criterion's description MUST
-// match a required regexp (e.g. a "must"/"should" claim).
+// Resolved by id; no such criterion fails.
+//
+//truebdd:concept then "Story content"
 func assertStoryCriterionDescMatch(state *State, args []string) error {
 	criterionID := args[0]
 
@@ -348,9 +351,9 @@ func assertStoryCriterionDescMatch(state *State, args []string) error {
 	return nil
 }
 
-// assertStoryCriterionStepsNoMatch is the step-text twin of
-// assertStoryCriterionDescNoMatch: NONE of a NAMED criterion's step texts
-// may match a forbidden regexp. A criterion with no steps fails.
+// Resolved by id; a criterion with no steps fails.
+//
+//truebdd:concept then "Story content"
 func assertStoryCriterionStepsNoMatch(state *State, args []string) error {
 	criterionID := args[0]
 

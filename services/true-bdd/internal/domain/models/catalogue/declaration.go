@@ -1,40 +1,13 @@
 package catalogue
 
-// Declaration is one term a step relies on: a term the entry it matched
-// declares, beside that entry's template.
+// Declaration is one term a concept relies on, beside the concept as a
+// finding names it ("then concept 'answer'").
 type Declaration struct {
-	Template string
-	Term     string
+	Concept string
+	Term    string
 }
 
-// Declarations lists the terms a run of steps relies on. Only a step a
-// model does not run that matches exactly one template declares any; each
-// (template, term) pair is listed once, in the order the steps reach it.
-func (c *Catalogue) Declarations(steps []Step) []Declaration {
-	declarations := make([]Declaration, 0)
-	seen := make(map[Declaration]bool)
-
-	for _, step := range steps {
-		if step.ModelRun() {
-			continue
-		}
-
-		matches := c.Match(step.Text)
-		if len(matches) != 1 {
-			continue
-		}
-
-		for _, term := range matches[0].Terms {
-			declaration := Declaration{Template: matches[0].Template, Term: term}
-			if seen[declaration] {
-				continue
-			}
-
-			seen[declaration] = true
-
-			declarations = append(declarations, declaration)
-		}
-	}
-
-	return declarations
+// quote wraps a term in double quotes, verbatim, as a finding quotes it.
+func quote(text string) string {
+	return `"` + text + `"`
 }

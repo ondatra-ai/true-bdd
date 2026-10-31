@@ -1,9 +1,3 @@
-# Product document for `scen-check-fix-records-term`.
-#
-# The catalogue phrases every step of E2E-001, and the glossary defines
-# every term those phrases declare but "reply"; the fix adds the entry
-# that defines it.
-
 title: "Fixture host project"
 
 description:
@@ -27,16 +21,16 @@ glossary:
       One request a client sends the MCP service, as text. The service
       answers each message on its own.
 
-catalogue:
-  - template: 'the mcp service is running'
-    block: given
-    means: The MCP service has started and accepts requests.
-    terms: [mcp service]
-  - template: 'the {actor:role} sends "{message}"'
-    block: when
-    means: That role sends the quoted message to the MCP service, once.
-    terms: [mcp service, message]
-  - template: 'the service answers "{reply}"'
-    block: then
-    means: The MCP service's reply to the message is exactly the quoted text.
-    terms: [mcp service, reply]
+concepts:
+  given:
+    - concept: service running
+      means: The MCP service has started and accepts requests.
+      terms: [mcp service]
+  when:
+    - concept: message sent
+      means: A role sends a stated message to the MCP service, once.
+      terms: [mcp service, message]
+  then:
+    - concept: answer
+      means: The MCP service's reply to the message is exactly a stated text.
+      terms: [mcp service, reply]

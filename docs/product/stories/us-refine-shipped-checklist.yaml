@@ -25,11 +25,11 @@ story:
       - and: 'judge: The error-scenario Prompt passes because input validation belongs to calculator-input, with a context line explaining that reason. The three success criteria are retained without invented
           error criteria or a new Story field.'
   - id: 001-shipped-checklist-reaches-menu
-    description: The full shipped checklist must reach a fix proposal, and exit at the menu must leave the Story and Catalogue unchanged
+    description: The full shipped checklist must reach a fix proposal, and exit at the menu must leave the Story and the product document unchanged
     steps:
     - given:
       - the "us-refine-shipped-menu-exit" project tree
-      - the Product Owner answers "3" to every question
+      - the Product Owner's answer to every question is "3"
     - when:
       - the Product Owner runs "us refine halve-negative --fix"
     - then:
@@ -42,11 +42,11 @@ story:
       - and: the file "docs/product/stories/halve-negative-cases.yaml" is unchanged
       - and: the file "docs/product/product.yaml" is unchanged
   - id: 002-shipped-checklist-adds-phrase
-    description: The full shipped checklist must add a missing Catalogue phrase only after apply and retain the Story words
+    description: The full shipped checklist must add a missing concept only after apply and retain the Story words
     steps:
     - given:
       - the "us-refine-shipped-catalogue" project tree
-      - the Product Owner answers "1" to every question
+      - the Product Owner's answer to every question is "1"
     - when:
       - the Product Owner runs "us refine halve-negative --fix"
     - then:
@@ -61,5 +61,5 @@ story:
       - and: the file "docs/product/product.yaml" is modified
       - and: the file "docs/product/stories/halve-negative-cases.yaml" matches the Calculator User halves the number
       - and: no file outside "tmp" and "docs/product" changed
-      - and: 'judge: The menu proposal adds a Catalogue entry for the existing halving action. The Story keeps all of its original descriptions and step words; no substitute action, error criterion or new
+      - and: 'judge: The menu proposal adds a product concept for the existing halving action. The Story keeps all of its original descriptions and step words; no substitute action, error criterion or new
           Story field is introduced.'

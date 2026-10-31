@@ -1,0 +1,15 @@
+scenarios:
+  host-001:
+    description: The greeter must log the requested greeting
+    service: greeter
+    path: tests/greeter/scenario_test.go
+    user_stories:
+    - story: greet
+      scenario_id: greet-001
+    merged_steps:
+      given:
+      - the greeting "Hello Alice" is configured in greeter.yaml
+      when:
+      - the greeting is requested for person "Alice" with loud omitted
+      then:
+      - the greeted log record has greeting "Hello Alice"

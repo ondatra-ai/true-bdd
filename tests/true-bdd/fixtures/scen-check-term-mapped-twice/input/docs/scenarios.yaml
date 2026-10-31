@@ -1,6 +1,6 @@
 # Registry seed for `scen-check-term-mapped-twice`.
 #
-# One Scenario a Story claims, its Then step's phrase relying on a term
+# One Scenario a Story claims, its Then step's concept relying on a term
 # the architecture maps twice.
 
 metadata:

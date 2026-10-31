@@ -1,0 +1,98 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+Apply only the exact concept, binding or step repair approved at the menu.
+Edit only the listed working copies. Preserve every unaffected entry.
+For a Story step rewrite, return the complete Story YAML instead of editing
+a document. For document edits return the requested confirmation markers.
+
+
+### TASK
+
+The Product Owner chose apply at the menu. Apply this approved word repair:
+=== FILE_START: tmp/{{RUN_DIR}}/03-host-001-fix-prompts.md ===
+# Proposed word repair — host-001 (Product Owner)
+
+## Failed judgement
+
+- `when: halve` — means "Halve the entered number once with the supplied idempotency key." uses the domain expression **idempotency key**, which is not declared in this concept's `terms` and is not readable as ordinary English from the means alone. The glossary is empty.
+
+The `given: number ready` and `then: number result` findings passed (declared terms and plain English only) and are left untouched.
+
+## Repair chosen: declared term (not a reword)
+
+The product's `language_policy` states: "The request label is presented to users as an idempotency key. Keep this exact domain name in the product meanings and declare it when needed." Rewording the means to drop "idempotency key" (e.g. to "request label") would violate that policy, so the repair declares the word instead: one `glossary` entry plus the word in the affected concept's `terms`. The means text is unchanged, so the meaning is preserved exactly.
+
+## Exact changes to `docs/product/product.yaml` (product document only)
+
+### Change 1 — declare the word in the affected concept's `terms`
+
+Under `concepts.when`, for the concept `halve` only:
+
+```yaml
+concepts:
+  when:
+    - concept: "halve"
+      means: "Halve the entered number once with the supplied idempotency key."
+      terms: ["idempotency key"]
+```
+
+Edit, in the file's existing style:
+
+- old: `        "terms": []` (the one inside the `when` concept `halve`, line 20)
+- new: `        "terms": ["idempotency key"]`
+
+### Change 2 — add the glossary entry
+
+Replace the empty `glossary` (line 36):
+
+- old: `  "glossary": [],`
+- new:
+
+```
+  "glossary": [
+    {
+      "term": "idempotency key",
+      "means": "The request label supplied with a halve request, so that repeating the request with the same label changes the number only once."
+    }
+  ],
+```
+
+Equivalent YAML view of the whole `glossary` key after the change:
+
+```yaml
+glossary:
+  - term: "idempotency key"
+    means: "The request label supplied with a halve request, so that repeating the request with the same label changes the number only once."
+```
+
+The entry uses `term` and `means` only — no `meaning` field.
+
+## Preserved, not touched
+
+- `concepts.given` — `number ready` (means and empty `terms` unchanged; it passed).
+- `concepts.then` — `number result` and `unused` unchanged (both unaffected concepts).
+- `roles`, `description`, `language_policy` unchanged.
+- No new concept and no new variation: `when: halve` is the existing concept for this item and use, and this repair only widens its declared words.
+- No Story, Scenario or architecture file is edited. Steps of host-001 ("six is entered" / "halve six once with idempotency key alpha" / "three is displayed") stay exactly as written.
+
+## Follow-up owned by someone else
+
+A Word mapping for the newly declared "idempotency key" is the System Architect's later work via `scen check` **D: term-mappings**. Refinement does not wait for it.
+
+## Menu
+
+Nothing has been applied. This is a proposal only — apply on an explicit menu decision.
+=== FILE_END: tmp/{{RUN_DIR}}/03-host-001-fix-prompts.md ===
+Edit ONLY the product working copy below, adding the glossary entry AND the
+concept's terms (a string list), or rewording its means. Glossary entries
+have term and means fields. Preserve unrelated product content.
+Do not edit the Story, Scenario or architecture; the Word mapping comes later.
+
+Edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`.
+
+Return confirmation inside these markers:
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===
+applied: true
+target: "product"
+summary: "<approved word repair>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===

@@ -14,9 +14,8 @@ quality or meaning check.
 
 **Where the fix goes:**
 Where the fix template says: the Scenario's own registry entry, its
-description or its steps, for a finding about the Scenario's words; or
-a catalogue entry's `means` in the product document, for a finding
-about what a phrase means. Nothing else changes.
+description or its steps, for a finding about the Scenario's words.
+Nothing else changes.
 
 **What must not change:**
 What the Scenario specifies. A rewrite says the same behaviour in
@@ -33,7 +32,7 @@ accept as options, the one you recommend first.
 
 **Tool Usage (CRITICAL):**
 1. Read every reference document named in the user prompt before
-   proposing a change: the vocabulary, the roles, the catalogue and the
+   proposing a change: the vocabulary, the roles, the concepts and the
    glossary live there.
 2. Give each change as its current text and its exact new text. A
    paraphrase the applier has to interpret is a fix that lands
@@ -71,12 +70,10 @@ wrap the object in markdown fences. Reasoning before the object is ignored.
 Where the fix template below says, and nowhere else. A model-judged
 scen-check finding is about the words of this one Scenario, its
 description or its steps, and is fixed in the Scenario's own entry of
-the scenario registry; or it is about what a catalogue phrase means,
-and is fixed in that catalogue entry's `means`, in the product
-document, where every Scenario using the phrase reads it. The generated
-test rendered from the Scenario is not edited here: `true-bdd build
-tests --fix` re-renders it from the registry once the entry reads
-correctly. A step definition is never edited by a scen-check fix.
+the scenario registry. The generated test rendered from the Scenario is
+not edited here: `true-bdd build tests --fix` re-renders it from the
+registry once the entry reads correctly. A step definition is never
+edited by a scen-check fix.
 
 ## Subject — Registry Scenario
 
@@ -123,18 +120,15 @@ Context: emit one line.
 **Fix template:**
 Replace each forbidden qualifier in this Scenario's description, in its registry entry, with the measurable criterion it stands for, taken from the Scenario's steps, asking for that criterion first when the steps do not state it. Change no step.
 
-## Keeping the Scenario in the catalogue's words
+## Keeping the Scenario in its concepts' words
 
-When the product document declares a `catalogue:` and a Story claims
-this Scenario (its lineage above is not empty), every step that does
-not open with `llm:` or `judge:` must match exactly one catalogue
-template, of its own block. A rewritten step stays in an existing
-template's shape: fill the template's slots with new values, or pick
-another entry whose meaning fits, rather than inventing wording no
-template matches. Read the catalogue before you reword a step. Slots:
-`"{name}"` is a quoted run, `{name:number}` digits or `no`,
-`{name:role}` one of the product document's role names, and
-`{name:pattern}` the rest of the step, verbatim.
+When the product document declares `concepts:`, every step that does
+not open with `llm:` or `judge:` stays an instance of exactly one
+concept of its own block, as that concept's closed `means` states it.
+A rewritten step keeps to a variation the `means` admits, or rewords
+into another concept of its block whose meaning fits, rather than
+inventing a variation no concept admits. Read the concepts before you
+reword a step.
 
 ## Your Task
 Decide whether the Scenario and the documents already say what the
@@ -143,8 +137,8 @@ the Scenario leaves the answer open, ask; otherwise generate the fix.
 
 **If you can generate a confident fix**, output a fix prompt the applier
 can execute against the document the fix template names. The fix MUST:
-- Change only what the findings name: the description, the steps they
-  object to, or the `means` of the catalogue entries they name.
+- Change only what the findings name: the description or the steps
+  they object to.
 - Keep the behaviour the Scenario specifies. Rewording is the point;
   re-specifying it silently loses coverage.
 - In the registry, leave the Scenario's id, `service:`, `path:` and
@@ -159,13 +153,12 @@ can execute against the document the fix template names. The fix MUST:
 
 ## Target
 The `E2E-001` entry of the `scenarios_yaml` document (the
-scenario registry), or the catalogue entries of the `product` document
-the findings name.
+scenario registry).
 
 ## Required Changes
 ### Change #N: [description]
-**Document:** <scenarios_yaml | product>
-**Field:** <description | merged_steps.<given|when|then> | the means of catalogue entry '<template>'>
+**Document:** scenarios_yaml
+**Field:** <description | merged_steps.<given|when|then>>
 **Current text:**
 ```
 <the text as it stands>

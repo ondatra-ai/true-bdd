@@ -1,0 +1,94 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+Apply only the exact concept, binding or step repair approved at the menu.
+Edit only the listed working copies. Preserve every unaffected entry.
+For a Story step rewrite, return the complete Story YAML instead of editing
+a document. For document edits return the requested confirmation markers.
+
+
+### TASK
+
+The responsible person chose apply at the menu for Scenario host-001.
+Approved fix:
+## Repair proposal — Item host-001 (service `calc`)
+
+**Finding:** when concept "halve" for service calc has 0 Concept bindings.
+
+**Owner of this repair:** System Architect (concept binding only).
+**No Product Owner change needed:** `product.yaml` → `concepts.when` already declares
+`halve` → means "Halve the entered number once.", which covers this Item's use.
+**No Public interface change needed:** the declared `calc` UI interface already exposes
+`{page: Calc, role: button, name: Halve}` and `{page: Calc, role: textbox, name: Number}`.
+
+### Exact change — ONE file: `docs/architecture/architecture.yaml`
+
+Add exactly one new entry to `architecture.concepts`, inserted between the existing
+`number ready` (given) entry and the existing `number result` (then) entry, so the list
+stays in given / when / then order. Change nothing else in the file.
+
+Insert after the `number ready` object (i.e. after the `},` closing it at line 40) and
+before the `number result` object (line 41):
+
+```json
+      {
+        "concept": "halve",
+        "block": "when",
+        "service": "calc",
+        "references": [
+          {
+            "element": {
+              "page": "Calc",
+              "role": "button",
+              "name": "Halve"
+            }
+          }
+        ],
+        "does": "Press the Halve button once to halve the number in the Number field."
+      },
+```
+
+### Resulting `architecture.concepts` list (for review)
+
+1. `number ready` — block `given`, service `calc` — UNCHANGED
+2. `halve` — block `when`, service `calc` — NEW (the entry above)
+3. `number result` — block `then`, service `calc` — UNCHANGED
+
+`architecture.services` and `architecture.terms` are UNCHANGED.
+`docs/product/product.yaml` is UNCHANGED.
+
+### Why this binding
+
+- `concept: "halve"` matches the Scenario's When step wording "halve six" as linked, and
+  matches the existing product concept name exactly, so the link resolves.
+- `block: "when"` — the step is in the When block, and the product concept `halve` is
+  declared under `when`.
+- `service: "calc"` — the Item's service.
+- `references` — the single declared Public interface element that performs the halving,
+  the `Halve` button on page `Calc`; no interface extension is required.
+- `does` — a deterministic single action, so `references` + `does` is used and `intent`
+  is deliberately NOT used (no model-performed UI step here).
+- The Given ("six is entered") stays bound by `number ready`, and the Then
+  ("three is displayed") stays bound by `number result`; both are left untouched.
+
+### Apply only after an explicit menu decision
+
+Do not write this change now. Apply exactly the inserted object above, and nothing else,
+only if the System Architect approves it at the menu.
+Working copies (edit only the approved target):
+
+- `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
+
+- `architecture_yaml`: edit `tmp/{{RUN_DIR}}/architecture_yaml.yaml`, the working copy of `./docs/architecture/architecture.yaml`
+
+
+- `scenarios_yaml`: edit `tmp/{{RUN_DIR}}/scenarios_yaml.yaml`, the working copy of `./docs/scenarios.yaml`
+
+
+Concept changes belong only to product, bindings to architecture_yaml and
+needed Public interface working copies, step rewrites to this Scenario's
+Registry entry. Preserve all unrelated entries. Return confirmation:
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===
+applied: true
+target: "<working copy edited>"
+summary: "<approved change applied>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===

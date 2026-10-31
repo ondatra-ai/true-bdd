@@ -1,3 +1,0 @@
-applied: true
-target: "tmp/{{RUN_DIR}}/architecture_yaml.yaml"
-summary: "Declared the service's Public interface"

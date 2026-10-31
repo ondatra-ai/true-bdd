@@ -2,8 +2,7 @@
 
 You are a Registry Scenario Editor applying an approved fix to the
 working copy of one document: the scenario registry, where a
-Scenario's description or steps are rewritten, or the product
-document, where a catalogue entry's meaning is.
+Scenario's description or steps are rewritten.
 
 **Your Task:**
 1. Read the working copy the fix names.
@@ -51,37 +50,53 @@ Then:
 # Fix Prompt for Scenario E2E-001: The greeter must print the configured greeting followed by the name it is given
 
 ## Target
-The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry, `docs/scenarios.yaml`). No catalogue entry is named by the findings, so the `product` document is **not** edited.
+The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry, `docs/scenarios.yaml`).
 
-## Finding being fixed
-`scen-check/scenario_quality` — `E2E-001: forbidden verb 'handle' in then`.
+Edit only the one step named below. Do NOT touch `E2E-001`'s `description`, `service`, `path` or `user_stories`, do NOT touch its `given` or `when` steps, do NOT touch any other scenario, and do NOT edit `tests/greeter/greet_test.go` or any step definition — the generated test is re-rendered by `true-bdd build tests --fix` from the corrected registry entry.
 
-The product document's `vocabulary.forbidden_actions` lists `handle` with reason "Hides what the program observably does with the input." and replacement "Name the observable action: prints, exits, writes."
+## Why
+The scen-check finding is: `E2E-001: forbidden verb 'handle' in then`. The product document lists `handle` under `vocabulary.forbidden_actions` ("Hides what the program observably does with the input.") with the replacement instruction "Name the observable action: prints, exits, writes."
 
-The only observable action in that step is the printing, and the printed text `"Hello Ada"` already carries the name `"Ada"` the step says is "handled". Dropping the `handles the name "Ada"` clause therefore loses no assertion: what the run can settle — that the greeter prints `Hello Ada` — is kept verbatim.
+The clause `the greeter handles the name "Ada" and` asserts no observable fact of its own: the name `"Ada"` is already supplied by the `when` step (`the Operator runs "greet Ada"`), and the only observable consequence the step asserts is the printed line `Hello Ada`. Dropping the `handles` clause and keeping the printed-line assertion therefore loses no coverage: the scenario still asserts that running `greet Ada` with the greeting configured as `"Hello"` prints `Hello Ada`.
+
+The replacement wording is an instance of exactly one `then` concept of the product document — `standard output`, whose `means` is "A line the command printed on its standard output has a match for a stated pattern, a regular expression." The new step states one command-printed line and one pattern, `Hello Ada`, and nothing more. No `exit code` assertion is added, because the current step asserts none.
 
 ## Required Changes
 
-### Change #1: Replace the forbidden verb `handle` in the `then` step with the observable action it hides
+### Change #1: Replace the forbidden verb `handle` in the `then` step with the observable action `prints`
 **Document:** scenarios_yaml
-**Field:** merged_steps.then (the single `then` step of scenario `E2E-001`)
+**Field:** merged_steps.then
 **Current text:**
 ```
 the greeter handles the name "Ada" and prints "Hello Ada"
 ```
 **New text:**
 ```
-the greeter prints "Hello Ada"
+the command prints a line matching "Hello Ada"
 ```
 
-## Constraints for the applier
-- Change only the one `then` step above. Leave `description`, `service: greeter`, `path: tests/greeter/greet_test.go`, `user_stories: []`, the `given` step (`the greeting is configured as "Hello"`) and the `when` step (`the Operator runs "greet Ada"`) exactly as they are.
-- Keep the step as a single list item under `then:`; do not split it into two steps and do not add a step.
-- Do not reword the step into the catalogue's `stdout matches {expected:pattern}` template. This Scenario's `user_stories:` is empty, so no Story claims it and catalogue matching is not required here; switching to a regex-match step would re-specify the assertion rather than reword it.
-- Do not edit `docs/product/product.yaml`, the generated test `tests/greeter/greet_test.go`, or any step definition. After the registry entry reads correctly, the test is re-rendered by `true-bdd build tests --fix`.
+## Result after the fix
+The `E2E-001` entry must read exactly:
+```yaml
+  E2E-001:
+    description: The greeter must print the configured greeting followed by the name it is given
+    service: greeter
+    path: tests/greeter/greet_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the greeting is configured as "Hello"
+      when:
+        - the Operator runs "greet Ada"
+      then:
+        - the command prints a line matching "Hello Ada"
+```
 
-## Done when
-The `then` block of `E2E-001` reads `the greeter prints "Hello Ada"`, no step of the Scenario contains `handle`, `process` or `parse`, and nothing else in the registry or in any other document has changed.
+## Verification
+- No step of `E2E-001` contains `handle`, `handles`, `process` or `parse`.
+- The `then` step names an observable action (`prints`) and reads as one instance of the `standard output` concept: one line the command printed, one stated pattern.
+- The asserted behaviour is unchanged: greeting `Hello` configured, `greet Ada` run, line `Hello Ada` printed.
+- `given` and `when` steps, `description`, `service`, `path`, `user_stories` and all other scenarios are byte-identical to before.
 
 ---
 
@@ -100,8 +115,7 @@ same Scenarios, so a copy you leave unparseable changes nothing.
 ## Instructions
 
 1. Use the Read tool to load the working copy the fix prompt names. In
-   the registry, find the `E2E-001:` entry under `scenarios:`;
-   in the product document, the catalogue entry the fix names.
+   the registry, find the `E2E-001:` entry under `scenarios:`.
 2. Apply each change with the Edit tool on that working copy: replace
    the current text the fix prompt gives with its new text, inside that
    entry only.

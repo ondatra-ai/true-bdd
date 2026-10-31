@@ -1,0 +1,29 @@
+scenarios:
+  calc-001-halve:
+    description: Halving an even number
+    service: calc
+    path: tests/calc/calc_test.go
+    merged_steps:
+      when: ["the Owner halves 6"]
+      then: ["the calculator's output matches ^3$"]
+  calc-002-double:
+    description: Doubling a number
+    service: calc
+    path: tests/calc/calc_test.go
+    merged_steps:
+      when: ["the Owner doubles 6"]
+      then: ["the calculator's output matches ^12$"]
+  calc-003-halve-odd:
+    description: Halving an odd number prints a whole number
+    service: calc
+    path: tests/calc/calc_test.go
+    merged_steps:
+      when: ["the Owner halves 7"]
+      then: ["the calculator's output does not match \\."]
+  calc-004-exact:
+    description: Halving an odd number exactly keeps its half
+    service: calc
+    path: tests/calc/calc_test.go
+    merged_steps:
+      when: ["the Owner exactly halves 7"]
+      then: ["the calculator's output matches ^3\\.5$"]

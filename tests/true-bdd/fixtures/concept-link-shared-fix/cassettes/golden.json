@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "concept-link-shared-fix",
+  "files": [
+    {
+      "path": "docs/product/product.yaml",
+      "kind": "modified",
+      "size": 892,
+      "sha256": "af213160415d00660234023d1a22674b06f1dbca71f080f81ccfcaeb9b375555",
+      "text": "{\n  \"roles\": [\n    {\n      \"name\": \"Product Owner\",\n      \"description\": \"Owns meanings.\"\n    }\n  ],\n  \"concepts\": {\n    \"given\": [\n      {\n        \"concept\": \"number ready\",\n        \"means\": \"A number is entered before the action.\",\n        \"terms\": []\n      }\n    ],\n    \"when\": [\n      {\n        \"concept\": \"halve\",\n        \"means\": \"Invoke the Halve control once by activating its button, with a pointer or from the keyboard, replacing the entered number with its half.\",\n        \"terms\": []\n      }\n    ],\n    \"then\": [\n      {\n        \"concept\": \"number result\",\n        \"means\": \"Compare the displayed number with an expected value.\",\n        \"terms\": []\n      }\n    ]\n  },\n  \"glossary\": [],\n  \"description\": {\n    \"summary\": \"The calculator has a single Halve control. A pointer click and a keyboard activation of this same control must invoke the same halving operation once.\"\n  }\n}\n"
+    }
+  ]
+}

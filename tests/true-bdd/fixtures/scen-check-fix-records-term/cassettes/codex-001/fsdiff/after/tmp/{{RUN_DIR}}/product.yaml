@@ -1,14 +1,8 @@
-# Product document for `scen-check-fix-records-term`.
-#
-# The catalogue phrases every step of E2E-001, and the glossary defines
-# every term those phrases declare but "reply"; the fix adds the entry
-# that defines it.
-
 title: "Fixture host project"
 
 description:
   summary: >-
-    A single MCP service, used by the bdd-cli fixtures as the host
+    A single MCP service, used by the true-bdd fixtures as the host
     project a scenario registry describes.
 
 roles:
@@ -28,22 +22,20 @@ glossary:
       answers each message on its own.
   - term: reply
     means: >-
-      The text the MCP service sends back in answer to one message —
-      any answer, success or failure. There is exactly one reply per
-      message, and a Scenario reads it as the whole answer, character
-      for character: it is what the Operator watches to judge the
-      service.
+      The text the MCP service sends back for one message, as text.
+      Exactly one reply per message, and what a Then observes and
+      compares against a stated text.
 
-catalogue:
-  - template: 'the mcp service is running'
-    block: given
-    means: The MCP service has started and accepts requests.
-    terms: [mcp service]
-  - template: 'the {actor:role} sends "{message}"'
-    block: when
-    means: That role sends the quoted message to the MCP service, once.
-    terms: [mcp service, message]
-  - template: 'the service answers "{reply}"'
-    block: then
-    means: The MCP service's reply to the message is exactly the quoted text.
-    terms: [mcp service, reply]
+concepts:
+  given:
+    - concept: service running
+      means: The MCP service has started and accepts requests.
+      terms: [mcp service]
+  when:
+    - concept: message sent
+      means: A role sends a stated message to the MCP service, once.
+      terms: [mcp service, message]
+  then:
+    - concept: answer
+      means: The MCP service's reply to the message is exactly a stated text.
+      terms: [mcp service, reply]

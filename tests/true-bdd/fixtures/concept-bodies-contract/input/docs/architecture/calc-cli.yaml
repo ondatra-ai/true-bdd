@@ -1,0 +1,19 @@
+opencli: 0.1
+info:
+  title: Calculator CLI
+  version: '1.0'
+commands:
+  halve:
+    description: Run go run ./services/calc halve VALUE from the host root; stdout
+      is VALUE halved and rounded toward zero, as an integer, and a newline.
+    parameters:
+    - name: value
+      in: argument
+      required: true
+      schema:
+        type: integer
+    responses:
+      '0':
+        description: Halved integer on stdout
+      '1':
+        description: Invalid arguments

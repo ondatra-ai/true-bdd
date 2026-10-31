@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "fixture": "concept-steps-negative",
+  "files": [
+    {
+      "path": "tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go",
+      "kind": "created",
+      "size": 1309,
+      "sha256": "34d9dd85e9d78e4b9d8985cbb1d3147686fa9cbd747db963e6a4e1f8ac735bcb",
+      "text": "package steps\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"os\"\n\t\"os/exec\"\n\t\"path/filepath\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"halving\"\nfunc concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {\n\tnumber := args[0]\n\n\t// The declared halve command runs from the host root: walk up from the\n\t// suite's working directory to the directory holding go.mod.\n\troot, err := os.Getwd()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"halve %s: locating the host root: %w\", number, err)\n\t}\n\tfor {\n\t\tif _, statErr := os.Stat(filepath.Join(root, \"go.mod\")); statErr == nil {\n\t\t\tbreak\n\t\t}\n\t\tparent := filepath.Dir(root)\n\t\tif parent == root {\n\t\t\treturn fmt.Errorf(\"halve %s: no host root with go.mod above the working directory\", number)\n\t\t}\n\t\troot = parent\n\t}\n\n\tvar stdout, stderr bytes.Buffer\n\tcmd := exec.Command(\"go\", \"run\", \"./services/calc\", \"halve\", number)\n\tcmd.Dir = root\n\tcmd.Stdout = \u0026stdout\n\tcmd.Stderr = \u0026stderr\n\tif err := cmd.Run(); err != nil {\n\t\treturn fmt.Errorf(\"halve %s: %w: %s\", number, err, strings.TrimSpace(stderr.String()))\n\t}\n\n\tprinted := strings.TrimSpace(stdout.String())\n\thalved, err := strconv.Atoi(printed)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"halve %s: stdout %q is not an integer: %w\", number, printed, err)\n\t}\n\n\tstate.Result = halved\n\treturn nil\n}\n"
+    },
+    {
+      "path": "tests/calc/steps/register.go",
+      "kind": "modified",
+      "size": 214,
+      "sha256": "65b97563458d35aebdb18e1a26fa783e6bffe507ec3b9b5736acba8670a08932",
+      "text": "package steps\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the result is (-?\\d+)$`, result)\n\n\tsuite.Step(\"^the Owner halves (-?\\\\d+)$\", concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87)\n}\n"
+    }
+  ]
+}

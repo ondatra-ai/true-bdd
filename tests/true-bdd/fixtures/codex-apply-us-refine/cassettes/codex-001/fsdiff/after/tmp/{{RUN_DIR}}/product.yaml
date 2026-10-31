@@ -1,9 +1,3 @@
-# Product document for `us-refine-fix-records-phrase`.
-#
-# The catalogue phrases every step of the Story doc-outline but AC-2's
-# last; the fix adds the entry that phrases "Claude offers to summarise
-# the document instead".
-
 title: "MCP Google Docs Editor (BDD fixture stub)"
 summary: "Synthetic product document for BDD fixtures — deliberately minimal."
 
@@ -36,28 +30,22 @@ glossary:
       The document's headings, in document order, as Claude lists them
       in the conversation.
 
-catalogue:
-  - template: 'a Google Doc with {count:number} heading[s] is shared with the {actor:role}'
-    block: given
-    means: A Google Doc holding that many headings is shared with that role's account; "no" means none.
-    terms: [Google Doc]
-  - template: 'a Google Doc that is not shared with the {actor:role}'
-    block: given
-    means: A Google Doc exists that that role's account cannot open.
-    terms: [Google Doc]
-  - template: 'the {actor:role} asks Claude to outline the document'
-    block: when
-    means: That role asks Claude, in the conversation, for the outline of the Google Doc.
-    terms: [Google Doc, outline]
-  - template: 'Claude displays an outline of {count:number} heading[s]'
-    block: then
-    means: Claude's reply lists exactly that many headings, in document order.
-    terms: [outline]
-  - template: 'Claude displays the message "{message}"'
-    block: then
-    means: Claude's reply in the conversation is exactly the quoted message.
-    terms: []
-  - template: 'Claude offers to summarise the document instead'
-    block: then
-    means: Claude's reply contains an offer to produce a summary of the Google Doc, which the Claude User can accept in the next turn; the offer's exact wording is not fixed.
-    terms: [Google Doc]
+concepts:
+  given:
+    - concept: shared document
+      means: >-
+        A Google Doc set up for a role's account: either it holds a stated
+        number of headings, "no" meaning none, and is shared with that
+        account, or that account cannot open it.
+      terms: [Google Doc]
+  when:
+    - concept: outline request
+      means: A role asks Claude, in the conversation, for the outline of the Google Doc.
+      terms: [Google Doc, outline]
+  then:
+    - concept: reply
+      means: >-
+        Claude's reply in the conversation either lists exactly a stated
+        number of headings, in document order, is exactly a stated
+        message, or offers to summarise the Google Doc instead.
+      terms: [Google Doc, outline]

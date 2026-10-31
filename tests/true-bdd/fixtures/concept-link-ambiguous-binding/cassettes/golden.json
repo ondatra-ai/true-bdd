@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "concept-link-ambiguous-binding",
+  "files": [
+    {
+      "path": "docs/architecture/architecture.yaml",
+      "kind": "modified",
+      "size": 1895,
+      "sha256": "b70c797417989a5342ba9035c8d271f6a9b5d2838710dbf710a5019ed1233727",
+      "text": "{\n  \"architecture\": {\n    \"services\": [\n      {\n        \"name\": \"calc\",\n        \"path\": \"services/calc\",\n        \"language\": \"go\",\n        \"public_interface\": {\n          \"kind\": \"ui\",\n          \"elements\": [\n            {\n              \"page\": \"Calc\",\n              \"role\": \"button\",\n              \"name\": \"Halve\"\n            },\n            {\n              \"page\": \"Calc\",\n              \"role\": \"textbox\",\n              \"name\": \"Number\"\n            }\n          ]\n        }\n      }\n    ],\n    \"concepts\": [\n      {\n        \"concept\": \"number ready\",\n        \"block\": \"given\",\n        \"service\": \"calc\",\n        \"references\": [\n          {\n            \"element\": {\n              \"page\": \"Calc\",\n              \"role\": \"textbox\",\n              \"name\": \"Number\"\n            }\n          }\n        ],\n        \"does\": \"Parse the Given step’s numeral as a decimal number, replace the entire Number textbox value with its decimal representation, and leave it set before the action.\"\n      },\n      {\n        \"concept\": \"halve\",\n        \"block\": \"when\",\n        \"service\": \"calc\",\n        \"references\": [\n          {\n            \"element\": {\n              \"page\": \"Calc\",\n              \"role\": \"button\",\n              \"name\": \"Halve\"\n            }\n          }\n        ],\n        \"does\": \"Activate the Calc page ‘Halve’ button exactly once. Perform no other interaction, enter no value and assert nothing.\"\n      },\n      {\n        \"concept\": \"number result\",\n        \"block\": \"then\",\n        \"service\": \"calc\",\n        \"references\": [\n          {\n            \"element\": {\n              \"page\": \"Calc\",\n              \"role\": \"textbox\",\n              \"name\": \"Number\"\n            }\n          }\n        ],\n        \"does\": \"Read the Number textbox value, parse it as a decimal number and assert numeric equality with the expected numeral supplied by the Then step.\"\n      }\n    ],\n    \"terms\": []\n  }\n}\n"
+    }
+  ]
+}

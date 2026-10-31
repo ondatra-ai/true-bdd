@@ -14,8 +14,8 @@ story:
     - given:
       - the "claude-guard-read-only-tool" project tree
       - claude's write policy lets the turn write under "tests"
-      - claude names the tool "Read"
-      - claude names the file "docs/README.md" of the project tree
+      - the tool call names the tool "Read"
+      - the tool call names the file "docs/README.md" of the project tree
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -27,7 +27,7 @@ story:
     - given:
       - the "claude-guard-shell-denied" project tree
       - claude's write policy lets the turn write under "tests"
-      - claude names the tool "Bash"
+      - the tool call names the tool "Bash"
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -40,8 +40,8 @@ story:
     - given:
       - the "claude-guard-unknown-tool" project tree
       - claude's write policy lets the turn write under "tests"
-      - claude names the tool "rename"
-      - claude names the file "tests/notes.md" of the project tree
+      - the tool call names the tool "rename"
+      - the tool call names the file "tests/notes.md" of the project tree
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -52,9 +52,9 @@ story:
     steps:
     - given:
       - the "claude-guard-missing-policy" project tree
-      - claude hands the guard no write policy
-      - claude names the tool "Read"
-      - claude names the file "docs/README.md" of the project tree
+      - claude's write policy is missing
+      - the tool call names the tool "Read"
+      - the tool call names the file "docs/README.md" of the project tree
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -66,9 +66,9 @@ story:
     steps:
     - given:
       - the "claude-guard-unreadable-policy" project tree
-      - claude hands the guard an unreadable write policy
-      - claude names the tool "Read"
-      - claude names the file "docs/README.md" of the project tree
+      - claude's write policy is unreadable
+      - the tool call names the tool "Read"
+      - the tool call names the file "docs/README.md" of the project tree
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -81,7 +81,7 @@ story:
     - given:
       - the "claude-guard-hook-payload" project tree
       - claude's write policy lets the turn write under "tests"
-      - claude pipes the hook payload naming the tool "Write" and the file "tests/notes.md"
+      - the hook payload names the tool "Write" and the file "tests/notes.md"
     - when:
       - claude asks the guard about the tool call
     - then:

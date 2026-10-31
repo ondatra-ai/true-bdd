@@ -19,10 +19,20 @@ type State struct{}
 // Register installs a second definition for the Operator's ping, so that
 // step binds to two definitions, which the suite itself would refuse.
 func Register(suite Suite) {
-	suite.Step(`^the mcp service is running$`, noop)
-	suite.Step(`^the (Operator|Client Developer) sends "([^"]+)"$`, noop)
-	suite.Step(`^the Operator sends "ping"$`, noop)
-	suite.Step(`^the service answers "([^"]+)"$`, noop)
+	suite.Step(`^the mcp service is running$`, serviceRunning)
+	suite.Step(`^the (Operator|Client Developer) sends "([^"]+)"$`, messageSent)
+	suite.Step(`^the Operator sends "ping"$`, pingSent)
+	suite.Step(`^the service answers "([^"]+)"$`, answer)
 }
 
-func noop(_ *State, _ []string) error { return nil }
+//truebdd:concept given "service running"
+func serviceRunning(_ *State, _ []string) error { return nil }
+
+//truebdd:concept when "message sent"
+func messageSent(_ *State, _ []string) error { return nil }
+
+//truebdd:concept when "message sent"
+func pingSent(_ *State, _ []string) error { return nil }
+
+//truebdd:concept then "answer"
+func answer(_ *State, _ []string) error { return nil }

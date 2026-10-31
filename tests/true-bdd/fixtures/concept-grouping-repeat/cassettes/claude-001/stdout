@@ -1,0 +1,1 @@
+{"type": "result", "subtype": "success", "is_error": false, "total_cost_usd": 0, "structured_output": {"assignments": [{"index": 1, "concept": "halve", "score": 9, "runner_up": "double", "runner_up_score": 2}, {"index": 1, "concept": "halve", "score": 9, "runner_up": "double", "runner_up_score": 2}]}}

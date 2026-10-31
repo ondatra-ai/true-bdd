@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/scenarios_yaml.yaml"
-summary: "Reworded E2E-001's description and replaced its sole Then step with stdout matches ^Hello Ada$; all other content preserved."
+summary: "Replaced E2E-001's description and Then step exactly as specified; preserved all other bytes."
 === FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===

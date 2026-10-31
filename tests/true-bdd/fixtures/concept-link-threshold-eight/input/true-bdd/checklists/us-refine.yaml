@@ -1,0 +1,39 @@
+{
+  "sections": [
+    {
+      "id": "concepts",
+      "validation_prompts": [
+        {
+          "Q": "Link every step of this Item to a product concept of its own block.\nGiven is a state before the behaviour, When an action or event,\nThen an observable outcome. A concept is one Public interface item\nand kind of use, as the wording fixes it; an argument's target\ndoes not change the concept. Read the product roles and glossary.\nScore EVERY concept of the step's block, from 0 to 10:\n10: a plain instance; 9: an instance in other words without doubt;\n7 or 8: related but partly outside its meaning, or another fits as well;\n1 to 6: not this concept; 0: unrelated.\nRead means as CLOSED: it admits only the variations its prose states,\nnever everything in the same area. An unstated variation scores at most 8.\nA step of the wrong kind for its block scores at most 4 for every\nconcept of that block. Name the other block's concept it is an instance\nof in other_block_concept, or null if none. For a right-kind step use null.\nGive a reason for the highest score, or why none fits.\njudge: clauses are unlinked: omit them from the answer.\nllm: steps link by their intent; strip the prefix when judging meaning.\nAnswer steps by their supplied keys, with every concept a required\nkey of scores, a reason and other_block_concept. Change nothing.\n",
+          "with": {
+            "concepts": "link",
+            "threshold": 8
+          },
+          "rationale": "A step without one closed meaning cannot yield an unambiguous definition.",
+          "docs": [
+            "product"
+          ],
+          "F": "Offer the Product Owner a rewritten step applied to the Story or\nScenario, a wider concept when its Public interface item and kind of\nuse already exist, or else a new concept for the new item or use.\nConcepts have concept, means and terms, with variations in closed prose.\nApply concept changes only to the product document and a rewrite only\nto the Item. Show the exact change at the menu and wait for apply.\n"
+        }
+      ]
+    },
+    {
+      "id": "concept_words",
+      "name": "Concept Words",
+      "description": "Linked meanings rely only on declared terms and plain English.",
+      "validation_prompts": [
+        {
+          "Q": "Judge the means of EVERY supplied linked concept, using the product\ndocument's glossary for its declared terms. Name every domain word\nor expression its means relies on that is neither declared in THAT\nconcept's terms nor readable as plain English in that means's context.\nA glossary entry alone does not declare a term for a concept.\nPlain English that already defines the word in this context passes;\ndo not demand glossary entries for ordinary words or infer a special\ndomain meaning without evidence. Judge means, not the concept's name,\nsteps, bindings or unrelated concepts. Trust no earlier judgement.\nJudge each concept independently. Every word in undeclared_words\nmust occur in THAT concept's means; never carry a word from another\nverdict. Keep the list consistent with the reason: if none is\nundeclared, return exactly an empty array.\nFor every supplied concept key return undeclared_words (the exact\nwords, or an empty array when none) and a nonempty reason explaining\nthe verdict. Omit no concept. Change nothing.\n",
+          "with": {
+            "concepts": "words"
+          },
+          "rationale": "An undeclared domain word leaves a linked meaning open to interpretation.",
+          "docs": [
+            "product"
+          ],
+          "F": "Offer the Product Owner a declared term (a glossary entry with term and\nmeans fields, and the word as a string in the affected concept's terms),\nor reword that concept's means in product words and plain English without\na new term. Use the product document's schema, never a meaning field.\nPreserve the meaning and unrelated concepts. Propose exact YAML for\nthe product document only. Show the change at the menu and apply only\nafter apply. Do not edit the Story, Scenario or architecture. A newly\ndeclared term's Word mapping is the System Architect's later work\nthrough scen check's D: term-mappings; refinement never waits for it.\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,9 +1,3 @@
-# Story seed for the `us-refine-fix-records-phrase` BDD fixture.
-#
-# Every step matches one catalogue phrase of the fixture's product
-# document but AC-2's last then step, which matches none. The fix phrases
-# it in the catalogue and leaves the Story's steps as they are.
-
 story:
     id: doc-outline
     title: Document Outline On Demand

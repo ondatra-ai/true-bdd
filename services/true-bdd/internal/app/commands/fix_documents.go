@@ -27,8 +27,8 @@ var ErrTermDocumentUnparseable = errors.New("the fix left the document unreadabl
 var ErrRegistryScenariosChanged = errors.New("the fix added or removed a Scenario of the Registry")
 
 // termDocumentKeys are the documents a closure fix may write: the
-// catalogue and the glossary live in the product document, the word
-// mapping in the architecture document.
+// concepts and the glossary live in the product document, the word
+// mapping and the concept bindings in the architecture document.
 func termDocumentKeys() []string {
 	return []string{docs.KeyProduct, docs.KeyArchitectureYAML}
 }
@@ -60,7 +60,7 @@ func seedTermDocuments(resolver *docs.Resolver, tmpDir string) ([]template.FixDo
 
 // seedInterfaceDocuments copies each Public interface document the
 // architecture names into tmp, keyed by its declared path, for a
-// public-interface or phrase-mappings fix to extend.
+// public-interface or concept-bindings fix to extend.
 func seedInterfaceDocuments(resolver *docs.Resolver, tmpDir string) ([]template.FixDocument, error) {
 	architecturePath, err := resolver.Resolve(docs.KeyArchitectureYAML)
 	if err != nil {
@@ -201,12 +201,12 @@ func readableFixDocument(key, scratch string, content []byte, ids []string) erro
 	return nil
 }
 
-// readableProductDocument holds an edited product document to a catalogue
+// readableProductDocument holds an edited product document to concepts
 // and a glossary the checks load.
 func readableProductDocument(scratch string) error {
-	_, err := product.LoadCatalogue(scratch)
+	_, err := product.Load(scratch)
 	if err != nil {
-		return fmt.Errorf("load the catalogue: %w", err)
+		return fmt.Errorf("load the concepts: %w", err)
 	}
 
 	_, err = product.LoadGlossary(scratch)
@@ -257,9 +257,14 @@ func commitInterfaceFix(architectureDocument template.FixDocument, interfaceDocu
 		return fmt.Errorf("validate Public interface fix: %w", err)
 	}
 
-	_, err = architecture.LoadPhraseMappings(architectureDocument.Scratch)
+	_, err = architecture.LoadConceptBindings(architectureDocument.Scratch)
 	if err != nil {
-		return fmt.Errorf("validate Phrase mapping fix: %w", err)
+		return fmt.Errorf("validate Concept binding fix: %w", err)
+	}
+
+	err = architecture.ValidateForm(architectureDocument.Scratch)
+	if err != nil {
+		return fmt.Errorf("validate Concept binding fix: %w", err)
 	}
 
 	declared, err := architecture.DeclaredInterfaceDocuments(architectureDocument.Scratch)
