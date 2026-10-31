@@ -14,6 +14,11 @@ import (
 var ErrInvalidConcepts = errors.New("concepts: requires given, when or then lists with concept, means and terms; " +
 	"names must be unique within each block")
 
+// ErrUndeclaredConceptKey refuses a concept entry holding a key beyond its
+// closed shape (ADR-0036): a widening rewrites its means instead.
+var ErrUndeclaredConceptKey = errors.New("a concept holds only concept, means and terms; " +
+	"state every variation it admits in its means")
+
 // ValidateForm refuses the retired catalogue and malformed concepts before a
 // command starts.
 func ValidateForm(path string) error {
@@ -83,6 +88,12 @@ func decodeConceptBlock(path string, block catalogue.Block, list *yaml.Node) ([]
 			return nil, fmt.Errorf("product document %s: %s concept '%s': %w", path, block, entry.Name, ErrInvalidConcepts)
 		}
 
+		key := undeclaredConceptKey(node)
+		if key != "" {
+			return nil, fmt.Errorf("product document %s: %s concept '%s' declares %s: %w",
+				path, block, entry.Name, key, ErrUndeclaredConceptKey)
+		}
+
 		entry.Block = block
 		seen[entry.Name] = true
 		entries = append(entries, entry)
@@ -93,4 +104,18 @@ func decodeConceptBlock(path string, block catalogue.Block, list *yaml.Node) ([]
 
 func incompleteConcept(entry Concept) bool {
 	return strings.TrimSpace(entry.Name) == "" || strings.TrimSpace(entry.Means) == "" || entry.Terms == nil
+}
+
+// undeclaredConceptKey names the first key of a concept entry beyond
+// concept, means and terms, which node.Decode would silently drop (#268).
+func undeclaredConceptKey(node *yaml.Node) string {
+	for index := 0; index+1 < len(node.Content); index += 2 {
+		switch key := node.Content[index].Value; key {
+		case "concept", "means", "terms":
+		default:
+			return key
+		}
+	}
+
+	return ""
 }

@@ -1,0 +1,17 @@
+story:
+    id: host
+    title: Halve a number
+    as_a: Owner
+    i_want: to halve a whole number
+    so_that: I can read its half
+    status: DRAFT
+    acceptance_criteria:
+        - id: AC-1
+          description: The calculator must print 3 when the Owner halves 6
+          steps:
+            - given:
+                - the calculator is installed
+            - when:
+                - the Owner halves 6
+            - then:
+                - the calculator prints 3

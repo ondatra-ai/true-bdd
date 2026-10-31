@@ -118,3 +118,15 @@ story:
       - no file outside "tmp" and "docs" changed
       - 'the file "docs/greeter-cli.yaml" matches (?m)^  translate:'
       - the file "docs/scenarios.yaml" is unchanged
+  - id: 009-extra-key-refused
+    description: A product document whose concept carries a key beyond concept, means and terms must refuse startup, naming the block, the concept and the key
+    steps:
+    - given:
+      - the "concepts-extra-key" project tree
+    - when:
+      - the System Architect runs "scen check"
+    - then:
+      - the command exits with code 1
+      - stdout matches Refusing to start.*then concept 'greeting' declares variations.*a concept holds only concept, means and terms
+      - the engine dispatched 0 AI turns
+      - no file outside "tmp" changed

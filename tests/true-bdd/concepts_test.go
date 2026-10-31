@@ -131,3 +131,15 @@ func TestConcepts008BindingAddsOperation(t *testing.T) {
 	s.And(`the file "docs/scenarios.yaml" is unchanged`)
 	s.Done()
 }
+
+// concepts-009-extra-key-refused: A product document whose concept carries a key beyond concept, means and terms must refuse startup, naming the block, the concept and the key
+func TestConcepts009ExtraKeyRefused(t *testing.T) {
+	s := scenarios.New(t, "concepts-009-extra-key-refused")
+	s.Given(`the "concepts-extra-key" project tree`)
+	s.When(`the System Architect runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches Refusing to start.*then concept 'greeting' declares variations.*a concept holds only concept, means and terms`)
+	s.And(`the engine dispatched 0 AI turns`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}

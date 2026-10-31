@@ -293,11 +293,12 @@ func buildSpecEngine[I any](
 	var latestResult checklistmodels.ValidationResult
 
 	fixCount := 0
+	refusals := newFixRefusals()
 
 	cell := &engine.CellHandler[I, *checklistmodels.PromptWithContext]{
-		Query:   buildQueryClosure(spec, builder, &latestResult),
+		Query:   buildQueryClosure(spec, builder, &latestResult, refusals),
 		GenFix:  buildGenFixClosure(spec, &latestResult),
-		Fix:     buildFixClosure(spec, &latestResult, &fixCount),
+		Fix:     buildFixClosure(spec, &latestResult, &fixCount, refusals),
 		UI:      spec.UI,
 		FixMode: spec.Fix,
 	}
@@ -325,8 +326,8 @@ func buildSpecEngine[I any](
 				var result checklistmodels.ValidationResult
 
 				return &engine.CellHandler[I, *checklistmodels.PromptWithContext]{
-					Query: buildQueryClosure(spec, builder, &result), GenFix: buildGenFixClosure(spec, &result),
-					Fix: buildFixClosure(spec, &result, &fixCount), UI: spec.UI, FixMode: spec.Fix,
+					Query: buildQueryClosure(spec, builder, &result, refusals), GenFix: buildGenFixClosure(spec, &result),
+					Fix: buildFixClosure(spec, &result, &fixCount, refusals), UI: spec.UI, FixMode: spec.Fix,
 				}
 			},
 		}
@@ -383,6 +384,7 @@ func buildQueryClosure[I any](
 	spec Spec[I],
 	builder *reportBuilder,
 	latestResult *checklistmodels.ValidationResult,
+	refusals *fixRefusals,
 ) engine.QueryFn[I, *checklistmodels.PromptWithContext] {
 	return func(
 		ctx context.Context,
@@ -426,6 +428,7 @@ func buildQueryClosure[I any](
 			}
 		}
 
+		result.Context = refusals.attach(subjectID, result)
 		*latestResult = result
 		builder.Add(subjectID, subjectTitle, result)
 
@@ -480,6 +483,7 @@ func buildFixClosure[I any](
 	spec Spec[I],
 	latestResult *checklistmodels.ValidationResult,
 	fixCount *int,
+	refusals *fixRefusals,
 ) engine.FixFn[I] {
 	return func(
 		ctx context.Context,
@@ -517,12 +521,41 @@ func buildFixClosure[I any](
 			return item, fmt.Errorf("fix applier failed: %w", err)
 		}
 
-		if latestResult.Check != "" && spec.PostCheckFix != nil {
-			return spec.PostCheckFix(ctx, item, latestResult.Check)
-		}
-
-		return spec.PostFix(ctx, item, content)
+		return commitApplied(ctx, spec, item, content, *latestResult, refusals)
 	}
+}
+
+// commitApplied hands a completed apply to the Spec's commit hook. A fix
+// the hook did not take leaves the Item as it was, and the walk asks the
+// Prompt again with the refusal held for its next fix (#268).
+func commitApplied[I any](
+	ctx context.Context,
+	spec Spec[I],
+	item I,
+	content string,
+	failed checklistmodels.ValidationResult,
+	refusals *fixRefusals,
+) (I, error) {
+	var (
+		next I
+		err  error
+	)
+
+	if failed.Check != "" && spec.PostCheckFix != nil {
+		next, err = spec.PostCheckFix(ctx, item, failed.Check)
+	} else {
+		next, err = spec.PostFix(ctx, item, content)
+	}
+
+	if !errors.Is(err, ErrFixNotTaken) {
+		return next, err
+	}
+
+	subjectID, _ := spec.GetSubject(item)
+	slog.Warn("Fix not committed", "subjectID", subjectID, "promptIndex", failed.PromptIndex, "reason", err)
+	refusals.hold(subjectID, failed.PromptIndex, err.Error())
+
+	return item, nil
 }
 
 // headerLine builds the opening banner for one runner.Run. Story-based

@@ -295,14 +295,9 @@ func scenCheckPostFix(
 		item *template.ScenarioCheckData,
 		_ string,
 	) (*template.ScenarioCheckData, error) {
-		err := commitConceptInterfaceFix(item)
+		registryChanged, err := commitScenarioFix(item)
 		if err != nil {
-			return nil, err
-		}
-
-		registryChanged, err := commitFixDocuments(item)
-		if err != nil {
-			return nil, err
+			return item, err
 		}
 
 		if registryChanged {
@@ -381,7 +376,7 @@ func scenCheckPostCheckFix(
 
 			err := commitInterfaceFix(document, item.InterfaceDocuments)
 			if err != nil {
-				return nil, err
+				return item, fixNotTaken(append([]template.FixDocument{document}, item.InterfaceDocuments...), err)
 			}
 		}
 
