@@ -28,9 +28,9 @@ description:
     architecture still declaring architecture.phrases, even empty or null, is
     refused at startup, naming concepts or architecture.concepts as its
     replacement. A concept carrying any other key is refused wherever concepts
-    are read, startup included, naming its block, concept and key. A fix whose
-    working copy does not read as its document commits no document of that fix:
-    the fix did not take, its copies are reset, and the refusal becomes a
+    are read, startup included, naming its block, concept and key. A fix that
+    leaves its edited copy of a document unreadable as that document writes no
+    document: the fix did not take, its copies are reset, and the refusal becomes a
     finding of that Prompt's next failed result, so the bounded fix loop tries again. The declared-terms and term-mappings built-in checks hold every
     concept's terms to the glossary and Word mapping, and concept-bindings holds
     all Concept bindings to declared concepts and Public interface references,

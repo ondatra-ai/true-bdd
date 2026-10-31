@@ -78,3 +78,23 @@ func assertScenFixUnchanged(t *testing.T, document template.FixDocument) {
 		}
 	}
 }
+
+// An architecture copy its loader refuses is a fix not taken as well: the
+// retired Phrase mapping written back commits nothing and the walk goes on.
+func TestScenCheckPostFixTakesNoArchitectureCopyItsLoaderRefuses(t *testing.T) {
+	architectureDocument, interfaceDocuments := writeInterfaceFixHost(t, interfaceFixDocument)
+	writeScenFixFile(t, architectureDocument.Scratch, interfaceFixArchitecture+"  phrases: []\n")
+
+	item := &template.ScenarioCheckData{
+		ID: "calc-001-halve", ConceptsDeclared: true,
+		TermDocuments:      []template.FixDocument{architectureDocument},
+		InterfaceDocuments: interfaceDocuments,
+	}
+
+	_, err := scenCheckPostFix(ScenCheckDeps{}, "")(context.Background(), item, "")
+	if !errors.Is(err, runner.ErrFixNotTaken) || !strings.Contains(err.Error(), "architecture.phrases") {
+		t.Fatalf("scenCheckPostFix() error = %v, want a fix not taken naming architecture.phrases", err)
+	}
+
+	assertScenFixUnchanged(t, architectureDocument)
+}

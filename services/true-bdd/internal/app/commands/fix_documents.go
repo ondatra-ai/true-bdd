@@ -321,24 +321,9 @@ func registryIDs(scenarios []*template.ScenarioCheckData) []string {
 // interface documents the fix changed, documents first, once each parses
 // in the form of the kind the edited architecture declares for it.
 func commitInterfaceFix(architectureDocument template.FixDocument, interfaceDocuments []template.FixDocument) error {
-	_, err := architecture.LoadInterfaces(architectureDocument.Scratch, ".")
+	declared, err := checkArchitectureWorkingCopy(architectureDocument)
 	if err != nil {
-		return fmt.Errorf("validate Public interface fix: %w", err)
-	}
-
-	_, err = architecture.LoadConceptBindings(architectureDocument.Scratch)
-	if err != nil {
-		return fmt.Errorf("validate Concept binding fix: %w", err)
-	}
-
-	err = architecture.ValidateForm(architectureDocument.Scratch)
-	if err != nil {
-		return fmt.Errorf("validate Concept binding fix: %w", err)
-	}
-
-	declared, err := architecture.DeclaredInterfaceDocuments(architectureDocument.Scratch)
-	if err != nil {
-		return fmt.Errorf("validate Public interface fix: %w", err)
+		return fmt.Errorf("%s: %w: %w", architectureDocument.Path, ErrTermDocumentUnparseable, err)
 	}
 
 	kinds := make(map[string]string, len(declared))
@@ -361,6 +346,32 @@ func commitInterfaceFix(architectureDocument template.FixDocument, interfaceDocu
 	}
 
 	return commitFixDocument(architectureDocument, nil)
+}
+
+// checkArchitectureWorkingCopy holds the architecture's working copy to its
+// Public interfaces and Concept bindings, and lists its interface documents.
+func checkArchitectureWorkingCopy(document template.FixDocument) ([]architecture.InterfaceDocument, error) {
+	_, err := architecture.LoadInterfaces(document.Scratch, ".")
+	if err != nil {
+		return nil, fmt.Errorf("validate Public interface fix: %w", err)
+	}
+
+	_, err = architecture.LoadConceptBindings(document.Scratch)
+	if err != nil {
+		return nil, fmt.Errorf("validate Concept binding fix: %w", err)
+	}
+
+	err = architecture.ValidateForm(document.Scratch)
+	if err != nil {
+		return nil, fmt.Errorf("validate Concept binding fix: %w", err)
+	}
+
+	declared, err := architecture.DeclaredInterfaceDocuments(document.Scratch)
+	if err != nil {
+		return nil, fmt.Errorf("validate Public interface fix: %w", err)
+	}
+
+	return declared, nil
 }
 
 // checkInterfaceWorkingCopy holds a changed interface document working copy
