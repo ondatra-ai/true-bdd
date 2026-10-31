@@ -61,7 +61,7 @@ One testable condition inside a refined user story, before it is merged into the
 _Avoid_: AC (in prose), criterion, condition
 
 **Item**:
-Whatever a single command walks — a Story for `us refine`, an Acceptance Criterion for `us apply`, a Scenario for `scen check`, the Failing set for `build code`, and for `build steps` a concept and suite on a concept host or, on a template host, a Catalogue phrase that a go-test suite's service maps or its Scenarios use and that has no written step definition there. A concept Item holds the suite's unbound steps grouped into its concept, or the pending skeletons of that concept a walk finds, and requires a fresh unambiguous service binding before any skeleton. The AI proposes its patterns, which the engine checks against every step of the suite and turns into skeletons recording the concept; the AI then writes the bodies, and the critique judges each pattern and body, a pattern finding sending the whole Item back to the proposal and a body finding only that body.
+Whatever a single command walks — a Story for `us refine`, an Acceptance Criterion for `us apply`, a Scenario for `scen check`, the Failing set for `build code`, and for `build steps` a concept and a go-test suite. A concept Item holds the suite's unbound steps grouped into its concept, or the pending skeletons of that concept a walk finds, and requires a fresh unambiguous service binding before any skeleton. The AI proposes its patterns, which the engine checks against every step of the suite and turns into skeletons recording the concept; the AI then writes the bodies, and the critique judges each pattern and body, a pattern finding sending the whole Item back to the proposal and a body finding only that body.
 _Avoid_: subject, entity, record
 
 **Prompt**:
@@ -69,7 +69,7 @@ One validation question in a Checklist, with its rationale, its declared referen
 _Avoid_: check, question, validation item
 
 **Model-run step**:
-A step a model carries out in place of a step definition. An `llm:` step performs, in a Given or When, an operation the Phrase mapping states by intent rather than by element; a `judge:` clause rules, in a Then, on meaning no comparison can settle. Every other step runs through a step definition.
+A step a model carries out in place of a step definition. An `llm:` step performs, in a Given or When, an operation its Concept binding states by intent rather than by element; a `judge:` clause rules, in a Then, on meaning no comparison can settle. Every other step runs through a step definition.
 _Avoid_: AI step, LLM step, smart step
 
 **Built-in check**:
@@ -93,7 +93,7 @@ The check of `build steps --fix` that runs a suite once in a copy of the Host pr
 _Avoid_: expected failure, any failure counts
 
 **Catalogue**:
-The product document's declared step meanings. During transition it uses either `catalogue:`, templates giving a step's shape, block, meaning and terms, or `concepts:`, meanings in prose grouped by Given, When and Then. A host declares at most one form. With templates, every step a model does not run must match exactly one phrase; linking free-text steps to concepts is the separate link pass.
+Retired: the product document's former `catalogue` key of step templates, each a step's shape, block, meaning and terms. Concepts replaced it (ADR-0034), and the engine refuses at startup a product document that still declares one, naming `concepts:` in its place. Older ADRs still name it.
 _Avoid_: vocabulary (the words a Story must not use), phrase book, step library
 
 **Concept**:
@@ -101,23 +101,23 @@ One way of putting state in place (Given), calling (When), or observing and comp
 _Avoid_: step template, phrase (for a concept)
 
 **Concept binding**:
-An `architecture.concepts` entry naming a Concept by name and block and its service, with Public interface `references` and a `does` sentence describing what its step definition does by block. An `intent` replaces both for a UI service. Each concept (name and block) and service pair has at most one binding, and every reference is declared by that service. The built-in phrase-mappings check holds these declarations without linking steps. After the link, scen check requires every linked concept to be bound for the Scenario's service and judges those bindings usable; an unused unbound concept is not that Scenario's finding.
+An `architecture.concepts` entry naming a Concept by name and block and its service, with Public interface `references` and a `does` sentence describing what its step definition does by block. An `intent` replaces both for a UI service. Each concept (name and block) and service pair has at most one binding, and every reference is declared by that service. The built-in concept-bindings check holds these declarations without linking steps. After the link, scen check requires every linked concept to be bound for the Scenario's service and judges those bindings usable; an unused unbound concept is not that Scenario's finding.
 _Avoid_: concept mapping, step binding
 
 **Word mapping**:
-The architecture document's list of terms, each saying what the term is in the implementation and how a step definition sets it up or observes it, without naming code. Every term a Catalogue phrase or Concept declares is mapped exactly once.
+The architecture document's list of terms, each saying what the term is in the implementation and how a step definition sets it up or observes it, without naming code. Every term a Concept declares is mapped exactly once.
 _Avoid_: architecture glossary, dictionary
 
 **Phrase mapping**:
-The architecture document's legacy `architecture.phrases` list: one entry per Catalogue template and service, stating what a step does through its Public interface by block. A Given sets up state, a When calls, a Then observes and compares. A host using concepts writes Concept bindings in `architecture.concepts` instead; the Word mapping covers the terms in either form.
+Retired: the architecture document's former `architecture.phrases`, one entry per Catalogue template and service. Concept bindings replaced it (ADR-0035), and the engine refuses at startup an architecture document that still declares one, naming `architecture.concepts` in its place. Older ADRs still name it.
 _Avoid_: step mapping, operation map
 
 **Term document**:
-A specification document holding declared meanings and their implementation: the product document, with its glossary and either Catalogue templates or Concepts, and the architecture document, with the Word mapping and either Phrase mappings or Concept bindings. A fix for a failed Closure check edits a Term document or a named Public interface document, never the Scenario.
+A specification document holding declared meanings and their implementation: the product document, with its glossary and Concepts, and the architecture document, with the Word mapping and Concept bindings. A fix for a failed Closure check edits a Term document or a named Public interface document, never the Scenario.
 _Avoid_: vocabulary file, dictionary
 
 **Closure check**:
-One of the six Built-in checks over a Scenario and its Term documents. With templates, these hold its Public interface, step phrases, declared terms, Word mappings, Phrase mappings and step definitions to their declarations; the five about templates pass unclaimed Scenarios or hosts without a Catalogue unchecked. With concepts, declared-terms and term-mappings check every declared concept, phrase-mappings checks all Concept bindings, and step-definitions holds each step of every Scenario to one step definition recording a declared concept of the step's block, independently of Story claims; template matching and the templates' correspondence to definitions stay unchecked, while model Prompts link steps and judge their service bindings. The Public interface check always runs. Both forms answer without an AI turn.
+One of the five Built-in checks over a Scenario and its Term documents. public-interface holds its service to a valid Public interface declaration. declared-terms and term-mappings hold every declared concept's terms to the glossary and the Word mapping, concept-bindings holds every Concept binding to a declared concept and its service's Public interface, and step-definitions holds each step of the Scenario to one step definition recording a declared concept of the step's block, a Story claiming the Scenario or not. These four pass every Scenario of a host declaring no concepts as not checked. Model Prompts link steps and judge their service bindings; the Closure checks answer without an AI turn.
 _Avoid_: spec check, term check
 
 **Services**:
@@ -129,7 +129,7 @@ What a command run with `--fix` does for a failed Prompt: ask any clarifying que
 _Avoid_: automatic approval, advance approval
 
 **Failing set**:
-All tests failing in one `build code` discovery, walked as one Item with one proposed repair plan. After each completed apply, including a started codex writer that exits non-zero or answers empty, or a started Claude writer that exits non-zero, returns an error result or answers empty, the engine reruns its remaining members once; passing members leave, missing results stay failing. Synthetic members include Go `package::<build>`, Jest `file::<load>` for each file that fails to load (carrying Jest's message), and Playwright `<startup>`. A load member reruns by file path and passes only when that file reports success; a missing file stays failing. A non-zero test command with no named member stops the run with its command, exit code and output tail, before any AI turn or `BUILD CODE COMPLETE`. A green discovery yields no Item; `build code` reports success only after the test command succeeds. Its `D:` Prompt answers the whole set's latest runner verdict without an AI turn. Its plan and writer turns get each matched Scenario and what the Specification says its steps mean: the Catalogue phrases and words on a template host, and on a concept host the concepts the steps' definitions record, with their words and bindings.
+All tests failing in one `build code` discovery, walked as one Item with one proposed repair plan. After each completed apply, including a started codex writer that exits non-zero or answers empty, or a started Claude writer that exits non-zero, returns an error result or answers empty, the engine reruns its remaining members once; passing members leave, missing results stay failing. Synthetic members include Go `package::<build>`, Jest `file::<load>` for each file that fails to load (carrying Jest's message), and Playwright `<startup>`. A load member reruns by file path and passes only when that file reports success; a missing file stays failing. A non-zero test command with no named member stops the run with its command, exit code and output tail, before any AI turn or `BUILD CODE COMPLETE`. A green discovery yields no Item; `build code` reports success only after the test command succeeds. Its `D:` Prompt answers the whole set's latest runner verdict without an AI turn. Its plan and writer turns get each matched Scenario and what the Specification says its steps mean: the concepts the steps' definitions record, with their words and bindings.
 _Avoid_: repair batch, failure queue
 
 **Writable paths**:

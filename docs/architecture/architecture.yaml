@@ -9,7 +9,7 @@
 #   terms:    — the word mapping: how each product glossary word is built
 #               and how a step definition observes it (`D: term-mappings`).
 #   concepts: — the Concept bindings: what a step definition of each product
-#               concept does through the Public interface (`D: phrase-mappings`).
+#               concept does through the Public interface (`D: concept-bindings`).
 #
 # Path resolved from `documents.architecture_yaml` in true-bdd/true-bdd.yaml.
 #
@@ -60,7 +60,7 @@ architecture:
   prompt_data:
     checklist:
       rendering: &prompt-rendering >-
-        Render the configured template file verbatim through Go text/template with Sprig FuncMap and the engine toYaml override (yaml.v3 Marshal). Template literal bytes, leading/trailing newlines, trim markers, field order and conditional branches are authoritative; no final trim or YAML/Markdown escaping is applied to rendered prompts. Lists retain their input order; map ranges sort string keys. Dot paths below are reads, including methods and collection tests/ranges; [] denotes one ranged value. All strings are YAML-decoded values rather than their source spelling. The same role data reaches system and user templates. Structured concept Q protocols bypass these templates: the Q text plus a JSON-only instruction is the system prompt, and indented JSON is the user prompt. Link embeds the Item id/title, steps with numeric keys and optional criterion ids, and the whole product including roles/glossary. Its schema requires every non-judge step and every own-block concept score (integer 0..10), reason and nullable other_block_concept. with.threshold defaults to 9 and accepts integers 1..10. Binding embeds the product, Scenario steps, linked means, bindings and full Public interface; its schema requires every block:name key, an unambiguous boolean and reason. Raw model answers are saved as model-answer.txt, and the engine-derived canonical answer/context JSON is saved in both response.txt and result.yaml for the coverage census. Links live only in the current walk Item. Walking orders D prompts, then concept links, then other Q prompts, preserving file-position indices; template hosts omit the concept cells and keep their old order.
+        Render the configured template file verbatim through Go text/template with Sprig FuncMap and the engine toYaml override (yaml.v3 Marshal). Template literal bytes, leading/trailing newlines, trim markers, field order and conditional branches are authoritative; no final trim or YAML/Markdown escaping is applied to rendered prompts. Lists retain their input order; map ranges sort string keys. Dot paths below are reads, including methods and collection tests/ranges; [] denotes one ranged value. All strings are YAML-decoded values rather than their source spelling. The same role data reaches system and user templates. Structured concept Q protocols bypass these templates: the Q text plus a JSON-only instruction is the system prompt, and indented JSON is the user prompt. Link embeds the Item id/title, steps with numeric keys and optional criterion ids, and the whole product including roles/glossary. Its schema requires every non-judge step and every own-block concept score (integer 0..10), reason and nullable other_block_concept. with.threshold defaults to 9 and accepts integers 1..10. Binding embeds the product, Scenario steps, linked means, bindings and full Public interface; its schema requires every block:name key, an unambiguous boolean and reason. Raw model answers are saved as model-answer.txt, and the engine-derived canonical answer/context JSON is saved in both response.txt and result.yaml for the coverage census. Links live only in the current walk Item. Walking orders D prompts, then concept links, then other Q prompts, preserving file-position indices; a host declaring no concepts omits the concept cells and keeps its order.
       fields:
         Docs: &docs >-
           Checklist effective docs: a nonempty Prompt docs list replaces the checklist defaults; even an explicitly empty list falls back. Keys resolve through config documents.<key>; duplicate keys collapse in a map, unsatisfiable keys warn and are skipped after preflight. Template map range sorts string keys lexically, not checklist order; empty emits no documentation section.
@@ -73,7 +73,7 @@ architecture:
         Rationale: &rationale >-
           Checklist rationale scalar, YAML-decoded unchanged; empty omits the suffix, otherwise the template appends " SO THAT WE ENSURE " and this value without trimming.
         ResultPath: &validation-result-path >-
-          Run result path: run_dir is the cleaned paths.tmp_dir/date-pid join described in invocation.values.run_dir (./tmp yields tmp/<run>, relative; an absolute configured tmp_dir stays absolute); cassettes normalise its date-pid segment to {{RUN_DIR}}. Filename sanitising replaces each run of characters outside [A-Za-z0-9._-] with one hyphen; no other escaping. Format is <run_dir>/<index zero-padded to at least 2 digits>-<safe subject id>-checklist-<safe checklist-stem[/section-id]>-result.yaml. Index counts non-skipped Prompts from 1 in file section/Prompt order, before D Prompts are moved ahead of Q Prompts for walking. Subject id is Story id for us refine, lineage id for us apply, Registry key for scen check, registry for build steps whole-Registry coverage and a stable phrase hash (suite-prefixed if needed) for its body-writing Items, the stable failing-set Item id for build code (discovery BuildID for a singleton, failing-set otherwise). A build-code id begins with / and sanitises to a leading hyphen, producing 01--go-test-...; an empty id likewise leaves two hyphens.
+          Run result path: run_dir is the cleaned paths.tmp_dir/date-pid join described in invocation.values.run_dir (./tmp yields tmp/<run>, relative; an absolute configured tmp_dir stays absolute); cassettes normalise its date-pid segment to {{RUN_DIR}}. Filename sanitising replaces each run of characters outside [A-Za-z0-9._-] with one hyphen; no other escaping. Format is <run_dir>/<index zero-padded to at least 2 digits>-<safe subject id>-checklist-<safe checklist-stem[/section-id]>-result.yaml. Index counts non-skipped Prompts from 1 in file section/Prompt order, before D Prompts are moved ahead of Q Prompts for walking. Subject id is Story id for us refine, lineage id for us apply, Registry key for scen check, registry for build steps whole-Registry coverage and the concept's block and name (suite-prefixed if two suites hold it) for its body-writing Items, the stable failing-set Item id for build code (discovery BuildID for a singleton, failing-set otherwise). A build-code id begins with / and sanitises to a leading hyphen, producing 01--go-test-...; an empty id likewise leaves two hyphens.
         Structured: &structured >-
           Run boolean from the resolved role model CLI: true for both supported CLIs, claude and codex. Validation and generation pass the same populated data to both templates; appliers never receive this field.
         Subject: >-
@@ -1288,9 +1288,10 @@ architecture:
       technical: >-
         The product loader decodes concepts given/when/then lists of concept,
         means and terms, preserving block and declaration order. It refuses names
-        repeated within a block and malformed entries. At command startup both
-        catalogue and concepts keys, even null, are refused naming both. Template
-        hosts retain their old checks. Concepts declare one Public interface item
+        repeated within a block and malformed entries. At command startup a
+        retired catalogue key, even null, is refused naming concepts as its
+        replacement, as is architecture.phrases, naming architecture.concepts.
+        Concepts declare one Public interface item
         and kind of use per block, with a closed prose means covering every admitted
         variation, in declared terms and plain English; Given states a state.
         The definition's use as fixed by the wording decides the concept, never
@@ -1305,13 +1306,16 @@ architecture:
       technical: >-
         architecture.concepts is an optional list of concept, block, service,
         references and does, or intent replacing does and references for UI only.
-        The loader preserves duplicates. phrase-mappings checks all bindings:
+        The loader preserves duplicates. concept-bindings checks all bindings:
         a declared concept by name and block, a service with Public interface,
         one binding per concept and service, and every reference declared there.
         Each concept needs at least one binding, without choosing a Scenario's
         service before #257 links its steps. does states setup, calling or
-        observation and comparison by block. References use the Phrase mapping's
-        selectors. No step text is linked and no AI turn answers these checks.
+        observation and comparison by block. Each reference has exactly one
+        selector: command is an exact CLI commands key, file/log_record/outgoing_call
+        is a key under the corresponding files/log_records/outgoing_calls
+        extension, operation_id is an OpenAPI operationId, or element is a
+        declared UI page/region, role and accessible name. No step text is linked and no AI turn answers these checks.
       observed_by: >-
         scen check names the block and concept for unknown concepts, services,
         references, duplicates, incomplete entries and non-UI intent. Fix proposals
@@ -1320,29 +1324,7 @@ architecture:
         The existing fix ledger restores documents when a walk fails. The link and means word judgements run in us refine and scen check.
         build steps reuses the binding judgement after suite grouping, and its
         proposal turn reads the binding before the engine checks the patterns.
-        step-phrases still reports concept hosts unchecked; step-definitions holds
-        each Scenario step to one definition recording a declared concept of its block.
-    - term: Phrase mapping
-      technical: >-
-        architecture.phrases is an optional list of template and service pairs for template
-        hosts. Concept hosts use architecture.concepts and the same phrase-mappings
-        check over Concept bindings instead. Operation
-        entries carry references and does; intent replaces both, currently accepted only
-        for UI services. Each reference has exactly one selector: command is an exact CLI
-        commands key, file/log_record/outgoing_call is a key under the corresponding
-        files/log_records/outgoing_calls extension, operation_id is an OpenAPI operationId,
-        or element is a declared UI page/region, role and accessible name. The same Public
-        interface loader retains the declarations used for membership checks. The built-in
-        phrase-mappings check reads the Catalogue and architecture afresh, checks matched
-        phrases of claimed Scenarios by service, and reports missing, duplicate, incomplete
-        or undeclared mappings without AI. No Catalogue or Story claim passes unchecked;
-        model-run steps and steps not matched in their block are left to their own checks.
-      observed_by: >-
-        Run scen check and compare named phrase and reference findings, exit code and
-        zero AI turns. Under --fix the System Architect answers what the step does; the
-        proposal reaches the menu before apply, and only the architecture changes. Exit
-        leaves documents unchanged. The Word mapping still maps terms and stores no
-        link from a phrase to a step definition.
+        step-definitions holds each Scenario step to one definition recording a declared concept of its block.
     - term: Public interface
       technical: >-
         Each architecture.services entry optionally carries public_interface with kind,
@@ -1421,26 +1403,25 @@ architecture:
 
     - term: Item
       technical: >-
-        For a template host, BuildStepsItem carries one Catalogue Entry, service name and suite steps directory. Discovery orders suites by the first Registry Scenario id and phrases by Catalogue order, deduplicating each phrase and suite. Inventory includes phrases mapped to the suite's service or used by its Scenarios, including mapped unused phrases. The read-only command reports whole-Registry coverage with subject id registry. Under --fix the Item includes its skeleton location, complete YAML Specification context and latest per-Item findings, and uses a stable phrase hash as its artifact id, prefixed by the suite directory when multiple suites write the same phrase.
-        For a concept host, unboundConceptSuites deduplicates gap texts by suite and block, excluding judge: and llm:. Each linked concept and suite is an Item; all service bindings are judged before any skeleton, by the same binding Prompt loaded from scen-check and the same evaluator. The group protocol uses best and runner-up scores with the shared link threshold selector and ambiguity verdict. Malformed completeness or ranking, and output caps, crash. config.grouping_batch_texts defaults to 800 for claude-opus-5 and this format; equalStepBatches uses the fewest batches and sizes differ by at most one. A bare run then lists the Items. Under --fix the propose Q answers each Item's patterns, pattern, captures and serves, as schema-bound data from the concept, its terms' glossary entries, its binding, the Public interface, the concept's existing definition patterns and the grouped steps; catalogue.CheckPatterns holds it to every deterministic suite step in every block (compiles, one capture per name, each grouped step one pattern, no foreign step, no unused pattern), and a refusal is resent with the refused patterns and findings up to max_apply_attempts proposals, else ErrPatternProposal. Accepted patterns become stepskeleton.WriteConcept skeletons named from concept, suite and pattern, recording //truebdd:concept; stepskeleton.Concepts reads them back so pending ones resume as Items. conceptFixtures embeds the bound Scenarios' fixture inputs in the Item's context. A critique pattern finding (validate.CritiqueFinding.Pattern) runs the same propose Q again with the Item's own steps as its own, its own patterns refused and the critique's findings; stepskeleton.RemoveConcept deletes a dropped engine skeleton's file and literal registration before the new ones are written. Under --fix, loadConceptRun reads the propose Q, the product's concepts, glossary, Word mapping and Concept bindings before unboundConceptSuites' grouping, so a malformed term list stops before any turn. For build code on a concept host, codeConceptSpecifications gives each matched Scenario the concepts its deterministic steps link to: the //truebdd:concept record (stepskeleton.Concepts) of the one definition stepcoverage.LoadSuite binds the step to, naming a declared concept of the step's block, with that concept's binding for the Scenario's service; catalogue.SpecifyConcepts adds the glossary entries and Word mappings of their terms, and BuildCodeItem.Specification lists each concept once across the failing set.
+        BuildStepsItem is one concept and suite. unboundConceptSuites deduplicates gap texts by suite and block, excluding judge: and llm:. Each linked concept and suite is an Item; all service bindings are judged before any skeleton, by the same binding Prompt loaded from scen-check and the same evaluator. The group protocol uses best and runner-up scores with the shared link threshold selector and ambiguity verdict. Malformed completeness or ranking, and output caps, crash. config.grouping_batch_texts defaults to 800 for claude-opus-5 and this format; equalStepBatches uses the fewest batches and sizes differ by at most one. A bare run then lists the Items. Under --fix the propose Q answers each Item's patterns, pattern, captures and serves, as schema-bound data from the concept, its terms' glossary entries, its binding, the Public interface, the concept's existing definition patterns and the grouped steps; catalogue.CheckPatterns holds it to every deterministic suite step in every block (compiles, one capture per name, each grouped step one pattern, no foreign step, no unused pattern), and a refusal is resent with the refused patterns and findings up to max_apply_attempts proposals, else ErrPatternProposal. Accepted patterns become stepskeleton.WriteConcept skeletons named from concept, suite and pattern, recording //truebdd:concept; stepskeleton.Concepts reads them back so pending ones resume as Items. conceptFixtures embeds the bound Scenarios' fixture inputs in the Item's context. A critique pattern finding (validate.CritiqueFinding.Pattern) runs the same propose Q again with the Item's own steps as its own, its own patterns refused and the critique's findings; stepskeleton.RemoveConcept deletes a dropped engine skeleton's file and literal registration before the new ones are written. Under --fix, loadConceptRun reads the propose Q, the product's concepts, glossary, Word mapping and Concept bindings before unboundConceptSuites' grouping, so a malformed term list stops before any turn. For build code, codeConceptSpecifications gives each matched Scenario the concepts its deterministic steps link to: the //truebdd:concept record (stepskeleton.Concepts) of the one definition stepcoverage.LoadSuite binds the step to, naming a declared concept of the step's block, with that concept's binding for the Scenario's service; catalogue.SpecifyConcepts adds the glossary entries and Word mappings of their terms, and BuildCodeItem.Specification lists each concept once across the failing set.
       observed_by: >-
-        build-steps-list-001 observes the phrase and suite in each missing-definition log record. build-steps-writing-001 through 007 and the restored term-document, exit and codex-apply Scenarios pin body writing, verification and confinement. concept-bodies-001 through 005 pin #248's three cases, the fixture inputs in the body turns and the critique, a body requiring more than its binding sent back, and a pattern repaired through a new proposal.
+        concept-grouping-batches observes each concept and suite in its missing-definition log record. build-steps-writing-001 to -003 and -005 to -007 and the restored term-document, exit and codex-apply Scenarios pin body writing, verification and confinement. concept-bodies-001 through 005 pin #248's three cases, the fixture inputs in the body turns and the critique, a body requiring more than its binding sent back, and a pattern repaired through a new proposal.
 
     - term: red without the target
       technical: >-
-        buildStepsExecution checks convergence through the shared bounded walk. The Go runner selects package-qualified generated tests, disables result caching and parses their own JSON events. Each failing Scenario needs bddgo's numbered executed-step diagnostic. The copy omits all declared service paths, VCS metadata and scratch, retaining test command cwd and executable modes. Raw streams remain in the engine run artifacts. Green results return only Items written in this run whose phrase is used by that Scenario; apply counters persist across retries. TrueBDD's harness shares a LazyBinary build result, requests it inside definitions and stops root discovery at the copied Specification.
+        buildStepsExecution checks convergence through the shared bounded walk. The Go runner selects package-qualified generated tests, disables result caching and parses their own JSON events. Each failing Scenario needs bddgo's numbered executed-step diagnostic. The copy omits all declared service paths, VCS metadata and scratch, retaining test command cwd and executable modes. Raw streams remain in the engine run artifacts. Green results return only Items written in this run whose steps that Scenario uses; apply counters persist across retries. TrueBDD's harness shares a LazyBinary build result, requests it inside definitions and stops root discovery at the copied Specification.
       observed_by: >-
         build-steps-writing-001 pins both Scenarios red at their steps and the declared command on a normal run; 006 rejects harness bring-up as red; 007 injects a faulty writer body, observes the green finding and repairs it through the Fix loop. Unit tests pin skipped, missing, build and owning-package verdicts, the isolated copy, lazy build failure sharing and the unchanged attempt bound.
 
     - term: Step coverage
       technical: >-
-        build steps parses each Registry suite's steps package and constant-folds every registration pattern. A pattern it cannot fold or compile refuses startup. On a concept host Scan always runs first; its distinct unbound texts feed grouping. On a template host, without --fix ambiguous concrete bindings refuse startup; with --fix concrete Step coverage runs once after every Item is written and refuses ambiguities there. Absent steps directories contain zero definitions. Every Registry Scenario is examined; an empty gap list alone is insufficient. Missing definitions are listed once per Catalogue phrase and suite when mapped to its service or used by a suite Scenario, including mapped unused phrases. A phrase has a definition when their regular-expression languages overlap; concrete Registry steps are checked separately, so a partially covering definition still fails coverage. Pattern intersection traverses the paired finite automata, retaining anchors, word boundaries, Unicode and case folding; it does not guess sample slot values.
+        build steps parses each Registry suite's steps package and constant-folds every registration pattern. A pattern it cannot fold or compile refuses startup. Scan always runs first, and ambiguous concrete bindings refuse startup before grouping; its distinct unbound texts feed grouping, and a host declaring no concepts groups nothing, leaving them Step coverage's findings. Absent steps directories contain zero definitions. Every Registry Scenario is examined; an empty gap list alone is insufficient. Concrete Registry steps are checked against every definition, so a definition covering only part of a concept's steps still fails coverage.
       observed_by: >-
-        build-steps-coverage-001 through 005 and build-steps-list-001 name missing or ambiguous definitions without AI or runner starts. Unit tests cover unused phrases and pattern intersection.
+        build-steps-coverage-001 through 005 name missing or ambiguous definitions without AI or runner starts.
 
     - term: command
       technical: >-
-        The pipeline is us refine, us apply, build tests, build steps, build code. build tests only renders Registry test files: --fix writes stale files; without it stale files refuse startup. It never reads definitions, starts a test runner or dispatches an AI turn. build steps loads its build-steps checklist; on a template host, without --fix it lists missing phrases and checks coverage without AI or a runner. With --fix it writes all skeletons first, compiles, then writes each body through the shared Fix loop. Per-apply compilation, exact binding and pending-body checks and then a separate semantic critique of the body precede whole-suite coverage, generated-test listing and a run without every service path. A red result requires each named Scenario to fail at an executed definition; compilation, harness bring-up, skipped or missing results fail the check. Green Scenarios send their written phrase Items back together, retaining apply counts and the bounded walk. Once those checks pass, a separate AI critique turn reads the applied definition's body with the whole phrase meaning, Phrase mapping entry, term glossary entries and Word mappings, Public interface declaration and document, and every suite Scenario using the phrase. It checks the mapping by block (when calls its named operation, given sets up the stated state, then observes and compares as stated), assertions against the phrase meaning, and that the definition does not compute what it asserts. Failures name the definition and discrepancy and return to the same Fix loop within its configured attempts. The turn uses build-steps checklist engine.critique_model, falling back to engine.default_prompt_model, and states no time, turn, token or cost budget. The writer receives the complete phrase context, writes only protected tests and shared state, and reports interface_cannot_serve with phrase and lacks to stop immediately when the declared interface cannot serve the meaning. The quoted text, split into arguments at whitespace (no quoting, so
+        The pipeline is us refine, us apply, build tests, build steps, build code. build tests only renders Registry test files: --fix writes stale files; without it stale files refuse startup. It never reads definitions, starts a test runner or dispatches an AI turn. build steps loads its build-steps checklist, groups the suites' unbound steps into concept Items and, without --fix, lists them and checks coverage without a runner. With --fix the AI proposes each Item's patterns, the engine checks them and writes all skeletons first, compiles, then writes each Item's bodies through the shared Fix loop. Per-apply compilation, exact binding, concept-record and pending-body checks and then a separate semantic critique of the patterns and bodies precede whole-suite coverage, generated-test listing and a run without every service path. A red result requires each named Scenario to fail at an executed definition; compilation, harness bring-up, skipped or missing results fail the check. Green Scenarios send their written Items back together, retaining apply counts and the bounded walk. The critique turn reads the concept context the writer reads and judges each pattern against the concept and its bound steps, and each body against the binding by block (when calls its named operation, given puts the stated state in place, then observes and compares as stated), against what each step means, and for computing what it asserts. Failures name the definition and discrepancy and return to the proposal or to the same Fix loop within its configured attempts. The turn uses build-steps checklist engine.critique_model, falling back to engine.default_prompt_model, and states no time, turn, token or cost budget. The writer receives the complete concept context, writes only protected tests and shared state, and reports interface_cannot_serve with the concept and what it lacks to stop immediately when the declared interface cannot serve the meaning. The quoted text, split into arguments at whitespace (no quoting, so
         an argument cannot hold a space) and run as the engine binary's
         arguments in a subprocess; `{{CWD}}` in an argument stands for the
         run directory's absolute path, so a command can name a file of the
@@ -1714,7 +1695,7 @@ architecture:
         picking that suggestion. An optional `Your answer: ` prompt follows
         the options before the read; the original engine prints it, with
         indentation and blank lines, and labels Other as `0) Other (type custom answer)`.
-        For build code the Item is the whole failing set, zero Items when discovery is green. Its tests-pass D: Prompt passes exactly when every remaining member passed its latest run; failing findings group every still-failing id beside the whole first output using runtime-failure normalization. No validation model runs. The unchanged walker allowance counts applies on that set Item, including applied false, successful responses missing the confirmation, and started codex writers that exit non-zero or answer empty, and started Claude writer turns that exit non-zero, return error results or answer empty; allowance two still permits three applies before stopping. Each missing confirmation warns once with the result path and follows the not-applied rerun. Each started writer failure logs one WARN and follows the same rerun, preserving its files. Start failures, engine refusals before spawning, failures in other roles stay fatal. The next plan sees the rerun's remaining set and rebuilt grouped evidence, including build failures. The terminal attempt is rerun but still stops at the bound even if it passed. The proposed repair plan names changes, files and served tests. The plan and the writer get the matched Scenarios and what the Specification says their steps mean: the reached Catalogue phrases and their words on a template host, unchanged; on a concept host the concepts the steps' definitions record, with means, terms, binding and words. The writer gets the same set, Specification, edit roots and codex and Claude command forms, implements the service, tests each part and the whole set, then reports changes and observed passes without a stated time, turn, token or cost budget. The proposed
+        For build code the Item is the whole failing set, zero Items when discovery is green. Its tests-pass D: Prompt passes exactly when every remaining member passed its latest run; failing findings group every still-failing id beside the whole first output using runtime-failure normalization. No validation model runs. The unchanged walker allowance counts applies on that set Item, including applied false, successful responses missing the confirmation, and started codex writers that exit non-zero or answer empty, and started Claude writer turns that exit non-zero, return error results or answer empty; allowance two still permits three applies before stopping. Each missing confirmation warns once with the result path and follows the not-applied rerun. Each started writer failure logs one WARN and follows the same rerun, preserving its files. Start failures, engine refusals before spawning, failures in other roles stay fatal. The next plan sees the rerun's remaining set and rebuilt grouped evidence, including build failures. The terminal attempt is rerun but still stops at the bound even if it passed. The proposed repair plan names changes, files and served tests. The plan and the writer get the matched Scenarios and what the Specification says their steps mean: the concepts the steps' definitions record, with means, terms, binding and words. The writer gets the same set, Specification, edit roots and codex and Claude command forms, implements the service, tests each part and the whole set, then reports changes and observed passes without a stated time, turn, token or cost budget. The proposed
         fix is then followed by `[1] Apply this fix to working copy`, `[2]
         Refine the fix prompt` and `[3] Exit without applying`, on separate
         lines in that order. An optional `Your choice (1/2/3): ` prompt
@@ -1841,37 +1822,6 @@ architecture:
         `merged_steps` read back as identical YAML; a Scenario without
         `merged_steps` shares nothing.
 
-    - term: template
-      technical: >-
-        A catalogue entry's `template:` text, which the engine compiles into
-        one regular expression, anchored at both ends, that a step's whole
-        text, without its `and:` or `but:` key, must match: words as written,
-        case and spaces included; a quoted slot, which sits between literal
-        double quotes, as one or more characters other than a double quote;
-        a number slot as digits or `no`; a role slot as exactly one of the
-        names under the product document's `roles:` (Product Owner, System
-        Architect, Quality Engineer); a pattern slot, only ever the last
-        token and after a space, as the rest of the text, at least one
-        character; brackets with several alternatives as exactly one of them,
-        and brackets with one as that text or nothing; a backslash before
-        `{`, `}`, `[`, `]` or `\` as that character.
-      observed_by: >-
-        A step definition's pattern is its phrase's template written as an
-        anchored regular expression: it binds exactly the texts the template
-        matches, no fewer and no more, so a step the catalogue takes binds
-        and one it refuses binds nothing. Each slot is a capture group: a
-        quoted slot captures one or more characters other than a double
-        quote, so an empty quote binds nothing; a number slot captures
-        digits or `no`, which the definition reads as zero; a role slot
-        captures only the declared role names, so other words, however
-        capitalised, bind nothing, and which role it names changes nothing
-        the step does; a pattern slot captures the rest of the step
-        verbatim, quotes included, never split or unquoted, and the step
-        compiles it as the mapping of pattern says. Brackets with several
-        alternatives are a group that must match exactly one of them and is
-        never optional, so a step naming none of them binds nothing; brackets
-        with one alternative are optional.
-
     - term: Scenario
       technical: >-
         One entry under the Registry's `scenarios:`, keyed by its Scenario
@@ -1926,7 +1876,7 @@ architecture:
       technical: >-
         A registration in the Go package `steps/` beside a Scenario's test
         file: a regular expression, written as a string literal, paired with
-        the code run for every step whose whole text it matches. The engine writes registrations and functions through stepskeleton, using the same Catalogue compiler in capturing mode. Every slot is one group in template order, passed through the harness shape func(*State, []string) error. Pending bodies fail with the phrase and "step not written yet". The AI writes only the body, necessary imports and shared State. No service package is shared. Each phrase's function is named phrase<hex sha256 of the template> and lives in its own <name>.go in the suite's steps/ directory, so an interrupted walk finds it again. The registration is appended to the package's existing Register function; a package without one gets register.go, and one without a State type gets state.go with an empty State, each named true_bdd_register.go or true_bdd_state.go when that file name is already taken.
+        the code run for every step whose whole text it matches. The engine writes registrations and functions through stepskeleton.WriteConcept, from the patterns a concept's proposal supplied and the engine checked. Every capture is one group in pattern order, passed through the harness shape func(*State, []string) error. Pending bodies fail with the concept, its block and the pattern, and "step not written yet". The AI writes only the bodies, necessary imports and shared State. No service package is shared. Each function records its concept as //truebdd:concept <block> "<concept>", is named concept<hex sha256 of block, concept, suite and pattern> and lives in its own <name>.go in the suite's steps/ directory, so an interrupted walk finds it again. The registration is appended to the package's existing Register function; a package without one gets register.go, and one without a State type gets state.go with an empty State, each named true_bdd_register.go or true_bdd_state.go when that file name is already taken.
       observed_by: >-
         The step reads the source of every `.go` file directly in the quoted
         directory, without building it. The directory is held inside the run
