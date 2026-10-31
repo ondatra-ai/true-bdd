@@ -1,8 +1,9 @@
 # Story `us-apply`: `us apply` merging a Story into the Registry.
 #
 # The merge: criteria missing from the Registry added, duplicate entries
-# collapsed, keys kept across a reorder, and no Registry written whose
-# Scenario for a criterion is keyed apart from its lineage id. The startup refusals of a Story
+# collapsed, keys kept across a reorder, each new Scenario naming a service the
+# architecture declares, and no Registry written whose Scenario for a criterion is
+# keyed apart from its lineage id or names no declared service. The startup refusals of a Story
 # the command cannot merge are the Story `us-apply-refusals`; where the
 # Registry lives comes from `true-bdd.yaml` for every command alike, so
 # that Scenario is the `engine` Story's.
@@ -100,6 +101,44 @@ story:
             - then:
                 - the command exits with code 1
                 - stdout matches level=ERROR msg="Scenario keyed apart from its lineage" scenario=mcp-endpoint-get-refused lineage=mcp-endpoint-002-get-refused
+                - but: stdout does not match ALL CHECKS PASSED
+                - and: the file "docs/scenarios.yaml" is unchanged
+                - and: no file outside "tmp" changed
+                - and: the engine dispatched 2 AI turns
+        - id: 005-merge-names-declared-service
+          description: A criterion merged into a Registry whose architecture declares several services must name the service whose suite holds the test file it reuses, never an empty service
+          steps:
+            - given:
+                - the "us-apply-names-service" project tree
+                - and: the "us-apply" checklist is narrowed to its "already appear as a scenario in the registry" prompt
+                - the Product Owner's answer to every question is "1"
+            - when:
+                - the Product Owner runs "us apply calc-halve --fix"
+            - then:
+                - the command exits with code 0
+                - 'stdout matches msg=AC index=1 total=1'
+                - stdout matches ALL CHECKS PASSED!
+                - stdout matches APPLY COMPLETE
+                - and: the file "docs/scenarios.yaml" is modified
+                - and: exactly 1 scenario in "docs/scenarios.yaml" comes from acceptance criterion "calc-halve-001-even"
+                - and: the scenario from acceptance criterion "calc-halve-001-even" in "docs/scenarios.yaml" is keyed "calc-halve-001-even"
+                - and: 'the scenario from acceptance criterion "calc-halve-001-even" in "docs/scenarios.yaml" matches (?m)^service: "?calc"?$'
+                - and: 'the scenario from acceptance criterion "calc-halve-001-even" in "docs/scenarios.yaml" matches (?m)^path: "?tests/calc/calc_test\.go"?$'
+                - but: the file "docs/product/stories/calc-halve-a-number.yaml" is unchanged
+                - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
+                - and: stdout does not match One or more scenarios did not pass
+        - id: 006-undeclared-service-refused
+          description: '`us apply` must refuse to write the Registry, exiting 1 and leaving it unchanged, when a Scenario claiming one of the Story''s criteria leaves its `service` empty or names one the architecture does not declare, even though every Prompt passed, naming each such Scenario and its `service`'
+          steps:
+            - given:
+                - the "us-apply-undeclared-service" project tree
+                - and: the "us-apply" checklist is narrowed to its "already appear as a scenario in the registry" prompt
+            - when:
+                - the Product Owner runs "us apply calc-halve"
+            - then:
+                - the command exits with code 1
+                - 'stdout matches level=ERROR msg="Scenario names no declared service" scenario=calc-halve-001-even service="" declared=calc,neighbour'
+                - 'stdout matches level=ERROR msg="Scenario names no declared service" scenario=calc-halve-002-odd service=abacus declared=calc,neighbour'
                 - but: stdout does not match ALL CHECKS PASSED
                 - and: the file "docs/scenarios.yaml" is unchanged
                 - and: no file outside "tmp" changed

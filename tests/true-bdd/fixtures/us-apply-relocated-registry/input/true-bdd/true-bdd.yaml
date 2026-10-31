@@ -11,7 +11,7 @@
 # deltas are `paths.stories_dir` and `documents.scenarios_yaml` below.
 
 engine:
-  # Three named tiers. A checklist asks for a tier by name; this table
+  # Four named tiers. A checklist asks for a tier by name; this table
   # decides which CLI runs it and with which model, so retargeting a
   # role at a different provider is a config edit, not a code change.
   #
@@ -20,8 +20,9 @@ engine:
   #   model — passed through verbatim to that CLI's model flag
   models:
     xhigh: "claude:claude-fable-5"
-    high: "claude:claude-opus-4-8"
+    high: "claude:claude-opus-5"
     coder: "codex:gpt-6.1-sol"
+    quick: "claude:claude-sonnet-5"
   # Tier per AI role, used when neither a prompt nor its checklist names
   # one. A checklist overrides any of these in its own `engine:` block.
   default_prompt_model: high

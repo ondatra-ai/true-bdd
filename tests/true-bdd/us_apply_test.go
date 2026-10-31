@@ -167,6 +167,44 @@ func TestUsApply004KeyApartFromLineageRefused(t *testing.T) {
 	s.Done()
 }
 
+// us-apply-005-merge-names-declared-service: A criterion merged into a Registry whose architecture declares several services must name the service whose suite holds the test file it reuses, never an empty service
+func TestUsApply005MergeNamesDeclaredService(t *testing.T) {
+	s := scenarios.New(t, "us-apply-005-merge-names-declared-service")
+	s.Given(`the "us-apply-names-service" project tree`)
+	s.And(`the "us-apply" checklist is narrowed to its "already appear as a scenario in the registry" prompt`)
+	s.And(`the Product Owner's answer to every question is "1"`)
+	s.When(`the Product Owner runs "us apply calc-halve --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg=AC index=1 total=1`)
+	s.And(`stdout matches ALL CHECKS PASSED!`)
+	s.And(`stdout matches APPLY COMPLETE`)
+	s.And(`the file "docs/scenarios.yaml" is modified`)
+	s.And(`exactly 1 scenario in "docs/scenarios.yaml" comes from acceptance criterion "calc-halve-001-even"`)
+	s.And(`the scenario from acceptance criterion "calc-halve-001-even" in "docs/scenarios.yaml" is keyed "calc-halve-001-even"`)
+	s.And(`the scenario from acceptance criterion "calc-halve-001-even" in "docs/scenarios.yaml" matches (?m)^service: "?calc"?$`)
+	s.And(`the scenario from acceptance criterion "calc-halve-001-even" in "docs/scenarios.yaml" matches (?m)^path: "?tests/calc/calc_test\.go"?$`)
+	s.But(`the file "docs/product/stories/calc-halve-a-number.yaml" is unchanged`)
+	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
+	s.And(`stdout does not match One or more scenarios did not pass`)
+	s.Done()
+}
+
+// us-apply-006-undeclared-service-refused: `us apply` must refuse to write the Registry, exiting 1 and leaving it unchanged, when a Scenario claiming one of the Story's criteria leaves its `service` empty or names one the architecture does not declare, even though every Prompt passed, naming each such Scenario and its `service`
+func TestUsApply006UndeclaredServiceRefused(t *testing.T) {
+	s := scenarios.New(t, "us-apply-006-undeclared-service-refused")
+	s.Given(`the "us-apply-undeclared-service" project tree`)
+	s.And(`the "us-apply" checklist is narrowed to its "already appear as a scenario in the registry" prompt`)
+	s.When(`the Product Owner runs "us apply calc-halve"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Scenario names no declared service" scenario=calc-halve-001-even service="" declared=calc,neighbour`)
+	s.And(`stdout matches level=ERROR msg="Scenario names no declared service" scenario=calc-halve-002-odd service=abacus declared=calc,neighbour`)
+	s.But(`stdout does not match ALL CHECKS PASSED`)
+	s.And(`the file "docs/scenarios.yaml" is unchanged`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched 2 AI turns`)
+	s.Done()
+}
+
 // us-apply-refusals-001-missing-story-refused: `us apply` on a story number that has no file must be refused, and the refusal must say what filename it looked for
 func TestUsApplyRefusals001MissingStoryRefused(t *testing.T) {
 	s := scenarios.New(t, "us-apply-refusals-001-missing-story-refused")

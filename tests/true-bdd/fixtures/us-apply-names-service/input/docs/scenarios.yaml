@@ -1,0 +1,23 @@
+metadata:
+  title: "Calculator Registry"
+  version: "2.0"
+  last_updated: "2026-10-31"
+  description: "The calculator and its neighbour"
+
+scenarios:
+  calc-001-double:
+    description: Doubling a number returns twice its value
+    service: calc
+    path: tests/calc/calc_test.go
+    merged_steps:
+      given: [the calculator is installed]
+      when: [the Owner doubles 3]
+      then: [the result is 6]
+  neighbour-001-greets:
+    description: The neighbour greets the Owner who knocks
+    service: neighbour
+    path: tests/neighbour/neighbour_test.go
+    merged_steps:
+      given: [the neighbour is at home]
+      when: [the Owner knocks]
+      then: [the greeting is "hello"]

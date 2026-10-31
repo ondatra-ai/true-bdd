@@ -1,0 +1,41 @@
+metadata:
+  title: "Calculator Registry"
+  version: "2.0"
+  last_updated: "2026-10-31"
+  description: "The calculator and its neighbour"
+
+scenarios:
+  calc-001-double:
+    description: Doubling a number returns twice its value
+    service: calc
+    path: tests/calc/calc_test.go
+    merged_steps:
+      given: [the calculator is installed]
+      when: [the Owner doubles 3]
+      then: [the result is 6]
+  calc-halve-001-even:
+    description: Halving an even number returns half its value
+    service: ""
+    path: tests/calc/calc_test.go
+    last_updated: "2026-10-31"
+    user_stories:
+      - story: docs/product/stories/calc-halve-a-number.yaml
+        scenario_id: calc-halve-001-even
+        merge_date: "2026-10-31"
+    merged_steps:
+      given: [the calculator is installed]
+      when: [the Owner halves 6]
+      then: [the result is 3]
+  calc-halve-002-odd:
+    description: Halving an odd number rounds toward zero
+    service: abacus
+    path: tests/calc/calc_test.go
+    last_updated: "2026-10-31"
+    user_stories:
+      - story: docs/product/stories/calc-halve-a-number.yaml
+        scenario_id: calc-halve-002-odd
+        merge_date: "2026-10-31"
+    merged_steps:
+      given: [the calculator is installed]
+      when: [the Owner halves 7]
+      then: [the result is 3]

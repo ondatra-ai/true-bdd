@@ -1,0 +1,8 @@
+architecture:
+  services:
+    - name: calc
+      path: services/calc
+      language: go
+    - name: neighbour
+      path: services/neighbour
+      language: go
