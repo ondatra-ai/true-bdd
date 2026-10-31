@@ -29,7 +29,7 @@ inventing an operation. Return the same confirmation markers with:
 ```yaml
 applied: false
 interface_cannot_serve:
-  phrase: "when concept \"doubling\""
+  concept: "when concept \"doubling\""
   lacks: "<what the interface offers no way to set up or observe>"
 ```
 
@@ -95,8 +95,8 @@ definitions:
       pattern: ^the Owner doubles (-?\d+)$
       captures:
         - name: value
-          means: The whole number operand to double, as written in the step (an optional leading minus sign followed by digits); passed as the VALUE argument of the kept calculator program's double command.
-      serves: 'Serves the whole clause "Run the kept calculator program''s double command as a process from the host root with the step''s whole number and keep its integer stdout": the words "the Owner doubles" make it the doubling concept, and the single capture supplies the only value the body needs — the operand handed to `calc double` — while the body itself performs the run from the host root and keeps the integer stdout.'
+          means: The whole number the Owner doubles, as written in the step (an optional minus sign followed by digits); passed as the VALUE argument of the calculator's double command.
+      serves: 'Serves the whole of "Run the kept calculator program''s double command as a process from the host root with the step''s whole number and keep its integer stdout": the words "the Owner doubles" make it the doubling concept bound to the double command, and the single capture supplies the step''s whole number that the command is run with, the only value the body needs before it keeps the integer stdout.'
       steps:
         - text: the Owner doubles 3
           captures:
@@ -115,28 +115,24 @@ scenarios:
           - the result is 6
 
 
-For Item when-doubling: when concept "doubling" — Target suite: tests/calc/steps
+# Fix Prompt for Item when-doubling: when concept "doubling"
+
+## Target
+tests/calc/steps
+
+## Scope
+Change only the body of `concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b` in `tests/calc/steps/concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b.go`, plus that file's import block. Keep the `//truebdd:concept when "doubling"` record, the function name and the signature exactly as they are. Do not touch `tests/calc/steps/register.go`, `tests/calc/steps/state.go`, `tests/calc/calc_test.go`, the Specification or `services/calc`.
+
+## Shared state
+No State change is needed. `State.Program` is already set by the given step `installed`, and `State.Value` is already read by the then step `result`. This body consumes `Program` and writes `Value`.
 
 ## Required Changes
-
-### 1. `tests/calc/steps/state.go` — no change
-
-`State` already carries everything this body needs:
-
-- `Program` — the kept calculator program, set by the `given "installation"` step (`installed` in `tests/calc/steps/register.go`) to an absolute path.
-- `Value` — the integer the `then "result"` step (`result`) compares against.
-
-Do **not** add fields, package-level constants, variables, helper functions or types.
-
-### 2. `tests/calc/steps/concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b.go`
-
-Replace the whole file with the content below. Only the import block and the body of the existing function change: the `//truebdd:concept when "doubling"` record, the function name and the `(state *State, args []string) error` signature stay exactly as the engine wrote them, and the registration in `register.go` is untouched.
+Replace the whole contents of `tests/calc/steps/concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b.go` with:
 
 ```go
 package steps
 
 import (
-	"errors"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -145,42 +141,29 @@ import (
 
 //truebdd:concept when "doubling"
 func concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b(state *State, args []string) error {
-	if state.Program == "" {
-		return errors.New("the calculator is not installed")
-	}
 	const hostRoot = "../.."
+	if state.Program == "" {
+		return fmt.Errorf("the calculator is not installed")
+	}
 	command := exec.Command(state.Program, "double", args[0])
 	command.Dir = hostRoot
-	stdout, err := command.Output()
+	output, err := command.Output()
 	if err != nil {
-		var exit *exec.ExitError
-		if errors.As(err, &exit) {
-			return fmt.Errorf("run calc double %s: %w: %s", args[0], err, exit.Stderr)
-		}
-		return fmt.Errorf("run calc double %s: %w", args[0], err)
+		return fmt.Errorf("double %s: %w: %s", args[0], err, output)
 	}
-	doubled, err := strconv.Atoi(strings.TrimSpace(string(stdout)))
+	value, err := strconv.Atoi(strings.TrimSpace(string(output)))
 	if err != nil {
-		return fmt.Errorf("read the double stdout %q: %w", stdout, err)
+		return fmt.Errorf("double %s: unexpected stdout %q: %w", args[0], string(output), err)
 	}
-	state.Value = doubled
+	state.Value = value
 	return nil
 }
 ```
 
-## Why this body serves the binding
-
-- **Runs the operation through the declared Public interface only.** The binding says "Run the kept calculator program's double command as a process from the host root with the step's whole number and keep its integer stdout". `docs/architecture/calc-cli.yaml` declares `calc double VALUE` with one required integer argument `value` and a doubled integer on stdout, so the body invokes `state.Program double <args[0]>` as a process and nothing else.
-- **From the host root.** `installed` builds with `command.Dir = "../.."` (the host root, relative to the suite's `tests/calc` working directory) and keeps an absolute `state.Program`, so this When sets the same `Dir` and the absolute path still resolves.
-- **The capture is passed through verbatim.** `args[0]` is the single `value` capture of `^the Owner doubles (-?\d+)$`, handed to the command as written (optional leading minus plus digits) — no parsing, normalising or arithmetic on the operand.
-- **Never computes the product's result.** The body does no doubling. It only trims the trailing newline the interface documents and converts the program's own stdout to an int so the separate `then "result"` step can compare `state.Value` with the expected value.
-- **Observes failures instead of hiding them.** A non-zero exit (the interface's `'1': Invalid arguments`) or unparsable stdout is reported as a step error with the program's stderr/stdout attached; it is not turned into a value.
-
-## Do not change
-
-- `Register` in `tests/calc/steps/register.go`, including the pattern string.
-- The `installed` and `result` definitions.
-- `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, the Specification, or anything under `services/`.
+## Why this serves the binding
+- The binding says to run the kept calculator program's `double` command as a process from the host root with the step's whole number and keep its integer stdout. `state.Program` is the kept absolute program path from the `installation` given; `command.Dir = "../.."` is the host root, matching the `go build` invocation in `installed`; the single capture `args[0]` is passed verbatim as the declared `value` argument of `calc double VALUE`.
+- The declared interface says `calc double VALUE` prints the doubled integer and a newline on exit 0, so the body trims the newline and parses the integer, then keeps it in `state.Value` for the `then` step to compare. No doubling is computed in the test: the only arithmetic source is the product's stdout.
+- `hostRoot` stays a local constant inside the function body; no package-level constants, variables, helpers or types are added.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists and shared state. Preserve the engine's patterns, registrations,
@@ -199,6 +182,6 @@ inventing an operation. Return the same confirmation markers with:
 ```yaml
 applied: false
 interface_cannot_serve:
-  phrase: "when concept \"doubling\""
+  concept: "when concept \"doubling\""
   lacks: "<what the interface offers no way to set up or observe>"
 ```

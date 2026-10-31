@@ -5,44 +5,46 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 //truebdd:concept given "toolchain"
 func concept47f741283eda70d7a0d1d2aaa90ad59f9b70d6cc753b4652aced0fd106d24dd9(state *State, args []string) error {
 	name := args[0]
-
-	// The named fixture's Go stand-in, run in place of go. Step bodies run
-	// from the suite directory (tests/calc), the same assumption the
-	// registry path "../../docs/scenarios.yaml" already makes, so the
-	// fixture lives at fixtures/<name>/bin/go. Absolute, because the
-	// halving step runs the tool from the host root (cmd.Dir = "../..").
+	// The suite runs with tests/calc as its working directory, and the halving step
+	// runs the tool from the host root, so the stand-in must be an absolute path.
 	standIn, err := filepath.Abs(filepath.Join("fixtures", name, "bin", "go"))
 	if err != nil {
-		return fmt.Errorf("the %q toolchain: resolving its Go stand-in: %w", name, err)
+		return err
 	}
 	info, err := os.Stat(standIn)
 	if err != nil {
-		return fmt.Errorf("the %q toolchain: its Go stand-in %s: %w", name, standIn, err)
+		return fmt.Errorf("toolchain %q: %w", name, err)
 	}
-	if info.IsDir() {
-		return fmt.Errorf("the %q toolchain: its Go stand-in %s is a directory", name, standIn)
-	}
-	if info.Mode().Perm()&0o111 == 0 {
-		if err := os.Chmod(standIn, info.Mode().Perm()|0o111); err != nil {
-			return fmt.Errorf("the %q toolchain: making its Go stand-in %s runnable: %w", name, standIn, err)
+	if info.Mode()&0o111 == 0 {
+		if err := os.Chmod(standIn, info.Mode()|0o755); err != nil {
+			return fmt.Errorf("toolchain %q: %w", name, err)
 		}
 	}
-
-	// The stand-in runs the installed toolchain, which it reads from
-	// CALC_REAL_GO. Carry the inherited environment through unchanged so
-	// the Go build cache and temporary directory stay as the suite found
-	// them, and add only that one name.
+	// The stand-in defers to the installed go, which it expects in CALC_REAL_GO.
 	realGo, err := exec.LookPath("go")
 	if err != nil {
-		return fmt.Errorf("the %q toolchain: locating the installed go for CALC_REAL_GO: %w", name, err)
+		return fmt.Errorf("toolchain %q: no installed go: %w", name, err)
 	}
-
+	if realGo, err = filepath.Abs(realGo); err != nil {
+		return err
+	}
+	// Keep the inherited environment, including the Go build cache and temporary
+	// directory, and only name the real go for the stand-in.
+	inherited := os.Environ()
+	env := make([]string, 0, len(inherited)+1)
+	for _, entry := range inherited {
+		if strings.HasPrefix(entry, "CALC_REAL_GO=") {
+			continue
+		}
+		env = append(env, entry)
+	}
 	state.Go = standIn
-	state.Env = append(os.Environ(), "CALC_REAL_GO="+realGo)
+	state.Env = append(env, "CALC_REAL_GO="+realGo)
 	return nil
 }

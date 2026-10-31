@@ -47,7 +47,7 @@ func (s Set[I]) Names() []string {
 	return names
 }
 
-// Describe renders Names as one phrase: "none" for an empty set.
+// Describe renders Names as one comma-separated list, or "none" for an empty set.
 func (s Set[I]) Describe() string {
 	if len(s) == 0 {
 		return "none"

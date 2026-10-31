@@ -3,39 +3,39 @@
   "fixture": "build-steps-many",
   "files": [
     {
-      "path": "tests/calc/steps/concept08bdc8ba20fbc17f8cbea598ca6da5bdbc121817e637f18277eb83c75896fcf3.go",
-      "kind": "created",
-      "size": 1208,
-      "sha256": "3661887348e3e90816cdecc8c4f671afaed7b35dde86a93d5d28391dc72303b7",
-      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"os\"\n\t\"os/exec\"\n\t\"path/filepath\"\n\t\"strings\"\n)\n\n//truebdd:concept given \"installation\"\nfunc concept08bdc8ba20fbc17f8cbea598ca6da5bdbc121817e637f18277eb83c75896fcf3(state *State, args []string) error {\n\tconst (\n\t\thostRootFromSuite = \"../..\"\n\t\tcommandPackage    = \"./services/calc\"\n\t\tcommandName       = \"double\"\n\t\tprogramName       = \"calc\"\n\t\tbuildDirPattern   = \"calc-install-\"\n\t)\n\n\tif state.CalcBinary != \"\" {\n\t\treturn nil\n\t}\n\n\thostRoot, err := filepath.Abs(hostRootFromSuite)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"resolve the host root %q: %w\", hostRootFromSuite, err)\n\t}\n\n\tbuildDir, err := os.MkdirTemp(\"\", buildDirPattern)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"create a build directory under the host's tmp directory: %w\", err)\n\t}\n\n\tprogram := filepath.Join(buildDir, programName)\n\n\tbuild := exec.Command(\"go\", \"build\", \"-o\", program, commandPackage)\n\tbuild.Dir = hostRoot\n\tif output, err := build.CombinedOutput(); err != nil {\n\t\treturn fmt.Errorf(\n\t\t\t\"build the %q command from %s at the host root %s: %w: %s\",\n\t\t\tcommandName, commandPackage, hostRoot, err, strings.TrimSpace(string(output)),\n\t\t)\n\t}\n\n\tstate.HostRoot = hostRoot\n\tstate.CalcBinary = program\n\n\treturn nil\n}\n"
-    },
-    {
       "path": "tests/calc/steps/concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b.go",
       "kind": "created",
-      "size": 880,
-      "sha256": "bae5c67e11dd8c371873c8073b001e88eac0a1346ba56c60d30b44e13f439a7f",
-      "text": "package steps\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"doubling\"\nfunc concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b(state *State, args []string) error {\n\tconst commandName = \"double\"\n\n\tnumber := args[0]\n\n\tif state.CalcBinary == \"\" {\n\t\treturn fmt.Errorf(\n\t\t\t\"run the %q command with %s: the calculator program is not installed yet\",\n\t\t\tcommandName, number,\n\t\t)\n\t}\n\n\tstate.DoubleStdout = \"\"\n\n\tvar stdout, stderr bytes.Buffer\n\n\trun := exec.Command(state.CalcBinary, commandName, number)\n\trun.Dir = state.HostRoot\n\trun.Stdout = \u0026stdout\n\trun.Stderr = \u0026stderr\n\n\tif err := run.Run(); err != nil {\n\t\treturn fmt.Errorf(\n\t\t\t\"run %s %s %s from the host root %s: %w: %s\",\n\t\t\tstate.CalcBinary, commandName, number, state.HostRoot, err, strings.TrimSpace(stderr.String()),\n\t\t)\n\t}\n\n\tstate.DoubleStdout = stdout.String()\n\n\treturn nil\n}\n"
+      "size": 1363,
+      "sha256": "b3b4735a73cd2e8e1f306fa29c40eabf66fe69b28b54a8a04b480f75a7b8ca63",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"os\"\n\t\"os/exec\"\n\t\"path/filepath\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"doubling\"\nfunc concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b(state *State, args []string) error {\n\tnumber := args[0]\n\n\tif _, err := strconv.Atoi(number); err != nil {\n\t\treturn fmt.Errorf(\"the step's whole number %q is not an integer literal: %w\", number, err)\n\t}\n\n\tif state.CalcPath == \"\" {\n\t\treturn fmt.Errorf(\"no calculator program was kept by the installation Given; the doubling step needs it to run double %s\", number)\n\t}\n\n\thostRoot, err := filepath.Abs(filepath.Join(\"..\", \"..\"))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"locate the host root: %w\", err)\n\t}\n\n\trun := exec.Command(state.CalcPath, \"double\", number)\n\trun.Dir = hostRoot\n\trun.Env = os.Environ()\n\n\tvar stderr strings.Builder\n\trun.Stderr = \u0026stderr\n\n\tstdout, err := run.Output()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"run %s double %s from %s: %w: %s\", state.CalcPath, number, hostRoot, err, strings.TrimSpace(stderr.String()))\n\t}\n\n\tprinted := strings.TrimSpace(string(stdout))\n\tdoubled, err := strconv.Atoi(printed)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"%s double %s printed %q on stdout, which is not the doubled integer the Calculator CLI declares: %w\", state.CalcPath, number, printed, err)\n\t}\n\n\tstate.Doubled = doubled\n\tstate.DoubledSet = true\n\treturn nil\n}\n"
+    },
+    {
+      "path": "tests/calc/steps/conceptbef0930c9a09dec2b565c664833e27eb5e85810f2e50d51372923cf970aa997c.go",
+      "kind": "created",
+      "size": 1043,
+      "sha256": "52466170ddfc8054691633e97357638d0f1ef3aaaa0d46bb822263194ab4d40e",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"os\"\n\t\"os/exec\"\n\t\"path/filepath\"\n\t\"strings\"\n)\n\n//truebdd:concept given \"installation\"\nfunc conceptbef0930c9a09dec2b565c664833e27eb5e85810f2e50d51372923cf970aa997c(state *State, args []string) error {\n\thostRoot, err := filepath.Abs(filepath.Join(\"..\", \"..\"))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"locate the host root: %w\", err)\n\t}\n\n\tbuildDir, err := os.MkdirTemp(\"\", \"calc-install-\")\n\tif err != nil {\n\t\treturn fmt.Errorf(\"make a build directory under the host's tmp directory: %w\", err)\n\t}\n\n\tprogram := filepath.Join(buildDir, \"calc\")\n\n\tbuild := exec.Command(\"go\", \"build\", \"-o\", program, \"./services/calc\")\n\tbuild.Dir = hostRoot\n\tbuild.Env = os.Environ()\n\tif out, err := build.CombinedOutput(); err != nil {\n\t\treturn fmt.Errorf(\"build the calculator from ./services/calc at %s: %w: %s\", hostRoot, err, strings.TrimSpace(string(out)))\n\t}\n\n\tif _, err := os.Stat(program); err != nil {\n\t\treturn fmt.Errorf(\"the built calculator program is not at %s: %w\", program, err)\n\t}\n\n\tstate.CalcPath = program\n\treturn nil\n}\n"
     },
     {
       "path": "tests/calc/steps/concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e.go",
       "kind": "created",
-      "size": 1050,
-      "sha256": "2bc87838a67fe296e42811a704988626989a7a74e9dc5de88fa95102e1ae755a",
-      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept then \"result\"\nfunc concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e(state *State, args []string) error {\n\tconst commandName = \"double\"\n\n\texpectedText := args[0]\n\n\texpected, err := strconv.Atoi(expectedText)\n\tif err != nil {\n\t\treturn fmt.Errorf(\n\t\t\t\"read the expected whole number %q written in the step: %w\",\n\t\t\texpectedText, err,\n\t\t)\n\t}\n\n\tif state.DoubleStdout == \"\" {\n\t\treturn fmt.Errorf(\n\t\t\t\"observe the whole number the %q command printed, want %d: no stdout was kept from the %q command\",\n\t\t\tcommandName, expected, commandName,\n\t\t)\n\t}\n\n\tprinted := strings.TrimSpace(state.DoubleStdout)\n\n\tactual, err := strconv.Atoi(printed)\n\tif err != nil {\n\t\treturn fmt.Errorf(\n\t\t\t\"read a whole number from the stdout %q the %q command printed: %w\",\n\t\t\tstate.DoubleStdout, commandName, err,\n\t\t)\n\t}\n\n\tif actual != expected {\n\t\treturn fmt.Errorf(\n\t\t\t\"the %q command printed %d on stdout, want the result %d\",\n\t\t\tcommandName, actual, expected,\n\t\t)\n\t}\n\n\treturn nil\n}\n"
+      "size": 764,
+      "sha256": "b7af5184c113aed8e7255a07bd73c9a5b9c2936e4048ae6c7577fb8088a0c5a7",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"strconv\"\n)\n\n//truebdd:concept then \"result\"\nfunc concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e(state *State, args []string) error {\n\texpectedText := args[0]\n\n\texpected, err := strconv.Atoi(expectedText)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"the step's expected whole number %q is not an integer literal: %w\", expectedText, err)\n\t}\n\n\tif !state.DoubledSet {\n\t\treturn fmt.Errorf(\"no stdout of the calculator's double command was kept by the doubling When; the result step cannot observe the printed whole number it expects to be %d\", expected)\n\t}\n\n\tif state.Doubled != expected {\n\t\treturn fmt.Errorf(\"the calculator's double command printed %d on stdout, want %d\", state.Doubled, expected)\n\t}\n\n\treturn nil\n}\n"
     },
     {
       "path": "tests/calc/steps/register.go",
       "kind": "created",
-      "size": 448,
-      "sha256": "06c3faf82fa45e09de2e02a9e24c6d9255dfdbd0df36a6ea6f3ea41cb534d169",
-      "text": "package steps\n\nfunc Register(suite interface {\n\tStep(string, func(*State, []string) error)\n}) {\n\tsuite.Step(\"^the calculator is installed$\", concept08bdc8ba20fbc17f8cbea598ca6da5bdbc121817e637f18277eb83c75896fcf3)\n\n\tsuite.Step(\"^the Owner doubles (-?\\\\d+)$\", concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b)\n\n\tsuite.Step(\"^the result is (-?\\\\d+)$\", concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e)\n}\n"
+      "size": 461,
+      "sha256": "02ed5697663d784ba9e939b79aeb2cb6178b291fec5b5ef7e55dc18c6f70869c",
+      "text": "package steps\n\nfunc Register(suite interface {\n\tStep(string, func(*State, []string) error)\n}) {\n\tsuite.Step(\"^the calculator (?:is|has been) installed$\", conceptbef0930c9a09dec2b565c664833e27eb5e85810f2e50d51372923cf970aa997c)\n\n\tsuite.Step(\"^the Owner doubles (-?\\\\d+)$\", concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b)\n\n\tsuite.Step(\"^the result is (-?\\\\d+)$\", concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e)\n}\n"
     },
     {
       "path": "tests/calc/steps/state.go",
       "kind": "created",
-      "size": 425,
-      "sha256": "c9e3372921e5ef8d855ba0ccb7efefe9dd1ea32ab68adf07207982bf8c9d2af0",
-      "text": "package steps\n\ntype State struct {\n\t// CalcBinary is the absolute path of the calculator program the Given\n\t// built under the host's tmp directory.\n\tCalcBinary string\n\t// HostRoot is the absolute host root the calculator program is run from.\n\tHostRoot string\n\t// DoubleStdout is the stdout the calculator's double command printed,\n\t// kept exactly as the process wrote it (the integer and a newline).\n\tDoubleStdout string\n}\n"
+      "size": 520,
+      "sha256": "0e5b6def7e8f2d9116f277dbf135ec75ad19b6ec10dfd2ebfa11719686379bab",
+      "text": "package steps\n\n// State carries what one scenario's steps share.\ntype State struct {\n\t// CalcPath is the path of the calculator program built by the\n\t// installation Given, kept for the When to run.\n\tCalcPath string\n\n\t// Doubled is the integer the kept calculator program's double\n\t// command printed on stdout, kept by the doubling When for the\n\t// result Then to observe.\n\tDoubled int\n\n\t// DoubledSet records that the doubling When ran the double command\n\t// and kept its integer stdout in Doubled.\n\tDoubledSet bool\n}\n"
     }
   ]
 }

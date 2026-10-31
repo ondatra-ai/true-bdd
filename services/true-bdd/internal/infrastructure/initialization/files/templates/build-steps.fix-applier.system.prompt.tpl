@@ -27,7 +27,7 @@ inventing an operation. Return the same confirmation markers with:
 ```yaml
 applied: false
 interface_cannot_serve:
-  phrase: {{ .Subject.Label | printf "%q" }}
+  concept: {{ .Subject.Label | printf "%q" }}
   lacks: "<what the interface offers no way to set up or observe>"
 ```
 

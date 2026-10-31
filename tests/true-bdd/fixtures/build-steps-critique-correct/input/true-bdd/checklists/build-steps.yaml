@@ -12,7 +12,7 @@ sections:
     validation_prompts:
       - D: step-coverage
         rationale: Each concept Item needs its compiled definitions with their bodies written; the whole suite is covered and listed after all Items.
-        F: Write only this phrase's body using its Phrase mapping and declared Public interface, preserving the engine's registration and signature.
+        F: Write only the bodies of this concept's step definitions in this suite, doing what its Concept binding says through the declared Public interface, preserving the engine's registrations and signatures.
 
   - id: concept-grouping
     name: Concept grouping

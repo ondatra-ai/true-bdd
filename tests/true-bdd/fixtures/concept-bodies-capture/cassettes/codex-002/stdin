@@ -29,7 +29,7 @@ inventing an operation. Return the same confirmation markers with:
 ```yaml
 applied: false
 interface_cannot_serve:
-  phrase: "when concept \"halving\""
+  concept: "when concept \"halving\""
   lacks: "<what the interface offers no way to set up or observe>"
 ```
 
@@ -104,8 +104,8 @@ definitions:
       pattern: ^the Owner halves (-?\d+)$
       captures:
         - name: number
-          means: The whole number the Owner halves, captured in full including every digit and an optional leading minus sign, so positive, zero and negative values all arrive intact (6, 64, -7); it is passed verbatim as the VALUE argument of the declared halve command.
-      serves: 'Serves the whole does clause: "Run the declared halve command as a process with the step''s whole number and keep its integer stdout as the result." The single capture supplies the step''s whole number as the command''s argument, and the words "the Owner halves" state that this is the halving concept rather than any other calculator operation. One pattern suffices because the binding names exactly one command and one action.'
+          means: The whole number the Owner halves, captured in full including any leading minus sign, so positive, zero and negative values all reach the body as written in the step (6, 64, -7).
+      serves: 'Serves the whole of "Run the declared halve command as a process with the step''s whole number and keep its integer stdout as the result": the one capture is the step''s number, passed as the halve command''s required integer value argument, and the words "the Owner halves" fix the step to the halving concept.'
       steps:
         - text: the Owner halves 6
           captures:
@@ -149,36 +149,25 @@ scenarios:
 # Fix Prompt for Item when-halving: when concept "halving"
 
 ## Target
-`tests/calc/steps`
+tests/calc/steps
 
-## Scope
-Only ONE file changes: `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go` (its import block and the single function body).
+## Summary
 
-Do NOT touch:
-- `tests/calc/steps/register.go` (registration and the pattern `^the Owner halves (-?\\d+)$` are already correct and engine-owned — the stale `concept8c83e30...` file named in the failure report no longer exists; nothing to delete)
-- `tests/calc/steps/definitions.go` (the `then` "result" body already compares `state.Result`)
-- `tests/calc/steps/state.go` — **no shared-state change is needed**: `State{ Result int }` already carries exactly what this When must hand to the Then
-- `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, `docs/**`, `services/**`
+Only one change is needed: write the body of the already-registered `when` definition for the `halving` concept. The engine's pattern in the current tree is already the correct whole-signed-integer capture (`^the Owner halves (-?\d+)$` in `tests/calc/steps/register.go`), so nothing about registrations, patterns, signatures or the `//truebdd:concept` record may change. The earlier `concept8c83e30...` file with the truncating `(-?\d)\d*` pattern is no longer present; do not recreate it.
 
-Keep the `//truebdd:concept when "halving"` record, the function name and the `(state *State, args []string) error` signature byte-for-byte as they are.
+No shared-state change is needed: `tests/calc/steps/state.go` already carries `State{ Result int }`, which is exactly what the existing `then` definition (`result` in `tests/calc/steps/definitions.go`) observes. Leave `state.go`, `register.go`, `definitions.go`, `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, the Specification and `services/calc` untouched.
 
-## What the body must do
-From the binding ("Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result") and the declared CLI document (`docs/architecture/calc-cli.yaml`, command `halve`: "Run `go run ./services/calc halve VALUE` from the host root; stdout is VALUE halved and rounded toward zero, as an integer, and a newline"):
+## Required Changes
 
-1. Take `args[0]` — the full captured whole number, including any leading minus — and pass it **verbatim** as the `VALUE` argument. Never parse, negate, divide or otherwise touch the number; the product does the halving.
-2. Run the command as a process with the working directory set to the host root. The generated test binary runs in `tests/calc`, so the host root is `../..` and the package path stays `./services/calc` exactly as the interface spells it.
-3. On a non-zero exit (the interface's `'1': Invalid arguments`) or a launch failure, return an error that quotes the step's number and any captured stderr; do not store a result.
-4. Trim the trailing newline from stdout, convert it with `strconv.Atoi`, and store it in `state.Result`. If stdout is not an integer, return an error quoting the raw stdout.
-5. Keep both path constants as `const` declarations **inside** the function body — add no package-level constant, variable, type or helper.
+### 1. `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go`
 
-## Exact replacement file content
-Replace the entire contents of `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go` with:
+Replace the whole file with the following. The package clause, the `//truebdd:concept when "halving"` record and the function name/signature are kept verbatim; only the import block and the function body change.
 
 ```go
 package steps
 
 import (
-	"errors"
+	"bytes"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -187,39 +176,43 @@ import (
 
 //truebdd:concept when "halving"
 func concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {
-	const (
-		hostRoot    = "../.."
-		calcPackage = "./services/calc"
-	)
+	// The declared CLI runs from the host root; the suite's tests run in
+	// tests/calc, the same base the registry path "../../docs/scenarios.yaml"
+	// is written against.
+	const hostRoot = "../.."
+	const packagePath = "./services/calc"
 
 	number := args[0]
+	if _, err := strconv.Atoi(number); err != nil {
+		return fmt.Errorf("the Owner halves %q: not a whole number: %w", number, err)
+	}
 
-	cmd := exec.Command("go", "run", calcPackage, "halve", number)
+	cmd := exec.Command("go", "run", packagePath, "halve", number)
 	cmd.Dir = hostRoot
-
-	stdout, err := cmd.Output()
-	if err != nil {
-		var exit *exec.ExitError
-		if errors.As(err, &exit) {
-			return fmt.Errorf("halve %s: %w: %s", number, err, strings.TrimSpace(string(exit.Stderr)))
-		}
-		return fmt.Errorf("halve %s: %w", number, err)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("go run %s halve %s: %w: %s", packagePath, number, err, strings.TrimSpace(stderr.String()))
 	}
 
-	halved, err := strconv.Atoi(strings.TrimSpace(string(stdout)))
+	result, err := strconv.Atoi(strings.TrimSpace(stdout.String()))
 	if err != nil {
-		return fmt.Errorf("halve %s: stdout %q is not an integer: %w", number, string(stdout), err)
+		return fmt.Errorf("go run %s halve %s: stdout %q is not an integer: %w", packagePath, number, stdout.String(), err)
 	}
 
-	state.Result = halved
+	state.Result = result
 	return nil
 }
 ```
 
-## Notes for the applier
-- `cmd.Output()` must be used without assigning `cmd.Stderr`; `exec.ExitError.Stderr` supplies the captured stderr for the error message. Setting `cmd.Stderr` as well would make `Output` fail with "exec: Stderr already set".
-- `go run` treats everything after the package path as the program's own arguments, so a negative value such as `-7` reaches the calculator intact rather than being read as a `go run` flag.
-- Nothing else in the suite needs editing; do not run a scenario or the suite to verify — the engine owns compilation and the whole-suite checks.
+## Why this body
+
+- The binding says: run the declared `halve` command as a process with the step's whole number and keep its integer stdout as the result. The body does exactly that — `go run ./services/calc halve VALUE` from the host root, as the `halve` command is described in `docs/architecture/calc-cli.yaml`.
+- `args[0]` is the pattern's single `number` capture, taken in full including any leading minus sign, so `6`, `64` and `-7` all reach the command as written in the step. It is passed straight through as the command's required integer `value` argument; the `strconv.Atoi` call only guards that the capture really is a whole number and is never used to compute anything.
+- Nothing halves anything here: the integer stored in `state.Result` is only what the command printed on stdout, trimmed of its newline. The comparison with the expected value stays in the existing `then` definition.
+- A non-zero exit (the interface's `'1'` response) and non-integer stdout both fail the step with the command's stderr or stdout quoted, rather than silently leaving a stale result.
+- Every constant (`hostRoot`, `packagePath`) stays inside the function body; no package-level constants, variables, helpers or types are added.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists and shared state. Preserve the engine's patterns, registrations,
@@ -238,6 +231,6 @@ inventing an operation. Return the same confirmation markers with:
 ```yaml
 applied: false
 interface_cannot_serve:
-  phrase: "when concept \"halving\""
+  concept: "when concept \"halving\""
   lacks: "<what the interface offers no way to set up or observe>"
 ```

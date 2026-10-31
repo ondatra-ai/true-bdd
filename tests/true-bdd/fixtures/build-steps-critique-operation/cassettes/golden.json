@@ -5,9 +5,9 @@
     {
       "path": "tests/calc/steps/concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b.go",
       "kind": "created",
-      "size": 809,
-      "sha256": "e53ce618c1882eedf1a78f136e582339d082ca4ecba9e42758dbf520135974f4",
-      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"doubling\"\nfunc concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b(state *State, args []string) error {\n\tif state.Program == \"\" {\n\t\treturn fmt.Errorf(\"double %s: the calculator is not installed\", args[0])\n\t}\n\tcommand := exec.Command(state.Program, \"double\", args[0])\n\tcommand.Dir = \"../..\"\n\tvar failure strings.Builder\n\tcommand.Stderr = \u0026failure\n\toutput, err := command.Output()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"double %s: %w: %s\", args[0], err, strings.TrimSpace(failure.String()))\n\t}\n\tvalue, err := strconv.Atoi(strings.TrimSpace(string(output)))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"double %s: unexpected stdout %q: %w\", args[0], string(output), err)\n\t}\n\tstate.Value = value\n\treturn nil\n}\n"
+      "size": 911,
+      "sha256": "852ca2298ea1ec861188b798508846da50631d1e7a1afb956f6b6b9f2b7b72c5",
+      "text": "package steps\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"doubling\"\nfunc concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b(state *State, args []string) error {\n\tconst hostRoot = \"../..\"\n\tif state.Program == \"\" {\n\t\treturn fmt.Errorf(\"double %s: the calculator is not installed\", args[0])\n\t}\n\tcommand := exec.Command(state.Program, \"double\", args[0])\n\tcommand.Dir = hostRoot\n\tstdout, err := command.Output()\n\tif err != nil {\n\t\tvar exit *exec.ExitError\n\t\tif errors.As(err, \u0026exit) {\n\t\t\treturn fmt.Errorf(\"run calc double %s: %w: %s\", args[0], err, exit.Stderr)\n\t\t}\n\t\treturn fmt.Errorf(\"run calc double %s: %w\", args[0], err)\n\t}\n\tvalue, err := strconv.Atoi(strings.TrimSpace(string(stdout)))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"read the doubled integer from calc double %s stdout %q: %w\", args[0], stdout, err)\n\t}\n\tstate.Value = value\n\treturn nil\n}\n"
     },
     {
       "path": "tests/calc/steps/injected",

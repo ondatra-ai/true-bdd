@@ -5,9 +5,9 @@
     {
       "path": "tests/calc/steps/concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b.go",
       "kind": "created",
-      "size": 891,
-      "sha256": "7c478d1ad1604b316d6fe89c7f014daf011799756af070f3e785daea73a555c6",
-      "text": "package steps\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"doubling\"\nfunc concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b(state *State, args []string) error {\n\tif state.Program == \"\" {\n\t\treturn errors.New(\"the calculator is not installed: no kept program to run\")\n\t}\n\tcommand := exec.Command(state.Program, \"double\", args[0])\n\tcommand.Dir = \"../..\"\n\tstdout, err := command.Output()\n\tif err != nil {\n\t\tvar exit *exec.ExitError\n\t\tif errors.As(err, \u0026exit) {\n\t\t\treturn fmt.Errorf(\"run calc double %s: %w: %s\", args[0], err, exit.Stderr)\n\t\t}\n\t\treturn fmt.Errorf(\"run calc double %s: %w\", args[0], err)\n\t}\n\tvalue, err := strconv.Atoi(strings.TrimSpace(string(stdout)))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"read the doubled integer of calc double %s from stdout %q: %w\", args[0], stdout, err)\n\t}\n\tstate.Value = value\n\treturn nil\n}\n"
+      "size": 706,
+      "sha256": "4d687a543faaf73f955621a4d951ee5c1f3893582457e14e952c31c173fa099d",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"doubling\"\nfunc concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b(state *State, args []string) error {\n\tif state.Program == \"\" {\n\t\treturn fmt.Errorf(\"the calculator is not installed\")\n\t}\n\tcommand := exec.Command(state.Program, \"double\", args[0])\n\tcommand.Dir = \"../..\"\n\toutput, err := command.Output()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"run %s double %s: %w\", state.Program, args[0], err)\n\t}\n\tvalue, err := strconv.Atoi(strings.TrimSpace(string(output)))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"read the doubled integer from %q: %w\", string(output), err)\n\t}\n\tstate.Value = value\n\treturn nil\n}\n"
     },
     {
       "path": "tests/calc/steps/register.go",

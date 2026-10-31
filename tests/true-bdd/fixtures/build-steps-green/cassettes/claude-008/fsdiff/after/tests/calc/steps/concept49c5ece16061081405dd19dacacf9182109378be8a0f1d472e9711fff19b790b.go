@@ -9,31 +9,32 @@ import (
 
 //truebdd:concept when "doubling"
 func concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b(state *State, args []string) error {
-	const hostRoot = "../.."
-	const commandPath = "./services/calc"
-	const commandName = "double"
+	const (
+		hostRoot    = "../.."
+		servicePath = "./services/calc"
+		command     = "double"
+	)
 
-	value := strings.TrimSpace(args[0])
-	if _, err := strconv.Atoi(value); err != nil {
-		return fmt.Errorf("the Owner doubles %s: not a whole number: %w", args[0], err)
+	value := args[0]
+
+	run := exec.Command("go", "run", servicePath, command, value)
+	run.Dir = hostRoot
+	var stderr strings.Builder
+	run.Stderr = &stderr
+
+	stdout, err := run.Output()
+	if err != nil {
+		return fmt.Errorf("go run %s %s %s in %s: %w: %s",
+			servicePath, command, value, hostRoot, err, strings.TrimSpace(stderr.String()))
 	}
 
-	cmd := exec.Command("go", "run", commandPath, commandName, value)
-	cmd.Dir = hostRoot
-	var stdout, stderr strings.Builder
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("go run %s %s %s in %s: %w: %s", commandPath, commandName, value, hostRoot, err, strings.TrimSpace(stderr.String()))
-	}
-
-	printed := strings.TrimSpace(stdout.String())
+	printed := strings.TrimSpace(string(stdout))
 	doubled, err := strconv.Atoi(printed)
 	if err != nil {
-		return fmt.Errorf("go run %s %s %s: stdout %q is not an integer: %w", commandPath, commandName, value, printed, err)
+		return fmt.Errorf("%s %s printed %q, want an integer on stdout: %w",
+			command, value, printed, err)
 	}
 
-	state.Program = commandPath
 	state.Value = doubled
 	return nil
 }

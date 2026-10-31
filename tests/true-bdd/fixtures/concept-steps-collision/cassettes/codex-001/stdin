@@ -29,7 +29,7 @@ inventing an operation. Return the same confirmation markers with:
 ```yaml
 applied: false
 interface_cannot_serve:
-  phrase: "when concept \"halving\""
+  concept: "when concept \"halving\""
   lacks: "<what the interface offers no way to set up or observe>"
 ```
 
@@ -103,9 +103,9 @@ definitions:
       file: tests/calc/steps/concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb.go
       pattern: ^the Owner halves (-\d+)$
       captures:
-        - name: value
-          means: The step's negative whole number to halve, as written (a leading minus sign followed by digits), passed as the halve command's value argument.
-      serves: 'Serves the whole does clause: "Run the declared halve command as a process with the step''s whole number and keep its integer stdout as the result" — the number is the only value the body needs, since the command (halve) and the keeping of integer stdout are fixed by the binding; the negative form is kept distinct from the existing definition ^the Owner halves (\d+)$, which already binds the non-negative steps.'
+        - name: number
+          means: The negative whole number the Owner halves, captured with its leading minus sign so the body has the signed value verbatim; passed to the declared halve command as its value argument.
+      serves: 'Serves the whole of the does: the captured signed number is the step''s whole number that the body passes to the declared halve command run as a process, keeping that process''s integer stdout as the result. The pattern is restricted to the minus-signed form because the unsigned form is already bound by the existing definition ^the Owner halves (\d+)$.'
       steps:
         - text: the Owner halves -7
           captures:
@@ -122,43 +122,48 @@ scenarios:
           - the result is -3
 
 
+=== FILE_START: tmp/{{RUN_DIR}}/01-when-halving-fix-prompts.md ===
 # Fix Prompt for Item when-halving: when concept "halving"
 
 ## Target
-`tests/calc/steps`
+tests/calc/steps
 
 ## Summary
-The engine already registered `^the Owner halves (-\\d+)$` to `concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb` in `tests/calc/steps/register.go`. Only the body of that function must change. The suite already owns the When helper that runs the declared `halve` command as a process and keeps its integer stdout in `State.Result` (`halveNumber` in `tests/calc/steps/definitions.go`), and the capture `value` arrives in `args[0]` already written as the command expects it (a leading minus sign followed by digits). So the body delegates to that helper — no new parsing, no sign handling, no arithmetic. No shared-state change is needed: `State.Result` already carries the command's integer stdout for the matching Then step.
+The suite already owns a helper that does exactly what the `halving` binding declares: `halveNumber` in `tests/calc/steps/definitions.go` runs the declared `halve` command as a process (`go run ./services/calc halve VALUE` with `cmd.Dir = "../.."`, i.e. the host root, as the Public interface document states) and keeps its trimmed integer stdout in `state.Result`. The new definition covers only the minus-signed wording of the same concept, and its single capture `number` arrives in `args[0]` with its leading minus sign verbatim — exactly the shape `halveNumber` passes through as the command's `value` argument.
+
+So the body is a delegation to that existing helper. Nothing is computed in the step: the halved value comes only from the command's stdout.
+
+No shared state change is required — `State.Result int` in `tests/calc/steps/state.go` already carries the result that the existing `^the result is (-?\d+)$` Then step observes, and that Then pattern already accepts negative expected values.
 
 ## Required Changes
 
-### 1. `tests/calc/steps/concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb.go`
+### 1. Replace the body in `tests/calc/steps/concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb.go`
 
-Replace the whole file with exactly this content. The `//truebdd:concept` record, the function name and the signature are unchanged; the `fmt` import is dropped because the new body no longer uses it.
+Replace the `return fmt.Errorf("step not written yet: ...")` line with a delegation to `halveNumber`, and drop the now-unused `fmt` import from this file (the only import change needed; `halveNumber` lives in the same `steps` package, so no new import is required).
+
+Write the file so its full contents are exactly:
 
 ```go
 package steps
 
 //truebdd:concept when "halving"
 func concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb(state *State, args []string) error {
-	// args[0] is the step's negative whole number, as written, and is passed
-	// straight through as the halve command's value argument. halveNumber runs
-	// the declared command as a process and keeps its integer stdout in
-	// state.Result for the Then step to observe.
 	return halveNumber(state, args)
 }
 ```
 
-## Do Not Change
-- `tests/calc/steps/register.go` — the registration and pattern stay exactly as the engine wrote them.
-- `tests/calc/steps/definitions.go` — `halveNumber` and `result` are reused as-is, not edited or duplicated.
-- `tests/calc/steps/state.go` — no new field is required.
-- `tests/calc/calc_test.go`, the scenarios package, the Specification and `services/calc` — untouched.
+### 2. Change nothing else
 
-## Notes
-- No package-level constant, variable, helper or type is added; the only edit outside the selected function body is removing that file's now-unused `fmt` import.
-- The definition never computes the half itself; the rounding-toward-zero behaviour stays entirely inside the `halve` command declared in `docs/architecture/calc-cli.yaml`.
-- Do not run the scenario or try to make it green; the engine owns compilation and the whole-suite checks.
+- Keep the `//truebdd:concept when "halving"` record, the function name and the `func(*State, []string) error` signature exactly as the engine wrote them.
+- Do not touch `tests/calc/steps/register.go` — the registration `suite.Step("^the Owner halves (-\\d+)$", concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb)` and the pattern are the engine's.
+- Do not modify `tests/calc/steps/definitions.go` (`halveNumber`, `result`), `tests/calc/steps/state.go`, `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, the Specification or any service code.
+- Add no package-level constants, variables, helpers or types.
+
+## Why this serves the binding
+- **does:** "Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result." — `halveNumber` runs the process and stores `strconv.Atoi(strings.TrimSpace(stdout))` into `state.Result`; passing `args` through hands it the step's signed whole number unchanged.
+- **Word mapping:** `number` is the integer argument and stdout of the calculator `halve` command; the body supplies the argument and keeps the stdout, and the separate Then step does the comparison.
+- The When step performs no arithmetic of its own, so the rounding-toward-zero behaviour described in the concept stays entirely the product's to demonstrate.
+=== FILE_END ===
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists and shared state. Preserve the engine's patterns, registrations,
@@ -177,6 +182,6 @@ inventing an operation. Return the same confirmation markers with:
 ```yaml
 applied: false
 interface_cannot_serve:
-  phrase: "when concept \"halving\""
+  concept: "when concept \"halving\""
   lacks: "<what the interface offers no way to set up or observe>"
 ```

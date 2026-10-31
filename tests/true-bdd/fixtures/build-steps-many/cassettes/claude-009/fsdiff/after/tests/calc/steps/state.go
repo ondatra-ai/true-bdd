@@ -1,9 +1,8 @@
 package steps
 
+// State carries what one scenario's steps share.
 type State struct {
-	// CalcBinary is the absolute path of the calculator program the Given
-	// built under the host's tmp directory.
-	CalcBinary string
-	// HostRoot is the absolute host root the calculator program is run from.
-	HostRoot string
+	// CalcPath is the path of the calculator program built by the
+	// installation Given, kept for the When to run.
+	CalcPath string
 }
