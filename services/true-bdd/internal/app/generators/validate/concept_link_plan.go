@@ -4,27 +4,53 @@ import (
 	"maps"
 	"slices"
 	"strconv"
+	"strings"
+
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/catalogue"
 )
 
-// linkPlan is a walk's distinct steps in the fewest balanced batches of at most the shared batch size.
+// linkPlan is a walk's distinct steps in the fewest balanced batches of at most the shared batch size, each
+// step with the descriptions of the walked Scenarios using it.
 type linkPlan struct {
-	batches [][]conceptStep
-	batchOf map[string]int
+	batches      [][]conceptStep
+	batchOf      map[string]int
+	descriptions map[string][]string
+}
+
+// sharedLinkStep is one step of a shared link turn: its block and text, and the descriptions of its Scenarios.
+type sharedLinkStep struct {
+	Key          string          `json:"key"`
+	Block        catalogue.Block `json:"block"`
+	Text         string          `json:"text"`
+	Descriptions []string        `json:"descriptions"`
 }
 
 func newLinkPlan(subjects []any, size int) linkPlan {
 	unique := make(map[string]conceptStep)
+	plan := linkPlan{batchOf: make(map[string]int), descriptions: make(map[string][]string)}
 
 	for _, subject := range subjects {
+		description := strings.TrimSpace(conceptItemTitle(subject))
+
 		for _, step := range conceptSteps(subject) {
-			if !step.judged() {
-				unique[step.identity()] = step
+			if step.judged() {
+				continue
+			}
+
+			unique[step.identity()] = step
+
+			known := plan.descriptions[step.identity()]
+			if description != "" && !slices.Contains(known, description) {
+				plan.descriptions[step.identity()] = append(known, description)
 			}
 		}
 	}
 
+	for _, known := range plan.descriptions {
+		slices.Sort(known)
+	}
+
 	ordered := rekeyedSteps(unique)
-	plan := linkPlan{batchOf: make(map[string]int)}
 	count := (len(ordered) + max(1, size) - 1) / max(1, size)
 
 	for number := range count {
@@ -37,6 +63,21 @@ func newLinkPlan(subjects []any, size int) linkPlan {
 	}
 
 	return plan
+}
+
+// batchSteps is a batch as its shared turn reads it.
+func (plan linkPlan) batchSteps(number int) []sharedLinkStep {
+	steps := make([]sharedLinkStep, 0, len(plan.batches[number]))
+	for _, step := range plan.batches[number] {
+		descriptions := plan.descriptions[step.identity()]
+		if descriptions == nil {
+			descriptions = []string{}
+		}
+
+		steps = append(steps, sharedLinkStep{Key: step.Key, Block: step.Block, Text: step.Text, Descriptions: descriptions})
+	}
+
+	return steps
 }
 
 // batchesFor names the batches holding the steps a link judges, or false when one is outside the plan.

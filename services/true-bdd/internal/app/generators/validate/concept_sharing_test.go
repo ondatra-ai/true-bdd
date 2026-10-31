@@ -24,6 +24,7 @@ const (
 	resultConcept = "result"
 	displayedStep = "36 is displayed"
 	squaredStep   = "6 is squared"
+	halvedStep    = "6 is halved"
 )
 
 type sharedTurn struct {

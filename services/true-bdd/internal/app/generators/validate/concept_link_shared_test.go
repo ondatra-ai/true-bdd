@@ -37,14 +37,19 @@ func linkAnswer(key, user string) string {
 	return `{}`
 }
 
+const (
+	squareDescription = "Squaring shows the square"
+	bothDescription   = "Squaring and halving both work"
+)
+
 func linkScenarios() []*template.ScenarioCheckData {
 	return []*template.ScenarioCheckData{
-		{ID: "scenario-square", Service: linkTestService, Description: "secret description", CheckedSteps: []catalogue.Step{
+		{ID: "scenario-square", Service: linkTestService, Description: squareDescription, CheckedSteps: []catalogue.Step{
 			{Block: catalogue.BlockWhen, Text: squaredStep}, {Block: catalogue.BlockThen, Text: displayedStep},
 			{Block: catalogue.BlockThen, Text: "judge: the answer reads well"},
 		}},
-		{ID: sharedBothID, Service: linkTestService, CheckedSteps: []catalogue.Step{
-			{Block: catalogue.BlockWhen, Text: squaredStep}, {Block: catalogue.BlockWhen, Text: "6 is halved"},
+		{ID: sharedBothID, Service: linkTestService, Description: bothDescription, CheckedSteps: []catalogue.Step{
+			{Block: catalogue.BlockWhen, Text: squaredStep}, {Block: catalogue.BlockWhen, Text: halvedStep},
 		}},
 	}
 }
@@ -64,11 +69,10 @@ func TestSharedLinkJudgesEachDistinctStepOncePerWalkAndReadsAsTodaysLink(t *test
 		t.Fatalf("three distinct steps in two balanced batches, got %+v", turns)
 	}
 
-	for _, turn := range turns {
-		if strings.Contains(turn.user, "scenario-") || strings.Contains(turn.user, "secret description") {
-			t.Fatalf("a shared link turn reads steps, not a Scenario: %s", turn.user)
-		}
-	}
+	assertStepDescriptions(t, turns, map[string][]string{
+		squaredStep: {bothDescription, squareDescription}, displayedStep: {squareDescription},
+		halvedStep: {bothDescription},
+	})
 
 	alone := linkScenarios()
 	today := evaluateTogether(t, evaluator, checklist.PromptWithContext{Index: 3, SectionID: "concept",
@@ -76,6 +80,39 @@ func TestSharedLinkJudgesEachDistinctStepOncePerWalkAndReadsAsTodaysLink(t *test
 		alone...)
 
 	assertReadsAsToday(t, shared, alone, results, today)
+}
+
+// assertStepDescriptions holds every shared link step to the descriptions of the walked Scenarios using it.
+func assertStepDescriptions(t *testing.T, turns []sharedTurn, want map[string][]string) {
+	t.Helper()
+
+	judged := 0
+
+	for _, turn := range turns {
+		var payload struct {
+			Steps []struct {
+				Text         string   `json:"text"`
+				Descriptions []string `json:"descriptions"`
+			} `json:"steps"`
+		}
+
+		err := json.Unmarshal([]byte(turn.user), &payload)
+		if err != nil || strings.Contains(turn.user, "scenario-") {
+			t.Fatalf("a shared link turn reads steps and their Scenarios' descriptions, no id: %s", turn.user)
+		}
+
+		for _, step := range payload.Steps {
+			judged++
+
+			if !slices.Equal(step.Descriptions, want[step.Text]) {
+				t.Errorf("step %q: descriptions %q, want %q", step.Text, step.Descriptions, want[step.Text])
+			}
+		}
+	}
+
+	if judged != len(want) {
+		t.Errorf("judged %d steps, want %d", judged, len(want))
+	}
 }
 
 func assertReadsAsToday(t *testing.T, shared, alone []*template.ScenarioCheckData,

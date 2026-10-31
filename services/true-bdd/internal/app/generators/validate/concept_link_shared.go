@@ -9,8 +9,8 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/product"
 )
 
-// evaluateSharedLink grades the Scenario's steps from the walk's batches, each distinct step judged once with
-// the product document alone: no description, no sibling step. False leaves a step outside the plan to today's turn.
+// evaluateSharedLink grades the Scenario's steps from the walk's batches, each distinct step judged once with the
+// product document and its Scenarios' descriptions, no sibling step. False leaves an unplanned step to today's turn.
 func (e *ChecklistEvaluator) evaluateSharedLink(ctx context.Context, subject any, prompt checklist.PromptWithContext,
 	source product.Document, steps []conceptStep, result *checklist.ValidationResult,
 ) (bool, error) {
@@ -32,17 +32,17 @@ func (e *ChecklistEvaluator) evaluateSharedLink(ctx context.Context, subject any
 	}
 
 	answers, err := e.sharing.resolve(ctx, names, func(name string) (string, error) {
-		batch := plan.batches[numbers[slices.Index(names, name)]]
+		number := numbers[slices.Index(names, name)]
 
-		schema, err := linkSchema(batch, source.Concepts)
+		schema, err := linkSchema(plan.batches[number], source.Concepts)
 		if err != nil {
 			return "", err
 		}
 
 		payload := struct {
-			Product string        `json:"product"`
-			Steps   []conceptStep `json:"steps"`
-		}{productText, batch}
+			Product string           `json:"product"`
+			Steps   []sharedLinkStep `json:"steps"`
+		}{productText, plan.batchSteps(number)}
 
 		return e.sharedTurn(ctx, prompt, name, payload, schema)
 	})

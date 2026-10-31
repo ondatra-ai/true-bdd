@@ -40,7 +40,7 @@ func TestSharedBindingsJudgeEachBindingOncePerWalkWithEveryStepLinkingIt(t *test
 		{Block: catalogue.BlockWhen, Text: squaredStep}, {Block: catalogue.BlockThen, Text: displayedStep},
 	}}
 	both := &template.ScenarioCheckData{ID: sharedBothID, Service: linkTestService, CheckedSteps: []catalogue.Step{
-		{Block: catalogue.BlockWhen, Text: "7 is squared"}, {Block: catalogue.BlockWhen, Text: "6 is halved"},
+		{Block: catalogue.BlockWhen, Text: "7 is squared"}, {Block: catalogue.BlockWhen, Text: halvedStep},
 	}}
 	unlinked := &template.ScenarioCheckData{ID: "scenario-unlinked", Service: linkTestService,
 		CheckedSteps: []catalogue.Step{{Block: catalogue.BlockWhen, Text: "8 is cubed"}}}
