@@ -23,15 +23,17 @@ Product working copy:
 {{ range .Subject.TermDocuments }}{{ if eq .Key "product" }}
 - `{{.Key}}`: edit `{{.Scratch}}`, the working copy of `{{.Path}}`
 {{ end }}{{ end }}
-If the approved fix changes a concept, edit only that product working copy;
-return applied: true, target and summary inside the markers below.
-If it rewrites a step, return the COMPLETE updated Story body inside those
-markers, preserving every other field and criterion. Do not edit concepts
-for a step rewrite. Current Story:
-{{.Subject | toYaml}}
+If the approved fix changes a concept, edit only that product working copy
+and return this confirmation inside these markers:
 === FILE_START: {{.ResultPath}} ===
-<confirmation YAML or complete Story body YAML>
+applied: true
+target: "product"
+summary: "<approved concept repair>"
 === FILE_END: {{.ResultPath}} ===
+If it rewrites a step, return instead the COMPLETE updated Story body inside
+those markers, preserving every other field and criterion. Do not edit
+concepts for a step rewrite. Current Story:
+{{.Subject | toYaml}}
 {{ else -}}
 
 ## Current Story

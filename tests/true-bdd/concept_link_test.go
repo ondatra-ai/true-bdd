@@ -252,3 +252,22 @@ func TestConceptLink019Unfixed(t *testing.T) {
 	s.And(`the file "docs/product/stories/host-story.yaml" is unchanged`)
 	s.Done()
 }
+
+// concept-link-020-unquoted-confirmation: A concept fix whose confirmation summary holds an unquoted colon must be committed and the Story linked again
+func TestConceptLink020UnquotedConfirmation(t *testing.T) {
+	s := scenarios.New(t, "concept-link-020-unquoted-confirmation")
+	s.Given(`the "concept-link-unquoted-confirmation" project tree`)
+	s.And(`the Product Owner's answer to every question is "1"`)
+	s.When(`the Product Owner runs "us refine host --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches no concept of when`)
+	s.And(`stdout matches action=apply`)
+	s.And(`every file matching "tmp/*/apply-host-iter1-result.yaml" matches (?m)^summary: [^"'].*: \S`)
+	s.And(`stdout matches read applied: true from the raw text`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=product`)
+	s.And(`stdout matches msg="Concept judgement answered" subjectID=host promptIndex=1 judgement=link answer=pass`)
+	s.And(`stdout does not match failed to parse updated story body`)
+	s.And(`the file "docs/product/product.yaml" matches square`)
+	s.And(`the file "docs/product/stories/host-story.yaml" is unchanged`)
+	s.Done()
+}

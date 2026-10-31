@@ -551,6 +551,7 @@ func conceptLinkFixtures() []string {
 		"concept-link-threshold-eight",
 		"concept-link-threshold-nine",
 		"concept-link-unfixed",
+		"concept-link-unquoted-confirmation",
 		"concept-link-unrelated-unbound",
 		"concept-link-widen",
 		"concept-link-wrong-block",

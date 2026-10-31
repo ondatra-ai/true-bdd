@@ -3,9 +3,8 @@ package commands
 import (
 	"context"
 
-	"gopkg.in/yaml.v3"
-
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/engine"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/validate"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/runner"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/story"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/docs"
@@ -24,8 +23,9 @@ func refineSubject(item *template.StoryRefineData) (string, string) {
 	return item.ID, item.Title
 }
 
-// refinePostFix takes the Story body a model Prompt's fix wrote as the
-// Story's next version, keeping the documents the walk seeded.
+// refinePostFix commits the product working copy a concept fix confirmed,
+// reading the confirmation as the applier does, and otherwise takes the
+// Story body a rewrite returned as the Story's next version.
 func refinePostFix(
 	versionMgr *fs.StoryVersionManager,
 ) func(context.Context, *template.StoryRefineData, string) (*template.StoryRefineData, error) {
@@ -36,10 +36,7 @@ func refinePostFix(
 		item *template.StoryRefineData,
 		applierContent string,
 	) (*template.StoryRefineData, error) {
-		var confirmation struct {
-			Applied *bool `yaml:"applied"`
-		}
-		if yaml.Unmarshal([]byte(applierContent), &confirmation) == nil && confirmation.Applied != nil {
+		if validate.IsConfirmation(applierContent) {
 			productDocuments := make([]template.FixDocument, 0)
 
 			for _, document := range item.TermDocuments {

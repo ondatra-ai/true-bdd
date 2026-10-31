@@ -269,27 +269,56 @@ func checkFixApplied(content string) error {
 var appliedLinePattern = regexp.MustCompile(`(?mi)^\s*applied:\s*(true|false)\s*$`)
 
 // checkFixAppliedFallback salvages the verdict from unparseable content.
-// Only an explicit `applied: false` is actionable. Every status line is
-// scanned, not just the first, so a later refusal can never be masked by an earlier success.
+// Only an explicit `applied: false` is actionable.
 func checkFixAppliedFallback(content string) error {
-	matches := appliedLinePattern.FindAllStringSubmatch(stripMarkdownFences(content), -1)
-	if len(matches) == 0 {
+	applied := salvageApplied(content)
+	if applied == nil {
 		return nil
 	}
 
-	for _, match := range matches {
-		if strings.EqualFold(match[1], "false") {
-			slog.Warn("Fix applier confirmation block is not valid YAML; " +
-				"read applied: false from the raw text")
+	if !*applied {
+		slog.Warn("Fix applier confirmation block is not valid YAML; " +
+			"read applied: false from the raw text")
 
-			return pkgerrors.ErrFixNotAppliedByModel("", "")
-		}
+		return pkgerrors.ErrFixNotAppliedByModel("", "")
 	}
 
 	slog.Warn("Fix applier confirmation block is not valid YAML; " +
 		"read applied: true from the raw text")
 
 	return nil
+}
+
+// salvageApplied reads the verdict of content YAML could not decode from its
+// `applied:` lines, nil when it has none. Every line is scanned, so a later
+// refusal can never be masked by an earlier success.
+func salvageApplied(content string) *bool {
+	matches := appliedLinePattern.FindAllStringSubmatch(stripMarkdownFences(content), -1)
+	if len(matches) == 0 {
+		return nil
+	}
+
+	applied := true
+
+	for _, match := range matches {
+		if strings.EqualFold(match[1], "false") {
+			applied = false
+		}
+	}
+
+	return &applied
+}
+
+// IsConfirmation reports whether an applier's content is a confirmation
+// block, read as checkFixApplied reads it: decoded with an `applied:` key, or
+// undecodable with an `applied:` line (#267). A Story body has neither.
+func IsConfirmation(content string) bool {
+	result, ok := parseApplyResult(content)
+	if ok {
+		return result.Applied != nil
+	}
+
+	return salvageApplied(content) != nil
 }
 
 // parseApplyResult decodes an applier confirmation block. Content that is

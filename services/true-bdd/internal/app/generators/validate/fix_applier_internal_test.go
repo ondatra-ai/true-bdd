@@ -203,3 +203,28 @@ func TestCheckFixAppliedStopsOnlyOnANonemptyInterfaceVerdict(t *testing.T) {
 		}
 	}
 }
+
+// IsConfirmation is checkFixApplied's reading, so us refine takes every block
+// the applier salvaged as a confirmation, never as a Story body (#267).
+func TestIsConfirmationReadsWhatCheckFixAppliedReads(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]bool{
+		"applied: true\ntarget: product\nsummary: Added `halving` (terms: [number]).": true,
+		"```yaml\napplied: true\ntarget: \"product\"\n```":                            true,
+		"applied: false\ntarget: \"product\"\nsummary: \"denied\"":                    true,
+		"id: halve\ntitle: Halve a number\nacceptance_criteria: []":                   false,
+		"target: product\nsummary: Added `halving` (terms: [number]).":                false,
+		"The fix was applied: false starts were needed.":                              false,
+	}
+
+	for content, want := range tests {
+		t.Run(content, func(t *testing.T) {
+			t.Parallel()
+
+			if got := IsConfirmation(content); got != want {
+				t.Errorf("IsConfirmation(%q) = %v, want %v", content, got, want)
+			}
+		})
+	}
+}
