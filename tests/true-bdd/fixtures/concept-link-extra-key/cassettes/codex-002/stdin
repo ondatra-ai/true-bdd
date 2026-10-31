@@ -1,0 +1,74 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+Apply only the exact concept, binding or step repair approved at the menu.
+Edit only the listed working copies. Preserve every unaffected entry.
+For a Story step rewrite, return the complete Story YAML instead of editing
+a document. For document edits return the requested confirmation markers.
+
+
+### TASK
+
+The Product Owner chose apply at the menu for Story host.
+Approved fix:
+Proposed repair for Item `host`, AC-1 then step "the calculator prints 3" — widen the existing `then` concept `result`.
+
+Why widen rather than add: the Public interface item (the whole number the calculator prints) and the kind of use (`then` — the observable outcome) already exist as `result`. The step is only a variation of that same item and use: the printed number comes from the halving instead of the doubling. A new variation widens the existing concept of that item and use, so no new concept is added.
+
+Owner of the change: the System Architect owns concept bindings; the Product Owner owns the concept prose below. The Story `host` is NOT changed — its wording, status and all steps stay exactly as they are.
+
+Single change, to `./docs/product/product.yaml` only, line 18 — rewrite the `means` of concept `result` and nothing else. A concept holds only `concept`, `means` and `terms`; no `variations` key is introduced (that is what made the previous attempt unreadable). Every variation is stated inside the `means` prose, closed.
+
+BEFORE (lines 16-19):
+
+```yaml
+  then:
+    - concept: result
+      means: The calculator prints the whole number the doubling produced.
+      terms: []
+```
+
+AFTER (lines 16-19):
+
+```yaml
+  then:
+    - concept: result
+      means: The calculator prints the whole number it computed, which is either the whole number the doubling produced or the whole number the halving produced, and no other number.
+      terms: []
+```
+
+Unaffected and left byte-for-byte unchanged: `roles`, the `given` concept `installation`, the `when` concepts `doubling` and `halving`, `glossary`, `description`, and the whole Story `host` including AC-1's given, when and then steps.
+
+Effect once applied: AC-1's then step "the calculator prints 3" is a plain instance of the widened `result` — the printed whole number is the one the halving produced — so it reaches the threshold of 9 and the Item passes.
+
+Do not apply yet; await an explicit menu decision.
+Product working copy:
+
+- `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
+
+If the approved fix changes a concept, edit only that product working copy
+and return this confirmation inside these markers:
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-iter2-result.yaml ===
+applied: true
+target: "product"
+summary: "<approved concept repair>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-iter2-result.yaml ===
+If it rewrites a step, return instead the COMPLETE updated Story body inside
+those markers, preserving every other field and criterion. Do not edit
+concepts for a step rewrite. Current Story:
+id: host
+title: Halve a number
+as_a: Owner
+i_want: to halve a whole number
+so_that: I can read its half
+status: DRAFT
+acceptance_criteria:
+    - id: AC-1
+      description: The calculator must print 3 when the Owner halves 6
+      steps:
+        - given:
+            - the calculator is installed
+        - when:
+            - the Owner halves 6
+        - then:
+            - the calculator prints 3
+
