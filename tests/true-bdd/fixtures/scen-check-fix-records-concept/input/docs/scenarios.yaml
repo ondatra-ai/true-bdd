@@ -1,0 +1,28 @@
+# Registry seed for `scen-check-fix-records-concept`.
+#
+# One claimed Scenario of the MCP service, its steps bound to the step
+# definitions of its suite.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-30"
+  description: "One Scenario of the MCP service"
+
+scenarios:
+  E2E-001:
+    description: The service must answer a greeting and log it
+    service: mcp-service
+    path: tests/mcp/ping_test.go
+    user_stories:
+      - story: docs/product/stories/ping-answers.yaml
+        scenario_id: ping-002-logs-greeting
+        merge_date: "2026-10-21"
+    merged_steps:
+      given:
+        - the mcp service is running
+      when:
+        - the Client Developer sends "hi"
+      then:
+        - the service answers "hello"
+        - and: the service logs "greeted"

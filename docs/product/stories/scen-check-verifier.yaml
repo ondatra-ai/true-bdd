@@ -2,9 +2,8 @@
 #
 # The walk, the id filter and the exit code. The closure checks, the
 # checklist's `D:` refusals and `scen check --fix` are Stories of their own:
-# scen-check-phrases, scen-check-terms, scen-check-mappings,
-# scen-check-step-definitions, checklist-checks, scen-check-fix and
-# scen-check-quality-fix.
+# scen-check-terms, scen-check-mappings, scen-check-step-definitions,
+# checklist-checks, scen-check-fix and scen-check-quality-fix.
 #
 # Criteria 001 and 002 walk the shipped checklist on a host declaring
 # concepts, whose walk adds the link, binding and word Prompts (#259).
@@ -56,7 +55,7 @@ story:
                 - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=3 answer=fail context="\[E2E-002: then step \\"the greeter prints \\\\\\"Hello Ada\\\\\\" on one line\\" binds to the step definition \^the greeter prints \\"\(\[\^\\"\]\+\)\\" on one line\$ \(greet_steps\.go:23\), which records no concept\]"'
                 - and: stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=14 judgement=link answer=fail
                 - and: stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=12
-                - and: 'stdout matches SKIP: 13\n'
+                - and: 'stdout matches SKIP: 11\n'
                 - and: stdout matches Validation failed
                 - but: stdout does not match ALL CHECKS PASSED
                 - and: the engine dispatched 9 AI turns

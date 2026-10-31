@@ -1,0 +1,187 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Technical Scrum Master applying fixes to a user story.
+
+**Your Task:**
+1. Read the current story and the fix prompt instructions.
+2. Apply the changes EXACTLY as specified in the fix prompt — they may
+   target any field of the story (`title`, `as_a`, `i_want`, `so_that`,
+   `status`, `acceptance_criteria`, …), not only acceptance criteria.
+3. Output the COMPLETE updated story body in YAML form.
+
+**Output Requirements:**
+- Output every field of the current story, with the fix prompt's
+  changes applied. Fields not mentioned by the fix prompt MUST be
+  preserved verbatim — do not invent, drop, or reorder unrelated
+  fields.
+- The `acceptance_criteria` array MUST always be present, even when
+  the fix only touches a top-level field; preserve all ACs unless the
+  fix prompt explicitly modifies them.
+- Each acceptance criterion must have an `id`, `description`, and
+  `steps` field. The `description` is a one-line rule-based statement
+  using must/should (NO Gherkin in `description`). The `steps` field
+  holds the Gherkin scenario as a structured given/when/then list.
+- Wrap the output with FILE_START/FILE_END markers.
+
+**Output Format:**
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply-halve-negative-iter2-result.yaml ===
+id: "<story id>"
+title: "<story title>"
+as_a: "<role>"
+i_want: "<desire>"
+so_that: "<benefit>"
+status: "<status>"
+acceptance_criteria:
+  - id: "AC-1"
+    description: "One-line rule-based statement with must/should"
+    steps:
+      - given:
+          - "precondition"
+      - when:
+          - "action"
+      - then:
+          - "outcome"
+          - and: "additional outcome"
+  - id: "AC-2"
+    description: "Another one-line rule-based statement"
+    steps:
+      - given:
+          - "precondition"
+      - when:
+          - "action"
+      - then:
+          - "outcome"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-halve-negative-iter2-result.yaml ===
+```
+
+**CRITICAL:**
+- Apply changes EXACTLY as described in the fix prompt.
+- Output the WHOLE story body — top-level fields AND
+  `acceptance_criteria`. Never output just one section.
+- Do NOT add, remove, or rename fields beyond what the fix prompt
+  specifies.
+- Preserve the exact wording from the fix prompt's "After" sections.
+- The `description` must NEVER contain Given/When/Then — those belong
+  in `steps`.
+
+
+### TASK
+
+## Current Story
+
+**ID:** halve-negative
+**Title:** Halve negative integers
+**As a:** Calculator User
+**I want:** to halve an already validated negative integer, rounding toward zero
+**So that:** I can calculate half its value
+**Status:** PLANNED
+
+### Current Acceptance Criteria
+
+**001-even:**
+The calculator must print -3 when the Calculator User halves -6.
+
+**002-odd:**
+The calculator must return -3 when the Calculator User halves -7.
+
+**003-near-zero:**
+The calculator must return 0 when the Calculator User halves -1.
+
+
+---
+
+## Fix Prompt to Apply
+
+# Fix Prompt for Story halve-negative: Halve negative integers
+
+## Instructions
+Apply the following changes to the acceptance criteria for this story.
+
+Story fields `id`, `feature`, `title`, `as_a`, `i_want`, `so_that` and `status` are unchanged — do not touch them.
+
+## Original Acceptance Criteria
+1. 001-even: The calculator must print -3 when the Calculator User halves -6. [has steps]
+2. 002-odd: The calculator must return -3 when the Calculator User halves -7. [has steps]
+3. 003-near-zero: The calculator must return 0 when the Calculator User halves -1. [has steps]
+
+## Required Changes
+
+Only the two faulted descriptions change. The word "return" names the internal call result of a function; the product's closed `then` concept **result** ("The halve command succeeds and prints exactly a stated integer, the half rounded toward zero.") and the architecture ("a CLI: calculator halve <integer>; exit 0 and print the integer result on stdout") agree that what the Calculator User observes is the **printed** integer. Replace "return" with "print" in the description. The Given/When/Then steps of all three ACs already instance the closed concepts `number supplied`, `halving` and `result`, so they are reproduced byte for byte and MUST NOT be reworded. No ACs are added, merged or removed. The behaviour (-6 → -3, -7 → -3, -1 → 0, rounding toward zero) is unchanged.
+
+### Change #1: 002-odd
+**Before:** The calculator must return -3 when the Calculator User halves -7.
+**Issue:** "return" describes the implementation's internal call result rather than behaviour observable by the Calculator User; the observable outcome under the product's `result` concept is the printed integer.
+**After (description):** The calculator must print -3 when the Calculator User halves -7.
+**After (steps):** unchanged, reproduced verbatim.
+```yaml
+- given: 'the number is "-7"'
+- when: 'the Calculator User halves the number'
+- then: 'the result is "-3"'
+```
+
+### Change #2: 003-near-zero
+**Before:** The calculator must return 0 when the Calculator User halves -1.
+**Issue:** Same defect — "return" names the internal call result instead of the integer the Calculator User sees printed.
+**After (description):** The calculator must print 0 when the Calculator User halves -1.
+**After (steps):** unchanged, reproduced verbatim.
+```yaml
+- given: 'the number is "-1"'
+- when: 'the Calculator User halves the number'
+- then: 'the result is "0"'
+```
+
+### Not changed: 001-even
+The check reports this AC as ok ("must print -3" is already observable). Preserve its description and steps verbatim; do not reword it.
+
+## Complete Fixed Acceptance Criteria
+
+```yaml
+- ac_id: 001-even
+  description: "The calculator must print -3 when the Calculator User halves -6."
+  steps:
+    - given: 'the number is "-6"'
+    - when: 'the Calculator User halves the number'
+    - then: 'the result is "-3"'
+
+- ac_id: 002-odd
+  description: "The calculator must print -3 when the Calculator User halves -7."
+  steps:
+    - given: 'the number is "-7"'
+    - when: 'the Calculator User halves the number'
+    - then: 'the result is "-3"'
+
+- ac_id: 003-near-zero
+  description: "The calculator must print 0 when the Calculator User halves -1."
+  steps:
+    - given: 'the number is "-1"'
+    - when: 'the Calculator User halves the number'
+    - then: 'the result is "0"'
+```
+
+## Concept coverage after the fix
+- given → `number supplied`: each AC states the already validated integer supplied to the calculator (-6, -7, -1).
+- when → `halving`: each AC runs the calculator's halve command once with that integer.
+- then → `result`: each AC states the exact integer printed, the half rounded toward zero (-3, -3, 0).
+No step needs a variation the concepts do not state, so no concept rewrite, widening or new concept is required.
+
+## Apply
+Present this proposal at the fix menu and apply it only after the Product Owner answers apply.
+
+---
+
+## Instructions
+
+Apply the changes described in the "Fix Prompt to Apply" section above.
+The fix may target any field of the story — top-level (`title`,
+`as_a`, `i_want`, `so_that`, `status`) or `acceptance_criteria` —
+so output the COMPLETE updated story body. Preserve every field that
+the fix prompt does not touch.
+
+Output the complete updated story body using FILE_START/FILE_END
+markers:
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-halve-negative-iter2-result.yaml ===
+(Complete story body YAML here — every top-level field plus
+`acceptance_criteria`)
+=== FILE_END: tmp/{{RUN_DIR}}/apply-halve-negative-iter2-result.yaml ===

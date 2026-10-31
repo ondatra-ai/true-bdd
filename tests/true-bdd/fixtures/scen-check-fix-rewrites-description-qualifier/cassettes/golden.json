@@ -6,8 +6,8 @@
       "path": "docs/scenarios.yaml",
       "kind": "modified",
       "size": 674,
-      "sha256": "e5213649f360c2f3bc70bbfa06f275e501834eb5f635fbaeb6efbe4ef3ddc88c",
-      "text": "metadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-10-21\"\n  description: \"One scenario with a vague word in its description\"\n\nscenarios:\n  E2E-001:\n    description: The greeter must print the configured greeting followed by the name it is given and exit with code 0 within 100 milliseconds\n    service: greeter\n    path: tests/greeter/greet_test.go\n    user_stories: []\n    merged_steps:\n      given:\n        - the greeting is configured as \"Hello\"\n      when:\n        - the Operator runs \"greet Ada\"\n      then:\n        - the command exits with code 0 within 100 milliseconds\n        - and: stdout matches ^Hello Ada$\n"
+      "sha256": "6bba103687e242551840860a231f151aef26f0845d72213ce7144735408f4ffa",
+      "text": "metadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-10-21\"\n  description: \"One scenario with a vague word in its description\"\n\nscenarios:\n  E2E-001:\n    description: The greeter must print the configured greeting followed by the name it is given, exiting with code 0 within 100 milliseconds\n    service: greeter\n    path: tests/greeter/greet_test.go\n    user_stories: []\n    merged_steps:\n      given:\n        - the greeting is configured as \"Hello\"\n      when:\n        - the Operator runs \"greet Ada\"\n      then:\n        - the command exits with code 0 within 100 milliseconds\n        - and: stdout matches ^Hello Ada$\n"
     }
   ]
 }

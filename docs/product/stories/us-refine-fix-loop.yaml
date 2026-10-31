@@ -15,7 +15,7 @@ story:
     feature: us-refine
     title: Drive a failing Story check to a pass with us refine --fix
     as_a: Product Owner
-    i_want: us refine --fix to rewrite every acceptance criterion a walked us-refine check fails, for a vague qualifier, a forbidden action verb, a description written as Given/When/Then prose or a criterion with no steps, and to phrase a step the product's catalogue lacks as a new catalogue entry in the product document, taking my answers to its questions, until every walked check passes, and to save the Story in place with its id and its feature label as I wrote them
+    i_want: us refine --fix to rewrite every acceptance criterion a walked us-refine check fails, for a vague qualifier, a forbidden action verb, a description written as Given/When/Then prose or a criterion with no steps, taking my answers to its questions, until every walked check passes, and to save the Story in place with its id and its feature label as I wrote them
     so_that: a Story reaches us apply with measurable, rule-based criteria without my rewriting each one by hand, and nothing the fix loop rewrites drops what the Story already said
     status: IMPLEMENTED
     acceptance_criteria:

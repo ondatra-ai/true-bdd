@@ -21,13 +21,13 @@ func conceptSteps(subject any) []conceptStep {
 
 	switch item := subject.(type) {
 	case *template.ScenarioCheckData:
-		for _, phrase := range item.CheckedSteps {
-			steps = appendConceptStep(steps, "", phrase)
+		for _, step := range item.CheckedSteps {
+			steps = appendConceptStep(steps, "", step)
 		}
 	case *template.StoryRefineData:
 		for _, criterion := range item.AcceptanceCriteria {
-			for _, phrase := range criterion.CheckedSteps() {
-				steps = appendConceptStep(steps, criterion.ID, phrase)
+			for _, step := range criterion.CheckedSteps() {
+				steps = appendConceptStep(steps, criterion.ID, step)
 			}
 		}
 	}
@@ -35,9 +35,9 @@ func conceptSteps(subject any) []conceptStep {
 	return steps
 }
 
-func appendConceptStep(steps []conceptStep, criterion string, phrase catalogue.Step) []conceptStep {
+func appendConceptStep(steps []conceptStep, criterion string, step catalogue.Step) []conceptStep {
 	return append(steps, conceptStep{Key: strconv.Itoa(len(steps) + 1),
-		Criterion: criterion, Block: phrase.Block, Text: phrase.Text})
+		Criterion: criterion, Block: step.Block, Text: step.Text})
 }
 
 func (step conceptStep) judged() bool {

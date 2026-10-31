@@ -2,8 +2,7 @@
 
 You are a Registry Scenario Editor applying an approved fix to the
 working copy of one document: the scenario registry, where a
-Scenario's description or steps are rewritten, or the product
-document, where a catalogue entry's meaning is.
+Scenario's description or steps are rewritten.
 
 **Your Task:**
 1. Read the working copy the fix names.
@@ -48,64 +47,67 @@ Then:
 
 ## Fix Prompt to Apply
 
+=== FILE_START: tmp/{{RUN_DIR}}/01-E2E-001-fix-prompts.md ===
 # Fix Prompt for Scenario E2E-001: The greeter must greet the person whose name it is given so that they feel welcome
 
 ## Target
-The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry). Two fields change: `description` and the single entry of `merged_steps.then`.
+The `E2E-001` entry of the `scenarios_yaml` document (the
+scenario registry).
 
-No catalogue applies: the `product` document declares `concepts:`, not `catalogue:`, and `E2E-001` has `user_stories: []`, so no catalogue template must be matched. The `product` document is **not** edited by this fix — the finding is about this Scenario's own words, not about what a phrase means.
+Edit nothing else: no other Scenario, no other document. Within `E2E-001`,
+leave `service: greeter`, `path: tests/greeter/greet_test.go`,
+`user_stories: []`, the `given:` step and the `when:` step exactly as they
+stand. Do NOT touch `tests/greeter/greet_test.go` or any step definition —
+`true-bdd build tests --fix` re-renders the test from the registry once the
+entry reads correctly.
 
-## Decisions already settled by the user (do not re-open)
-- The correct printed output is a line matching the regular expression `^Hello Ada$` — the configured greeting, a space, the name given on the command line, and nothing else.
-- No exit-code assertion is added. The Scenario keeps exactly one `then` step, so its coverage is unchanged.
-- The new description is the user's own wording, reproduced verbatim below.
-
-The rewritten `then` step is phrased in the product document's `then` concept `standard output` ("A line the command printed on its standard output has a match for a stated pattern, a regular expression"), so the assertion a reviewer settles is a regex match against a printed line — pass or fail, no judgement.
+## Why
+scen-check/scenario_quality failed: "E2E-001: subjective — 'Then step asserts
+"Ada feels welcomed by what the greeter prints" — a human emotional state
+with no stated expected output, so two reviewers can disagree on the same
+printed text'". The user settled what counts as correct: a line matching
+`^Hello Ada$` — the configured greeting, one space, the name, nothing else.
+The two changes below state that same behaviour as an outcome a reviewer
+settles by comparison, and keep the `then:` step an instance of the product
+document's `then:` concept `standard output` ("A line the command printed on
+its standard output has a match for a stated pattern, a regular
+expression.", terms: command, standard output).
 
 ## Required Changes
 
-### Change #1: Replace the subjective description with the printed-output behaviour
+### Change #1: Replace the subjective description with the printed-line one the user chose
 **Document:** scenarios_yaml
-**Field:** `scenarios.E2E-001.description`
+**Field:** description
 **Current text:**
 ```
 The greeter must greet the person whose name it is given so that they feel welcome
 ```
 **New text:**
 ```
-The greeter must print the configured greeting followed by the name it is given, so an Operator reading the terminal sees that person greeted
+The greeter must print the configured greeting followed by the name it is given so that the Operator reads that person's name in the line it prints
 ```
 
-### Change #2: Replace the feeling-based assertion with the expected printed line
+### Change #2: Replace the emotional-state assertion with the stated output pattern
 **Document:** scenarios_yaml
-**Field:** `scenarios.E2E-001.merged_steps.then` (the list's only entry)
+**Field:** merged_steps.then
 **Current text:**
 ```
-Ada feels welcomed by what the greeter prints
+- Ada feels welcomed by what the greeter prints
 ```
 **New text:**
 ```
-the greeter prints a line on standard output matching "^Hello Ada$"
+- the command printed a line on standard output matching "^Hello Ada$"
 ```
 
-In YAML, write this entry as a plain (unquoted) block-sequence scalar, exactly as the `given` step `the greeting is configured as "Hello"` is written — it does not begin with a quote, so the embedded double quotes need no YAML escaping:
-```yaml
-      then:
-        - the greeter prints a line on standard output matching "^Hello Ada$"
-```
+Keep `then:` a one-step list: replace the single existing step, do not append
+alongside it, and do not add an exit-code step or any other assertion — the
+Scenario asserts exactly what it asserted before, now in words a run can
+settle.
 
-## Must not change
-- The `E2E-001` key, `service: greeter`, `path: tests/greeter/greet_test.go` and `user_stories: []` stay exactly as they are.
-- `merged_steps.given` (`the greeting is configured as "Hello"`) and `merged_steps.when` (`the Operator runs "greet Ada"`) stay exactly as they are — the finding names only the `then` step and the description.
-- The `then` list keeps exactly one entry. Do not add an exit-code step or any other assertion; do not drop the assertion.
-- No other Scenario and no other key of the registry is touched. The `metadata:` block stays as it is.
-- Do not edit `product.yaml`, `tests/greeter/greet_test.go`, or any step definition. The generated test is re-rendered later by `true-bdd build tests --fix` from the corrected registry entry.
-
-## Done when
-`scenarios.E2E-001` reads:
+## After the edit, the entry must read exactly
 ```yaml
   E2E-001:
-    description: The greeter must print the configured greeting followed by the name it is given, so an Operator reading the terminal sees that person greeted
+    description: The greeter must print the configured greeting followed by the name it is given so that the Operator reads that person's name in the line it prints
     service: greeter
     path: tests/greeter/greet_test.go
     user_stories: []
@@ -115,9 +117,19 @@ In YAML, write this entry as a plain (unquoted) block-sequence scalar, exactly a
       when:
         - the Operator runs "greet Ada"
       then:
-        - the greeter prints a line on standard output matching "^Hello Ada$"
+        - the command printed a line on standard output matching "^Hello Ada$"
 ```
-A reviewer now decides the outcome by matching one printed line against `^Hello Ada$`: binary, with no interpretation left.
+
+## Checks before you finish
+- No word from the product document's `vocabulary.forbidden_qualifiers`
+  (properly, correctly, appropriate, appropriately, user-friendly, fast,
+  quickly, helpful) and no forbidden action (handle, process, parse) appears
+  in the new description or step.
+- The new `then:` step reads as the `standard output` concept's `means`: one
+  line the command printed, matched against one stated regular expression.
+- `metadata:` and every key of the entry other than `description` and
+  `merged_steps.then` are byte-identical to before.
+=== FILE_END: tmp/{{RUN_DIR}}/01-E2E-001-fix-prompts.md ===
 
 ---
 
@@ -136,8 +148,7 @@ same Scenarios, so a copy you leave unparseable changes nothing.
 ## Instructions
 
 1. Use the Read tool to load the working copy the fix prompt names. In
-   the registry, find the `E2E-001:` entry under `scenarios:`;
-   in the product document, the catalogue entry the fix names.
+   the registry, find the `E2E-001:` entry under `scenarios:`.
 2. Apply each change with the Edit tool on that working copy: replace
    the current text the fix prompt gives with its new text, inside that
    entry only.

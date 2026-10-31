@@ -7,7 +7,7 @@ approval: never
 sandbox: read-only
 reasoning effort: medium
 reasoning summaries: none
-session id: 01a18dea-7d6b-7e62-9e20-83506bdf0495
+session id: 01a18e9f-a364-7ab0-9993-0021f2579c59
 --------
 user
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
@@ -240,9 +240,9 @@ concepts:
       terms: [command, standard output]
 
 codex
-The description contains “quickly,” which the product document lists as a forbidden qualifier.
+The description contains “quickly,” which appears in the product document’s `forbidden_qualifiers` list.
 
 codex
 {"answer":"fail","context":["E2E-001: contains 'quickly'"],"fix_prompt":"Replace each forbidden qualifier in this Scenario's description, in its registry entry, with the measurable criterion it stands for, taken from the Scenario's steps, asking for that criterion first when the steps do not state it. Change no step."}
 tokens used
-18,408
+37,290

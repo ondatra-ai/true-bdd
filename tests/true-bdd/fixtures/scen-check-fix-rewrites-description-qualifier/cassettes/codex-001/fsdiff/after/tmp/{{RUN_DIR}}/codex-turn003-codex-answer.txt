@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/scenarios_yaml.yaml"
-summary: "Changed only E2E-001's description, replacing quickly with the specified exit code and 100-millisecond bound."
+summary: "Replaced 'quickly' in the E2E-001 description with the exact requested wording; all other content is unchanged."
 === FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===

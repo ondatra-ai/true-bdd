@@ -16,4 +16,4 @@ scenarios:
       when:
         - the Operator runs "greet Ada"
       then:
-        - the greeter prints "Hello Ada"
+        - the command prints a line matching "Hello Ada"

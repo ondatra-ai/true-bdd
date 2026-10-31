@@ -1,36 +1,37 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-halve-negative-iter1-result.yaml ===
-id: "halve-negative"
-title: "Halve negative integers"
-as_a: "Calculator User"
-i_want: "to halve an already validated negative integer, rounding toward zero"
-so_that: "I can calculate half its value"
-status: "PLANNED"
+id: halve-negative
+feature: calculator
+title: Halve negative integers
+as_a: Calculator User
+i_want: to halve an already validated negative integer, rounding toward zero
+so_that: I can calculate half its value
+status: PLANNED
 acceptance_criteria:
-  - id: "001-even"
-    description: "The calculator must return -3 when the Calculator User halves -6."
-    steps:
-      - given:
-          - "the number is \"-6\""
-      - when:
-          - "the Calculator User halves the number"
-      - then:
-          - "the result is \"-3\""
-  - id: "002-odd"
-    description: "The calculator must return -3 when the Calculator User halves -7."
-    steps:
-      - given:
-          - "the number is \"-7\""
-      - when:
-          - "the Calculator User halves the number"
-      - then:
-          - "the result is \"-3\""
-  - id: "003-toward-zero-boundary"
-    description: "The calculator must return 0 when the Calculator User halves -1."
-    steps:
-      - given:
-          - "the number is \"-1\""
-      - when:
-          - "the Calculator User halves the number"
-      - then:
-          - "the result is \"0\""
+- id: 001-even
+  description: The calculator must return -3 when the Calculator User halves -6.
+  steps:
+  - given:
+    - the number is "-6"
+  - when:
+    - the Calculator User halves the number
+  - then:
+    - the result is "-3"
+- id: 002-odd
+  description: The calculator must return -3 when the Calculator User halves -7.
+  steps:
+  - given:
+    - the number is "-7"
+  - when:
+    - the Calculator User halves the number
+  - then:
+    - the result is "-3"
+- id: 003-boundary
+  description: The calculator must return 0 when the Calculator User halves -1.
+  steps:
+  - given:
+    - the number is "-1"
+  - when:
+    - the Calculator User halves the number
+  - then:
+    - the result is "0"
 === FILE_END: tmp/{{RUN_DIR}}/apply-halve-negative-iter1-result.yaml ===

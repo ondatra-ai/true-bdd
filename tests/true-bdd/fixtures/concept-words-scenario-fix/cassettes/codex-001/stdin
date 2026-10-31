@@ -9,88 +9,80 @@ a document. For document edits return the requested confirmation markers.
 ### TASK
 
 The Product Owner chose apply at the menu. Apply this approved word repair:
-Product Owner word repair for Item host-001 — declared term (no reword), product document only.
+=== FILE_START: tmp/{{RUN_DIR}}/03-host-001-fix-prompts.md ===
+# Proposed word repair — host-001 (Product Owner)
 
-Failed judgement: the domain word "idempotency key" is used but not declared in the concept terms (flagged on when:halve, and reported again under then:number result).
+## Failed judgement
 
-Why a declared term rather than a reworded means: the product's language_policy states "The request label is presented to users as an idempotency key. Keep this exact domain name in the product meanings and declare it when needed." Rewording the means to avoid the name would break that policy, so the repair declares the word instead. Every `means` keeps its exact wording, so meaning is preserved. The new term's Word mapping is the System Architect's later work via scen check D: term-mappings; refinement does not wait for it.
+- `when: halve` — means "Halve the entered number once with the supplied idempotency key." uses the domain expression **idempotency key**, which is not declared in this concept's `terms` and is not readable as ordinary English from the means alone. The glossary is empty.
 
-Edit docs/product/product.yaml only. No Story, Scenario or architecture change. No new concept and no new variation (this widens nothing — the item and use are unchanged). Uses the document schema fields `term` and `means`; no `meaning` field anywhere.
+The `given: number ready` and `then: number result` findings passed (declared terms and plain English only) and are left untouched.
 
-Targeted edits:
+## Repair chosen: declared term (not a reword)
 
-1) concepts.when, concept "halve" — add the term declaration, means unchanged:
-      {
-        "concept": "halve",
-        "means": "Halve the entered number once with the supplied idempotency key.",
-        "terms": ["idempotency key"]
-      }
+The product's `language_policy` states: "The request label is presented to users as an idempotency key. Keep this exact domain name in the product meanings and declare it when needed." Rewording the means to drop "idempotency key" (e.g. to "request label") would violate that policy, so the repair declares the word instead: one `glossary` entry plus the word in the affected concept's `terms`. The means text is unchanged, so the meaning is preserved exactly.
 
-2) concepts.then, concept "number result" — add the term declaration, means unchanged (this concept was flagged for the same undeclared word):
-      {
-        "concept": "number result",
-        "means": "Compare the displayed number with an expected value.",
-        "terms": ["idempotency key"]
-      }
+## Exact changes to `docs/product/product.yaml` (product document only)
 
-3) glossary — add one entry:
+### Change 1 — declare the word in the affected concept's `terms`
+
+Under `concepts.when`, for the concept `halve` only:
+
+```yaml
+concepts:
+  when:
+    - concept: "halve"
+      means: "Halve the entered number once with the supplied idempotency key."
+      terms: ["idempotency key"]
+```
+
+Edit, in the file's existing style:
+
+- old: `        "terms": []` (the one inside the `when` concept `halve`, line 20)
+- new: `        "terms": ["idempotency key"]`
+
+### Change 2 — add the glossary entry
+
+Replace the empty `glossary` (line 36):
+
+- old: `  "glossary": [],`
+- new:
+
+```
   "glossary": [
     {
       "term": "idempotency key",
-      "means": "The label a caller supplies with a request so that repeating the request with the same label changes the number only once."
-    }
-  ]
-
-Unaffected concepts given:number ready and then:unused keep empty terms and unchanged means.
-
-Complete docs/product/product.yaml after the repair:
-
-{
-  "roles": [
-    {
-      "name": "Product Owner",
-      "description": "Owns meanings."
+      "means": "The request label supplied with a halve request, so that repeating the request with the same label changes the number only once."
     }
   ],
-  "concepts": {
-    "given": [
-      {
-        "concept": "number ready",
-        "means": "A number is entered before the action.",
-        "terms": []
-      }
-    ],
-    "when": [
-      {
-        "concept": "halve",
-        "means": "Halve the entered number once with the supplied idempotency key.",
-        "terms": ["idempotency key"]
-      }
-    ],
-    "then": [
-      {
-        "concept": "number result",
-        "means": "Compare the displayed number with an expected value.",
-        "terms": ["idempotency key"]
-      },
-      {
-        "concept": "unused",
-        "means": "The settlement ledger has a reconciled nostro balance.",
-        "terms": []
-      }
-    ]
-  },
-  "glossary": [
-    {
-      "term": "idempotency key",
-      "means": "The label a caller supplies with a request so that repeating the request with the same label changes the number only once."
-    }
-  ],
-  "description": "A calculator accepts a number and a request label. Repeating a request with the same label changes the number only once.",
-  "language_policy": "The request label is presented to users as an idempotency key. Keep this exact domain name in the product meanings and declare it when needed."
-}
+```
 
-Not applied. Apply only after an explicit menu decision.
+Equivalent YAML view of the whole `glossary` key after the change:
+
+```yaml
+glossary:
+  - term: "idempotency key"
+    means: "The request label supplied with a halve request, so that repeating the request with the same label changes the number only once."
+```
+
+The entry uses `term` and `means` only — no `meaning` field.
+
+## Preserved, not touched
+
+- `concepts.given` — `number ready` (means and empty `terms` unchanged; it passed).
+- `concepts.then` — `number result` and `unused` unchanged (both unaffected concepts).
+- `roles`, `description`, `language_policy` unchanged.
+- No new concept and no new variation: `when: halve` is the existing concept for this item and use, and this repair only widens its declared words.
+- No Story, Scenario or architecture file is edited. Steps of host-001 ("six is entered" / "halve six once with idempotency key alpha" / "three is displayed") stay exactly as written.
+
+## Follow-up owned by someone else
+
+A Word mapping for the newly declared "idempotency key" is the System Architect's later work via `scen check` **D: term-mappings**. Refinement does not wait for it.
+
+## Menu
+
+Nothing has been applied. This is a proposal only — apply on an explicit menu decision.
+=== FILE_END: tmp/{{RUN_DIR}}/03-host-001-fix-prompts.md ===
 Edit ONLY the product working copy below, adding the glossary entry AND the
 concept's terms (a string list), or rewording its means. Glossary entries
 have term and means fields. Preserve unrelated product content.

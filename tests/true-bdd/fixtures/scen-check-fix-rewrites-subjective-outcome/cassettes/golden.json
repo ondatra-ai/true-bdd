@@ -5,9 +5,9 @@
     {
       "path": "docs/scenarios.yaml",
       "kind": "modified",
-      "size": 652,
-      "sha256": "a9b9d5e41b3bd66dd7307bc361294729086a7aa9adecfb08952f5dce6fb0daf1",
-      "text": "metadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-10-21\"\n  description: \"One scenario with a subjective outcome\"\n\nscenarios:\n  E2E-001:\n    description: The greeter must print the configured greeting followed by the name it is given, so an Operator reading the terminal sees that person greeted\n    service: greeter\n    path: tests/greeter/greet_test.go\n    user_stories: []\n    merged_steps:\n      given:\n        - the greeting is configured as \"Hello\"\n      when:\n        - the Operator runs \"greet Ada\"\n      then:\n        - the greeter prints a line on standard output matching \"^Hello Ada$\"\n"
+      "size": 659,
+      "sha256": "8b1e5aab261bb7991a0caa4a5852ca01d9e6cd0fa7c421c7052fbc0cafb2b67e",
+      "text": "metadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-10-21\"\n  description: \"One scenario with a subjective outcome\"\n\nscenarios:\n  E2E-001:\n    description: The greeter must print the configured greeting followed by the name it is given so that the Operator reads that person's name in the line it prints\n    service: greeter\n    path: tests/greeter/greet_test.go\n    user_stories: []\n    merged_steps:\n      given:\n        - the greeting is configured as \"Hello\"\n      when:\n        - the Operator runs \"greet Ada\"\n      then:\n        - the command printed a line on standard output matching \"^Hello Ada$\"\n"
     }
   ]
 }

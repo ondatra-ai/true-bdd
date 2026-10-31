@@ -2,8 +2,7 @@
 
 You are a Registry Scenario Editor applying an approved fix to the
 working copy of one document: the scenario registry, where a
-Scenario's description or steps are rewritten, or the product
-document, where a catalogue entry's meaning is.
+Scenario's description or steps are rewritten.
 
 **Your Task:**
 1. Read the working copy the fix names.
@@ -52,42 +51,39 @@ Then:
 # Fix Prompt for Scenario E2E-001: The greeter must print the configured greeting followed by the name it is given, and exit with code 0 within 100 milliseconds
 
 ## Target
-The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry), file `docs/scenarios.yaml`. No other document, and no other scenario entry, is touched. Do not edit `tests/greeter/greet_test.go` or any step definition — `true-bdd build tests --fix` re-renders the test from the registry afterwards.
+The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry).
 
-## Why
-The scen-check `scenario_quality` check failed with:
+Edit nothing else: not `tests/greeter/greet_test.go` (it is re-rendered by `true-bdd build tests --fix`), not any step definition, not `docs/product/product.yaml`, and no other Scenario entry. Within `E2E-001`, leave `id`, `service: greeter`, `path: tests/greeter/greet_test.go` and `user_stories: []` exactly as they are.
 
-- `E2E-001: contains 'quickly' in then`
+## Finding being fixed
+`scen-check/scenario_quality` — `E2E-001: contains 'quickly' in then`.
 
-`quickly` is on the product document's `vocabulary.forbidden_qualifiers` list. The measurable criterion it stands for is already stated in this Scenario's own description — "exit with code 0 within 100 milliseconds" — so the qualifier is replaced by that criterion verbatim. The product document declares no `catalogue:`, and this Scenario's `user_stories:` is empty, so no catalogue template constrains the step's shape.
+`quickly` is on `vocabulary.forbidden_qualifiers` in `docs/product/product.yaml`. The measurable criterion it stands for is already stated in this Scenario's own description — "exit with code 0 within 100 milliseconds" — so the vague word is replaced by that criterion. The assertion is unchanged: exit code 0, bounded by 100 milliseconds.
 
 ## Required Changes
 
-### Change #1: Replace the forbidden qualifier 'quickly' in the `then` step with the measurable criterion from the description
-**Document:** scenarios_yaml (`docs/scenarios.yaml`)
-**Field:** `scenarios.E2E-001.merged_steps.then` — the first list item
+### Change #1: replace the forbidden qualifier 'quickly' with the 100 millisecond bound from the description
+**Document:** scenarios_yaml
+**Field:** merged_steps.then (the first `then` step of `E2E-001`)
 **Current text:**
 ```
-        - the command exits with code 0 quickly
+the command exits with code 0 quickly
 ```
 **New text:**
 ```
-        - the command exits with code 0 within 100 milliseconds
+the command exits with code 0 within 100 milliseconds
 ```
 
-## Must Not Change
-- `scenarios.E2E-001.description` — leave it exactly as it is; it already states the measurable criterion and contains no forbidden qualifier.
-- `scenarios.E2E-001.id`/key, `service: greeter`, `path: tests/greeter/greet_test.go`, `user_stories: []`.
-- The `given` step `the greeting is configured as "Hello"` and the `when` step `the Operator runs "greet Ada"`.
-- The second `then` item `- and: stdout matches ^Hello Ada$`.
-- The `metadata:` block and every other scenario entry.
-- `docs/product/product.yaml` — no catalogue entry `means` is implicated by this finding.
+## What must stay as it is
+- The second `then` step stays exactly `and stdout matches ^Hello Ada$`.
+- The `given` step stays exactly `the greeting is configured as "Hello"`.
+- The `when` step stays exactly `the Operator runs "greet Ada"`.
+- The description stays exactly `The greeter must print the configured greeting followed by the name it is given, and exit with code 0 within 100 milliseconds` — it contains no forbidden qualifier, and it is the source of the 100 millisecond bound used above.
 
-## Behaviour Preserved
-The Scenario still asserts exactly what it asserted: the command exits with code 0, and the exit happens within 100 milliseconds. The timing assertion is kept, not dropped — only the unsettlable word `quickly` is replaced by the bound the description already names.
-
-## Verification
-After applying, re-run the scen-check `scenario_quality` check for E2E-001; it must emit `E2E-001: ok`. Then run `true-bdd build tests --fix` so `tests/greeter/greet_test.go` is re-rendered from the corrected registry entry.
+## Check after applying
+- No step of `E2E-001` contains any word from `vocabulary.forbidden_qualifiers` (`properly`, `correctly`, `appropriate`, `appropriately`, `user-friendly`, `fast`, `quickly`, `helpful`).
+- The rewritten step is still an instance of the `then` concept `exit code` ("The command the role ran ended with a stated exit code; 0 means it succeeded"), now with the exit code stated as 0 and the bound the description sets written out instead of the vague word.
+- Re-render the generated test with `true-bdd build tests --fix`; do not hand-edit it.
 
 ---
 
@@ -106,8 +102,7 @@ same Scenarios, so a copy you leave unparseable changes nothing.
 ## Instructions
 
 1. Use the Read tool to load the working copy the fix prompt names. In
-   the registry, find the `E2E-001:` entry under `scenarios:`;
-   in the product document, the catalogue entry the fix names.
+   the registry, find the `E2E-001:` entry under `scenarios:`.
 2. Apply each change with the Edit tool on that working copy: replace
    the current text the fix prompt gives with its new text, inside that
    entry only.

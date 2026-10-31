@@ -11,22 +11,22 @@ type AcceptanceCriterion struct {
 // CheckedSteps are the criterion's steps as the closure checks read them: each
 // one's own text, without its and:/but: keyword, beside its block.
 func (c AcceptanceCriterion) CheckedSteps() []catalogue.Step {
-	phrases := make([]catalogue.Step, 0, len(c.Steps))
+	steps := make([]catalogue.Step, 0, len(c.Steps))
 
 	for _, step := range c.Steps {
-		phrases = appendPhrases(phrases, catalogue.BlockGiven, step.Given)
-		phrases = appendPhrases(phrases, catalogue.BlockWhen, step.When)
-		phrases = appendPhrases(phrases, catalogue.BlockThen, step.Then)
+		steps = appendSteps(steps, catalogue.BlockGiven, step.Given)
+		steps = appendSteps(steps, catalogue.BlockWhen, step.When)
+		steps = appendSteps(steps, catalogue.BlockThen, step.Then)
 	}
 
-	return phrases
+	return steps
 }
 
-// appendPhrases adds one block's statements, in the order the Story lists them.
-func appendPhrases(phrases []catalogue.Step, block catalogue.Block, statements []StepStatement) []catalogue.Step {
+// appendSteps adds one block's statements, in the order the Story lists them.
+func appendSteps(steps []catalogue.Step, block catalogue.Block, statements []StepStatement) []catalogue.Step {
 	for _, statement := range statements {
-		phrases = append(phrases, catalogue.NewStep(block, statement.Statement))
+		steps = append(steps, catalogue.NewStep(block, statement.Statement))
 	}
 
-	return phrases
+	return steps
 }

@@ -1,9 +1,9 @@
 story:
     id: build-tests-refusals
     feature: build-tests
-    title: Refuse an invalid Registry or a step outside the Catalogue
+    title: Refuse an invalid Registry
     as_a: System Architect
-    i_want: build tests to refuse an absent, empty or malformed Registry and steps outside the declared Catalogue
+    i_want: build tests to refuse an absent, empty or malformed Registry
     so_that: rendering cannot silently omit behaviour
     status: IMPLEMENTED
     acceptance_criteria:

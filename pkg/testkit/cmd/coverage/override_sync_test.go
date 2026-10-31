@@ -207,6 +207,7 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"scen-check-term-defined-twice":           overrideChecks,
 		"scen-check-terms-no-catalogue":           overrideChecks,
 		"scen-check-fix-records-term":             overrideChecks,
+		"scen-check-fix-records-concept":          overrideChecks,
 		"scen-check-term-mapped-twice":            overrideChecks,
 		"scen-check-step-binds-twice":             overrideChecks,
 		"scen-check-definitions-correspond":       overrideChecks,
@@ -244,7 +245,7 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 func interfaceCheckFixtures() []string {
 	return []string{
 		"concepts-valid", "concepts-catalogue-retired", "concepts-undefined-term", "concepts-unmapped-term",
-		"concepts-bindings", "concepts-phrases-retired", "concepts-fix-binding",
+		"concepts-bindings", "concepts-phrases-retired", "concepts-fix-binding", "concepts-fix-operation",
 		"public-interface-missing", "public-interface-missing-document", "public-interface-malformed-document",
 		"public-interface-valid", "public-interface-unsupported", "public-interface-fix",
 	}

@@ -42,7 +42,7 @@ func TestConcepts002BothRefused(t *testing.T) {
 	s.Given(`the "concepts-catalogue-retired" project tree`)
 	s.When(`the System Architect runs "scen check"`)
 	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches Refusing to start.*catalogue: is no longer read; declare concepts: in its place`)
+	s.And(`stdout matches Refusing to start.*the catalogue key is no longer read; declare concepts: in its place`)
 	s.And(`the engine dispatched 0 AI turns`)
 	s.And(`no file outside "tmp" changed`)
 	s.Done()
@@ -110,6 +110,24 @@ func TestConcepts007FixBinding(t *testing.T) {
 	s.And(`stdout matches msg="User chose fix action".*action=apply`)
 	s.And(`stdout matches every concept binding`)
 	s.And(`the only file changed outside "tmp" is "docs/architecture/architecture.yaml"`)
+	s.And(`the file "docs/scenarios.yaml" is unchanged`)
+	s.Done()
+}
+
+// concepts-008-binding-adds-operation: A concept-bindings fix for a binding whose command the CLI document does not declare yet must ask the System Architect first and add the command to that document only after apply, never to the Scenario
+func TestConcepts008BindingAddsOperation(t *testing.T) {
+	s := scenarios.New(t, "concepts-008-binding-adds-operation")
+	s.Given(`the "concepts-fix-operation" project tree`)
+	s.And(`the System Architect's answer to every question is "1"`)
+	s.When(`the System Architect runs "scen check --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches when concept 'translation' for service greeter references \[command: translate\], which its Public interface does not declare`)
+	s.And(`stdout matches msg="AI needs clarification"`)
+	s.And(`stdout matches msg="User chose fix action".*action=apply`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=docs/greeter-cli.yaml`)
+	s.And(`stdout matches every concept binding names a declared concept and valid Public interface references`)
+	s.And(`no file outside "tmp" and "docs" changed`)
+	s.And(`the file "docs/greeter-cli.yaml" matches (?m)^  translate:`)
 	s.And(`the file "docs/scenarios.yaml" is unchanged`)
 	s.Done()
 }

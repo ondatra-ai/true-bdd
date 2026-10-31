@@ -494,7 +494,7 @@ func TestScenCheck002FailedScenarioExits1(t *testing.T) {
 	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=3 answer=fail context="\[E2E-002: then step \\"the greeter prints \\\\\\"Hello Ada\\\\\\" on one line\\" binds to the step definition \^the greeter prints \\"\(\[\^\\"\]\+\)\\" on one line\$ \(greet_steps\.go:23\), which records no concept\]"`)
 	s.And(`stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=14 judgement=link answer=fail`)
 	s.And(`stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=12`)
-	s.And(`stdout matches SKIP: 13\n`)
+	s.And(`stdout matches SKIP: 11\n`)
 	s.And(`stdout matches Validation failed`)
 	s.But(`stdout does not match ALL CHECKS PASSED`)
 	s.And(`the engine dispatched 9 AI turns`)
@@ -565,7 +565,7 @@ func TestScenCheckFix002UndefinedTermGetsDefinition(t *testing.T) {
 	s.When(`the Quality Engineer runs "scen check --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches CHECK FAILED`)
-	s.And(`stdout matches E2E-001: then concept 'answer': "then concept 'answer'" declares "reply", which the glossary does not define`)
+	s.And(`stdout matches E2E-001: then concept 'answer' declares "reply", which the glossary does not define`)
 	s.And(`stdout matches msg="AI needs clarification"`)
 	s.And(`stdout matches FIX PROMPT GENERATED`)
 	s.And(`stdout matches msg="Fix recorded in the document" document=product`)
@@ -594,6 +594,25 @@ func TestScenCheckFix003UnmappedTermGetsMapping(t *testing.T) {
 	s.And(`the only file changed outside "tmp" is "docs/architecture/architecture.yaml"`)
 	s.And(`the file "docs/architecture/architecture.yaml" matches (?m)^ +- term: .?reply.?$`)
 	s.And(`the engine dispatched 3 AI turns`)
+	s.Done()
+}
+
+// scen-check-fix-004-recorded-concept-declared: `scen check --fix` must propose declaring the concept a step's one step definition records when the product document does not declare it under the step's block, asking what the step means first, record the concept the user applies in the product document and never in the Scenario or a step definition, and pass the re-walk
+func TestScenCheckFix004RecordedConceptDeclared(t *testing.T) {
+	s := scenarios.New(t, "scen-check-fix-004-recorded-concept-declared")
+	s.Given(`the "scen-check-fix-records-concept" project tree`)
+	s.And(`the Quality Engineer's answer to every question is "1"`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches CHECK FAILED`)
+	s.And(`stdout matches E2E-001: then step .*the service logs .*which records then concept .*log line.*, which is not a declared then concept`)
+	s.And(`stdout matches msg="AI needs clarification"`)
+	s.And(`stdout matches FIX PROMPT GENERATED`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=product`)
+	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=pass`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.And(`the only file changed outside "tmp" is "docs/product/product.yaml"`)
+	s.And(`the file "docs/product/product.yaml" matches (?m)^ +- concept: .?log line.?$`)
 	s.Done()
 }
 

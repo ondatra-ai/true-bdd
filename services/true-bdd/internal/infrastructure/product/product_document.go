@@ -14,8 +14,8 @@ import (
 )
 
 // ErrCatalogueRetired refuses a product document still declaring the
-// retired `catalogue:` of step templates, naming what replaced it.
-var ErrCatalogueRetired = errors.New("catalogue: is no longer read; declare concepts: in its place (ADR-0034)")
+// retired catalogue of step templates, naming what replaced it.
+var ErrCatalogueRetired = errors.New("the catalogue key is no longer read; declare concepts: in its place (ADR-0034)")
 
 // Document is what the engine reads of the product document. ConceptsDeclared
 // is false when the document, or its `concepts:` key, is absent: a host that

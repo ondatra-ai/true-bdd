@@ -1,15 +1,11 @@
-# Story `scen-check-step-definitions`: `scen check` holding the catalogue and
-# the step definitions one to one.
+# Story `scen-check-step-definitions`: `scen check` holding each step to
+# the one step definition recording its concept.
 #
-# The `step-definitions` closure check of the scen-check checklist: across the
-# Scenarios a Story claims that share one suite, each catalogue template their
-# steps match binds to one step definition, and each step definition is
-# reached by one template. The walk and the exit code are the Story
-# `scen-check`; the other closure checks are scen-check-phrases,
-# scen-check-terms and scen-check-mappings.
-#
-# Criteria 003 to 005 run on a host declaring concepts, where every
-# Scenario is checked, a Story claiming it or not (#259).
+# The `step-definitions` closure check of the scen-check checklist: every
+# step of every Scenario, a Story claiming it or not, binds one step
+# definition of its suite, which records a declared concept of the step's
+# block. The walk and the exit code are the Story `scen-check`; the other
+# closure checks are scen-check-terms and scen-check-mappings.
 #
 # Each criterion's id is the second half of its Scenario's Registry key,
 # `scen-check-step-definitions-<id>` (ADR 0014), and its steps are that
@@ -18,10 +14,10 @@
 story:
     id: scen-check-step-definitions
     feature: scen-check
-    title: Hold the catalogue and the step definitions one to one with scen check
+    title: Hold each step to one step definition recording its concept with scen check
     as_a: Quality Engineer
-    i_want: scen check to verify, with no AI turn, that across the Scenarios a Story claims that share one suite each catalogue template binds to one step definition and each step definition is reached by one template, naming every template, step and definition that breaks it and the file and line where that definition is written; on a host declaring concepts, that every step of every Scenario binds one step definition, which records a declared concept of the step's block
-    so_that: the catalogue and the step definitions never drift apart, and each step definition follows from the one catalogue entry whose steps it binds
+    i_want: scen check to verify, with no AI turn, that every step of every Scenario binds one step definition, which records a declared concept of the step's block, naming every step and definition that breaks it and the file and line where that definition is written
+    so_that: the concepts and the step definitions never drift apart, and each step definition follows from the one concept whose steps it binds
     status: IMPLEMENTED
     acceptance_criteria:
         - id: 003-step-binds-twice-fails

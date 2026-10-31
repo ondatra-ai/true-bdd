@@ -25,12 +25,12 @@
     "{\n  \"item\": \"halve-negative\",\n  \"description\": \"Halve negative integers\",\n  \"product\": \"title: Integer calculator\\ndescription:\\n  summary: 'The halve-negative Story halves an already validated negative integer and rounds toward zero. It has no failure mode of its own: missing and non-integer inputs belong to the separate calculator-input\\n    Story. Negative inputs -6, -7 and -1 produce -3, -3 and 0 respectively.'\\nroles:\\n- name: Calculator User\\n  definition: A person using the calculator CLI\\nvocabulary:\\n  forbidden_qualifiers:\\n  - properly\\n  - correctly\\n  - appropriate\\n  - fast\\n  forbidden_actions: []\\nglossary: []\\nconcepts:\\n  given:\\n    - concept: number supplied\\n      means: The calculator is supplied a stated, already validated integer.\\n      terms: []\\n  when:\\n    - concept: halve requested\\n      means: The Calculator User runs the halve command on the supplied number.\\n      terms: []\\n  then:\\n    - concept: result\\n      means: The halve command succeeds and prints exactly a stated integer, the half rounded toward zero.\\n      terms: []\\n\",\n  \"steps\": [\n    {\n      \"key\": \"1\",\n      \"criterion\": \"001-even\",\n      \"block\": \"given\",\n      \"text\": \"the number is \\\"-6\\\"\"\n    },\n    {\n      \"key\": \"2\",\n      \"criterion\": \"001-even\",\n      \"block\": \"when\",\n      \"text\": \"the Calculator User halves the number\"\n    },\n    {\n      \"key\": \"3\",\n      \"criterion\": \"001-even\",\n      \"block\": \"then\",\n      \"text\": \"the result is \\\"-3\\\"\"\n    },\n    {\n      \"key\": \"4\",\n      \"criterion\": \"002-odd\",\n      \"block\": \"given\",\n      \"text\": \"the number is \\\"-7\\\"\"\n    },\n    {\n      \"key\": \"5\",\n      \"criterion\": \"002-odd\",\n      \"block\": \"when\",\n      \"text\": \"the Calculator User halves the number\"\n    },\n    {\n      \"key\": \"6\",\n      \"criterion\": \"002-odd\",\n      \"block\": \"then\",\n      \"text\": \"the result is \\\"-3\\\"\"\n    },\n    {\n      \"key\": \"7\",\n      \"criterion\": \"003-near-zero\",\n      \"block\": \"given\",\n      \"text\": \"the number is \\\"-1\\\"\"\n    },\n    {\n      \"key\": \"8\",\n      \"criterion\": \"003-near-zero\",\n      \"block\": \"when\",\n      \"text\": \"the Calculator User halves the number\"\n    },\n    {\n      \"key\": \"9\",\n      \"criterion\": \"003-near-zero\",\n      \"block\": \"then\",\n      \"text\": \"the result is \\\"0\\\"\"\n    }\n  ]\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 10465,
+  "duration_ms": 21214,
   "request_hash": "sha256:5af9866712f0d26c595c26c296a857401df246e77f95957773da9b43e2f75df6",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-10-30T16:32:16Z"
+  "recorded_at": "2026-10-30T21:30:14Z"
 }

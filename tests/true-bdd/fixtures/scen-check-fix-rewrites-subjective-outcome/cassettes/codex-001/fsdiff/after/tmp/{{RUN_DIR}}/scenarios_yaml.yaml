@@ -6,7 +6,7 @@ metadata:
 
 scenarios:
   E2E-001:
-    description: The greeter must print the configured greeting followed by the name it is given, so an Operator reading the terminal sees that person greeted
+    description: The greeter must print the configured greeting followed by the name it is given so that the Operator reads that person's name in the line it prints
     service: greeter
     path: tests/greeter/greet_test.go
     user_stories: []
@@ -16,4 +16,4 @@ scenarios:
       when:
         - the Operator runs "greet Ada"
       then:
-        - the greeter prints a line on standard output matching "^Hello Ada$"
+        - the command printed a line on standard output matching "^Hello Ada$"

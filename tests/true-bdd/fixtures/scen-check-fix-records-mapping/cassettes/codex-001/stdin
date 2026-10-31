@@ -1,8 +1,8 @@
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
 
 You are a Term Document Editor applying an approved fix to the working
-copy of one term document: the product document's step-phrase catalogue
-or glossary, or the architecture document's word mapping.
+copy of one term document: the product document's glossary or
+concepts, or the architecture document's word mapping.
 
 **Your Task:**
 1. Read the working copy the fix names.
@@ -48,22 +48,23 @@ Then:
 
 ## Fix Prompt to Apply
 
-For the System Architect (owner of Word mappings and bindings).
+Proposal for the System Architect (owner of Word mappings), at the menu before apply.
 
-Finding: E2E-001, service mcp-service, check term-mappings — the Then concept `answer` (product.yaml `concepts.then`) uses the term `reply`, declared in the product glossary, but `architecture.terms` has mappings only for `mcp service` and `message`. The term `reply` therefore has no Word mapping.
+Finding: E2E-001, service mcp-service, check term-mappings — the Then concept `answer` uses the product term `reply`, which has no entry in `architecture.terms`. The product glossary already defines `reply` ("What the MCP service sends back for one message. A client waits on it, so its content is behaviour."), so only the architecture mapping is missing. Nothing in the product document, the Scenario, the step definitions or any generated test changes.
 
-Fix: add one `architecture.terms` entry for `reply`, using the technical meaning and observation you gave. Nothing in the Scenario, the generated test, or any step definition changes; the product glossary already declares `reply`, so it stays untouched.
-
-File: ./docs/architecture/architecture.yaml
+Change one file: `docs/architecture/architecture.yaml` — append one `architecture.terms` entry for `reply`, after the existing `message` entry, keeping the list's two-space-nested, four-space item indentation.
 
 old_string:
+```
     - term: message
       technical: >-
         One JSON-RPC request whose params carry the text, posted to /mcp.
       observed_by: >-
         Post the request to /mcp and keep the response for the steps after.
+```
 
 new_string:
+```
     - term: message
       technical: >-
         One JSON-RPC request whose params carry the text, posted to /mcp.
@@ -71,15 +72,23 @@ new_string:
         Post the request to /mcp and keep the response for the steps after.
     - term: reply
       technical: >-
-        The JSON-RPC response body returned by POST /mcp, whose result
-        carries the answer text as a string.
+        The JSON-RPC response body returned by the POST to /mcp, whose
+        result field holds the answer text.
       observed_by: >-
-        Read the result text out of the response the send step kept, and
-        compare it with the stated text.
+        Read the response the When step kept and compare its answer text
+        with the stated text.
+```
 
-Why this shape: `term` is the glossary word verbatim (`reply`), `technical` states what the word is in the implementation (the JSON-RPC response body from POST /mcp carrying the answer text), and `observed_by` is prose for how a step definition observes it — reading the result text out of the response the When step kept and comparing it with the stated text, which is what a Then does (observe and compare). All three are nonempty strings and none is a reference object.
+Why this satisfies the check:
+- `term` is the product's verbatim glossary word `reply`.
+- `technical` says what the word is in the implementation — the JSON-RPC response body from the POST to /mcp, with the answer text in its `result` field — taken verbatim from the `reply-technical` answer. It is prose, not a reference object.
+- `observed_by` is prose for how a step definition observes it: the Then step reads the response that the When step kept and compares its answer text with the stated text — taken verbatim from the `reply-observed` answer. It is prose, not a reference object.
+- The mapping is observed in a Then, which observes and compares, matching the `answer` concept's block; it does not set up state or call anything.
+- All three fields are nonempty strings, and the entry duplicates no existing term (`mcp service`, `message`).
 
-No other document needs editing: this is a term-mappings finding, so `architecture.concepts` bindings and the service's Public interface declarations are unaffected.
+No other document is touched: this check names only `architecture.terms`, no concept binding or reference is added, so no Public interface declaration is needed.
+
+Apply after approval at the menu.
 
 ---
 
@@ -105,8 +114,7 @@ observed_by is prose describing setup or observation, never a reference object.
    above with the Edit tool on that working copy: append a new entry at
    the end of its list, at the list's own indentation, or replace the
    old_string verbatim.
-3. Copy each entry's YAML exactly as the fix prompt gives it. Keep a
-   template single-quoted: it carries `{`, `[` and `"` of its own.
+3. Copy each entry's YAML exactly as the fix prompt gives it.
 4. You MAY only edit the working copies listed above. The documents
    themselves, the scenario registry, a generated test file and a step
    definition are all out of bounds.

@@ -7,7 +7,7 @@ approval: never
 sandbox: read-only
 reasoning effort: medium
 reasoning summaries: none
-session id: 01a18deb-09d9-77a0-bb96-84862dc06138
+session id: 01a18ea0-55e3-7463-8fb0-9f5e97a64a01
 --------
 user
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
@@ -90,7 +90,7 @@ is a question this checklist does not ask — answer the one it does.
 ## Subject — Registry Scenario
 
 **Scenario ID:** E2E-001
-**Description:** The greeter must print the configured greeting followed by the name it is given and exit within 100 milliseconds
+**Description:** The greeter must print the configured greeting followed by the name it is given and exit with code 0 within 100 milliseconds
 **Service:** greeter
 **Generated test file:** tests/greeter/greet_test.go
 
@@ -154,7 +154,7 @@ markdown fences. Reasoning before the object is fine and is ignored.
 
 
 codex
-I’ll read the product document’s forbidden qualifiers and check the scenario description against them.
+I’ll read the product’s forbidden qualifiers and check the scenario description against that list.
 
 exec
 /bin/zsh -lc 'cat ./docs/product/product.yaml' in {{CWD}}
@@ -240,9 +240,9 @@ concepts:
       terms: [command, standard output]
 
 codex
-The description contains none of the listed forbidden qualifiers. “Within 100 milliseconds” states a measurable limit.
+The description contains none of the forbidden qualifiers. “Within 100 milliseconds” states a measurable limit.
 
 codex
-{"answer":"pass","context":["E2E-001: ok"] , "fix_prompt":""}
+{"answer":"pass","context":["E2E-001: ok"] ,"fix_prompt":""}
 tokens used
-18,386
+18,292
