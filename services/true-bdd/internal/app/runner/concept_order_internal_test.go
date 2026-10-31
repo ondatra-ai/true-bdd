@@ -17,7 +17,7 @@ func TestWalkLinksBeforeSketchBindingAndWordJudgements(t *testing.T) {
 		{Index: 2, Prompt: checklist.Prompt{Question: "Bindings", With: map[string]any{conceptsKey: "bindings"}}},
 		{Index: 3, Prompt: checklist.Prompt{Check: "public-interface"}},
 		{Index: 4, Prompt: checklist.Prompt{Question: "Link", With: map[string]any{conceptsKey: "link"}}},
-		{Index: 5, Prompt: checklist.Prompt{Check: "phrase-mappings"}},
+		{Index: 5, Prompt: checklist.Prompt{Check: "concept-bindings"}},
 		{Index: 6, Prompt: checklist.Prompt{Question: "Words", With: map[string]any{conceptsKey: "words"}}},
 	}
 

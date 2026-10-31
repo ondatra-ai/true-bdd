@@ -989,7 +989,6 @@ scenarios:
         - stdout matches REFINE COMPLETE
         - but: no file outside "tmp" changed
         - and: the file "docs/product/stories/96.4-summary-error-messages.yaml" is unchanged
-        - and: 'stdout matches msg="Check answered" check=step-phrases subjectID=96\.4 promptIndex=13 answer=pass context="\[96\.4: not checked: the product document declares no catalogue\]"'
         - and: stdout does not match ALL CHECKS PASSED!
         - and: 'stdout does not match msg="Story saved"'
   us-refine-verdicts-003-implementation-and-subjective-fail:
@@ -1014,33 +1013,6 @@ scenarios:
         - and: the file "docs/product/stories/96.3-summary-service-internals.yaml" is unchanged
         - and: stdout does not match ALL CHECKS PASSED!
         - and: 'stdout does not match msg="Story saved"'
-  us-refine-verdicts-004-step-outside-catalogue-fails:
-    description: When the product document declares a catalogue, a Story with a step that matches no catalogue phrase, or only a phrase of another block, must fail the step-phrase check, naming each such step under its acceptance criterion, skip every model check, and leave the Story unchanged without an AI turn
-    service: true-bdd
-    path: tests/true-bdd/us_refine_test.go
-    user_stories:
-      - story: docs/product/stories/us-refine-verdicts-without-fix.yaml
-        scenario_id: us-refine-verdicts-004-step-outside-catalogue-fails
-        merge_date: '2026-10-22'
-    merged_steps:
-      given:
-        - the "us-refine-step-outside-catalogue" project tree
-      when:
-        - the Product Owner runs "us refine doc-outline"
-      then:
-        - the command exits with code 0
-        - 'stdout matches msg="Check answered" check=step-phrases subjectID=doc-outline promptIndex=13 answer=fail'
-        - and: 'stdout matches AC-1: 3 steps match one template each'
-        - and: 'stdout matches AC-2: then step \\"Claude offers to summarise the document instead\\" matches no template'
-        - and: 'stdout matches AC-3: given step \\"the Claude User asks Claude to outline the document\\" matches \\"the \{actor:role\} asks Claude to outline the document\\", declared for when'
-        - and: stdout matches msg="Prompt skipped after a failed check" subjectID=doc-outline promptIndex=1
-        - and: 'stdout matches us-refine/term_closure +D: step-phrases +fail +FAIL'
-        - and: 'stdout matches SKIP: 12\n'
-        - and: stdout matches Validation failed. Use --fix flag to enter interactive fix mode.
-        - but: 'stdout does not match msg="Story saved"'
-        - and: no file outside "tmp" changed
-        - and: the file "docs/product/stories/doc-outline-catalogued.yaml" is unchanged
-        - and: the engine dispatched no AI turns
   us-refine-refusals-002-slug-id-accepted:
     description: A Story id that is a slug rather than a numeric `<N>.<M>` must pass validation, so a story with no file is refused as a missing Story, never as a malformed id
     service: true-bdd
@@ -1113,35 +1085,6 @@ scenarios:
         - and: the story "docs/product/stories/doc-summary-keeps-feature.yaml" has feature "document-summaries"
         - and: the story "docs/product/stories/doc-summary-keeps-feature.yaml" has 4 acceptance criteria
         - and: stdout does not match Hit max apply attempts
-  us-refine-fix-007-step-outside-catalogue-gets-phrase:
-    description: '`us refine --fix` must propose a catalogue entry for a Story step that matches no catalogue phrase, record the entry the user applies in the product document and never in the Story, and pass the re-walk'
-    service: true-bdd
-    path: tests/true-bdd/us_refine_test.go
-    user_stories:
-      - story: docs/product/stories/us-refine-fix-loop.yaml
-        scenario_id: us-refine-fix-007-step-outside-catalogue-gets-phrase
-        merge_date: '2026-10-22'
-    timeout: 10m
-    merged_steps:
-      given:
-        - the "us-refine-fix-records-phrase" project tree
-        - the Product Owner's answer to every question is "1"
-      when:
-        - the Product Owner runs "us refine doc-outline --fix"
-      then:
-        - the command exits with code 0
-        - 'stdout matches msg="Check answered" check=step-phrases subjectID=doc-outline promptIndex=1 answer=fail'
-        - and: 'stdout matches AC-2: then step \\"Claude offers to summarise the document instead\\" matches no template'
-        - and: stdout matches FIX PROMPT GENERATED
-        - and: stdout matches msg="Fix recorded in the document" document=product
-        - and: stdout matches check=step-phrases subjectID=doc-outline promptIndex=1 answer=pass
-        - and: stdout matches ALL CHECKS PASSED!
-        - and: 'stdout matches msg="Story saved"'
-        - and: no file outside "tmp" and "docs/product" changed
-        - and: the file "docs/product/product.yaml" is modified
-        - and: the file "docs/product/product.yaml" matches Claude offers to
-        - and: the story "docs/product/stories/doc-outline-catalogued.yaml" has 3 acceptance criteria
-        - and: the file "docs/product/stories/doc-outline-catalogued.yaml" matches Claude offers to summarise the document instead
   engine-002-us-help-lists-story-commands:
     description: '`us --help` must list the Story commands the pipeline has, which start at `us refine`, and no `us create`'
     service: true-bdd
@@ -1375,7 +1318,7 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches level=ERROR msg="Refusing to start" command="scen check"
-        - 'stdout matches scen-check/scenario_quality #1 D: steps-are-present names no built-in check of scen check, which has declared-terms, given-when-then, phrase-mappings, public-interface, step-definitions, step-phrases, term-mappings'
+        - 'stdout matches scen-check/scenario_quality #1 D: steps-are-present names no built-in check of scen check, which has concept-bindings, declared-terms, given-when-then, public-interface, step-definitions, term-mappings'
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
@@ -1466,183 +1409,6 @@ scenarios:
         - but: stdout does not match ALL CHECKS PASSED
         - and: the engine dispatched 1 AI turn
         - and: no file outside "tmp" changed
-  scen-check-phrases-002-unmatched-step-fails:
-    description: A step of a Scenario a Story claims that matches no catalogue phrase must fail that Scenario, naming the step and its block, with the Scenario's `Q:` Prompts skipped and no AI turn spent on them
-    service: true-bdd
-    path: tests/true-bdd/scen_check_test.go
-    user_stories:
-      - story: docs/product/stories/scen-check-phrases-step-phrase-closure.yaml
-        scenario_id: scen-check-phrases-002-unmatched-step-fails
-        merge_date: '2026-10-21'
-    merged_steps:
-      given:
-        - the "scen-check-phrase-unmatched" project tree
-      when:
-        - the Quality Engineer runs "scen check"
-      then:
-        - the command exits with code 1
-        - 'stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: then step \\"the service answers within 200 milliseconds\\" matches no template\]"'
-        - and: stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-001 promptIndex=2
-        - and: 'stdout matches scen-check/term_closure +D: step-phrases +fail +FAIL'
-        - and: 'stdout matches SKIP: 1\n'
-        - and: stdout matches Validation failed
-        - but: stdout does not match ALL CHECKS PASSED
-        - and: the engine dispatched no AI turns
-        - and: no file outside "tmp" changed
-  scen-check-phrases-003-ambiguous-step-fails:
-    description: A step of a Scenario a Story claims that two catalogue templates match must fail that Scenario, naming both templates, because a step means one thing or nothing
-    service: true-bdd
-    path: tests/true-bdd/scen_check_test.go
-    user_stories:
-      - story: docs/product/stories/scen-check-phrases-step-phrase-closure.yaml
-        scenario_id: scen-check-phrases-003-ambiguous-step-fails
-        merge_date: '2026-10-21'
-    merged_steps:
-      given:
-        - the "scen-check-phrase-ambiguous" project tree
-      when:
-        - the Quality Engineer runs "scen check"
-      then:
-        - the command exits with code 1
-        - 'stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: then step \\"the service answers 200\\" matches 2 templates: \\"the service answers \{code:number\}\\"; \\"the service answers 200\\"\]"'
-        - and: stdout matches Validation failed
-        - and: the engine dispatched no AI turns
-        - and: no file outside "tmp" changed
-  scen-check-phrases-004-wrong-block-step-fails:
-    description: A step of a Scenario a Story claims must fail that Scenario when the one template it matches is declared for another block, naming that block
-    service: true-bdd
-    path: tests/true-bdd/scen_check_test.go
-    user_stories:
-      - story: docs/product/stories/scen-check-phrases-step-phrase-closure.yaml
-        scenario_id: scen-check-phrases-004-wrong-block-step-fails
-        merge_date: '2026-10-21'
-    merged_steps:
-      given:
-        - the "scen-check-phrase-wrong-block" project tree
-      when:
-        - the Quality Engineer runs "scen check"
-      then:
-        - the command exits with code 1
-        - 'stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: then step \\"the mcp service is running\\" matches \\"the mcp service is running\\", declared for given\]"'
-        - and: stdout matches Validation failed
-        - and: the engine dispatched no AI turns
-        - and: no file outside "tmp" changed
-  scen-check-phrases-005-malformed-template-fails-every-scenario:
-    description: A catalogue template the grammar refuses must fail every Scenario a Story claims, naming the template and the rule it breaks, because no step can be held to it
-    service: true-bdd
-    path: tests/true-bdd/scen_check_test.go
-    user_stories:
-      - story: docs/product/stories/scen-check-phrases-step-phrase-closure.yaml
-        scenario_id: scen-check-phrases-005-malformed-template-fails-every-scenario
-        merge_date: '2026-10-21'
-    merged_steps:
-      given:
-        - the "scen-check-phrase-malformed" project tree
-      when:
-        - the Quality Engineer runs "scen check"
-      then:
-        - the command exits with code 1
-        - stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=fail
-        - and: 'stdout matches E2E-001: catalogue template \\"the mcp service is running\\" is malformed: another entry declares the same template'
-        - and: 'stdout matches E2E-001: catalogue template \\"the service answers \{reply\}\\" is malformed: text slot \{reply\} is not between double quotes'
-        - and: 'stdout matches E2E-001: catalogue template \\"the service waits \{delay:seconds\}\\" is malformed: slot \{delay:seconds\} has an unknown kind; a slot is text, number, role or pattern'
-        - and: 'stdout matches E2E-001: catalogue template \\"the reply matches \{expected:pattern\} exactly\\" is malformed: pattern slot \{expected:pattern\} is not the last token'
-        - and: 'stdout matches E2E-001: catalogue template \\"the reply matches\{expected:pattern\}\\" is malformed: pattern slot \{expected:pattern\} does not follow a space'
-        - and: 'stdout matches is malformed: slot name \\"name\\" is used twice'
-        - and: 'stdout matches E2E-001: catalogue template \\"the \{actor:role\} sends \\"\{message\}\\"\\" is malformed: role slot \{actor:role\}, but the product document declares no roles'
-        - and: 'stdout matches is malformed: brackets \[answers\|\\"replies\\"\] hold a slot, a quote or another bracket'
-        - and: 'stdout matches E2E-001: catalogue template \\"the service is \{up\\" is malformed: a \{ is never closed'
-        - and: 'stdout matches E2E-001: catalogue template \\"the service \[answers\\" is malformed: a \[ is never closed'
-        - and: 'stdout matches msg="Check answered" check=step-phrases subjectID=E2E-002 promptIndex=1 answer=fail context="\[E2E-002: catalogue template \\"the mcp service is running\\" is malformed: another entry declares the same template'
-        - and: stdout matches Validation failed
-        - and: the engine dispatched no AI turns
-        - and: no file outside "tmp" changed
-  scen-check-phrases-001-matched-steps-pass:
-    description: A Scenario a Story claims must pass the step-phrase check when each of its steps matches exactly one catalogue template declared for its block, whatever slots the templates use, and the `llm:` and `judge:` steps a model runs must be exempt
-    service: true-bdd
-    path: tests/true-bdd/scen_check_test.go
-    user_stories:
-      - story: docs/product/stories/scen-check-phrases-step-phrase-closure.yaml
-        scenario_id: scen-check-phrases-001-matched-steps-pass
-        merge_date: '2026-10-21'
-    merged_steps:
-      given:
-        - the "scen-check-phrase-closed" project tree
-      when:
-        - the Quality Engineer runs "scen check"
-      then:
-        - the command exits with code 0
-        - 'stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: 7 steps match one template each, 2 model-run steps exempt\]"'
-        - and: stdout matches ALL CHECKS PASSED
-        - and: the engine dispatched no AI turns
-        - and: no file outside "tmp" changed
-  scen-check-phrases-006-unclaimed-scenario-unchecked:
-    description: A Scenario no Story claims must pass the step-phrase check unchecked, saying so, while a Scenario a Story claims is checked beside it
-    service: true-bdd
-    path: tests/true-bdd/scen_check_test.go
-    user_stories:
-      - story: docs/product/stories/scen-check-phrases-step-phrase-closure.yaml
-        scenario_id: scen-check-phrases-006-unclaimed-scenario-unchecked
-        merge_date: '2026-10-21'
-    merged_steps:
-      given:
-        - the "scen-check-phrase-unclaimed" project tree
-      when:
-        - the Quality Engineer runs "scen check"
-      then:
-        - the command exits with code 0
-        - 'stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: 3 steps match one template each\]"'
-        - and: 'stdout matches msg="Check answered" check=step-phrases subjectID=E2E-002 promptIndex=1 answer=pass context="\[E2E-002: not checked: no Story claims this Scenario yet\]"'
-        - and: stdout matches ALL CHECKS PASSED
-        - and: the engine dispatched no AI turns
-        - and: no file outside "tmp" changed
-  scen-check-phrases-007-no-catalogue-unchecked:
-    description: A product document that declares no catalogue must leave every Scenario unchecked by the step-phrase check, saying so, because a host adopts the catalogue by writing one
-    service: true-bdd
-    path: tests/true-bdd/scen_check_test.go
-    user_stories:
-      - story: docs/product/stories/scen-check-phrases-step-phrase-closure.yaml
-        scenario_id: scen-check-phrases-007-no-catalogue-unchecked
-        merge_date: '2026-10-21'
-    merged_steps:
-      given:
-        - the "scen-check-phrase-no-catalogue" project tree
-      when:
-        - the Quality Engineer runs "scen check"
-      then:
-        - the command exits with code 0
-        - 'stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: not checked: the product document declares no catalogue\]"'
-        - and: stdout matches ALL CHECKS PASSED
-        - and: the engine dispatched no AI turns
-        - and: no file outside "tmp" changed
-  scen-check-fix-001-unmatched-step-gets-phrase:
-    description: '`scen check --fix` must propose a catalogue entry for a step that matches none, record the entry the user
-      applies in the product document and never in the Scenario, and pass the re-walk'
-    service: true-bdd
-    path: tests/true-bdd/scen_check_test.go
-    user_stories:
-    - story: docs/product/stories/scen-check-fix-clarification-loop.yaml
-      scenario_id: scen-check-fix-001-unmatched-step-gets-phrase
-      merge_date: '2026-10-21'
-    timeout: 10m
-    merged_steps:
-      given:
-      - the "scen-check-fix-records-phrase" project tree
-      - the Quality Engineer's answer to every question is "1"
-      when:
-      - the Quality Engineer runs "scen check --fix"
-      then:
-      - the command exits with code 0
-      - stdout matches CHECK FAILED
-      - and: 'stdout matches E2E-001: then step "the service answers within 200 milliseconds" matches no template'
-      - and: stdout matches msg="AI needs clarification"
-      - and: stdout matches FIX PROMPT GENERATED
-      - and: stdout matches msg="Fix recorded in the document" document=product
-      - and: stdout matches check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass
-      - and: stdout matches ALL CHECKS PASSED
-      - and: the only file changed outside "tmp" is "docs/product/product.yaml"
-      - and: the file "docs/product/product.yaml" matches the service answers within
-      - and: the engine dispatched 3 AI turns
   checklist-checks-007-unlisted-document-refused:
     description: A `D:` Prompt naming a check that reads a document must be refused at startup when its `docs:` does not list that document, because the check would otherwise read no product document and pass every Scenario unchecked
     service: true-bdd
@@ -1663,49 +1429,6 @@ scenarios:
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
-  scen-check-terms-001-undefined-term-fails:
-    description: A term that the catalogue template a step matches declares, and that the product glossary does not define, must fail the Scenario a Story claims, naming the template and the term, while a term only an unmatched template declares is no failure of that Scenario
-    service: true-bdd
-    path: tests/true-bdd/scen_check_test.go
-    user_stories:
-      - story: docs/product/stories/scen-check-terms-glossary-closure.yaml
-        scenario_id: scen-check-terms-001-undefined-term-fails
-        merge_date: '2026-10-21'
-    merged_steps:
-      given:
-        - the "scen-check-term-undefined" project tree
-      when:
-        - the Quality Engineer runs "scen check"
-      then:
-        - the command exits with code 1
-        - 'stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: \\"the service answers \\"\{reply\}\\"\\" declares \\"reply\\", which the glossary does not define\]"'
-        - but: stdout does not match the service restarts
-        - and: 'stdout matches scen-check/term_closure +D: declared-terms +fail +FAIL'
-        - and: stdout matches Validation failed
-        - but: stdout does not match ALL CHECKS PASSED
-        - and: the engine dispatched no AI turns
-        - and: no file outside "tmp" changed
-  scen-check-terms-002-defined-terms-pass:
-    description: A Scenario a Story claims must pass the declared-term check when the glossary defines every term the templates its steps match declare, naming those terms, while a Scenario no Story claims passes unchecked and one whose templates declare no term passes saying so
-    service: true-bdd
-    path: tests/true-bdd/scen_check_test.go
-    user_stories:
-      - story: docs/product/stories/scen-check-terms-glossary-closure.yaml
-        scenario_id: scen-check-terms-002-defined-terms-pass
-        merge_date: '2026-10-21'
-    merged_steps:
-      given:
-        - the "scen-check-terms-defined" project tree
-      when:
-        - the Quality Engineer runs "scen check"
-      then:
-        - the command exits with code 0
-        - 'stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: every declared term is defined: mcp service, message, reply\]"'
-        - and: 'stdout matches msg="Check answered" check=declared-terms subjectID=E2E-002 promptIndex=1 answer=pass context="\[E2E-002: not checked: no Story claims this Scenario yet\]"'
-        - and: 'stdout matches msg="Check answered" check=declared-terms subjectID=E2E-003 promptIndex=1 answer=pass context="\[E2E-003: no matched template declares a term\]"'
-        - and: stdout matches ALL CHECKS PASSED
-        - and: the engine dispatched no AI turns
-        - and: no file outside "tmp" changed
   scen-check-terms-003-term-defined-twice-fails:
     description: A term a concept declares, which the glossary defines more than once, must fail every Scenario, naming the concept, the term and how many times it is defined, because a word with two meanings has none a reader can rely on
     service: true-bdd
@@ -1726,7 +1449,7 @@ scenarios:
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
   scen-check-terms-004-no-catalogue-unchecked:
-    description: A product document that declares no catalogue must leave every Scenario unchecked by the declared-term check, saying so, whatever its glossary holds
+    description: A product document that declares no concepts must leave every Scenario unchecked by the declared-term check, saying so, whatever its glossary holds
     service: true-bdd
     path: tests/true-bdd/scen_check_test.go
     user_stories:
@@ -1740,7 +1463,7 @@ scenarios:
         - the Quality Engineer runs "scen check"
       then:
         - the command exits with code 0
-        - 'stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: not checked: the product document declares no catalogue\]"'
+        - 'stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: not checked: the product document declares no concepts\]"'
         - and: stdout matches ALL CHECKS PASSED
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
@@ -1762,7 +1485,7 @@ scenarios:
       then:
         - the command exits with code 0
         - stdout matches CHECK FAILED
-        - and: 'stdout matches E2E-001: then concept ''answer'': "then concept ''answer''" declares "reply", which the glossary does not define'
+        - and: 'stdout matches E2E-001: then concept ''answer'' declares "reply", which the glossary does not define'
         - and: stdout matches msg="AI needs clarification"
         - and: stdout matches FIX PROMPT GENERATED
         - and: stdout matches msg="Fix recorded in the document" document=product
@@ -1771,48 +1494,6 @@ scenarios:
         - and: the only file changed outside "tmp" is "docs/product/product.yaml"
         - and: 'the file "docs/product/product.yaml" matches (?m)^ +- term: .?reply.?$'
         - and: the engine dispatched 3 AI turns
-  scen-check-mappings-002-unmapped-term-fails:
-    description: A term that the catalogue template a step matches declares, and that the architecture's word mapping does not map, must fail the Scenario a Story claims, naming the term
-    service: true-bdd
-    path: tests/true-bdd/scen_check_test.go
-    user_stories:
-      - story: docs/product/stories/scen-check-mappings-architecture-closure.yaml
-        scenario_id: scen-check-mappings-002-unmapped-term-fails
-        merge_date: '2026-10-21'
-    merged_steps:
-      given:
-        - the "scen-check-term-unmapped" project tree
-      when:
-        - the Quality Engineer runs "scen check"
-      then:
-        - the command exits with code 1
-        - 'stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: \\"reply\\" has no mapping in the architecture\]"'
-        - and: 'stdout matches scen-check/term_closure +D: term-mappings +fail +FAIL'
-        - and: stdout matches Validation failed
-        - but: stdout does not match ALL CHECKS PASSED
-        - and: the engine dispatched no AI turns
-        - and: no file outside "tmp" changed
-  scen-check-mappings-001-mapped-terms-pass:
-    description: A Scenario a Story claims must pass the term-mapping check when the architecture maps every term the templates its steps match declare, naming those terms, while a Scenario no Story claims passes unchecked and one whose templates declare no term passes saying so
-    service: true-bdd
-    path: tests/true-bdd/scen_check_test.go
-    user_stories:
-      - story: docs/product/stories/scen-check-mappings-architecture-closure.yaml
-        scenario_id: scen-check-mappings-001-mapped-terms-pass
-        merge_date: '2026-10-21'
-    merged_steps:
-      given:
-        - the "scen-check-terms-mapped" project tree
-      when:
-        - the Quality Engineer runs "scen check"
-      then:
-        - the command exits with code 0
-        - 'stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: every declared term is mapped: mcp service, message, reply\]"'
-        - and: 'stdout matches msg="Check answered" check=term-mappings subjectID=E2E-002 promptIndex=1 answer=pass context="\[E2E-002: not checked: no Story claims this Scenario yet\]"'
-        - and: 'stdout matches msg="Check answered" check=term-mappings subjectID=E2E-003 promptIndex=1 answer=pass context="\[E2E-003: no matched template declares a term\]"'
-        - and: stdout matches ALL CHECKS PASSED
-        - and: the engine dispatched no AI turns
-        - and: no file outside "tmp" changed
   scen-check-mappings-003-term-mapped-twice-fails:
     description: A term a concept declares, which the architecture maps more than once, must fail every Scenario, naming the concept, the term and how many times it is mapped, because a word built two ways has no one way a step definition can follow
     service: true-bdd
@@ -1829,47 +1510,6 @@ scenarios:
       then:
         - the command exits with code 1
         - 'stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: then concept ''answer'': the architecture maps \\"reply\\" 2 times\]"'
-        - and: stdout matches Validation failed
-        - and: the engine dispatched no AI turns
-        - and: no file outside "tmp" changed
-  scen-check-step-definitions-001-template-binds-twice-fails:
-    description: A catalogue template whose steps, across every Scenario a Story claims that shares one suite, bind to two different step definitions must fail each of those Scenarios using it, naming the template and both definitions with where each is written, while a Scenario no Story claims neither counts nor is checked
-    service: true-bdd
-    path: tests/true-bdd/scen_check_test.go
-    user_stories:
-      - story: docs/product/stories/scen-check-step-definitions-correspondence.yaml
-        scenario_id: scen-check-step-definitions-001-template-binds-twice-fails
-        merge_date: '2026-10-21'
-    merged_steps:
-      given:
-        - the "scen-check-template-binds-twice" project tree
-      when:
-        - the Quality Engineer runs "scen check"
-      then:
-        - the command exits with code 1
-        - 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: template \\"the service answers \\"\{reply\}\\"\\" binds to 2 step definitions in tests/mcp/steps: \^the service answers \\"pong\\"\$ \(mcp_steps\.go:24\); \^the service answers \\"hello\\"\$ \(mcp_steps\.go:25\)\]"'
-        - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=1 answer=fail context="\[E2E-002: template \\"the service answers \\"\{reply\}\\"\\" binds to 2 step definitions in tests/mcp/steps: \^the service answers \\"pong\\"\$ \(mcp_steps\.go:24\); \^the service answers \\"hello\\"\$ \(mcp_steps\.go:25\)\]"'
-        - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-003 promptIndex=1 answer=pass context="\[E2E-003: not checked: no Story claims this Scenario yet\]"'
-        - and: stdout matches Validation failed
-        - and: the engine dispatched no AI turns
-        - and: no file outside "tmp" changed
-  scen-check-step-definitions-002-definition-reached-twice-fails:
-    description: A step definition that the steps of two catalogue templates bind, across the Scenarios a Story claims that share one suite, must fail each of those Scenarios, naming the definition with where it is written and both templates
-    service: true-bdd
-    path: tests/true-bdd/scen_check_test.go
-    user_stories:
-      - story: docs/product/stories/scen-check-step-definitions-correspondence.yaml
-        scenario_id: scen-check-step-definitions-002-definition-reached-twice-fails
-        merge_date: '2026-10-21'
-    merged_steps:
-      given:
-        - the "scen-check-definition-reached-twice" project tree
-      when:
-        - the Quality Engineer runs "scen check"
-      then:
-        - the command exits with code 1
-        - 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: step definition \^the service \(\?:answers\|replies\) \\"\(\[\^\\"\]\+\)\\"\$ \(mcp_steps\.go:24\) is reached by 2 templates: \\"the service answers \\"\{reply\}\\"\\"; \\"the service replies \\"\{reply\}\\"\\"\]"'
-        - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=1 answer=fail context="\[E2E-002: step definition \^the service \(\?:answers\|replies\) \\"\(\[\^\\"\]\+\)\\"\$ \(mcp_steps\.go:24\) is reached by 2 templates: \\"the service answers \\"\{reply\}\\"\\"; \\"the service replies \\"\{reply\}\\"\\"\]"'
         - and: stdout matches Validation failed
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
@@ -1935,7 +1575,7 @@ scenarios:
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
   scen-check-mappings-004-no-catalogue-unchecked:
-    description: A product document that declares no catalogue must leave every Scenario unchecked by the term-mapping and step-definition checks, saying so, whatever the architecture maps
+    description: A product document that declares no concepts must leave every Scenario unchecked by the term-mapping and step-definition checks, saying so, whatever the architecture maps
     service: true-bdd
     path: tests/true-bdd/scen_check_test.go
     user_stories:
@@ -1949,8 +1589,8 @@ scenarios:
         - the Quality Engineer runs "scen check"
       then:
         - the command exits with code 0
-        - 'stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: not checked: the product document declares no catalogue\]"'
-        - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=2 answer=pass context="\[E2E-001: not checked: the product document declares no catalogue\]"'
+        - 'stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: not checked: the product document declares no concepts\]"'
+        - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=2 answer=pass context="\[E2E-001: not checked: the product document declares no concepts\]"'
         - and: stdout matches ALL CHECKS PASSED
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
@@ -1981,6 +1621,32 @@ scenarios:
         - and: the only file changed outside "tmp" is "docs/architecture/architecture.yaml"
         - and: 'the file "docs/architecture/architecture.yaml" matches (?m)^ +- term: .?reply.?$'
         - and: the engine dispatched 3 AI turns
+  scen-check-fix-004-recorded-concept-declared:
+    description: '`scen check --fix` must propose declaring the concept a step''s one step definition records when the product document does not declare it under the step''s block, asking what the step means first, record the concept the user applies in the product document and never in the Scenario or a step definition, and pass the re-walk'
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/scen-check-fix-clarification-loop.yaml
+        scenario_id: scen-check-fix-004-recorded-concept-declared
+        merge_date: '2026-10-31'
+    timeout: 10m
+    merged_steps:
+      given:
+        - the "scen-check-fix-records-concept" project tree
+        - the Quality Engineer's answer to every question is "1"
+      when:
+        - the Quality Engineer runs "scen check --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches CHECK FAILED
+        - and: 'stdout matches E2E-001: then step .*the service logs .*which records then concept .*log line.*, which is not a declared then concept'
+        - and: stdout matches msg="AI needs clarification"
+        - and: stdout matches FIX PROMPT GENERATED
+        - and: stdout matches msg="Fix recorded in the document" document=product
+        - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=pass'
+        - and: stdout matches ALL CHECKS PASSED
+        - and: the only file changed outside "tmp" is "docs/product/product.yaml"
+        - and: 'the file "docs/product/product.yaml" matches (?m)^ +- concept: .?log line.?$'
   scen-check-quality-fix-001-missing-step-added:
     description: '`scen check --fix` must add the given, when or then step a Scenario lacks to that Scenario''s entry in the Registry, saying what its description pins, and pass the re-walk'
     service: true-bdd
@@ -2161,84 +1827,6 @@ scenarios:
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
         - and: the engine dispatched 6 AI turns
-  scen-check-fix-005-restated-meaning-rewritten:
-    description: '`scen check --fix` must rewrite the meaning of a catalogue phrase that only restates its template, a model having judged it, in the product document and never in the Scenario, and pass the re-walk'
-    service: true-bdd
-    path: tests/true-bdd/scen_check_test.go
-    user_stories:
-      - story: docs/product/stories/scen-check-fix-clarification-loop.yaml
-        scenario_id: scen-check-fix-005-restated-meaning-rewritten
-        merge_date: '2026-10-21'
-    timeout: 15m
-    merged_steps:
-      given:
-        - the "scen-check-fix-rewrites-phrase-meaning" project tree
-        - and: the "scen-check" checklist is narrowed to its "whether each catalogue phrase this scenario's steps use" prompt
-        - the Quality Engineer's answer to every question is "1"
-      when:
-        - the Quality Engineer runs "scen check --fix"
-      then:
-        - the command exits with code 0
-        - stdout matches CHECK FAILED
-        - and: stdout matches FIX PROMPT GENERATED
-        - and: stdout matches msg="Fix recorded in the document" document=product
-        - and: stdout matches ALL CHECKS PASSED
-        - but: stdout does not match Hit max apply attempts
-        - and: the only file changed outside "tmp" is "docs/product/product.yaml"
-        - and: the engine dispatched 5 AI turns
-  scen-check-fix-006-misused-phrase-step-rewritten:
-    description: '`scen check --fix` must rewrite a Scenario''s step whose pattern a model judged to name no observable output, as the output its description pins, in that Scenario''s entry in the Registry, and pass the re-walk'
-    service: true-bdd
-    path: tests/true-bdd/scen_check_test.go
-    user_stories:
-      - story: docs/product/stories/scen-check-fix-clarification-loop.yaml
-        scenario_id: scen-check-fix-006-misused-phrase-step-rewritten
-        merge_date: '2026-10-21'
-    timeout: 15m
-    merged_steps:
-      given:
-        - the "scen-check-fix-rewrites-phrase-use" project tree
-        - and: the "scen-check" checklist is narrowed to its "whether this scenario uses each catalogue phrase" prompt
-        - the Quality Engineer's answer to every question is "1"
-      when:
-        - the Quality Engineer runs "scen check --fix"
-      then:
-        - the command exits with code 0
-        - stdout matches CHECK FAILED
-        - and: stdout matches FIX PROMPT GENERATED
-        - and: stdout matches msg="Fix recorded in the document" document=scenarios_yaml
-        - and: stdout matches ALL CHECKS PASSED
-        - but: stdout does not match Hit max apply attempts
-        - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
-        - and: 'the file "docs/scenarios.yaml" matches (?m)stdout matches [^\n]*Hello Ada'
-        - and: the engine dispatched 5 AI turns
-  scen-check-fix-004-shared-definition-merges-phrases:
-    description: '`scen check --fix` must merge two catalogue entries whose steps one step definition binds into one entry, in the product document and never in a Scenario or a step definition, and pass the re-walk'
-    service: true-bdd
-    path: tests/true-bdd/scen_check_test.go
-    user_stories:
-      - story: docs/product/stories/scen-check-fix-clarification-loop.yaml
-        scenario_id: scen-check-fix-004-shared-definition-merges-phrases
-        merge_date: '2026-10-21'
-    timeout: 10m
-    merged_steps:
-      given:
-        - the "scen-check-fix-merges-phrases" project tree
-        - the Quality Engineer's answer to every question is "1"
-      when:
-        - the Quality Engineer runs "scen check --fix"
-      then:
-        - the command exits with code 0
-        - stdout matches CHECK FAILED
-        - and: 'stdout matches E2E-001: step definition \^the service \(\?:answers\|replies\) \\"\(\[\^\\"\]\+\)\\"\$ \(mcp_steps\.go:24\) is reached by 2 templates'
-        - and: stdout matches FIX PROMPT GENERATED
-        - and: stdout matches msg="Fix recorded in the document" document=product
-        - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=pass
-        - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=1 answer=pass
-        - and: stdout matches ALL CHECKS PASSED
-        - but: stdout does not match Hit max apply attempts
-        - and: the only file changed outside "tmp" is "docs/product/product.yaml"
-        - and: the engine dispatched 2 AI turns
   build-tests-steps-007-unreadable-catalogue-refused:
     description: '`build tests --fix` must refuse a product document whose concepts it cannot read, before it writes a generated test and before any AI turn, rather than author steps blind to the spec the host declared'
     service: true-bdd
@@ -2350,16 +1938,16 @@ scenarios:
       then:
         - the command exits with code 0
         - stdout matches SCEN CHECK
-        - and: stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=2 answer=pass
-        - and: stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=3 answer=pass
-        - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=4 answer=pass
-        - and: stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=17 judgement=link answer=pass
-        - and: stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=18 judgement=bindings answer=pass
-        - and: stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=19 judgement=words answer=pass
-        - and: 'stdout matches PASS: 19 '
+        - and: stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=pass
+        - and: stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=2 answer=pass
+        - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=3 answer=pass
+        - and: stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=14 judgement=link answer=pass
+        - and: stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=15 judgement=bindings answer=pass
+        - and: stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=16 judgement=words answer=pass
+        - and: 'stdout matches PASS: 16 '
         - and: stdout matches ALL CHECKS PASSED!
         - and: stdout matches SCEN CHECK COMPLETE
-        - and: the engine dispatched 13 AI turns
+        - and: the engine dispatched 11 AI turns
         - and: no file outside "tmp" changed
 
   scen-check-002-failed-scenario-exits-1:
@@ -2379,14 +1967,14 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches SCEN CHECK
-        - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=4 answer=pass
-        - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=4 answer=fail context="\[E2E-002: then step \\"the greeter prints \\\\\\"Hello Ada\\\\\\" on one line\\" binds to the step definition \^the greeter prints \\"\(\[\^\\"\]\+\)\\" on one line\$ \(greet_steps\.go:23\), which records no concept\]"'
-        - and: stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=17 judgement=link answer=fail
-        - and: stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=15
-        - and: 'stdout matches SKIP: 13\n'
+        - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=3 answer=pass
+        - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=3 answer=fail context="\[E2E-002: then step \\"the greeter prints \\\\\\"Hello Ada\\\\\\" on one line\\" binds to the step definition \^the greeter prints \\"\(\[\^\\"\]\+\)\\" on one line\$ \(greet_steps\.go:23\), which records no concept\]"'
+        - and: stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=14 judgement=link answer=fail
+        - and: stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=12
+        - and: 'stdout matches SKIP: 11\n'
         - and: stdout matches Validation failed
         - but: stdout does not match ALL CHECKS PASSED
-        - and: the engine dispatched 11 AI turns
+        - and: the engine dispatched 9 AI turns
         - and: no file outside "tmp" changed
 
   scen-check-fix-007-whole-checklist-fixes-description:
@@ -2411,13 +1999,12 @@ scenarios:
         - and: stdout matches CHECK FAILED
         - and: stdout matches FIX PROMPT GENERATED
         - and: stdout matches msg="Fix recorded in the document" document=scenarios_yaml
-        - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=4 answer=pass
-        - and: 'stdout matches PASS: 19 '
+        - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=3 answer=pass
+        - and: 'stdout matches PASS: 16 '
         - and: stdout matches ALL CHECKS PASSED
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
         - and: 'the file "docs/scenarios.yaml" matches (?m)^    description: [^\n]*\b(must|should)\b'
-        - and: the engine dispatched 32 AI turns
 
   scen-check-003-unknown-id-refused:
     description: An id naming no scenario in the registry must be refused before the first prompt, never walked as an empty selection
@@ -2482,52 +2069,6 @@ scenarios:
         - but: stdout does not match E2E-003
         - and: no file outside "tmp" changed
 
-  build-tests-refusals-005-step-outside-catalogue-refused:
-    description: When the product document declares a catalogue, a Registry step that does not match exactly one catalogue template of its own block must refuse `build tests` at startup, naming each such Scenario and step whether or not a Story claims that Scenario, before a generated test is written or an AI turn is spent
-    service: true-bdd
-    path: tests/true-bdd/build_tests_test.go
-    user_stories:
-      - story: docs/product/stories/build-tests-refusals-startup.yaml
-        scenario_id: build-tests-refusals-005-step-outside-catalogue-refused
-        merge_date: '2026-10-22'
-    merged_steps:
-      given:
-        - the "build-tests-step-outside-catalogue" project tree
-      when:
-        - the System Architect runs "build tests --fix"
-      then:
-        - the command exits with code 1
-        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
-        - and: stdout matches registry steps outside the catalogue in \./docs/product/product\.yaml
-        - and: 'stdout matches INT-902: then step \\"the session is granted a ticket within 2 seconds\\" matches no template'
-        - and: 'stdout matches INT-903: then step \\"the server answers 200\\" matches 2 templates: \\"the server answers \{code:number\}\\"; \\"the server answers 200\\"'
-        - and: 'stdout matches INT-904: then step \\"the MCP server is running\\" matches \\"the MCP server is running\\", declared for given'
-        - but: 'stdout does not match INT-901:'
-        - and: no file outside "tmp" changed
-        - and: the engine dispatched no AI turns
-
-  build-tests-refusals-006-no-catalogue-walks-unrefused:
-    description: When the product document declares no catalogue, `build tests` must say that it checks no step phrase and must render the Registry without refusing
-      any step for its wording, so a host adopts the catalogue only by writing one
-    service: true-bdd
-    path: tests/true-bdd/build_tests_test.go
-    user_stories:
-    - story: docs/product/stories/build-tests-refusals-startup.yaml
-      scenario_id: build-tests-refusals-006-no-catalogue-walks-unrefused
-      merge_date: '2026-10-22'
-    merged_steps:
-      given:
-      - the "build-tests-no-catalogue" project tree
-      when:
-      - the System Architect runs "build tests --fix"
-      then:
-      - the command exits with code 0
-      - stdout matches msg="Step phrases not checked" reason="the product document declares no catalogue"
-      - and: stdout matches BUILD TESTS COMPLETE
-      - but: stdout does not match Refusing to start
-      - and: the engine dispatched no AI turns
-      - and: the file "tests/mcp/mcp_test.go" is created
-      - and: no file outside "tmp" and "tests" changed
   build-tests-files-001-stale-test-refused:
     description: Without `--fix`, a generated test file that is missing or differs from what the Registry renders must refuse `build tests`, naming each such file and the command that regenerates it, and must leave every file as it was
     service: true-bdd
@@ -3883,9 +3424,9 @@ scenarios:
         - the Quality Engineer runs "scen check"
       then:
         - the command exits with code 1
-        - stdout matches level=ERROR msg="Check could not answer" check=step-phrases subjectID=E2E-001
-        - and: 'stdout matches read the catalogue: .*product document \./docs/product/product\.yaml: yaml: line \d+: did not find expected'
-        - but: stdout does not match check=declared-terms
+        - stdout matches level=ERROR msg="Check could not answer" check=declared-terms subjectID=E2E-001
+        - and: 'stdout matches read the concepts: .*product document \./docs/product/product\.yaml: yaml: line \d+: did not find expected'
+        - but: stdout does not match check=term-mappings
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
   engine-term-documents-004-architecture-not-yaml-stops-scen-check:
@@ -5671,9 +5212,9 @@ scenarios:
       - the Quality Engineer runs "scen check --fix"
       then:
       - the command exits with code 1
-      - stdout matches In this product, what does the term "latency" mean
-      - stdout matches It means how long the MCP service takes to send its reply, measured in milliseconds from when the message arrives.
-      - 'stdout matches It means the delay of a reply: the time between the message being sent and the reply arriving.'
+      - stdout matches \[1/1\] .*latency
+      - stdout matches 1\) It means
+      - stdout matches 2\) It means
       - stdout matches a person must answer
       - stderr matches a person must answer
       - stdout does not match User answered clarification question
@@ -6473,170 +6014,6 @@ scenarios:
       - and: no file outside "tmp" and "docs/product" changed
       - and: 'judge: The menu proposal adds a product concept for the existing halving action. The Story keeps all of its original descriptions and step words; no substitute action, error criterion or new
           Story field is introduced.'
-  phrase-mappings-001-missing:
-    description: A claimed Scenario with a missing Phrase mapping must fail naming its phrase without an AI turn
-    service: true-bdd
-    path: tests/true-bdd/phrase_mappings_test.go
-    user_stories:
-    - story: docs/product/stories/phrase-mappings-checked.yaml
-      scenario_id: phrase-mappings-001-missing
-      merge_date: '2026-10-29'
-    merged_steps:
-      given:
-      - the "phrase-mappings-missing" project tree
-      when:
-      - the System Architect runs "scen check"
-      then:
-      - the command exits with code 1
-      - the engine dispatched 0 AI turns
-      - stdout matches phrase.*the greeting is requested
-      - no file outside "tmp" changed
-  phrase-mappings-002-undeclared:
-    description: A Phrase mapping referencing an undeclared operation must fail naming the phrase and reference without AI
-    service: true-bdd
-    path: tests/true-bdd/phrase_mappings_test.go
-    user_stories:
-    - story: docs/product/stories/phrase-mappings-checked.yaml
-      scenario_id: phrase-mappings-002-undeclared
-      merge_date: '2026-10-29'
-    merged_steps:
-      given:
-      - the "phrase-mappings-undeclared" project tree
-      when:
-      - the System Architect runs "scen check"
-      then:
-      - the command exits with code 1
-      - the engine dispatched 0 AI turns
-      - stdout matches phrase.*the greeting is requested
-      - stdout matches invented-halve
-      - no file outside "tmp" changed
-  phrase-mappings-003-valid:
-    description: A fully mapped Scenario must pass with declared file and log references as well as a command
-    service: true-bdd
-    path: tests/true-bdd/phrase_mappings_test.go
-    user_stories:
-    - story: docs/product/stories/phrase-mappings-checked.yaml
-      scenario_id: phrase-mappings-003-valid
-      merge_date: '2026-10-29'
-    merged_steps:
-      given:
-      - the "phrase-mappings-valid" project tree
-      when:
-      - the System Architect runs "scen check"
-      then:
-      - the command exits with code 0
-      - the engine dispatched 0 AI turns
-      - stdout matches every matched phrase has one valid Phrase mapping
-      - no file outside "tmp" changed
-  phrase-mappings-004-duplicate:
-    description: Two Phrase mapping entries for one phrase and service must fail naming the phrase and count
-    service: true-bdd
-    path: tests/true-bdd/phrase_mappings_test.go
-    user_stories:
-    - story: docs/product/stories/phrase-mappings-checked.yaml
-      scenario_id: phrase-mappings-004-duplicate
-      merge_date: '2026-10-29'
-    merged_steps:
-      given:
-      - the "phrase-mappings-duplicate" project tree
-      when:
-      - the System Architect runs "scen check"
-      then:
-      - the command exits with code 1
-      - the engine dispatched 0 AI turns
-      - stdout matches phrase.*the greeting is requested
-      - stdout matches has 2 Phrase mapping entries
-      - no file outside "tmp" changed
-  phrase-mappings-005-intent:
-    description: A non-UI phrase stated by intent must fail until llm steps are supported
-    service: true-bdd
-    path: tests/true-bdd/phrase_mappings_test.go
-    user_stories:
-    - story: docs/product/stories/phrase-mappings-checked.yaml
-      scenario_id: phrase-mappings-005-intent
-      merge_date: '2026-10-29'
-    merged_steps:
-      given:
-      - the "phrase-mappings-intent" project tree
-      when:
-      - the System Architect runs "scen check"
-      then:
-      - the command exits with code 1
-      - the engine dispatched 0 AI turns
-      - stdout matches phrase.*the greeting is requested
-      - stdout matches intent is not supported for a non-UI service
-      - no file outside "tmp" changed
-  phrase-mappings-006-fix:
-    description: A missing Phrase mapping fix must ask the System Architect and propose at the menu before apply changes only the architecture
-    service: true-bdd
-    path: tests/true-bdd/phrase_mappings_test.go
-    user_stories:
-    - story: docs/product/stories/phrase-mappings-checked.yaml
-      scenario_id: phrase-mappings-006-fix
-      merge_date: '2026-10-29'
-    timeout: 10m
-    merged_steps:
-      given:
-      - the "phrase-mappings-fix" project tree
-      - the System Architect's answer to every question is "1"
-      when:
-      - the System Architect runs "scen check --fix"
-      then:
-      - the command exits with code 0
-      - stdout matches msg="AI needs clarification"
-      - stdout matches FIX PROMPT GENERATED
-      - stdout matches msg="User chose fix action".*action=apply
-      - stdout matches every matched phrase has one valid Phrase mapping
-      - the only file changed outside "tmp" is "docs/architecture/architecture.yaml"
-      - the file "docs/scenarios.yaml" is unchanged
-  phrase-mappings-007-exit:
-    description: Exiting the Phrase mapping fix menu must leave the architecture and Scenario unchanged
-    service: true-bdd
-    path: tests/true-bdd/phrase_mappings_test.go
-    user_stories:
-    - story: docs/product/stories/phrase-mappings-checked.yaml
-      scenario_id: phrase-mappings-007-exit
-      merge_date: '2026-10-29'
-    timeout: 25m
-    merged_steps:
-      given:
-      - the "phrase-mappings-exit" project tree
-      - the System Architect's answer to every question is "Call greet once with the literal person Ada, without the loud flag or any outgoing call."
-      when:
-      - the System Architect runs "scen check --fix"
-      then:
-      - the command exits with code 1
-      - stdout matches msg="AI needs clarification"
-      - stdout matches FIX PROMPT GENERATED
-      - stdout matches msg="User chose fix action".*action=exit
-      - stdout matches Exiting.
-      - no file outside "tmp" changed
-      - the file "docs/scenarios.yaml" is unchanged
-  phrase-mappings-008-adds-operation:
-    description: A Phrase mapping fix whose operation the CLI document does not declare yet must add the command to that document and the entry to the architecture, only after apply
-    service: true-bdd
-    path: tests/true-bdd/phrase_mappings_test.go
-    user_stories:
-    - story: docs/product/stories/phrase-mappings-checked.yaml
-      scenario_id: phrase-mappings-008-adds-operation
-      merge_date: '2026-10-29'
-    timeout: 25m
-    merged_steps:
-      given:
-      - the "phrase-mappings-fix-operation" project tree
-      - the System Architect's answer to every question is "1"
-      when:
-      - the System Architect runs "scen check --fix"
-      then:
-      - the command exits with code 0
-      - stdout matches msg="AI needs clarification"
-      - stdout matches msg="User chose fix action".*action=apply
-      - stdout matches msg="Fix recorded in the document" document=docs/greeter-cli.yaml
-      - stdout matches every matched phrase has one valid Phrase mapping
-      - no file outside "tmp" and "docs" changed
-      - 'the file "docs/greeter-cli.yaml" matches (?m)^  translate:'
-      - 'the file "docs/architecture/architecture.yaml" matches command: translate'
-      - the file "docs/scenarios.yaml" is unchanged
   build-tests-render-001-renders-only:
     description: build tests --fix renders the Registry tests without definitions, AI turns or test runs
     service: true-bdd
@@ -6782,29 +6159,6 @@ scenarios:
       - but: stdout does not match BUILD STEPS
       - and: no file outside "tmp" changed
       - and: the engine dispatched no AI turns
-  build-steps-list-001-missing-phrases:
-    description: build steps without --fix exits non-zero and names every Catalogue phrase with no definition, including an unused phrase
-    service: true-bdd
-    path: tests/true-bdd/build_steps_test.go
-    user_stories:
-    - story: docs/product/stories/build-steps-list.yaml
-      scenario_id: build-steps-list-001-missing-phrases
-      merge_date: '2026-10-29'
-    merged_steps:
-      given:
-      - the "build-steps-missing" project tree
-      when:
-      - the System Architect runs "build steps"
-      then:
-      - the command exits with code 1
-      - and: stdout matches phrase="the MCP server is running on its configured port"
-      - and: stdout matches phrase="the Claude User posts a valid JSON-RPC initialize request to /mcp"
-      - and: stdout matches phrase="the server returns HTTP \{status:number\}"
-      - and: stdout matches phrase="the unused operation runs"
-      - and: stdout matches Step coverage failed
-      - and: the engine dispatched no AI turns
-      - and: the engine spawned no test runners
-      - and: no file outside "tmp" changed
   build-steps-writing-001-new-body:
     description: A missing concept's steps get an engine skeleton from the proposed pattern and an AI body that executes the declared CLI command
     service: true-bdd
@@ -6886,29 +6240,6 @@ scenarios:
       - the engine dispatched 4 validation AI turns to "claude"
       - the engine spawned exactly 1 test runner with arguments matching -list \.
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
-  build-steps-writing-004-interface-cannot-serve:
-    description: A phrase needing an observation the declared CLI cannot offer stops distinctly after its first writer verdict
-    service: true-bdd
-    path: tests/true-bdd/build_steps_test.go
-    user_stories:
-    - story: docs/product/stories/build-steps-writing.yaml
-      scenario_id: build-steps-writing-004-interface-cannot-serve
-      merge_date: '2026-10-29'
-    timeout: 15m
-    merged_steps:
-      given:
-      - the "build-steps-interface" project tree
-      - the System Architect's answer to every question is "1"
-      when:
-      - the System Architect runs "build steps --fix"
-      then:
-      - the command exits with code 1
-      - stdout matches public interface cannot serve phrase
-      - stdout matches the number is doubled
-      - stdout matches heap
-      - stdout does not match BUILD STEPS COMPLETE
-      - the engine dispatched 2 AI turns
-      - no file outside "tmp" and "tests" changed
   fix-loop-choices-006-exit-fails-build-steps:
     description: Exiting the body-writing Fix loop ends build steps non-zero with no COMPLETE banner
     service: true-bdd
@@ -7167,7 +6498,7 @@ scenarios:
       - the engine dispatched 0 AI turns
       - no file outside "tmp" changed
   concepts-002-both-refused:
-    description: A product declaring both catalogue and concepts must refuse startup naming both
+    description: A product document still declaring the retired catalogue must refuse startup, naming concepts as its replacement
     service: true-bdd
     path: tests/true-bdd/concepts_test.go
     user_stories:
@@ -7176,12 +6507,12 @@ scenarios:
       merge_date: '2026-10-29'
     merged_steps:
       given:
-      - the "concepts-both" project tree
+      - the "concepts-catalogue-retired" project tree
       when:
       - the System Architect runs "scen check"
       then:
       - the command exits with code 1
-      - 'stdout matches Refusing to start.*catalogue: and concepts:'
+      - 'stdout matches Refusing to start.*the catalogue key is no longer read; declare concepts: in its place'
       - the engine dispatched 0 AI turns
       - no file outside "tmp" changed
   concepts-003-undefined-term:
@@ -7242,7 +6573,7 @@ scenarios:
       - the engine dispatched 0 AI turns
       - no file outside "tmp" changed
   concepts-006-templates:
-    description: A host retaining Catalogue templates must behave as before
+    description: An architecture document still declaring the retired Phrase mapping must refuse startup, naming architecture.concepts as its replacement
     service: true-bdd
     path: tests/true-bdd/concepts_test.go
     user_stories:
@@ -7251,12 +6582,12 @@ scenarios:
       merge_date: '2026-10-29'
     merged_steps:
       given:
-      - the "concepts-templates" project tree
+      - the "concepts-phrases-retired" project tree
       when:
       - the System Architect runs "scen check"
       then:
-      - the command exits with code 0
-      - stdout matches every matched phrase has one valid Phrase mapping
+      - the command exits with code 1
+      - 'stdout matches Refusing to start.*architecture.phrases is no longer read; bind each concept in architecture.concepts in its place'
       - the engine dispatched 0 AI turns
       - no file outside "tmp" changed
   concepts-007-fix-binding:
@@ -7280,6 +6611,31 @@ scenarios:
       - stdout matches msg="User chose fix action".*action=apply
       - stdout matches every concept binding
       - the only file changed outside "tmp" is "docs/architecture/architecture.yaml"
+      - the file "docs/scenarios.yaml" is unchanged
+  concepts-008-binding-adds-operation:
+    description: A concept-bindings fix for a binding whose command the CLI document does not declare yet must ask the System Architect first and add the command to that document only after apply, never to the Scenario
+    service: true-bdd
+    path: tests/true-bdd/concepts_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/concepts.yaml
+      scenario_id: concepts-008-binding-adds-operation
+      merge_date: '2026-10-31'
+    merged_steps:
+      given:
+      - the "concepts-fix-operation" project tree
+      - the System Architect's answer to every question is "1"
+      when:
+      - the System Architect runs "scen check --fix"
+      then:
+      - the command exits with code 0
+      - 'stdout matches when concept ''translation'' for service greeter references \[command: translate\], which its Public interface does not declare'
+      - stdout matches msg="AI needs clarification"
+      - stdout matches msg="User chose fix action".*action=apply
+      - stdout matches msg="Fix recorded in the document" document=docs/greeter-cli.yaml
+      - stdout matches every concept binding names a declared concept and valid Public interface references
+      - no file outside "tmp" and "docs" changed
+      - 'the file "docs/greeter-cli.yaml" matches (?m)^  translate:'
       - the file "docs/scenarios.yaml" is unchanged
   scen-check-speed-001-overlapping-validation:
     description: Concurrent validation preserves each Scenario gate and Prompt order and serializes fixes in Scenario order
@@ -8026,7 +7382,7 @@ scenarios:
       - the engine spawned no test runners
       - the engine dispatched no AI turns
   concept-grouping-011-build-tests:
-    description: Concept hosts render free text without Catalogue matching
+    description: build tests renders a concept host's free-text steps without matching them against anything
     service: true-bdd
     path: tests/true-bdd/concept_grouping_test.go
     timeout: 5m

@@ -16,4 +16,4 @@ scenarios:
       when:
         - the Operator runs the greeter with a name
       then:
-        - the greeter prints the line "Hello Alice" on standard output
+        - the greeter's standard output has a line matching `^Hello, Alice$`

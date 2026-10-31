@@ -17,7 +17,7 @@ func TestConceptTerms(t *testing.T) {
 	for _, checkName := range []string{"declared-terms", "term-mappings"} {
 		t.Run(checkName, func(t *testing.T) {
 			t.Parallel()
-			item, input := conceptInput(t, "", "")
+			item, input := conceptInput(t, "")
 
 			verdict, err := checks.ForScenarios()[checkName].Run(item, input)
 			if err != nil {
@@ -29,6 +29,58 @@ func TestConceptTerms(t *testing.T) {
 				t.Fatalf("missing concept and term finding: %+v", verdict)
 			}
 		})
+	}
+}
+
+func TestConceptTermFindingNamesTheConceptOnce(t *testing.T) {
+	t.Parallel()
+	item, input := conceptInput(t, "")
+
+	verdict, err := checks.ForScenarios()["declared-terms"].Run(item, input)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := `halve-001: when concept 'halve' declares "number", which the glossary does not define`
+	if verdict.Pass || len(verdict.Context) != 1 || verdict.Context[0] != want {
+		t.Fatalf("want the one finding %q, got %+v", want, verdict)
+	}
+}
+
+func TestHostWithoutConceptsPassesEveryClosureCheckUnchecked(t *testing.T) {
+	t.Parallel()
+
+	for _, checkName := range []string{"declared-terms", "term-mappings", "concept-bindings", "step-definitions"} {
+		t.Run(checkName, func(t *testing.T) {
+			t.Parallel()
+			item, input := conceptInput(t, "")
+			item.Path = "tests/calc/calc_test.go"
+
+			err := disk.Write(input.Docs[docs.KeyProduct], []byte("title: Calculator\n"), disk.Shared)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			verdict, err := checks.ForScenarios()[checkName].Run(item, input)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			want := "halve-001: not checked: the product document declares no concepts"
+			if !verdict.Pass || len(verdict.Context) != 1 || verdict.Context[0] != want {
+				t.Fatalf("want %q, got %+v", want, verdict)
+			}
+		})
+	}
+}
+
+func TestScenarioChecksOfferNoTemplateCheck(t *testing.T) {
+	t.Parallel()
+
+	for _, retired := range []string{"step-phrases", "phrase-mappings"} {
+		if _, offered := checks.ForScenarios()[retired]; offered {
+			t.Errorf("scen check still offers the template form's %s", retired)
+		}
 	}
 }
 
@@ -68,9 +120,9 @@ func TestConceptBindings(t *testing.T) {
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			item, input := conceptInput(t, testCase.bindings, "")
+			item, input := conceptInput(t, testCase.bindings)
 
-			verdict, err := checks.ForScenarios()["phrase-mappings"].Run(item, input)
+			verdict, err := checks.ForScenarios()["concept-bindings"].Run(item, input)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -87,11 +139,11 @@ func TestConceptBindings(t *testing.T) {
 	}
 }
 
-func conceptInput(t *testing.T, bindings, extra string) (*template.ScenarioCheckData, checks.Input) {
+func conceptInput(t *testing.T, bindings string) (*template.ScenarioCheckData, checks.Input) {
 	t.Helper()
 	root := t.TempDir()
 	product := "concepts:\n  when: [{concept: halve, means: Call the number " +
-		"command., terms: [number]}]\n" + extra
+		"command., terms: [number]}]\n"
 
 	arch := `architecture:
   services:

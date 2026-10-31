@@ -5,7 +5,7 @@
 - Read(`{{ $path }}`) — {{ $key }}
 {{ end }}
 
-{{ if .Subject.Concept }}## Concept
+## Concept
 
 Suite: {{ .Subject.Suite }}
 Service: {{ .Subject.Service }}
@@ -28,27 +28,7 @@ missing; do not ask a clarification question to invent or extend the interface.
 The engine owns every registration, pattern, function signature and
 //truebdd:concept record. Reuse the suite's state and helpers. Never implement
 the service's behaviour inside a definition. Never edit the Specification or
-service code. Ask for missing context before proposing.{{ else }}## Catalogue phrase
-
-Suite: {{ .Subject.Suite }}
-Service: {{ .Subject.Service }}
-Phrase: {{ .Subject.Phrase.Template }}
-Block: {{ .Subject.Phrase.Block }}
-Meaning: {{ .Subject.Phrase.Means }}
-
-## Complete phrase context
-{{ .Subject.Context }}
-
-Propose only this phrase's body against the declared Public interface and Phrase mapping.
-Derive the body solely from the declared interface, never from service source or
-a target-dependent test run. Do not propose running a Scenario or making it green.
-When the declaration cannot serve the phrase, propose that the writer return
-interface_cannot_serve with the phrase and what setup or observation is missing;
-do not ask a clarification question to invent or extend the interface.
-
-The engine owns the registration, pattern and function signature. Reuse the suite's
-state and helpers. Never implement the service's behaviour inside a definition.
-Never edit the Specification or service code. Ask for missing context before proposing.{{ end }}
+service code. Ask for missing context before proposing.
 
 ## Validation Failure
 
@@ -109,16 +89,13 @@ Using the user's clarifications above, generate a complete fix prompt.
 Analyze if you have enough context to generate a confident fix.
 {{- end }}
 
-{{ if .Subject.Concept }}When ready, propose only these definitions' bodies and any shared state they need.
+When ready, propose only these definitions' bodies and any shared state they need.
 Preserve registrations, patterns, signatures and concept records. Do not edit other
 definitions, generated tests, the Specification or service code. Follow the binding
-through the declared Public interface; never perform the product's operation yourself.{{ else }}When ready, propose only the phrase's body and any shared state it needs.
-Preserve registration, pattern and signature. Do not edit other phrases, generated
-tests, the Specification or service code. Follow the Phrase mapping through the
-declared Public interface; never perform the product's operation yourself.{{ end }}
+through the declared Public interface; never perform the product's operation yourself.
 
 === FILE_START: {{.ResultPath}} ===
-# Fix Prompt for Item {{.SubjectID}}: {{ if .Subject.Concept }}{{ .Subject.Label }}{{ else }}{{.Subject.Phrase.Template}}{{ end }}
+# Fix Prompt for Item {{.SubjectID}}: {{ .Subject.Label }}
 
 ## Target
 {{.Subject.Suite}}

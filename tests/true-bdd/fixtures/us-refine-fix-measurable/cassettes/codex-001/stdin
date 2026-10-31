@@ -96,106 +96,115 @@ The viewer must display a concise summary when the Calculator User requests the 
 # Fix Prompt for Story summary-views: Read summary views
 
 ## Instructions
-Apply the following changes to the acceptance criteria for this story. Keep the existing AC ids, keep the exact role "Calculator User" from the story's `as_a` clause, and preserve all other Story fields unchanged.
+Apply the following changes to the acceptance criteria for this story.
 
 ## Original Acceptance Criteria
 1. 001-brief: The viewer must display a concise summary when the Calculator User requests the brief view. [has steps]
 2. 002-overview: The viewer must display a concise summary when the Calculator User requests the overview view. [has steps]
 3. 003-preview: The viewer must display a concise summary when the Calculator User requests the preview view. [has steps]
 
-## Why these changes
-The failed check (`us-refine/acceptance_criteria`) requires at least half of the ACs to carry a specific measurable criterion. All three ACs currently assert only "the summary is concise", which is not observable. The measurable threshold already exists in the reference documentation, so nothing new is being invented:
-- `docs/product/product.yaml`: "Three independent summary views show at most 150 words of the selected shared document. No other thresholds are specified. The brief, overview and preview views all enforce this limit."
-- `docs/architecture/architecture.yaml`: calculator service — "viewer summary --view <brief|overview|preview> <document>; stdout contains the summary, which must be at most 150 words."
-
-The three ACs are **not** duplicates: product.yaml declares three independent views, and each AC exercises a different `--view` value (brief, overview, preview), so all three are kept.
-
-Only the vague qualifier "concise" is replaced with the observable 150-word assertion. The Given and When wording is preserved verbatim — it already matches the declared given concept "document selected" and when concept "view requested". The Then step now matches the declared then concept "summary length" ("The displayed summary contains at most a stated number of words"). `product.yaml` states "No other thresholds are specified", so no response-time, exit-code or error-message criterion is added.
-
 ## Required Changes
+
+Change ONLY what the failed check requires. The failed check is `us-refine/acceptance_criteria`: no AC states a measurable criterion, because every Then step says only "the summary is concise". The fix is to replace the vague qualifier "concise" with the measurable word-count limit already declared in the reference documentation — `docs/product/product.yaml` ("Three independent summary views show at most 150 words of the selected shared document... The brief, overview and preview views all enforce this limit") and `docs/architecture/architecture.yaml` ("stdout contains the summary, which must be at most 150 words"). No threshold is invented; 150 words is taken verbatim from the product document, which also states "No other thresholds are specified".
+
+All three ACs are faulted by the check, so all three change. The per-view split is kept: the product document states the three views are independent, so 001-brief, 002-overview and 003-preview remain separate criteria with their existing ids. Nothing is merged, nothing is added, nothing is removed. Keep all other Story fields (id, feature, title, as_a, i_want, so_that, status) unchanged.
+
+The measurable observation goes in the Then step as well as in the description — not only in the description. Every Given/When/Then step uses the exact role from the story's `as_a` field, "Calculator User". Given steps stay exactly as they are (they already instance the `document selected` concept). When steps stay exactly as they are (they already instance the `view requested` concept). Only the Then step and the description change, so each Then step instances the `then` concept `summary length` (means: the displayed summary contains at most a stated number of words) by naming the number, 150.
 
 ### Change #1: 001-brief
 **Before:** The viewer must display a concise summary when the Calculator User requests the brief view.
-**Issue:** "concise" is a subjective qualifier with no measurable threshold; the Then step ("the summary is concise") cannot be asserted in a test. The documented limit of 150 words is missing.
+**Issue:** "concise" is not measurable — nothing in the AC states a verifiable limit, so the Then step "the summary is concise" cannot be asserted in a test.
 **After (description):** The viewer must display a summary of at most 150 words when the Calculator User requests the brief view.
 **After (steps):**
 ```yaml
 - given:
     - "a shared document is selected"
 - when:
-    - 'the Calculator User requests the "brief" view'
+    - "the Calculator User requests the \"brief\" view"
 - then:
     - "the displayed summary contains at most 150 words"
 ```
 
 ### Change #2: 002-overview
 **Before:** The viewer must display a concise summary when the Calculator User requests the overview view.
-**Issue:** Same defect — "concise" is not measurable, and the documented 150-word limit (which product.yaml says the overview view also enforces) is not asserted.
+**Issue:** "concise" is not measurable — the Then step "the summary is concise" states no verifiable threshold.
 **After (description):** The viewer must display a summary of at most 150 words when the Calculator User requests the overview view.
 **After (steps):**
 ```yaml
 - given:
     - "a shared document is selected"
 - when:
-    - 'the Calculator User requests the "overview" view'
+    - "the Calculator User requests the \"overview\" view"
 - then:
     - "the displayed summary contains at most 150 words"
 ```
 
 ### Change #3: 003-preview
 **Before:** The viewer must display a concise summary when the Calculator User requests the preview view.
-**Issue:** Same defect — "concise" is not measurable, and the documented 150-word limit (which product.yaml says the preview view also enforces) is not asserted.
+**Issue:** "concise" is not measurable — the Then step "the summary is concise" states no verifiable threshold.
 **After (description):** The viewer must display a summary of at most 150 words when the Calculator User requests the preview view.
 **After (steps):**
 ```yaml
 - given:
     - "a shared document is selected"
 - when:
-    - 'the Calculator User requests the "preview" view'
+    - "the Calculator User requests the \"preview\" view"
 - then:
     - "the displayed summary contains at most 150 words"
 ```
 
-No ACs are added, merged or removed.
-
-Resulting measurability: 3/3 = 100% of ACs include a measurable criterion (`at most 150 words`), which passes the 50% threshold.
+No new ACs are added. Edge cases that would need new criteria (missing or unreadable document, exit codes, response-time budgets) are not specified by the product document and must not be invented here — see Open Questions below.
 
 ## Complete Fixed Acceptance Criteria
 
 ```yaml
-- id: 001-brief
-  description: "The viewer must display a summary of at most 150 words when the Calculator User requests the brief view."
-  steps:
-    - given:
-        - "a shared document is selected"
-    - when:
-        - 'the Calculator User requests the "brief" view'
-    - then:
-        - "the displayed summary contains at most 150 words"
+acceptance_criteria:
+  - id: 001-brief
+    description: "The viewer must display a summary of at most 150 words when the Calculator User requests the brief view."
+    steps:
+      - given:
+          - "a shared document is selected"
+      - when:
+          - "the Calculator User requests the \"brief\" view"
+      - then:
+          - "the displayed summary contains at most 150 words"
 
-- id: 002-overview
-  description: "The viewer must display a summary of at most 150 words when the Calculator User requests the overview view."
-  steps:
-    - given:
-        - "a shared document is selected"
-    - when:
-        - 'the Calculator User requests the "overview" view'
-    - then:
-        - "the displayed summary contains at most 150 words"
+  - id: 002-overview
+    description: "The viewer must display a summary of at most 150 words when the Calculator User requests the overview view."
+    steps:
+      - given:
+          - "a shared document is selected"
+      - when:
+          - "the Calculator User requests the \"overview\" view"
+      - then:
+          - "the displayed summary contains at most 150 words"
 
-- id: 003-preview
-  description: "The viewer must display a summary of at most 150 words when the Calculator User requests the preview view."
-  steps:
-    - given:
-        - "a shared document is selected"
-    - when:
-        - 'the Calculator User requests the "preview" view'
-    - then:
-        - "the displayed summary contains at most 150 words"
+  - id: 003-preview
+    description: "The viewer must display a summary of at most 150 words when the Calculator User requests the preview view."
+    steps:
+      - given:
+          - "a shared document is selected"
+      - when:
+          - "the Calculator User requests the \"preview\" view"
+      - then:
+          - "the displayed summary contains at most 150 words"
 ```
 
-## Implementation note (not an AC change)
-When automating these ACs, the word count is taken from the CLI's stdout (`viewer summary --view <brief|overview|preview> <document>`) as whitespace-delimited tokens, per architecture.yaml. If the Product Owner wants an exact counting rule stated in the story itself, raise it at refinement — the current wording deliberately mirrors the documented threshold without adding unstated rules.
+## Result
+
+After this change every AC names an explicit, assertable threshold:
+- 001-brief: measurable — "the displayed summary contains at most 150 words"
+- 002-overview: measurable — "the displayed summary contains at most 150 words"
+- 003-preview: measurable — "the displayed summary contains at most 150 words"
+- Totals: 3/3 = 100% (above the 50% threshold)
+
+## Open Questions for the Product Owner (do not invent values)
+
+Ask rather than guess if any of the following is wanted but unspecified:
+- a minimum word count, or a per-view limit different from 150 (the product document says all three views enforce the same limit and that "No other thresholds are specified")
+- a response-time budget in milliseconds for rendering a view
+- an exit code or exact error message when the document is missing or unreadable
+- the exact stdout field or formatting the word count is measured over (the architecture says only "stdout contains the summary")
 
 ---
 

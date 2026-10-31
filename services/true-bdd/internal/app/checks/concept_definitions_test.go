@@ -104,7 +104,7 @@ func conceptSuite(t *testing.T, steps []catalogue.Step) (*template.ScenarioCheck
 	}
 
 	item := &template.ScenarioCheckData{ID: "calc-001", Path: filepath.Join(root, "tests/calc/calc_test.go"),
-		Phrases: steps}
+		CheckedSteps: steps}
 
 	return item, checks.Input{Docs: map[string]string{docs.KeyProduct: filepath.Join(root, "docs/product/product.yaml")}}
 }

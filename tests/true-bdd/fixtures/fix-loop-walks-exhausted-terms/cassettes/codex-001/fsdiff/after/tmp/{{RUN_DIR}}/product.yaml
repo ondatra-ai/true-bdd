@@ -23,9 +23,9 @@ glossary:
       are both behaviour.
   - term: latency
     means: >-
-      How long a reply took to arrive: the delay from the moment a role
-      sends the message to the moment the MCP service's reply is back,
-      measured in milliseconds.
+      The delay of a reply: the time in milliseconds from the moment a
+      client sends a message to the MCP service until that message's
+      reply arrives.
 
 concepts:
   given:

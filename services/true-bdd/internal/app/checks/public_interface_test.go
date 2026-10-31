@@ -10,7 +10,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/template"
 )
 
-func TestPublicInterfaceCheckNamesServiceWithoutCatalogueOrStory(t *testing.T) {
+func TestPublicInterfaceCheckNamesServiceWithoutConceptsOrStory(t *testing.T) {
 	t.Parallel()
 
 	path := filepath.Join(t.TempDir(), "architecture.yaml")

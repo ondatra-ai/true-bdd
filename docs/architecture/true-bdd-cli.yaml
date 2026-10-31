@@ -86,12 +86,12 @@ commands:
       '1': {description: A refusal before rendering, or a stale file without --fix.}
   build steps:
     description: >-
-      Lists each Catalogue phrase a go-test suite has no step definition for
-      and checks Step coverage on template hosts. With --fix it writes every skeleton, then each
-      body through the Fix loop, and checks compilation, binding, coverage, the
-      test list and that every Scenario is red without the target.
-      On concept hosts, both forms group distinct unbound texts per suite and block
-      and rejudge service bindings; without --fix the concept Items are listed. With
+      Groups the distinct texts no step definition binds, per go-test suite and
+      block, into concept Items and rejudges their service bindings; without
+      --fix it lists the Items and checks Step coverage. A host declaring no
+      concepts has no Item. With --fix it writes every skeleton, then each
+      Item's bodies through the Fix loop, and checks compilation, binding,
+      coverage, the test list and that every Scenario is red without the target. With
       --fix each Item's patterns are proposed and checked against every suite step
       before any skeleton, a refusal going back with the findings within the
       configured attempts; skeletons record their concept and pending ones are
@@ -103,8 +103,8 @@ commands:
       - {name: requirements, in: option, description: Path to the Registry., schema: {type: string}}
       - {name: model, in: option, description: 'Repeatable <tier>=<cli>:<model> override.', schema: {type: string}}
     responses:
-      '0': {description: No phrase lacks a definition and every check passes; under --fix stdout ends with BUILD STEPS COMPLETE.}
-      '1': {description: A missing definition or concept Item without --fix, a failed check, a phrase the Public interface cannot serve, a proposal still refused after the configured attempts, or an incomplete walk.}
+      '0': {description: No concept Item lacks a definition and every check passes; under --fix stdout ends with BUILD STEPS COMPLETE.}
+      '1': {description: A missing definition or concept Item without --fix, a failed check, a concept the Public interface cannot serve, a proposal still refused after the configured attempts, or an incomplete walk.}
   build code:
     description: >-
       Runs the architecture's declared replay command, walks the failing set,
@@ -163,7 +163,7 @@ extensions:
       access: read-write
     product-document:
       path: docs/product/product.yaml
-      format: The product document (documents.product); us refine --fix and scen check --fix add concepts, or Catalogue entries on a template host, and glossary entries.
+      format: The product document (documents.product); us refine --fix and scen check --fix add concepts and glossary entries.
       access: read-write
     stories:
       path: docs/product/stories/<story-id>-*.yaml
@@ -171,7 +171,7 @@ extensions:
       access: read-write
     architecture-document:
       path: docs/architecture/architecture.yaml
-      format: The architecture document (documents.architecture_yaml); scen check --fix writes Word mappings, Public interface declarations and Concept bindings, or Phrase mapping entries on a template host.
+      format: The architecture document (documents.architecture_yaml); scen check --fix writes Word mappings, Public interface declarations and Concept bindings.
       access: read-write
     interface-documents:
       path: the documents the architecture's public_interface declarations name

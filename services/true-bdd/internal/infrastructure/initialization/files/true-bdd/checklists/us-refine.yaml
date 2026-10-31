@@ -34,10 +34,11 @@ sections:
           never discard required behaviour just to meet the count.
           Give each added or rewritten AC an id, a one-sentence must/should
           description and concrete Given/When/Then steps. Preserve unaffected
-          ACs and Story fields. When a Catalogue is declared, use only its
-          phrases with filled slots in their declared blocks, including any
-          phrases already added by the step-phrases fix; a missing phrase
-          must be proposed through that fix, never invented in a Story step.
+          ACs and Story fields. When the product document declares concepts,
+          word each step as an instance of one concept of its block, within
+          the variations its closed means states; a step needing a variation
+          no concept states is still written plainly, and the concept link's
+          fix offers a rewritten step, a wider concept or a new concept for it.
           Present the proposal at the fix menu; apply it only after the
           Product Owner answers apply.
 
@@ -121,9 +122,9 @@ sections:
           ```
 
           Rules:
-          - When the product document declares a `catalogue:`, write every
-            step as one of its phrases, its slots filled, in the block the
-            phrase is declared for: the catalogue is the product's vocabulary
+          - When the product document declares `concepts:`, word every step
+            as an instance of one concept of its block, within the variations
+            its closed means states: the concepts are the product's vocabulary
           - Third person perspective using EXACT role from story's "as_a:" field
           - Active voice ("Claude displays" not "is displayed")
           - Observable outcome (what user sees/experiences)
@@ -207,13 +208,13 @@ sections:
           Use the product document to select a concrete replacement that
           specifies the interaction mechanism — not just the user's intent:
           the forbidden action's `replacement`, and, when the product
-          document declares a `catalogue:`, one of its phrases.
+          document declares `concepts:`, a concept of the step's block.
 
       - Q: |
           For every AC, decide whether it describes implementation (endpoint
           created, database updated, schema migrated, etc.) instead of
-          observable behavior in the product's own words: the phrases of the
-          product document's catalogue, when it declares one.
+          observable behavior in the product's own words: the concepts of the
+          product document, when it declares them.
 
           Pass when every AC describes observable behavior.
           Fail when one or more ACs describe implementation.
@@ -233,10 +234,11 @@ sections:
           product document; preserve the behaviour and unaffected ACs.
           Give each added or rewritten AC an id, a one-sentence must/should
           description and concrete Given/When/Then steps. Preserve unaffected
-          ACs and Story fields. When a Catalogue is declared, use only its
-          phrases with filled slots in their declared blocks, including any
-          phrases already added by the step-phrases fix; a missing phrase
-          must be proposed through that fix, never invented in a Story step.
+          ACs and Story fields. When the product document declares concepts,
+          word each step as an instance of one concept of its block, within
+          the variations its closed means states; a step needing a variation
+          no concept states is still written plainly, and the concept link's
+          fix offers a rewritten step, a wider concept or a new concept for it.
           Present the proposal at the fix menu; apply it only after the
           Product Owner answers apply.
 
@@ -262,10 +264,11 @@ sections:
           document. Preserve the real failure cases already covered.
           Give each added or rewritten AC an id, a one-sentence must/should
           description and concrete Given/When/Then steps. Preserve unaffected
-          ACs and Story fields. When a Catalogue is declared, use only its
-          phrases with filled slots in their declared blocks, including any
-          phrases already added by the step-phrases fix; a missing phrase
-          must be proposed through that fix, never invented in a Story step.
+          ACs and Story fields. When the product document declares concepts,
+          word each step as an instance of one concept of its block, within
+          the variations its closed means states; a step needing a variation
+          no concept states is still written plainly, and the concept link's
+          fix offers a rewritten step, a wider concept or a new concept for it.
           Present the proposal at the fix menu; apply it only after the
           Product Owner answers apply.
 
@@ -299,10 +302,11 @@ sections:
           A Story with no failure mode of its own needs no error AC.
           Give each added or rewritten AC an id, a one-sentence must/should
           description and concrete Given/When/Then steps. Preserve unaffected
-          ACs and Story fields. When a Catalogue is declared, use only its
-          phrases with filled slots in their declared blocks, including any
-          phrases already added by the step-phrases fix; a missing phrase
-          must be proposed through that fix, never invented in a Story step.
+          ACs and Story fields. When the product document declares concepts,
+          word each step as an instance of one concept of its block, within
+          the variations its closed means states; a step needing a variation
+          no concept states is still written plainly, and the concept link's
+          fix offers a rewritten step, a wider concept or a new concept for it.
           Present the proposal at the fix menu; apply it only after the
           Product Owner answers apply.
 
@@ -330,10 +334,11 @@ sections:
           threshold is unspecified; never invent a product requirement.
           Give each added or rewritten AC an id, a one-sentence must/should
           description and concrete Given/When/Then steps. Preserve unaffected
-          ACs and Story fields. When a Catalogue is declared, use only its
-          phrases with filled slots in their declared blocks, including any
-          phrases already added by the step-phrases fix; a missing phrase
-          must be proposed through that fix, never invented in a Story step.
+          ACs and Story fields. When the product document declares concepts,
+          word each step as an instance of one concept of its block, within
+          the variations its closed means states; a step needing a variation
+          no concept states is still written plainly, and the concept link's
+          fix offers a rewritten step, a wider concept or a new concept for it.
           Present the proposal at the fix menu; apply it only after the
           Product Owner answers apply.
 
@@ -361,10 +366,11 @@ sections:
           documents do not define one instead of inventing it.
           Give each added or rewritten AC an id, a one-sentence must/should
           description and concrete Given/When/Then steps. Preserve unaffected
-          ACs and Story fields. When a Catalogue is declared, use only its
-          phrases with filled slots in their declared blocks, including any
-          phrases already added by the step-phrases fix; a missing phrase
-          must be proposed through that fix, never invented in a Story step.
+          ACs and Story fields. When the product document declares concepts,
+          word each step as an instance of one concept of its block, within
+          the variations its closed means states; a step needing a variation
+          no concept states is still written plainly, and the concept link's
+          fix offers a rewritten step, a wider concept or a new concept for it.
           Present the proposal at the fix menu; apply it only after the
           Product Owner answers apply.
 
@@ -429,25 +435,13 @@ sections:
           or an oracle absent from the Specification.
           Give each added or rewritten AC an id, a one-sentence must/should
           description and concrete Given/When/Then steps. Preserve unaffected
-          ACs and Story fields. When a Catalogue is declared, use only its
-          phrases with filled slots in their declared blocks, including any
-          phrases already added by the step-phrases fix; a missing phrase
-          must be proposed through that fix, never invented in a Story step.
+          ACs and Story fields. When the product document declares concepts,
+          word each step as an instance of one concept of its block, within
+          the variations its closed means states; a step needing a variation
+          no concept states is still written plainly, and the concept link's
+          fix offers a rewritten step, a wider concept or a new concept for it.
           Present the proposal at the fix menu; apply it only after the
           Product Owner answers apply.
-
-  # Appended, not inserted: `D:` prompts walk first wherever they sit, but
-  # a Cell's artifacts keep its file position, so a prompt above the `Q:`s
-  # would renumber them and re-hash every us-refine cassette.
-  - id: term_closure
-    name: "Term Closure"
-    description: "Every step of every acceptance criterion must match exactly one phrase of the product document's catalogue, declared for its block, so the Story speaks the language the product declares."
-    validation_prompts:
-      - D: step-phrases
-        rationale: "A step outside the catalogue has no stated meaning, so no step definition follows from the spec."
-        docs:
-          - product
-        F: "Propose one catalogue entry (template, block, means, terms) for each failing step, asking what it means first. Write it to the product document, never to the Story."
 
   - id: concept_link
     name: "Concept Link"

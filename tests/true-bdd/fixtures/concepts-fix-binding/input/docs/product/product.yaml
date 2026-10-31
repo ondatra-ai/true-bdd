@@ -1,6 +1,6 @@
 roles:
 - name: System Architect
-  description: Owns the service and its Phrase mapping.
+  description: Owns the service and its concept bindings.
 concepts:
   given:
   - concept: greeting

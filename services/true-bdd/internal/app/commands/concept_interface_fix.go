@@ -6,7 +6,7 @@ import (
 )
 
 func commitConceptInterfaceFix(item *template.ScenarioCheckData) error {
-	if !item.ConceptForm {
+	if !item.ConceptsDeclared {
 		return nil
 	}
 

@@ -1,54 +1,39 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-divide-integers-iter1-result.yaml ===
-id: divide-integers
-title: Divide integers
-as_a: Calculator User
-i_want: to divide two validated integers
-so_that: I can obtain their quotient or a zero-divisor error
-status: PLANNED
+id: "divide-integers"
+title: "Divide integers"
+as_a: "Calculator User"
+i_want: "to divide two validated integers"
+so_that: "I can obtain their quotient or a zero-divisor error"
+status: "PLANNED"
 acceptance_criteria:
-  - id: 001-division
-    description: The calculator must return 3 when dividing 6 by 2.
+  - id: "001-division"
+    description: "The calculator must return 3 when dividing 6 by 2."
     steps:
-      - given:
-          - 'the dividend is "6"'
-          - 'the divisor is "2"'
-      - when:
-          - 'the Calculator User divides the numbers'
-      - then:
-          - 'the result is "3"'
-
-  - id: 002-division
-    description: The calculator must return 3 when dividing 9 by 3.
+      - given: "the dividend is \"6\""
+      - given: "the divisor is \"2\""
+      - when: "the Calculator User divides the numbers"
+      - then: "the result is \"3\""
+  - id: "002-division"
+    description: "The calculator must return 3 when dividing 9 by 3."
     steps:
-      - given:
-          - 'the dividend is "9"'
-          - 'the divisor is "3"'
-      - when:
-          - 'the Calculator User divides the numbers'
-      - then:
-          - 'the result is "3"'
-
-  - id: 003-division
-    description: The calculator must return 0 when dividing 0 by 2.
+      - given: "the dividend is \"9\""
+      - given: "the divisor is \"3\""
+      - when: "the Calculator User divides the numbers"
+      - then: "the result is \"3\""
+  - id: "003-division"
+    description: "The calculator must return 0 when dividing 0 by 2."
     steps:
-      - given:
-          - 'the dividend is "0"'
-          - 'the divisor is "2"'
-      - when:
-          - 'the Calculator User divides the numbers'
-      - then:
-          - 'the result is "0"'
-
-  - id: 004-division
-    description: The calculator must exit 1 with stderr "Cannot divide by zero" and print no result when the divisor is zero.
+      - given: "the dividend is \"0\""
+      - given: "the divisor is \"2\""
+      - when: "the Calculator User divides the numbers"
+      - then: "the result is \"0\""
+  - id: "004-division"
+    description: "The calculator must exit 1 with stderr \"Cannot divide by zero\" and print no result when the divisor is zero."
     steps:
-      - given:
-          - 'the dividend is "6"'
-          - 'the divisor is "0"'
-      - when:
-          - 'the Calculator User divides the numbers'
-      - then:
-          - 'the command exits 1'
-          - 'the error message is "Cannot divide by zero"'
-          - 'no result is printed'
+      - given: "the dividend is \"6\""
+      - given: "the divisor is \"0\""
+      - when: "the Calculator User divides the numbers"
+      - then: "the command exits 1"
+      - then: "the error message is \"Cannot divide by zero\""
+      - then: "no result is printed"
 === FILE_END: tmp/{{RUN_DIR}}/apply-divide-integers-iter1-result.yaml ===

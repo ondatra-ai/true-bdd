@@ -38,7 +38,7 @@ target: "<working copy edited>"
 summary: "<approved change applied>"
 === FILE_END: {{.ResultPath}} ===
 {{ else -}}
-{{ if eq .Check "phrase-mappings" -}}
+{{ if eq .Check "concept-bindings" -}}
 Service: {{.Subject.Service}}
 The menu action was apply. Perform the approved fix now.
 Approved fix:
@@ -54,7 +54,7 @@ After editing, return:
 === FILE_START: {{.ResultPath}} ===
 applied: true
 target: "<architecture working copy>"
-summary: "Mapped the phrase to the service's Public interface"
+summary: "Bound the concept to the service's Public interface"
 === FILE_END: {{.ResultPath}} ===
 {{ else -}}
 {{ if eq .Check "public-interface" -}}
@@ -110,8 +110,7 @@ same Scenarios, so a copy you leave unparseable changes nothing.
 ## Instructions
 
 1. Use the Read tool to load the working copy the fix prompt names. In
-   the registry, find the `{{.Subject.ID}}:` entry under `scenarios:`;
-   in the product document, the catalogue entry the fix names.
+   the registry, find the `{{.Subject.ID}}:` entry under `scenarios:`.
 2. Apply each change with the Edit tool on that working copy: replace
    the current text the fix prompt gives with its new text, inside that
    entry only.
@@ -155,7 +154,7 @@ the working copy, never the document itself:
 The engine replaces each document with its working copy once the copy
 reads as valid YAML, so a copy you leave unparseable changes nothing.
 
-{{ if and .Subject.ConceptForm (eq .Check "term-mappings") -}}
+{{ if eq .Check "term-mappings" -}}
 Word mapping entries have term, technical and observed_by, all strings.
 observed_by is prose describing setup or observation, never a reference object.
 {{ end -}}
@@ -163,20 +162,19 @@ observed_by is prose describing setup or observation, never a reference object.
 
 {{ if .Subject.Writes "architecture_yaml" -}}
 1. Use the Read tool to load the working copy the fix prompt's
-   document names, and find the list it changes (`{{ if .Subject.ConceptForm }}concepts:{{ else }}catalogue:{{ end }}` or
+   document names, and find the list it changes (`concepts:` or
    `glossary:` in the product document, `architecture.terms:` in the
    architecture document).
 {{- else -}}
 1. Use the Read tool to load the working copy the fix prompt's
-   document names, and find the list it changes (`{{ if .Subject.ConceptForm }}concepts:{{ else }}catalogue:{{ end }}` or
+   document names, and find the list it changes (`concepts:` or
    `glossary:`).
 {{- end }}
 2. Apply the changes described in the "Fix Prompt to Apply" section
    above with the Edit tool on that working copy: append a new entry at
    the end of its list, at the list's own indentation, or replace the
    old_string verbatim.
-3. Copy each entry's YAML exactly as the fix prompt gives it. Keep a
-   template single-quoted: it carries `{`, `[` and `"` of its own.
+3. Copy each entry's YAML exactly as the fix prompt gives it.
 4. You MAY only edit the working copies listed above. The documents
    themselves, the scenario registry, a generated test file and a step
    definition are all out of bounds.

@@ -16,4 +16,4 @@ scenarios:
       when:
         - the Operator runs "greet Ada"
       then:
-        - the standard output has a line matching "^Hello Ada$"
+        - the command printed a line on standard output matching "^Hello Ada$"

@@ -3,8 +3,8 @@ story:
   feature: scen-check
   title: Declare concepts and bind them to the Public interface
   as_a: System Architect
-  i_want: concepts in the product document and their architecture bindings to be checked without AI while hosts may retain
-    Catalogue templates
+  i_want: concepts in the product document and their architecture bindings to be checked without AI, and a host still declaring
+    the retired catalogue or Phrase mapping to be refused at startup
   so_that: each concept has declared words and Public interface references before step definitions are written
   status: IMPLEMENTED
   acceptance_criteria:
@@ -23,15 +23,15 @@ story:
       - the engine dispatched 0 AI turns
       - no file outside "tmp" changed
   - id: 002-both-refused
-    description: A product declaring both catalogue and concepts must refuse startup naming both
+    description: A product document still declaring the retired catalogue must refuse startup, naming concepts as its replacement
     steps:
     - given:
-      - the "concepts-both" project tree
+      - the "concepts-catalogue-retired" project tree
     - when:
       - the System Architect runs "scen check"
     - then:
       - the command exits with code 1
-      - 'stdout matches Refusing to start.*catalogue: and concepts:'
+      - 'stdout matches Refusing to start.*the catalogue key is no longer read; declare concepts: in its place'
       - the engine dispatched 0 AI turns
       - no file outside "tmp" changed
   - id: 003-undefined-term
@@ -74,15 +74,15 @@ story:
       - the engine dispatched 0 AI turns
       - no file outside "tmp" changed
   - id: 006-templates
-    description: A host retaining Catalogue templates must behave as before
+    description: An architecture document still declaring the retired Phrase mapping must refuse startup, naming architecture.concepts as its replacement
     steps:
     - given:
-      - the "concepts-templates" project tree
+      - the "concepts-phrases-retired" project tree
     - when:
       - the System Architect runs "scen check"
     - then:
-      - the command exits with code 0
-      - stdout matches every matched phrase has one valid Phrase mapping
+      - the command exits with code 1
+      - 'stdout matches Refusing to start.*architecture.phrases is no longer read; bind each concept in architecture.concepts in its place'
       - the engine dispatched 0 AI turns
       - no file outside "tmp" changed
   - id: 007-fix-binding
@@ -99,4 +99,22 @@ story:
       - stdout matches msg="User chose fix action".*action=apply
       - stdout matches every concept binding
       - the only file changed outside "tmp" is "docs/architecture/architecture.yaml"
+      - the file "docs/scenarios.yaml" is unchanged
+  - id: 008-binding-adds-operation
+    description: A concept-bindings fix for a binding whose command the CLI document does not declare yet must ask the System Architect first and add the command to that document only after apply, never to the Scenario
+    steps:
+    - given:
+      - the "concepts-fix-operation" project tree
+      - the System Architect's answer to every question is "1"
+    - when:
+      - the System Architect runs "scen check --fix"
+    - then:
+      - the command exits with code 0
+      - 'stdout matches when concept ''translation'' for service greeter references \[command: translate\], which its Public interface does not declare'
+      - stdout matches msg="AI needs clarification"
+      - stdout matches msg="User chose fix action".*action=apply
+      - stdout matches msg="Fix recorded in the document" document=docs/greeter-cli.yaml
+      - stdout matches every concept binding names a declared concept and valid Public interface references
+      - no file outside "tmp" and "docs" changed
+      - 'the file "docs/greeter-cli.yaml" matches (?m)^  translate:'
       - the file "docs/scenarios.yaml" is unchanged

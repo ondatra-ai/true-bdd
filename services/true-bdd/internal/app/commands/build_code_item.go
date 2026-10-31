@@ -72,22 +72,14 @@ func (item *BuildCodeItem) Scenarios() []*registry.RegistryScenario {
 	return scenarios
 }
 
-// Specification unions the remaining members' phrases and words in discovery order.
+// Specification unions the remaining members' concepts and words in discovery order.
 func (item *BuildCodeItem) Specification() catalogue.Specification {
 	spec := catalogue.Specification{}
-	phrases, terms := make(map[string]bool), make(map[string]bool)
+	terms := make(map[string]bool)
 
 	for _, test := range item.Tests {
 		if test.LastRunPassed {
 			continue
-		}
-
-		spec.Declared = spec.Declared || test.Spec.Declared
-		for _, phrase := range test.Spec.Phrases {
-			if !phrases[phrase.Template] {
-				spec.Phrases = append(spec.Phrases, phrase)
-				phrases[phrase.Template] = true
-			}
 		}
 
 		for _, term := range test.Spec.Terms {

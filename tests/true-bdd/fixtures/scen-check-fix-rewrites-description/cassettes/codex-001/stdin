@@ -2,8 +2,7 @@
 
 You are a Registry Scenario Editor applying an approved fix to the
 working copy of one document: the scenario registry, where a
-Scenario's description or steps are rewritten, or the product
-document, where a catalogue entry's meaning is.
+Scenario's description or steps are rewritten.
 
 **Your Task:**
 1. Read the working copy the fix names.
@@ -49,29 +48,59 @@ Then:
 
 ## Fix Prompt to Apply
 
-Proposal for the Product Owner — E2E-001's registry description, one edit, in `docs/scenarios.yaml`.
+# Fix Prompt for Scenario E2E-001: Greeting a name prints the configured greeting followed by that name, and the greeter exits with code 0
 
-Finding: `E2E-001: missing must/should — "Greeting a name prints the configured greeting followed by that name, and the greeter exits with code 0"`. The sentence narrates what happens instead of stating the rule it pins. Nothing is missing from the documents: the Scenario's own steps and the product glossary already name every criterion the rule needs — the `greeting` read from the config file (`given: the greeting is configured as "Hello"`), the name the command is given (`when: the Operator runs "greet Ada"`), the `standard output` line (`then: stdout matches ^Hello Ada$`) and the `exit code` 0 (`then: the command exits with code 0`) — so the rule can be stated from what the entry already specifies, with no new meaning invented.
+## Target
+The `E2E-001` entry of the `scenarios_yaml` document (the
+scenario registry), file `tmp/{{RUN_DIR}}/scenarios_yaml.yaml`.
 
-Nothing about the concepts, terms or bindings is at fault here, so this touches no product glossary entry, no `architecture.terms` entry and no `architecture.concepts` binding, and `docs/greeter-cli.yaml` needs no new declaration: `command: greet` and `file: greeting-config`, the references the bound concepts use, are already declared there.
+Edit only the `description:` field of that entry. Do not touch
+`service:`, `path:`, `user_stories:`, `merged_steps:`, any other
+Scenario, the generated test `tests/greeter/greet_test.go`, or any step
+definition.
 
-Exact change — `docs/scenarios.yaml`:
+## Why
+scen-check/scenario_quality failed: the description states the
+behaviour as prose ("Greeting a name prints ... and the greeter
+exits ...") and never says what *must* hold, so it is not a rule.
+It is one sentence and carries no Given/When/Then text, so only the
+missing `must` has to be repaired.
 
-old_string:
+## Required Changes
+### Change #1: State the description as one rule sentence using "must"
+**Document:** scenarios_yaml
+**Field:** description
+**Current text:**
 ```
-    description: Greeting a name prints the configured greeting followed by that name, and the greeter exits with code 0
+Greeting a name prints the configured greeting followed by that name, and the greeter exits with code 0
+```
+**New text:**
+```
+The greeter must print the configured greeting followed by the name it was given and must exit with code 0
 ```
 
-new_string:
-```
-    description: Greeting a name must print the configured greeting followed by that name and must exit with code 0
-```
+## Constraints on the replacement
+- Keep the YAML scalar style of the existing line: a plain unquoted
+  scalar on the same `description:` key, at the same indentation
+  (4 spaces under `E2E-001:`), on one line.
+- Both assertions the Scenario pins stay: the printed line is the
+  configured greeting followed by the given name, and the exit code is
+  0. Neither may be dropped or weakened.
+- The sentence stays one sentence, contains `must`, and contains no
+  `Given`/`When`/`Then` text.
+- It uses no word from `vocabulary.forbidden_qualifiers` and no verb
+  from `vocabulary.forbidden_actions` in `product.yaml`; `print`,
+  `greeting` and `exit ... code` are the glossary's own words
+  (`greeting`, `exit code`).
+- Change no step. `merged_steps.given`, `merged_steps.when` and
+  `merged_steps.then` stay byte-for-byte as they are, so every step
+  remains an instance of its concept (`configured greeting`,
+  `a role runs a command`, `exit code`, `standard output`).
 
-Why this wording: one sentence; carries `must`; no Given/When/Then text; keeps both criteria the entry specifies, the configured greeting followed by the given name and the exit code 0; uses the product's own words (`greeting`, `exit code`) and no forbidden qualifier.
-
-No step changes. `merged_steps` — the `given`, the `when` and both `then` clauses — stays byte-for-byte as it is, as do `service`, `path`, `user_stories` and the file's `metadata`. No generated test and no step definition is touched.
-
-Apply this single edit only after the owner answers apply at the menu.
+## After applying
+Run `true-bdd build tests --fix` so the generated test
+`tests/greeter/greet_test.go` is re-rendered from the corrected
+registry entry. Do not hand-edit that test.
 
 ---
 
@@ -91,8 +120,7 @@ same Scenarios, so a copy you leave unparseable changes nothing.
 ## Instructions
 
 1. Use the Read tool to load the working copy the fix prompt names. In
-   the registry, find the `E2E-001:` entry under `scenarios:`;
-   in the product document, the catalogue entry the fix names.
+   the registry, find the `E2E-001:` entry under `scenarios:`.
 2. Apply each change with the Edit tool on that working copy: replace
    the current text the fix prompt gives with its new text, inside that
    entry only.

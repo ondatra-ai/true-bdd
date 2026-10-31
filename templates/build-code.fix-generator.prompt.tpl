@@ -47,27 +47,7 @@ Tests: {{ join ", " .IDs }}
 {{ end }}
 
 {{ with .Subject.Specification }}
-{{ if .Declared }}
-## What the spec says these steps mean
-
-### Phrases
-{{ range .Phrases }}
-- `{{ .Template }}` ({{ .Block }} step): {{ .Means }}
-  Words: {{ if .Terms }}{{ join ", " .Terms }}{{ else }}none{{ end }}
-{{ end }}
-
-### Words
-{{ range .Terms }}
-#### {{ .Term }}
-{{ range .Means }}- Means: {{ . }}
-{{ else }}- The glossary does not define it.
-{{ end }}
-{{ range .Mappings }}- In the implementation: {{ .Technical }}
-- Observed by: {{ .ObservedBy }}
-{{ else }}- The architecture's word mapping does not map it.
-{{ end }}
-{{ end }}
-{{ else if .Concepts }}
+{{ if .Concepts }}
 ## What the spec says these steps mean
 
 ### Concepts

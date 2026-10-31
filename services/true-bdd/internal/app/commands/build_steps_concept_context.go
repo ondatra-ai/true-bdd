@@ -54,6 +54,14 @@ type conceptSpecification struct {
 	bindings    []architecture.ConceptBinding
 }
 
+type stepScenarioContext struct {
+	ID          string `yaml:"id"`
+	Description string `yaml:"description"`
+	Service     string `yaml:"service"`
+	Path        string `yaml:"path"`
+	Steps       string `yaml:"steps"`
+}
+
 func describeConceptItem(item *BuildStepsItem, arch *architecture.Architecture, spec conceptSpecification,
 	discovery *conceptDiscovery,
 ) error {
@@ -169,7 +177,7 @@ func conceptScenarios(item *BuildStepsItem, discovery *conceptDiscovery) []stepS
 			continue
 		}
 
-		for _, step := range scenario.Phrases() {
+		for _, step := range scenario.CheckedSteps() {
 			if step.Block == item.Concept.Block && slices.Contains(item.Concept.Steps, step.Text) {
 				using = append(using, stepScenarioContext{scenario.ID, scenario.Description,
 					scenario.Service, scenario.Path, scenario.FormatSteps()})

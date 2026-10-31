@@ -15,7 +15,7 @@ import (
 // reviewConceptDefinitions holds a concept host's Scenario to its suite's
 // step definitions: no step binds two, and the one a step binds records a
 // declared concept of that step's block. An unbound step is build steps' gap.
-func reviewConceptDefinitions(item *template.ScenarioCheckData, source product.Catalogue, dir string,
+func reviewConceptDefinitions(item *template.ScenarioCheckData, source product.Document, dir string,
 ) (Verdict, error) {
 	suite, err := stepcoverage.LoadSuite(dir)
 	if err != nil {
@@ -27,7 +27,7 @@ func reviewConceptDefinitions(item *template.ScenarioCheckData, source product.C
 		return Verdict{}, fmt.Errorf("read the concept records in %s: %w", dir, err)
 	}
 
-	findings, unbound := reviewConceptSteps(item.Phrases, suite, recorded, source.Concepts)
+	findings, unbound := reviewConceptSteps(item.CheckedSteps, suite, recorded, source.Concepts)
 	if len(findings) > 0 {
 		return Verdict{Pass: false, Context: prefixed(item.ID, findings)}, nil
 	}

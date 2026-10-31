@@ -3,8 +3,7 @@ package catalogue
 import "fmt"
 
 // ReviewMappings holds each declared term to the architecture's word
-// mapping: exactly one mapping must name it, spelled as the catalogue
-// spells it. Each finding names a term once, whichever templates declare it.
+// mapping: exactly one mapping must name it, spelled as the concept spells it.
 func ReviewMappings(declarations []Declaration, mappings []Mapping) TermReview {
 	named := make([]string, 0, len(mappings))
 	for _, mapping := range mappings {
@@ -13,11 +12,10 @@ func ReviewMappings(declarations []Declaration, mappings []Mapping) TermReview {
 
 	return reviewDeclarations(declarations, named, termRules{
 		unnamed: func(declaration Declaration) string {
-			return quote(declaration.Term) + " has no mapping in the architecture"
+			return fmt.Sprintf("%s: %s has no mapping in the architecture", declaration.Concept, quote(declaration.Term))
 		},
-		perTemplate: false,
-		repeated: func(term string, count int) string {
-			return fmt.Sprintf("the architecture maps %s %d times", quote(term), count)
+		repeated: func(declaration Declaration, count int) string {
+			return fmt.Sprintf("%s: the architecture maps %s %d times", declaration.Concept, quote(declaration.Term), count)
 		},
 	})
 }

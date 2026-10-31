@@ -20,7 +20,7 @@ func TestGroupingUsesLinkThresholdAndAmbiguity(t *testing.T) {
 		status    checklist.Status
 	}{{9, checklist.StatusPass}, {8, checklist.StatusFail}, {10, checklist.StatusFail}} {
 		item := &template.ScenarioCheckData{ID: groupTestSuite, Service: linkTestService,
-			Phrases: []catalogue.Step{{Block: catalogue.BlockWhen, Text: linkTestStepText}}}
+			CheckedSteps: []catalogue.Step{{Block: catalogue.BlockWhen, Text: linkTestStepText}}}
 
 		result, err := evaluator.EvaluateOne(t.Context(), item, item.ID, groupTestPrompt(testCase.threshold), t.TempDir())
 		if err != nil || result.Status != testCase.status {
@@ -43,7 +43,7 @@ func TestGroupingMalformedAnswerCrashes(t *testing.T) {
 	} {
 		reply.response = answer
 		item := &template.ScenarioCheckData{ID: groupTestSuite,
-			Phrases: []catalogue.Step{{Block: catalogue.BlockWhen, Text: linkTestStepText}}}
+			CheckedSteps: []catalogue.Step{{Block: catalogue.BlockWhen, Text: linkTestStepText}}}
 
 		_, err := evaluator.EvaluateOne(t.Context(), item, item.ID, groupTestPrompt(9), t.TempDir())
 		if err == nil {
@@ -59,7 +59,7 @@ func groupTestPrompt(threshold int) checklist.PromptWithContext {
 
 func TestGroupingSingleConceptRequiresExplicitNullRunnerUp(t *testing.T) {
 	evaluator, reply, _ := conceptRequestEvaluator(t)
-	item := &template.ScenarioCheckData{ID: groupTestSuite, Phrases: []catalogue.Step{
+	item := &template.ScenarioCheckData{ID: groupTestSuite, CheckedSteps: []catalogue.Step{
 		{Block: catalogue.BlockThen, Text: "36 is displayed"},
 	}}
 	reply.response = `{"assignments":[{"index":1,"concept":"result","score":10,"runner_up":null,"runner_up_score":0}]}`

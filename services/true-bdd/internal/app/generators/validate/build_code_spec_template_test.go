@@ -13,13 +13,6 @@ import (
 
 const buildCodeTemplates = "../../../../../../templates/"
 
-// The template host's section as build code rendered it before concepts
-// existed: a host with templates keeps these bytes.
-const templateHostSection = "\n\n## What the spec says these steps mean\n\n### Phrases\n\n" +
-	"- `the number is {value:number}` (given step): The number supplies the input to double.\n" +
-	"  Words: number\n\n\n### Words\n\n#### number\n- Means: An integer operand.\n\n" +
-	"- In the implementation: The integer argument of double.\n- Observed by: The step reads stdout.\n\n\n\n\n\n"
-
 const conceptHostSection = "\n\n## What the spec says these steps mean\n\n### Concepts\n\n" +
 	"- `doubling` (when concept): The Owner doubles a whole number.\n" +
 	"  Words: number\n" +
@@ -76,15 +69,11 @@ func numberWord() catalogue.TermSpec {
 			ObservedBy: "The step reads stdout."}}}
 }
 
-// Both repair turns of a template host render the Catalogue section byte
-// for byte as before; a concept host's render each linked concept's
-// meaning, words and bindings, then the same words.
-func TestBuildCodeTurnsEmbedTheSpecificationOfEitherForm(t *testing.T) {
+// Both repair turns of a concept host render each linked concept's meaning,
+// words and bindings, then the same words; a host declaring no concepts gets
+// no Specification section.
+func TestBuildCodeTurnsEmbedTheLinkedConcepts(t *testing.T) {
 	number := numberWord()
-	templateHost := catalogue.Specification{Declared: true, Phrases: []catalogue.Entry{{
-		Template: "the number is {value:number}", Block: catalogue.BlockGiven,
-		Means: "The number supplies the input to double.", Terms: []string{numberTerm}}},
-		Terms: []catalogue.TermSpec{number}}
 
 	conceptHost := catalogue.Specification{Concepts: []catalogue.ConceptSpec{
 		{Concept: "doubling", Block: catalogue.BlockWhen, Means: "The Owner doubles a whole number.",
@@ -95,21 +84,15 @@ func TestBuildCodeTurnsEmbedTheSpecificationOfEitherForm(t *testing.T) {
 		{Concept: "ready", Block: catalogue.BlockGiven, Means: "The calculator is ready to use.", Terms: []string{}},
 	}, Terms: []catalogue.TermSpec{number}}
 
-	for _, example := range []struct {
-		name string
-		spec catalogue.Specification
-		want string
-	}{{"template host", templateHost, templateHostSection}, {"concept host", conceptHost, conceptHostSection}} {
-		for _, request := range renderBuildCodeTurns(t, example.spec) {
-			if got := specSection(t, request); got != example.want {
-				t.Errorf("%s section:\n got %q\nwant %q", example.name, got, example.want)
-			}
+	for _, request := range renderBuildCodeTurns(t, conceptHost) {
+		if got := specSection(t, request); got != conceptHostSection {
+			t.Errorf("concept host section:\n got %q\nwant %q", got, conceptHostSection)
 		}
 	}
 
 	for _, request := range renderBuildCodeTurns(t, catalogue.Specification{}) {
 		if strings.Contains(request, "What the spec says") {
-			t.Errorf("a host with neither form got a Specification section:\n%s", request)
+			t.Errorf("a host declaring no concepts got a Specification section:\n%s", request)
 		}
 	}
 }

@@ -93,23 +93,6 @@ func TestBuildStepsCoverage005StepFileNotGoRefused(t *testing.T) {
 	s.Done()
 }
 
-// build-steps-list-001-missing-phrases: build steps without --fix exits non-zero and names every Catalogue phrase with no definition, including an unused phrase
-func TestBuildStepsList001MissingPhrases(t *testing.T) {
-	s := scenarios.New(t, "build-steps-list-001-missing-phrases")
-	s.Given(`the "build-steps-missing" project tree`)
-	s.When(`the System Architect runs "build steps"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches phrase="the MCP server is running on its configured port"`)
-	s.And(`stdout matches phrase="the Claude User posts a valid JSON-RPC initialize request to /mcp"`)
-	s.And(`stdout matches phrase="the server returns HTTP \{status:number\}"`)
-	s.And(`stdout matches phrase="the unused operation runs"`)
-	s.And(`stdout matches Step coverage failed`)
-	s.And(`the engine dispatched no AI turns`)
-	s.And(`the engine spawned no test runners`)
-	s.And(`no file outside "tmp" changed`)
-	s.Done()
-}
-
 // build-steps-refusals-001-empty-checklist-refused: A checklist file that declares no prompts must be refused before the walk, never converge on an item nothing checked
 func TestBuildStepsRefusals001EmptyChecklistRefused(t *testing.T) {
 	s := scenarios.New(t, "build-steps-refusals-001-empty-checklist-refused")
@@ -180,22 +163,6 @@ func TestBuildStepsWriting003SlotOrder(t *testing.T) {
 	s.And(`the engine dispatched 4 validation AI turns to "claude"`)
 	s.And(`the engine spawned exactly 1 test runner with arguments matching -list \.`)
 	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
-	s.Done()
-}
-
-// build-steps-writing-004-interface-cannot-serve: A phrase needing an observation the declared CLI cannot offer stops distinctly after its first writer verdict
-func TestBuildStepsWriting004InterfaceCannotServe(t *testing.T) {
-	s := scenarios.New(t, "build-steps-writing-004-interface-cannot-serve")
-	s.Given(`the "build-steps-interface" project tree`)
-	s.And(`the System Architect's answer to every question is "1"`)
-	s.When(`the System Architect runs "build steps --fix"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches public interface cannot serve phrase`)
-	s.And(`stdout matches the number is doubled`)
-	s.And(`stdout matches heap`)
-	s.And(`stdout does not match BUILD STEPS COMPLETE`)
-	s.And(`the engine dispatched 2 AI turns`)
-	s.And(`no file outside "tmp" and "tests" changed`)
 	s.Done()
 }
 

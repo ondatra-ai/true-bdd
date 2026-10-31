@@ -1,8 +1,8 @@
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
 
 You are a Term Document Editor applying an approved fix to the working
-copy of one term document: the product document's step-phrase catalogue
-or glossary, or the architecture document's word mapping.
+copy of one term document: the product document's glossary or
+concepts, or the architecture document's word mapping.
 
 **Your Task:**
 1. Read the working copy the fix names.
@@ -48,13 +48,11 @@ Then:
 
 ## Fix Prompt to Apply
 
-Proposal for the System Architect (owner of Word mappings) — scenario host-001, service `calc`, check `term-mappings`.
+Proposal for the System Architect (owner of Word mappings) — add the one missing Word mapping for the term `idempotency key`, used by the `when` concept `halve` in service `calc`.
 
-Finding: when concept 'halve' declares the term "idempotency key" in `docs/product/product.yaml` (concepts.when → halve.terms, and the glossary entry "A label identifying a requested halving; repeats with the same label must not halve the number again."), but `architecture.terms` in `docs/architecture/architecture.yaml` is an empty list, so the word has no mapping.
+Why: check `term-mappings` on Scenario host-001 reports that the product term `idempotency key` (declared in `docs/product/product.yaml` glossary and listed under the `when` concept `halve`) has no entry in `architecture.terms`, which is currently an empty list. The product meaning stays as declared ("A label identifying a requested halving; repeats with the same label must not halve the number again."); only the implementation mapping is added. The `Calc` / `textbox` / `Idempotency key` element is already declared in the `calc` service Public interface, so no interface change is required, and no Scenario, generated test or step definition is touched.
 
-The product meaning stays untouched — the only gap is the architecture-side Word mapping. Using the answers supplied (how the word is built in the implementation, and how the when step definition sets it up and observes it), add exactly one `architecture.terms` entry with the term name verbatim from the product declaration and plain prose for `technical` and `observed_by` (neither is a reference object).
-
-Apply this single edit to `docs/architecture/architecture.yaml` — no Scenario, generated test or step definition is touched, and no concept binding or Public interface declaration changes (the Calc page 'Idempotency key' textbox is already declared in the calc Public interface and already referenced by the 'halve' binding):
+Apply exactly one edit, to `docs/architecture/architecture.yaml`:
 
 old_string:
     "terms": []
@@ -63,14 +61,15 @@ new_string:
     "terms": [
       {
         "term": "idempotency key",
-        "technical": "The text value typed into the Calc page 'Idempotency key' textbox, which the page sends with the halve request",
-        "observed_by": "The when step definition fills the Calc 'Idempotency key' textbox with the key named in the step, then presses Halve"
+        "technical": "The text value of the \"Idempotency key\" textbox on the Calc page, submitted with the halving request as the request label",
+        "observed_by": "A step definition generates a fresh unique label for a requested halving and types it into the Idempotency key textbox before pressing Halve; for a repeated request it types the same label again"
       }
     ]
 
-After the edit, `architecture.terms` holds one mapping whose `term` matches the product-declared word "idempotency key" exactly, with `technical` and `observed_by` as nonempty strings, closing the host-001 term-mappings finding.
-
-Confirm at the menu before applying.
+Notes for the owner:
+- `term` is the product's verbatim glossary term `idempotency key`.
+- `technical` and `observed_by` are nonempty strings taken verbatim from the architect's answers; neither is a reference object.
+- No other key in the document changes: `architecture.concepts` and the `calc` Public interface are left as they are.
 
 ---
 
@@ -96,8 +95,7 @@ observed_by is prose describing setup or observation, never a reference object.
    above with the Edit tool on that working copy: append a new entry at
    the end of its list, at the list's own indentation, or replace the
    old_string verbatim.
-3. Copy each entry's YAML exactly as the fix prompt gives it. Keep a
-   template single-quoted: it carries `{`, `[` and `"` of its own.
+3. Copy each entry's YAML exactly as the fix prompt gives it.
 4. You MAY only edit the working copies listed above. The documents
    themselves, the scenario registry, a generated test file and a step
    definition are all out of bounds.

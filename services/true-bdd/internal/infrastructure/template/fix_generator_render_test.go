@@ -20,13 +20,11 @@ type fixSubject struct {
 	AcceptanceCriteria []story.AcceptanceCriterion
 }
 
-// Check names the `D:` check that failed; empty renders a model Prompt's fix.
+// Judgement names a concept judgement; empty renders a model Prompt's fix.
 type failedCheck struct {
 	Judgement    string
 	SectionPath  string
 	Question     string
-	Check        string
-	Rationale    string
 	ActualAnswer string
 	Context      []string
 	FixPrompt    string
@@ -121,31 +119,5 @@ func TestFixGeneratorPromptDemandsUntouchedCriteriaSurvive(t *testing.T) {
 		if !strings.Contains(out, phrase) {
 			t.Errorf("the prompt never says %q", phrase)
 		}
-	}
-}
-
-// A `D:` finding reaches the model only through FailedCheck.Context
-// (spike #133, trap 1), and its fix phrases the step in the catalogue.
-func TestClosureFixPromptNamesTheStepAndSparesTheStory(t *testing.T) {
-	t.Parallel()
-
-	out := renderFailed(t, failedCheck{
-		SectionPath: "us-refine/term_closure", Question: "D: step-phrases", Check: "step-phrases",
-		ActualAnswer: "fail", FixPrompt: "Propose one catalogue entry for each failing step.",
-		Context: []string{`AC-2: then step "Claude offers a summary" matches no template`},
-	})
-
-	for _, phrase := range []string{
-		`AC-2: then step "Claude offers a summary" matches no template`,
-		"step-phrase catalogue",
-		"The Story itself is never edited by this fix",
-	} {
-		if !strings.Contains(out, phrase) {
-			t.Errorf("the closure fix prompt never says %q", phrase)
-		}
-	}
-
-	if strings.Contains(out, "an omitted criterion is a deleted criterion") {
-		t.Error("the closure fix prompt asks for a Story rewrite")
 	}
 }

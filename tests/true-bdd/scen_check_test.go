@@ -76,7 +76,7 @@ func TestChecklistChecks004UnknownCheckRefused(t *testing.T) {
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
-	s.And(`stdout matches scen-check/scenario_quality #1 D: steps-are-present names no built-in check of scen check, which has declared-terms, given-when-then, phrase-mappings, public-interface, step-definitions, step-phrases, term-mappings`)
+	s.And(`stdout matches scen-check/scenario_quality #1 D: steps-are-present names no built-in check of scen check, which has concept-bindings, declared-terms, given-when-then, public-interface, step-definitions, term-mappings`)
 	s.But(`stdout does not match SCEN CHECK`)
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
@@ -368,9 +368,9 @@ func TestEngineTermDocuments003ProductNotYamlStopsScenCheck(t *testing.T) {
 	s.Given(`the "scen-check-product-not-yaml" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Check could not answer" check=step-phrases subjectID=E2E-001`)
-	s.And(`stdout matches read the catalogue: .*product document \./docs/product/product\.yaml: yaml: line \d+: did not find expected`)
-	s.But(`stdout does not match check=declared-terms`)
+	s.And(`stdout matches level=ERROR msg="Check could not answer" check=declared-terms subjectID=E2E-001`)
+	s.And(`stdout matches read the concepts: .*product document \./docs/product/product\.yaml: yaml: line \d+: did not find expected`)
+	s.But(`stdout does not match check=term-mappings`)
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
@@ -469,16 +469,16 @@ func TestScenCheck001ClaimedScenarioPasses(t *testing.T) {
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches SCEN CHECK`)
-	s.And(`stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=2 answer=pass`)
-	s.And(`stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=3 answer=pass`)
-	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=4 answer=pass`)
-	s.And(`stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=17 judgement=link answer=pass`)
-	s.And(`stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=18 judgement=bindings answer=pass`)
-	s.And(`stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=19 judgement=words answer=pass`)
-	s.And(`stdout matches PASS: 19 `)
+	s.And(`stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=pass`)
+	s.And(`stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=2 answer=pass`)
+	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=3 answer=pass`)
+	s.And(`stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=14 judgement=link answer=pass`)
+	s.And(`stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=15 judgement=bindings answer=pass`)
+	s.And(`stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=16 judgement=words answer=pass`)
+	s.And(`stdout matches PASS: 16 `)
 	s.And(`stdout matches ALL CHECKS PASSED!`)
 	s.And(`stdout matches SCEN CHECK COMPLETE`)
-	s.And(`the engine dispatched 13 AI turns`)
+	s.And(`the engine dispatched 11 AI turns`)
 	s.And(`no file outside "tmp" changed`)
 	s.Done()
 }
@@ -490,14 +490,14 @@ func TestScenCheck002FailedScenarioExits1(t *testing.T) {
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches SCEN CHECK`)
-	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=4 answer=pass`)
-	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=4 answer=fail context="\[E2E-002: then step \\"the greeter prints \\\\\\"Hello Ada\\\\\\" on one line\\" binds to the step definition \^the greeter prints \\"\(\[\^\\"\]\+\)\\" on one line\$ \(greet_steps\.go:23\), which records no concept\]"`)
-	s.And(`stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=17 judgement=link answer=fail`)
-	s.And(`stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=15`)
-	s.And(`stdout matches SKIP: 13\n`)
+	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=3 answer=pass`)
+	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=3 answer=fail context="\[E2E-002: then step \\"the greeter prints \\\\\\"Hello Ada\\\\\\" on one line\\" binds to the step definition \^the greeter prints \\"\(\[\^\\"\]\+\)\\" on one line\$ \(greet_steps\.go:23\), which records no concept\]"`)
+	s.And(`stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=14 judgement=link answer=fail`)
+	s.And(`stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=12`)
+	s.And(`stdout matches SKIP: 11\n`)
 	s.And(`stdout matches Validation failed`)
 	s.But(`stdout does not match ALL CHECKS PASSED`)
-	s.And(`the engine dispatched 11 AI turns`)
+	s.And(`the engine dispatched 9 AI turns`)
 	s.And(`no file outside "tmp" changed`)
 	s.Done()
 }
@@ -557,26 +557,6 @@ func TestScenCheck006DuplicateIdRefused(t *testing.T) {
 	s.Done()
 }
 
-// scen-check-fix-001-unmatched-step-gets-phrase: `scen check --fix` must propose a catalogue entry for a step that matches none, record the entry the user applies in the product document and never in the Scenario, and pass the re-walk
-func TestScenCheckFix001UnmatchedStepGetsPhrase(t *testing.T) {
-	s := scenarios.New(t, "scen-check-fix-001-unmatched-step-gets-phrase")
-	s.Given(`the "scen-check-fix-records-phrase" project tree`)
-	s.And(`the Quality Engineer's answer to every question is "1"`)
-	s.When(`the Quality Engineer runs "scen check --fix"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches CHECK FAILED`)
-	s.And(`stdout matches E2E-001: then step "the service answers within 200 milliseconds" matches no template`)
-	s.And(`stdout matches msg="AI needs clarification"`)
-	s.And(`stdout matches FIX PROMPT GENERATED`)
-	s.And(`stdout matches msg="Fix recorded in the document" document=product`)
-	s.And(`stdout matches check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass`)
-	s.And(`stdout matches ALL CHECKS PASSED`)
-	s.And(`the only file changed outside "tmp" is "docs/product/product.yaml"`)
-	s.And(`the file "docs/product/product.yaml" matches the service answers within`)
-	s.And(`the engine dispatched 3 AI turns`)
-	s.Done()
-}
-
 // scen-check-fix-002-undefined-term-gets-definition: `scen check --fix` must propose a definition for a declared term the glossary lacks, asking what it means first, record the definition the user applies in the product glossary and never in the Scenario, and pass the re-walk
 func TestScenCheckFix002UndefinedTermGetsDefinition(t *testing.T) {
 	s := scenarios.New(t, "scen-check-fix-002-undefined-term-gets-definition")
@@ -585,7 +565,7 @@ func TestScenCheckFix002UndefinedTermGetsDefinition(t *testing.T) {
 	s.When(`the Quality Engineer runs "scen check --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches CHECK FAILED`)
-	s.And(`stdout matches E2E-001: then concept 'answer': "then concept 'answer'" declares "reply", which the glossary does not define`)
+	s.And(`stdout matches E2E-001: then concept 'answer' declares "reply", which the glossary does not define`)
 	s.And(`stdout matches msg="AI needs clarification"`)
 	s.And(`stdout matches FIX PROMPT GENERATED`)
 	s.And(`stdout matches msg="Fix recorded in the document" document=product`)
@@ -617,60 +597,22 @@ func TestScenCheckFix003UnmappedTermGetsMapping(t *testing.T) {
 	s.Done()
 }
 
-// scen-check-fix-004-shared-definition-merges-phrases: `scen check --fix` must merge two catalogue entries whose steps one step definition binds into one entry, in the product document and never in a Scenario or a step definition, and pass the re-walk
-func TestScenCheckFix004SharedDefinitionMergesPhrases(t *testing.T) {
-	s := scenarios.New(t, "scen-check-fix-004-shared-definition-merges-phrases")
-	s.Given(`the "scen-check-fix-merges-phrases" project tree`)
+// scen-check-fix-004-recorded-concept-declared: `scen check --fix` must propose declaring the concept a step's one step definition records when the product document does not declare it under the step's block, asking what the step means first, record the concept the user applies in the product document and never in the Scenario or a step definition, and pass the re-walk
+func TestScenCheckFix004RecordedConceptDeclared(t *testing.T) {
+	s := scenarios.New(t, "scen-check-fix-004-recorded-concept-declared")
+	s.Given(`the "scen-check-fix-records-concept" project tree`)
 	s.And(`the Quality Engineer's answer to every question is "1"`)
 	s.When(`the Quality Engineer runs "scen check --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches CHECK FAILED`)
-	s.And(`stdout matches E2E-001: step definition \^the service \(\?:answers\|replies\) \\"\(\[\^\\"\]\+\)\\"\$ \(mcp_steps\.go:24\) is reached by 2 templates`)
+	s.And(`stdout matches E2E-001: then step .*the service logs .*which records then concept .*log line.*, which is not a declared then concept`)
+	s.And(`stdout matches msg="AI needs clarification"`)
 	s.And(`stdout matches FIX PROMPT GENERATED`)
 	s.And(`stdout matches msg="Fix recorded in the document" document=product`)
 	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=pass`)
-	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=1 answer=pass`)
 	s.And(`stdout matches ALL CHECKS PASSED`)
-	s.But(`stdout does not match Hit max apply attempts`)
 	s.And(`the only file changed outside "tmp" is "docs/product/product.yaml"`)
-	s.And(`the engine dispatched 2 AI turns`)
-	s.Done()
-}
-
-// scen-check-fix-005-restated-meaning-rewritten: `scen check --fix` must rewrite the meaning of a catalogue phrase that only restates its template, a model having judged it, in the product document and never in the Scenario, and pass the re-walk
-func TestScenCheckFix005RestatedMeaningRewritten(t *testing.T) {
-	s := scenarios.New(t, "scen-check-fix-005-restated-meaning-rewritten")
-	s.Given(`the "scen-check-fix-rewrites-phrase-meaning" project tree`)
-	s.And(`the "scen-check" checklist is narrowed to its "whether each catalogue phrase this scenario's steps use" prompt`)
-	s.And(`the Quality Engineer's answer to every question is "1"`)
-	s.When(`the Quality Engineer runs "scen check --fix"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches CHECK FAILED`)
-	s.And(`stdout matches FIX PROMPT GENERATED`)
-	s.And(`stdout matches msg="Fix recorded in the document" document=product`)
-	s.And(`stdout matches ALL CHECKS PASSED`)
-	s.But(`stdout does not match Hit max apply attempts`)
-	s.And(`the only file changed outside "tmp" is "docs/product/product.yaml"`)
-	s.And(`the engine dispatched 5 AI turns`)
-	s.Done()
-}
-
-// scen-check-fix-006-misused-phrase-step-rewritten: `scen check --fix` must rewrite a Scenario's step whose pattern a model judged to name no observable output, as the output its description pins, in that Scenario's entry in the Registry, and pass the re-walk
-func TestScenCheckFix006MisusedPhraseStepRewritten(t *testing.T) {
-	s := scenarios.New(t, "scen-check-fix-006-misused-phrase-step-rewritten")
-	s.Given(`the "scen-check-fix-rewrites-phrase-use" project tree`)
-	s.And(`the "scen-check" checklist is narrowed to its "whether this scenario uses each catalogue phrase" prompt`)
-	s.And(`the Quality Engineer's answer to every question is "1"`)
-	s.When(`the Quality Engineer runs "scen check --fix"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches CHECK FAILED`)
-	s.And(`stdout matches FIX PROMPT GENERATED`)
-	s.And(`stdout matches msg="Fix recorded in the document" document=scenarios_yaml`)
-	s.And(`stdout matches ALL CHECKS PASSED`)
-	s.But(`stdout does not match Hit max apply attempts`)
-	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
-	s.And(`the file "docs/scenarios.yaml" matches (?m)stdout matches [^\n]*Hello Ada`)
-	s.And(`the engine dispatched 5 AI turns`)
+	s.And(`the file "docs/product/product.yaml" matches (?m)^ +- concept: .?log line.?$`)
 	s.Done()
 }
 
@@ -686,43 +628,12 @@ func TestScenCheckFix007WholeChecklistFixesDescription(t *testing.T) {
 	s.And(`stdout matches CHECK FAILED`)
 	s.And(`stdout matches FIX PROMPT GENERATED`)
 	s.And(`stdout matches msg="Fix recorded in the document" document=scenarios_yaml`)
-	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=4 answer=pass`)
-	s.And(`stdout matches PASS: 19 `)
+	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=3 answer=pass`)
+	s.And(`stdout matches PASS: 16 `)
 	s.And(`stdout matches ALL CHECKS PASSED`)
 	s.But(`stdout does not match Hit max apply attempts`)
 	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
 	s.And(`the file "docs/scenarios.yaml" matches (?m)^    description: [^\n]*\b(must|should)\b`)
-	s.And(`the engine dispatched 32 AI turns`)
-	s.Done()
-}
-
-// scen-check-mappings-001-mapped-terms-pass: A Scenario a Story claims must pass the term-mapping check when the architecture maps every term the templates its steps match declare, naming those terms, while a Scenario no Story claims passes unchecked and one whose templates declare no term passes saying so
-func TestScenCheckMappings001MappedTermsPass(t *testing.T) {
-	s := scenarios.New(t, "scen-check-mappings-001-mapped-terms-pass")
-	s.Given(`the "scen-check-terms-mapped" project tree`)
-	s.When(`the Quality Engineer runs "scen check"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: every declared term is mapped: mcp service, message, reply\]"`)
-	s.And(`stdout matches msg="Check answered" check=term-mappings subjectID=E2E-002 promptIndex=1 answer=pass context="\[E2E-002: not checked: no Story claims this Scenario yet\]"`)
-	s.And(`stdout matches msg="Check answered" check=term-mappings subjectID=E2E-003 promptIndex=1 answer=pass context="\[E2E-003: no matched template declares a term\]"`)
-	s.And(`stdout matches ALL CHECKS PASSED`)
-	s.And(`the engine dispatched no AI turns`)
-	s.And(`no file outside "tmp" changed`)
-	s.Done()
-}
-
-// scen-check-mappings-002-unmapped-term-fails: A term that the catalogue template a step matches declares, and that the architecture's word mapping does not map, must fail the Scenario a Story claims, naming the term
-func TestScenCheckMappings002UnmappedTermFails(t *testing.T) {
-	s := scenarios.New(t, "scen-check-mappings-002-unmapped-term-fails")
-	s.Given(`the "scen-check-term-unmapped" project tree`)
-	s.When(`the Quality Engineer runs "scen check"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: \\"reply\\" has no mapping in the architecture\]"`)
-	s.And(`stdout matches scen-check/term_closure +D: term-mappings +fail +FAIL`)
-	s.And(`stdout matches Validation failed`)
-	s.But(`stdout does not match ALL CHECKS PASSED`)
-	s.And(`the engine dispatched no AI turns`)
-	s.And(`no file outside "tmp" changed`)
 	s.Done()
 }
 
@@ -739,121 +650,14 @@ func TestScenCheckMappings003TermMappedTwiceFails(t *testing.T) {
 	s.Done()
 }
 
-// scen-check-mappings-004-no-catalogue-unchecked: A product document that declares no catalogue must leave every Scenario unchecked by the term-mapping and step-definition checks, saying so, whatever the architecture maps
+// scen-check-mappings-004-no-catalogue-unchecked: A product document that declares no concepts must leave every Scenario unchecked by the term-mapping and step-definition checks, saying so, whatever the architecture maps
 func TestScenCheckMappings004NoCatalogueUnchecked(t *testing.T) {
 	s := scenarios.New(t, "scen-check-mappings-004-no-catalogue-unchecked")
 	s.Given(`the "scen-check-closure-no-catalogue" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: not checked: the product document declares no catalogue\]"`)
-	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=2 answer=pass context="\[E2E-001: not checked: the product document declares no catalogue\]"`)
-	s.And(`stdout matches ALL CHECKS PASSED`)
-	s.And(`the engine dispatched no AI turns`)
-	s.And(`no file outside "tmp" changed`)
-	s.Done()
-}
-
-// scen-check-phrases-001-matched-steps-pass: A Scenario a Story claims must pass the step-phrase check when each of its steps matches exactly one catalogue template declared for its block, whatever slots the templates use, and the `llm:` and `judge:` steps a model runs must be exempt
-func TestScenCheckPhrases001MatchedStepsPass(t *testing.T) {
-	s := scenarios.New(t, "scen-check-phrases-001-matched-steps-pass")
-	s.Given(`the "scen-check-phrase-closed" project tree`)
-	s.When(`the Quality Engineer runs "scen check"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: 7 steps match one template each, 2 model-run steps exempt\]"`)
-	s.And(`stdout matches ALL CHECKS PASSED`)
-	s.And(`the engine dispatched no AI turns`)
-	s.And(`no file outside "tmp" changed`)
-	s.Done()
-}
-
-// scen-check-phrases-002-unmatched-step-fails: A step of a Scenario a Story claims that matches no catalogue phrase must fail that Scenario, naming the step and its block, with the Scenario's `Q:` Prompts skipped and no AI turn spent on them
-func TestScenCheckPhrases002UnmatchedStepFails(t *testing.T) {
-	s := scenarios.New(t, "scen-check-phrases-002-unmatched-step-fails")
-	s.Given(`the "scen-check-phrase-unmatched" project tree`)
-	s.When(`the Quality Engineer runs "scen check"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: then step \\"the service answers within 200 milliseconds\\" matches no template\]"`)
-	s.And(`stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-001 promptIndex=2`)
-	s.And(`stdout matches scen-check/term_closure +D: step-phrases +fail +FAIL`)
-	s.And(`stdout matches SKIP: 1\n`)
-	s.And(`stdout matches Validation failed`)
-	s.But(`stdout does not match ALL CHECKS PASSED`)
-	s.And(`the engine dispatched no AI turns`)
-	s.And(`no file outside "tmp" changed`)
-	s.Done()
-}
-
-// scen-check-phrases-003-ambiguous-step-fails: A step of a Scenario a Story claims that two catalogue templates match must fail that Scenario, naming both templates, because a step means one thing or nothing
-func TestScenCheckPhrases003AmbiguousStepFails(t *testing.T) {
-	s := scenarios.New(t, "scen-check-phrases-003-ambiguous-step-fails")
-	s.Given(`the "scen-check-phrase-ambiguous" project tree`)
-	s.When(`the Quality Engineer runs "scen check"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: then step \\"the service answers 200\\" matches 2 templates: \\"the service answers \{code:number\}\\"; \\"the service answers 200\\"\]"`)
-	s.And(`stdout matches Validation failed`)
-	s.And(`the engine dispatched no AI turns`)
-	s.And(`no file outside "tmp" changed`)
-	s.Done()
-}
-
-// scen-check-phrases-004-wrong-block-step-fails: A step of a Scenario a Story claims must fail that Scenario when the one template it matches is declared for another block, naming that block
-func TestScenCheckPhrases004WrongBlockStepFails(t *testing.T) {
-	s := scenarios.New(t, "scen-check-phrases-004-wrong-block-step-fails")
-	s.Given(`the "scen-check-phrase-wrong-block" project tree`)
-	s.When(`the Quality Engineer runs "scen check"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: then step \\"the mcp service is running\\" matches \\"the mcp service is running\\", declared for given\]"`)
-	s.And(`stdout matches Validation failed`)
-	s.And(`the engine dispatched no AI turns`)
-	s.And(`no file outside "tmp" changed`)
-	s.Done()
-}
-
-// scen-check-phrases-005-malformed-template-fails-every-scenario: A catalogue template the grammar refuses must fail every Scenario a Story claims, naming the template and the rule it breaks, because no step can be held to it
-func TestScenCheckPhrases005MalformedTemplateFailsEveryScenario(t *testing.T) {
-	s := scenarios.New(t, "scen-check-phrases-005-malformed-template-fails-every-scenario")
-	s.Given(`the "scen-check-phrase-malformed" project tree`)
-	s.When(`the Quality Engineer runs "scen check"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=fail`)
-	s.And(`stdout matches E2E-001: catalogue template \\"the mcp service is running\\" is malformed: another entry declares the same template`)
-	s.And(`stdout matches E2E-001: catalogue template \\"the service answers \{reply\}\\" is malformed: text slot \{reply\} is not between double quotes`)
-	s.And(`stdout matches E2E-001: catalogue template \\"the service waits \{delay:seconds\}\\" is malformed: slot \{delay:seconds\} has an unknown kind; a slot is text, number, role or pattern`)
-	s.And(`stdout matches E2E-001: catalogue template \\"the reply matches \{expected:pattern\} exactly\\" is malformed: pattern slot \{expected:pattern\} is not the last token`)
-	s.And(`stdout matches E2E-001: catalogue template \\"the reply matches\{expected:pattern\}\\" is malformed: pattern slot \{expected:pattern\} does not follow a space`)
-	s.And(`stdout matches is malformed: slot name \\"name\\" is used twice`)
-	s.And(`stdout matches E2E-001: catalogue template \\"the \{actor:role\} sends \\"\{message\}\\"\\" is malformed: role slot \{actor:role\}, but the product document declares no roles`)
-	s.And(`stdout matches is malformed: brackets \[answers\|\\"replies\\"\] hold a slot, a quote or another bracket`)
-	s.And(`stdout matches E2E-001: catalogue template \\"the service is \{up\\" is malformed: a \{ is never closed`)
-	s.And(`stdout matches E2E-001: catalogue template \\"the service \[answers\\" is malformed: a \[ is never closed`)
-	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-002 promptIndex=1 answer=fail context="\[E2E-002: catalogue template \\"the mcp service is running\\" is malformed: another entry declares the same template`)
-	s.And(`stdout matches Validation failed`)
-	s.And(`the engine dispatched no AI turns`)
-	s.And(`no file outside "tmp" changed`)
-	s.Done()
-}
-
-// scen-check-phrases-006-unclaimed-scenario-unchecked: A Scenario no Story claims must pass the step-phrase check unchecked, saying so, while a Scenario a Story claims is checked beside it
-func TestScenCheckPhrases006UnclaimedScenarioUnchecked(t *testing.T) {
-	s := scenarios.New(t, "scen-check-phrases-006-unclaimed-scenario-unchecked")
-	s.Given(`the "scen-check-phrase-unclaimed" project tree`)
-	s.When(`the Quality Engineer runs "scen check"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: 3 steps match one template each\]"`)
-	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-002 promptIndex=1 answer=pass context="\[E2E-002: not checked: no Story claims this Scenario yet\]"`)
-	s.And(`stdout matches ALL CHECKS PASSED`)
-	s.And(`the engine dispatched no AI turns`)
-	s.And(`no file outside "tmp" changed`)
-	s.Done()
-}
-
-// scen-check-phrases-007-no-catalogue-unchecked: A product document that declares no catalogue must leave every Scenario unchecked by the step-phrase check, saying so, because a host adopts the catalogue by writing one
-func TestScenCheckPhrases007NoCatalogueUnchecked(t *testing.T) {
-	s := scenarios.New(t, "scen-check-phrases-007-no-catalogue-unchecked")
-	s.Given(`the "scen-check-phrase-no-catalogue" project tree`)
-	s.When(`the Quality Engineer runs "scen check"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: not checked: the product document declares no catalogue\]"`)
+	s.And(`stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: not checked: the product document declares no concepts\]"`)
+	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=2 answer=pass context="\[E2E-001: not checked: the product document declares no concepts\]"`)
 	s.And(`stdout matches ALL CHECKS PASSED`)
 	s.And(`the engine dispatched no AI turns`)
 	s.And(`no file outside "tmp" changed`)
@@ -991,35 +795,6 @@ func TestScenCheckQualityFix007SubjectiveOutcomeRewritten(t *testing.T) {
 	s.Done()
 }
 
-// scen-check-step-definitions-001-template-binds-twice-fails: A catalogue template whose steps, across every Scenario a Story claims that shares one suite, bind to two different step definitions must fail each of those Scenarios using it, naming the template and both definitions with where each is written, while a Scenario no Story claims neither counts nor is checked
-func TestScenCheckStepDefinitions001TemplateBindsTwiceFails(t *testing.T) {
-	s := scenarios.New(t, "scen-check-step-definitions-001-template-binds-twice-fails")
-	s.Given(`the "scen-check-template-binds-twice" project tree`)
-	s.When(`the Quality Engineer runs "scen check"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: template \\"the service answers \\"\{reply\}\\"\\" binds to 2 step definitions in tests/mcp/steps: \^the service answers \\"pong\\"\$ \(mcp_steps\.go:24\); \^the service answers \\"hello\\"\$ \(mcp_steps\.go:25\)\]"`)
-	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=1 answer=fail context="\[E2E-002: template \\"the service answers \\"\{reply\}\\"\\" binds to 2 step definitions in tests/mcp/steps: \^the service answers \\"pong\\"\$ \(mcp_steps\.go:24\); \^the service answers \\"hello\\"\$ \(mcp_steps\.go:25\)\]"`)
-	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-003 promptIndex=1 answer=pass context="\[E2E-003: not checked: no Story claims this Scenario yet\]"`)
-	s.And(`stdout matches Validation failed`)
-	s.And(`the engine dispatched no AI turns`)
-	s.And(`no file outside "tmp" changed`)
-	s.Done()
-}
-
-// scen-check-step-definitions-002-definition-reached-twice-fails: A step definition that the steps of two catalogue templates bind, across the Scenarios a Story claims that share one suite, must fail each of those Scenarios, naming the definition with where it is written and both templates
-func TestScenCheckStepDefinitions002DefinitionReachedTwiceFails(t *testing.T) {
-	s := scenarios.New(t, "scen-check-step-definitions-002-definition-reached-twice-fails")
-	s.Given(`the "scen-check-definition-reached-twice" project tree`)
-	s.When(`the Quality Engineer runs "scen check"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: step definition \^the service \(\?:answers\|replies\) \\"\(\[\^\\"\]\+\)\\"\$ \(mcp_steps\.go:24\) is reached by 2 templates: \\"the service answers \\"\{reply\}\\"\\"; \\"the service replies \\"\{reply\}\\"\\"\]"`)
-	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=1 answer=fail context="\[E2E-002: step definition \^the service \(\?:answers\|replies\) \\"\(\[\^\\"\]\+\)\\"\$ \(mcp_steps\.go:24\) is reached by 2 templates: \\"the service answers \\"\{reply\}\\"\\"; \\"the service replies \\"\{reply\}\\"\\"\]"`)
-	s.And(`stdout matches Validation failed`)
-	s.And(`the engine dispatched no AI turns`)
-	s.And(`no file outside "tmp" changed`)
-	s.Done()
-}
-
 // scen-check-step-definitions-003-step-binds-twice-fails: A step of a Scenario a Story claims that two step definitions of its suite bind must fail that Scenario, naming the step and both definitions with where each is written, because which one runs depends on the order they were registered in
 func TestScenCheckStepDefinitions003StepBindsTwiceFails(t *testing.T) {
 	s := scenarios.New(t, "scen-check-step-definitions-003-step-binds-twice-fails")
@@ -1063,37 +838,6 @@ func TestScenCheckStepDefinitions005UnreadablePatternExits1(t *testing.T) {
 	s.Done()
 }
 
-// scen-check-terms-001-undefined-term-fails: A term that the catalogue template a step matches declares, and that the product glossary does not define, must fail the Scenario a Story claims, naming the template and the term, while a term only an unmatched template declares is no failure of that Scenario
-func TestScenCheckTerms001UndefinedTermFails(t *testing.T) {
-	s := scenarios.New(t, "scen-check-terms-001-undefined-term-fails")
-	s.Given(`the "scen-check-term-undefined" project tree`)
-	s.When(`the Quality Engineer runs "scen check"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: \\"the service answers \\"\{reply\}\\"\\" declares \\"reply\\", which the glossary does not define\]"`)
-	s.But(`stdout does not match the service restarts`)
-	s.And(`stdout matches scen-check/term_closure +D: declared-terms +fail +FAIL`)
-	s.And(`stdout matches Validation failed`)
-	s.But(`stdout does not match ALL CHECKS PASSED`)
-	s.And(`the engine dispatched no AI turns`)
-	s.And(`no file outside "tmp" changed`)
-	s.Done()
-}
-
-// scen-check-terms-002-defined-terms-pass: A Scenario a Story claims must pass the declared-term check when the glossary defines every term the templates its steps match declare, naming those terms, while a Scenario no Story claims passes unchecked and one whose templates declare no term passes saying so
-func TestScenCheckTerms002DefinedTermsPass(t *testing.T) {
-	s := scenarios.New(t, "scen-check-terms-002-defined-terms-pass")
-	s.Given(`the "scen-check-terms-defined" project tree`)
-	s.When(`the Quality Engineer runs "scen check"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: every declared term is defined: mcp service, message, reply\]"`)
-	s.And(`stdout matches msg="Check answered" check=declared-terms subjectID=E2E-002 promptIndex=1 answer=pass context="\[E2E-002: not checked: no Story claims this Scenario yet\]"`)
-	s.And(`stdout matches msg="Check answered" check=declared-terms subjectID=E2E-003 promptIndex=1 answer=pass context="\[E2E-003: no matched template declares a term\]"`)
-	s.And(`stdout matches ALL CHECKS PASSED`)
-	s.And(`the engine dispatched no AI turns`)
-	s.And(`no file outside "tmp" changed`)
-	s.Done()
-}
-
 // scen-check-terms-003-term-defined-twice-fails: A term a concept declares, which the glossary defines more than once, must fail every Scenario, naming the concept, the term and how many times it is defined, because a word with two meanings has none a reader can rely on
 func TestScenCheckTerms003TermDefinedTwiceFails(t *testing.T) {
 	s := scenarios.New(t, "scen-check-terms-003-term-defined-twice-fails")
@@ -1107,13 +851,13 @@ func TestScenCheckTerms003TermDefinedTwiceFails(t *testing.T) {
 	s.Done()
 }
 
-// scen-check-terms-004-no-catalogue-unchecked: A product document that declares no catalogue must leave every Scenario unchecked by the declared-term check, saying so, whatever its glossary holds
+// scen-check-terms-004-no-catalogue-unchecked: A product document that declares no concepts must leave every Scenario unchecked by the declared-term check, saying so, whatever its glossary holds
 func TestScenCheckTerms004NoCatalogueUnchecked(t *testing.T) {
 	s := scenarios.New(t, "scen-check-terms-004-no-catalogue-unchecked")
 	s.Given(`the "scen-check-terms-no-catalogue" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: not checked: the product document declares no catalogue\]"`)
+	s.And(`stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: not checked: the product document declares no concepts\]"`)
 	s.And(`stdout matches ALL CHECKS PASSED`)
 	s.And(`the engine dispatched no AI turns`)
 	s.And(`no file outside "tmp" changed`)

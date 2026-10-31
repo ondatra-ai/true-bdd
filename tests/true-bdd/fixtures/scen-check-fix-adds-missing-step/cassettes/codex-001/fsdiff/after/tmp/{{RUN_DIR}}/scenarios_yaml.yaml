@@ -17,4 +17,4 @@ scenarios:
         - the Operator runs "greet Ada"
       then:
         - the standard output has a line matching "Hello Ada"
-        - the exit code is 0
+        - the command exits with code 0

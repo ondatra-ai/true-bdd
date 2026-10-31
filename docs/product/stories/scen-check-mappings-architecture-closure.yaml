@@ -1,16 +1,11 @@
-# Story `scen-check-mappings`: `scen check` holding a claimed Scenario's
-# words to the architecture's word mapping.
+# Story `scen-check-mappings`: `scen check` holding the words a host's
+# concepts declare to the architecture's word mapping.
 #
-# The `term-mappings` verdicts: an unmapped term, every term mapped, a term
-# mapped twice, and a product document with no catalogue, which also leaves
-# the step-definition check idle. The walk and its exit code are the Story
-# `scen-check`; the phrase and glossary closures, the catalogue to step
-# definition correspondence and the fixes of `scen check --fix` are
-# scen-check-phrases, scen-check-terms, scen-check-step-definitions and
-# scen-check-fix.
-#
-# Criterion 003 runs on a host declaring concepts, where every concept's
-# terms are held for every Scenario (#259).
+# The `term-mappings` verdicts: a term mapped twice, and a product document
+# with no concepts, which also leaves the step-definition check idle. The
+# walk and its exit code are the Story `scen-check`; the glossary closure,
+# the step definition check and the fixes of `scen check --fix` are
+# scen-check-terms, scen-check-step-definitions and scen-check-fix.
 #
 # Each criterion's id is the second half of its Scenario's Registry key,
 # `scen-check-mappings-<id>` (ADR 0014), and its steps are that Scenario's
@@ -19,42 +14,12 @@
 story:
     id: scen-check-mappings
     feature: scen-check
-    title: Hold every word a claimed Scenario's steps rely on to one architecture mapping
+    title: Hold every word a host's concepts rely on to one architecture mapping
     as_a: Quality Engineer
-    i_want: scen check to fail a Scenario a Story claims when a term declared by the catalogue templates its steps match has no mapping in the architecture, or more than one, and to name the terms it checked; on a host declaring concepts, to fail every Scenario when a term a concept declares is mapped more than once, naming the concept
+    i_want: scen check to fail every Scenario when a term a concept declares has no mapping in the architecture or more than one, naming the concept, and to leave every Scenario unchecked when the product document declares no concepts
     so_that: every word a step relies on says how one step definition builds and observes it, so that definition follows from the spec rather than from a guess
     status: IMPLEMENTED
     acceptance_criteria:
-        - id: 001-mapped-terms-pass
-          description: A Scenario a Story claims must pass the term-mapping check when the architecture maps every term the templates its steps match declare, naming those terms, while a Scenario no Story claims passes unchecked and one whose templates declare no term passes saying so
-          steps:
-            - given:
-                - the "scen-check-terms-mapped" project tree
-            - when:
-                - the Quality Engineer runs "scen check"
-            - then:
-                - the command exits with code 0
-                - 'stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: every declared term is mapped: mcp service, message, reply\]"'
-                - and: 'stdout matches msg="Check answered" check=term-mappings subjectID=E2E-002 promptIndex=1 answer=pass context="\[E2E-002: not checked: no Story claims this Scenario yet\]"'
-                - and: 'stdout matches msg="Check answered" check=term-mappings subjectID=E2E-003 promptIndex=1 answer=pass context="\[E2E-003: no matched template declares a term\]"'
-                - and: stdout matches ALL CHECKS PASSED
-                - and: the engine dispatched no AI turns
-                - and: no file outside "tmp" changed
-        - id: 002-unmapped-term-fails
-          description: A term that the catalogue template a step matches declares, and that the architecture's word mapping does not map, must fail the Scenario a Story claims, naming the term
-          steps:
-            - given:
-                - the "scen-check-term-unmapped" project tree
-            - when:
-                - the Quality Engineer runs "scen check"
-            - then:
-                - the command exits with code 1
-                - 'stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: \\"reply\\" has no mapping in the architecture\]"'
-                - and: 'stdout matches scen-check/term_closure +D: term-mappings +fail +FAIL'
-                - and: stdout matches Validation failed
-                - but: stdout does not match ALL CHECKS PASSED
-                - and: the engine dispatched no AI turns
-                - and: no file outside "tmp" changed
         - id: 003-term-mapped-twice-fails
           description: A term a concept declares, which the architecture maps more than once, must fail every Scenario, naming the concept, the term and how many times it is mapped, because a word built two ways has no one way a step definition can follow
           steps:
@@ -69,7 +34,7 @@ story:
                 - and: the engine dispatched no AI turns
                 - and: no file outside "tmp" changed
         - id: 004-no-catalogue-unchecked
-          description: A product document that declares no catalogue must leave every Scenario unchecked by the term-mapping and step-definition checks, saying so, whatever the architecture maps
+          description: A product document that declares no concepts must leave every Scenario unchecked by the term-mapping and step-definition checks, saying so, whatever the architecture maps
           steps:
             - given:
                 - the "scen-check-closure-no-catalogue" project tree
@@ -77,8 +42,8 @@ story:
                 - the Quality Engineer runs "scen check"
             - then:
                 - the command exits with code 0
-                - 'stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: not checked: the product document declares no catalogue\]"'
-                - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=2 answer=pass context="\[E2E-001: not checked: the product document declares no catalogue\]"'
+                - 'stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: not checked: the product document declares no concepts\]"'
+                - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=2 answer=pass context="\[E2E-001: not checked: the product document declares no concepts\]"'
                 - and: stdout matches ALL CHECKS PASSED
                 - and: the engine dispatched no AI turns
                 - and: no file outside "tmp" changed

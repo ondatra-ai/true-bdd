@@ -90,7 +90,7 @@ func (d *conceptDiscovery) resumeConceptStep(items map[string]*BuildStepsItem, o
 
 	item.Concept.Resumed = true
 	item.Concept.Steps = append(item.Concept.Steps, entry.Text)
-	suite.Phrases = append(suite.Phrases, catalogue.Step{Block: entry.Block, Text: entry.Text})
+	suite.CheckedSteps = append(suite.CheckedSteps, catalogue.Step{Block: entry.Block, Text: entry.Text})
 
 	if !slices.Contains(item.Concept.Definitions, definition.Definition) {
 		item.Concept.Definitions = append(item.Concept.Definitions, definition.Definition)
@@ -140,7 +140,7 @@ func (d *conceptDiscovery) suiteSteps(suite string) []catalogue.Step {
 			continue
 		}
 
-		for _, step := range scenario.Phrases() {
+		for _, step := range scenario.CheckedSteps() {
 			if !step.ModelRun() && !slices.Contains(steps, step) {
 				steps = append(steps, step)
 			}

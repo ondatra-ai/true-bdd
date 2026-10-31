@@ -25,12 +25,12 @@
     "{\n  \"item\": \"host-001\",\n  \"description\": \"The number must be halved\",\n  \"product\": \"{\\n  \\\"roles\\\": [\\n    {\\n      \\\"name\\\": \\\"Product Owner\\\",\\n      \\\"description\\\": \\\"Owns meanings.\\\"\\n    }\\n  ],\\n  \\\"concepts\\\": {\\n    \\\"given\\\": [\\n      {\\n        \\\"concept\\\": \\\"number ready\\\",\\n        \\\"means\\\": \\\"A number is entered before the action.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ],\\n    \\\"when\\\": [\\n      {\\n        \\\"concept\\\": \\\"halve\\\",\\n        \\\"means\\\": \\\"Halve the entered number once with the supplied idempotency key.\\\",\\n        \\\"terms\\\": [\\n          \\\"idempotency key\\\"\\n        ]\\n      }\\n    ],\\n    \\\"then\\\": [\\n      {\\n        \\\"concept\\\": \\\"number result\\\",\\n        \\\"means\\\": \\\"Compare the displayed number with an expected value.\\\",\\n        \\\"terms\\\": []\\n      },\\n      {\\n        \\\"concept\\\": \\\"unused\\\",\\n        \\\"means\\\": \\\"The settlement ledger has a reconciled nostro balance.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ]\\n  },\\n  \\\"glossary\\\": [\\n    {\\n      \\\"term\\\": \\\"idempotency key\\\",\\n      \\\"means\\\": \\\"A label identifying a requested halving; repeats with the same label must not halve the number again.\\\"\\n    }\\n  ],\\n  \\\"description\\\": \\\"A calculator accepts a number and a request label. Repeating a request with the same label changes the number only once.\\\",\\n  \\\"language_policy\\\": \\\"The request label is presented to users as an idempotency key. Keep this exact domain name in the product meanings and declare it when needed.\\\"\\n}\\n\",\n  \"steps\": [\n    {\n      \"key\": \"1\",\n      \"block\": \"given\",\n      \"text\": \"six is entered\"\n    },\n    {\n      \"key\": \"2\",\n      \"block\": \"when\",\n      \"text\": \"halve six once with idempotency key alpha\"\n    },\n    {\n      \"key\": \"3\",\n      \"block\": \"then\",\n      \"text\": \"three is displayed\"\n    }\n  ]\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 8796,
+  "duration_ms": 6945,
   "request_hash": "sha256:ada2a72d6c110654a0af256a1de192f63151b92b5d7eed87986738b32c0f947a",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-10-29T22:38:14Z"
+  "recorded_at": "2026-10-30T20:57:08Z"
 }

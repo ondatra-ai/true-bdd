@@ -13,8 +13,9 @@ description:
     each scenario into an executable test, and drives an agent until
     those tests pass. The harness and the project's files stay on the
     developer's machine and are the only state. It works with any
-    technology stack. A Host project may declare concepts instead of Catalogue
-    templates. Concepts are grouped under given, when and then, with concept,
+    technology stack. A Host project declares the concepts its steps state,
+    which replaced the retired Catalogue's templates (ADR-0034). Concepts are
+    grouped under given, when and then, with concept,
     means and terms; names are unique within a block. A concept is one Public
     interface item and kind of use per block. The item is what the use is about,
     reached through one or several declared references. What a step definition
@@ -23,12 +24,14 @@ description:
     every admitted variation in prose without slots or brackets, relying only
     on declared terms and plain English. A new variation widens that concept;
     only a new item or kind of use needs a new concept.
-    Declaring catalogue and concepts together refuses startup naming both,
-    including when either value is null. Existing template hosts keep their
-    behavior. The declared-terms and term-mappings built-in checks hold every
-    concept's terms to the glossary and Word mapping, and phrase-mappings holds
+    A product document still declaring the retired catalogue key, or an
+    architecture still declaring architecture.phrases, even empty or null, is
+    refused at startup, naming concepts or architecture.concepts as its
+    replacement. The declared-terms and term-mappings built-in checks hold every
+    concept's terms to the glossary and Word mapping, and concept-bindings holds
     all Concept bindings to declared concepts and Public interface references,
-    without AI and regardless of Story claims. Bindings are unique per name,
+    without AI and regardless of Story claims; a product declaring no concepts
+    passes them, and step-definitions, as not checked. Bindings are unique per name,
     block and service. The walk answers D: Prompts first, then the link before the other Q:
     Prompts, preserving artifact indices so a new concept reaches refinement
     sketches after its link fix. The link pass in us refine and scen check scores every
@@ -67,8 +70,7 @@ description:
     or a reworded means in product words. Refinement never waits for architecture.
     On the next walk, D: term-mappings fails for a newly declared unmapped term;
     its System Architect menu fix adds the Word mapping. Every Scenario judges
-    again after fixes, trusting no earlier result. Template hosts keep their
-    existing behaviour. build steps writes step definitions per concept and
+    again after fixes, trusting no earlier result. build steps writes step definitions per concept and
     build code embeds the concepts a failing Scenario's steps link to, both
     described under the pipeline below.
 
@@ -230,33 +232,11 @@ glossary:
       setup, calling, or observation and comparison by block. A UI service
       may state intent instead of does and references. Bindings are unique per
       concept name, block and service, and every reference is declared. Only
-      concepts this Scenario links to require a binding for its service. The phrase-mappings built-in check names the concept for
+      concepts this Scenario links to require a binding for its service. The concept-bindings built-in check names the concept for
       undeclared concepts, services, references, duplicates or incomplete
       bindings; its fix writes the architecture and any needed Public interface
       declaration after apply, never a Scenario. After the link, a Q: Prompt judges
       each linked binding unambiguous enough to write a step definition from.
-
-  - term: Phrase mapping
-    means: >-
-      The architecture's phrases list for template hosts; concept hosts use Concept
-      bindings in architecture.concepts instead, checked by the same phrase-mappings
-      built-in check over every declaration. The phrases list has one entry per verbatim Catalogue template and
-      service, stating what a step does through its declared Public interface by block.
-      A when calls an operation, a given sets up state, a then observes and compares.
-      An operation entry carries references and a does sentence. References name CLI
-      command paths or named file, log record and outgoing call extensions, HTTP
-      operation IDs, or scoped UI roles and accessible names. An intent sentence can
-      replace does and references, accepted only for UI services until llm support lands.
-      The phrase-mappings built-in check fails a claimed Scenario for missing or duplicate
-      entries, incomplete operation entries or undeclared references, naming the phrase
-      and reference without an AI turn. With no Catalogue or Story claim it passes unchecked.
-      Its fix asks the System Architect what the step does and proposes the entry at the
-      menu, with any operation, file, log record or call the answers name that the Public
-      interface document does not declare yet; only apply writes the architecture document
-      and that document, never the Scenario. Each changed document must still parse in the
-      form of its kind before anything is written. It names no
-      Go identifier and stores no link to a step definition. Word mappings still cover terms;
-      build steps --fix embeds these entries in each Item’s body-writing context.
 
   - term: engine
     means: >-
@@ -315,28 +295,9 @@ glossary:
       The pipeline is us refine, us apply, build tests, build steps, build code.
       build tests renders test files deterministically from the Registry, refuses
       stale files without --fix and writes them with --fix. It preserves Registry,
-      path, renderer and step-shape refusals before rendering, plus Catalogue phrase
-      refusals only for template hosts. Concept hosts render free text without AI.
-      It runs no AI turn, fix menu or test runner. For template hosts, build steps reads its own
-      checklist, lists missing Catalogue phrase definitions per go-test suite,
-      checks Step coverage in-process and exits non-zero for Items or failed checks.
-      build steps --fix first writes all missing registrations and functions with
-      one capture per template slot in order and bodies failing "step not written yet".
-      It compiles the suite before the first AI turn. The Fix loop writes one body
-      at a time from the complete phrase meaning, service Phrase mapping, glossary,
-      Word mapping, Public interface declaration and document, and every suite
-      Scenario using the phrase. Only the body and shared state may change.
-      After each apply compilation, exactly one definition and a written body
-      are required; failures return to that Item within the configured attempts.
-      Once an apply's compilation, binding and body checks pass, a separate AI critique turn reads the applied definition's body, never the engine's registration, pattern or signature, with the whole phrase meaning, Phrase mapping entry, term glossary entries and Word mappings, Public interface declaration and document, and every suite Scenario using the phrase. It checks the mapping by block (when calls its named operation, given sets up the stated state, then observes and compares as stated), assertions against the phrase meaning, and that the definition does not compute what it asserts. Failures name the definition and discrepancy and return to the same Fix loop within its configured attempts. The turn uses build-steps checklist engine.critique_model, falling back to engine.default_prompt_model, and states no time, turn, token or cost budget.
-      Once all Items pass, whole-suite Step coverage and one generated-test listing
-      must pass. After whole-suite coverage and generated-test listing, it runs the suite once in a Host project copy without any service path. Every Scenario must fail at an executed step definition; compilation, bring-up, skipped and missing results fail the check and name the Scenario. Green Scenarios return all Items written in this run for their phrases to the Fix loop together, with the finding and existing attempt counts. If none of those Items can repair a green Scenario, or attempts are exhausted, the command fails distinctly. The original Host project is preserved.
-      The writer may change only the protected test paths (writable paths),
-      never service code or the Specification; a write outside them is refused,
-      whichever AI CLI writes. An interface_cannot_serve writer
-      verdict stops immediately, naming the phrase and missing setup or observation;
-      the System Architect extends the declaration. An unfinished walk exits non-zero.
-      For concept hosts, build steps with or without --fix groups distinct texts
+      path, renderer and step-shape refusals before rendering and renders free-text
+      steps, matched against nothing. It runs no AI turn, fix menu or test runner.
+      build steps, with or without --fix, groups distinct texts
       no existing definition binds, per suite and block, excluding judge: and llm:.
       Each answer gives the best concept and score and runner-up and score.
       With one concept, runner_up is explicit null and runner_up_score is zero.
@@ -352,8 +313,10 @@ glossary:
       Every grouped concept and suite is one Item. All Items must have a binding
       for the suite service, judged afresh by scen check's binding judgement;
       a missing or ambiguous binding stops before any skeleton, naming the concept.
-      Without --fix, build steps then lists every concept Item still to write
-      and exits 1. With --fix, the AI proposes each Item's patterns as data,
+      A host declaring no concepts has no Item: its unbound steps are Step
+      coverage's findings. Without --fix, build steps then lists every concept
+      Item still to write, checks Step coverage in-process and exits non-zero
+      for Items or failed checks. With --fix, the AI proposes each Item's patterns as data,
       given the concept, its binding, its terms, the Public interface, the
       patterns of its existing definitions and every step grouped into it.
       Before any skeleton the engine checks each proposal against every step of
@@ -364,13 +327,19 @@ glossary:
       with the engine's findings, within config.max_apply_attempts proposals;
       past them the run stops writing nothing. Each accepted pattern gets a
       skeleton that records its concept, identified by concept, suite and
-      pattern; a later walk resumes the pending skeletons it finds. Bodies,
-      the critique and the whole-suite checks then run as for templates, the
-      body turns and the critique reading the concept, its binding, its terms'
-      glossary entries and Word mappings, the Public interface, each pattern's
-      captures and bound steps, every Scenario using the concept's steps, and
-      the fixture inputs of those Scenarios. The critique's context carries no
-      Catalogue, no Phrase mapping and no template Word mapping. It judges each
+      pattern, with a body failing "step not written yet"; a later walk resumes
+      the pending skeletons it finds. The suite compiles before the first body.
+      The Fix loop then writes each Item's bodies, the body turns and the
+      critique reading the concept, its binding, its terms' glossary entries
+      and Word mappings, the Public interface declaration and document, each
+      pattern's captures and bound steps, every Scenario using the concept's
+      steps, and the fixture inputs of those Scenarios. Only the bodies and
+      shared state may change. After each apply compilation, one binding per
+      step, the concept records and written bodies are required; failures
+      return to that Item within the configured attempts. Once those pass, a
+      separate AI critique turn, on the build-steps checklist's
+      engine.critique_model falling back to engine.default_prompt_model and
+      stating no time, turn, token or cost budget, judges each
       pattern and its captures as well as each body: a pattern capturing the
       wrong part of a step, leaving a meaningful alternative uncaptured or
       binding steps its body cannot serve is a finding against the pattern; a
@@ -381,18 +350,25 @@ glossary:
       with the findings: the engine checks the new patterns as before, removes
       the skeletons of the patterns it dropped, keeps unchanged ones with their
       bodies and writes the new ones, whose bodies go back to the writer. A
-      finding against a body sends that body back. build steps --fix reads the
+      finding against a body sends that body back.
+      Once all Items pass, whole-suite Step coverage and one generated-test listing
+      must pass. After whole-suite coverage and generated-test listing, it runs the suite once in a Host project copy without any service path. Every Scenario must fail at an executed step definition; compilation, bring-up, skipped and missing results fail the check and name the Scenario. Green Scenarios return all Items written in this run that their steps use to the Fix loop together, with the finding and existing attempt counts. If none of those Items can repair a green Scenario, or attempts are exhausted, the command fails distinctly. The original Host project is preserved.
+      The writer may change only the protected test paths (writable paths),
+      never service code or the Specification; a write outside them is refused,
+      whichever AI CLI writes. An interface_cannot_serve writer
+      verdict stops immediately, naming the concept and missing setup or observation;
+      the System Architect extends the declaration. An unfinished walk exits non-zero.
+      build steps --fix reads the
       product's concepts and glossary, the Word mapping and the bindings before
       its grouping turns, so a malformed term list stops it before any turn.
-      On a concept host build code hands both repair turns, for each failing
+      build code hands both repair turns, for each failing
       Scenario it matches, the concepts its steps link to, with no link turn:
       a step's concept is the declared concept of its block that the one step
       definition it binds records. A judge: or llm: step, a step binding none
       or two, or an unrecorded definition links nothing. Each linked concept
       appears once across the failing set with its means, its terms, and its
       binding for the Scenario's service, followed by those terms' glossary
-      entries and Word mappings; a template host keeps its Catalogue phrases
-      and words unchanged.
+      entries and Word mappings.
       Commands print their existing upper-case command name followed
       by ` COMPLETE` on stdout only when they succeed, after finalization and
       any post-run validation. A command returning an error prints no COMPLETE
@@ -468,7 +444,7 @@ glossary:
       walks, one checklist per command, read from the project tree. It
       decides which questions a run asks.
       The shipped us-refine checklist gives every Prompt an F: so --fix can
-      propose added or rewritten Acceptance Criteria or a Catalogue phrase;
+      propose added or rewritten Acceptance Criteria, or a wider or new concept;
       each apply requires the Product Owner's answer at the menu. A custom
       checklist with any Prompt lacking F: still refuses --fix at startup.
       A Story needs 3 to 7 criteria. Every failure mode its behaviour meets
@@ -476,10 +452,6 @@ glossary:
       the error-scenario Prompt with a context line saying why, for example
       that its input errors belong to another Story. The rule adds no Story
       field, and fixes propose error criteria only for real failure modes.
-      With catalogue: templates, each step must match exactly one phrase in its
-      declared block, including phrases the step-phrases fix adds.
-      That built-in check runs before model Prompts, and its fix records a
-      missing phrase in the product document while the Story keeps its words.
       With concepts, the link Prompt holds each step to one closed means, and
       Prompt 12 sketches against means and the service interface kind without
       requiring a binding. Concept fixes write the product document, while
@@ -564,9 +536,8 @@ glossary:
   - term: failing set
     means: >-
       All tests failing in one build code discovery, with their latest
-      failure evidence and matched Specification context: the Catalogue phrases
-      and words of their Scenarios' steps on a template host, the concepts
-      those steps link to, with words and bindings, on a concept host. It is one Item;
+      failure evidence and matched Specification context: the concepts their
+      Scenarios' steps link to, with words and bindings. It is one Item;
       discovery with no failures yields no Item. After an apply, members
       leave only on their own passing result. A member with no result stays
       failing and is reported as not having run. A Go build member's own
@@ -618,29 +589,7 @@ glossary:
       One line of a Scenario or an Acceptance Criterion: a Given states
       where the behaviour starts, a When is what the role does, a Then is
       what must be observed afterwards. Its text is an instance of one
-      concept of its block, or takes one shape a template host's catalogue
-      declares, or is a `judge:` clause a model rules on.
-
-  # Every phrase whose template holds a slot or brackets declares it, so
-  # whoever writes the phrase's step definition is handed the grammar.
-  - term: template
-    means: >-
-      The shape a catalogue phrase gives the text of its steps, as its
-      `template:` writes it: words a step repeats exactly, slots it fills
-      in, and brackets offering a choice. A step takes the shape with its
-      whole text, never a part of it. A quoted slot, `"{name}"`, is filled
-      with at least one character and no double quote, so a step with an
-      empty quote does not take the shape; a number slot, `{name:number}`,
-      with a whole number in digits or the word `no` for zero; a role slot,
-      `{name:role}`, with exactly one of the roles the product document
-      declares, spelled as declared, and no other words; a pattern slot,
-      `{name:pattern}`, always the last thing in the template, with the rest
-      of the step as written, quotes included. Brackets with several
-      alternatives, such as `[is|are]`, take exactly one of them, never
-      none; brackets with one, such as `[s]`, take it or leave it out. What
-      fills a slot is what the phrase's meaning calls the named or given
-      thing, that many, or that role, so the template decides which steps a
-      meaning speaks of.
+      concept of its block, or is a `judge:` clause a model rules on.
 
   - term: Scenario
     means: >-
@@ -673,15 +622,12 @@ glossary:
       The test code that carries out one shape of step against the running
       product: it sets up what a Given states or observes what a Then
       states. A step runs through the one definition whose pattern matches
-      its whole text. The
-      engine writes template-host skeletons and the AI writes their bodies through build steps --fix,
-      using the declared Public interface across a process boundary.
-      On a concept host the engine writes one skeleton per checked proposed pattern,
-      recording its concept, and the AI writes its body the same way. The body may extend
+      its whole text. The engine writes one skeleton per checked proposed
+      pattern, recording its concept, and the AI writes its body through build
+      steps --fix, using the declared Public interface across a process boundary. The body may extend
       shared state but preserves every registration and signature. A pending body fails
-      with "step not written yet" and its phrase, or on a concept host its
-      concept and pattern. On a concept host scen check's step-definitions
-      built-in check holds every step a Scenario binds, judge: and llm: steps
+      with "step not written yet", its concept and its pattern. scen check's
+      step-definitions built-in check holds every step a Scenario binds, judge: and llm: steps
       aside, to one definition, which records a concept the product document
       declares under that step's block; a step two definitions bind, or a
       definition recording no concept, another block's or an undeclared one,
@@ -700,29 +646,24 @@ glossary:
 
   - term: Item
     means: >-
-      What one command walks. On a concept host, build steps groups one concept
-      and suite as an Item and rejudges its service binding before any skeleton.
-      On a template host, build steps walks one Catalogue phrase
-      without a completed step definition in one go-test suite; pending engine skeletons
-      resume as Items. Missing Items include
-      unused Catalogue phrases mapped to the suite's service, as well as phrases used
-      by any Scenario of the suite, and are listed once per phrase and suite.
+      What one command walks. build steps groups one concept and suite as an
+      Item and rejudges its service binding before any skeleton; pending engine
+      skeletons resume as Items.
 
   - term: Step coverage
     means: >-
       The in-process answer to whether every step of every Registry Scenario
       binds to exactly one definition in its suite. Nonconstant or invalid
-      patterns refuse startup. On concept hosts ambiguous concrete bindings refuse
-      startup before grouping. On template hosts ambiguous bindings refuse the
-      read-only command at startup, or --fix at final whole-suite Step coverage. An absent
-      steps directory has zero definitions; on a template host, missing bindings
+      patterns refuse startup. Ambiguous concrete bindings refuse startup before
+      grouping. An absent steps directory has zero definitions; missing bindings
       fail the command and name the Scenario and step. build steps performs this check without
-      running a test or spending an AI turn. On a concept host its gaps feed a
-      separate model grouping pass; judge: and llm: steps get no Item.
+      running a test or spending an AI turn. Its gaps feed a separate model
+      grouping pass; judge: and llm: steps get no Item, and a host declaring no
+      concepts has none.
 
   - term: red without the target
     means: >-
-      One run of every Scenario after build steps --fix writes its Items, in a Host project copy without every service path. Only a failure at an executed step definition counts as red. Compilation, harness bring-up, skipped and missing results fail the check, naming the Scenario. A green Scenario returns all Items written in this run for the phrases it uses to the same bounded Fix loop together, with the finding. A green Scenario with no written Item, or exhausted attempts, ends distinctly. The harness defers service builds until a step needs them, preserving the prebuilt oracle flag.
+      One run of every Scenario after build steps --fix writes its Items, in a Host project copy without every service path. Only a failure at an executed step definition counts as red. Compilation, harness bring-up, skipped and missing results fail the check, naming the Scenario. A green Scenario returns all Items written in this run that its steps use to the same bounded Fix loop together, with the finding. A green Scenario with no written Item, or exhausted attempts, ends distinctly. The harness defers service builds until a step needs them, preserving the prebuilt oracle flag.
 
   - term: test runner
     means: >-

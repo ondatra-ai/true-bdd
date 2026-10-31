@@ -8,6 +8,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/runner"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/provider"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/ports"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/architecture"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/checklist"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/config"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/docs"
@@ -129,6 +130,11 @@ func NewContainer(overrides ...string) (*Container, error) {
 	}
 
 	err = product.ValidateForm(cfg.GetString("documents.product"))
+	if err != nil {
+		return nil, err
+	}
+
+	err = architecture.ValidateForm(cfg.GetString("documents.architecture_yaml"))
 	if err != nil {
 		return nil, err
 	}

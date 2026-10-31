@@ -4,9 +4,9 @@ Edit only the listed working copies. Preserve every unaffected entry.
 For a Story step rewrite, return the complete Story YAML instead of editing
 a document. For document edits return the requested confirmation markers.
 {{ else -}}
-{{ if eq .Check "phrase-mappings" -}}
+{{ if eq .Check "concept-bindings" -}}
 The user has already chosen Apply at the engine menu, authorizing this turn.
-Apply the approved Phrase mapping now to the architecture working copy, and any
+Apply the approved Concept binding now to the architecture working copy, and any
 declaration it adds to the working copy of the Public interface document it names,
 without asking for another choice. Menu reminders inside the approved proposal are
 satisfied. Do not edit any other file, including the Registry, product, tests or step
@@ -21,8 +21,7 @@ copy and replace the exact text the fix provides.
 {{ if eq .Check "" -}}
 You are a Registry Scenario Editor applying an approved fix to the
 working copy of one document: the scenario registry, where a
-Scenario's description or steps are rewritten, or the product
-document, where a catalogue entry's meaning is.
+Scenario's description or steps are rewritten.
 
 **Your Task:**
 1. Read the working copy the fix names.
@@ -49,12 +48,12 @@ document, where a catalogue entry's meaning is.
 {{ else -}}
 {{ if .Subject.Writes "architecture_yaml" -}}
 You are a Term Document Editor applying an approved fix to the working
-copy of one term document: the product document's step-phrase catalogue
-or glossary, or the architecture document's word mapping.
+copy of one term document: the product document's glossary or
+concepts, or the architecture document's word mapping.
 {{- else -}}
 You are a Term Document Editor applying an approved fix to the working
-copy of one term document: the product document's step-phrase catalogue
-or glossary.
+copy of one term document: the product document's glossary or
+concepts.
 {{- end }}
 
 **Your Task:**

@@ -25,12 +25,12 @@
     "{\n  \"item\": \"host-001\",\n  \"description\": \"The number must be halved\",\n  \"product\": \"{\\n  \\\"roles\\\": [\\n    {\\n      \\\"name\\\": \\\"Product Owner\\\",\\n      \\\"description\\\": \\\"Owns meanings.\\\"\\n    }\\n  ],\\n  \\\"concepts\\\": {\\n    \\\"given\\\": [\\n      {\\n        \\\"concept\\\": \\\"number ready\\\",\\n        \\\"means\\\": \\\"A number is entered before the action.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ],\\n    \\\"when\\\": [\\n      {\\n        \\\"concept\\\": \\\"halve\\\",\\n        \\\"means\\\": \\\"Halve the entered number once with the supplied idempotency key.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ],\\n    \\\"then\\\": [\\n      {\\n        \\\"concept\\\": \\\"number result\\\",\\n        \\\"means\\\": \\\"Compare the displayed number with an expected value.\\\",\\n        \\\"terms\\\": []\\n      },\\n      {\\n        \\\"concept\\\": \\\"unused\\\",\\n        \\\"means\\\": \\\"The settlement ledger has a reconciled nostro balance.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ]\\n  },\\n  \\\"glossary\\\": [],\\n  \\\"description\\\": \\\"A calculator accepts a number and a request label. Repeating a request with the same label changes the number only once.\\\",\\n  \\\"language_policy\\\": \\\"The request label is presented to users as an idempotency key. Keep this exact domain name in the product meanings and declare it when needed.\\\"\\n}\\n\",\n  \"steps\": [\n    {\n      \"key\": \"1\",\n      \"block\": \"given\",\n      \"text\": \"six is entered\"\n    },\n    {\n      \"key\": \"2\",\n      \"block\": \"when\",\n      \"text\": \"halve six once with idempotency key alpha\"\n    },\n    {\n      \"key\": \"3\",\n      \"block\": \"then\",\n      \"text\": \"three is displayed\"\n    }\n  ]\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 7479,
+  "duration_ms": 9088,
   "request_hash": "sha256:4f7427a6eebcc87e71a9540ffa960902631054512bf5b9f3ff68773e59911244",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-10-29T22:48:47Z"
+  "recorded_at": "2026-10-30T20:57:26Z"
 }

@@ -19,9 +19,9 @@ story:
       - the Quality Engineer runs "scen check --fix"
     - then:
       - the command exits with code 1
-      - stdout matches In this product, what does the term "latency" mean
-      - stdout matches It means how long the MCP service takes to send its reply, measured in milliseconds from when the message arrives.
-      - 'stdout matches It means the delay of a reply: the time between the message being sent and the reply arriving.'
+      - stdout matches \[1/1\] .*latency
+      - stdout matches 1\) It means
+      - stdout matches 2\) It means
       - stdout matches a person must answer
       - stderr matches a person must answer
       - stdout does not match User answered clarification question

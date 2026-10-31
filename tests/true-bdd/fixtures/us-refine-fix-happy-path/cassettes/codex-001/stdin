@@ -105,85 +105,74 @@ Apply the following changes to the acceptance criteria for this story.
 
 ## Required Changes
 
-The failed check (`us-refine/acceptance_criteria`) is about missing happy-path coverage only: all three existing ACs cover the zero-divisor failure mode, and none describes the primary success scenario. Therefore **no existing AC is changed** — 001-division, 002-division and 003-division are reproduced exactly as they stand, same descriptions and same steps, word for word. The only edit is the addition of one new AC.
+The failed check (`us-refine/acceptance_criteria`) faults only the absence of a happy-path AC. All three existing ACs cover the zero-divisor failure mode and are correct as they stand, so they are reproduced word for word below — no description or step text is altered. The only change is the addition of one new AC covering the primary success path.
 
-### Change #1: ADD new AC 004-division (happy path)
-**Before:** (no AC existed for the success path)
-**Issue:** The Story has no AC describing the happy path. Every existing AC asserts the zero-divisor error, so the check "at least one AC describes the happy path" fails (Total happy path ACs: 0, need ≥1).
+### Change #1: NEW AC 004-division (add)
+**Before:** (no AC describes the happy path — every existing AC asserts the zero-divisor error)
+**Issue:** The check requires at least one AC describing the primary success scenario, where the division succeeds and the calculator prints a quotient. 001/002/003 all assert the failure branch of the `outcome` concept (exit 1 with stderr "Cannot divide by zero"); none assert the success branch (exit 0 with the result on stdout, per the architecture's CLI contract for `calculator divide <dividend> <divisor>`).
 **After (description):** The calculator must print "3" as the quotient when dividing 6 by 2.
 **After (steps):**
 ```yaml
 - given:
-    - the dividend is "6"
-    - the divisor is "2"
+    - "the dividend is \"6\""
+    - "the divisor is \"2\""
 - when:
-    - the Calculator User divides the numbers
+    - "the Calculator User divides the numbers"
 - then:
-    - the quotient is "3"
+    - "the result is \"3\""
 ```
 
-Rationale and sourcing:
-- The success values 6 / 2 = 3 are named directly in `docs/product/product.yaml` (`description.summary`: "Successes: 6 / 2 = 3; 9 / 3 = 3; 0 / 2 = 0").
-- The `given` steps instantiate the product `given` concept "operand supplied" (a stated, already validated integer as dividend or divisor), using the same wording as the existing ACs.
-- The `when` step instantiates the product `when` concept "division" and uses the exact role "Calculator User" from the Story's `as_a` clause, matching the wording already used by 001/002/003.
-- The `then` step instantiates the product `then` concept "outcome" — the divide command exits 0 and prints exactly a stated integer on stdout (`services/calculator` CLI, per `docs/architecture/architecture.yaml`). It is phrased `the quotient is "3"` to run parallel to the existing `the error is "Cannot divide by zero"`.
+The inputs come from the product document's stated successes (6 / 2 = 3). Each `given` step is an instance of the `operand supplied` concept (a stated, already validated integer as dividend or divisor); the `when` step is an instance of the `division` concept (the Calculator User runs the divide command once with the supplied dividend and divisor); the `then` step is an instance of the `outcome` concept's success branch (exits 0 and prints exactly a stated integer on stdout). The role wording "Calculator User" matches the Story's as_a clause exactly.
 
-Decisions confirmed by the Product Owner:
-- Add exactly one AC (004-division, 6 / 2 → "3"); do not add ACs for 9 / 3 or 0 / 2.
-- Use the outcome phrasing `the quotient is "3"`.
-- Keep all three existing failure ACs unchanged.
-
-### Changes NOT to make
-- Do not reword, merge, renumber or delete 001-division, 002-division or 003-division. Their three-value coverage of the zero divisor (6/0, 9/0, 0/0) is deliberate and the check does not fault it.
-- Do not change any other Story field: `id`, `feature`, `title`, `as_a`, `i_want`, `so_that` and `status` stay exactly as they are.
-- If a step-phrase Catalogue is in force for this project, the success-outcome phrase (`the quotient is "<value>"`) must exist in the Catalogue as a declared `then` phrase before this AC is applied; propose it through the step-phrases fix first rather than inventing it inside the Story step. The product document declares `concepts` for given/when/then but no step-phrase Catalogue, so if none is in force the phrase above may be used as written.
+### Unchanged: 001-division, 002-division, 003-division
+Preserve these three ACs exactly — same ids, same descriptions, same Given/When/Then step text. Do not reword, reorder, merge, or "tighten" them. Also preserve all other Story fields (id, title, as_a, i_want, so_that) unchanged.
 
 ## Complete Fixed Acceptance Criteria
 
 ```yaml
 - ac_id: 001-division
-  description: The calculator must report "Cannot divide by zero" when dividing 6 by zero.
+  description: "The calculator must report \"Cannot divide by zero\" when dividing 6 by zero."
   steps:
     - given:
-        - the dividend is "6"
-        - the divisor is "0"
+        - "the dividend is \"6\""
+        - "the divisor is \"0\""
     - when:
-        - the Calculator User divides the numbers
+        - "the Calculator User divides the numbers"
     - then:
-        - the error is "Cannot divide by zero"
+        - "the error is \"Cannot divide by zero\""
 
 - ac_id: 002-division
-  description: The calculator must report "Cannot divide by zero" when dividing 9 by zero.
+  description: "The calculator must report \"Cannot divide by zero\" when dividing 9 by zero."
   steps:
     - given:
-        - the dividend is "9"
-        - the divisor is "0"
+        - "the dividend is \"9\""
+        - "the divisor is \"0\""
     - when:
-        - the Calculator User divides the numbers
+        - "the Calculator User divides the numbers"
     - then:
-        - the error is "Cannot divide by zero"
+        - "the error is \"Cannot divide by zero\""
 
 - ac_id: 003-division
-  description: The calculator must report "Cannot divide by zero" when dividing 0 by zero.
+  description: "The calculator must report \"Cannot divide by zero\" when dividing 0 by zero."
   steps:
     - given:
-        - the dividend is "0"
-        - the divisor is "0"
+        - "the dividend is \"0\""
+        - "the divisor is \"0\""
     - when:
-        - the Calculator User divides the numbers
+        - "the Calculator User divides the numbers"
     - then:
-        - the error is "Cannot divide by zero"
+        - "the error is \"Cannot divide by zero\""
 
 - ac_id: 004-division
-  description: The calculator must print "3" as the quotient when dividing 6 by 2.
+  description: "The calculator must print \"3\" as the quotient when dividing 6 by 2."
   steps:
     - given:
-        - the dividend is "6"
-        - the divisor is "2"
+        - "the dividend is \"6\""
+        - "the divisor is \"2\""
     - when:
-        - the Calculator User divides the numbers
+        - "the Calculator User divides the numbers"
     - then:
-        - the quotient is "3"
+        - "the result is \"3\""
 ```
 
 ## Expected Check Result After Fix
@@ -192,7 +181,7 @@ Decisions confirmed by the Product Owner:
 001-division: not happy path
 002-division: not happy path
 003-division: not happy path
-004-division: happy path — 'dividing 6 by 2 prints the quotient 3'
+004-division: happy path — 'dividing 6 by 2 prints the quotient "3"'
 Total happy path ACs: 1 (need ≥1)
 ```
 

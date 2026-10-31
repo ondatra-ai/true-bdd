@@ -20,22 +20,22 @@ type StoryRef struct {
 type ScenarioCheckData struct {
 	ConceptLinks      []ConceptLink // The current walk only; never stored in the Registry.
 	ConceptLinkPassed bool
-	ConceptForm       bool        // document checks hold concepts rather than matched templates
+	ConceptsDeclared  bool        // the product document declares concepts
 	ID                string      // e.g. "scen-check-003-unknown-id-refused"
 	Description       string      // verbatim registry description
 	Service           string      // names an entry in architecture services[]
 	Path              string      // generated test file the scenario renders into
 	UserStories       []StoryRef  // lineage back to the stories it was merged from
 	Steps             MergedSteps // Given / When / Then as the registry holds them
-	// Phrases are the same steps as the closure checks read them: each
+	// CheckedSteps are the same steps as the closure checks read them: each
 	// one's own text, without its and:/but: keyword, beside its block.
-	Phrases []catalogue.Step
+	CheckedSteps []catalogue.Step
 	// TermDocuments are the documents a closure fix may write; empty
 	// without --fix. A fix defines a term there, never in the Scenario.
 	TermDocuments []FixDocument
 	// InterfaceDocuments are the working copies of the Public interface
 	// documents the architecture names, which a public-interface or
-	// phrase-mappings fix may extend; empty without --fix.
+	// concept-bindings fix may extend; empty without --fix.
 	InterfaceDocuments []FixDocument
 	// RegistryDocument is the Registry's working copy under --fix, where
 	// a model Prompt's fix rewrites the Scenario; nil without --fix.

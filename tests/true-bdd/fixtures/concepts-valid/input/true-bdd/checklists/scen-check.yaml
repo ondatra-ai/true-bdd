@@ -3,7 +3,7 @@ sections:
 - id: term_closure
   validation_prompts:
   - D: declared-terms
-    rationale: A phrase whose meaning relies on an undefined word still has no stated meaning, so no step definition follows
+    rationale: A concept whose meaning relies on an undefined word still has no stated meaning, so no step definition follows
       from the spec.
     docs:
     - product
@@ -17,14 +17,14 @@ sections:
     - architecture_yaml
     F: Propose one architecture.terms entry (term, technical, observed_by) for each unmapped term, asking how it is built
       and observed first. Write it to the architecture document, never to the Scenario.
-  - D: phrase-mappings
-    rationale: A phrase without a Public interface operation leaves its step definition to invent what to do.
+  - D: concept-bindings
+    rationale: A binding naming no declared concept, bound twice, or referencing what its service's Public interface does
+      not declare leaves its step definitions to invent what to do.
     docs:
     - product
     - architecture_yaml
-    F: 'Ask the System Architect what a step of this shape does through the service''s Public interface, by block: a when
-      calls an operation, a given sets up state, a then observes and compares. For a template host propose one architecture.phrases
-      entry with the verbatim template; for a concept host propose architecture.concepts with the declared concept name and
-      block. Include service, references and does, or intent for a UI service, and add to the Public interface document what
-      the answers name that it does not declare yet. Write the architecture and that document only after apply, never the
-      Scenario.'
+    F: 'Ask the System Architect what a step of the concept does through the service''s Public interface, by block: a when
+      calls an operation, a given sets up state, a then observes and compares. Propose architecture.concepts with the declared
+      concept name and block, service, references and does, or intent for a UI service, and add to the Public interface document
+      what the answers name that it does not declare yet. Write the architecture and that document only after apply, never
+      the Scenario.'

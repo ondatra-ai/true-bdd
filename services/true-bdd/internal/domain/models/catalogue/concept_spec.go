@@ -30,8 +30,6 @@ func SpecifyConcepts(concepts []ConceptSpec, definitions []Definition, mappings 
 	}
 
 	return Specification{
-		Steps:    make([]PhrasedStep, 0),
-		Phrases:  make([]Entry, 0),
 		Terms:    termSpecs(terms, definitions, mappings),
 		Concepts: concepts,
 	}

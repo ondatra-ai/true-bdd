@@ -8,14 +8,15 @@ import (
 
 const linkJudgement = "link"
 
-// Template hosts retain their original cells and request numbering.
+// conceptPrompts drops the concept judgements of a host declaring no concepts,
+// whose walk keeps its other cells and their request numbering.
 func conceptPrompts(prompts []checklist.PromptWithContext, resolver *docs.Resolver) []checklist.PromptWithContext {
 	path, err := resolver.Resolve(docs.KeyProduct)
 	if err != nil {
 		return withoutConceptJudgements(prompts)
 	}
 
-	source, err := product.LoadCatalogue(path)
+	source, err := product.Load(path)
 	if err != nil || !source.ConceptsDeclared {
 		return withoutConceptJudgements(prompts)
 	}

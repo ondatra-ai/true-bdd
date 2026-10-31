@@ -268,7 +268,7 @@ func refreshScenario(item *template.ScenarioCheckData, scenario *registry.Regist
 	item.Path = scenario.Path
 	item.UserStories = stories
 	item.Steps = scenario.Steps
-	item.Phrases = scenario.Phrases()
+	item.CheckedSteps = scenario.CheckedSteps()
 }
 
 // scenCheckSubject is the GetSubject implementation: the scenario id
@@ -370,7 +370,7 @@ func scenCheckPostCheckFix(
 	requirementsFile string,
 ) func(context.Context, *template.ScenarioCheckData, string) (*template.ScenarioCheckData, error) {
 	return func(ctx context.Context, item *template.ScenarioCheckData, check string) (*template.ScenarioCheckData, error) {
-		if check != checks.CheckPublicInterface && check != checks.CheckPhraseMappings {
+		if check != checks.CheckPublicInterface && check != checks.CheckConceptBindings {
 			return scenCheckPostFix(deps, requirementsFile)(ctx, item, "")
 		}
 

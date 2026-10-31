@@ -119,10 +119,6 @@ func TestCodeFailureEmbedsLinkedConcepts(t *testing.T) {
 	specifyCodeFailures(BuildCodeDeps{DocResolver: docs.NewResolver(cfg)}, arch,
 		repairArchitecture, []*testrunner.FailingTest{failure})
 
-	if failure.Spec.Declared || len(failure.Spec.Phrases) != 0 {
-		t.Fatalf("a concept host declares no catalogue: %+v", failure.Spec)
-	}
-
 	calc := func(references []string, does string) []catalogue.ConceptUse {
 		return []catalogue.ConceptUse{{Service: repairService, References: references, Does: does}}
 	}
@@ -171,7 +167,7 @@ func TestFailingSetUnionsLinkedConcepts(t *testing.T) {
 			{Service: "other", Does: "Run other."}}}
 
 	spec := item.Specification()
-	if spec.Declared || !reflect.DeepEqual(spec.Concepts, []catalogue.ConceptSpec{want}) ||
+	if !reflect.DeepEqual(spec.Concepts, []catalogue.ConceptSpec{want}) ||
 		!reflect.DeepEqual(spec.Terms, []catalogue.TermSpec{number}) {
 		t.Fatalf("union: %+v", spec)
 	}

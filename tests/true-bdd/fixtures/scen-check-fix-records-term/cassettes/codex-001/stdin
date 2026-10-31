@@ -1,8 +1,8 @@
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
 
 You are a Term Document Editor applying an approved fix to the working
-copy of one term document: the product document's step-phrase catalogue
-or glossary.
+copy of one term document: the product document's glossary or
+concepts.
 
 **Your Task:**
 1. Read the working copy the fix names.
@@ -48,13 +48,21 @@ Then:
 
 ## Fix Prompt to Apply
 
-Apply one fix to the product glossary only. Owner: Product Owner (product meanings). Do not touch any Scenario, generated test, step definition, or architecture section.
+Proposal for the Product Owner — add one missing glossary term to the product document. No Scenario, generated test or step definition is touched, and no binding or Word mapping changes are needed.
 
-File: ./docs/product/product.yaml
+## Finding addressed
 
-The `then` concept `answer` (block: then) lists term `reply` in its `terms`, but the glossary defines only `mcp service` and `message`. Add the missing glossary entry with the meaning the owner supplied, keeping the existing entry order and the file's two-space list indentation and `>-` folded-block style.
+- Scenario E2E-001, service `mcp-service`, check `declared-terms`: the `then` concept `answer` (`docs/product/product.yaml`, line 36) declares the term `reply`, but `glossary` only defines `mcp service` and `message`. The concept's own meaning — "The MCP service's reply to the message is exactly a stated text." — already uses `reply` as a Word, so the fix is a glossary entry, not a change to the concept or to the Scenario.
 
-Edit (exact):
+## Meaning used (from the owner's answer `reply-meaning`)
+
+> The text the MCP service sends back for one message, as text. Exactly one reply per message, and what a Then observes and compares against a stated text.
+
+This is consistent with the existing `message` entry ("The service answers each message on its own") and with `answer` being a `then` concept that observes and compares.
+
+## Exact edit — `docs/product/product.yaml`
+
+Insert the new term after `message`, keeping the glossary in its current order and the existing `>-` folded style.
 
 old_string:
 ```
@@ -62,6 +70,8 @@ old_string:
     means: >-
       One request a client sends the MCP service, as text. The service
       answers each message on its own.
+
+concepts:
 ```
 
 new_string:
@@ -72,11 +82,20 @@ new_string:
       answers each message on its own.
   - term: reply
     means: >-
-      The text the MCP service sends back for one message — exactly one
-      reply per message.
+      The text the MCP service sends back for one message, as text.
+      Exactly one reply per message, and what a Then observes and
+      compares against a stated text.
+
+concepts:
 ```
 
-Nothing else changes: the concept `answer` keeps its verbatim name, block `then`, its means, and `terms: [mcp service, reply]`. No architecture.terms or architecture.concepts change is needed for this finding, and no Public interface declaration is involved.
+## After the edit
+
+- `then` concept `answer` declares `terms: [mcp service, reply]`, and both are now defined in `glossary` — `declared-terms` for E2E-001 is satisfied.
+- `architecture.terms` and `architecture.concepts` are unchanged: this finding is a product meaning only, owned by the Product Owner.
+- No Public interface declaration is added, because no binding reference was named by the finding.
+
+Apply this edit only with the Product Owner's approval of the `reply` wording above.
 
 ---
 
@@ -98,8 +117,7 @@ reads as valid YAML, so a copy you leave unparseable changes nothing.
    above with the Edit tool on that working copy: append a new entry at
    the end of its list, at the list's own indentation, or replace the
    old_string verbatim.
-3. Copy each entry's YAML exactly as the fix prompt gives it. Keep a
-   template single-quoted: it carries `{`, `[` and `"` of its own.
+3. Copy each entry's YAML exactly as the fix prompt gives it.
 4. You MAY only edit the working copies listed above. The documents
    themselves, the scenario registry, a generated test file and a step
    definition are all out of bounds.

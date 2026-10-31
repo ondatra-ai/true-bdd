@@ -10,48 +10,37 @@ a document. For document edits return the requested confirmation markers.
 
 The Product Owner chose apply at the menu for Story halve-negative.
 Approved fix:
-Repair for Item `halve-negative` (owner: Product Owner — concept addition)
+# Repair proposal — Item `halve-negative`
 
-## Diagnosis
+**Owner:** Product Owner (concept addition)
+**Kind:** New concept for a new kind of use (`when`)
+**Files touched:** `docs/product/product.yaml` only. The Story `halve-negative` is **not** modified.
 
-All nine findings resolve to a single root cause. The `given` steps bind cleanly to
-`number supplied` (score 10) and the `then` steps bind cleanly to `result` (score 10).
-Only the three `when` steps fail, all with the identical reason: "the when block declares
-no concepts, so there is nothing to score."
+## Why
 
-The three failing steps are textually identical across all acceptance criteria:
+The `when` steps of all three acceptance criteria (`001-even`, `002-odd`, `003-near-zero`) read "the Calculator User halves the number". Each finding reports the step is of the right kind but scores `{}`, because `concepts.when` does not exist in the product document. No rewrite of the step can link it, and no variation can widen a concept that is absent, so a new concept is added for this use. The `given` concept `number supplied` and the `then` concept `result` already link all six remaining steps at score 10 and are left exactly as they are.
 
-    the Calculator User halves the number
+## Exact change to `docs/product/product.yaml`
 
-The step wording is sound — it names the role, the action, and the already-supplied
-number, with no forbidden qualifier. The gap is in the product document:
-`docs/product/product.yaml` declares `concepts.given` and `concepts.then` but has no
-`concepts.when` block at all.
+Insert a `when:` block between the existing `given:` and `then:` blocks under `concepts:`, so that the three blocks appear in given/when/then order.
 
-Therefore this is a **new use**, not a new item under an existing use. No variation can
-widen a concept that does not exist, so the repair is one new concept under a new `when`
-block. One concept covers all three criteria because the step text is identical.
-
-## Proposed change — exactly one file: `docs/product/product.yaml`
-
-Insert a `when` block between the existing `given` and `then` blocks, keeping the
-document's declaration order given → when → then.
-
-Replace these lines (16-24):
-
-```yaml
-concepts:
-  given:
-    - concept: number supplied
-      means: The calculator is supplied a stated, already validated integer.
-      terms: []
-  then:
-    - concept: result
-      means: The halve command succeeds and prints exactly a stated integer, the half rounded toward zero.
-      terms: []
+```diff
+ concepts:
+   given:
+     - concept: number supplied
+       means: The calculator is supplied a stated, already validated integer.
+       terms: []
++  when:
++    - concept: halve requested
++      means: The Calculator User runs the halve command on the supplied number.
++      terms: []
+   then:
+     - concept: result
+       means: The halve command succeeds and prints exactly a stated integer, the half rounded toward zero.
+       terms: []
 ```
 
-with:
+## Resulting `concepts:` section in full
 
 ```yaml
 concepts:
@@ -69,26 +58,19 @@ concepts:
       terms: []
 ```
 
-## What is NOT changed
+## Notes on the wording
 
-- **No change to the Story `halve-negative`.** All nine steps, including the three
-  `when` steps, keep their exact current wording. No rewrite is proposed.
-- **No change to `number supplied`** — its three `given` steps already bind at 10.
-- **No change to `result`** — its three `then` steps already bind at 10.
-- **No variation added** to any existing concept: a variation widens an existing concept
-  of the same item and use, and no `when` concept exists to widen.
-- No change to `title`, `description`, `roles`, `vocabulary`, or `glossary`.
-- No binding change, so nothing here falls to the System Architect.
+- `means` is closed prose naming the actor from `roles` (Calculator User), the command (halve) and its object (the supplied number), matching the phrasing of the step under all three acceptance criteria.
+- `terms: []` matches the style of the two existing concepts; no variation is added, because all three `when` steps share one identical wording that the concept covers plainly.
+- No forbidden qualifier (`properly`, `correctly`, `appropriate`, `fast`) is used, and `forbidden_actions` is empty.
+- The concept states the request only; the printed outcome stays the business of the `then` concept `result`, so the two do not overlap.
 
 ## Expected effect
 
-Each of the three `when` steps — "the Calculator User halves the number" in `001-even`,
-`002-odd` and `003-near-zero` — becomes a plain instance of `halve requested`: the
-Calculator User running the halve command on the number supplied by the given step.
-Each should score 10 against the threshold of 9, clearing all three remaining findings
-and leaving the six already-passing step links untouched.
-
-Awaiting an explicit menu decision before applying. Nothing has been changed.
+- `001-even`, `002-odd`, `003-near-zero` `when` steps link to `halve requested` at the threshold of 9.
+- All `given` and `then` findings are unchanged.
+- `title`, `description`, `roles`, `vocabulary` and `glossary` are unchanged.
+- The Story file for `halve-negative` is unchanged, including `status: PLANNED`.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

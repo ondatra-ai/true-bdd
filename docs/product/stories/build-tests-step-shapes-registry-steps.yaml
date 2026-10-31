@@ -3,8 +3,8 @@
 #
 # A step is one line of text, an `and:` or `but:` mapping holding one
 # line, or a line that opens with `llm:` (Given and When) or `judge:`
-# (Then). Whether a step's words match the catalogue is criterion 005 of
-# the Story build-tests-refusals.
+# (Then). What a step's words mean is the concepts', which scen check holds
+# them to.
 #
 # Each criterion's id is the second half of its Scenario's Registry key,
 # `build-tests-step-shapes-<id>` (ADR 0014), and its steps are that

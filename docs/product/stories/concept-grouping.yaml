@@ -138,7 +138,7 @@ story:
       - the engine spawned no test runners
       - the engine dispatched no AI turns
   - id: 011-build-tests
-    description: Concept hosts render free text without Catalogue matching
+    description: build tests renders a concept host's free-text steps without matching them against anything
     steps:
     - given:
       - the "concept-grouping-render" project tree

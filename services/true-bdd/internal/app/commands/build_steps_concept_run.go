@@ -32,7 +32,7 @@ func (e *buildStepsExecution) prepareConceptRun(discovery *conceptDiscovery, arc
 }
 
 // loadConceptRun reads them before any turn, so a malformed term list is
-// refused before grouping, as a template host's is.
+// refused before grouping.
 func (e *buildStepsExecution) loadConceptRun() (*conceptRun, error) {
 	document, err := e.deps.ChecklistLoader.LoadFull(buildStepsChecklistName)
 	if err != nil {
@@ -51,12 +51,12 @@ func (e *buildStepsExecution) loadConceptRun() (*conceptRun, error) {
 
 	file := productDocument(e.deps.DocResolver)
 
-	source, err := product.LoadCatalogue(file)
+	source, err := product.Load(file)
 	if err != nil {
 		return nil, err
 	}
 
-	_, definitions, mappings, err := compileStepSpecification(source, file, e.architectureFile)
+	definitions, mappings, err := stepSpecification(file, e.architectureFile)
 	if err != nil {
 		return nil, err
 	}

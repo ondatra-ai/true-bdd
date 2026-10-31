@@ -7,17 +7,15 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/catalogue"
 )
 
-// BuildStepsItem is one Catalogue phrase missing a definition in one go-test
-// suite, or on a concept host one concept and suite.
+// BuildStepsItem is one concept and one go-test suite whose steps of that
+// concept still need step definitions.
 type BuildStepsItem struct {
-	subjectID  string
-	Context    string
-	Definition stepskeleton.Definition
-	Findings   []string
-	Suite      string
-	Service    string
-	Phrase     catalogue.Entry
-	Concept    *BuildStepsConcept
+	subjectID string
+	Context   string
+	Findings  []string
+	Suite     string
+	Service   string
+	Concept   *BuildStepsConcept
 }
 
 // BuildStepsConcept is what a concept Item defines: the suite's steps of
@@ -35,18 +33,10 @@ type BuildStepsConcept struct {
 
 // Label names the Item in findings, logs and errors.
 func (item *BuildStepsItem) Label() string {
-	if item.Concept != nil {
-		return fmt.Sprintf("%s concept %q", item.Concept.Block, item.Concept.Name)
-	}
-
-	return item.Phrase.Template
+	return fmt.Sprintf("%s concept %q", item.Concept.Block, item.Concept.Name)
 }
 
 func (item *BuildStepsItem) functions() []string {
-	if item.Concept == nil {
-		return []string{item.Definition.Function}
-	}
-
 	names := make([]string, 0, len(item.Concept.Definitions))
 	for _, definition := range item.Concept.Definitions {
 		names = append(names, definition.Function)
@@ -56,9 +46,5 @@ func (item *BuildStepsItem) functions() []string {
 }
 
 func (item *BuildStepsItem) definitions() []stepskeleton.Definition {
-	if item.Concept == nil {
-		return []stepskeleton.Definition{item.Definition}
-	}
-
 	return item.Concept.Definitions
 }

@@ -2,12 +2,23 @@ package checks
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/architecture"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/product"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/template"
 )
+
+// conceptBindings passes when every binding names a declared concept once per
+// block and service, with references its service declares and what is done
+// through them, or a UI service's intent.
+func conceptBindings() Check[*template.ScenarioCheckData] {
+	return closureCheck([]string{docs.KeyProduct, docs.KeyArchitectureYAML},
+		func(item *template.ScenarioCheckData, input Input, source product.Document) (Verdict, error) {
+			return reviewConceptBindings(item, input, source.Concepts)
+		})
+}
 
 func reviewConceptBindings(item *template.ScenarioCheckData, input Input, concepts []product.Concept) (Verdict, error) {
 	path := input.Docs[docs.KeyArchitectureYAML]
@@ -60,7 +71,7 @@ func conceptBindingFindings(concepts []product.Concept, bindings []architecture.
 		case declaration == nil:
 			findings = append(findings, subject+" names no service with a declared Public interface")
 		default:
-			findings = append(findings, operationMappingFindings(subject, entries[0], declaration)...)
+			findings = append(findings, bindingUseFindings(subject, entries[0], declaration)...)
 		}
 	}
 
@@ -69,18 +80,60 @@ func conceptBindingFindings(concepts []product.Concept, bindings []architecture.
 
 func conceptBindingEntries(bindings []architecture.ConceptBinding,
 	binding architecture.ConceptBinding,
-) []architecture.PhraseMapping {
-	entries := make([]architecture.PhraseMapping, 0)
+) []architecture.ConceptBinding {
+	entries := make([]architecture.ConceptBinding, 0)
 
 	for _, candidate := range bindings {
 		if candidate.Concept == binding.Concept && candidate.Block == binding.Block && candidate.Service == binding.Service {
-			entries = append(entries, architecture.PhraseMapping{
-				References: candidate.References, Does: candidate.Does, Intent: candidate.Intent,
-			})
+			entries = append(entries, candidate)
 		}
 	}
 
 	return entries
+}
+
+// bindingUseFindings holds one binding's use of its service: references
+// the Public interface declares and what is done through them, or the intent
+// an llm: step performs through a UI.
+func bindingUseFindings(subject string, entry architecture.ConceptBinding,
+	declaration *architecture.PublicInterface,
+) []string {
+	if strings.TrimSpace(entry.Intent) != "" {
+		return intentFinding(subject, entry, declaration)
+	}
+
+	if strings.TrimSpace(entry.Does) == "" {
+		return []string{fmt.Sprintf("%s requires a does sentence (references: %v)", subject, entry.References)}
+	}
+
+	if len(entry.References) == 0 {
+		return []string{subject + " requires Public interface references (reference: missing)"}
+	}
+
+	findings := make([]string, 0)
+
+	for _, reference := range entry.References {
+		if !declaration.Declares(reference) {
+			finding := fmt.Sprintf("%s references %s, which its Public interface does not declare", subject, reference)
+			findings = append(findings, finding)
+		}
+	}
+
+	return findings
+}
+
+func intentFinding(subject string, entry architecture.ConceptBinding,
+	declaration *architecture.PublicInterface,
+) []string {
+	if entry.Does != "" || len(entry.References) != 0 {
+		return []string{subject + " reference intent must replace does and references"}
+	}
+
+	if declaration == nil || declaration.Kind != "ui" {
+		return []string{subject + " reference intent is not supported for a non-UI service until llm: steps are supported"}
+	}
+
+	return nil
 }
 
 func declaredConcept(concepts []product.Concept, binding architecture.ConceptBinding) bool {

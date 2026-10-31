@@ -21,24 +21,9 @@ type stepCritiqueFinding struct {
 	Finding    string `json:"finding"`
 }
 
+// stepCritiqueSchema names a concept Item's categories: its patterns, which
+// an AI proposed, and its bodies against the concept's binding.
 const stepCritiqueSchema = `{
- "type":"object", "additionalProperties":false,
- "properties": {
-  "answer":{"type":"string","enum":["pass","fail"]},
-  "findings":{"type":"array","items":{
-   "type":"object","additionalProperties":false,
-   "properties":{
-    "definition":{"type":"string","minLength":1},
-    "category":{"type":"string","enum":["phrase_mapping","phrase_meaning","computes_assertion"]},
-    "finding":{"type":"string","minLength":1}
-   },"required":["definition","category","finding"]
-  }}
- },"required":["answer","findings"]
-}`
-
-// conceptCritiqueSchema names a concept Item's categories: its patterns, which
-// an AI proposed, and its bodies against the binding, not a Phrase mapping.
-const conceptCritiqueSchema = `{
  "type":"object", "additionalProperties":false,
  "properties": {
   "answer":{"type":"string","enum":["pass","fail"]},
@@ -106,7 +91,6 @@ func ParseStepCritique(response string) ([]CritiqueFinding, error) {
 }
 
 func validCritiqueCategory(category string) bool {
-	return category == "phrase_mapping" || category == "phrase_meaning" || category == "computes_assertion" ||
-		category == "concept_binding" || category == "concept_meaning" ||
+	return category == "computes_assertion" || category == "concept_binding" || category == "concept_meaning" ||
 		category == critiquePatternCaptures || category == critiquePatternScope
 }

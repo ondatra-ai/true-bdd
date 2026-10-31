@@ -73,33 +73,18 @@ func codeStepSpecifications(
 		return specs
 	}
 
-	source, err := product.LoadCatalogue(file)
+	source, err := product.Load(file)
 	if err != nil {
 		slog.Warn("Cannot read optional Specification document", "document", file, "error", err)
 
 		return specs
 	}
 
-	if source.ConceptsDeclared {
-		return codeConceptSpecifications(source, file, architectureFile, scenarios)
-	}
-
-	if !source.Declared {
+	if !source.ConceptsDeclared {
 		return specs
 	}
 
-	compiled, definitions, mappings, err := compileStepSpecification(source, file, architectureFile)
-	if err != nil {
-		slog.Warn("Cannot read optional Specification document", "document", file, "error", err)
-
-		return specs
-	}
-
-	for _, scenario := range scenarios {
-		specs[scenario.ID] = compiled.Specify(scenario.Phrases(), nil, definitions, mappings)
-	}
-
-	return specs
+	return codeConceptSpecifications(source, file, architectureFile, scenarios)
 }
 
 // codeScenarioIdentities resolves each Scenario once per discovery, rather

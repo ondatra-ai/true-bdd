@@ -2,8 +2,7 @@
 
 You are a Registry Scenario Editor applying an approved fix to the
 working copy of one document: the scenario registry, where a
-Scenario's description or steps are rewritten, or the product
-document, where a catalogue entry's meaning is.
+Scenario's description or steps are rewritten.
 
 **Your Task:**
 1. Read the working copy the fix names.
@@ -49,26 +48,37 @@ When:
 # Fix Prompt for Scenario E2E-001: The greeter must print the configured greeting followed by the name it is given, and exit with code 0
 
 ## Target
-The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry). No other document, Scenario, generated test or step definition is touched.
+The `E2E-001` entry of the `scenarios_yaml` document (the scenario
+registry, `documents.scenarios_yaml` → `docs/scenarios.yaml`).
+
+Edit only that entry's `merged_steps:` block. Do not touch
+`description:`, `service:`, `path:` or `user_stories:`, do not touch the
+existing `given:` or `when:` steps, do not touch `metadata:`, and do not
+touch any generated test or step definition. `true-bdd build tests --fix`
+re-renders `tests/greeter/greet_test.go` from the registry afterwards.
 
 ## Finding being fixed
-`scen-check/scenario_quality` — "E2E-001: missing then step". The entry carries `given:` and `when:` but no `then:` block, so nothing is asserted.
+`E2E-001: missing then step` — the entry has `given:` and `when:` but no
+`then:` block, so nothing is asserted.
 
-## What the new step says and why
-The description already pins both observations, so nothing is invented here:
-- "print the configured greeting followed by the name it is given" — with the greeting configured as "Hello" and the command `greet Ada`, the printed line is `Hello Ada`. This is the product document's `then:` concept **standard output**: "A line the command printed on its standard output has a match for a stated pattern, a regular expression."
-- "exit with code 0" — the product document's `then:` concept **exit code**: "The command the role ran ended with a stated exit code; 0 means it succeeded."
-
-The product document declares no `catalogue:`, and `user_stories:` is empty, so no catalogue template has to be matched; the wording below stays in the words of those two `then:` concepts and of the glossary terms `standard output` and `exit code`. It uses none of the words in `vocabulary.forbidden_qualifiers` and none of `vocabulary.forbidden_actions`.
+The description already pins what the then steps must say, so no new
+behaviour is invented here: the command prints the configured greeting
+(`"Hello"`, set by the `given:` step) followed by the name it was given
+(`Ada`, from the `when:` command line), and it exits with code 0. Those
+are exactly the two `then:` concepts the product document declares —
+`standard output` ("A line the command printed on its standard output has
+a match for a stated pattern, a regular expression") and `exit code`
+("The command the role ran ended with a stated exit code; 0 means it
+succeeded").
 
 ## Required Changes
 
-### Change #1: add the missing `then:` block to E2E-001
+### Change #1: Add the missing `then:` block with the two assertions the description pins
 **Document:** scenarios_yaml
-**Field:** merged_steps.then
+**Field:** `scenarios.E2E-001.merged_steps.then` (added; `given:` and `when:` are reproduced only to locate the insertion point and must come out byte-identical)
 
 **Current text:**
-```
+```yaml
     merged_steps:
       given:
         - the greeting is configured as "Hello"
@@ -77,7 +87,7 @@ The product document declares no `catalogue:`, and `user_stories:` is empty, so 
 ```
 
 **New text:**
-```
+```yaml
     merged_steps:
       given:
         - the greeting is configured as "Hello"
@@ -85,15 +95,30 @@ The product document declares no `catalogue:`, and `user_stories:` is empty, so 
         - the Operator runs "greet Ada"
       then:
         - the standard output has a line matching "Hello Ada"
-        - the exit code is 0
+        - the command exits with code 0
 ```
 
-## Constraints on the edit
-- Add the `then:` block only. Leave the `given:` step `the greeting is configured as "Hello"` and the `when:` step `the Operator runs "greet Ada"` byte-for-byte as they are.
-- Do not change the Scenario's `description:`, `id`/key `E2E-001`, `service: greeter`, `path: tests/greeter/greet_test.go` or `user_stories: []`.
-- Do not change `metadata:` or any other Scenario in the registry.
-- Do not edit `docs/product/product.yaml`, `tests/greeter/greet_test.go` or any step definition. The generated test is re-rendered by `true-bdd build tests --fix` once this entry reads correctly.
-- Keep the file's two-space indentation: `then:` sits at the same indentation as `given:` and `when:`, and its two items at the same indentation as the existing step items.
+Keep the two-space-per-level indentation shown above (`merged_steps:` at
+four spaces, the block keys at six, the step items at eight), and keep
+the double quotes around `Hello Ada` as written — it is the stated
+pattern of the `standard output` concept, and `Hello` in it is the
+greeting the `given:` step configured.
+
+## Acceptance
+- `scenarios.E2E-001.merged_steps` now carries all three of `given:`,
+  `when:` and `then:`, with one unchanged given step, one unchanged when
+  step and the two new then steps.
+- The first then step is an instance of the `then` concept `standard
+  output`; the second is an instance of the `then` concept `exit code`.
+- No forbidden qualifier (`properly`, `correctly`, `appropriate`,
+  `appropriately`, `user-friendly`, `fast`, `quickly`, `helpful`) and no
+  forbidden action (`handle`, `process`, `parse`) appears in the added
+  text.
+- `scenarios.E2E-001.description`, `service:`, `path:` and
+  `user_stories:` are byte-identical to before, and no other scenario or
+  document is modified.
+- `yamale -s true-bdd/scenarios_yaml-schema.yaml docs/scenarios.yaml`
+  still passes.
 
 ---
 
@@ -112,8 +137,7 @@ same Scenarios, so a copy you leave unparseable changes nothing.
 ## Instructions
 
 1. Use the Read tool to load the working copy the fix prompt names. In
-   the registry, find the `E2E-001:` entry under `scenarios:`;
-   in the product document, the catalogue entry the fix names.
+   the registry, find the `E2E-001:` entry under `scenarios:`.
 2. Apply each change with the Edit tool on that working copy: replace
    the current text the fix prompt gives with its new text, inside that
    entry only.

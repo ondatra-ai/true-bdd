@@ -84,8 +84,8 @@
     "terms": [
       {
         "term": "idempotency key",
-        "technical": "The text typed into the Calc page's \"Idempotency key\" textbox, which the calculator remembers alongside the last applied halving so a second request carrying the same text is ignored",
-        "observed_by": "The When step fills the \"Idempotency key\" textbox with the label named in the step before pressing Halve, and reuses that same label for a repeated press; the Then step never reads the key itself — it observes its effect by comparing the displayed Number with the expected value, unchanged after the repeat"
+        "technical": "The text held in the Calc page's 'Idempotency key' textbox, submitted together with the number when Halve is pressed, so the backend applies a label it has already seen only once",
+        "observed_by": "The When step definition types the label named in the scenario into the 'Idempotency key' textbox before pressing Halve, and for a repeated request types the same label again, so the Then step can see Number unchanged"
       }
     ]
   }

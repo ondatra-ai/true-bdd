@@ -24,7 +24,7 @@
       {
         "concept": "number result",
         "means": "Compare the displayed number with an expected value.",
-        "terms": ["idempotency key"]
+        "terms": []
       },
       {
         "concept": "unused",
@@ -36,7 +36,7 @@
   "glossary": [
     {
       "term": "idempotency key",
-      "means": "The label a caller supplies with a request so that repeating the request with the same label changes the number only once."
+      "means": "The request label supplied with a halve request, so that repeating the request with the same label changes the number only once."
     }
   ],
   "description": "A calculator accepts a number and a request label. Repeating a request with the same label changes the number only once.",

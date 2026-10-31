@@ -3,7 +3,7 @@ story:
   feature: build-steps
   title: Critique every applied definition
   as_a: System Architect
-  i_want: a separate critique of each definition against its phrase and mapping
+  i_want: a separate critique of each definition's pattern and body against its concept and binding
   so_that: a wrong operation or assertion returns to the Fix loop before the Item passes
   status: IMPLEMENTED
   acceptance_criteria:

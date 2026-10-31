@@ -6,7 +6,7 @@ metadata:
 
 scenarios:
   E2E-001:
-    description: Greeting a name must print the configured greeting followed by that name and must exit with code 0
+    description: The greeter must print the configured greeting followed by the name it was given and must exit with code 0
     service: greeter
     path: tests/greeter/greet_test.go
     user_stories:

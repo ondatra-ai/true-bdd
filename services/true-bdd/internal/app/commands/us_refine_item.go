@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+
 	"gopkg.in/yaml.v3"
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/engine"
@@ -61,22 +62,7 @@ func refinePostFix(
 	}
 }
 
-// refinePostCheckFix commits the term document a closure fix edited. The
-// Story keeps its version: the fix phrased its step in the catalogue.
-func refinePostCheckFix(
-	_ context.Context,
-	item *template.StoryRefineData,
-	_ string,
-) (*template.StoryRefineData, error) {
-	_, err := commitDocuments(item.TermDocuments, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return item, nil
-}
-
-// seedRefineDocuments gives the loaded Story the working copies a closure
+// seedRefineDocuments gives the loaded Story the working copies a concept
 // fix edits under --fix: one per term document the host has.
 func seedRefineDocuments(
 	load func(context.Context) ([]*template.StoryRefineData, error),

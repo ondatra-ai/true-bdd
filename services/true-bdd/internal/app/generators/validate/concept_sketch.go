@@ -20,7 +20,7 @@ func (e *ChecklistEvaluator) conceptSketch(prompt checklist.PromptWithContext, d
 		return fmt.Errorf("resolve sketch product: %w", err)
 	}
 
-	source, err := product.LoadCatalogue(path)
+	source, err := product.Load(path)
 	if err != nil {
 		return fmt.Errorf("read sketch product: %w", err)
 	}

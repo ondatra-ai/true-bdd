@@ -23,9 +23,9 @@ glossary:
       are both behaviour.
   - term: latency
     means: >-
-      How long a reply takes to arrive, as the client's clock measures
-      it: from the moment the client sends the message to the moment the
-      reply arrives back at the client, in milliseconds.
+      How long a reply takes to arrive, measured by the client clock from
+      the moment the client sends the message to the moment the reply
+      arrives, in milliseconds.
 
 concepts:
   given:

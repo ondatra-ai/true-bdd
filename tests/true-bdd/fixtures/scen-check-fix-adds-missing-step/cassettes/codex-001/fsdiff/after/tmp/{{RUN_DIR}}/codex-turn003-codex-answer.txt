@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/scenarios_yaml.yaml"
-summary: "Added only E2E-001's then block asserting standard output matches Hello Ada and exit code is 0."
+summary: "Added E2E-001 then assertions for Hello Ada output and exit code 0; all other text preserved. Yamale unavailable."
 === FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===

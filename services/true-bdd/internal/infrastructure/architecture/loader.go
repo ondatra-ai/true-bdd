@@ -75,7 +75,6 @@ type Service struct {
 // fields the build pipeline needs are decoded.
 type Architecture struct {
 	Concepts []ConceptBinding
-	Phrases  []PhraseMapping
 	Testing  Testing
 	Services []Service
 }
@@ -108,7 +107,7 @@ type rawDef struct {
 	Concepts []ConceptBinding `yaml:"concepts"`
 	Testing  rawTesting       `yaml:"testing"`
 	Services []Service        `yaml:"services"`
-	Phrases  []PhraseMapping  `yaml:"phrases"`
+	Phrases  yaml.Node        `yaml:"phrases"`
 }
 
 // rawArchitecture mirrors the top-level shape of architecture.yaml.
@@ -132,6 +131,10 @@ func Load(path string) (*Architecture, error) {
 		return nil, fmt.Errorf("failed to parse architecture file %s: %w", path, err)
 	}
 
+	if raw.Architecture.Phrases.Kind != 0 {
+		return nil, fmt.Errorf("%s: %w", path, ErrPhrasesRetired)
+	}
+
 	if len(raw.Architecture.Services) == 0 {
 		return nil, fmt.Errorf("%s: %w", path, ErrNoServices)
 	}
@@ -143,7 +146,6 @@ func Load(path string) (*Architecture, error) {
 
 	arch := &Architecture{
 		Concepts: raw.Architecture.Concepts,
-		Phrases:  raw.Architecture.Phrases,
 		Testing: Testing{
 			Framework:  raw.Architecture.Testing.Framework,
 			Libraries:  raw.Architecture.Testing.Libraries,

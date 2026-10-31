@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-host-001-iter2-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/architecture_yaml.yaml"
-summary: "Added the exact idempotency key mapping; validated parsing. Concept check unavailable."
+summary: "Added the exact idempotency key word mapping; working copy parses as valid YAML."
 === FILE_END: tmp/{{RUN_DIR}}/apply-host-001-iter2-result.yaml ===

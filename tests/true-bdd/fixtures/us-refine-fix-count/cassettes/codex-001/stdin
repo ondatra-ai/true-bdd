@@ -90,19 +90,12 @@ The calculator must return -3 when the Calculator User halves -7.
 
 ## Fix Prompt to Apply
 
-=== FILE_START: tmp/{{RUN_DIR}}/01-halve-negative-fix-prompts.md ===
 # Fix Prompt for Story halve-negative: Halve negative integers
 
 ## Instructions
-Apply the following changes to the acceptance criteria for this story.
+Apply the following changes to the acceptance criteria for this story in `docs/product/stories/halve-negative-cases.yaml`.
 
-The failed check is `us-refine/acceptance_criteria` (count must be 3-7 inclusive). The story currently has 2 ACs. Total ACs: 2.
-
-The fix is **additive only**. Per the Product Owner's answers:
-- Add exactly one new AC: `003-toward-zero-boundary` (the Calculator User halves -1, result 0).
-- Leave `001-even` and `002-odd` untouched, word for word.
-
-Preserve all Story fields unchanged: `id`, `feature`, `title`, `as_a`, `i_want`, `so_that`, `status`.
+Preserve all other Story fields (`id`, `feature`, `title`, `as_a`, `i_want`, `so_that`, `status`) exactly as they are. Do not merge, reword, or delete any existing acceptance criterion.
 
 ## Original Acceptance Criteria
 1. 001-even: The calculator must return -3 when the Calculator User halves -6. [has steps]
@@ -110,68 +103,95 @@ Preserve all Story fields unchanged: `id`, `feature`, `title`, `as_a`, `i_want`,
 
 ## Required Changes
 
-Change ONLY what the failed check requires. Neither existing criterion is faulted by the check, so both are reproduced exactly as they stand — same description, same steps, word for word. Do not reword, re-order, merge, or "improve" them.
+The failed check (`us-refine/acceptance_criteria`) is a **count** failure only: the story has 2 ACs and the Definition of Ready requires 3 to 7. Neither `001-even` nor `002-odd` is faulted by the check, so both are reproduced word for word, including their existing Given/When/Then steps. The only change is the addition of one new AC.
 
-### Change #1: 003-toward-zero-boundary (NEW AC)
-**Before:** (does not exist)
-**Issue:** The story has only 2 ACs, below the required minimum of 3. `./docs/product/product.yaml` declares "Negative inputs -6, -7 and -1 produce -3, -3 and 0 respectively", but the rounding-toward-zero boundary at -1 — the only case where halving a negative integer yields 0 rather than a negative integer — has no AC. Adding it brings the count to 3 and covers the one declared-but-unspecified behaviour.
+Per the Product Owner's clarification, add **only** `003-boundary` covering the rounding-toward-zero boundary case -1 → 0. This value is already declared behaviour in `docs/product/product.yaml` ("Negative inputs -6, -7 and -1 produce -3, -3 and 0 respectively"), so no new behaviour is invented. Missing and non-integer inputs stay out of this story — they belong to the separate `calculator-input` Story.
+
+### Change #1: 001-even
+**Before:** The calculator must return -3 when the Calculator User halves -6.
+**Issue:** None. Not faulted by the failed check.
+**After (description):** The calculator must return -3 when the Calculator User halves -6. *(unchanged)*
+**After (steps):** unchanged, byte for byte:
+```yaml
+- given:
+    - the number is "-6"
+- when:
+    - the Calculator User halves the number
+- then:
+    - the result is "-3"
+```
+
+### Change #2: 002-odd
+**Before:** The calculator must return -3 when the Calculator User halves -7.
+**Issue:** None. Not faulted by the failed check.
+**After (description):** The calculator must return -3 when the Calculator User halves -7. *(unchanged)*
+**After (steps):** unchanged, byte for byte:
+```yaml
+- given:
+    - the number is "-7"
+- when:
+    - the Calculator User halves the number
+- then:
+    - the result is "-3"
+```
+
+### Change #3: 003-boundary (NEW)
+**Before:** (did not exist)
+**Issue:** The declared behaviour "-1 produces 0" — the rounding-toward-zero boundary, where the magnitude is smaller than the divisor — has no AC covering it, and the story holds only 2 ACs against a required minimum of 3.
 **After (description):** The calculator must return 0 when the Calculator User halves -1.
 **After (steps):**
 ```yaml
 - given:
-    - "the number is \"-1\""
+    - the number is "-1"
 - when:
-    - "the Calculator User halves the number"
+    - the Calculator User halves the number
 - then:
-    - "the result is \"0\""
+    - the result is "0"
 ```
 
-Notes on the new AC:
-- It reuses the existing step wording shape ("the number is \"<n>\"", "the Calculator User halves the number", "the result is \"<n>\""), so the steps stay inside the declared given/when/then concepts in `./docs/product/product.yaml` (number supplied / halving / result).
-- It uses the exact role "Calculator User" from the Story's `as_a` clause in the When step.
-- It contains none of the forbidden qualifiers (properly, correctly, appropriate, fast).
-- No failure-mode AC is added for missing or non-integer input — those belong to the separate `calculator-input` Story.
-- `004-odd-larger-magnitude` (halve -5 → -2) from the suggested template is deliberately NOT added: the Product Owner chose to add only the boundary AC.
+Each step of the new AC is an instance of one concept of its block, within the variations its closed `means` states:
+- `given` → concept **number supplied** ("The calculator is supplied a stated, already validated integer.") — -1 is a stated, already validated integer.
+- `when` → concept **halving** ("The Calculator User runs the calculator's halve command once, with the supplied integer.") — one halve run, with the supplied integer.
+- `then` → concept **result** ("The halve command succeeds and prints exactly a stated integer, the half rounded toward zero.") — prints exactly `0`, the half of -1 rounded toward zero.
+
+No forbidden qualifier (`properly`, `correctly`, `appropriate`, `fast`) appears in any step or description, and no step needs a variation outside the stated concepts.
+
+Resulting count — **Total ACs: 3** — which is inside the required 3 to 7 range.
 
 ## Complete Fixed Acceptance Criteria
 
-This block replaces the whole AC list. `001-even` and `002-odd` appear exactly as before; `003-toward-zero-boundary` is appended.
+Replace the whole `acceptance_criteria:` list with the block below (field name is `id`, matching the existing story file; indentation shown matches the file's two-space list style):
 
 ```yaml
-- ac_id: 001-even
-  description: "The calculator must return -3 when the Calculator User halves -6."
-  steps:
+  acceptance_criteria:
+  - id: 001-even
+    description: The calculator must return -3 when the Calculator User halves -6.
+    steps:
     - given:
-        - "the number is \"-6\""
+      - the number is "-6"
     - when:
-        - "the Calculator User halves the number"
+      - the Calculator User halves the number
     - then:
-        - "the result is \"-3\""
-
-- ac_id: 002-odd
-  description: "The calculator must return -3 when the Calculator User halves -7."
-  steps:
+      - the result is "-3"
+  - id: 002-odd
+    description: The calculator must return -3 when the Calculator User halves -7.
+    steps:
     - given:
-        - "the number is \"-7\""
+      - the number is "-7"
     - when:
-        - "the Calculator User halves the number"
+      - the Calculator User halves the number
     - then:
-        - "the result is \"-3\""
-
-- ac_id: 003-toward-zero-boundary
-  description: "The calculator must return 0 when the Calculator User halves -1."
-  steps:
+      - the result is "-3"
+  - id: 003-boundary
+    description: The calculator must return 0 when the Calculator User halves -1.
+    steps:
     - given:
-        - "the number is \"-1\""
+      - the number is "-1"
     - when:
-        - "the Calculator User halves the number"
+      - the Calculator User halves the number
     - then:
-        - "the result is \"0\""
+      - the result is "0"
 ```
-
-After applying: Total ACs: 3 — inside the required 3-7 range.
-
-=== FILE_END: tmp/{{RUN_DIR}}/01-halve-negative-fix-prompts.md ===
 
 ---
 

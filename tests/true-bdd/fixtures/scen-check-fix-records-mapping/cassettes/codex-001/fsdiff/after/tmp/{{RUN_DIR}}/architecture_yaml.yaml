@@ -24,8 +24,8 @@ architecture:
         Post the request to /mcp and keep the response for the steps after.
     - term: reply
       technical: >-
-        The JSON-RPC response body returned by POST /mcp, whose result
-        carries the answer text as a string.
+        The JSON-RPC response body returned by the POST to /mcp, whose
+        result field holds the answer text.
       observed_by: >-
-        Read the result text out of the response the send step kept, and
-        compare it with the stated text.
+        Read the response the When step kept and compare its answer text
+        with the stated text.

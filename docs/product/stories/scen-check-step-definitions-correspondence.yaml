@@ -1,15 +1,11 @@
-# Story `scen-check-step-definitions`: `scen check` holding the catalogue and
-# the step definitions one to one.
+# Story `scen-check-step-definitions`: `scen check` holding each step to
+# the one step definition recording its concept.
 #
-# The `step-definitions` closure check of the scen-check checklist: across the
-# Scenarios a Story claims that share one suite, each catalogue template their
-# steps match binds to one step definition, and each step definition is
-# reached by one template. The walk and the exit code are the Story
-# `scen-check`; the other closure checks are scen-check-phrases,
-# scen-check-terms and scen-check-mappings.
-#
-# Criteria 003 to 005 run on a host declaring concepts, where every
-# Scenario is checked, a Story claiming it or not (#259).
+# The `step-definitions` closure check of the scen-check checklist: every
+# step of every Scenario, a Story claiming it or not, binds one step
+# definition of its suite, which records a declared concept of the step's
+# block. The walk and the exit code are the Story `scen-check`; the other
+# closure checks are scen-check-terms and scen-check-mappings.
 #
 # Each criterion's id is the second half of its Scenario's Registry key,
 # `scen-check-step-definitions-<id>` (ADR 0014), and its steps are that
@@ -18,41 +14,12 @@
 story:
     id: scen-check-step-definitions
     feature: scen-check
-    title: Hold the catalogue and the step definitions one to one with scen check
+    title: Hold each step to one step definition recording its concept with scen check
     as_a: Quality Engineer
-    i_want: scen check to verify, with no AI turn, that across the Scenarios a Story claims that share one suite each catalogue template binds to one step definition and each step definition is reached by one template, naming every template, step and definition that breaks it and the file and line where that definition is written; on a host declaring concepts, that every step of every Scenario binds one step definition, which records a declared concept of the step's block
-    so_that: the catalogue and the step definitions never drift apart, and each step definition follows from the one catalogue entry whose steps it binds
+    i_want: scen check to verify, with no AI turn, that every step of every Scenario binds one step definition, which records a declared concept of the step's block, naming every step and definition that breaks it and the file and line where that definition is written
+    so_that: the concepts and the step definitions never drift apart, and each step definition follows from the one concept whose steps it binds
     status: IMPLEMENTED
     acceptance_criteria:
-        - id: 001-template-binds-twice-fails
-          description: A catalogue template whose steps, across every Scenario a Story claims that shares one suite, bind to two different step definitions must fail each of those Scenarios using it, naming the template and both definitions with where each is written, while a Scenario no Story claims neither counts nor is checked
-          steps:
-            - given:
-                - the "scen-check-template-binds-twice" project tree
-            - when:
-                - the Quality Engineer runs "scen check"
-            - then:
-                - the command exits with code 1
-                - 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: template \\"the service answers \\"\{reply\}\\"\\" binds to 2 step definitions in tests/mcp/steps: \^the service answers \\"pong\\"\$ \(mcp_steps\.go:24\); \^the service answers \\"hello\\"\$ \(mcp_steps\.go:25\)\]"'
-                - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=1 answer=fail context="\[E2E-002: template \\"the service answers \\"\{reply\}\\"\\" binds to 2 step definitions in tests/mcp/steps: \^the service answers \\"pong\\"\$ \(mcp_steps\.go:24\); \^the service answers \\"hello\\"\$ \(mcp_steps\.go:25\)\]"'
-                - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-003 promptIndex=1 answer=pass context="\[E2E-003: not checked: no Story claims this Scenario yet\]"'
-                - and: stdout matches Validation failed
-                - and: the engine dispatched no AI turns
-                - and: no file outside "tmp" changed
-        - id: 002-definition-reached-twice-fails
-          description: A step definition that the steps of two catalogue templates bind, across the Scenarios a Story claims that share one suite, must fail each of those Scenarios, naming the definition with where it is written and both templates
-          steps:
-            - given:
-                - the "scen-check-definition-reached-twice" project tree
-            - when:
-                - the Quality Engineer runs "scen check"
-            - then:
-                - the command exits with code 1
-                - 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: step definition \^the service \(\?:answers\|replies\) \\"\(\[\^\\"\]\+\)\\"\$ \(mcp_steps\.go:24\) is reached by 2 templates: \\"the service answers \\"\{reply\}\\"\\"; \\"the service replies \\"\{reply\}\\"\\"\]"'
-                - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=1 answer=fail context="\[E2E-002: step definition \^the service \(\?:answers\|replies\) \\"\(\[\^\\"\]\+\)\\"\$ \(mcp_steps\.go:24\) is reached by 2 templates: \\"the service answers \\"\{reply\}\\"\\"; \\"the service replies \\"\{reply\}\\"\\"\]"'
-                - and: stdout matches Validation failed
-                - and: the engine dispatched no AI turns
-                - and: no file outside "tmp" changed
         - id: 003-step-binds-twice-fails
           description: A step of a Scenario a Story claims that two step definitions of its suite bind must fail that Scenario, naming the step and both definitions with where each is written, because which one runs depends on the order they were registered in
           steps:
