@@ -10,32 +10,27 @@ a document. For document edits return the requested confirmation markers.
 
 The Product Owner chose apply at the menu for Story host.
 Approved fix:
-PROPOSED REPAIR (not applied — awaiting explicit menu decision)
+REPAIR PROPOSAL — Item: host (Story "Halve a number"), AC-1 when step
 
-Item: host (Story) — owner: Product Owner
-Kind of repair: rewritten step applied to the Story.
-Concept changes: none. Do not modify docs/product/product.yaml.
+Failed judgement: AC-1 when step "square six" — no `when` concept reaches threshold 9 (scores: {"halve": 2}).
 
-RATIONALE
-The failed judgement is AC-1's `when` step "square six" (score {"halve": 1}, threshold 9). The step is of the right kind (an action), but it names squaring. The product description states: "The calculator offers one operation, Halve, which displays half the entered number. It has no Square operation." Every other part of the Story already says halving — title "Halve a number", i_want "to halve a number", so_that "I can read its half", AC-1 description "The number must be halved", and the then step "three is displayed" (three is half of six, not the square of six). The `when` step is therefore a wording slip in the Item, not a gap in the concept set.
+Diagnosis: the step is the only part of the Story that mentions squaring. Every other part of the Item describes halving — title "Halve a number", i_want "to halve a number", so_that "I can read its half", AC-1 description "The number must be halved" — and the then step "three is displayed" is half of the given "six", not its square (36). The product description is closed on this point: "The calculator offers one operation, Halve, which displays half the entered number. It has no Square operation." So "square" is a wording slip in the step, not a new item or a new kind of use. No wider concept and no new concept is warranted: the `when` concept "halve" already covers this action exactly, and widening it with a Square variation would contradict the product's Public interface.
 
-No wider concept and no new concept is warranted:
-- A new variation would widen "halve" to cover squaring, which contradicts the product description (no Square operation).
-- A new `when` concept for squaring would introduce an operation the product does not offer.
-So the smallest correct repair is to restate the step as the halve action the rest of the Story already asserts.
+Repair kind: rewrite of the step, applied to the Item only (Product Owner owns Story wording). No change to docs/product/product.yaml — "number ready", "halve" and "number result" stay exactly as they are.
 
-EXACT CHANGE — docs/product/product.yaml
-No change.
+Owner to decide: Product Owner.
 
-EXACT CHANGE — Item: host, AC-1, `when` step
-Replace this one line:
+EXACT CHANGE — Item: host, acceptance_criteria AC-1, steps, when block
 
--        - when:
--            - square six
-+        - when:
-+            - halve six
+Before:
+        - when:
+            - square six
 
-RESULTING STORY AFTER APPLY (unaffected fields and steps preserved verbatim)
+After:
+        - when:
+            - halve six
+
+Resulting Story after apply (unaffected parts preserved verbatim):
 
 id: host
 title: Halve a number
@@ -54,19 +49,25 @@ acceptance_criteria:
         - then:
             - three is displayed
 
-EXPECTED EFFECT ON LINKING
-- AC-1 given "six is entered" — unchanged, stays linked to "number ready" (score 10).
-- AC-1 when "halve six" — becomes a plain instance of "halve" ("Halve the entered number once"): an action step that halves the entered number once, expected to clear the threshold of 9.
-- AC-1 then "three is displayed" — unchanged, stays linked to "number result" (score 10).
+Expected effect: AC-1 when step "halve six" links to `when` concept "halve" ("Halve the entered number once."), a plain instance of that concept. The given step "six is entered" keeps its link to "number ready" and the then step "three is displayed" keeps its link to "number result"; both are untouched by this change.
+
+Files that would change on apply: the Item (Story host) only. docs/product/product.yaml: unchanged.
+
+Nothing has been applied. Awaiting an explicit menu decision.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
 
-If the approved fix changes a concept, edit only that product working copy;
-return applied: true, target and summary inside the markers below.
-If it rewrites a step, return the COMPLETE updated Story body inside those
-markers, preserving every other field and criterion. Do not edit concepts
-for a step rewrite. Current Story:
+If the approved fix changes a concept, edit only that product working copy
+and return this confirmation inside these markers:
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
+applied: true
+target: "product"
+summary: "<approved concept repair>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
+If it rewrites a step, return instead the COMPLETE updated Story body inside
+those markers, preserving every other field and criterion. Do not edit
+concepts for a step rewrite. Current Story:
 id: host
 title: Halve a number
 as_a: Product Owner
@@ -84,6 +85,3 @@ acceptance_criteria:
         - then:
             - three is displayed
 
-=== FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
-<confirmation YAML or complete Story body YAML>
-=== FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===

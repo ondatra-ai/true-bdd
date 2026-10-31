@@ -10,67 +10,73 @@ a document. For document edits return the requested confirmation markers.
 
 The Product Owner chose apply at the menu for Story host.
 Approved fix:
-PROPOSED REPAIR (not applied — awaiting an explicit menu decision)
+REPAIR PROPOSAL — Item `host`, AC-1 `when` step "halve twice"
 
-Failed judgement: Item `host`, AC-1 `when` step "halve twice" — no `when` concept reaches the threshold (best: 'halve', score 7, threshold 9).
+Owner of this change: Product Owner (concept prose in the product document).
+No binding change is needed, so the System Architect is not involved.
 
-Diagnosis: the Public interface item (the Halve action) and the kind of use (`when`) already exist as the concept 'halve'. "halve twice" is that same action repeated — a variation the concept's closed prose does not state, while the product summary explicitly supports one or two presses. Per the repair policy this calls for a WIDER CONCEPT (a new variation added to the existing concept of that item and use), not a step rewrite and not a new concept.
+WHY A WIDENING (not a new concept, not a Story rewrite)
+The step "halve twice" is already a right-kind `when` action on the existing
+Public interface item Halve, and a `when` concept for that item and that kind of
+use already exists ("halve"). It failed only because that concept's prose is
+closed at a single halving ("Halve the entered number once."), so a second press
+falls outside its stated meaning. The product description already states the
+supported range — "exactly one or two Halve presses per request: one displays
+half the entered number; two displays its quarter. Three or more presses are not
+supported." — so the concept prose is narrower than the product it describes.
+The repair is therefore to add the second-press variation to the existing
+concept's closed prose. The Story needs no rewrite: "halve twice" is the correct
+wording for the intended behaviour.
 
-Owner: Product Owner (concept wording).
-Scope: `docs/product/product.yaml` only. The Story `host` is NOT changed — all three steps, including "halve twice", stay exactly as written.
+EXACT CHANGE — one file, one field
 
---- EXACT CHANGE: docs/product/product.yaml ---
+File: ./docs/product/product.yaml
+Path: concepts.when[0] (concept: "halve"), field `means`
 
-In `concepts.when`, replace the 'halve' concept's `means` prose.
-
-Before (lines 16-22):
-    "when": [
+BEFORE
       {
         "concept": "halve",
         "means": "Halve the entered number once.",
         "terms": []
       }
-    ],
 
-After:
-    "when": [
+AFTER
       {
         "concept": "halve",
-        "means": "Halve the entered number. Variations: halve once, giving half the entered number; halve twice, halving the result of the first halving, giving a quarter of the entered number. Halving three or more times is not part of this concept.",
+        "means": "Halve the entered number, in one request either once or twice: once halved displays half the entered number, twice halved displays its quarter. Halving three or more times is not supported.",
         "terms": []
       }
-    ],
 
-Unified diff:
-@@ docs/product/product.yaml @@
-     "when": [
-       {
-         "concept": "halve",
--        "means": "Halve the entered number once.",
-+        "means": "Halve the entered number. Variations: halve once, giving half the entered number; halve twice, halving the result of the first halving, giving a quarter of the entered number. Halving three or more times is not part of this concept.",
-         "terms": []
-       }
-     ],
+NOTHING ELSE CHANGES
+- `concepts.given` ("number ready") unchanged — AC-1's given step passed (score 10).
+- `concepts.then` ("number result") unchanged — AC-1's then step passed (score 10).
+- `concepts.when[0].concept` and `.terms` unchanged; no concept added or removed.
+- `glossary`, `roles` and `description.summary` unchanged.
+- Story `host` unchanged: id, title, as_a, i_want, so_that, status and all of
+  AC-1's given/when/then step wording stay exactly as they are.
 
---- UNAFFECTED (no change proposed) ---
-- `concepts.given` → 'number ready': unchanged (AC-1 given step links at 10).
-- `concepts.then` → 'number result': unchanged (AC-1 then step links at 10).
-- `glossary`, `roles`, `description.summary`: unchanged.
-- Story `host`: unchanged — id, title, as_a, i_want, so_that, status DRAFT, and all of AC-1's given/when/then steps preserved verbatim.
+EXPECTED EFFECT
+AC-1's when step "halve twice" links to the widened `when` concept "halve",
+because the prose now states the two-halving variation explicitly and still
+closes the meaning against three or more halvings, matching the product
+description.
 
---- EFFECT ---
-The `when` step "halve twice" becomes a plain instance of the widened 'halve' concept: one and two halvings are both stated in the closed prose and three or more is explicitly excluded, matching the product summary. The failed judgement for Item `host` is expected to pass with no change to the Story wording.
-
-Apply only on an explicit menu decision.
+DO NOT APPLY YET — present this at the menu and wait for an explicit apply
+decision from the Product Owner.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
 
-If the approved fix changes a concept, edit only that product working copy;
-return applied: true, target and summary inside the markers below.
-If it rewrites a step, return the COMPLETE updated Story body inside those
-markers, preserving every other field and criterion. Do not edit concepts
-for a step rewrite. Current Story:
+If the approved fix changes a concept, edit only that product working copy
+and return this confirmation inside these markers:
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
+applied: true
+target: "product"
+summary: "<approved concept repair>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
+If it rewrites a step, return instead the COMPLETE updated Story body inside
+those markers, preserving every other field and criterion. Do not edit
+concepts for a step rewrite. Current Story:
 id: host
 title: Halve a number twice
 as_a: Product Owner
@@ -88,6 +94,3 @@ acceptance_criteria:
         - then:
             - one and a half is displayed
 
-=== FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
-<confirmation YAML or complete Story body YAML>
-=== FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===

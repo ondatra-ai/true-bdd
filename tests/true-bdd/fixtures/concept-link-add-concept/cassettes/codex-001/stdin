@@ -10,18 +10,20 @@ a document. For document edits return the requested confirmation markers.
 
 The Product Owner chose apply at the menu for Story host.
 Approved fix:
-PROPOSED REPAIR (not applied — awaiting an explicit menu decision)
+Repair proposal for Item `host`, AC-1 when step "square six" — NOT APPLIED, awaiting an explicit menu decision.
 
-Item: host — AC-1 when step "square six"
-Owner of this repair: Product Owner (concept addition; no binding change, so the System Architect is not involved)
+Why this repair:
+- The given step ("six is entered" -> `number ready`) and the then step ("thirty-six is displayed" -> `number result`) already link above threshold; leave both untouched.
+- The when step "square six" is the right kind of use (an action) but no `when` concept reaches the threshold. `halve` cannot be widened with a new variation: the product description states the calculator offers separate Halve and Square controls, and `halve` is closed to "Halve the entered number once." Squaring is a different Public interface item, not a variation of halving.
+- Rewriting the step is also wrong: "square six" correctly names the Square control the description defines; the gap is a missing concept, not wrong wording.
+- Therefore: add one new `when` concept for the new item/use. The Story/Scenario text stays exactly as written.
 
-WHY THIS REPAIR
-The when step "square six" is of the correct kind (a when-step in the when block) but reaches no concept: the only when concept, "halve", is closed to "Halve the entered number once." The product description states the calculator offers separate Halve and Square controls, and that Square multiplies the entered number by itself. Squaring is therefore a different Public interface item and a different use, not a variation of halving. Per the repair policy, a new variation may only widen an existing concept of the same item and use; a new item or use requires a new concept. So the repair is a new when concept, not a widened "halve" and not a rewrite of the Story step ("square six" already matches the described Square control and the Story's intent, so rewriting it would misstate the product).
+Change 1 of 1 — product document only (concepts, owned by the Product Owner)
 
-EXACT CHANGE — one file: docs/product/product.yaml
-Add one concept to concepts.when, after the existing "halve" entry. Nothing else changes: "halve", "number ready", "number result", the glossary, the description and the roles are preserved verbatim, and the Story "host" is left exactly as written.
+File: ./docs/product/product.yaml
+Location: `concepts.when`, appended after the existing `halve` entry.
 
-Before (concepts.when):
+Before:
 
     "when": [
       {
@@ -31,7 +33,7 @@ Before (concepts.when):
       }
     ],
 
-After (concepts.when):
+After:
 
     "when": [
       {
@@ -46,23 +48,26 @@ After (concepts.when):
       }
     ],
 
-EXPECTED RESULT AFTER APPLY
-- AC-1 when step "square six" links to the new concept "square" (the step invokes the Square control on the entered number; six is the argument and does not change the concept).
-- AC-1 given step "six is entered" keeps its link to "number ready" — unchanged.
-- AC-1 then step "thirty-six is displayed" keeps its link to "number result" — unchanged.
-- Item host: fail -> pass, with no edit to the Story text.
+No other change:
+- `concepts.given` (`number ready`), `concepts.then` (`number result`), `roles`, `glossary` and `description` are unchanged.
+- `halve` keeps its exact wording and gains no variation.
+- Item `host` is unchanged: title, as_a, i_want, so_that, status and all three AC-1 steps ("six is entered", "square six", "thirty-six is displayed") stay verbatim.
 
-APPLY DECISION REQUIRED
-Nothing has been changed. Apply this repair only on an explicit menu decision by the Product Owner.
+Expected effect after apply: AC-1's when step "square six" links to the new `when` concept `square` as a plain instance (multiplying the entered number by itself once), clearing the failed judgement for Item `host`.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
 
-If the approved fix changes a concept, edit only that product working copy;
-return applied: true, target and summary inside the markers below.
-If it rewrites a step, return the COMPLETE updated Story body inside those
-markers, preserving every other field and criterion. Do not edit concepts
-for a step rewrite. Current Story:
+If the approved fix changes a concept, edit only that product working copy
+and return this confirmation inside these markers:
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
+applied: true
+target: "product"
+summary: "<approved concept repair>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
+If it rewrites a step, return instead the COMPLETE updated Story body inside
+those markers, preserving every other field and criterion. Do not edit
+concepts for a step rewrite. Current Story:
 id: host
 title: Square a number
 as_a: Product Owner
@@ -80,6 +85,3 @@ acceptance_criteria:
         - then:
             - thirty-six is displayed
 
-=== FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
-<confirmation YAML or complete Story body YAML>
-=== FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===

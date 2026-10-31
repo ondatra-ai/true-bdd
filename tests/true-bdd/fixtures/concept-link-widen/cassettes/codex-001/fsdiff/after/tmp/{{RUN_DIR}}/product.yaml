@@ -16,7 +16,7 @@
     "when": [
       {
         "concept": "halve",
-        "means": "Halve the entered number. Variations: halve once, giving half the entered number; halve twice, halving the result of the first halving, giving a quarter of the entered number. Halving three or more times is not part of this concept.",
+        "means": "Halve the entered number, in one request either once or twice: once halved displays half the entered number, twice halved displays its quarter. Halving three or more times is not supported.",
         "terms": []
       }
     ],

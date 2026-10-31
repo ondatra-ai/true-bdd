@@ -19,8 +19,8 @@ concepts:
       means: The calculator is supplied a stated, already validated integer.
       terms: []
   when:
-    - concept: halve requested
-      means: The Calculator User runs the halve command on the supplied number.
+    - concept: number halved
+      means: The Calculator User halves the number supplied to the calculator.
       terms: []
   then:
     - concept: result

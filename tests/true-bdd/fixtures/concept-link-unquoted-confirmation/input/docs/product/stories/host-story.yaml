@@ -1,0 +1,17 @@
+story:
+    id: host
+    title: Square a number
+    as_a: Product Owner
+    i_want: to square a number
+    so_that: I can read its square
+    status: DRAFT
+    acceptance_criteria:
+        - id: AC-1
+          description: The number must be squared
+          steps:
+            - given:
+                - six is entered
+            - when:
+                - square six
+            - then:
+                - thirty-six is displayed

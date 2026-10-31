@@ -25,12 +25,12 @@
     "{\n  \"item\": \"host\",\n  \"product\": \"{\\n  \\\"roles\\\": [\\n    {\\n      \\\"name\\\": \\\"Product Owner\\\",\\n      \\\"description\\\": \\\"Owns meanings.\\\"\\n    }\\n  ],\\n  \\\"concepts\\\": {\\n    \\\"given\\\": [\\n      {\\n        \\\"concept\\\": \\\"number ready\\\",\\n        \\\"means\\\": \\\"A number is entered before the action.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ],\\n    \\\"when\\\": [\\n      {\\n        \\\"concept\\\": \\\"halve\\\",\\n        \\\"means\\\": \\\"Halve the entered number once.\\\",\\n        \\\"terms\\\": []\\n      },\\n      {\\n        \\\"concept\\\": \\\"square\\\",\\n        \\\"means\\\": \\\"Multiply the entered number by itself once.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ],\\n    \\\"then\\\": [\\n      {\\n        \\\"concept\\\": \\\"number result\\\",\\n        \\\"means\\\": \\\"Compare the displayed number with an expected value.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ]\\n  },\\n  \\\"glossary\\\": [],\\n  \\\"description\\\": {\\n    \\\"summary\\\": \\\"The calculator offers separate Halve and Square controls. Halve divides the entered number by two; Square multiplies the entered number by itself.\\\"\\n  }\\n}\\n\",\n  \"concepts\": {\n    \"given:number ready\": {\n      \"Name\": \"number ready\",\n      \"Means\": \"A number is entered before the action.\",\n      \"Terms\": [],\n      \"Block\": \"given\"\n    },\n    \"then:number result\": {\n      \"Name\": \"number result\",\n      \"Means\": \"Compare the displayed number with an expected value.\",\n      \"Terms\": [],\n      \"Block\": \"then\"\n    },\n    \"when:square\": {\n      \"Name\": \"square\",\n      \"Means\": \"Multiply the entered number by itself once.\",\n      \"Terms\": [],\n      \"Block\": \"when\"\n    }\n  }\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 10194,
+  "duration_ms": 9967,
   "request_hash": "sha256:afa7ad3363db7e4ad0a1e8dfade71de3c16a62cf6f6b9afb20629482626ecf9a",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-10-29T23:03:12Z"
+  "recorded_at": "2026-10-31T15:02:28Z"
 }

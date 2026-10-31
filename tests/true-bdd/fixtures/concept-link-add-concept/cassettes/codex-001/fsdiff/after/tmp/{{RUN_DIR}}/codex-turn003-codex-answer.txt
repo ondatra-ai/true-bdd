@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
 applied: true
-target: tmp/{{RUN_DIR}}/product.yaml
-summary: Added square after halve in concepts.when, meaning "Multiply the entered number by itself once." with empty terms. All other content and the Story are unchanged.
+target: "product"
+summary: "Appended when concept square after halve, meaning Multiply the entered number by itself once., with empty terms. All existing content preserved."
 === FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
