@@ -13,7 +13,7 @@
           "docs": [
             "product"
           ],
-          "F": "Offer the Product Owner a rewritten step applied to the Story or\nScenario, a wider concept when its Public interface item and kind of\nuse already exist, or else a new concept for the new item or use.\nConcepts have concept, means and terms, with variations in closed prose.\nApply concept changes only to the product document and a rewrite only\nto the Item. Show the exact change at the menu and wait for apply.\n"
+          "F": "Offer the Product Owner a rewritten step applied to the Story or\nScenario, a wider concept when its Public interface item and kind of\nuse already exist, or else a new concept for the new item or use.\nWiden a concept by rewriting its means to state every variation it\nadmits, in closed prose; a concept holds only concept, means and terms.\nApply concept changes only to the product document and a rewrite only\nto the Item. Show the exact change at the menu and wait for apply.\n"
         },
         {
           "Q": "Judge every supplied linked concept's binding for this Scenario's service.\nGiven its closed means, the binding's does, its references and the\ncomplete declared Public interface, is it unambiguous enough for an\nLLM to write a step definition from? A Given puts the state in place;\na When calls; a Then observes and compares. All admitted variations\nneed explicit instructions, inputs and an objective observable result.\nAn intent binding must say the intent an llm: step performs through\nthe UI, with no guessed behaviour or hidden implementation dependency.\nAnswer every binding by its supplied key with unambiguous (boolean)\nand a reason. Never infer absent instructions or silently pass an\nambiguous binding. Change nothing.\n",

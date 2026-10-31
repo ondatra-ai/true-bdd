@@ -96,7 +96,7 @@ architecture:
         FailedCheck.ActualAnswer: &failedcheck-actualanswer >-
           Model JSON answer is copied unchanged; YAML scalar answer is TrimSpace, YAML mapping or sequence is yaml.Marshal with trailing newline bytes removed. Status classification alone lowercases and trims. Built-in or runtime failures supply literal fail.
         FailedCheck.Context: &failedcheck-context >-
-          Failed result observation strings in original list order, without trimming or joining; built-in checks supply their finding lines. Template prefixes each with "- "; an empty list produces no findings.
+          Failed result observation strings in original list order, without trimming or joining; built-in checks supply their finding lines. After a fix whose commit was refused (runner.ErrFixNotTaken), the same subject and Prompt's next failed result gains one last line, that refusal's error text unchanged; a passing result drops it. Template prefixes each with "- "; an empty list produces no findings.
         FailedCheck.FixPrompt: &failedcheck-fixprompt >-
           Failed model result fix_prompt is TrimSpace after JSON/YAML decoding; pass discards it. Built-in and structured concept failures use TrimSpace of F; the template inserts it unchanged, even if empty.
         FailedCheck.Question: &failedcheck-question >-
@@ -1288,7 +1288,8 @@ architecture:
       technical: >-
         The product loader decodes concepts given/when/then lists of concept,
         means and terms, preserving block and declaration order. It refuses names
-        repeated within a block and malformed entries. At command startup a
+        repeated within a block, malformed entries and an entry with any other
+        key, naming block, concept and key, before decoding drops it. At command startup a
         retired catalogue key, even null, is refused naming concepts as its
         replacement, as is architecture.phrases, naming architecture.concepts.
         Concepts declare one Public interface item

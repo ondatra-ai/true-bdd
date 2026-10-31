@@ -13,7 +13,7 @@
           "docs": [
             "product"
           ],
-          "F": "Offer the Product Owner a rewritten step applied to the Story or\nScenario, a wider concept when its Public interface item and kind of\nuse already exist, or else a new concept for the new item or use.\nConcepts have concept, means and terms, with variations in closed prose.\nApply concept changes only to the product document and a rewrite only\nto the Item. Show the exact change at the menu and wait for apply.\n"
+          "F": "Offer the Product Owner a rewritten step applied to the Story or\nScenario, a wider concept when its Public interface item and kind of\nuse already exist, or else a new concept for the new item or use.\nWiden a concept by rewriting its means to state every variation it\nadmits, in closed prose; a concept holds only concept, means and terms.\nApply concept changes only to the product document and a rewrite only\nto the Item. Show the exact change at the menu and wait for apply.\n"
         }
       ]
     },

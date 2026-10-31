@@ -16,18 +16,22 @@ description:
     technology stack. A Host project declares the concepts its steps state,
     which replaced the retired Catalogue's templates (ADR-0034). Concepts are
     grouped under given, when and then, with concept,
-    means and terms; names are unique within a block. A concept is one Public
+    means and terms and no other key; names are unique within a block. A concept is one Public
     interface item and kind of use per block. The item is what the use is about,
     reached through one or several declared references. What a step definition
     does, as the step wording fixes it, decides the concept, never an argument's
     target. A Given states a state. The closed means names the item, use and
     every admitted variation in prose without slots or brackets, relying only
-    on declared terms and plain English. A new variation widens that concept;
-    only a new item or kind of use needs a new concept.
+    on declared terms and plain English. A new variation widens that concept
+    by rewriting its means; only a new item or kind of use needs a new concept.
     A product document still declaring the retired catalogue key, or an
     architecture still declaring architecture.phrases, even empty or null, is
     refused at startup, naming concepts or architecture.concepts as its
-    replacement. The declared-terms and term-mappings built-in checks hold every
+    replacement. A concept carrying any other key is refused wherever concepts
+    are read, startup included, naming its block, concept and key. A fix that
+    leaves its edited copy of a document unreadable as that document writes no
+    document: the fix did not take, its copies are reset, and the refusal becomes a
+    finding of that Prompt's next failed result, so the bounded fix loop tries again. The declared-terms and term-mappings built-in checks hold every
     concept's terms to the glossary and Word mapping, and concept-bindings holds
     all Concept bindings to declared concepts and Public interface references,
     without AI and regardless of Story claims; a product declaring no concepts

@@ -10,59 +10,56 @@ a document. For document edits return the requested confirmation markers.
 
 The Product Owner chose apply at the menu for Story host.
 Approved fix:
-REPAIR PROPOSAL — Item `host`, AC-1 `when` step "halve twice"
+# Proposed repair — Item `host`, AC-1 when step "halve twice"
 
-Owner of this change: Product Owner (concept prose in the product document).
-No binding change is needed, so the System Architect is not involved.
+## Decision
 
-WHY A WIDENING (not a new concept, not a Story rewrite)
-The step "halve twice" is already a right-kind `when` action on the existing
-Public interface item Halve, and a `when` concept for that item and that kind of
-use already exists ("halve"). It failed only because that concept's prose is
-closed at a single halving ("Halve the entered number once."), so a second press
-falls outside its stated meaning. The product description already states the
-supported range — "exactly one or two Halve presses per request: one displays
-half the entered number; two displays its quarter. Three or more presses are not
-supported." — so the concept prose is narrower than the product it describes.
-The repair is therefore to add the second-press variation to the existing
-concept's closed prose. The Story needs no rewrite: "halve twice" is the correct
-wording for the intended behaviour.
+Widen the existing `when` concept **`halve`**. Its Public interface item (the Halve control) and kind of use (pressing it to halve the entered number) already exist, so no new concept is added and the Story is left untouched. The current means fixes the use at exactly one halving; the widened means states, in closed prose, every variation the concept admits — one halving or two — matching the product description's bound that three or more presses are not supported.
 
-EXACT CHANGE — one file, one field
+**Owner of this change:** Product Owner (concept means).
 
-File: ./docs/product/product.yaml
-Path: concepts.when[0] (concept: "halve"), field `means`
+## Exact change — `docs/product/product.yaml`
 
-BEFORE
+One field changes: `concepts.when[0].means` of the concept `halve`.
+
+### Before
+
+```json
+    "when": [
       {
         "concept": "halve",
         "means": "Halve the entered number once.",
         "terms": []
       }
+    ],
+```
 
-AFTER
+### After
+
+```json
+    "when": [
       {
         "concept": "halve",
-        "means": "Halve the entered number, in one request either once or twice: once halved displays half the entered number, twice halved displays its quarter. Halving three or more times is not supported.",
+        "means": "Halve the entered number, either once or twice in succession; halving it more than twice is not admitted.",
         "terms": []
       }
+    ],
+```
 
-NOTHING ELSE CHANGES
-- `concepts.given` ("number ready") unchanged — AC-1's given step passed (score 10).
-- `concepts.then` ("number result") unchanged — AC-1's then step passed (score 10).
-- `concepts.when[0].concept` and `.terms` unchanged; no concept added or removed.
-- `glossary`, `roles` and `description.summary` unchanged.
-- Story `host` unchanged: id, title, as_a, i_want, so_that, status and all of
-  AC-1's given/when/then step wording stay exactly as they are.
+## Unaffected, preserved as-is
 
-EXPECTED EFFECT
-AC-1's when step "halve twice" links to the widened `when` concept "halve",
-because the prose now states the two-halving variation explicitly and still
-closes the meaning against three or more halvings, matching the product
-description.
+- `given` concept `number ready` — unchanged (AC-1 given step links at 10).
+- `then` concept `number result` — unchanged (AC-1 then step links at 10).
+- Story `host` — no wording change; all three steps keep their current text.
+- `roles`, `glossary`, `description` — unchanged.
 
-DO NOT APPLY YET — present this at the menu and wait for an explicit apply
-decision from the Product Owner.
+## Expected effect
+
+AC-1 when step "halve twice" becomes a plain instance of the widened `halve` (the repeated application is now stated by the concept's prose rather than only by the Item description), so its score reaches the threshold of 9 and the judgement passes.
+
+## Status
+
+Not applied. Awaiting an explicit menu decision to apply.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

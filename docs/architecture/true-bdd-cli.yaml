@@ -251,6 +251,9 @@ extensions:
     fix-recorded:
       message: Fix recorded in the document
       format: INFO with document, after an applied fix is written to the product or the architecture document.
+    fix-not-committed:
+      message: Fix not committed
+      format: WARN with subjectID, promptIndex and reason, after an applied fix whose working copy did not read as its document; no document of that fix is written, and the same Prompt is asked again with the reason among its findings.
     file-created:
       message: Created
       format: INFO with path, for each file init writes.

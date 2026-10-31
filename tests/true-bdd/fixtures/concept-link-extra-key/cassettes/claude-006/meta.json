@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "binary": "claude",
+  "argv": [
+    "--setting-sources",
+    "",
+    "--strict-mcp-config",
+    "--safe-mode",
+    "--allowedTools",
+    "Read(**),Write(./tmp/**),Glob(**),Grep(**)",
+    "--disallowed-tools",
+    "Bash,Edit(**),MultiEdit(**),Agent,Task",
+    "--model",
+    "claude-opus-5",
+    "--system-prompt",
+    "Link every step of this Item to a product concept of its own block.\nGiven is a state before the behaviour, When an action or event,\nThen an observable outcome. A concept is one Public interface item\nand kind of use, as the wording fixes it; an argument's target\ndoes not change the concept. Read the product roles and glossary.\nScore EVERY concept of the step's block, from 0 to 10:\n10: a plain instance; 9: an instance in other words without doubt;\n7 or 8: related but partly outside its meaning, or another fits as well;\n1 to 6: not this concept; 0: unrelated.\nRead means as CLOSED: it admits only the variations its prose states,\nnever everything in the same area. An unstated variation scores at most 8.\nA step of the wrong kind for its block scores at most 4 for every\nconcept of that block. Name the other block's concept it is an instance\nof in other_block_concept, or null if none. For a right-kind step use null.\nGive a reason for the highest score, or why none fits.\njudge: clauses are unlinked: omit them from the answer.\nllm: steps link by their intent; strip the prefix when judging meaning.\nAnswer steps by their supplied keys, with every concept a required\nkey of scores, a reason and other_block_concept. Change nothing.\n\nAnswer only the JSON object described by the supplied schema. Change nothing.\n",
+    "--permission-mode",
+    "acceptEdits",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--json-schema",
+    "{\"additionalProperties\":false,\"properties\":{\"steps\":{\"additionalProperties\":false,\"properties\":{\"1\":{\"additionalProperties\":false,\"properties\":{\"other_block_concept\":{\"type\":[\"string\",\"null\"]},\"reason\":{\"minLength\":1,\"type\":\"string\"},\"scores\":{\"additionalProperties\":false,\"properties\":{\"installation\":{\"maximum\":10,\"minimum\":0,\"type\":\"integer\"}},\"required\":[\"installation\"],\"type\":\"object\"}},\"required\":[\"other_block_concept\",\"reason\",\"scores\"],\"type\":\"object\"},\"2\":{\"additionalProperties\":false,\"properties\":{\"other_block_concept\":{\"type\":[\"string\",\"null\"]},\"reason\":{\"minLength\":1,\"type\":\"string\"},\"scores\":{\"additionalProperties\":false,\"properties\":{\"doubling\":{\"maximum\":10,\"minimum\":0,\"type\":\"integer\"},\"halving\":{\"maximum\":10,\"minimum\":0,\"type\":\"integer\"}},\"required\":[\"doubling\",\"halving\"],\"type\":\"object\"}},\"required\":[\"other_block_concept\",\"reason\",\"scores\"],\"type\":\"object\"},\"3\":{\"additionalProperties\":false,\"properties\":{\"other_block_concept\":{\"type\":[\"string\",\"null\"]},\"reason\":{\"minLength\":1,\"type\":\"string\"},\"scores\":{\"additionalProperties\":false,\"properties\":{\"result\":{\"maximum\":10,\"minimum\":0,\"type\":\"integer\"}},\"required\":[\"result\"],\"type\":\"object\"}},\"required\":[\"other_block_concept\",\"reason\",\"scores\"],\"type\":\"object\"}},\"required\":[\"1\",\"2\",\"3\"],\"type\":\"object\"}},\"required\":[\"steps\"],\"type\":\"object\"}",
+    "-p",
+    "{\n  \"item\": \"host\",\n  \"description\": \"Halve a number\",\n  \"product\": \"roles:\\n  - name: Owner\\n    description: Uses the calculator.\\nconcepts:\\n  given:\\n    - concept: installation\\n      means: The calculator program is built from its source and ready for the Owner to run.\\n      terms: []\\n  when:\\n    - concept: doubling\\n      means: The Owner doubles a whole number with the calculator.\\n      terms: []\\n    - concept: halving\\n      means: The Owner halves a whole number with the calculator, taking the whole-number part of dividing it by two.\\n      terms: []\\n  then:\\n    - concept: result\\n      means: The calculator prints the whole number it computed, which is either the whole number the doubling produced or the whole number the halving produced, and no other number.\\n      terms: []\\nglossary: []\\ndescription:\\n  summary: The calculator doubles or halves a whole number the Owner gives it and prints the whole number it computes.\\n\",\n  \"steps\": [\n    {\n      \"key\": \"1\",\n      \"criterion\": \"AC-1\",\n      \"block\": \"given\",\n      \"text\": \"the calculator is installed\"\n    },\n    {\n      \"key\": \"2\",\n      \"criterion\": \"AC-1\",\n      \"block\": \"when\",\n      \"text\": \"the Owner halves 6\"\n    },\n    {\n      \"key\": \"3\",\n      \"criterion\": \"AC-1\",\n      \"block\": \"then\",\n      \"text\": \"the calculator prints 3\"\n    }\n  ]\n}"
+  ],
+  "exit_code": 0,
+  "duration_ms": 8602,
+  "request_hash": "sha256:2086807f2879747e84c136fd1b6b310cd1667adfa5ff0236ad3d107f361deb30",
+  "fsdiff": {
+    "created": [],
+    "modified": [],
+    "deleted": []
+  },
+  "recorded_at": "2026-10-31T17:31:32Z"
+}

@@ -2,11 +2,13 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/runner"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/story"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/fs"
@@ -177,5 +179,39 @@ func TestRefinePostFixRefusesAnAnswerThatIsNeither(t *testing.T) {
 				t.Errorf("product document = %q, want nothing committed", got)
 			}
 		})
+	}
+}
+
+// A concept fix whose working copy widens a concept through a key beyond
+// concept, means and terms is a fix that did not take (#268): nothing is
+// committed, the refusal names the key and the copy reads as the document.
+func TestRefinePostFixDoesNotTakeAConceptKeyBeyondItsShape(t *testing.T) {
+	host := newRefineHost(t)
+	scratch := host.item.TermDocuments[0].Scratch
+	widened := strings.Replace(refineProduct, "      terms: [number]\n",
+		"      terms: [number]\n      variations:\n        - The Owner halves a whole number.\n", 1)
+
+	err := os.WriteFile(scratch, []byte(widened), 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	next, err := refinePostFix(host.versions)(context.Background(), host.item, "applied: true\ntarget: product\n")
+	if !errors.Is(err, runner.ErrFixNotTaken) ||
+		!strings.Contains(err.Error(), "when concept 'doubling' declares variations") {
+		t.Fatalf("refinePostFix() error = %v, want a fix not taken naming the key", err)
+	}
+
+	if next != host.item {
+		t.Errorf("refinePostFix() returned another Item, want the walked Story kept")
+	}
+
+	if got := host.productContent(t); got != refineProduct {
+		t.Errorf("product document = %q, want nothing committed", got)
+	}
+
+	copied, err := os.ReadFile(scratch)
+	if err != nil || string(copied) != refineProduct {
+		t.Errorf("working copy = %q (%v), want it reset to the document", copied, err)
 	}
 }

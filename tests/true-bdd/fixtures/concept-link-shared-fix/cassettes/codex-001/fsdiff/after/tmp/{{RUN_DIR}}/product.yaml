@@ -16,7 +16,7 @@
     "when": [
       {
         "concept": "halve",
-        "means": "Invoke the Halve control once by activating its button, with a pointer or from the keyboard, replacing the entered number with its half.",
+        "means": "Invoke the Halve control once by activating its button in exactly one of two ways, with a pointer or with the keyboard, replacing the entered number with its half.",
         "terms": []
       }
     ],

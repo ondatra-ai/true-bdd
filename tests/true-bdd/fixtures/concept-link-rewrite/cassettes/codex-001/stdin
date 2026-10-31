@@ -10,27 +10,26 @@ a document. For document edits return the requested confirmation markers.
 
 The Product Owner chose apply at the menu for Story host.
 Approved fix:
-REPAIR PROPOSAL — Item: host (Story "Halve a number"), AC-1 when step
+Repair for failed judgement — Item: host (Story), AC-1 "when" step.
 
-Failed judgement: AC-1 when step "square six" — no `when` concept reaches threshold 9 (scores: {"halve": 2}).
+OWNER: Product Owner (Story wording rewrite only). No concept change, no binding change.
 
-Diagnosis: the step is the only part of the Story that mentions squaring. Every other part of the Item describes halving — title "Halve a number", i_want "to halve a number", so_that "I can read its half", AC-1 description "The number must be halved" — and the then step "three is displayed" is half of the given "six", not its square (36). The product description is closed on this point: "The calculator offers one operation, Halve, which displays half the entered number. It has no Square operation." So "square" is a wording slip in the step, not a new item or a new kind of use. No wider concept and no new concept is warranted: the `when` concept "halve" already covers this action exactly, and widening it with a Square variation would contradict the product's Public interface.
+WHY A REWRITE, NOT A CONCEPT CHANGE
+The only failing step is the "when" step "square six". Its kind of use is correct (an action step in the when block), but the operation named is squaring. The product document states: "The calculator offers one operation, Halve, which displays half the entered number. It has no Square operation." So squaring is not an item of the Public interface at all, and the existing concept "halve" ("Halve the entered number once.") must not be widened to admit it, nor may a new "square" concept be added for an operation the product does not offer. Everything else in the Story already describes halving: title "Halve a number", i_want "to halve a number", so_that "I can read its half", AC-1 "The number must be halved", given "six is entered", then "three is displayed" (three is half of six). The step text is the defect; the Story's intent is halving.
 
-Repair kind: rewrite of the step, applied to the Item only (Product Owner owns Story wording). No change to docs/product/product.yaml — "number ready", "halve" and "number result" stay exactly as they are.
+EXACT CHANGE — apply only to the Item (Story `host`), AC-1, when block
 
-Owner to decide: Product Owner.
+File: the Story `host` (no change to ./docs/product/product.yaml)
 
-EXACT CHANGE — Item: host, acceptance_criteria AC-1, steps, when block
-
-Before:
+Replace:
         - when:
             - square six
 
-After:
+With:
         - when:
             - halve six
 
-Resulting Story after apply (unaffected parts preserved verbatim):
+Resulting Story after apply (unaffected fields and steps preserved verbatim):
 
 id: host
 title: Halve a number
@@ -49,11 +48,14 @@ acceptance_criteria:
         - then:
             - three is displayed
 
-Expected effect: AC-1 when step "halve six" links to `when` concept "halve" ("Halve the entered number once."), a plain instance of that concept. The given step "six is entered" keeps its link to "number ready" and the then step "three is displayed" keeps its link to "number result"; both are untouched by this change.
+EFFECT ON JUDGEMENT
+- AC-1 given "six is entered" — unchanged; stays linked to "number ready".
+- AC-1 when "halve six" — becomes a plain instance of the existing concept "halve" ("Halve the entered number once."): a single halving of the entered number, scoring at or above the threshold of 9.
+- AC-1 then "three is displayed" — unchanged; stays linked to "number result".
 
-Files that would change on apply: the Item (Story host) only. docs/product/product.yaml: unchanged.
+CONCEPTS: unchanged. ./docs/product/product.yaml is not modified — "number ready", "halve" and "number result" keep their current concept, means and terms.
 
-Nothing has been applied. Awaiting an explicit menu decision.
+Nothing has been applied. Awaiting an explicit menu decision from the Product Owner.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

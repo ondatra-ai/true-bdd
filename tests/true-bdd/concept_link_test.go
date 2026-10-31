@@ -271,3 +271,21 @@ func TestConceptLink020UnquotedConfirmation(t *testing.T) {
 	s.And(`the file "docs/product/stories/host-story.yaml" is unchanged`)
 	s.Done()
 }
+
+// concept-link-021-extra-key-refused: A concept fix whose working copy widens a concept through a key beyond concept, means and terms must not be committed, naming the key, and the next fix must widen its means instead
+func TestConceptLink021ExtraKeyRefused(t *testing.T) {
+	s := scenarios.New(t, "concept-link-021-extra-key-refused")
+	s.Given(`the "concept-link-extra-key" project tree`)
+	s.And(`the Product Owner's answer to every question is "1"`)
+	s.When(`the Product Owner runs "us refine host --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches no concept of then`)
+	s.And(`stdout matches level=WARN msg="Fix not committed" subjectID=host promptIndex=1.*then concept 'result' declares variations`)
+	s.And(`every file matching "tmp/*/01-host-fix-iter1-user.txt" matches the fix was not committed.*then concept 'result' declares variations`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=product`)
+	s.And(`stdout matches msg="Concept judgement answered" subjectID=host promptIndex=1 judgement=link answer=pass`)
+	s.And(`every file matching "docs/product/product.yaml" does not match variations`)
+	s.And(`the file "docs/product/stories/host-story.yaml" is unchanged`)
+	s.And(`judge: the product document's result concept states in its means that the calculator prints the whole number the halving produced as well as the one the doubling produced, and every concept holds only concept, means and terms`)
+	s.Done()
+}

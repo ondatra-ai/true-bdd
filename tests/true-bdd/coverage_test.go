@@ -146,6 +146,7 @@ func fixtureTemplateDeclarations() map[string]string {
 		"build-code-partial/input/templates/build-code.fix-applier.prompt.tpl":                        templateExtension,
 
 		"concept-link-unquoted-confirmation/input/templates/us-checklist.fix-applier.prompt.tpl": templateExtension,
+		"concept-link-extra-key/input/templates/us-checklist.fix-generator.prompt.tpl":           templateExtension,
 	}
 }
 

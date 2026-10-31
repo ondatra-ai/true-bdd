@@ -246,8 +246,9 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 // concept-bindings checks and concept document closure (#239, #256, #259).
 func interfaceCheckFixtures() []string {
 	return []string{
-		"concepts-valid", "concepts-catalogue-retired", "concepts-undefined-term", "concepts-unmapped-term",
-		"concepts-bindings", "concepts-phrases-retired", "concepts-fix-binding", "concepts-fix-operation",
+		"concepts-valid", "concepts-catalogue-retired", "concepts-extra-key", "concepts-undefined-term",
+		"concepts-unmapped-term", "concepts-bindings", "concepts-phrases-retired", "concepts-fix-binding",
+		"concepts-fix-operation",
 		"public-interface-missing", "public-interface-missing-document", "public-interface-malformed-document",
 		"public-interface-valid", "public-interface-unsupported", "public-interface-fix",
 	}
@@ -538,6 +539,7 @@ func conceptLinkFixtures() []string {
 		"concept-link-add-concept",
 		"concept-link-ambiguous",
 		"concept-link-ambiguous-binding",
+		"concept-link-extra-key",
 		"concept-link-fix-binding",
 		"concept-link-incomplete",
 		"concept-link-judge-intent",

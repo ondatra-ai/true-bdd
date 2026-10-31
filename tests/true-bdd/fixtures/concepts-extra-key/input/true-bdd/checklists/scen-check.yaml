@@ -1,0 +1,30 @@
+version: '1.0'
+sections:
+- id: term_closure
+  validation_prompts:
+  - D: declared-terms
+    rationale: A concept whose meaning relies on an undefined word still has no stated meaning, so no step definition follows
+      from the spec.
+    docs:
+    - product
+    F: Propose one glossary entry (term, means) for each undefined term, asking what it means first. Write it to the product
+      document's glossary, never to the Scenario.
+  - D: term-mappings
+    rationale: A product word the architecture never maps says nothing of how a step definition builds or observes it, so
+      the definition cannot follow from the spec.
+    docs:
+    - product
+    - architecture_yaml
+    F: Propose one architecture.terms entry (term, technical, observed_by) for each unmapped term, asking how it is built
+      and observed first. Write it to the architecture document, never to the Scenario.
+  - D: concept-bindings
+    rationale: A binding naming no declared concept, bound twice, or referencing what its service's Public interface does
+      not declare leaves its step definitions to invent what to do.
+    docs:
+    - product
+    - architecture_yaml
+    F: 'Ask the System Architect what a step of the concept does through the service''s Public interface, by block: a when
+      calls an operation, a given sets up state, a then observes and compares. Propose architecture.concepts with the declared
+      concept name and block, service, references and does, or intent for a UI service, and add to the Public interface document
+      what the answers name that it does not declare yet. Write the architecture and that document only after apply, never
+      the Scenario.'

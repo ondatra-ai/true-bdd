@@ -27,6 +27,8 @@ func TestProductConcepts(t *testing.T) {
 		{"duplicate block", "concepts:\n  given: []\n  given: []\n", "block given"},
 		{"unknown block", "concepts: {whenever: []}\n", "whenever"},
 		{"missing terms", "concepts: {given: [{concept: number, means: Stored.}]}\n", "number"},
+		{"undeclared key", "concepts:\n  then: [{concept: result, means: Prints the double., terms: [], " +
+			"variations: [Prints the half.]}]\n", "then concept 'result' declares variations"},
 	}
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
@@ -81,6 +83,26 @@ func TestValidateFormRefusesTheRetiredCatalogue(t *testing.T) {
 	err = product.ValidateForm(path)
 	if !errors.Is(err, product.ErrCatalogueRetired) || !strings.Contains(err.Error(), "concepts:") {
 		t.Fatalf("startup must refuse the catalogue naming concepts, got %v", err)
+	}
+}
+
+func TestValidateFormRefusesAConceptKeyBeyondItsShape(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "product.yaml")
+
+	body := "concepts:\n  then:\n    - concept: result\n      means: The calculator prints the doubled number.\n" +
+		"      terms: []\n      variations:\n        - The calculator prints the halved number.\n"
+
+	err := disk.Write(path, []byte(body), disk.Shared)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = product.ValidateForm(path)
+	if !errors.Is(err, product.ErrUndeclaredConceptKey) ||
+		!strings.Contains(err.Error(), "then concept 'result' declares variations") ||
+		!strings.Contains(err.Error(), "means") {
+		t.Fatalf("startup must refuse the variations key naming the block, concept and key, got %v", err)
 	}
 }
 
