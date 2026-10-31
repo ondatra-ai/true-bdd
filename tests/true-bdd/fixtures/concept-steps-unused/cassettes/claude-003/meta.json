@@ -25,12 +25,12 @@
     "{\n  \"suite\": \"tests/calc/steps\",\n  \"service\": \"calc\",\n  \"block\": \"when\",\n  \"concept\": {\n    \"concept\": \"halving\",\n    \"means\": \"The Owner halves a whole number, positive, zero or negative, with the calculator, which rounds an odd number's half toward zero.\",\n    \"terms\": [\n      \"number\"\n    ]\n  },\n  \"glossary\": [\n    {\n      \"means\": \"A whole number, positive, zero or negative.\",\n      \"term\": \"number\"\n    }\n  ],\n  \"binding\": {\n    \"Concept\": \"halving\",\n    \"Block\": \"when\",\n    \"Service\": \"calc\",\n    \"References\": [\n      {\n        \"Command\": \"halve\",\n        \"File\": \"\",\n        \"LogRecord\": \"\",\n        \"OutgoingCall\": \"\",\n        \"OperationID\": \"\",\n        \"Element\": null\n      }\n    ],\n    \"Does\": \"Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result.\",\n    \"Intent\": \"\"\n  },\n  \"public_interface\": {\n    \"declaration\": {\n      \"Kind\": \"cli\",\n      \"Document\": \"docs/architecture/calc-cli.yaml\",\n      \"Elements\": null\n    },\n    \"docs/architecture/calc-cli.yaml\": \"opencli: 0.1\\ninfo:\\n  title: Calculator CLI\\n  version: '1.0'\\ncommands:\\n  halve:\\n    description: Run go run ./services/calc halve VALUE from the host root; stdout\\n      is VALUE halved and rounded toward zero, as an integer, and a newline.\\n    parameters:\\n    - name: value\\n      in: argument\\n      required: true\\n      schema:\\n        type: integer\\n    responses:\\n      '0':\\n        description: Halved integer on stdout\\n      '1':\\n        description: Invalid arguments\\n\"\n  },\n  \"existing_definitions\": [],\n  \"steps\": [\n    \"the Owner halves 6\",\n    \"the Owner halves -7\"\n  ]\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 9421,
+  "duration_ms": 7037,
   "request_hash": "sha256:1987c46b587197323ba1cfd0200f7d5cb6aa9728a85cc52b61bfbb9635f04de7",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-10-30T07:40:47Z"
+  "recorded_at": "2026-10-31T09:44:27Z"
 }

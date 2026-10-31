@@ -25,12 +25,12 @@
     "{\n  \"suite\": \"tests/calc/steps\",\n  \"service\": \"calc\",\n  \"block\": \"given\",\n  \"concept\": {\n    \"concept\": \"installation\",\n    \"means\": \"The calculator program is built from its source and ready for the Owner to run.\",\n    \"terms\": []\n  },\n  \"glossary\": [],\n  \"binding\": {\n    \"Concept\": \"installation\",\n    \"Block\": \"given\",\n    \"Service\": \"calc\",\n    \"References\": [\n      {\n        \"Command\": \"double\",\n        \"File\": \"\",\n        \"LogRecord\": \"\",\n        \"OutgoingCall\": \"\",\n        \"OperationID\": \"\",\n        \"Element\": null\n      }\n    ],\n    \"Does\": \"Build the declared calculator command as a program under the host's tmp directory and keep its path for the When.\",\n    \"Intent\": \"\"\n  },\n  \"public_interface\": {\n    \"declaration\": {\n      \"Kind\": \"cli\",\n      \"Document\": \"docs/architecture/calc-cli.yaml\",\n      \"Elements\": null\n    },\n    \"docs/architecture/calc-cli.yaml\": \"opencli: 0.1\\ninfo: {title: Calculator CLI, version: '1.0'}\\ncommands:\\n  double:\\n    description: The calculator program, built with go build from ./services/calc at the host root and run from the host root; calc double VALUE prints the doubled integer and a newline.\\n    parameters:\\n      - {name: value, in: argument, required: true, schema: {type: integer}}\\n    responses:\\n      '0': {description: Doubled integer on stdout}\\n      '1': {description: Invalid arguments}\\n\"\n  },\n  \"existing_definitions\": [],\n  \"steps\": [\n    \"the calculator is installed\"\n  ]\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 16709,
+  "duration_ms": 12677,
   "request_hash": "sha256:11fbf6e6877448675239f41c734cbf256cb6af73fa662bffb4d960453ef0c987",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-10-30T10:38:40Z"
+  "recorded_at": "2026-10-31T09:55:39Z"
 }

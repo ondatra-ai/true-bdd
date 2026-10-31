@@ -29,7 +29,7 @@ inventing an operation. Return the same confirmation markers with:
 ```yaml
 applied: false
 interface_cannot_serve:
-  phrase: "when concept \"halving\""
+  concept: "when concept \"halving\""
   lacks: "<what the interface offers no way to set up or observe>"
 ```
 
@@ -133,24 +133,23 @@ scenarios:
 # Fix Prompt for Item when-halving: when concept "halving"
 
 ## Target
-tests/calc/steps
+`tests/calc/steps`
+
+## Scope
+Replace ONLY the body of the existing function `concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87` in `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go`, and update that file's import block. Do not touch `register.go`, `definitions.go`, `state.go`, `tests/calc/calc_test.go`, the scenarios package, the Specification or `services/calc`. Keep the `//truebdd:concept when "halving"` record, the function name and the `(state *State, args []string) error` signature exactly as they are.
+
+## Shared state
+No change needed: `State.Result int` in `tests/calc/steps/state.go` already carries the result that the existing `then` definition (`result`) observes. Do not add fields, package-level constants, variables, helpers or types.
 
 ## Required Changes
-
-### 1. Shared state — `tests/calc/steps/state.go`
-
-No change. `State.Result int` already carries the integer the `then "result"` definition in `tests/calc/steps/definitions.go` compares, and the binding ("keep its integer stdout as the result") needs nothing more.
-
-### 2. `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go`
-
-Replace the whole file with the text below. The only edits are the import list and the body of the existing function: the `//truebdd:concept when "halving"` record, the function name and the `(state *State, args []string) error` signature are preserved byte for byte, and `tests/calc/steps/register.go` is left untouched.
+Rewrite `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go` to exactly this content:
 
 ```go
 package steps
 
 import (
+	"bytes"
 	"fmt"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
@@ -160,64 +159,44 @@ import (
 //truebdd:concept when "halving"
 func concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {
 	if len(args) != 1 {
-		return fmt.Errorf("the Owner halves: expected 1 capture, got %d", len(args))
+		return fmt.Errorf("halve: want 1 capture, got %d", len(args))
 	}
-	value := args[0]
-	if _, err := strconv.Atoi(value); err != nil {
-		return fmt.Errorf("the Owner halves %q: not a whole number: %w", value, err)
-	}
-
-	// The declared CLI runs `go run ./services/calc halve VALUE` from the
-	// host root; the suite's working directory is the scenario package, so
-	// walk up to the directory holding go.mod.
-	hostRoot, err := os.Getwd()
+	number, err := strconv.Atoi(args[0])
 	if err != nil {
-		return fmt.Errorf("the Owner halves %s: working directory: %w", value, err)
-	}
-	for {
-		if _, statErr := os.Stat(filepath.Join(hostRoot, "go.mod")); statErr == nil {
-			break
-		}
-		parent := filepath.Dir(hostRoot)
-		if parent == hostRoot {
-			return fmt.Errorf("the Owner halves %s: host root with go.mod not found above the suite directory", value)
-		}
-		hostRoot = parent
+		return fmt.Errorf("halve: whole number %q: %w", args[0], err)
 	}
 
-	cmd := exec.Command("go", "run", "./services/calc", "halve", value)
+	// The suite runs with tests/calc as its working directory (see the
+	// registry path the scenarios package passes to bddgo), and the halve
+	// command is declared to run from the host root.
+	hostRoot, err := filepath.Abs(filepath.Join("..", ".."))
+	if err != nil {
+		return fmt.Errorf("halve %d: host root: %w", number, err)
+	}
+
+	cmd := exec.Command("go", "run", "./services/calc", "halve", strconv.Itoa(number))
 	cmd.Dir = hostRoot
-	var stdout, stderr strings.Builder
+	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	if runErr := cmd.Run(); runErr != nil {
-		return fmt.Errorf("the Owner halves %s: go run ./services/calc halve %s in %s: %w: %s",
-			value, value, hostRoot, runErr, strings.TrimSpace(stderr.String()))
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("halve %d: %w: %s", number, err, strings.TrimSpace(stderr.String()))
 	}
 
-	out := strings.TrimSpace(stdout.String())
-	halved, err := strconv.Atoi(out)
+	result, err := strconv.Atoi(strings.TrimSpace(stdout.String()))
 	if err != nil {
-		return fmt.Errorf("the Owner halves %s: stdout %q is not an integer: %w", value, out, err)
+		return fmt.Errorf("halve %d: integer stdout %q: %w", number, stdout.String(), err)
 	}
-	state.Result = halved
+	state.Result = result
 	return nil
 }
 ```
 
-### 3. Why this body
-
-- The binding says "Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result", so the body only launches the declared command and records what it printed.
-- The Word mapping's `number` is the integer argument and stdout of the halve command: `args[0]` goes in as the argument, and the parsed stdout lands in `state.Result`, which the existing `then "result"` definition observes.
-- Nothing in the body halves, rounds or otherwise computes the calculator's answer; both scenario expectations (`3` for `6`, `-3` for `-7`) come from the process's stdout alone.
-- Exit code `1` ("Invalid arguments") surfaces as a step error carrying stderr, per the declared responses.
-- Every constant and loop stays inside the function body — no package-level constants, variables, helper functions or types are added; only this file's imports change outside the body.
-
-### 4. Do not change
-
-- `tests/calc/steps/register.go` (registrations and patterns).
-- `tests/calc/steps/definitions.go` (the `then "result"` definition).
-- `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, `docs/**`, `services/**`.
+## Why this satisfies the binding
+- The binding says: run the declared `halve` command as a process with the step's whole number and keep its integer stdout as the result. The body shells out to `go run ./services/calc halve VALUE` from the host root, exactly as `docs/architecture/calc-cli.yaml` declares, and stores the parsed stdout integer in `State.Result`.
+- No halving is computed in the step: the single capture is only parsed and re-rendered as the command argument, and the answer comes solely from the command's stdout. Rounding toward zero (scenario calc-002-halve) is the command's concern, not the step's.
+- Observation stays in the existing `then` definition `result`, which compares `State.Result` with the expected value; this `when` body only sets up and records.
+- Exit status 1 (declared as invalid arguments) surfaces as a step error carrying the command's stderr, rather than being silently treated as a result.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists and shared state. Preserve the engine's patterns, registrations,
@@ -236,6 +215,6 @@ inventing an operation. Return the same confirmation markers with:
 ```yaml
 applied: false
 interface_cannot_serve:
-  phrase: "when concept \"halving\""
+  concept: "when concept \"halving\""
   lacks: "<what the interface offers no way to set up or observe>"
 ```

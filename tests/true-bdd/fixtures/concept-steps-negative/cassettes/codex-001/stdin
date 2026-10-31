@@ -29,7 +29,7 @@ inventing an operation. Return the same confirmation markers with:
 ```yaml
 applied: false
 interface_cannot_serve:
-  phrase: "when concept \"halving\""
+  concept: "when concept \"halving\""
   lacks: "<what the interface offers no way to set up or observe>"
 ```
 
@@ -104,8 +104,8 @@ definitions:
       pattern: ^the Owner halves (-?\d+)$
       captures:
         - name: number
-          means: The whole number the Owner halves, optionally signed with a leading minus, passed verbatim as the value argument of the declared halve command.
-      serves: 'Serves the whole does clause: it names the halving words "the Owner halves" and captures the step''s whole number, the only value the body needs to run the declared halve command as a process with that number and keep its integer stdout as the result.'
+          means: The whole number to halve, positive, zero or negative, captured with its leading minus sign when present, so the body can pass it as the halve command's value argument.
+      serves: 'Serves the whole does clause: it names the halving step and hands the body the step''s whole number, which it runs the declared halve command as a process with, keeping the integer stdout as the result.'
       steps:
         - text: the Owner halves 6
           captures:
@@ -134,17 +134,18 @@ scenarios:
           - the result is -3
 
 
+# Fix Prompt for Item when-halving: when concept "halving"
+
 ## Target
-`tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go`
+tests/calc/steps
 
-This is the only file to change. Do **not** touch `register.go`, `definitions.go`, `state.go`, `tests/calc/calc_test.go`, the Specification or any service code.
+## Required Changes
 
-## Shared state
-No change required. `State.Result int` in `tests/calc/steps/state.go` already carries the calculator's integer result, and the existing `result` Then-definition in `definitions.go` compares against it. Leave `state.go` exactly as it is.
+Edit only `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go`: replace the whole file with the content below. This keeps the engine's `//truebdd:concept when "halving"` record, the function name and the signature exactly as generated, and changes only the import block and the function body.
 
-## Required change
+No shared-state change is needed: `State.Result` in `tests/calc/steps/state.go` already carries the calculator's integer result, and the existing `result` helper in `tests/calc/steps/definitions.go` compares it against the Then step's expected value. Do not touch `register.go`, `definitions.go`, `state.go`, `tests/calc/calc_test.go`, the Specification or `services/calc`.
 
-Replace the whole contents of `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go` with the following. The `//truebdd:concept` record, the function name and the `(state *State, args []string) error` signature are preserved verbatim; only the import list and the body change.
+The body follows the binding ("Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result") through the declared CLI document `docs/architecture/calc-cli.yaml`: it runs `go run ./services/calc halve VALUE` from the host root and stores the parsed stdout integer. It never halves anything itself.
 
 ```go
 package steps
@@ -152,54 +153,59 @@ package steps
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
 
 //truebdd:concept when "halving"
 func concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {
-	const (
-		hostRoot    = "../.."
-		packagePath = "./services/calc"
-		commandName = "halve"
-	)
 	number := args[0]
-	if _, err := strconv.Atoi(number); err != nil {
-		return fmt.Errorf("%s: captured number %q is not a whole number: %w", commandName, number, err)
+
+	// The declared halve command runs from the host root: walk up from the
+	// suite's working directory to the directory holding go.mod.
+	root, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("halve %s: locating the host root: %w", number, err)
 	}
+	for {
+		if _, statErr := os.Stat(filepath.Join(root, "go.mod")); statErr == nil {
+			break
+		}
+		parent := filepath.Dir(root)
+		if parent == root {
+			return fmt.Errorf("halve %s: no host root with go.mod above the working directory", number)
+		}
+		root = parent
+	}
+
 	var stdout, stderr bytes.Buffer
-	cmd := exec.Command("go", "run", packagePath, commandName, number)
-	cmd.Dir = hostRoot
+	cmd := exec.Command("go", "run", "./services/calc", "halve", number)
+	cmd.Dir = root
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%s %s: %w: %s", commandName, number, err, strings.TrimSpace(stderr.String()))
+		return fmt.Errorf("halve %s: %w: %s", number, err, strings.TrimSpace(stderr.String()))
 	}
-	value, err := strconv.Atoi(strings.TrimSpace(stdout.String()))
+
+	printed := strings.TrimSpace(stdout.String())
+	halved, err := strconv.Atoi(printed)
 	if err != nil {
-		return fmt.Errorf("%s %s: stdout %q is not an integer: %w", commandName, number, stdout.String(), err)
+		return fmt.Errorf("halve %s: stdout %q is not an integer: %w", number, printed, err)
 	}
-	state.Result = value
+
+	state.Result = halved
 	return nil
 }
 ```
 
-## Why this body
-
-- The binding says: run the declared `halve` command as a process with the step's whole number and keep its integer stdout as the result. The body does exactly that and nothing else.
-- The declared Public interface (`docs/architecture/calc-cli.yaml`) spells the invocation out: `go run ./services/calc halve VALUE` from the host root; stdout is the halved integer plus a newline, exit `0` on success and `1` on invalid arguments. `cmd.Dir = "../.."` is the host root relative to the suite's working directory `tests/calc` (the same base `scenarios.New` already uses for `../../docs/scenarios.yaml`).
-- The capture is passed verbatim as the `value` argument, including a leading minus, as the capture's `means` requires. The `strconv.Atoi` guard before the call only rejects a malformed capture; it does not alter the value handed to the command.
-- No halving arithmetic, no rounding rule and no sign handling appears in the body — the product computes the result; the step only records the command's stdout. The comparison against the expected value stays in the existing `result` Then-definition.
-- A non-zero exit or non-integer stdout fails the step with the command's stderr, so a broken or absent target reports a step failure rather than a silent pass.
-- `cmd.Run` with explicit `Stdout`/`Stderr` buffers is used instead of `cmd.Output()`, because `Output()` errors when `Stderr` is already set.
-- Every constant (`hostRoot`, `packagePath`, `commandName`) is declared inside the function body. No package-level constants, variables, helper functions or types are added.
-
-## Verification for the applier
-
-- Confirm `tests/calc/steps/register.go` still reads `suite.Step("^the Owner halves (-?\\d+)$", concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87)` — unchanged.
-- Confirm the `//truebdd:concept when "halving"` line is present immediately above the function.
-- Do not run a Scenario; the engine owns compilation and the whole-suite checks. If you do compile the steps package, keep the inherited `GOCACHE`/`TMPDIR` environment and never create a separate build cache.
+## Notes for the applier
+- Keep the file name, the `//truebdd:concept when "halving"` comment line and the function name/signature byte-for-byte as above; only the import block and the body differ from the skeleton.
+- `args[0]` is the pattern's single `number` capture, passed verbatim (leading minus sign included) as the halve command's `value` argument, as the capture's `means` states.
+- All new names (`number`, `root`, `printed`, `halved`, the buffers) stay local to the function body; no package-level constants, variables, types or helpers are added.
+- Do not run the scenarios or require them to pass; the target service may not be built.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists and shared state. Preserve the engine's patterns, registrations,
@@ -218,6 +224,6 @@ inventing an operation. Return the same confirmation markers with:
 ```yaml
 applied: false
 interface_cannot_serve:
-  phrase: "when concept \"halving\""
+  concept: "when concept \"halving\""
   lacks: "<what the interface offers no way to set up or observe>"
 ```

@@ -25,12 +25,12 @@
     "{\n  \"suite\": \"tests/calc-then-1\",\n  \"service\": \"calc\",\n  \"product\": \"roles:\\n  - name: Owner\\n    description: Uses the calculator.\\nconcepts:\\n  when:\\n    - concept: operation\\n      means: The Owner halves or doubles a whole number, positive, zero or negative, with the calculator. Halving rounds an odd number's half toward zero, unless the Owner halves exactly, which keeps the half.\\n      terms: [number]\\n  then:\\n    - concept: output\\n      means: What the calculator printed for the operation has, or has no, match for a pattern.\\n      terms: [pattern]\\nglossary:\\n  - term: number\\n    means: A whole number, positive, zero or negative.\\n  - term: pattern\\n    means: A regular expression a printed text is matched against.\\n\",\n  \"steps\": [\n    {\n      \"key\": \"1\",\n      \"block\": \"then\",\n      \"text\": \"the calculator's output matches ^3$\"\n    },\n    {\n      \"key\": \"2\",\n      \"block\": \"then\",\n      \"text\": \"the calculator's output matches ^12$\"\n    },\n    {\n      \"key\": \"3\",\n      \"block\": \"then\",\n      \"text\": \"the calculator's output does not match \\\\.\"\n    },\n    {\n      \"key\": \"4\",\n      \"block\": \"then\",\n      \"text\": \"the calculator's output matches ^3\\\\.5$\"\n    }\n  ]\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 7979,
+  "duration_ms": 6453,
   "request_hash": "sha256:3d354c336349365ff447d1908227ec314ac85c021a955d02e154f5bce1f9c8d7",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-10-30T07:08:38Z"
+  "recorded_at": "2026-10-31T10:33:22Z"
 }

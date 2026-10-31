@@ -5,9 +5,9 @@
     {
       "path": "tests/calc/steps/concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb.go",
       "kind": "created",
-      "size": 466,
-      "sha256": "bd6d3f4227041f3326bce47f6520878a903dad7314c6b854421987e62a681345",
-      "text": "package steps\n\n//truebdd:concept when \"halving\"\nfunc concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb(state *State, args []string) error {\n\t// args[0] is the step's negative whole number, as written, and is passed\n\t// straight through as the halve command's value argument. halveNumber runs\n\t// the declared command as a process and keeps its integer stdout in\n\t// state.Result for the Then step to observe.\n\treturn halveNumber(state, args)\n}\n"
+      "size": 197,
+      "sha256": "01cb1bbfedb62d044951e6dada6cee6acc0a0adb35ad6dca18f77b1989ff2146",
+      "text": "package steps\n\n//truebdd:concept when \"halving\"\nfunc concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb(state *State, args []string) error {\n\treturn halveNumber(state, args)\n}\n"
     },
     {
       "path": "tests/calc/steps/register.go",

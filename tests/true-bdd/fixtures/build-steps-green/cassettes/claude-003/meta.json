@@ -25,12 +25,12 @@
     "{\n  \"suite\": \"tests/calc/steps\",\n  \"service\": \"calc\",\n  \"block\": \"when\",\n  \"concept\": {\n    \"concept\": \"doubling\",\n    \"means\": \"The Owner doubles a whole number with the calculator.\",\n    \"terms\": [\n      \"number\"\n    ]\n  },\n  \"glossary\": [\n    {\n      \"means\": \"An integer operand whose double is its sum with itself.\",\n      \"term\": \"number\"\n    }\n  ],\n  \"binding\": {\n    \"Concept\": \"doubling\",\n    \"Block\": \"when\",\n    \"Service\": \"calc\",\n    \"References\": [\n      {\n        \"Command\": \"double\",\n        \"File\": \"\",\n        \"LogRecord\": \"\",\n        \"OutgoingCall\": \"\",\n        \"OperationID\": \"\",\n        \"Element\": null\n      }\n    ],\n    \"Does\": \"Run the declared double command as a process from the host root, as go run ./services/calc double with the step's whole number, and keep its integer stdout.\",\n    \"Intent\": \"\"\n  },\n  \"public_interface\": {\n    \"declaration\": {\n      \"Kind\": \"cli\",\n      \"Document\": \"docs/architecture/calc-cli.yaml\",\n      \"Elements\": null\n    },\n    \"docs/architecture/calc-cli.yaml\": \"opencli: 0.1\\ninfo:\\n  title: Calculator CLI\\n  version: '1.0'\\ncommands:\\n  double:\\n    description: Run go run ./services/calc double VALUE from the host root; stdout\\n      is the doubled integer and a newline. The service appends one double VALUE line\\n      to its call log for each invocation.\\n    parameters:\\n    - name: value\\n      in: argument\\n      required: true\\n      schema:\\n        type: integer\\n    responses:\\n      '0':\\n        description: Doubled integer on stdout\\n      '1':\\n        description: Invalid arguments\\nextensions:\\n  files:\\n    calc_calls:\\n      path: tmp/calc-calls.log\\n      format: One double VALUE line per invocation, newline terminated.\\n      access: write\\n\"\n  },\n  \"existing_definitions\": [],\n  \"steps\": [\n    \"the Owner doubles 3\"\n  ]\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 8954,
+  "duration_ms": 7563,
   "request_hash": "sha256:294332b3b43938035b70712150d9bdb7b9e17947d1b09750cc4ae7f9c36fe669",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-10-30T10:48:51Z"
+  "recorded_at": "2026-10-31T10:01:09Z"
 }

@@ -25,12 +25,12 @@
     "{\n  \"suite\": \"tests/calc-when-1\",\n  \"service\": \"calc\",\n  \"product\": \"roles:\\n  - name: Owner\\n    description: Uses the calculator.\\nconcepts:\\n  given:\\n    - concept: installation\\n      means: The calculator program is built from its source and ready for the Owner to run.\\n      terms: []\\n  when:\\n    - concept: running\\n      means: The Owner runs the calculator command the step names on a whole number.\\n      terms: [number]\\n  then:\\n    - concept: result\\n      means: The calculator prints the whole number the command produced.\\n      terms: [number]\\nglossary:\\n  - term: number\\n    means: An integer operand whose double is its sum with itself.\\n\",\n  \"steps\": [\n    {\n      \"key\": \"1\",\n      \"block\": \"when\",\n      \"text\": \"the Owner runs \\\"double\\\" on 3\"\n    }\n  ]\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 5108,
+  "duration_ms": 6121,
   "request_hash": "sha256:5efd4d3648929f14d98f81dd220a4a045d0b7e8dbfc5d77b43a1d7bf25e2e987",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-10-30T10:14:42Z"
+  "recorded_at": "2026-10-31T09:32:04Z"
 }

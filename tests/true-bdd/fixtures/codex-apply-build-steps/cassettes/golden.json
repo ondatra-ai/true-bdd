@@ -5,9 +5,9 @@
     {
       "path": "tests/calc/steps/concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b.go",
       "kind": "created",
-      "size": 857,
-      "sha256": "fb90a50a923b17ee8e06386dfc5f564a3efc331cdcd07d5fab0fc099a4989f39",
-      "text": "package steps\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"doubling\"\nfunc concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b(state *State, args []string) error {\n\tif state.Program == \"\" {\n\t\treturn errors.New(\"the calculator is not installed\")\n\t}\n\tconst hostRoot = \"../..\"\n\tcommand := exec.Command(state.Program, \"double\", args[0])\n\tcommand.Dir = hostRoot\n\tstdout, err := command.Output()\n\tif err != nil {\n\t\tvar exit *exec.ExitError\n\t\tif errors.As(err, \u0026exit) {\n\t\t\treturn fmt.Errorf(\"run calc double %s: %w: %s\", args[0], err, exit.Stderr)\n\t\t}\n\t\treturn fmt.Errorf(\"run calc double %s: %w\", args[0], err)\n\t}\n\tdoubled, err := strconv.Atoi(strings.TrimSpace(string(stdout)))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"read the double stdout %q: %w\", stdout, err)\n\t}\n\tstate.Value = doubled\n\treturn nil\n}\n"
+      "size": 731,
+      "sha256": "9a4e8c647e04d25e6a4f85648468aa1852fd1090d3b4bd9376a2502346109c90",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"doubling\"\nfunc concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b(state *State, args []string) error {\n\tconst hostRoot = \"../..\"\n\tif state.Program == \"\" {\n\t\treturn fmt.Errorf(\"the calculator is not installed\")\n\t}\n\tcommand := exec.Command(state.Program, \"double\", args[0])\n\tcommand.Dir = hostRoot\n\toutput, err := command.Output()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"double %s: %w: %s\", args[0], err, output)\n\t}\n\tvalue, err := strconv.Atoi(strings.TrimSpace(string(output)))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"double %s: unexpected stdout %q: %w\", args[0], string(output), err)\n\t}\n\tstate.Value = value\n\treturn nil\n}\n"
     },
     {
       "path": "tests/calc/steps/register.go",

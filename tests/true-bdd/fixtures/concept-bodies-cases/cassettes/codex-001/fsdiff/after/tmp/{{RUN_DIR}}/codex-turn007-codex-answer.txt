@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-when-operation-iter1-result.yaml ===
 applied: true
 target: "tests/calc/steps/concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba.go"
-summary: "Applied the supplied CLI operation body and imports, storing stdout in State.Output."
+summary: "Applied the exact supplied body and imports to run calculator commands and capture stdout."
 === FILE_END: tmp/{{RUN_DIR}}/apply-when-operation-iter1-result.yaml ===

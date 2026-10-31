@@ -1,7 +1,5 @@
-Applied the initial inverted assertion and created the marker. Compilation check passed.
-
 === FILE_START: tmp/{{RUN_DIR}}/apply-then-result-iter1-result.yaml ===
 applied: true
 target: "tests/calc/steps/concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e.go"
-summary: "Parsed the expected integer, deliberately failed on equality, and created tests/calc/steps/injected."
+summary: "Added expected-integer parsing and the deliberately inverted equality assertion; created the injected marker. Step package compiles."
 === FILE_END: tmp/{{RUN_DIR}}/apply-then-result-iter1-result.yaml ===
