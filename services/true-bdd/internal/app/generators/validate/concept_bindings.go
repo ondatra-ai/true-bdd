@@ -41,17 +41,30 @@ func (e *ChecklistEvaluator) evaluateBindings(ctx context.Context, subject any, 
 			failConcept(&result, finding)
 		}
 	case len(linked) > 0:
-		err = e.judgeBindings(ctx, prompt, item.Service, linked, services, conceptSteps(subject), &result)
-		if err != nil {
-			return result, err
-		}
+		err = e.judgeLinkedBindings(ctx, item, prompt, linked, services, &result)
 	default:
 		result.Context = []string{"no linked concepts require a binding"}
+	}
+
+	if err != nil {
+		return result, err
 	}
 
 	e.saveConceptResult(result)
 
 	return result, nil
+}
+
+// judgeLinkedBindings judges the bindings once per walk when the Prompt shares them, else in this Scenario's turn.
+func (e *ChecklistEvaluator) judgeLinkedBindings(ctx context.Context, item *template.ScenarioCheckData,
+	prompt checklist.PromptWithContext, linked map[string]linkedBinding, services []architecture.Service,
+	result *checklist.ValidationResult,
+) error {
+	if e.shares(item, prompt) {
+		return e.judgeSharedBindings(ctx, prompt, item.Service, linked, services, result)
+	}
+
+	return e.judgeBindings(ctx, prompt, item.Service, linked, services, conceptSteps(item), result)
 }
 
 func (e *ChecklistEvaluator) judgeBindings(ctx context.Context, prompt checklist.PromptWithContext,

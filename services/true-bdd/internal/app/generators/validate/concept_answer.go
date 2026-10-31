@@ -41,68 +41,86 @@ func strictAnswer(response string, target any) error {
 	return nil
 }
 
+// linkGrade is a link's verdict: each linked step beside its link, every step's finding, and whether all linked.
+type linkGrade struct {
+	links    []template.ConceptLink
+	steps    []conceptStep
+	findings []string
+	passed   bool
+}
+
 func gradeLinks(response string, steps []conceptStep, concepts []product.Concept, threshold int,
-) ([]template.ConceptLink, []string, bool, error) {
+) (linkGrade, error) {
 	var answer struct {
 		Steps map[string]stepScores `json:"steps"`
 	}
 
 	err := strictAnswer(response, &answer)
 	if err != nil {
-		return nil, nil, false, err
+		return linkGrade{}, err
 	}
 
 	if answer.Steps == nil {
-		return nil, nil, false, errConceptAnswer
+		return linkGrade{}, errConceptAnswer
 	}
 
-	links := make([]template.ConceptLink, 0)
-	findings := make([]string, 0, len(steps))
-	passed := true
+	grade, err := gradeStepAnswers(answer.Steps, steps, concepts, threshold)
+	if err != nil {
+		return grade, err
+	}
+
+	if len(answer.Steps) != 0 {
+		return linkGrade{findings: grade.findings}, errConceptAnswer
+	}
+
+	return grade, nil
+}
+
+// gradeStepAnswers grades each step's scores, consuming them from answers, against the threshold.
+func gradeStepAnswers(answers map[string]stepScores, steps []conceptStep, concepts []product.Concept,
+	threshold int,
+) (linkGrade, error) {
+	grade := linkGrade{links: make([]template.ConceptLink, 0), findings: make([]string, 0, len(steps)), passed: true}
 
 	for _, step := range steps {
 		if step.judged() {
-			findings = append(findings, step.subject()+": judge: unlinked")
+			grade.findings = append(grade.findings, step.subject()+": judge: unlinked")
 
 			continue
 		}
 
-		scores, ok := answer.Steps[step.Key]
+		scores, ok := answers[step.Key]
 		if !ok {
-			return nil, findings, false, fmt.Errorf("step %s missing: %w", step.Key, errConceptAnswer)
+			return linkGrade{findings: grade.findings}, fmt.Errorf("step %s missing: %w", step.Key, errConceptAnswer)
 		}
 
-		delete(answer.Steps, step.Key)
+		delete(answers, step.Key)
 
 		selected, err := scoredConcepts(step, scores, concepts, threshold)
 		if err != nil {
-			return nil, findings, false, err
+			return linkGrade{findings: grade.findings}, err
 		}
 
 		if string(scores.Other) != schemaNull {
 			selected = nil
 		}
 
-		verdict := linkVerdict(step, selected)
-		other := otherConceptText(scores.Other, step, concepts)
-		findings = append(findings, fmt.Sprintf("%s: %s; threshold %d; scores %s; reason: %s; other block: %s",
-			step.subject(), verdict, threshold, scoreText(scores.Scores), scores.Reason, other))
+		grade.findings = append(grade.findings, fmt.Sprintf("%s: %s; threshold %d; scores %s; reason: %s; other block: %s",
+			step.subject(), linkVerdict(step, selected), threshold, scoreText(scores.Scores), scores.Reason,
+			otherConceptText(scores.Other, step, concepts)))
 
 		if len(selected) != 1 {
-			passed = false
+			grade.passed = false
 
 			continue
 		}
 
-		links = append(links, template.ConceptLink{Concept: selected[0], Block: step.Block,
+		grade.links = append(grade.links, template.ConceptLink{Concept: selected[0], Block: step.Block,
 			Intent: strings.HasPrefix(strings.TrimSpace(step.Text), "llm:")})
+		grade.steps = append(grade.steps, step)
 	}
 
-	if len(answer.Steps) != 0 {
-		return nil, findings, false, errConceptAnswer
-	}
-
-	return links, findings, passed, nil
+	return grade, nil
 }
 
 func scoredConcepts(step conceptStep, scores stepScores, concepts []product.Concept, threshold int) ([]string, error) {

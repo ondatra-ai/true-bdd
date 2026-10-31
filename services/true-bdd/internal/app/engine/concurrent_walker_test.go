@@ -192,3 +192,49 @@ func TestConcurrentWalkerHonorsValidationLimit(t *testing.T) {
 		t.Fatalf("peak=%d, want 2", peak.Load())
 	}
 }
+
+func TestConcurrentWalkerStartsAWaitingPromptOnlyAfterEveryItemsEarlierPrompts(t *testing.T) {
+	t.Parallel()
+
+	var guard sync.Mutex
+
+	var order, walks []string
+
+	walker := &engine.ConcurrentWalker[int, string]{Limit: 2,
+		Waits:      func(query string) bool { return query == "bindings" },
+		OnValidate: func(items []int) { walks = append(walks, fmt.Sprint(items)) },
+		CellFor: func(_ int, _ string) *engine.CellHandler[int, string] {
+			return &engine.CellHandler[int, string]{Query: func(_ context.Context, item int, query string) (bool, error) {
+				guard.Lock()
+				defer guard.Unlock()
+
+				order = append(order, fmt.Sprintf("%s-%d", query, item))
+
+				return true, nil
+			}}
+		},
+	}
+
+	runs, err := walker.WalkItems(t.Context(), []int{1, 2, 3, 4, 5}, []string{"d", "link", "bindings", "words"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(runs) != 5 || len(order) != 20 || fmt.Sprint(walks) != "[[1 2 3 4 5]]" {
+		t.Fatalf("runs=%d cells=%v walks=%v", len(runs), order, walks)
+	}
+
+	assertLinksFirst(t, order, 10)
+}
+
+// assertLinksFirst holds the first cells to d and link, and every later one to bindings and words.
+func assertLinksFirst(t *testing.T, order []string, links int) {
+	t.Helper()
+
+	for index, cell := range order {
+		early := cell[0] == 'd' || cell[0] == 'l'
+		if early != (index < links) {
+			t.Fatalf("cell %s at %d: a waiting Prompt began before every link answered: %v", cell, index, order)
+		}
+	}
+}

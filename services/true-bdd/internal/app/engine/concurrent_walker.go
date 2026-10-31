@@ -16,6 +16,10 @@ type ConcurrentWalker[I, Q any] struct {
 	CellFor  func(I, Q) *CellHandler[I, Q]
 	Gate     func(Q) bool
 	OnSkip   func(I, Q)
+	// Waits marks a query that starts only once every item has answered every query before it.
+	Waits func(Q) bool
+	// OnValidate, if non-nil, is told each validation round's items before its first cell.
+	OnValidate func([]I)
 }
 
 type pendingCell[I, Q any] struct {
@@ -25,9 +29,10 @@ type pendingCell[I, Q any] struct {
 }
 
 type validationRun[I, Q any] struct {
-	run    ItemRun[I]
-	failed []pendingCell[I, Q]
-	err    error
+	run        ItemRun[I]
+	failed     []pendingCell[I, Q]
+	err        error
+	gateFailed bool
 }
 
 func (w *ConcurrentWalker[I, Q]) Walk(ctx context.Context, item I, queries []Q) (ItemRun[I], error) {
@@ -114,14 +119,57 @@ func (w *ConcurrentWalker[I, Q]) validateItems(
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	if w.OnValidate != nil {
+		w.OnValidate(items)
+	}
+
 	results := make([]validationRun[I, Q], len(items))
+	for index, item := range items {
+		results[index] = validationRun[I, Q]{run: ItemRun[I]{Item: item, Passed: true}}
+	}
+
+	for number, stage := range w.stages(queries) {
+		if validationError(results) != nil {
+			break
+		}
+
+		if number > 0 {
+			onStart = nil
+		}
+
+		w.validateStage(ctx, cancel, items, queries[:stage[1]], stage[0], results, onStart)
+	}
+
+	return results
+}
+
+// stages splits the queries before every waiting one, as [begin, end) ranges.
+func (w *ConcurrentWalker[I, Q]) stages(queries []Q) [][2]int {
+	stages := make([][2]int, 0, 1)
+	begin := 0
+
+	for index, query := range queries {
+		if index > begin && w.Waits != nil && w.Waits(query) {
+			stages = append(stages, [2]int{begin, index})
+			begin = index
+		}
+	}
+
+	return append(stages, [2]int{begin, len(queries)})
+}
+
+func (w *ConcurrentWalker[I, Q]) validateStage(
+	ctx context.Context, cancel context.CancelFunc, items []I, queries []Q, begin int,
+	results []validationRun[I, Q], onStart func(int, int),
+) {
 	jobs := make(chan int)
 
 	var group sync.WaitGroup
 	for range min(max(1, w.Limit), len(items)) {
 		group.Go(func() {
 			for index := range jobs {
-				results[index] = w.validate(ctx, items[index], queries)
+				w.validate(ctx, items[index], queries, begin, &results[index])
+
 				if results[index].err != nil {
 					cancel()
 				}
@@ -139,17 +187,16 @@ func (w *ConcurrentWalker[I, Q]) validateItems(
 
 	close(jobs)
 	group.Wait()
-
-	return results
 }
 
-func (w *ConcurrentWalker[I, Q]) validate(ctx context.Context, item I, queries []Q) validationRun[I, Q] {
-	result := validationRun[I, Q]{run: ItemRun[I]{Item: item, Passed: true}}
-	gateFailed := false
+func (w *ConcurrentWalker[I, Q]) validate(
+	ctx context.Context, item I, queries []Q, begin int, result *validationRun[I, Q],
+) {
+	for index := begin; index < len(queries); index++ {
+		query := queries[index]
 
-	for index, query := range queries {
 		gate := w.Gate != nil && w.Gate(query)
-		if gateFailed && !gate {
+		if result.gateFailed && !gate {
 			if w.OnSkip != nil {
 				w.OnSkip(item, query)
 			}
@@ -161,7 +208,7 @@ func (w *ConcurrentWalker[I, Q]) validate(ctx context.Context, item I, queries [
 		if contextErr != nil {
 			result.err = contextErr
 
-			return result
+			return
 		}
 
 		handler := w.CellFor(item, query)
@@ -170,18 +217,16 @@ func (w *ConcurrentWalker[I, Q]) validate(ctx context.Context, item I, queries [
 		if err != nil {
 			result.err = err
 
-			return result
+			return
 		}
 
 		if !passed {
 			result.run.Passed = false
-			gateFailed = gateFailed || gate
+			result.gateFailed = result.gateFailed || gate
 
 			result.failed = append(result.failed, pendingCell[I, Q]{index: index, query: query, handler: handler})
 		}
 	}
-
-	return result
 }
 
 func (w *ConcurrentWalker[I, Q]) repair(

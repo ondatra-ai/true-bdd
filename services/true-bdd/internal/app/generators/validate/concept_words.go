@@ -32,6 +32,17 @@ func (e *ChecklistEvaluator) evaluateWords(ctx context.Context, subject any, pro
 		return result, err
 	}
 
+	if e.shares(subject, prompt) {
+		err = e.judgeSharedWords(ctx, prompt, linked, productText, &result)
+		if err != nil {
+			return result, err
+		}
+
+		e.saveConceptResult(result)
+
+		return result, nil
+	}
+
 	schema, err := wordsSchema(linked)
 	if err != nil {
 		return result, err

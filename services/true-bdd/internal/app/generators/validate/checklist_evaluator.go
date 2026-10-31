@@ -68,6 +68,7 @@ type ChecklistEvaluator struct {
 	tmpDir        string
 	subjectID     string
 	artifactLabel string
+	sharing       *conceptSharing
 }
 
 // NewChecklistEvaluator creates a new checklist evaluator with config-based template paths.
@@ -97,6 +98,7 @@ func NewChecklistEvaluatorWithPaths(
 		docResolver:  docs.NewResolver(cfg),
 		systemLoader: template.NewTemplateLoader[ChecklistPromptData](systemPath),
 		userLoader:   template.NewTemplateLoader[ChecklistPromptData](userPath),
+		sharing:      newConceptSharing(),
 	}
 }
 

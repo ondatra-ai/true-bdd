@@ -44,6 +44,11 @@ func (step conceptStep) judged() bool {
 	return strings.HasPrefix(strings.TrimSpace(step.Text), "judge:")
 }
 
+// identity is what a shared link judges once per walk: the step's block and text.
+func (step conceptStep) identity() string {
+	return string(step.Block) + "\x00" + step.Text
+}
+
 func (step conceptStep) subject() string {
 	return fmt.Sprintf("%s %s step %q", step.Criterion, step.Block, step.Text)
 }
