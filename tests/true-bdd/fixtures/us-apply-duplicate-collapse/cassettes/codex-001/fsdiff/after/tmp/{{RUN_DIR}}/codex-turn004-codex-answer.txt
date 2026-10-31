@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-95.1-001-mcp-initialize-iter1-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/scenarios.yaml"
-summary: "Removed E2E-901 and merged its missing steps into the lineage winner; preserved metadata and E2E-950."
+summary: "Deleted E2E-901 and appended missing steps to 95.1-001-mcp-initialize; metadata and E2E-950 unchanged."
 === FILE_END: tmp/{{RUN_DIR}}/apply-95.1-001-mcp-initialize-iter1-result.yaml ===
