@@ -5,9 +5,9 @@
     {
       "path": "docs/product/product.yaml",
       "kind": "modified",
-      "size": 963,
-      "sha256": "051af991610abba4b6db6b7023876ee773ea77cdc356c8e77df5a2b04be13278",
-      "text": "title: Integer calculator\ndescription:\n  summary: 'The halve-negative Story halves an already validated negative integer and rounds toward zero. It has no failure mode of its own: missing and non-integer inputs belong to the separate calculator-input\n    Story. Negative inputs -6, -7 and -1 produce -3, -3 and 0 respectively.'\nroles:\n- name: Calculator User\n  definition: A person using the calculator CLI\nvocabulary:\n  forbidden_qualifiers:\n  - properly\n  - correctly\n  - appropriate\n  - fast\n  forbidden_actions: []\nglossary: []\nconcepts:\n  given:\n    - concept: number supplied\n      means: The calculator is supplied a stated, already validated integer.\n      terms: []\n  when:\n    - concept: halve requested\n      means: The Calculator User runs the halve command on the supplied number.\n      terms: []\n  then:\n    - concept: result\n      means: The halve command succeeds and prints exactly a stated integer, the half rounded toward zero.\n      terms: []\n"
+      "size": 960,
+      "sha256": "aae7df3c9ffea33e6dd4d64c9b31738ad06225b8f9bdc926225a299ce6333303",
+      "text": "title: Integer calculator\ndescription:\n  summary: 'The halve-negative Story halves an already validated negative integer and rounds toward zero. It has no failure mode of its own: missing and non-integer inputs belong to the separate calculator-input\n    Story. Negative inputs -6, -7 and -1 produce -3, -3 and 0 respectively.'\nroles:\n- name: Calculator User\n  definition: A person using the calculator CLI\nvocabulary:\n  forbidden_qualifiers:\n  - properly\n  - correctly\n  - appropriate\n  - fast\n  forbidden_actions: []\nglossary: []\nconcepts:\n  given:\n    - concept: number supplied\n      means: The calculator is supplied a stated, already validated integer.\n      terms: []\n  when:\n    - concept: number halved\n      means: The Calculator User halves the number supplied to the calculator.\n      terms: []\n  then:\n    - concept: result\n      means: The halve command succeeds and prints exactly a stated integer, the half rounded toward zero.\n      terms: []\n"
     },
     {
       "path": "docs/product/stories/halve-negative-cases.yaml",

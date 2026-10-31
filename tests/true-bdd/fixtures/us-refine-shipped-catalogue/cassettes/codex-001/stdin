@@ -10,37 +10,41 @@ a document. For document edits return the requested confirmation markers.
 
 The Product Owner chose apply at the menu for Story halve-negative.
 Approved fix:
-# Repair proposal — Item `halve-negative`
+Repair for failed judgement on Item `halve-negative` (owner: Product Owner — concept addition to the product document only).
 
-**Owner:** Product Owner (concept addition)
-**Kind:** New concept for a new kind of use (`when`)
-**Files touched:** `docs/product/product.yaml` only. The Story `halve-negative` is **not** modified.
+## Diagnosis
 
-## Why
+All three acceptance criteria fail on the same judgement, and only on the When block:
 
-The `when` steps of all three acceptance criteria (`001-even`, `002-odd`, `003-near-zero`) read "the Calculator User halves the number". Each finding reports the step is of the right kind but scores `{}`, because `concepts.when` does not exist in the product document. No rewrite of the step can link it, and no variation can widen a concept that is absent, so a new concept is added for this use. The `given` concept `number supplied` and the `then` concept `result` already link all six remaining steps at score 10 and are left exactly as they are.
+- `001-even` when step "the Calculator User halves the number" — no concept of when reaches the threshold; scores `{}`
+- `002-odd` when step "the Calculator User halves the number" — no concept of when reaches the threshold; scores `{}`
+- `003-near-zero` when step "the Calculator User halves the number" — no concept of when reaches the threshold; scores `{}`
 
-## Exact change to `docs/product/product.yaml`
+The scores are empty, not low: `docs/product/product.yaml` declares `concepts.given` and `concepts.then` but no `concepts.when` block, so there is nothing for the When steps to be scored against. Each finding also records that the step is of the right kind — the `Calculator User` role from `roles` performing the halve action — so the step wording is sound and must not be rewritten. The Given steps (`number supplied`, 10) and Then steps (`result`, 10) already pass and stay untouched.
 
-Insert a `when:` block between the existing `given:` and `then:` blocks under `concepts:`, so that the three blocks appear in given/when/then order.
+Because the `when` kind of use has no concept for this Public interface item at all, this is a new item-and-use, so a new concept is added. It is not a variation: a variation only widens a concept that already exists for that item and use.
 
-```diff
- concepts:
-   given:
-     - concept: number supplied
-       means: The calculator is supplied a stated, already validated integer.
-       terms: []
-+  when:
-+    - concept: halve requested
-+      means: The Calculator User runs the halve command on the supplied number.
-+      terms: []
-   then:
-     - concept: result
-       means: The halve command succeeds and prints exactly a stated integer, the half rounded toward zero.
-       terms: []
+## Proposed change — exactly one file, exactly one addition
+
+File: `docs/product/product.yaml`
+
+Insert a `when:` section into `concepts`, between the existing `given:` and `then:` sections. Add nothing else; change no existing line.
+
+Before (lines 16-24):
+
+```yaml
+concepts:
+  given:
+    - concept: number supplied
+      means: The calculator is supplied a stated, already validated integer.
+      terms: []
+  then:
+    - concept: result
+      means: The halve command succeeds and prints exactly a stated integer, the half rounded toward zero.
+      terms: []
 ```
 
-## Resulting `concepts:` section in full
+After:
 
 ```yaml
 concepts:
@@ -49,8 +53,8 @@ concepts:
       means: The calculator is supplied a stated, already validated integer.
       terms: []
   when:
-    - concept: halve requested
-      means: The Calculator User runs the halve command on the supplied number.
+    - concept: number halved
+      means: The Calculator User halves the number supplied to the calculator.
       terms: []
   then:
     - concept: result
@@ -58,28 +62,31 @@ concepts:
       terms: []
 ```
 
-## Notes on the wording
+## Why this closes the judgement
 
-- `means` is closed prose naming the actor from `roles` (Calculator User), the command (halve) and its object (the supplied number), matching the phrasing of the step under all three acceptance criteria.
-- `terms: []` matches the style of the two existing concepts; no variation is added, because all three `when` steps share one identical wording that the concept covers plainly.
-- No forbidden qualifier (`properly`, `correctly`, `appropriate`, `fast`) is used, and `forbidden_actions` is empty.
-- The concept states the request only; the printed outcome stays the business of the `then` concept `result`, so the two do not overlap.
+The single concept `number halved` covers all three When steps, which are identical in wording ("the Calculator User halves the number"). Its `means` is closed prose naming the `Calculator User` role and the halve action over the number already supplied by the `number supplied` Given concept, so each When step is a plain instance of it and clears the threshold of 9. No forbidden qualifier from `vocabulary.forbidden_qualifiers` (`properly`, `correctly`, `appropriate`, `fast`) appears, and `forbidden_actions` is empty.
 
-## Expected effect
+## Explicitly unchanged
 
-- `001-even`, `002-odd`, `003-near-zero` `when` steps link to `halve requested` at the threshold of 9.
-- All `given` and `then` findings are unchanged.
-- `title`, `description`, `roles`, `vocabulary` and `glossary` are unchanged.
-- The Story file for `halve-negative` is unchanged, including `status: PLANNED`.
+- Story `halve-negative`: all nine steps, the three acceptance criteria, `title`, `as_a`, `i_want`, `so_that` and `status: PLANNED` stay exactly as written. No rewrite is proposed, because the failure is a missing concept, not step wording.
+- Product document: `title`, `description.summary`, `roles`, `vocabulary`, `glossary`, the `given` concept `number supplied` and the `then` concept `result` are all left byte-for-byte as they are.
+- No concept bindings are touched, so nothing here falls to the System Architect.
+
+Nothing has been applied. Awaiting an explicit apply decision at the menu.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
 
-If the approved fix changes a concept, edit only that product working copy;
-return applied: true, target and summary inside the markers below.
-If it rewrites a step, return the COMPLETE updated Story body inside those
-markers, preserving every other field and criterion. Do not edit concepts
-for a step rewrite. Current Story:
+If the approved fix changes a concept, edit only that product working copy
+and return this confirmation inside these markers:
+=== FILE_START: tmp/{{RUN_DIR}}/apply-halve-negative-iter1-result.yaml ===
+applied: true
+target: "product"
+summary: "<approved concept repair>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-halve-negative-iter1-result.yaml ===
+If it rewrites a step, return instead the COMPLETE updated Story body inside
+those markers, preserving every other field and criterion. Do not edit
+concepts for a step rewrite. Current Story:
 id: halve-negative
 feature: calculator
 title: Halve negative integers
@@ -116,6 +123,3 @@ acceptance_criteria:
         - then:
             - the result is "0"
 
-=== FILE_START: tmp/{{RUN_DIR}}/apply-halve-negative-iter1-result.yaml ===
-<confirmation YAML or complete Story body YAML>
-=== FILE_END: tmp/{{RUN_DIR}}/apply-halve-negative-iter1-result.yaml ===

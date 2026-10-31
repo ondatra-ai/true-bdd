@@ -10,29 +10,32 @@ a document. For document edits return the requested confirmation markers.
 
 The Product Owner chose apply at the menu for Story doc-outline.
 Approved fix:
-## Repair proposal — Item `doc-outline` (do not apply until the menu decides)
+PROPOSED REPAIR — Item `doc-outline`, failed judgement: AC-2 then step "Claude offers to summarise the document instead"
 
-### Failed judgement
-AC-2 then step `Claude offers to summarise the document instead` — no `then` concept reaches
-threshold 9; best score `reply`: 4. The closed prose of `reply` admits only two variations
-(a listing of a stated number of headings, or exactly a stated message), so an offer to
-summarise falls outside it.
+Owner of this change: **Product Owner** (concept text in the product document).
+Nothing is applied yet — apply only on an explicit menu decision.
 
-### Chosen repair: widen the existing `reply` concept (one new variation)
-Rationale: the Public interface item (Claude's reply in the conversation) and the kind of use
-(`then`) already exist in `reply`. Per policy, a new variation widens the existing concept of
-that item and use; a new concept is reserved for a new item or use. The Story wording is
-observable and unambiguous as written, so no step rewrite is proposed.
+## Diagnosis
 
-Owner: **Product Owner** (concept change).
-Scope: **`docs/product/product.yaml` only.** No change to the Item/Story. No change to any
-other concept, the glossary, roles or vocabulary.
+The failed step is an outcome of Claude's reply in the conversation — the same Public
+interface item, and the same kind of use (`then`), that the existing concept `reply`
+already covers. `reply` is closed to two variations (lists exactly a stated number of
+headings in document order; is exactly a stated message), and an offer of a different
+action is neither, so no concept of `then` reaches the threshold (score 4 of 9).
 
-### Exact change — `docs/product/product.yaml`, `concepts.then`
+Because the item (Claude's reply in the conversation) and the kind of use (`then`)
+already exist, the repair is to **widen the existing concept `reply` with a third
+variation** — not a new concept, and not a rewrite of the Story. The AC-2 step wording
+stays exactly as written.
 
-Replace exactly these lines (46–51):
+## Change 1 of 1 — widen concept `reply` (file: `docs/product/product.yaml`)
+
+Scope: product document only. No change to the Story or any other concept.
+
+Replace this block (lines 45-51, under `concepts:` → `then:`):
 
 ```yaml
+  then:
     - concept: reply
       means: >-
         Claude's reply in the conversation either lists exactly a stated
@@ -41,9 +44,10 @@ Replace exactly these lines (46–51):
       terms: [outline]
 ```
 
-with exactly:
+with:
 
 ```yaml
+  then:
     - concept: reply
       means: >-
         Claude's reply in the conversation either lists exactly a stated
@@ -52,29 +56,43 @@ with exactly:
       terms: [Google Doc, outline]
 ```
 
-Two edits only: the third variation `, or offers to summarise the Google Doc instead` added to
-the closed prose of `means` (replacing the trailing `, or is exactly a stated message.` with
-`, is exactly a stated message, or offers to summarise the Google Doc instead.`), and
-`Google Doc` added to `terms` because the new variation uses that glossary term.
+Two edits in that block:
+1. `means`: the closed prose gains a third variation — "or offers to summarise the
+   Google Doc instead" — and the two-way "either … or" becomes a closed three-way
+   "either …, …, or …". The first two variations are unchanged word for word.
+2. `terms`: `Google Doc` is added, because the new variation names that glossed term.
+   `outline` is kept.
 
-### Resulting binding after apply
-- AC-2 then `Claude offers to summarise the document instead` → `reply` (third variation:
-  Claude's reply offers to summarise the Google Doc instead).
-- Unaffected and preserved: AC-1/AC-2/AC-3 given steps → `shared document`; all three when
-  steps → `outline request`; AC-1 then → `reply` (first variation); AC-2 and AC-3 message
-  steps → `reply` (second variation). The widening adds an alternative and removes none, so
-  no existing binding changes.
+## No other file changes
 
-Awaiting an explicit apply decision at the menu. Nothing has been changed.
+- `docs/product/product.yaml`: `roles`, `vocabulary`, `glossary`, the `given` concept
+  `shared document` and the `when` concept `outline request` are untouched.
+- The Story `doc-outline` is untouched: all of AC-1, AC-3, and both other AC-2 steps
+  keep their current wording, and the failed step "Claude offers to summarise the
+  document instead" is kept verbatim.
+
+## Expected effect after apply
+
+- AC-2 then step "Claude offers to summarise the document instead" links to `reply`
+  (third variation), clearing the failed judgement.
+- All ten passing judgements keep their current bindings: AC-1/AC-2/AC-3 given →
+  `shared document`; AC-1/AC-2/AC-3 when → `outline request`; AC-1 then, AC-2 then
+  message, AC-3 then → `reply` (first and second variations, unchanged).
+- No binding file is edited, so nothing here falls to the System Architect.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
 
-If the approved fix changes a concept, edit only that product working copy;
-return applied: true, target and summary inside the markers below.
-If it rewrites a step, return the COMPLETE updated Story body inside those
-markers, preserving every other field and criterion. Do not edit concepts
-for a step rewrite. Current Story:
+If the approved fix changes a concept, edit only that product working copy
+and return this confirmation inside these markers:
+=== FILE_START: tmp/{{RUN_DIR}}/apply-doc-outline-iter1-result.yaml ===
+applied: true
+target: "product"
+summary: "<approved concept repair>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-doc-outline-iter1-result.yaml ===
+If it rewrites a step, return instead the COMPLETE updated Story body inside
+those markers, preserving every other field and criterion. Do not edit
+concepts for a step rewrite. Current Story:
 id: doc-outline
 title: Document Outline On Demand
 as_a: Claude User
@@ -111,6 +129,3 @@ acceptance_criteria:
         - then:
             - Claude displays the message "This document is not shared with your account"
 
-=== FILE_START: tmp/{{RUN_DIR}}/apply-doc-outline-iter1-result.yaml ===
-<confirmation YAML or complete Story body YAML>
-=== FILE_END: tmp/{{RUN_DIR}}/apply-doc-outline-iter1-result.yaml ===

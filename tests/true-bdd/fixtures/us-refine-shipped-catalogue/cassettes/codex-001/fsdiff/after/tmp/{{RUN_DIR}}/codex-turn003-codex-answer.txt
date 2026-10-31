@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-halve-negative-iter1-result.yaml ===
 applied: true
-target: tmp/{{RUN_DIR}}/product.yaml
-summary: "Inserted the approved when concept 'halve requested' between given and then. All other content and the Story remain unchanged."
+target: "product"
+summary: "Added the number halved concept under concepts.when between given and then; all existing content preserved."
 === FILE_END: tmp/{{RUN_DIR}}/apply-halve-negative-iter1-result.yaml ===
