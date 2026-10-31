@@ -145,3 +145,55 @@ log:
       The Owner's message after Q3, on the strategies left out.
     answer: |
       A,B FG не уменьшают сложность а просто.
+  - decision_trace:
+      research:
+        - |
+          The experiments (#264, comment 6549427827; branch
+          impl/264-fewer-judgements at 1908f9d2): on the 25-Scenario sample at
+          concurrency 10, the two baselines took 506 s and 473 s and differed
+          in 2 of 75 cells; D cut words turn time 65% with no words cell
+          differing; E cut link turn time 15 to 21% and left one of 184 steps
+          unlinked, scored 8 instead of 9 without its Scenario's description;
+          C cut bindings turn time 60%, and its shared turn, judging every
+          variation of a binding, failed `AI CLI observations`, which 16
+          per-Scenario turns had passed; C, D and E together took 317 s. On the
+          whole Registry, about 176 turns would replace 1,032.
+      recommendation: |
+        Keep D; keep E with every using Scenario's description in the shared
+        turn, then run it again; keep C after one more run for its stability
+        and a check of whether `AI CLI observations` is really ambiguous.
+      settled: |
+        D is kept. E is kept with the descriptions added and tried again. C is
+        kept once a second run shows its stability and the `AI CLI
+        observations` verdict is checked.
+    question: |
+      Q4 - D (words once per concept), E (link once per distinct step) and C
+      (bindings once per binding): keep D? For E, keep it with the
+      descriptions of every Scenario using the step, keep it as it is, or drop
+      it? For C, keep it after checking it first, keep it as it is, or drop it?
+    answer: |
+      D: Keep D (Recommended). E: Keep E, add descriptions (Recommended). C: Keep C, check it first (Recommended).
+  - decision_trace:
+      research:
+        - |
+          The second round (commit 47e9317e, appended to the experiments note):
+          C2 held 17 of 19 bindings against C, and `AI CLI observations` failed
+          in all four shared runs (0 of 16 per Scenario); a shared flip moves
+          every Scenario linking the binding. E2, with every using Scenario's
+          description, linked the borderline step "the System Architect runs
+          build steps after scen check and a binding change" in 1 of 4 shared
+          runs against 5 of 5 per Scenario, where the sibling steps imply
+          `--fix`. C, D and E2 together cut turn time 50 to 53%.
+      recommendation: |
+        One more try of E with each step's sibling steps, dropping E if the
+        step still links unreliably.
+      settled: |
+        E is dropped. C and D are built properly; C's check passed (stable
+        verdicts on 17 of 19 bindings, and its `AI CLI observations` failure is
+        real).
+    question: |
+      Q5 - E with the Scenarios' descriptions did not save the borderline
+      step (1 of 4 shared runs against 5 of 5 per Scenario). One more try
+      with the neighbouring steps, drop E now, or keep E as it is?
+    answer: |
+      Drop E now
