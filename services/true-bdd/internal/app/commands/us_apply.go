@@ -55,6 +55,14 @@ func RunApply(
 ) error {
 	tmpDir := deps.RunDir.GetTmpOutPath()
 	scratchPath := filepath.Join(tmpDir, scratchRegistryFilename)
+	architecturePath := func() (string, error) {
+		path, err := deps.DocResolver.Resolve(docs.KeyArchitectureYAML)
+		if err != nil {
+			return "", fmt.Errorf("resolve the architecture document: %w", err)
+		}
+
+		return path, nil
+	}
 
 	err := runner.Run(ctx, runner.Spec[*template.ScenarioApplyData]{
 		Name:          "us apply",
@@ -64,7 +72,7 @@ func RunApply(
 
 		LoadItems:   loadScenarios(deps, storyID, requirementsFile, scratchPath),
 		PostFix:     scenarioPostFix,
-		Finalize:    commitApplyWalk(scratchPath, requirementsFile),
+		Finalize:    commitApplyWalk(scratchPath, requirementsFile, architecturePath),
 		GetSubject:  scenarioSubject,
 		OnItemStart: scenarioOnItemStart,
 
@@ -95,9 +103,8 @@ func loadScenarios(
 			return nil, fmt.Errorf("failed to seed scratch registry: %w", err)
 		}
 
-		// us-apply declares no `docs:` keys, so the evaluator's document
-		// record is empty for this command — this log line is the only
-		// place the target registry path is nameable.
+		// The checklist's `docs:` name the architecture, never the Registry,
+		// so this log line is the only place the target registry path is nameable.
 		slog.Info("Seeded scratch registry", "from", requirementsFile, "to", scratchPath)
 
 		scenarios, _, err := deps.StoryScenarioParser.ParseStoryScenarios(storyID, scratchPath)
@@ -142,6 +149,7 @@ func scenarioPostFix(
 // other stop reason leaves the canonical untouched, scratch kept in tmpDir for inspection.
 func commitApplyWalk(
 	scratchPath, requirementsFile string,
+	architecturePath func() (string, error),
 ) func(*engine.Result[*template.ScenarioApplyData]) error {
 	return func(result *engine.Result[*template.ScenarioApplyData]) error {
 		if result.Reason != engine.Converged {
@@ -151,7 +159,17 @@ func commitApplyWalk(
 			return nil
 		}
 
-		err := heldLineageKeys(scratchPath, result.Items)
+		scenarios, err := registry.NewRegistryLoader().Load(scratchPath)
+		if err != nil {
+			return fmt.Errorf("read the walked Registry: %w", err)
+		}
+
+		err = heldLineageKeys(scenarios, result.Items)
+		if err != nil {
+			return err
+		}
+
+		err = heldDeclaredServices(scenarios, architecturePath, result.Items)
 		if err != nil {
 			return err
 		}
@@ -179,12 +197,7 @@ func commitApplyWalk(
 // heldLineageKeys refuses the walk's Registry when a Scenario claiming one
 // of the walked criteria is keyed apart from that criterion's lineage id:
 // the key never depends on a model, whatever its fix wrote.
-func heldLineageKeys(scratchPath string, items []*template.ScenarioApplyData) error {
-	scenarios, err := registry.NewRegistryLoader().Load(scratchPath)
-	if err != nil {
-		return fmt.Errorf("read the walked Registry: %w", err)
-	}
-
+func heldLineageKeys(scenarios []*registry.RegistryScenario, items []*template.ScenarioApplyData) error {
 	walked := make(map[string]bool, len(items))
 	for _, item := range items {
 		walked[item.LineageScenarioID] = true

@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-99.3-001-mcp-initialize-iter1-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/scenarios.yaml"
-summary: "Added scenario 99.3-001-mcp-initialize exactly as specified; preserved metadata."
+summary: "Added the exact 99.3-001-mcp-initialize scenario entry and preserved metadata."
 === FILE_END: tmp/{{RUN_DIR}}/apply-99.3-001-mcp-initialize-iter1-result.yaml ===

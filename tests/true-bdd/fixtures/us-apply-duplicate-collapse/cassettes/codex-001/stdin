@@ -73,28 +73,29 @@ Then:
 ## Target
 Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 
-## Context
-The registry currently holds TWO entries that both reference the lineage scenario id `95.1-001-mcp-initialize` in their `user_stories[]`:
+## Diagnosis
+The registry holds two entries for the same acceptance criterion:
 
-- `E2E-901` — "Valid initialize POST to /mcp returns HTTP 200 with a JSON-RPC envelope" (service `mcp-service`)
-- `95.1-001-mcp-initialize` — "MCP /mcp endpoint responds 200 to a valid initialize POST" (service `mcp-service`)
+- `E2E-901` — "Valid initialize POST to /mcp returns HTTP 200 with a JSON-RPC envelope" (service `mcp-service`), `user_stories[]` references `scenario_id: "95.1-001-mcp-initialize"`.
+- `95.1-001-mcp-initialize` — "MCP /mcp endpoint responds 200 to a valid initialize POST" (service `mcp-service`), `user_stories[]` references the same `scenario_id: "95.1-001-mcp-initialize"`.
 
-Verdict: duplicate (2 entries). They describe the same observable behavior with the same service.
+Verdict: duplicate (2 entries). Per the merge rule, the **winner is `95.1-001-mcp-initialize`** because it is already keyed by the subject's lineage scenario id. `E2E-901` is the loser and must be deleted. No re-keying is needed; `E2E-950` must not be touched.
 
-Per the merge rules, the **winner** is `95.1-001-mcp-initialize` because it is already keyed by the subject's lineage scenario id. `E2E-901` is the **loser** and must be deleted after its content is folded into the winner.
-
-Merge analysis:
-- `user_stories[]`: both entries carry the identical single item `(story: docs/product/stories/95.1-duplicate-collapse.yaml, scenario_id: 95.1-001-mcp-initialize)`. After dedup by `(story, scenario_id)` the winner keeps exactly one item — no new items to add.
-- `merged_steps.given`: the winner is missing `"the server accepts JSON-RPC over HTTP POST at /mcp"` (present only in `E2E-901`). Add it after the existing given step to preserve order.
-- `merged_steps.when`: identical in both — no change.
-- `merged_steps.then`: the winner is missing `"the response body is a well-formed JSON-RPC envelope referencing the request id"` (present only in `E2E-901`). Add it after `"the server returns HTTP 200"`.
-- `E2E-950` is unrelated (story `90.1-unrelated.yaml`) and must NOT be touched or renamed.
+Merge details:
+- `user_stories[]`: both entries carry the identical item `(story: docs/product/stories/95.1-duplicate-collapse.yaml, scenario_id: 95.1-001-mcp-initialize)`. After dedup by `(story, scenario_id)` the winner keeps exactly one item — no additions.
+- `merged_steps`: the winner is missing two steps that only exist on the loser. Union them in, appended after the winner's existing steps:
+  - `given`: add `"the server accepts JSON-RPC over HTTP POST at /mcp"`
+  - `then`: add `"the response body is a well-formed JSON-RPC envelope referencing the request id"`
+  - `when` is already identical in both entries — leave as is.
 
 ## Required Changes
 
-### Change #1: Delete the losing `E2E-901` entry and union its steps into the `95.1-001-mcp-initialize` winner
-**Issue:** Two registry entries reference the same lineage scenario id `95.1-001-mcp-initialize`, so the AC is duplicated. The winner entry is also missing one `given` step and one `then` step that only exist on the losing entry.
-**Action:** Use the Edit tool on `tmp/{{RUN_DIR}}/scenarios.yaml` with the exact old_string and new_string below. This single replacement removes the `E2E-901` block and simultaneously writes the unioned `merged_steps` into the winner. Leave `metadata:` and the `E2E-950` entry untouched.
+### Change #1: Delete the losing `E2E-901` entry and union its steps into the winner `95.1-001-mcp-initialize`
+
+**Issue:** Two scenario entries reference the lineage scenario id `95.1-001-mcp-initialize`, and the winning entry's `merged_steps` is missing one `given` step and one `then` step that exist only on the losing entry.
+
+**Action:** Use the Edit tool on `tmp/{{RUN_DIR}}/scenarios.yaml` with the exact `old_string` and `new_string` below. This single replacement removes the `E2E-901` block and simultaneously completes the winner's `merged_steps`. Do not change `metadata`, and do not change the `E2E-950` entry.
+
 **old_string:**
 ```
   E2E-901:
@@ -130,6 +131,7 @@ Merge analysis:
       then:
         - "the server returns HTTP 200"
 ```
+
 **new_string:**
 ```
   95.1-001-mcp-initialize:
@@ -152,12 +154,13 @@ Merge analysis:
 ```
 
 ## Verification
-After the edit, `tmp/{{RUN_DIR}}/scenarios.yaml` must satisfy all of the following:
-1. `scenarios:` contains exactly two keys, in this order: `95.1-001-mcp-initialize`, then `E2E-950`.
-2. No key `E2E-901` appears anywhere in the file.
-3. Exactly ONE entry references `scenario_id: "95.1-001-mcp-initialize"` in its `user_stories[]`, and that entry has exactly one `user_stories[]` item.
-4. The winner's `merged_steps` contain 2 `given`, 1 `when`, and 2 `then` steps, verbatim as in new_string above.
-5. The `E2E-950` entry and the `metadata:` block are byte-identical to before the edit.
+After the edit, re-read `tmp/{{RUN_DIR}}/scenarios.yaml` and confirm all of the following:
+1. The key `E2E-901` no longer appears anywhere in the file.
+2. Exactly one entry references `scenario_id: "95.1-001-mcp-initialize"`, and it is keyed `95.1-001-mcp-initialize`.
+3. That entry's `merged_steps` contains 2 `given` steps, 1 `when` step, and 2 `then` steps, with no duplicated step text.
+4. Its `user_stories[]` contains exactly one item (the `95.1-duplicate-collapse.yaml` / `95.1-001-mcp-initialize` pair).
+5. The `E2E-950` entry and the `metadata` block are byte-for-byte unchanged.
+6. The file is still valid YAML with `scenarios` containing exactly two keys: `95.1-001-mcp-initialize` and `E2E-950`.
 
 ---
 

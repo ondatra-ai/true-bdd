@@ -7,7 +7,7 @@ metadata:
 scenarios:
   mcp-endpoint-001-initialize-ok:
     description: "MCP server returns HTTP 200 and a JSON-RPC envelope for a valid initialize request to /mcp"
-    service: ""
+    service: "mcp"
     path: "tests/mcp/mcp_endpoint_test.go"
     last_updated: "2026-10-21"
     user_stories:
@@ -24,7 +24,7 @@ scenarios:
         - and: the response body is a well-formed JSON-RPC envelope referencing the request id
   mcp-endpoint-002-get-refused:
     description: "MCP server returns HTTP 405 Method Not Allowed for a GET request to /mcp"
-    service: ""
+    service: "mcp"
     path: "tests/mcp/mcp_endpoint_test.go"
     last_updated: "2026-10-21"
     user_stories:

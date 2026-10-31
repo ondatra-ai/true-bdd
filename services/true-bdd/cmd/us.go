@@ -117,7 +117,9 @@ validate each one against the us-apply checklist. With --fix, every failed
 (AC, prompt) cell drives a Claude-mediated edit on a scratch copy of the
 scenario registry configured at documents.scenarios_yaml (conventionally
 docs/scenarios.yaml). The canonical registry file is replaced atomically
-only when every AC passes every prompt; otherwise it is left untouched.
+only when every AC passes every prompt and every Scenario claiming one is
+keyed by its lineage id and names a service the architecture declares;
+otherwise it is left untouched.
 
 Stories that still use the deprecated scenarios.test_scenarios[] format are
 rejected — convert them to acceptance_criteria with embedded steps first.

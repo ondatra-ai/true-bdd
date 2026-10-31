@@ -33,7 +33,7 @@ The single YAML file holding every Scenario, resolved from `documents.scenarios_
 _Avoid_: requirements file, scenarios file, spec file
 
 **Scenario**:
-One entry in the Registry, keyed by its lineage id `<story-id>-<ac-id>` (legacy entries keep an `E2E-NNN` key until their Story renames them), carrying a description, a `service`, a `path`, its originating `user_stories` and its `merged_steps`. The unit of specification a generated test is rendered from, and named after: the key in CamelCase.
+One entry in the Registry, keyed by its lineage id `<story-id>-<ac-id>` (legacy entries keep an `E2E-NNN` key until their Story renames them), carrying a description, a `service` the architecture document declares, a `path`, its originating `user_stories` and its `merged_steps`. The unit of specification a generated test is rendered from, and named after: the key in CamelCase.
 _Avoid_: test case, requirement, feature
 
 **Given**:

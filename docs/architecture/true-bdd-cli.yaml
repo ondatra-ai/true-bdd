@@ -49,14 +49,16 @@ commands:
       Walks every Acceptance Criterion of the Story whose id is the argument
       against the us-apply checklist. With --fix, applied fixes edit a scratch
       copy of the Registry, which replaces the Registry only when every
-      Acceptance Criterion passes every Prompt.
+      Acceptance Criterion passes every Prompt and every Scenario claiming one
+      of them is keyed by its lineage id and has a service the architecture
+      document declares.
     parameters:
       - {name: story-id, in: argument, required: true, schema: {type: string}}
       - {name: fix, in: flag, schema: {type: boolean}}
       - {name: model, in: option, description: 'Repeatable <tier>=<cli>:<model> override.', schema: {type: string}}
     responses:
       '0': {description: The walk ended, passing or failing; a failing walk leaves the Registry untouched.}
-      '1': {description: A refusal before the walk, an unusable answer, or end of stdin at a question or a fix menu.}
+      '1': {description: 'A refusal before the walk, an unusable answer, end of stdin at a question or a fix menu, or a passing walk whose Registry it refuses to write: a Scenario claiming a criterion keyed apart from its lineage id, or naming an empty service or one the architecture does not declare.'}
   scen check:
     description: >-
       Walks the Registry's Scenarios against the scen-check checklist, one cell
@@ -171,7 +173,7 @@ extensions:
       access: read-write
     architecture-document:
       path: docs/architecture/architecture.yaml
-      format: The architecture document (documents.architecture_yaml); scen check --fix writes Word mappings, Public interface declarations and Concept bindings.
+      format: The architecture document (documents.architecture_yaml); us apply reads the services a merged Scenario may name; scen check --fix writes Word mappings, Public interface declarations and Concept bindings.
       access: read-write
     interface-documents:
       path: the documents the architecture's public_interface declarations name

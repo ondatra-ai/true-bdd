@@ -61,6 +61,8 @@ func declaredSelections() map[string]declaredSelection {
 		"us-refine-fix-forbidden-verb":     {Stem: usRefineStem, QShort: "3929749d", RequireF: true},
 		"us-apply-rewalk-converges":        {Stem: usApplyStem, QShort: presenceQ, RequireF: true},
 		"us-apply-key-apart-from-lineage":  {Stem: usApplyStem, QShort: presenceQ, RequireF: true},
+		"us-apply-names-service":           {Stem: usApplyStem, QShort: presenceQ, RequireF: true},
+		"us-apply-undeclared-service":      {Stem: usApplyStem, QShort: presenceQ, RequireF: true},
 		"fix-loop-exit-story":              {Stem: usRefineStem, QShort: vagueDescriptionQ, RequireF: true},
 		"fix-loop-exit-registry":           {Stem: usApplyStem, QShort: presenceQ, RequireF: true},
 		"scen-check-id-filter":             {Stem: scenCheckStem, QShort: "30469152", RequireF: false},
