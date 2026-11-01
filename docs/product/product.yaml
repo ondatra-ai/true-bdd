@@ -794,10 +794,11 @@ concepts:
         state before the run: the named fixture's files, copied fresh; with a
         stated file or directory left out; with a stated path made a symbolic
         link to a stated target; with a stated checklist narrowed to the one
-        Prompt whose question holds a stated text; or holding the probes of the
-        engine's atomic replacement of a whole file through a staging file, a
-        private file and an old hard link to it.
-      terms: [project tree, fixture, checklist, Prompt, symbolic link, engine, staging file, command, hard link]
+        Prompt whose question holds a stated text; or holding, put in place by
+        the fixture, the probes of the engine's atomic replacement of a whole
+        file through a staging file: a private file the engine will replace
+        and the file a stale staging file will point at.
+      terms: [project tree, fixture, checklist, Prompt, symbolic link, engine, staging file, command]
     - concept: machine environment
       means: >-
         The machine the engine runs on is in a stated state before the run: the
