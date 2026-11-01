@@ -197,3 +197,28 @@ log:
       with the neighbouring steps, drop E now, or keep E as it is?
     answer: |
       Drop E now
+  - decision_trace:
+      research:
+        - |
+          The closing review of PR #263 (spec axis, 1 November): after #264,
+          `scen check` judges each binding in its own turn over every step of
+          the walk that reached it, while `build steps` judges a suite's
+          bindings in one turn over its unbound steps
+          (services/true-bdd/internal/app/commands/build_steps_concepts.go);
+          ADR-0035 says `build steps` judges a binding "as scen check judges
+          it", and #264's experiment C showed the shared form stricter, so one
+          binding can pass one gate and fail the other.
+      recommendation: |
+        Unify: `build steps` uses the same per-binding judgement as
+        `scen check`, one code path instead of two, re-recording the build
+        steps fixtures that judge bindings.
+      settled: |
+        `build steps` judges each binding the way `scen check` does, one turn
+        per binding over the steps that reach it; the two gates share one
+        judgement path.
+    question: |
+      Q6 - After #264, `scen check` judges each binding separately over every
+      step that uses it, while `build steps` judges a suite's bindings in one
+      turn. Unify on one way, or record the difference in an ADR?
+    answer: |
+      Unify: one way (Recommended)
