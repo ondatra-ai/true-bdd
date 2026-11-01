@@ -1327,7 +1327,8 @@ architecture:
         build steps judges each binding the same way after suite grouping, one
         turn per binding over the steps of every Item reaching it, and its
         proposal turn reads the binding before the engine checks the patterns.
-        step-definitions holds each Scenario step to one definition recording a declared concept of its block.
+        step-definitions holds each Scenario step a definition binds to exactly one, recording a declared concept of its block;
+        a step no definition binds yet passes as build steps' gap, since scen check runs before build steps writes it.
     - term: Public interface
       technical: >-
         Each architecture.services entry optionally carries public_interface with kind,
