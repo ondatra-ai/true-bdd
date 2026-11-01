@@ -26,7 +26,7 @@ import (
 func TestWriterConfig001Codex(t *testing.T) {
 	s := scenarios.New(t, "writer-config-001-codex")
 	s.Given(`the "writer-config-codex" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`the engine dispatched 1 apply AI turn to "codex"`)
@@ -40,7 +40,7 @@ func TestWriterConfig001Codex(t *testing.T) {
 func TestWriterConfig002Claude(t *testing.T) {
 	s := scenarios.New(t, "writer-config-002-claude")
 	s.Given(`the "writer-config-claude" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`the engine dispatched 1 apply AI turn to "claude"`)

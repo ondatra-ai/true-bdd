@@ -1,7 +1,7 @@
 # Product document for `build-tests-fix-unreadable-catalogue`.
 #
-# Its `catalogue:` holds a string where a list of phrases belongs, so no
-# step's phrase can be read from it.
+# Its `concepts:` holds a string where the given, when and then lists of
+# concepts belong, so no step's concept can be read from it.
 
 title: "Fixture host project"
 
@@ -16,4 +16,4 @@ roles:
 
 glossary: []
 
-catalogue: "the MCP server is running"
+concepts: "the MCP server is running"

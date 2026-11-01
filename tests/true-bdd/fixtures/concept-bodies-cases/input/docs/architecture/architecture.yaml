@@ -1,0 +1,39 @@
+architecture:
+  services:
+  - name: calc
+    path: services/calc
+    language: go
+    public_interface:
+      kind: cli
+      document: docs/architecture/calc-cli.yaml
+  concepts:
+  - concept: operation
+    block: when
+    service: calc
+    references:
+    - command: halve
+    - command: double
+    does: Run the declared halve or double command, as the step names the operation, as a process with the step's whole number, passing --exact to halve when the step says exactly, and keep its stdout as the output.
+  - concept: output
+    block: then
+    service: calc
+    references:
+    - command: halve
+    - command: double
+    does: Match the step's pattern, a regular expression taken as the rest of the step, against the kept stdout without its trailing newline, and require a match or, when the step says does not match, no match.
+  terms:
+  - term: number
+    technical: The integer argument of the calculator's halve and double commands.
+    observed_by: The step passes it to the command it runs as a process.
+  - term: pattern
+    technical: A Go regular expression matched against the command's stdout.
+    observed_by: The step matches it against the kept stdout.
+  testing:
+    framework: go-test
+    libraries:
+    - module: github.com/ondatra-ai/true-bdd/pkg
+      version: v0.0.0-20261027174914-58543b8e324b
+    commands:
+      record: go test -tags bdd -json -count=1 ./tests/calc/...
+      replay: go test -tags bdd -json -count=1 ./tests/calc/...
+      live: go test -tags bdd -json -count=1 ./tests/calc/...

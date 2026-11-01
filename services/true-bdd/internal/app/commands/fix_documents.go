@@ -10,6 +10,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/runner"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/architecture"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/disk"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/docs"
@@ -27,8 +28,8 @@ var ErrTermDocumentUnparseable = errors.New("the fix left the document unreadabl
 var ErrRegistryScenariosChanged = errors.New("the fix added or removed a Scenario of the Registry")
 
 // termDocumentKeys are the documents a closure fix may write: the
-// catalogue and the glossary live in the product document, the word
-// mapping in the architecture document.
+// concepts and the glossary live in the product document, the word
+// mapping and the concept bindings in the architecture document.
 func termDocumentKeys() []string {
 	return []string{docs.KeyProduct, docs.KeyArchitectureYAML}
 }
@@ -60,7 +61,7 @@ func seedTermDocuments(resolver *docs.Resolver, tmpDir string) ([]template.FixDo
 
 // seedInterfaceDocuments copies each Public interface document the
 // architecture names into tmp, keyed by its declared path, for a
-// public-interface or phrase-mappings fix to extend.
+// public-interface or concept-bindings fix to extend.
 func seedInterfaceDocuments(resolver *docs.Resolver, tmpDir string) ([]template.FixDocument, error) {
 	architecturePath, err := resolver.Resolve(docs.KeyArchitectureYAML)
 	if err != nil {
@@ -105,16 +106,27 @@ func seedFixDocument(key, path, tmpDir string) (template.FixDocument, error) {
 	return template.FixDocument{Key: key, Path: path, Scratch: scratch}, nil
 }
 
-// commitFixDocuments replaces each document whose scratch copy the fix
-// changed, once that copy reads as the document it replaces, and reports
-// whether the Registry was one of them. The copy stays, equal to the document.
-func commitFixDocuments(item *template.ScenarioCheckData) (bool, error) {
+// commitScenarioFix commits what a Scenario fix changed, interface copies
+// first, only once every term document and the Registry read as their
+// documents, and reports whether the Registry was one; else nothing (#268).
+func commitScenarioFix(item *template.ScenarioCheckData) (bool, error) {
 	documents := slices.Clone(item.TermDocuments)
 	if item.RegistryDocument != nil {
 		documents = append(documents, *item.RegistryDocument)
 	}
 
-	changed, err := commitDocuments(documents, registryIDs(item.Registry))
+	ids := registryIDs(item.Registry)
+
+	_, err := checkFixDocuments(documents, ids)
+	if err == nil {
+		err = commitConceptInterfaceFix(item)
+	}
+
+	if err != nil {
+		return false, fixNotTaken(append(documents, item.InterfaceDocuments...), err)
+	}
+
+	changed, err := commitDocuments(documents, ids)
 	if err != nil {
 		return false, err
 	}
@@ -122,31 +134,83 @@ func commitFixDocuments(item *template.ScenarioCheckData) (bool, error) {
 	return slices.Contains(changed, docs.KeyScenariosYAML), nil
 }
 
-// commitDocuments commits each working copy the fix changed and lists the
-// keys of those documents; ids are the Registry's, which its copy keeps.
+// commitDocuments commits each working copy the fix changed, once every
+// one of them reads as its document, and lists their keys; ids are the
+// Registry's, which its copy keeps. One that does not is a fix not taken.
 func commitDocuments(documents []template.FixDocument, ids []string) ([]string, error) {
-	changed := make([]string, 0, len(documents))
+	changed, err := checkFixDocuments(documents, ids)
+	if err != nil {
+		return nil, fixNotTaken(documents, err)
+	}
 
-	for _, document := range documents {
-		committed, err := commitFixDocument(document, ids)
+	keys := make([]string, 0, len(changed))
+
+	for _, document := range changed {
+		err = recordFixDocument(document)
 		if err != nil {
 			return nil, err
 		}
 
-		if committed {
-			changed = append(changed, document.Key)
-		}
+		keys = append(keys, document.Key)
 	}
 
-	if len(changed) == 0 {
+	if len(keys) == 0 {
 		slog.Warn("The fix changed no document")
+	}
+
+	return keys, nil
+}
+
+// checkFixDocuments lists the working copies the fix changed, each held to
+// what its document's readers need before any is committed.
+func checkFixDocuments(documents []template.FixDocument, ids []string) ([]template.FixDocument, error) {
+	changed := make([]template.FixDocument, 0, len(documents))
+
+	for _, document := range documents {
+		differs, err := checkFixDocument(document, ids)
+		if err != nil {
+			return nil, err
+		}
+
+		if differs {
+			changed = append(changed, document)
+		}
 	}
 
 	return changed, nil
 }
 
-// commitFixDocument commits one scratch copy, reporting whether it differed.
-func commitFixDocument(document template.FixDocument, ids []string) (bool, error) {
+// fixNotTaken resets every working copy of a fix a document refused to its
+// document, so the next apply starts from what the walk reads, and marks
+// the refusal for the walk (#268); any other error stays what it was.
+func fixNotTaken(documents []template.FixDocument, err error) error {
+	if !errors.Is(err, ErrTermDocumentUnparseable) {
+		return err
+	}
+
+	for _, document := range documents {
+		resetErr := disk.Copy(document.Scratch, document.Path, disk.Shared)
+		if resetErr != nil {
+			return errors.Join(err, fmt.Errorf("reset the scratch copy of %s: %w", document.Path, resetErr))
+		}
+	}
+
+	return fmt.Errorf("%w: %w", runner.ErrFixNotTaken, err)
+}
+
+// commitFixDocument commits one scratch copy that differs from its document.
+func commitFixDocument(document template.FixDocument, ids []string) error {
+	differs, err := checkFixDocument(document, ids)
+	if err != nil || !differs {
+		return err
+	}
+
+	return recordFixDocument(document)
+}
+
+// checkFixDocument reports whether a scratch copy differs from its document
+// and, when it does, refuses one its document's readers cannot load.
+func checkFixDocument(document template.FixDocument, ids []string) (bool, error) {
 	edited, err := disk.Read(document.Scratch)
 	if err != nil {
 		return false, fmt.Errorf("read the scratch copy of %s: %w", document.Path, err)
@@ -166,14 +230,19 @@ func commitFixDocument(document template.FixDocument, ids []string) (bool, error
 		return false, fmt.Errorf("%s: %w: %w", document.Path, ErrTermDocumentUnparseable, err)
 	}
 
-	err = disk.Copy(document.Path, document.Scratch, disk.Shared)
+	return true, nil
+}
+
+// recordFixDocument puts a checked scratch copy over its document.
+func recordFixDocument(document template.FixDocument) error {
+	err := disk.Copy(document.Path, document.Scratch, disk.Shared)
 	if err != nil {
-		return false, fmt.Errorf("replace %s with its fixed copy: %w", document.Path, err)
+		return fmt.Errorf("replace %s with its fixed copy: %w", document.Path, err)
 	}
 
 	slog.Info("Fix recorded in the document", "document", document.Key, "path", document.Path)
 
-	return true, nil
+	return nil
 }
 
 // readableFixDocument holds an edited copy to what its readers need: a
@@ -201,12 +270,12 @@ func readableFixDocument(key, scratch string, content []byte, ids []string) erro
 	return nil
 }
 
-// readableProductDocument holds an edited product document to a catalogue
+// readableProductDocument holds an edited product document to concepts
 // and a glossary the checks load.
 func readableProductDocument(scratch string) error {
-	_, err := product.LoadCatalogue(scratch)
+	_, err := product.Load(scratch)
 	if err != nil {
-		return fmt.Errorf("load the catalogue: %w", err)
+		return fmt.Errorf("load the concepts: %w", err)
 	}
 
 	_, err = product.LoadGlossary(scratch)
@@ -252,19 +321,9 @@ func registryIDs(scenarios []*template.ScenarioCheckData) []string {
 // interface documents the fix changed, documents first, once each parses
 // in the form of the kind the edited architecture declares for it.
 func commitInterfaceFix(architectureDocument template.FixDocument, interfaceDocuments []template.FixDocument) error {
-	_, err := architecture.LoadInterfaces(architectureDocument.Scratch, ".")
+	declared, err := checkArchitectureWorkingCopy(architectureDocument)
 	if err != nil {
-		return fmt.Errorf("validate Public interface fix: %w", err)
-	}
-
-	_, err = architecture.LoadPhraseMappings(architectureDocument.Scratch)
-	if err != nil {
-		return fmt.Errorf("validate Phrase mapping fix: %w", err)
-	}
-
-	declared, err := architecture.DeclaredInterfaceDocuments(architectureDocument.Scratch)
-	if err != nil {
-		return fmt.Errorf("validate Public interface fix: %w", err)
+		return fmt.Errorf("%s: %w: %w", architectureDocument.Path, ErrTermDocumentUnparseable, err)
 	}
 
 	kinds := make(map[string]string, len(declared))
@@ -280,15 +339,39 @@ func commitInterfaceFix(architectureDocument template.FixDocument, interfaceDocu
 	}
 
 	for _, document := range interfaceDocuments {
-		_, err = commitFixDocument(document, nil)
+		err = commitFixDocument(document, nil)
 		if err != nil {
 			return err
 		}
 	}
 
-	_, err = commitFixDocument(architectureDocument, nil)
+	return commitFixDocument(architectureDocument, nil)
+}
 
-	return err
+// checkArchitectureWorkingCopy holds the architecture's working copy to its
+// Public interfaces and Concept bindings, and lists its interface documents.
+func checkArchitectureWorkingCopy(document template.FixDocument) ([]architecture.InterfaceDocument, error) {
+	_, err := architecture.LoadInterfaces(document.Scratch, ".")
+	if err != nil {
+		return nil, fmt.Errorf("validate Public interface fix: %w", err)
+	}
+
+	_, err = architecture.LoadConceptBindings(document.Scratch)
+	if err != nil {
+		return nil, fmt.Errorf("validate Concept binding fix: %w", err)
+	}
+
+	err = architecture.ValidateForm(document.Scratch)
+	if err != nil {
+		return nil, fmt.Errorf("validate Concept binding fix: %w", err)
+	}
+
+	declared, err := architecture.DeclaredInterfaceDocuments(document.Scratch)
+	if err != nil {
+		return nil, fmt.Errorf("validate Public interface fix: %w", err)
+	}
+
+	return declared, nil
 }
 
 // checkInterfaceWorkingCopy holds a changed interface document working copy

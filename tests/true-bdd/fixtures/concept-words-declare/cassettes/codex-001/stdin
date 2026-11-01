@@ -1,0 +1,127 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+Apply only the exact concept, binding or step repair approved at the menu.
+Edit only the listed working copies. Preserve every unaffected entry.
+For a Story step rewrite, return the complete Story YAML instead of editing
+a document. For document edits return the requested confirmation markers.
+
+
+### TASK
+
+The Product Owner chose apply at the menu. Apply this approved word repair:
+PROPOSED REPAIR (Product Owner word repair) — DO NOT APPLY until an explicit menu decision.
+
+Item: host
+Failed judgement: `when: halve` — undeclared domain word "idempotency key"
+
+Why a declared term and not a reword:
+The product's `language_policy` states: "The request label is presented to users as an idempotency key. Keep this exact domain name in the product meanings and declare it when needed." Rewording the means to drop "idempotency key" would break that policy, so the repair declares the word instead. The means of `halve` is left byte-identical; only `terms` and `glossary` change.
+
+File: docs/product/product.yaml (the only file touched)
+
+Change 1 — declare the word on the affected concept (`concepts.when`, concept `halve`):
+
+Replace:
+
+      {
+        "concept": "halve",
+        "means": "Halve the entered number once with the supplied idempotency key.",
+        "terms": []
+      }
+
+With:
+
+      {
+        "concept": "halve",
+        "means": "Halve the entered number once with the supplied idempotency key.",
+        "terms": [
+          "idempotency key"
+        ]
+      }
+
+Change 2 — add the matching glossary entry (top-level `glossary`):
+
+Replace:
+
+  "glossary": [],
+
+With:
+
+  "glossary": [
+    {
+      "term": "idempotency key",
+      "means": "The label a caller supplies with a request so that repeating the same request with the same label changes the number only once."
+    }
+  ],
+
+Resulting full document after both changes (docs/product/product.yaml):
+
+{
+  "roles": [
+    {
+      "name": "Product Owner",
+      "description": "Owns meanings."
+    }
+  ],
+  "concepts": {
+    "given": [
+      {
+        "concept": "number ready",
+        "means": "A number is entered before the action.",
+        "terms": []
+      }
+    ],
+    "when": [
+      {
+        "concept": "halve",
+        "means": "Halve the entered number once with the supplied idempotency key.",
+        "terms": [
+          "idempotency key"
+        ]
+      }
+    ],
+    "then": [
+      {
+        "concept": "number result",
+        "means": "Compare the displayed number with an expected value.",
+        "terms": []
+      },
+      {
+        "concept": "unused",
+        "means": "The settlement ledger has a reconciled nostro balance.",
+        "terms": []
+      }
+    ]
+  },
+  "glossary": [
+    {
+      "term": "idempotency key",
+      "means": "The label a caller supplies with a request so that repeating the same request with the same label changes the number only once."
+    }
+  ],
+  "description": "A calculator accepts a number and a request label. Repeating a request with the same label changes the number only once.",
+  "language_policy": "The request label is presented to users as an idempotency key. Keep this exact domain name in the product meanings and declare it when needed."
+}
+
+Scope and invariants:
+- Only `concepts.when[halve].terms` and the top-level `glossary` change.
+- `means` of `halve` is unchanged, so the behaviour described is preserved and the language policy's exact domain name is kept.
+- The passing concepts `given: number ready`, `then: number result` and the unrelated `then: unused` are untouched; no variation is added, since no new item or use is involved.
+- Schema honoured: the glossary entry uses `term` and `means`; no `meaning` field anywhere.
+- No Story, Scenario or architecture file is touched. The Story `host` (id, title, as_a, i_want, so_that, status, AC-1 and its given/when/then steps) stays exactly as written.
+
+Follow-up owned by someone else (not part of this fix):
+The newly declared term "idempotency key" needs a Word mapping from the System Architect, offered later through `scen check` section D: term-mappings. Refinement of this Story does not wait for that mapping.
+Edit ONLY the product working copy below, adding the glossary entry AND the
+concept's terms (a string list), or rewording its means. Glossary entries
+have term and means fields. Preserve unrelated product content.
+Do not edit the Story, Scenario or architecture; the Word mapping comes later.
+
+Edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`.
+
+Return confirmation inside these markers:
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
+applied: true
+target: "product"
+summary: "<approved word repair>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===

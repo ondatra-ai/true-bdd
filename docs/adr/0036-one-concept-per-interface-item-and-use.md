@@ -11,7 +11,7 @@ We decided:
 - **A new concept only for a new item or kind of use.** A step that needs a Public interface item, or a kind of use of one, that no concept covers justifies a new concept. Any other new variation widens the concept that already covers that item and use, and then its binding. What keeps the count down is the number of these pairs a product's steps reach.
 - **A Given concept states a state.** A Given step worded as an action is reworded as the state it puts in place (GLOSSARY, Given).
 - **A concept's `means` is closed.** It names the interface item, the kind of use and every variation the concept admits, in prose; the shape stays `concept`, `means` and `terms`. A step whose variation `means` does not state does not link, and its fix widens the concept at the menu, where the Product Owner validates it before any step is written (ADR-0034).
-- **A `means` relies only on its declared `terms` and plain English.** Any other domain word is declared, with a glossary entry and a Word mapping, or reworded in product words. A model Prompt of its own judges the `means` of every concept an Item links to for undeclared domain words, in `us refine` per Story and in `scen check` per Scenario. Its fix is the Product Owner's: a declared term (a glossary entry and the concept's `terms`) or a reworded `means`. The Word mapping a newly declared term needs is the System Architect's, through `scen check`'s existing term-mapping check, so `us refine` still never waits for the architecture.
+- **A `means` relies only on its declared `terms` and plain English.** Any other domain word is declared, with a glossary entry and a Word mapping, or reworded in product words. A model Prompt of its own judges the `means` of every concept an Item links to for undeclared domain words, in `us refine` per Story and in `scen check` per Scenario (_superseded for `scen check` by [ADR-0037](0037-concept-judgements-once-per-walk.md): each linked concept's words are judged once per walk_). Its fix is the Product Owner's: a declared term (a glossary entry and the concept's `terms`) or a reworded `means`. The Word mapping a newly declared term needs is the System Architect's, through `scen check`'s existing term-mapping check, so `us refine` still never waits for the architecture.
 
 These rules are the ones a later change of mind would cost a migration of every host's concepts. A decision that is cheap to change later stays provisional until it is seen working: what a concept is called, which concepts TrueBDD declares, and how a binding is worded.
 
@@ -30,6 +30,6 @@ These rules are the ones a later change of mind would cost a migration of every 
 - In #259, TrueBDD's concepts start from the spike's 19:
   - `engine activity` covers only steps worded as the engine's own activity;
   - its 15 Givens worded as actions (`claude pipes …`) are reworded as states;
-  - the six undeclared words (*fixture*, *stand-in*, *proxy*, *read root*, *staging file*, *hold*) are declared or reworded.
+  - the six undeclared words (_fixture_, _stand-in_, _proxy_, _read root_, _staging file_, _hold_) are declared or reworded.
 
 Grilling log: `docs/qna/20261029-131704-how-to-write-concepts.yaml`, Q1 to Q8 and the entries Claude settled as forced consequences.

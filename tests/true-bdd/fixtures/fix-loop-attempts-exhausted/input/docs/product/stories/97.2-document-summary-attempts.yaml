@@ -1,11 +1,3 @@
-# Story seed for the `fix-loop-attempts-exhausted` BDD fixture.
-#
-# ONE deliberate defect: AC-3's description carries the forbidden
-# qualifier "properly", so the vague-word-in-description prompt fails and
-# its fix is applied. The fixture's checklist allows one walk
-# (max_apply_attempts: 1), so the re-walk that would confirm the fix never
-# starts, and the run must leave this file exactly as it is.
-
 story:
     id: "97.2"
     title: Document Summary On Demand

@@ -1,7 +1,6 @@
 # Product document for `scen-check-closure-no-catalogue`.
 #
-# No `catalogue:` key: this host has not adopted the catalogue, so no
-# step declares a term, binds through a template, or is checked.
+# No `concepts:` key: this host has not adopted concepts.
 
 title: "Fixture host project"
 

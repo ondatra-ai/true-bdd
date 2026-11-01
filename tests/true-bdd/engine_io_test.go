@@ -41,6 +41,7 @@ func TestEngineIo002WriteHold(t *testing.T) {
 	s.When(`the System Architect runs "init" while a "shared" hold blocks "true-bdd"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`the file "true-bdd/true-bdd.yaml" is created`)
+	s.And(`the file "true-bdd/true-bdd.yaml" matches (?m)^  scen_check_concurrency: 1$`)
 	s.Done()
 }
 
@@ -51,7 +52,7 @@ func TestEngineIo003Events(t *testing.T) {
 	s.And(`the codex writer uses fixture-controlled authentication and CLIs`)
 	s.And(`the engine uses an observed fixture Claude CLI`)
 	s.And(`Git hook variables point outside the project`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`the codex writer provisioned and removed its fixture authentication`)
@@ -112,7 +113,7 @@ func TestEngineIo006CodexCancellation(t *testing.T) {
 func TestEngineIo007AtomicWrite(t *testing.T) {
 	s := scenarios.New(t, "engine-io-007-atomic-write")
 	s.Given(`the "engine-io-atomic" project tree`)
-	s.And(`the project prepares atomic replacement probes`)
+	s.And(`the project tree holds atomic replacement probes`)
 	s.When(`the System Architect runs "build tests --fix" after planting a stale staging symlink`)
 	s.Then(`the command exits with code 0`)
 	s.And(`the rewritten file "tests/mcp/ticket_test.go" keeps private permissions and replaces its old hard link "tmp/original.go"`)
@@ -137,7 +138,7 @@ func TestEngineIo009ClaudeWriterEnvironment(t *testing.T) {
 	s := scenarios.New(t, "engine-io-009-claude-writer-environment")
 	s.Given(`the "engine-io-claude-writer" project tree`)
 	s.And(`the engine uses an observed fixture Claude CLI`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`the file "tmp/claude-environment.txt" matches ^writer environment verified at spawn\n$`)

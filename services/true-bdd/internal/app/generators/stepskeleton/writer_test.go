@@ -13,13 +13,12 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/stepcoverage"
 )
 
-func TestSkeletonCompilesAndFailsWithPhraseBeforeBodyIsWritten(t *testing.T) {
+func TestSkeletonCompilesAndFailsWithItsConceptBeforeBodyIsWritten(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	phrase := `the command "{command}" gets {status:number}`
 
-	definition, err := stepskeleton.Write(
-		filepath.Join(dir, "steps"), phrase, `\Athe command "([^"]+)" gets ((?:[0-9]+|no))\z`)
+	definition, err := stepskeleton.WriteConcept(
+		filepath.Join(dir, "steps"), "then", "the command", `\Athe command "([^"]+)" gets ((?:[0-9]+|no))\z`)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -13,24 +13,16 @@ vocabulary:
   - fast
   forbidden_actions: []
 glossary: []
-catalogue:
-- template: the dividend is "{value}"
-  block: given
-  means: The first validated integer supplied to the calculator.
-  terms: []
-- template: the divisor is "{value}"
-  block: given
-  means: The second validated integer supplied to the calculator.
-  terms: []
-- template: the Calculator User divides the numbers
-  block: when
-  means: Run the calculator CLI divide command with both supplied integers.
-  terms: []
-- template: the result is "{value}"
-  block: then
-  means: Exit 0 and print exactly this integer on stdout.
-  terms: []
-- template: the error is "{message}"
-  block: then
-  means: Exit 1 with exactly this stderr message and no result.
-  terms: []
+concepts:
+  given:
+    - concept: operand supplied
+      means: The calculator is supplied a stated, already validated integer as its dividend or as its divisor.
+      terms: []
+  when:
+    - concept: division
+      means: The Calculator User runs the calculator's divide command once, with the supplied dividend and divisor.
+      terms: []
+  then:
+    - concept: outcome
+      means: Either the divide command exits 0 and prints exactly a stated integer on stdout, or it exits 1 with exactly a stated message on stderr and prints no result.
+      terms: []

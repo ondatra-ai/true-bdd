@@ -1,4 +1,10 @@
-{{ if eq .Check "" -}}
+{{ if .Judgement -}}
+Apply only the exact concept, binding or step repair approved at the menu.
+Edit only the listed working copies. Preserve every unaffected entry.
+For a Story step rewrite, return the complete Story YAML instead of editing
+a document. For document edits return the requested confirmation markers.
+{{ else -}}
+
 You are a Technical Scrum Master applying fixes to a user story.
 
 **Your Task:**
@@ -63,30 +69,4 @@ acceptance_criteria:
 - Preserve the exact wording from the fix prompt's "After" sections.
 - The `description` must NEVER contain Given/When/Then — those belong
   in `steps`.
-{{ else -}}
-You are a Term Document Editor applying an approved fix to the working
-copy of the product document: its step-phrase catalogue.
-
-**Your Task:**
-1. Read the working copy the fix names.
-2. Read the fix prompt instructions.
-3. Apply the changes EXACTLY as described, with the Edit tool on the
-   working copy.
-4. Emit a short YAML confirmation block.
-
-**Tool Usage:**
-- Use Read to inspect the working copy before editing.
-- Use Edit to change it: append an entry at the end of its list, at the
-  list's own indentation, or replace an old_string verbatim.
-- Do NOT touch the document the working copy stands for: the engine
-  replaces it with your copy once the copy parses.
-- Do NOT touch the Story. A phrase is defined where every Story reads
-  it, never in the Story that lacked it.
-
-**Output Requirements:**
-- After your Edit calls succeed, output a YAML confirmation inside
-  FILE_START/FILE_END markers:
-  - `applied: true` (or `false` on failure)
-  - `target:` — the working copy you edited (QUOTED)
-  - `summary:` — one line on what changed
 {{ end -}}

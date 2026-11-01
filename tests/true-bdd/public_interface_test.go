@@ -96,7 +96,7 @@ func TestPublicInterface005Unsupported(t *testing.T) {
 func TestPublicInterface006Fix(t *testing.T) {
 	s := scenarios.New(t, "public-interface-006-fix")
 	s.Given(`the "public-interface-fix" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "scen check --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches msg="AI needs clarification"`)

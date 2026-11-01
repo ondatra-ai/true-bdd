@@ -1,0 +1,29 @@
+scenarios:
+  calc-001-halve:
+    description: A halving step whose definition records no concept
+    service: calc
+    path: tests/calc/calc_test.go
+    merged_steps:
+      when: ["the Owner halves 6"]
+      then: ["the result is 3"]
+  calc-002-double:
+    description: A doubling step two definitions bind
+    service: calc
+    path: tests/calc/calc_test.go
+    merged_steps:
+      when: ["the Owner doubles 6"]
+      then: ["the result is 12"]
+  calc-003-double:
+    description: Every step binds one definition recording a declared concept of its block
+    service: calc
+    path: tests/calc/calc_test.go
+    merged_steps:
+      when: ["the Owner doubles 7"]
+      then: ["the result is 14"]
+  calc-004-even:
+    description: A result step whose definition records a concept of another block
+    service: calc
+    path: tests/calc/calc_test.go
+    merged_steps:
+      when: ["the Owner doubles 8"]
+      then: ["the result is even"]

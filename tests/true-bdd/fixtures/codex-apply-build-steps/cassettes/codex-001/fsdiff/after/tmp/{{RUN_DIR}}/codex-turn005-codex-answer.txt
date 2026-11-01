@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-when-doubling-iter1-result.yaml ===
+applied: true
+target: "tests/calc/steps/concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b.go"
+summary: "Applied the supplied doubling body and imports to run the calculator from the host root and store its integer stdout."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-when-doubling-iter1-result.yaml ===

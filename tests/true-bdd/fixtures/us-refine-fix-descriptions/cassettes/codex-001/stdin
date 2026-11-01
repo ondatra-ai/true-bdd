@@ -103,7 +103,7 @@ Claude must list every section heading of a shared Google Doc in the conversatio
 # Fix Prompt for Story 96.2: Document Summary On Demand
 
 ## Instructions
-Apply the following changes to the acceptance criteria for this story. Only AC-1's `description` changes. Every other AC description and every `steps` block (including AC-1's) is reproduced unchanged.
+Apply the following changes to the acceptance criteria for this story.
 
 ## Original Acceptance Criteria
 1. AC-1: Given a Google Doc is shared with the Claude User's account, when the Claude User asks for a summary, then Claude displays a summary of 150 words or fewer in the conversation. [has steps]
@@ -114,27 +114,51 @@ Apply the following changes to the acceptance criteria for this story. Only AC-1
 
 ## Required Changes
 
+Only AC-1 fails the `us-refine/acceptance_criteria` check. AC-2, AC-3, AC-4 and AC-5 already follow the rule-based description format and are reproduced below unchanged — same description text, same steps, word for word. Do not rewrite them.
+
 ### Change #1: AC-1
 **Before:** "Given a Google Doc is shared with the Claude User's account, when the Claude User asks for a summary, then Claude displays a summary of 150 words or fewer in the conversation."
-**Issue:** Contains Gherkin Given/When/Then text in the description field (Gherkin belongs in `steps`), and is missing the keyword "must"/"should". The Given/When/Then detail is already present in AC-1's `steps`, so removing it from the description loses nothing.
+
+**Issue:** Contains Gherkin Given/When/Then text in the description field (Gherkin belongs in `steps`), and is missing the required keyword "must"/"should". The Gherkin detail is already present in the AC's `steps` field, so the description duplicates it.
+
+**Issue classification:** core functionality (the summary is the whole point of the story) → use "must".
+
 **After (description):** "Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a Google Doc shared with their account."
-**After (steps):** unchanged — keep AC-1's existing steps exactly as they are:
+
+**After (steps):** unchanged — keep the existing Gherkin detail exactly as it stands:
 ```yaml
-steps:
-  - given:
-      - "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
-  - when:
-      - "the Claude User asks Claude to summarize the document"
-  - then:
-      - "Claude displays a summary of 150 words or fewer in the conversation"
+- given:
+    - "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
+- when:
+    - "the Claude User asks Claude to summarize the document"
+- then:
+    - "Claude displays a summary of 150 words or fewer in the conversation"
 ```
 
-### No other changes
-- AC-2, AC-3, AC-4 and AC-5 descriptions already follow the rule-based format (one sentence, contain "must", no Gherkin keywords) — leave them exactly as written.
-- Do not alter any `steps` field on any AC.
-- Do not add, merge, remove or reorder acceptance criteria.
+No new acceptance criteria are added, none are merged, and none are removed.
+
+### Rewrite summary (YAML)
+```yaml
+- original: "Given a Google Doc is shared with the Claude User's account, when the Claude User asks for a summary, then Claude displays a summary of 150 words or fewer in the conversation."
+  issue: "Contains GWT / Missing must/should"
+  rewritten: "Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a Google Doc shared with their account."
+- original: "Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access."
+  issue: "ok — no change"
+  rewritten: "(unchanged)"
+- original: "Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds."
+  issue: "ok — no change"
+  rewritten: "(unchanged)"
+- original: "Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words."
+  issue: "ok — no change"
+  rewritten: "(unchanged)"
+- original: "Claude must list every section heading of a shared Google Doc in the conversation when the Claude User asks for the document outline."
+  issue: "ok — no change"
+  rewritten: "(unchanged)"
+```
 
 ## Complete Fixed Acceptance Criteria
+
+This block replaces the whole acceptance-criteria list. AC-1's description is the only changed value; every other description and all steps are byte-for-byte identical to the originals.
 
 ```yaml
 - ac_id: AC-1
@@ -189,6 +213,11 @@ steps:
     - then:
         - "Claude displays each section heading in its original order"
 ```
+
+## Verification
+After applying, each AC description should report `ok`:
+- AC-1: one sentence, under 200 characters, contains "must", no Given/When/Then keywords, no vague words, uses the exact role "Claude User".
+- AC-2 through AC-5: unchanged and already compliant.
 
 === FILE_END: tmp/{{RUN_DIR}}/01-96.2-fix-prompts.md ===
 

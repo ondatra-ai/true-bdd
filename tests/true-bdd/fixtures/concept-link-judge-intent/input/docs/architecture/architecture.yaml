@@ -1,0 +1,65 @@
+{
+  "architecture": {
+    "services": [
+      {
+        "name": "calc",
+        "path": "services/calc",
+        "language": "go",
+        "public_interface": {
+          "kind": "ui",
+          "elements": [
+            {
+              "page": "Calc",
+              "role": "button",
+              "name": "Halve"
+            },
+            {
+              "page": "Calc",
+              "role": "textbox",
+              "name": "Number"
+            }
+          ]
+        }
+      }
+    ],
+    "concepts": [
+      {
+        "concept": "number ready",
+        "block": "given",
+        "service": "calc",
+        "references": [
+          {
+            "element": {
+              "page": "Calc",
+              "role": "textbox",
+              "name": "Number"
+            }
+          }
+        ],
+        "does": "Enter the given number into the Number field."
+      },
+      {
+        "concept": "halve",
+        "block": "when",
+        "service": "calc",
+        "intent": "Halve the entered number through the Calc UI."
+      },
+      {
+        "concept": "number result",
+        "block": "then",
+        "service": "calc",
+        "references": [
+          {
+            "element": {
+              "page": "Calc",
+              "role": "textbox",
+              "name": "Number"
+            }
+          }
+        ],
+        "does": "Compare the displayed Number text with the expected result."
+      }
+    ],
+    "terms": []
+  }
+}

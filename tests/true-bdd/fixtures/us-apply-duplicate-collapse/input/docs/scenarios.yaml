@@ -1,26 +1,3 @@
-# Seed registry for the `us-apply-duplicate-collapse` BDD fixture.
-#
-# Engineered so `us apply 95.1 --fix` walks its single AC through the
-# SHIPPED us-apply checklist and exercises the duplicate branch:
-#
-#   - "present?" PASSES: at least one entry references story
-#     docs/product/stories/95.1-duplicate-collapse.yaml with lineage
-#     95.1-001-mcp-initialize.
-#   - "duplicate?" FAILS: E2E-901 and 95.1-001-mcp-initialize BOTH
-#     reference that lineage. The F: collapses them into the entry keyed
-#     by the lineage id (ADR 0014), unioning user_stories and merged_steps.
-#
-# E2E-901 is listed first and carries more steps on purpose: keeping the
-# first entry, the richer one or the numbered one would each pick it, so
-# only the key rule leaves 95.1-001-mcp-initialize standing.
-#
-# After the collapse fix the walker restarts, both prompts pass, the
-# outer re-walk confirms the fixpoint, and the scratch registry is
-# committed over this file.
-#
-# E2E-950 is unrelated on purpose: it anchors the "leave every other
-# entry alone" assertion.
-
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
   version: "2.0"

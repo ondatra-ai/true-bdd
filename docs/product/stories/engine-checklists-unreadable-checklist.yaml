@@ -58,7 +58,7 @@ story:
             - then:
                 - the command exits with code 1
                 - stdout matches level=ERROR msg="Refusing to start" command="scen check"
-                - and: 'stdout matches checklist true-bdd/checklists/scen-check\.yaml: D: step-phrases carries a with: that is a list, but with: takes a mapping of check parameters'
+                - and: 'stdout matches checklist true-bdd/checklists/scen-check\.yaml: D: declared-terms carries a with: that is a list, but with: takes a mapping of check parameters'
                 - but: stdout does not match interface
                 - and: stdout does not match SCEN CHECK
                 - and: no file outside "tmp" changed

@@ -16,11 +16,12 @@ product  ⟷  user stories  ⟷  scenarios
 ```
 
 - **product document** (`docs/product/product.yaml`) sits at the top: the product's roles,
-  vocabulary and glossary, which the story checks read, and its step-phrase catalogue, the shape
-  every step of a claimed Scenario must take (`D: step-phrases`), each term of which the glossary
-  must define exactly once (`D: declared-terms`) and the architecture's word mapping must map
-  exactly once (`D: term-mappings`), and each template of which must bind one step definition of
-  the Scenario's suite that no other template reaches (`D: step-definitions`).
+  vocabulary and glossary, which the story checks read, and its concepts, what each Given, When
+  and Then step may state, each term of which the glossary must define exactly once
+  (`D: declared-terms`) and the architecture's word mapping must map exactly once
+  (`D: term-mappings`), each bound to its service's Public interface (`D: concept-bindings`), and
+  each step of which a step definition binds binds exactly one, recording a declared concept of its
+  block (`D: step-definitions`); a step no definition binds yet waits for `build steps`.
 - A **story is written directly**, by hand, out of a discussion of a Feature, into its own file
   under `docs/product/stories/` — no command creates one, and no larger document seeds it. The
   pipeline starts at `us refine <id>`, which grows the story in place.
@@ -29,7 +30,7 @@ product  ⟷  user stories  ⟷  scenarios
   `us apply` refuse any other id at startup and name it, so a path-like id such as `../x` never
   reaches the filesystem. The glob `<id>-*.yaml` also matches a story whose id starts with
   `<id>-`, so both commands read the one match whose own `id:` is the asked id: `us refine
-  scen-check` reads `scen-check-verifier.yaml`, never `scen-check-phrases-*.yaml`. When no match
+  scen-check` reads `scen-check-verifier.yaml`, never `scen-check-terms-*.yaml`. When no match
   declares the id (`us refine scen` never walks `scen-check`), or several do, they refuse.
 - A story may carry a **`feature:` label**, the Feature it belongs to. It is a label, not a document,
   and `us refine` keeps it through every rewrite of the story file, the fix applier's included.
@@ -56,7 +57,7 @@ host project root
 ├── templates/*.prompt.tpl       prompt templates (shipped by the engine repo)
 ├── docs/
 │   ├── product/
-│   │   ├── product.yaml         product ref + roles + BDD vocabulary + glossary + catalogue
+│   │   ├── product.yaml         product ref + roles + BDD vocabulary + glossary + concepts
 │   │   └── stories/<id>-<slug>.yaml
 │   ├── architecture/architecture.yaml   testing.suites[] + services + terms (word mapping)
 │   └── scenarios.yaml           the central scenario registry (each entry names the test file it
@@ -69,7 +70,7 @@ host project root
 
 | Category | Documents |
 | --- | --- |
-| **Product docs** | product (incl. the BDD vocabulary and the step-phrase catalogue) — story |
+| **Product docs** | product (incl. the BDD vocabulary and the concepts) — story |
 | **Scenario registry** | the merge target — single source of truth for behavior |
 | **Architecture** | one `testing:` section (the suites and how each runs) plus services (incl. `type` and runtime `dependencies`) |
 | **Code artifacts** | specs, production source |
@@ -92,7 +93,7 @@ and its refined ACs — its scenarios — merge into the registry (`us apply`). 
 flowchart LR
   subgraph spine["hierarchy spine"]
     direction LR
-    PRODUCT["docs/product/product.yaml<br/>roles · vocabulary · catalogue"]
+    PRODUCT["docs/product/product.yaml<br/>roles · vocabulary · concepts"]
     STORY["docs/product/stories/&lt;id&gt;-&lt;slug&gt;.yaml<br/>acceptance_criteria[] — the scenarios, long form"]
     REG["docs/scenarios.yaml<br/>keyed by lineage &lt;story-id&gt;-&lt;ac-id&gt;"]
     STORY -- "③ us apply" --> REG
@@ -132,9 +133,9 @@ prompt.
 | --- | --- | --- | --- |
 | `us refine <id>` | the hand-written **story**; **product** roles + vocabulary; **architecture** test suites (for sketches) | us-refine.yaml | the same **story file, in place** — ACs gain steps and rule-based descriptions |
 | `us apply <id>` | every **AC** of the refined story (lineage id `<id>-<ac-id>`, the Scenario's Registry key; an AC id that is not `<NNN>-<slug>` is refused) | us-apply.yaml | merges into **scenarios.yaml** via a scratch copy; re-walks to a fixpoint (≤ `max_apply_attempts`), then commits it over the registry |
-| `build tests` | every **registry scenario**; the suite that owns it, and the step definitions under that suite's `path:`; when the **product** declares a catalogue, every scenario's steps are held to it first, and a step outside it refuses the run; with `--fix`, when the **product** declares a catalogue, the phrase each unbound step matches, the **glossary** words it relies on and their **architecture** word mapping, embedded in the step-authoring prompt | build-tests.yaml | with `--fix` only: the **generated test file** each scenario's `path:` names, rendered deterministically, and the missing **step definition** in that suite. Without `--fix` nothing is written — the same renderer verifies the tree by regenerating and comparing. The registry is never modified either way |
+| `build tests` | every **registry scenario** and the **architecture** service and suite that own it; steps are free text, held to nothing, and no step definition is read | none: deterministic codegen, no AI turn | with `--fix` only: the **generated test file** each scenario's `path:` names, rendered deterministically — nothing else, no step definition among it. Without `--fix` nothing is written — the same renderer verifies the tree by regenerating and comparing. The registry is never modified either way |
 | `build code` | every **suite** under `architecture.testing.suites[]`; discovers failing tests by running the suite's own declared `commands.replay` | build-code.yaml | with `--fix`: **production source** under the declared service paths only — tests and registry are never touched |
-| `scen check [id...]` | one **registry scenario** at a time — its own description, `service:`, `path:`, lineage and steps, and never the registry file itself; its `D:` checks also read the **product** catalogue and glossary, the **architecture** word mapping, and the suite's **step definitions**, related over the steps of every claimed Scenario of that suite | scen-check.yaml | **nothing**. It exits 1 when any scenario fails, so it can gate a change. With `--fix`, through a scratch copy: a failed `D:` check's fix writes only the **product** or **architecture** document, never the Scenario; a failed model question's fix writes the meaning of a **product** catalogue phrase, or the Scenario's own entry in **scenarios.yaml** (its description or steps) |
+| `scen check [id...]` | one **registry scenario** at a time — its own description, `service:`, `path:`, lineage and steps, and never the registry file itself; its `D:` checks also read the **product** concepts and glossary, the **architecture** word mapping, and the suite's **step definitions**, related over the steps of every claimed Scenario of that suite | scen-check.yaml | **nothing**. It exits 1 when any scenario fails, so it can gate a change. With `--fix`, through a scratch copy: a failed `D:` check's fix writes only the **product** or **architecture** document, never the Scenario; a failed link's fix writes a wider or new concept to the **product** document, or a rewritten step to the Scenario's own entry in **scenarios.yaml**; a failed word judgement's fix writes the **product** document only; a failed binding judgement's fix writes a binding to the **architecture** document, extending its service's Public interface document where needed, or a corrected concept to the **product** document; any other failed model question's fix writes the Scenario's own entry in **scenarios.yaml** (its description or steps) |
 
 ## Every cross-reference, with real values
 
@@ -147,7 +148,7 @@ Example values come from the BDD fixtures. Numbers match the arrows on the map.
 | 3 | AC id in story | registry key and user_stories[].scenario_id | **us apply** bridges the gap between story and registry — it derives the lineage id `<story-id>-<ac-id>` (AC `001-mcp-initialize` of story 95.1 → `"95.1-001-mcp-initialize"`), keys the scenario by it and merges it in; the author writes the AC id as `<NNN>-<slug>`, so reordering a story's ACs changes no key (ADR 0014) |
 | 4 | user_stories[].story | story file path | each registry entry names its source stories: `docs/product/stories/95.1-duplicate-collapse.yaml` |
 | 5 | scenario service: | architecture services[].name | `service: "mcp-service"` must name a declared service |
-| 6 | scenario steps | step definitions | **build tests** passes only if every Given/When/Then step binds to exactly one ``suite.Step(`regexp`, …)`` in the owning suite's `steps/` package — except steps prefixed `llm:` (a model performs it) or `judge:` (a model rules on it once the scenario has run), which bind to nothing and must never be given a definition. The engine answers that question itself, by parsing the `steps/` package, and walks only the scenarios with gaps, so a converged repository spends no model at all. Separately, the scenario's `path:` names the generated `func Test<Key>` (the key in CamelCase) that runs it — with the steps stated literally, and cross-checked against the registry before any of them run. That file is deterministic codegen rather than a model turn: `--fix` writes it, and without `--fix` the same renderer verifies the tree by regenerating and comparing |
+| 6 | scenario steps | step definitions | **build steps** passes only if every Given/When/Then step binds to exactly one ``suite.Step(`regexp`, …)`` in the owning suite's `steps/` package — except steps prefixed `llm:` (a model performs it) or `judge:` (a model rules on it once the scenario has run), which bind to nothing and must never be given a definition. The engine answers that question itself, by parsing the `steps/` package, and walks only the scenarios with gaps, so a converged repository spends no model at all. Separately, the scenario's `path:` names the generated `func Test<Key>` (the key in CamelCase) that runs it — with the steps stated literally, and cross-checked against the registry before any of them run. That file is deterministic codegen rather than a model turn: **build tests** `--fix` writes it, and without `--fix` the same renderer verifies the tree by regenerating and comparing |
 | 7 | scenario service: | testing.suites[].service | the one join that says which suite owns a scenario, and therefore where its step definitions live. Replaced the id-prefix convention (INT- / E2E-), which lived in prompt prose and in no code |
 | 8 | services[].path | services/&lt;name&gt;/ | `path: services/true-bdd` tells **build code** where production source lives — any path works; the fixtures use `services/calc` |
 | 9 | failing test | production source | **build code --fix** edits the service's source (its `services[].path`) until the runner's `LastRunPassed` flips to true |

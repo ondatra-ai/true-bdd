@@ -58,15 +58,17 @@ const checklistResultSchema = `{
 
 // ChecklistEvaluator evaluates subjects against validation prompts using AI.
 type ChecklistEvaluator struct {
-	aiClient     ports.AIPort
-	config       *config.ViperConfig
-	models       *provider.Registry
-	modeFactory  *ai.ModeFactory
-	docResolver  *docs.Resolver
-	systemLoader *template.TemplateLoader[ChecklistPromptData]
-	userLoader   *template.TemplateLoader[ChecklistPromptData]
-	tmpDir       string
-	subjectID    string
+	aiClient      ports.AIPort
+	config        *config.ViperConfig
+	models        *provider.Registry
+	modeFactory   *ai.ModeFactory
+	docResolver   *docs.Resolver
+	systemLoader  *template.TemplateLoader[ChecklistPromptData]
+	userLoader    *template.TemplateLoader[ChecklistPromptData]
+	tmpDir        string
+	subjectID     string
+	artifactLabel string
+	sharing       *conceptSharing
 }
 
 // NewChecklistEvaluator creates a new checklist evaluator with config-based template paths.
@@ -96,6 +98,7 @@ func NewChecklistEvaluatorWithPaths(
 		docResolver:  docs.NewResolver(cfg),
 		systemLoader: template.NewTemplateLoader[ChecklistPromptData](systemPath),
 		userLoader:   template.NewTemplateLoader[ChecklistPromptData](userPath),
+		sharing:      newConceptSharing(),
 	}
 }
 
@@ -108,9 +111,20 @@ func (e *ChecklistEvaluator) EvaluateOne(
 	subjectID string,
 	promptCtx checklist.PromptWithContext,
 	tmpDir string,
+	artifactLabel ...string,
 ) (checklist.ValidationResult, error) {
+	local := *e
+	e = &local
 	e.tmpDir = tmpDir
+
 	e.subjectID = subjectID
+	if len(artifactLabel) > 0 {
+		e.artifactLabel = artifactLabel[0]
+	}
+
+	if kind := promptCtx.Prompt.Judgement(); kind != "" && kind != checklist.JudgementSketch {
+		return e.evaluateConcepts(ctx, subject, subjectID, promptCtx, kind)
+	}
 
 	return e.evaluatePrompt(ctx, subject, subjectID, promptCtx)
 }
@@ -151,7 +165,7 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 		Structured:  ai.SupportsResultSchema(model.CLI),
 	}
 
-	systemPrompt, userPrompt, err := e.renderPrompts(promptData)
+	systemPrompt, userPrompt, err := e.renderChecklistPrompts(promptCtx, promptData)
 	if err != nil {
 		return checklist.ValidationResult{}, err
 	}
@@ -170,6 +184,7 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 
 	response, err := e.aiClient.ExecutePromptWithSystem(
 		ctx, provider.RolePrompt, systemPrompt, userPrompt, model, mode, schema,
+		provider.TurnOptions{ArtifactLabel: e.artifactLabel},
 	)
 	if err != nil {
 		return checklist.ValidationResult{}, pkgerrors.ErrChecklistAIEvaluationFailed(err)
@@ -191,7 +206,7 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 
 	return checklist.ValidationResult{
 		SectionPath:  promptCtx.GetFullSectionPath(),
-		Question:     promptCtx.Prompt.Question,
+		Question:     promptData.Question,
 		ActualAnswer: parsedResult.Answer,
 		Context:      parsedResult.Context,
 		Status:       status,

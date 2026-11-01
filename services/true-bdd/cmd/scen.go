@@ -2,17 +2,22 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"github.com/spf13/cobra"
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/bootstrap"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/commands"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/runner"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/docs"
 )
+
+var errInvalidConcurrency = errors.New("engine.scen_check_concurrency must be a positive integer")
 
 // NewScenCommand builds the `scen` cobra supergroup. The container is
 // resolved lazily inside each subcommand's RunE.
@@ -36,10 +41,13 @@ func newScenCheckCmd(provide containerProvider) *cobra.Command {
 the scen-check checklist, one cell per (scenario, prompt). Each prompt
 reads one scenario's own fields — description, service, path, lineage
 and steps — and rules on that scenario alone; no prompt is shown the
-registry file, so none can ask a cross-registry question. A Q: prompt
-costs one AI turn per scenario; a D: prompt is answered by one of the
-engine's built-in checks with no turn, before any Q: prompt, and a
-scenario failing one skips its Q: prompts.
+registry file. A Q: prompt costs one AI turn per scenario, except the
+binding and word judgements, which rule on a binding or a concept:
+once every walked scenario has its link, each binding is one turn with
+every step that links it and each linked concept's words one turn, and
+every scenario using it answers from that verdict. A D: prompt is answered by one of the engine's
+built-in checks with no turn, before any Q: prompt, and a scenario
+failing one skips its Q: prompts.
 
 With no argument every scenario is walked; ids narrow the walk to those
 scenarios, in ascending id order whatever order they are typed. An id
@@ -49,9 +57,15 @@ The CLI exits 1 when any scenario fails a check, so scen check can gate
 a change. --fix walks the same checklist, every shipped prompt of which
 carries a fix template, and is refused at startup while a prompt it
 would walk carries none. A failed D: check's fix defines what it found
-undefined in the product document, or maps it in the architecture
-document, never in the scenario; a failed Q: prompt's fix rewrites the
-scenario's own registry entry, or the meaning of a catalogue phrase.
+undefined in the product document, or maps or binds it in the
+architecture document, never in the scenario. A failed link's fix
+offers the Product Owner a wider or new concept in the product document
+or a rewritten step in the scenario's own registry entry; a failed word
+judgement's fix rewrites the product document only; a failed binding
+judgement's fix offers the System Architect a binding in the
+architecture document, extending the Public interface where needed, or
+the Product Owner a corrected concept. Any other failed Q: prompt's fix
+rewrites the scenario's own registry entry.
 
 Example:
   true-bdd scen check
@@ -116,7 +130,19 @@ func runScenCheckWithContainer(
 	ids []string,
 	fix bool,
 ) error {
+	concurrency := 1
+
+	if value := container.Config.GetString("engine.scen_check_concurrency"); value != "" {
+		parsed, err := strconv.Atoi(value)
+		if err != nil || parsed < 1 {
+			return runner.RefuseStartup("scen check", errInvalidConcurrency)
+		}
+
+		concurrency = parsed
+	}
+
 	return commands.RunScenCheck(ctx, commands.ScenCheckDeps{
+		ValidationConcurrency:       concurrency,
 		RegistryLoader:              container.RegistryLoader,
 		ChecklistLoader:             container.ChecklistLoader,
 		DocResolver:                 container.DocResolver,

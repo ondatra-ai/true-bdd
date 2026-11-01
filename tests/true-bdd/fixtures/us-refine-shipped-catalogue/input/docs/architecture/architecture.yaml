@@ -3,6 +3,8 @@ architecture:
   - name: calculator
     path: services/calculator
     language: go
+    public_interface:
+      kind: cli
     description: 'A CLI: calculator halve <integer>; exit 0 and print the integer result on stdout. Input validation is owned by calculator-input.'
   testing:
     framework: go-test

@@ -1,0 +1,6 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
+applied: false
+impossible: []
+target: "services/calc"
+summary: "Updated calc.go so double adds the operand to itself and halve divides it by two; preserved square and argument validation. Changes remain saved. Attempted TestCalc001Double and TestCalc002Halve individually and together; neither executed because sandbox permissions blocked the harness dependency pkg/testkit/bddgo. No tests were observed passing; verification remains incomplete."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===

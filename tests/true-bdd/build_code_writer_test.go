@@ -26,7 +26,7 @@ import (
 func TestBuildCodeWriter001Nonzero(t *testing.T) {
 	s := scenarios.New(t, "build-code-writer-001-nonzero")
 	s.Given(`the "build-code-writer-nonzero" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches level=WARN msg="Writer turn failed" outcome="non-zero exit"`)
@@ -49,7 +49,7 @@ func TestBuildCodeWriter001Nonzero(t *testing.T) {
 func TestBuildCodeWriter002Empty(t *testing.T) {
 	s := scenarios.New(t, "build-code-writer-002-empty")
 	s.Given(`the "build-code-writer-empty" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches level=WARN msg="Writer turn failed" outcome="empty output"`)
@@ -70,7 +70,7 @@ func TestBuildCodeWriter002Empty(t *testing.T) {
 func TestBuildCodeWriter003Bound(t *testing.T) {
 	s := scenarios.New(t, "build-code-writer-003-bound")
 	s.Given(`the "build-code-writer-bound" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=WARN msg="Writer turn failed" outcome="non-zero exit"`)

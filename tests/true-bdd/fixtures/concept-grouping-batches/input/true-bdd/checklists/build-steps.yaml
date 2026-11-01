@@ -1,0 +1,38 @@
+# Checklist for `true-bdd build steps`.
+config:
+  max_apply_attempts: 3
+  grouping_batch_texts: 4
+sections:
+  - id: step-coverage
+    name: Step coverage
+    validation_prompts:
+      - D: step-coverage
+        rationale: Each concept Item needs its compiled definitions with their bodies written; the whole suite is covered and listed after all Items.
+        F: Write only the bodies of this concept's step definitions in this suite, doing what its Concept binding says through the declared Public interface, preserving the engine's registrations and signatures.
+
+  - id: concept-grouping
+    name: Concept grouping
+    validation_prompts:
+      - Q: |
+          Group the supplied distinct unbound steps of one suite and block.
+          Read the product roles, concepts and glossary. Given is a state
+          before behaviour, When an action or event, Then an observable outcome.
+          A concept is one Public interface item and kind of use, as the
+          wording fixes it; an argument's target never changes the concept.
+          Read means as CLOSED: only the variations its prose states fit.
+          Score from 0 to 10: 10 a plain instance; 9 an instance in other
+          words without doubt; 7 or 8 related but partly outside its meaning
+          or another fits as well; 1 to 6 not this concept; 0 unrelated.
+          An unstated variation scores at most 8. A step of the wrong kind
+          for its block scores at most 4 against every concept of that block.
+          For every supplied key return exactly one assignment: index is
+          the numeric key, concept and score are the highest scoring concept
+          of its block, runner_up and runner_up_score the next highest.
+          With only one concept use runner_up null and runner_up_score 0.
+          Use distinct names for best and runner-up, never rank a higher
+          score second. Omit no index and invent none. Change nothing.
+        with:
+          concepts: group
+          threshold: 9
+        rationale: Every unbound text needs one closed meaning before any skeleton.
+        docs: [product]

@@ -1,9 +1,3 @@
-# Registry seed for `scen-check-fix-rewrites-subjective-outcome`.
-#
-# One Scenario whose outcome is a feeling: the person feels welcomed,
-# which two reviewers can decide differently and both be right. The fix
-# asks what counts as correct, then rewrites the outcome in this entry.
-
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
   version: "2.0"

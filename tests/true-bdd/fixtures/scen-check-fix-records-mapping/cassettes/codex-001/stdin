@@ -1,8 +1,8 @@
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
 
 You are a Term Document Editor applying an approved fix to the working
-copy of one term document: the product document's step-phrase catalogue
-or glossary, or the architecture document's word mapping.
+copy of one term document: the product document's glossary or
+concepts, or the architecture document's word mapping.
 
 **Your Task:**
 1. Read the working copy the fix names.
@@ -48,23 +48,11 @@ Then:
 
 ## Fix Prompt to Apply
 
-# Fix Prompt for Scenario E2E-001: The service must answer a ping with a pong
+Proposal for the System Architect (owner of Word mappings), at the menu before apply.
 
-## Target
-The `architecture_yaml` document (`docs/architecture/architecture.yaml`): its `architecture.terms:` list, and nothing else.
+Finding: E2E-001, service mcp-service, check term-mappings — the Then concept `answer` uses the product term `reply`, which has no entry in `architecture.terms`. The product glossary already defines `reply` ("What the MCP service sends back for one message. A client waits on it, so its content is behaviour."), so only the architecture mapping is missing. Nothing in the product document, the Scenario, the step definitions or any generated test changes.
 
-## Background (context only — do not act on this section)
-- The catalogue entry `the service answers "{reply}"` (block `then`) declares the terms `mcp service` and `reply`.
-- `architecture.terms:` already maps `mcp service` and `message` exactly once each; it does not map `reply`.
-- The fix is one new mapping for `reply`. The Scenario, the generated test `tests/mcp/ping_test.go`, the step definitions and `docs/product/product.yaml` are NOT edited.
-
-## Required Changes
-
-### Change #1: Add the missing `reply` mapping
-**Document:** architecture_yaml (`docs/architecture/architecture.yaml`)
-**Action:** Append one entry to the end of the existing `architecture.terms:` list, after the `message` entry. The list already exists — do not create a second `terms:` key, and do not reorder or re-indent the existing `mcp service` and `message` entries.
-
-**Exact edit — replace old_string with new_string, verbatim:**
+Change one file: `docs/architecture/architecture.yaml` — append one `architecture.terms` entry for `reply`, after the existing `message` entry, keeping the list's two-space-nested, four-space item indentation.
 
 old_string:
 ```
@@ -84,34 +72,23 @@ new_string:
         Post the request to /mcp and keep the response for the steps after.
     - term: reply
       technical: >-
-        The result field of the JSON-RPC response to the request the when
-        step posted, carrying the answer text directly.
+        The JSON-RPC response body returned by the POST to /mcp, whose
+        result field holds the answer text.
       observed_by: >-
-        Read the reply out of the response the when step kept and compare it
-        to the quoted text exactly, character for character, with no trimming
-        and no normalisation; the step fails when they differ.
+        Read the response the When step kept and compare its answer text
+        with the stated text.
 ```
 
-**The new entry alone, for reference (4 spaces before `- term:`, 6 before the other keys, matching the entries already in the list):**
-```yaml
-    - term: reply
-      technical: >-
-        The result field of the JSON-RPC response to the request the when
-        step posted, carrying the answer text directly.
-      observed_by: >-
-        Read the reply out of the response the when step kept and compare it
-        to the quoted text exactly, character for character, with no trimming
-        and no normalisation; the step fails when they differ.
-```
+Why this satisfies the check:
+- `term` is the product's verbatim glossary word `reply`.
+- `technical` says what the word is in the implementation — the JSON-RPC response body from the POST to /mcp, with the answer text in its `result` field — taken verbatim from the `reply-technical` answer. It is prose, not a reference object.
+- `observed_by` is prose for how a step definition observes it: the Then step reads the response that the When step kept and compares its answer text with the stated text — taken verbatim from the `reply-observed` answer. It is prose, not a reference object.
+- The mapping is observed in a Then, which observes and compares, matching the `answer` concept's block; it does not set up state or call anything.
+- All three fields are nonempty strings, and the entry duplicates no existing term (`mcp service`, `message`).
 
-## Constraints
-- Spell the term exactly `reply`, as the catalogue entry `the service answers "{reply}"` and the glossary spell it.
-- Add this entry exactly once: a term mapped twice is built two ways, so no step definition can follow both.
-- Change nothing else in `docs/architecture/architecture.yaml` — the header comment, the `testing:` block, the `services:` list and the existing two mappings stay byte-for-byte as they are.
-- Do not edit `docs/product/product.yaml`, the Scenario registry entry E2E-001, `tests/mcp/ping_test.go`, or any step definition.
+No other document is touched: this check names only `architecture.terms`, no concept binding or reference is added, so no Public interface declaration is needed.
 
-## Done when
-`architecture.terms:` holds three entries — `mcp service`, `message`, `reply` — each mapped exactly once, and every term declared by the catalogue entries matching E2E-001's steps has a mapping.
+Apply after approval at the menu.
 
 ---
 
@@ -125,18 +102,19 @@ the working copy, never the document itself:
 The engine replaces each document with its working copy once the copy
 reads as valid YAML, so a copy you leave unparseable changes nothing.
 
+Word mapping entries have term, technical and observed_by, all strings.
+observed_by is prose describing setup or observation, never a reference object.
 ## Instructions
 
 1. Use the Read tool to load the working copy the fix prompt's
-   document names, and find the list it changes (`catalogue:` or
+   document names, and find the list it changes (`concepts:` or
    `glossary:` in the product document, `architecture.terms:` in the
    architecture document).
 2. Apply the changes described in the "Fix Prompt to Apply" section
    above with the Edit tool on that working copy: append a new entry at
    the end of its list, at the list's own indentation, or replace the
    old_string verbatim.
-3. Copy each entry's YAML exactly as the fix prompt gives it. Keep a
-   template single-quoted: it carries `{`, `[` and `"` of its own.
+3. Copy each entry's YAML exactly as the fix prompt gives it.
 4. You MAY only edit the working copies listed above. The documents
    themselves, the scenario registry, a generated test file and a step
    definition are all out of bounds.

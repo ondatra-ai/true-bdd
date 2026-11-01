@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
+applied: true
+target: "product"
+summary: "Declared idempotency key in halve terms and added its glossary entry; all other content preserved."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===

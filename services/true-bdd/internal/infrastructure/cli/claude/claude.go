@@ -214,6 +214,7 @@ func parseEnvelope(stdout []byte, opts Options) (Answer, error) {
 		IsError          bool            `json:"is_error"`
 		Errors           []string        `json:"errors"`
 		Subtype          string          `json:"subtype"`
+		StopReason       string          `json:"stop_reason"`
 		APIErrorStatus   int             `json:"api_error_status"`
 		StructuredOutput json.RawMessage `json:"structured_output"`
 		Result           json.RawMessage `json:"result"`
@@ -239,6 +240,10 @@ func parseEnvelope(stdout []byte, opts Options) (Answer, error) {
 	answer := Answer{Data: envelope.StructuredOutput, CostUSD: envelope.CostUSD, Tokens: counts(envelope.Usage)}
 	if isEmptyJSON(envelope.StructuredOutput) {
 		answer.Data = envelope.Result
+	}
+
+	if envelope.StopReason == "max_tokens" || envelope.Subtype == "error_max_output_tokens" {
+		return answer, fmt.Errorf("%w: output cap reached", ErrResult)
 	}
 
 	if envelope.IsError || envelope.APIErrorStatus >= 400 {

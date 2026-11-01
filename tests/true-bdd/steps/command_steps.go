@@ -13,9 +13,9 @@ import (
 // standing; it exists to bound a hang, not to pace a passing run.
 const hostCommandTimeout = 10 * time.Minute
 
-// assertCommandExitCode runs a command the scenario names, in a directory
-// under the run's tmpdir, and pins its exit status — the independent
-// outcome check that the suite the fix loop left behind passes on its own.
+// The outcome check apart from the engine: the suite the fix loop left behind passes on its own.
+//
+//truebdd:concept then "after-run shell check"
 func assertCommandExitCode(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)

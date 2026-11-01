@@ -123,6 +123,10 @@ func (e *Engine[I, P, Q]) walkAllItems(
 	items []I,
 	queries []Q,
 ) (walkSummary, error) {
+	if batch, ok := e.walker.(itemWalker[I, Q]); ok {
+		return e.walkBatch(ctx, batch, items, queries)
+	}
+
 	summary := walkSummary{allPassed: true}
 
 	for idx, item := range items {
@@ -171,9 +175,25 @@ func (e *Engine[I, P, Q]) completedWalk(ctx context.Context, summary walkSummary
 }
 
 func (e *Engine[I, P, Q]) attemptLimit() int {
-	if e.opts.MaxApplyAttempts > 0 {
-		return e.opts.MaxApplyAttempts
+	return fixLimit(e.opts.MaxApplyAttempts)
+}
+
+type itemWalker[I, Q any] interface {
+	WalkItems(ctx context.Context, items []I, queries []Q, onStart func(int, int)) ([]ItemRun[I], error)
+}
+
+func (e *Engine[I, P, Q]) walkBatch(
+	ctx context.Context, batch itemWalker[I, Q], items []I, queries []Q,
+) (walkSummary, error) {
+	runs, err := batch.WalkItems(ctx, items, queries, e.opts.OnItemStart)
+	summary := walkSummary{allPassed: true}
+
+	for index, run := range runs {
+		items[index] = run.Item
+		summary.allPassed = summary.allPassed && run.Passed
+		summary.anyFixApplied = summary.anyFixApplied || run.FixApplied
+		summary.exit = summary.exit || run.UserExited
 	}
 
-	return defaultMaxApplyAttempts
+	return summary, err
 }

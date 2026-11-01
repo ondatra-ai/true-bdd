@@ -14,9 +14,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
 )
 
-// assertScenarioStepsMatched pins that a `build tests --fix` run left a
-// named scenario EXECUTABLE: every step resolves to exactly one pattern
-// parsed from the fix loop's Go source — zero is unbound, more than one is ambiguous.
+// Zero patterns is unbound and two are ambiguous, read from the steps' Go source.
+//
+//truebdd:concept then "Registry content"
 func assertScenarioStepsMatched(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)

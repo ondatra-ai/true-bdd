@@ -44,9 +44,9 @@ story:
                 - the Quality Engineer runs "scen check"
             - then:
                 - the command exits with code 1
-                - stdout matches level=ERROR msg="Check could not answer" check=step-phrases subjectID=E2E-001
-                - and: 'stdout matches read the catalogue: .*product document \./docs/product/product\.yaml: yaml: line \d+: did not find expected'
-                - but: stdout does not match check=declared-terms
+                - stdout matches level=ERROR msg="Check could not answer" check=declared-terms subjectID=E2E-001
+                - and: 'stdout matches read the concepts: .*product document \./docs/product/product\.yaml: yaml: line \d+: did not find expected'
+                - but: stdout does not match check=term-mappings
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns
         - id: 004-architecture-not-yaml-stops-scen-check

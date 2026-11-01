@@ -1,22 +1,23 @@
-# Fixture checklist for `fix-loop-own-words`.
+# Fixture checklist for `fix-loop-unanswered-eof`.
 #
-# The step-phrase check alone, with a fix that asks one question before it
-# proposes its catalogue entry, so the person answers it in their own words.
+# The declared-term check alone, with a fix that asks one question before
+# it proposes its glossary entry; stdin is at end of input, so nobody
+# answers it.
 
 version: "1.0"
-last_updated: "2026-10-22"
+last_updated: "2026-10-30"
 
 sections:
   - id: term_closure
     name: "Term Closure"
-    description: "Every step of a Scenario a Story claims must match exactly one catalogue phrase."
+    description: "Every term a declared concept relies on must be defined in the product glossary."
     validation_prompts:
-      - D: step-phrases
-        rationale: "A step outside the catalogue has no stated meaning, so no step definition follows from the spec."
+      - D: declared-terms
+        rationale: "A concept whose meaning relies on an undefined word still has no stated meaning, so no step definition follows from the spec."
         docs:
           - product
         F: >-
-          Propose one catalogue entry (template, block, means, terms) for the failing step, asking exactly one question first: what the step means.
-          After the person answers, copy their definition into means verbatim, removing only the introductory "It means" and replacing "that many" with the template's number slot in braces.
+          Propose one glossary entry (term, means) for the undefined term, asking exactly one question first: what the term means.
+          After the person answers, copy their definition into means verbatim, removing only the introductory "It means".
           Keep means on one YAML scalar line. Preserve the person's pronouns and wording; do not expand "its reply" into a longer phrase.
-          Write it to the product document, never to the Scenario.
+          Write it to the product document's glossary, never to the Scenario.

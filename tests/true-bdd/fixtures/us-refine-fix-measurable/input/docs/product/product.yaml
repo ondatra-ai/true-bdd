@@ -8,20 +8,16 @@ vocabulary:
   forbidden_qualifiers: []
   forbidden_actions: []
 glossary: []
-catalogue:
-- template: a shared document is selected
-  block: given
-  means: Select an accessible document.
-  terms: []
-- template: the Calculator User requests the "{view}" view
-  block: when
-  means: Request the named summary view.
-  terms: []
-- template: the summary is concise
-  block: then
-  means: The summary length has no measurable threshold in this wording.
-  terms: []
-- template: the summary has at most {count:number} words
-  block: then
-  means: The displayed summary contains at most the stated word count.
-  terms: []
+concepts:
+  given:
+    - concept: document selected
+      means: A shared document the Calculator User can open is selected.
+      terms: []
+  when:
+    - concept: view requested
+      means: The Calculator User requests one named summary view of the selected document, brief, overview or preview.
+      terms: []
+  then:
+    - concept: summary length
+      means: The displayed summary contains at most a stated number of words.
+      terms: []

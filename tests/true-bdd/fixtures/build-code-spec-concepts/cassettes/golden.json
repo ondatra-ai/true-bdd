@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "build-code-spec-concepts",
+  "files": [
+    {
+      "path": "services/calc/calc.go",
+      "kind": "modified",
+      "size": 356,
+      "sha256": "9ac777c6a033e4daed92dd56cc704a16d6ea9bfc8a1cd01fe8e4461072be1bf0",
+      "text": "package main\n\nimport (\n\t\"fmt\"\n\t\"os\"\n\t\"strconv\"\n)\n\nfunc main() {\n\tif len(os.Args) != 3 {\n\t\tos.Exit(1)\n\t}\n\tvalue, err := strconv.Atoi(os.Args[2])\n\tif err != nil {\n\t\tos.Exit(1)\n\t}\n\tswitch os.Args[1] {\n\tcase \"double\":\n\t\tfmt.Println(value + value)\n\tcase \"halve\":\n\t\tfmt.Println(value / 2)\n\tcase \"square\":\n\t\tfmt.Println(value * value)\n\tdefault:\n\t\tos.Exit(1)\n\t}\n}\n"
+    }
+  ]
+}

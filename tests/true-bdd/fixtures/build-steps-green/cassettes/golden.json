@@ -3,6 +3,13 @@
   "fixture": "build-steps-green",
   "files": [
     {
+      "path": "tests/calc/steps/concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b.go",
+      "kind": "created",
+      "size": 897,
+      "sha256": "281cb3bf512e28f73d1e3b8dc91d7c35b9d988597651b798109fb81b11b9508d",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"doubling\"\nfunc concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b(state *State, args []string) error {\n\tconst (\n\t\thostRoot    = \"../..\"\n\t\tservicePath = \"./services/calc\"\n\t\tcommand     = \"double\"\n\t)\n\n\tvalue := args[0]\n\n\trun := exec.Command(\"go\", \"run\", servicePath, command, value)\n\trun.Dir = hostRoot\n\tvar stderr strings.Builder\n\trun.Stderr = \u0026stderr\n\n\tstdout, err := run.Output()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"go run %s %s %s in %s: %w: %s\",\n\t\t\tservicePath, command, value, hostRoot, err, strings.TrimSpace(stderr.String()))\n\t}\n\n\tprinted := strings.TrimSpace(string(stdout))\n\tdoubled, err := strconv.Atoi(printed)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"%s %s printed %q, want an integer on stdout: %w\",\n\t\t\tcommand, value, printed, err)\n\t}\n\n\tstate.Value = doubled\n\treturn nil\n}\n"
+    },
+    {
       "path": "tests/calc/steps/first-body-written",
       "kind": "created",
       "size": 8,
@@ -10,18 +17,18 @@
       "text": "injected"
     },
     {
-      "path": "tests/calc/steps/phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df.go",
-      "kind": "created",
-      "size": 851,
-      "sha256": "bff07ae63ee8934d10cf2248ad21c92083aec6d8e5c70d8e15347926098554bc",
-      "text": "package steps\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\nfunc phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df(state *State, args []string) error {\n\tconst (\n\t\thostRoot    = \"../..\"\n\t\tservicePath = \"./services/calc\"\n\t\tcommandName = \"double\"\n\t)\n\n\tvalue := strconv.Itoa(state.Value)\n\n\tcmd := exec.Command(\"go\", \"run\", servicePath, commandName, value)\n\tcmd.Dir = hostRoot\n\n\tvar stdout, stderr bytes.Buffer\n\tcmd.Stdout = \u0026stdout\n\tcmd.Stderr = \u0026stderr\n\n\tif err := cmd.Run(); err != nil {\n\t\treturn fmt.Errorf(\"run %s %s %s: %w: %s\", servicePath, commandName, value, err, strings.TrimSpace(stderr.String()))\n\t}\n\n\tdoubled, err := strconv.Atoi(strings.TrimSpace(stdout.String()))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"parse %s stdout %q: %w\", commandName, stdout.String(), err)\n\t}\n\n\tstate.Value = doubled\n\n\treturn nil\n}\n"
-    },
-    {
       "path": "tests/calc/steps/register.go",
       "kind": "modified",
-      "size": 630,
-      "sha256": "d10b4aa1552a73b2b1df27fe01e7e06ca39f4053ae15f9ceed528dc80ae316c8",
-      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"strconv\"\n)\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the number is (\\d+)$`, number)\n\tsuite.Step(`^the result is (\\d+)$`, result)\n\n\tsuite.Step(\"\\\\Athe number is doubled\\\\z\", phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df)\n}\nfunc number(state *State, args []string) error {\n\tvalue, err := strconv.Atoi(args[0])\n\tstate.Value = value\n\treturn err\n}\nfunc result(state *State, args []string) error {\n\twant, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn err\n\t}\n\tif state.Value != want {\n\t\treturn fmt.Errorf(\"expected %d, got %d\", want, state.Value)\n\t}\n\treturn nil\n}\n"
+      "size": 501,
+      "sha256": "b0fd0d450a3b802d7ff43b9d38fcebf82209411c1dfd07e3243550633e7cf143",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"strconv\"\n)\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the result is (-?\\d+)$`, result)\n\n\tsuite.Step(\"^the Owner doubles (-?\\\\d+)$\", concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b)\n}\n\n//truebdd:concept then \"result\"\nfunc result(state *State, args []string) error {\n\twant, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn err\n\t}\n\tif state.Value != want {\n\t\treturn fmt.Errorf(\"expected %d, got %d\", want, state.Value)\n\t}\n\treturn nil\n}\n"
+    },
+    {
+      "path": "tests/calc/steps/state.go",
+      "kind": "modified",
+      "size": 121,
+      "sha256": "44374b18168954e912b37b95c970da0970646eee812aadeff25c5ace0c4b586b",
+      "text": "package steps\n\ntype State struct {\n\tValue int\n}\ntype Registrar interface {\n\tStep(string, func(*State, []string) error)\n}\n"
     }
   ]
 }

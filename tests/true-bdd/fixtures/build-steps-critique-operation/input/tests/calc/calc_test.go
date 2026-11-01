@@ -25,8 +25,8 @@ import (
 // calc-001-double: Doubling a number returns twice its value
 func TestCalc001Double(t *testing.T) {
 	s := scenarios.New(t, "calc-001-double")
-	s.Given(`the number is 3`)
-	s.When(`the number is doubled`)
+	s.Given(`the calculator is installed`)
+	s.When(`the Owner doubles 3`)
 	s.Then(`the result is 6`)
 	s.Done()
 }
@@ -34,8 +34,8 @@ func TestCalc001Double(t *testing.T) {
 // calc-002-double: Another Scenario reaches the shared command definition
 func TestCalc002Double(t *testing.T) {
 	s := scenarios.New(t, "calc-002-double")
-	s.Given(`the number is 4`)
-	s.When(`the number is doubled`)
+	s.Given(`the calculator is installed`)
+	s.When(`the Owner doubles 4`)
 	s.Then(`the result is 8`)
 	s.Done()
 }

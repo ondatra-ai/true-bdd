@@ -13,7 +13,8 @@ type Checklist struct {
 
 // ConfigBlock holds per-checklist engine tuning knobs.
 type ConfigBlock struct {
-	MaxApplyAttempts int `yaml:"max_apply_attempts,omitempty"`
+	GroupingBatchTexts int `yaml:"grouping_batch_texts,omitempty"`
+	MaxApplyAttempts   int `yaml:"max_apply_attempts,omitempty"`
 }
 
 // EngineBlock selects checklist model tiers under engine.models. Empty fields

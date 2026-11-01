@@ -1,7 +1,7 @@
 # Registry seed for `scen-check-checklist-missing`.
 #
-# One claimed scenario, sound in every respect: every step matches
-# one catalogue phrase whose words are defined and mapped.
+# One claimed scenario, sound in every respect: every step falls
+# under one concept whose words are defined and mapped.
 #
 # The run never reads it: the directory true-bdd.yaml names for
 # checklists holds no checklist for `scen check`.

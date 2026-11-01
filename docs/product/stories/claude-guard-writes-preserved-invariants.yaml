@@ -14,8 +14,8 @@ story:
     - given:
       - the "claude-guard-write-inside-root" project tree
       - claude's write policy lets the turn write under "tests"
-      - claude names the tool "Write"
-      - claude names the file "tests/notes.md" of the project tree
+      - the tool call names the tool "Write"
+      - the tool call names the file "tests/notes.md" of the project tree
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -27,8 +27,8 @@ story:
       - the "claude-guard-write-outside-roots" project tree
       - claude's write policy lets the turn write under "tests"
       - and: claude's write policy lets the turn write under "services"
-      - claude names the tool "Write"
-      - claude names the file "docs/notes.md" of the project tree
+      - the tool call names the tool "Write"
+      - the tool call names the file "docs/notes.md" of the project tree
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -42,8 +42,8 @@ story:
       - the "claude-guard-symlink-escape" project tree
       - the project tree's "tests/node_modules/shared" is a symbolic link to "../../docs"
       - claude's write policy lets the turn write under "tests"
-      - claude names the tool "Write"
-      - claude names the file "tests/node_modules/shared/README.md" of the project tree
+      - the tool call names the tool "Write"
+      - the tool call names the file "tests/node_modules/shared/README.md" of the project tree
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -55,8 +55,8 @@ story:
     - given:
       - the "claude-guard-shared-prefix" project tree
       - claude's write policy lets the turn write under "tests"
-      - claude names the tool "Write"
-      - claude names the file "tests-old/notes.md" of the project tree
+      - the tool call names the tool "Write"
+      - the tool call names the file "tests-old/notes.md" of the project tree
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -68,7 +68,7 @@ story:
     - given:
       - the "claude-guard-unnamed-path" project tree
       - claude's write policy lets the turn write under "tests"
-      - claude names the tool "Write"
+      - the tool call names the tool "Write"
     - when:
       - claude asks the guard about the tool call
     - then:

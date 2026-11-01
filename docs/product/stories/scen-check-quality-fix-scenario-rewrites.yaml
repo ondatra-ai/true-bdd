@@ -26,7 +26,7 @@ story:
             - given:
                 - the "scen-check-fix-adds-missing-step" project tree
                 - and: the "scen-check" checklist is narrowed to its "whether this scenario's steps carry all three" prompt
-                - the Quality Engineer answers "1" to every question
+                - the Quality Engineer's answer to every question is "1"
             - when:
                 - the Quality Engineer runs "scen check --fix"
             - then:
@@ -45,7 +45,7 @@ story:
             - given:
                 - the "scen-check-fix-rewrites-description-qualifier" project tree
                 - and: the "scen-check" checklist is narrowed to its "whether this scenario's description contains a vague word" prompt
-                - the Quality Engineer answers "1" to every question
+                - the Quality Engineer's answer to every question is "1"
             - when:
                 - the Quality Engineer runs "scen check --fix"
             - then:
@@ -64,7 +64,7 @@ story:
             - given:
                 - the "scen-check-fix-rewrites-step-qualifier" project tree
                 - and: the "scen-check" checklist is narrowed to its "whether any of this scenario's steps contains a vague" prompt
-                - the Quality Engineer answers "1" to every question
+                - the Quality Engineer's answer to every question is "1"
             - when:
                 - the Quality Engineer runs "scen check --fix"
             - then:
@@ -83,7 +83,7 @@ story:
             - given:
                 - the "scen-check-fix-rewrites-forbidden-verb" project tree
                 - and: the "scen-check" checklist is narrowed to its "whether any of this scenario's steps uses an action verb" prompt
-                - the Quality Engineer answers "1" to every question
+                - the Quality Engineer's answer to every question is "1"
             - when:
                 - the Quality Engineer runs "scen check --fix"
             - then:
@@ -101,7 +101,7 @@ story:
             - given:
                 - the "scen-check-fix-rewrites-implementation" project tree
                 - and: the "scen-check" checklist is narrowed to its "whether this scenario describes observable behaviour" prompt
-                - the Quality Engineer answers "1" to every question
+                - the Quality Engineer's answer to every question is "1"
             - when:
                 - the Quality Engineer runs "scen check --fix"
             - then:
@@ -119,7 +119,7 @@ story:
             - given:
                 - the "scen-check-fix-adds-measurable-criterion" project tree
                 - and: the "scen-check" checklist is narrowed to its "whether this scenario includes at least one specific" prompt
-                - the Quality Engineer answers "1" to every question
+                - the Quality Engineer's answer to every question is "1"
             - when:
                 - the Quality Engineer runs "scen check --fix"
             - then:
@@ -138,7 +138,7 @@ story:
             - given:
                 - the "scen-check-fix-rewrites-subjective-outcome" project tree
                 - and: the "scen-check" checklist is narrowed to its "whether this scenario has a binary pass/fail outcome" prompt
-                - the Quality Engineer answers "1" to every question
+                - the Quality Engineer's answer to every question is "1"
             - when:
                 - the Quality Engineer runs "scen check --fix"
             - then:

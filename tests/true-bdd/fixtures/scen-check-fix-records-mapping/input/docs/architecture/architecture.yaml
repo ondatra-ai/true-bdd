@@ -1,9 +1,3 @@
-# Architectural spec for `scen-check-fix-records-mapping`.
-#
-# The word mapping says how "mcp service" and "message" are built and
-# observed, and says nothing of "reply", which E2E-001 relies on; the fix
-# adds the mapping.
-
 architecture:
   testing:
     framework: go-test

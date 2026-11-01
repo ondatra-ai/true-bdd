@@ -27,35 +27,26 @@ func replay(cfg config, name string, argv []string) (int, error) {
 		return 0, fmt.Errorf("getwd: %w", err)
 	}
 
-	idx, err := nextCallIndex(cfg.StateDir, name)
+	candidates, err := requestCassettes(cfg.Cassettes, name)
 	if err != nil {
 		return 0, err
 	}
 
-	dir := filepath.Join(cfg.Cassettes, cassetteName(name, idx))
-
-	manifest, err := readMeta(dir)
-	if err != nil {
-		return 0, fmt.Errorf("%w (%s: %w)", errCassetteMissing, dir, err)
+	if len(candidates) == 0 {
+		return 0, errCassetteMissing
 	}
 
-	recordedStdin, err := disk.Read(filepath.Join(dir, stdinFile))
-	if err != nil {
-		return 0, fmt.Errorf("read recorded stdin: %w", err)
-	}
-
-	liveStdin, err := denormalize(string(recordedStdin), cwd, findCurrentRunDir(cwd))
+	want, err := requestSize(candidates, cwd)
 	if err != nil {
 		return 0, err
 	}
 
 	stdin := startStdinCollector()
+	incoming := stdin.collect(want)
 
-	incoming := stdin.collect(len(liveStdin))
-
-	requestArgs, requestInput := canonicalGoRequest(argv, incoming, manifest.NormalizeGoDurations)
-	if requestHash(requestArgs, requestInput, cwd) != manifest.RequestHash {
-		return 0, fmt.Errorf("%w (%s)", errCassetteStale, dir)
+	dir, manifest, err := claimRequest(cfg, name, argv, incoming, cwd)
+	if err != nil {
+		return 0, err
 	}
 
 	// File effects FIRST: the engine re-reads the touched files the

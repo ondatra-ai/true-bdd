@@ -195,3 +195,33 @@ func expectedCutFiles(name string) []string {
 
 	return expected
 }
+
+// Every cut keeps what concepts need, unchanged: the product document's
+// concepts and glossary, the architecture's bindings and Word mappings, and
+// the Public interface document the bindings reference (#259).
+func TestEveryCutKeepsTheDocumentsConceptsNeed(t *testing.T) {
+	documents := map[string]string{
+		testProduct: "concepts:\n  when:\n    - {concept: doubling, means: The Owner doubles a number., terms: [number]}\n" +
+			"glossary:\n  - {term: number, means: A whole number.}\n",
+		interfaceArchitecture: "architecture:\n  services:\n    - path: services/true-bdd\n    - name: calc\n" +
+			"      public_interface: {kind: cli, document: docs/architecture/calc-cli.yaml}\n" +
+			"  terms:\n    - {term: number, technical: The double argument., observed_by: Its stdout.}\n" +
+			"  concepts:\n    - {concept: doubling, block: when, service: calc, references: [{command: double}], " +
+			"does: Run double.}\n",
+		"docs/architecture/calc-cli.yaml": "opencli: 0.1\ncommands: {double: {}}\n",
+	}
+
+	runner, record := fixtureEngineFiles(t, "#!/bin/sh\nexit 0\n", documents)
+	for _, name := range []string{"a", "b", "c", "d"} {
+		cut, err := runner.Cut(t.Context(), record.Directory, name)
+		must(t, err)
+		t.Cleanup(func() { _ = os.RemoveAll(cut.Directory) })
+
+		for path, want := range documents {
+			data, err := os.ReadFile(filepath.Join(cut.Directory, path))
+			if err != nil || string(data) != want {
+				t.Fatalf("cut %s lost or changed %s, which concepts need: %q, %v", name, path, data, err)
+			}
+		}
+	}
+}

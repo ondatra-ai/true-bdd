@@ -10,7 +10,7 @@ last_updated: "2026-10-21"
 sections:
   - id: term_closure
     name: "Term Closure"
-    description: "Every term a matched catalogue phrase declares must be mapped in the architecture."
+    description: "Every term a declared concept relies on must be mapped in the architecture."
     validation_prompts:
       - D: term-mappings
         rationale: "A product word the architecture never maps says nothing of how a step definition builds or observes it, so the definition cannot follow from the spec."

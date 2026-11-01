@@ -1,0 +1,224 @@
+intent: |
+  #264: make `scen check` judge a whole Registry cheaper and faster than the
+  measured $1.47 and 174 s of turn time per Scenario (about $500 and 1.8 hours
+  for TrueBDD's 339 Scenarios at concurrency 10), before #259's whole-Registry
+  run. The Owner, 31 October: «Меня концерн по поводу этого, этой части.
+  Скорее всего, нужно будет попытаться вот этот сцен-чек попробовать
+  оптимизировать. То есть не делать его полностью, а попытаться оптимизировать
+  так, чтобы эта задача была, делалась дешевле и быстрее. То есть это нужно
+  вынести в какую-то отдельную подзадачу, посмотри, куда она должна
+  принадлежать. Но в целом оптимизация скин-чек должна, сцен-чек должна тоже
+  быть сделана.»
+
+log:
+  - decision_trace:
+      research:
+        - |
+          The three concept Prompts (link, bindings, words) are one Claude turn
+          each per Scenario. Every turn embeds TrueBDD's whole product document
+          (about 65 KB); the Scenario's own steps are under 1 KB; bindings adds
+          the service's bindings (6.5 KB) and Public interface (16 KB). Each
+          user message opens with the Scenario id, so no turn reuses another's
+          prompt. Code: services/true-bdd/internal/app/generators/validate/
+          concept_link.go, concept_words.go, concept_bindings.go.
+        - |
+          The word check reads only the linked concepts' means, nothing of the
+          Scenario. The shipped checklist also asks 8 scenario_quality questions
+          per Scenario; #259's sample left them out, and #259's criterion names
+          only the concept checks.
+      recommendation: |
+        (a): only the three concept Prompts, which #259's criterion and the
+        measurement cover; the 8 quality questions stay as they are.
+      settled: |
+        No scope was chosen. The Owner reframed #264 as research: find where the
+        time goes (what is slow, why there are so many operations), propose
+        strategies, discuss the plan with the Owner, then try each strategy and
+        keep what is faster at the same quality. The goal is the fastest walk
+        with the same quality; nothing is decided before the experiments.
+    question: |
+      Q1 - Что именно удешевляем в #264?: (a) только три Prompt проверки
+      concepts (link, bindings, words), которые требует критерий #259 и которые
+      дают замеренные $1.47 и 174 с на сценарий, а 8 вопросов scenario_quality
+      остаются как есть; (b) весь поставляемый checklist scen check вместе с 8
+      вопросами о качестве.
+    answer: |
+      Стой, подожди, смотри, здесь процесс должен быть по-другому. Здесь надо тестировать, то есть надо... у меня нет ответа. И вообще вся эта задача, это задача на ресерч. То есть у нее нет ответов, что мы удешевляем и так далее. То есть, скорее всего, нужно просто взять, посмотреть, поресерчить, где тратятся токены, придумать план, обсудить план со мной. Нет, даже не токены, где тратится время. Да, то есть, что делается долго, что хорошо, почему там так много операций и так далее, и так далее. И предложение, типа, давайте совместим. Ну и дальше, короче, в зависимости от этого делаем. Вещь проверяем. И после этого только сработало, не сработало. То есть наша задача, да, сделать максимально быстро с тем же самым качеством. Вот, то есть ты просто берешь, принимаешь любые шаги, вот берешь стратегию А, смотришь, что получилось. Получилось ли тоже качество или нет? А, хорошо, получилось. Получилось ли быстрее или нет? А, получилось. Вот, то же самое с Б. Да, и смотришь, что будет работать, что нет. Вот я к этому так хотел бы относиться.
+  - decision_trace:
+      research:
+        - |
+          The drill never runs `scen check`: each cut runs `build tests --fix`,
+          `build steps --fix` and `build code --fix`, and #212's three-hour limit
+          holds those commands (scripts/cmd/drill and scripts/drill name no scen
+          check; #212's body, "The cuts").
+        - |
+          A whole-Registry `scen check` of TrueBDD is needed once in the epic:
+          #259's first acceptance criterion. Today's pass (about 1.8 hours at
+          concurrency 10) fits three hours; its cost, about $500 a pass plus the
+          reruns its repairs trigger, may pass the $600 cap. #245 runs
+          `scen check --fix` only on the calculator host. No gate runs a live
+          `scen check`.
+        - |
+          `build steps` judges bindings with `scen check`'s binding Prompt, but
+          once per concept Item, not per Scenario.
+      recommendation: |
+        Let the read-only research finish (about an hour, no AI spend), then
+        decide with its numbers.
+      settled: |
+        Fact: `scen check`'s time does not block the epic's completion; it
+        bears only on #259's one whole-Registry run, as cost more than time.
+    question: |
+      The Owner, while the research ran: does `scen check`'s time block the
+      whole epic?
+    answer: |
+      Почему сцен чек надо, возможно, заниматься этим или даже, может быть, следующим шагом? Это потому, что я вижу, что если мы не сделаем эту оптимизацию, то вполне возможно, мы никогда не дойдем до полного решения поставленного задачи, поставленного эпика. Вот. То есть, потому что сейчас эта операция занимает чересчур много времени для того, чтобы протестировать ее несколько раз. Вот. Так что посмотри, блокирует ли время сцен для завершения всего эпика или нет. И на основе этого я приму дальше решение, что делать с этой задачей, брать ее сейчас или делать ее потом.
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        None asked; the Owner decided on the facts above.
+      settled: |
+        #264 moves to the very end of the task; the research run stopped (its
+        partial per-turn table stays under tmp/orchestrator/research-264/).
+    question: |
+      The Owner's decision on when #264 runs.
+    answer: |
+      Давай оставляем 264 на потом. Делаем его в самом конце.
+  - decision_trace:
+      research:
+        - |
+          #259 is blocked by #264 since 31 October; its whole-Registry run
+          would cost about $500 a pass today.
+      recommendation: |
+        At the end, after #264: #245, then #264, then #259's whole-Registry run
+        on the faster engine, then the closing review, then the PR ready. The
+        expensive run happens once and costs less, and the review covers #264.
+      settled: |
+        Order: #245's live run, #264, #259's whole-Registry run, the closing
+        review, PR #263 ready.
+    question: |
+      Q2 - #259's whole-Registry run: now at today's price, or at the end after
+      #264? Options: at the end, after #264 (recommended); now, at today's price
+      (cap $600, repairs may pass it); drop it from #259.
+    answer: |
+      At the end, after #264 (Recommended)
+  - decision_trace:
+      research:
+        - |
+          The research note (tmp/orchestrator/research-264/where-the-time-goes.md,
+          posted on #264, comment 6548415797): writing the answer, mostly
+          thinking, is the time (4.9 s plus 13 s per 1000 output tokens, input
+          size adds nothing); bindings are 59% of a pass; a pass makes 2,198
+          binding and 2,198 word judgements for 19 distinct bindings and 19
+          concepts, and 3,350 link step judgements for 1,373 distinct steps;
+          with --fix every applied fix re-validates every Scenario; the
+          baseline itself is noisy (9 of 19 bindings got differing verdicts
+          within one pass). 344 Scenarios, about 100 min a pass at 10 workers.
+      recommendation: |
+        A plan on the 25-Scenario sample, one experiment at a time: 0, today's
+        walk twice for time and noise; A, 20 or 30 workers; B, fast mode; C,
+        bindings once per binding; D, words once per concept; E, link once per
+        distinct step; F, under --fix keep what a fix did not touch; G, less
+        thinking, last. Same quality: the same failing bindings, concepts and
+        steps, and no more disagreement than two runs of today's walk.
+      settled: |
+        The aim is less complexity, fewer judgements, not the same work done
+        faster: A and B are dropped (and G with them, which keeps the same
+        work). C, D and E are tried; 0 stays as the measure of quality.
+    question: |
+      Q3 - Согласны с планом опытов (0 базовая линия; A 20–30 параллельных; B
+      fast mode; C привязки раз на привязку; D слова раз на concept; E связь раз
+      на разный шаг; F при --fix не перепроверять нетронутое; G меньше
+      размышлений, последним) и с мерой «то же качество» (те же проблемные
+      привязки, concepts и шаги; не больше расхождений, чем у двух прогонов
+      сегодняшнего способа)?
+    answer: |
+      смотри тут суть в том чтоб уменьшить сложность. A b И делать смысла нет тк сложность останится той же. давай попробем C, D, E.
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        None asked; the Owner's message came while the plan was being set up.
+      settled: |
+        F is dropped too, with A, B and G: none reduces the complexity. The
+        experiments are C, D and E alone, measured against 0.
+    question: |
+      The Owner's message after Q3, on the strategies left out.
+    answer: |
+      A,B FG не уменьшают сложность а просто.
+  - decision_trace:
+      research:
+        - |
+          The experiments (#264, comment 6549427827; branch
+          impl/264-fewer-judgements at 1908f9d2): on the 25-Scenario sample at
+          concurrency 10, the two baselines took 506 s and 473 s and differed
+          in 2 of 75 cells; D cut words turn time 65% with no words cell
+          differing; E cut link turn time 15 to 21% and left one of 184 steps
+          unlinked, scored 8 instead of 9 without its Scenario's description;
+          C cut bindings turn time 60%, and its shared turn, judging every
+          variation of a binding, failed `AI CLI observations`, which 16
+          per-Scenario turns had passed; C, D and E together took 317 s. On the
+          whole Registry, about 176 turns would replace 1,032.
+      recommendation: |
+        Keep D; keep E with every using Scenario's description in the shared
+        turn, then run it again; keep C after one more run for its stability
+        and a check of whether `AI CLI observations` is really ambiguous.
+      settled: |
+        D is kept. E is kept with the descriptions added and tried again. C is
+        kept once a second run shows its stability and the `AI CLI
+        observations` verdict is checked.
+    question: |
+      Q4 - D (words once per concept), E (link once per distinct step) and C
+      (bindings once per binding): keep D? For E, keep it with the
+      descriptions of every Scenario using the step, keep it as it is, or drop
+      it? For C, keep it after checking it first, keep it as it is, or drop it?
+    answer: |
+      D: Keep D (Recommended). E: Keep E, add descriptions (Recommended). C: Keep C, check it first (Recommended).
+  - decision_trace:
+      research:
+        - |
+          The second round (commit 47e9317e, appended to the experiments note):
+          C2 held 17 of 19 bindings against C, and `AI CLI observations` failed
+          in all four shared runs (0 of 16 per Scenario); a shared flip moves
+          every Scenario linking the binding. E2, with every using Scenario's
+          description, linked the borderline step "the System Architect runs
+          build steps after scen check and a binding change" in 1 of 4 shared
+          runs against 5 of 5 per Scenario, where the sibling steps imply
+          `--fix`. C, D and E2 together cut turn time 50 to 53%.
+      recommendation: |
+        One more try of E with each step's sibling steps, dropping E if the
+        step still links unreliably.
+      settled: |
+        E is dropped. C and D are built properly; C's check passed (stable
+        verdicts on 17 of 19 bindings, and its `AI CLI observations` failure is
+        real).
+    question: |
+      Q5 - E with the Scenarios' descriptions did not save the borderline
+      step (1 of 4 shared runs against 5 of 5 per Scenario). One more try
+      with the neighbouring steps, drop E now, or keep E as it is?
+    answer: |
+      Drop E now
+  - decision_trace:
+      research:
+        - |
+          The closing review of PR #263 (spec axis, 1 November): after #264,
+          `scen check` judges each binding in its own turn over every step of
+          the walk that reached it, while `build steps` judges a suite's
+          bindings in one turn over its unbound steps
+          (services/true-bdd/internal/app/commands/build_steps_concepts.go);
+          ADR-0035 says `build steps` judges a binding "as scen check judges
+          it", and #264's experiment C showed the shared form stricter, so one
+          binding can pass one gate and fail the other.
+      recommendation: |
+        Unify: `build steps` uses the same per-binding judgement as
+        `scen check`, one code path instead of two, re-recording the build
+        steps fixtures that judge bindings.
+      settled: |
+        `build steps` judges each binding the way `scen check` does, one turn
+        per binding over the steps that reach it; the two gates share one
+        judgement path.
+    question: |
+      Q6 - After #264, `scen check` judges each binding separately over every
+      step that uses it, while `build steps` judges a suite's bindings in one
+      turn. Unify on one way, or record the difference in an ADR?
+    answer: |
+      Unify: one way (Recommended)

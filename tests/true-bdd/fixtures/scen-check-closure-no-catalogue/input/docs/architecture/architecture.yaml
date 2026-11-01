@@ -1,7 +1,6 @@
 # Architectural spec for `scen-check-closure-no-catalogue`.
 #
-# A word mapping, which no check reads while the product document
-# declares no catalogue.
+# A word mapping, beside a product document that declares no concepts.
 
 architecture:
   testing:

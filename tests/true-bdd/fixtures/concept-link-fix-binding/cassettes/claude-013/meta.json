@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "binary": "claude",
+  "argv": [
+    "--setting-sources",
+    "",
+    "--strict-mcp-config",
+    "--safe-mode",
+    "--allowedTools",
+    "Read(**),Write(./tmp/**),Glob(**),Grep(**)",
+    "--disallowed-tools",
+    "Bash,Edit(**),MultiEdit(**),Agent,Task",
+    "--model",
+    "claude-opus-5",
+    "--system-prompt",
+    "You prepare a concept or binding repair for the responsible person's menu.\nChange nothing; propose only the failed judgement's repair. Apply requires\nan explicit menu decision. The Product Owner owns concepts and Item wording,\nthe System Architect bindings. Return the required structured answer.\n",
+    "--permission-mode",
+    "acceptEdits",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--json-schema",
+    "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"fix_prompt\": {\"type\": \"string\"},\n    \"questions\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"id\": {\"type\": \"string\"},\n          \"question\": {\"type\": \"string\"},\n          \"context\": {\"type\": \"string\"},\n          \"options\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}\n        },\n        \"required\": [\"id\", \"question\", \"context\", \"options\"],\n        \"additionalProperties\": false\n      }\n    }\n  },\n  \"required\": [\"fix_prompt\", \"questions\"],\n  \"additionalProperties\": false\n}",
+    "-p",
+    "You propose a repair; change no file. The Product Owner owns concepts and\nStory or Scenario wording; the System Architect owns concept bindings.\nRead the reference documents:\n\n- Read(`./docs/architecture/architecture.yaml`) - architecture_yaml\n\n- Read(`./docs/product/product.yaml`) - product\n\nItem: host-001\n**Actual:** fail\nDescription: The number must be halved\nService: calc\nSteps:\nGiven:\n  - six is entered\nWhen:\n  - halve six\nThen:\n  - three is displayed\n\nFindings:\n\n- given:number ready: The Does ('Enter the given number into the Number field') names one explicit action with one input taken from the step text, and its sole reference — Page 'Calc', role 'textbox', name 'Number' — is declared in the ui Public interface, so no element is guessed. As a Given it only has to place state, and typing the step's number into that field does exactly that; no variations, branches or hidden dependencies are admitted, and no intent text is required because the binding targets a concrete declared element rather than an llm: UI intent. An LLM can write this step definition directly.\n\n- then:number result: The Then binding names a single reference that exists in the declared ui Public interface (Page \"Calc\", Role textbox, Name \"Number\"), and its Does — compare the displayed Number text with the expected result — matches the concept means and is a pure observation plus comparison, with no state change or call. The observable is objective (the text held by that one textbox) and the expected value is supplied by the step itself (\"three is displayed\"), so no admitted variation is left without an input. The concept declares no terms and the step admits no alternatives, so there is nothing further to instruct. An LLM can write the step definition as: read the Calc \"Number\" textbox and assert it equals the expected number from the step, with no guessed behaviour or hidden implementation dependency.\n\n- when:halve: The does (\"Click the Halve button once to halve the number currently entered in the Number field\") is a single concrete call on a declared element (Calc / button / Halve), so the bare action is clear. But the only step bound to this concept is \"halve six\", which carries a number as part of the When, while the concept declares no terms and the binding gives no instruction for that value: nothing says whether the step must first type 6 into the declared Calc / textbox / Number and then click, or whether \"six\" is to be ignored because a Given already placed it. An LLM writing the step definition would have to guess which, so this admitted variation lacks the explicit input and instruction it needs.\n\n- when:halve: binding is ambiguous\n\n\nRequired repair policy:\nOffer the System Architect a binding for every missing or ambiguous\nlinked concept, for this Scenario's service: concept, block, service,\nreferences and does, or intent for a UI step performed by a model.\nJudge against the declared Public interface and extend it only where\nneeded. If the meaning needs repair, offer the Product Owner a wider\nor corrected concept in the product document. Show each exact change\nat the menu; apply only the approved change after apply.\n\nReturn the exact proposed changes in fix_prompt for review at the menu.\nDo not apply them. Preserve unaffected steps and concepts. A new variation\nwidens an existing concept of that item and use; add one only for a new item or use.\nReturn JSON with fix_prompt and questions. Exactly one carries content:\na complete proposal with questions: [], or questions with fix_prompt: \"\".\nNever return both a proposal and questions. If no schema is supplied, put the proposed fix between these markers:\n=== FILE_START: tmp/{{RUN_DIR}}/02-host-001-fix-prompts.md ===\n\u003cexact proposed changes\u003e\n=== FILE_END: tmp/{{RUN_DIR}}/02-host-001-fix-prompts.md ===\n"
+  ],
+  "exit_code": 0,
+  "duration_ms": 49458,
+  "request_hash": "sha256:2b34908901e7e209b8ce823c8678408cea2290b3f5d5342e61d18a636f32c10a",
+  "fsdiff": {
+    "created": [],
+    "modified": [],
+    "deleted": []
+  },
+  "recorded_at": "2026-10-31T23:44:17Z"
+}

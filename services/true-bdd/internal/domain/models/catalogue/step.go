@@ -2,7 +2,7 @@ package catalogue
 
 import "strings"
 
-// Prefixes that hand a step to a model, which no template phrases. The
+// Prefixes that hand a step to a model, which no concept states. The
 // Registry classifies its steps by them, as bddgo does.
 const (
 	// PrefixAct marks a step a model PERFORMS. Legal in given:/when: only.

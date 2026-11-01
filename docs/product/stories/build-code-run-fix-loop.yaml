@@ -50,7 +50,7 @@ story:
     steps:
     - given:
       - the "build-code-fix-named-test" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:
@@ -91,7 +91,7 @@ story:
     - given:
       - the "build-code-playwright-nextjs" project tree
       - and: the project's browser test dependencies are installed
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:
@@ -115,7 +115,7 @@ story:
     steps:
     - given:
       - the "build-code-shared-fix" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:
@@ -142,7 +142,7 @@ story:
     steps:
     - given:
       - the "build-code-cross-walk" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:

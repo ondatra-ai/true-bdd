@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "fixture": "concept-bodies-capture",
+  "files": [
+    {
+      "path": "tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go",
+      "kind": "created",
+      "size": 1243,
+      "sha256": "aeec1fbc917aa289938fd074b83c87c6057f8077d27f62c13389c5c33577596e",
+      "text": "package steps\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"halving\"\nfunc concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {\n\t// docs/architecture/calc-cli.yaml, command `halve`: run\n\t// `go run ./services/calc halve VALUE` from the host root; stdout is VALUE\n\t// halved and a newline. The suite's tests run from tests/calc — the same\n\t// directory the registry is read from as ../../docs/scenarios.yaml — so the\n\t// host root is two levels up.\n\tconst hostRoot = \"../..\"\n\n\tvalue, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn fmt.Errorf(\"halving: %q is not a whole number: %w\", args[0], err)\n\t}\n\n\tcmd := exec.Command(\"go\", \"run\", \"./services/calc\", \"halve\", strconv.Itoa(value))\n\tcmd.Dir = hostRoot\n\tvar stdout, stderr bytes.Buffer\n\tcmd.Stdout = \u0026stdout\n\tcmd.Stderr = \u0026stderr\n\tif err := cmd.Run(); err != nil {\n\t\treturn fmt.Errorf(\"halve %d: %w: %s\", value, err, strings.TrimSpace(stderr.String()))\n\t}\n\n\tprinted := strings.TrimSpace(stdout.String())\n\thalved, err := strconv.Atoi(printed)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"halve %d: stdout %q is not an integer: %w\", value, printed, err)\n\t}\n\n\tstate.Result = halved\n\treturn nil\n}\n"
+    },
+    {
+      "path": "tests/calc/steps/concept8c83e3012dd37395db8aad8a8fafef5f14ca67ae936908b0e63bff4b60526148.go",
+      "kind": "deleted",
+      "size": 0,
+      "sha256": ""
+    },
+    {
+      "path": "tests/calc/steps/register.go",
+      "kind": "modified",
+      "size": 215,
+      "sha256": "eb877a9b021b276ce8ea2a384915a360f9103f120a9ec2c9ab7dd5110f047024",
+      "text": "package steps\n\nfunc Register(suite Registrar) {\n\tsuite.Step(\"^the result is (-?\\\\d+)$\", result)\n\n\tsuite.Step(\"^the Owner halves (-?\\\\d+)$\", concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87)\n}\n"
+    }
+  ]
+}

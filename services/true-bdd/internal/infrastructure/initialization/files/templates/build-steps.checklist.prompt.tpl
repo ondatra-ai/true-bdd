@@ -1,8 +1,8 @@
 # Step definition body
 
 Suite: {{ .Subject.Suite }}
-Phrase: {{ .Subject.Phrase.Template }}
-Meaning: {{ .Subject.Phrase.Means }}
+Concept: {{ .Subject.Label }}
+Meaning: {{ .Subject.Concept.Means }}
 
 {{ .Question }}
 {{ .Rationale }}

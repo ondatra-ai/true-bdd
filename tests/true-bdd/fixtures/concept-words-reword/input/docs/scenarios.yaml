@@ -1,0 +1,21 @@
+{
+  "scenarios": {
+    "host-001": {
+      "description": "The number must be halved",
+      "service": "calc",
+      "path": "tests/calc/number_test.go",
+      "user_stories": [],
+      "merged_steps": {
+        "given": [
+          "six is entered"
+        ],
+        "when": [
+          "halve six once with idempotency key alpha"
+        ],
+        "then": [
+          "three is displayed"
+        ]
+      }
+    }
+  }
+}

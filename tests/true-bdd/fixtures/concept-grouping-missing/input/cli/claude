@@ -1,0 +1,16 @@
+#!/usr/bin/env python3
+"""Deliberately invalid grouping answers, selected by an explicit Given."""
+import json,pathlib,sys
+case=json.loads(pathlib.Path("group-case.json").read_text())["case"]
+schema=json.loads(sys.argv[sys.argv.index("--json-schema")+1])
+names=schema["properties"]["assignments"]["items"]["properties"]["concept"]["enum"]
+a={"index":1,"concept":names[0],"score":9,"runner_up":names[1],"runner_up_score":2}
+items=[a]
+if case=="missing": items=[]
+if case=="repeat": items=[a,a]
+if case=="rank": a["runner_up_score"]=10
+if case=="unknown": a["index"]=99
+if case=="same": a["runner_up"]=a["concept"]
+envelope=dict(type="result",subtype="success",is_error=False,total_cost_usd=0,structured_output={"assignments":items})
+if case=="cap": envelope.update(subtype="error_max_output_tokens",is_error=True,errors=["output cap reached"])
+print(json.dumps(envelope))

@@ -1,0 +1,39 @@
+architecture:
+  services:
+  - name: greeter
+    path: services/greeter
+    language: go
+    public_interface:
+      kind: cli
+      document: docs/greeter-cli.yaml
+  concepts:
+  - concept: greeting
+    block: given
+    service: greeter
+    references:
+    - file: greeting-config
+    does: Write the expected greeting to the configuration file before running greet.
+  - concept: request greeting
+    block: when
+    service: greeter
+    references:
+    - command: invented-halve
+    does: Call greet with the requested person and keep the outcome.
+  - concept: greeting
+    block: then
+    service: greeter
+    intent: Compare the greeting.
+  - concept: greeting
+    block: given
+    service: greeter
+    references:
+    - file: greeting-config
+    does: Write the expected greeting to the configuration file before running greet.
+  - concept: undeclared greeting
+    block: when
+    service: greeter
+    intent: Ask for a greeting.
+  terms:
+  - term: greeting
+    technical: Text supplied to greet and recorded in the greeted log record.
+    observed_by: Set the greeting configuration and compare the greeted text.

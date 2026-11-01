@@ -1,0 +1,1 @@
+{"type": "result", "subtype": "error_max_output_tokens", "is_error": true, "total_cost_usd": 0, "structured_output": {"assignments": [{"index": 1, "concept": "halve", "score": 9, "runner_up": "double", "runner_up_score": 2}]}, "errors": ["output cap reached"]}

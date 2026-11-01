@@ -1,9 +1,0 @@
-scenarios:
-  calc-001-double:
-    description: Doubling a number returns twice its value
-    service: calc
-    path: tests/calc/calc_test.go
-    merged_steps:
-      given: [the number is 3]
-      when: [the number is doubled]
-      then: [the result is 6]

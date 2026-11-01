@@ -1,9 +1,10 @@
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
 
-You apply the approved body of one Catalogue phrase in one suite.
-Preserve the engine's registration, pattern and signature. Modify only the body
-and the suite's shared state. Use the declared Public interface and Phrase
-mapping; never implement the product's operation inside a step definition.
+You apply the approved bodies of one concept's step definitions in one suite.
+Preserve the engine's registrations, patterns, signatures and //truebdd:concept
+records. Modify only those bodies and the suite's shared state. Use the declared
+Public interface and the concept's binding; never implement the product's
+operation inside a step definition.
 
 **Output Requirements:**
 - After your Write/Edit calls succeed, output a YAML confirmation
@@ -16,19 +17,19 @@ mapping; never implement the product's operation inside a step definition.
 
 **Output Format:**
 ```
-=== FILE_START: tmp/{{RUN_DIR}}/apply-phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df-iter1-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply-when-doubling-iter1-result.yaml ===
 applied: true
 target: "<repo-relative path>"
 summary: "<one-line summary>"
-=== FILE_END: tmp/{{RUN_DIR}}/apply-phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df-iter1-result.yaml ===
+=== FILE_END: tmp/{{RUN_DIR}}/apply-when-doubling-iter1-result.yaml ===
 ```
 
-If the declared Public interface cannot set up or observe the phrase, stop without
+If the declared Public interface cannot set up or observe the concept, stop without
 inventing an operation. Return the same confirmation markers with:
 ```yaml
 applied: false
 interface_cannot_serve:
-  phrase: "the number is doubled"
+  concept: "when concept \"doubling\""
   lacks: "<what the interface offers no way to set up or observe>"
 ```
 
@@ -46,26 +47,27 @@ shared State fields and the selected file's imports may change outside that body
 
 ### TASK
 
-# Apply a step definition body
+# Apply step definition bodies
 
 Suite: tests/calc/steps
 Service: calc
-Phrase: the number is doubled
-Meaning: The calculator doubles the supplied number.
+Concept: doubling (when)
+Meaning: The Owner doubles a whole number with the calculator.
 
-## Complete phrase context
-phrase:
-    template: the number is doubled
+## Complete concept context
+concept:
+    concept: doubling
     block: when
-    means: The calculator doubles the supplied number.
+    means: The Owner doubles a whole number with the calculator.
     terms:
         - number
-phrase_mapping:
-    template: the number is doubled
+binding:
+    concept: doubling
+    block: when
     service: calc
     references:
         - command: double
-    does: Run the declared double command as a process and keep its integer stdout.
+    does: Run the kept calculator program's double command as a process from the host root with the step's whole number and keep its integer stdout.
 glossary:
     - term: number
       means: An integer operand whose double is its sum with itself.
@@ -81,12 +83,24 @@ interface_document: |
     info: {title: Calculator CLI, version: '1.0'}
     commands:
       double:
-        description: Run go run ./services/calc double VALUE from the host root; stdout is the doubled integer and a newline.
+        description: The calculator program, built with go build from ./services/calc at the host root and run from the host root; calc double VALUE prints the doubled integer and a newline.
         parameters:
           - {name: value, in: argument, required: true, schema: {type: integer}}
         responses:
           '0': {description: Doubled integer on stdout}
           '1': {description: Invalid arguments}
+definitions:
+    - function: concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b
+      file: tests/calc/steps/concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b.go
+      pattern: ^the Owner doubles (-?\d+)$
+      captures:
+        - name: value
+          means: The whole number the Owner doubles, as written in the step (an optional minus sign followed by digits); passed as the VALUE argument of the calculator's double command.
+      serves: 'Serves the whole of "Run the kept calculator program''s double command as a process from the host root with the step''s whole number and keep its integer stdout": the words "the Owner doubles" make it the doubling concept bound to the double command, and the single capture supplies the step''s whole number that the command is run with, the only value the body needs before it keeps the integer stdout.'
+      steps:
+        - text: the Owner doubles 3
+          captures:
+            - "3"
 scenarios:
     - id: calc-001-double
       description: Doubling a number returns twice its value
@@ -94,93 +108,80 @@ scenarios:
       path: tests/calc/calc_test.go
       steps: |
         Given:
-          - the number is 3
+          - the calculator is installed
         When:
-          - the number is doubled
+          - the Owner doubles 3
         Then:
           - the result is 6
 
 
+# Fix Prompt for Item when-doubling: when concept "doubling"
+
 ## Target
-Suite `tests/calc/steps` — phrase `the number is doubled` (block: when)
+tests/calc/steps
 
-Edit exactly one file: `tests/calc/steps/phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df.go`
-
-Do NOT touch `tests/calc/steps/register.go`, `tests/calc/steps/state.go`, `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, the Specification, or `services/calc`.
+## Scope
+Change only the body of `concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b` in `tests/calc/steps/concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b.go`, plus that file's import block. Keep the `//truebdd:concept when "doubling"` record, the function name and the signature exactly as they are. Do not touch `tests/calc/steps/register.go`, `tests/calc/steps/state.go`, `tests/calc/calc_test.go`, the Specification or `services/calc`.
 
 ## Shared state
-No change needed. `State{Value int}` already carries the operand (set by the `number` Given) and is the field the `result` Then observes, so the When overwrites `state.Value` with the integer stdout of the declared `double` command.
+No State change is needed. `State.Program` is already set by the given step `installed`, and `State.Value` is already read by the then step `result`. This body consumes `Program` and writes `Value`.
 
-## Required change
-
-Replace the whole contents of `tests/calc/steps/phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df.go` with the code below. The function name, signature and the `package steps` clause are unchanged — only the body and the import block change.
+## Required Changes
+Replace the whole contents of `tests/calc/steps/concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b.go` with:
 
 ```go
 package steps
 
 import (
-	"bytes"
 	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
 )
 
-func phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df(state *State, args []string) error {
-	const (
-		hostRoot    = "../.."
-		packagePath = "./services/calc"
-		command     = "double"
-	)
-
-	value := strconv.Itoa(state.Value)
-	cmd := exec.Command("go", "run", packagePath, command, value)
-	cmd.Dir = hostRoot
-
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("run %s %s: %w: %s", command, value, err, strings.TrimSpace(stderr.String()))
+//truebdd:concept when "doubling"
+func concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b(state *State, args []string) error {
+	const hostRoot = "../.."
+	if state.Program == "" {
+		return fmt.Errorf("the calculator is not installed")
 	}
-
-	doubled, err := strconv.Atoi(strings.TrimSpace(stdout.String()))
+	command := exec.Command(state.Program, "double", args[0])
+	command.Dir = hostRoot
+	output, err := command.Output()
 	if err != nil {
-		return fmt.Errorf("parse %s stdout %q: %w", command, stdout.String(), err)
+		return fmt.Errorf("double %s: %w: %s", args[0], err, output)
 	}
-
-	state.Value = doubled
+	value, err := strconv.Atoi(strings.TrimSpace(string(output)))
+	if err != nil {
+		return fmt.Errorf("double %s: unexpected stdout %q: %w", args[0], string(output), err)
+	}
+	state.Value = value
 	return nil
 }
 ```
 
-## Why this is the body
+## Why this serves the binding
+- The binding says to run the kept calculator program's `double` command as a process from the host root with the step's whole number and keep its integer stdout. `state.Program` is the kept absolute program path from the `installation` given; `command.Dir = "../.."` is the host root, matching the `go build` invocation in `installed`; the single capture `args[0]` is passed verbatim as the declared `value` argument of `calc double VALUE`.
+- The declared interface says `calc double VALUE` prints the doubled integer and a newline on exit 0, so the body trims the newline and parses the integer, then keeps it in `state.Value` for the `then` step to compare. No doubling is computed in the test: the only arithmetic source is the product's stdout.
+- `hostRoot` stays a local constant inside the function body; no package-level constants, variables, helpers or types are added.
 
-- The Phrase mapping says `references: [command: double]` and `does: Run the declared double command as a process and keep its integer stdout.` The body therefore only launches the process and records what it printed; the doubling itself is never computed in the step.
-- The declared Public interface (`docs/architecture/calc-cli.yaml`, command `double`) states: *"Run `go run ./services/calc double VALUE` from the host root; stdout is the doubled integer and a newline."* The argv and `cmd.Dir` follow that sentence literally.
-- `cmd.Dir = "../.."` is the host root as seen by the running test: `tests/calc/scenarios/scenarios.go` resolves the registry as `../../docs/scenarios.yaml`, so the test's working directory is `tests/calc` and the root with `go.mod`, `docs/` and `services/` is two levels up.
-- `strings.TrimSpace` strips the declared trailing newline before `strconv.Atoi`, per the `number` Word mapping ("The integer argument and stdout of the calculator double command").
-- A non-zero exit (interface response `'1': Invalid arguments`) surfaces as a step error carrying stderr, instead of being mistaken for a value.
-- `exec.Command` is left with the inherited environment — no `cmd.Env` assignment — so the ambient `GOCACHE`/`TMPDIR` the engine provides are preserved and no separate build cache is created.
-- All new constants (`hostRoot`, `packagePath`, `command`) live inside the function body; no package-level constants, variables, types or helpers are added.
-
-Read existing state and helpers first. Write only this phrase's body and shared
-state. Preserve the engine's pattern, registration and signature. Reach the
-service through its declared Public interface. Preserve generated tests, the
+Read existing state and helpers first. Write only the bodies of the definitions the
+context lists and shared state. Preserve the engine's patterns, registrations,
+signatures and //truebdd:concept records. Reach the service through its declared
+Public interface. Preserve generated tests, the
 Specification and service code. Report the changes in the confirmation below.
 
-=== FILE_START: tmp/{{RUN_DIR}}/apply-phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df-iter1-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply-when-doubling-iter1-result.yaml ===
 applied: true
 target: "<repo-relative path of the file you wrote/edited>"
 summary: "<one-line summary of what changed>"
-=== FILE_END: tmp/{{RUN_DIR}}/apply-phrasefd1683cb9efb040dcb9ff323bbe5d2d3e9f958d39b3e3e7eafcb136f94b8a9df-iter1-result.yaml ===
+=== FILE_END: tmp/{{RUN_DIR}}/apply-when-doubling-iter1-result.yaml ===
 
-If the declared Public interface cannot set up or observe the phrase, stop without
+If the declared Public interface cannot set up or observe the concept, stop without
 inventing an operation. Return the same confirmation markers with:
 ```yaml
 applied: false
 interface_cannot_serve:
-  phrase: "the number is doubled"
+  concept: "when concept \"doubling\""
   lacks: "<what the interface offers no way to set up or observe>"
 ```

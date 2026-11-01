@@ -17,7 +17,7 @@ story:
     steps:
     - given:
       - the "build-code-fix-by-codex" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:
@@ -39,7 +39,7 @@ story:
     steps:
     - given:
       - the "scen-check-prompt-names-its-tiers" project tree
-      - the Quality Engineer answers "1" to every question
+      - the Quality Engineer's answer to every question is "1"
     - when:
       - the Quality Engineer runs "scen check --fix"
     - then:

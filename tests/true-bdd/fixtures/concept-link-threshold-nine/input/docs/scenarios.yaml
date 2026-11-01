@@ -1,0 +1,21 @@
+{
+  "scenarios": {
+    "host-001": {
+      "description": "The number must be halved",
+      "service": "calc",
+      "path": "tests/calc/number_test.go",
+      "user_stories": [],
+      "merged_steps": {
+        "given": [
+          "6 is entered"
+        ],
+        "when": [
+          "halve 6 once and round the half to the nearest integer"
+        ],
+        "then": [
+          "3 is displayed"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "roles": [
+    {
+      "name": "Product Owner",
+      "description": "Owns meanings."
+    }
+  ],
+  "concepts": {
+    "given": [
+      {
+        "concept": "number ready",
+        "means": "A number is entered before the action.",
+        "terms": []
+      }
+    ],
+    "when": [
+      {
+        "concept": "halve",
+        "means": "Invoke the Halve control once by activating its button with a pointer, replacing the entered number with its half.",
+        "terms": []
+      }
+    ],
+    "then": [
+      {
+        "concept": "number result",
+        "means": "Compare the displayed number with an expected value.",
+        "terms": []
+      }
+    ]
+  },
+  "glossary": [],
+  "description": {
+    "summary": "The calculator has a single Halve control. A pointer click and a keyboard activation of this same control must invoke the same halving operation once."
+  }
+}

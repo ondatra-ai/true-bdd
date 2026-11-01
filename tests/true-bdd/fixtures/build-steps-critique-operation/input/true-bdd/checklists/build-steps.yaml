@@ -3,10 +3,78 @@ engine:
 # Checklist for `true-bdd build steps`.
 config:
   max_apply_attempts: 3
+  grouping_batch_texts: 800
 sections:
   - id: step-coverage
     name: Step coverage
     validation_prompts:
       - D: step-coverage
-        rationale: Each phrase needs one compiled definition with its body written; the whole suite is covered and listed after all Items.
-        F: Write only this phrase's body using its Phrase mapping and declared Public interface, preserving the engine's registration and signature.
+        rationale: Each concept Item needs its compiled definitions with their bodies written; the whole suite is covered and listed after all Items.
+        F: Write only the bodies of this concept's step definitions in this suite, doing what its Concept binding says through the declared Public interface, preserving the engine's registrations and signatures.
+
+  - id: concept-grouping
+    name: Concept grouping
+    validation_prompts:
+      - Q: |
+          Group the supplied distinct unbound steps of one suite and block.
+          Read the product roles, concepts and glossary. Given is a state
+          before behaviour, When an action or event, Then an observable outcome.
+          A concept is one Public interface item and kind of use, as the
+          wording fixes it; an argument's target never changes the concept.
+          Read means as CLOSED: only the variations its prose states fit.
+          Score from 0 to 10: 10 a plain instance; 9 an instance in other
+          words without doubt; 7 or 8 related but partly outside its meaning
+          or another fits as well; 1 to 6 not this concept; 0 unrelated.
+          An unstated variation scores at most 8. A step of the wrong kind
+          for its block scores at most 4 against every concept of that block.
+          For every supplied key return exactly one assignment: index is
+          the numeric key, concept and score are the highest scoring concept
+          of its block, runner_up and runner_up_score the next highest.
+          With only one concept use runner_up null and runner_up_score 0.
+          Use distinct names for best and runner-up, never rank a higher
+          score second. Omit no index and invent none. Change nothing.
+        with:
+          concepts: group
+          threshold: 9
+        rationale: Every unbound text needs one closed meaning before any skeleton.
+        docs: [product]
+
+  - id: concept-patterns
+    name: Concept patterns
+    validation_prompts:
+      - Q: |
+          Propose the step definition patterns of one concept for one suite,
+          as data. A pattern is a Go regular expression (RE2: no lookaround,
+          no backreferences) matched against a step's whole text. Each capture
+          group becomes an argument of the definition, in order. The engine
+          writes each skeleton from your pattern and another turn writes its
+          body from the concept's binding, so the captures are everything the
+          body will know about the step.
+          Anchor every pattern from ^ to $. Capture every value the body needs
+          to do what the binding says: a quoted value, without its quotes; a
+          number, together with the word "no" where the steps use it for zero;
+          a role; a pattern or other free text that ends the step; and every
+          alternative that changes what the body must do, such as a negation
+          (matches or does not match), a kind out of a set (validation, fix or
+          apply), or an optional word that changes the meaning. A grammatical
+          variant that changes nothing the body does (a plural s, is or are)
+          is a non-capturing group (?:...).
+          A pattern is as general as the binding allows, so a new step of the
+          same shape binds it without a new pattern, but it states the words
+          that make it this concept: a pattern that would bind any text, such
+          as ^(.+)$, is wrong. Propose one pattern per distinct thing the
+          binding says a definition does, not one per step.
+          The engine checks your patterns against every step of the suite in
+          every block, and refuses them unless every supplied step binds
+          exactly one pattern among yours and the existing definitions, no
+          pattern of yours binds any other step of the suite, and every
+          pattern of yours binds at least one step. Never repeat or change an
+          existing definition.
+          For each pattern, name and explain each capture in order, and say
+          which clause of the binding's does it serves. When refused is
+          supplied, the engine refused those patterns with those findings:
+          propose again so that none of them holds. Change nothing.
+        with:
+          concepts: propose
+        rationale: Every concept Item needs patterns the engine can check before any skeleton.
+        docs: [product, architecture_yaml]

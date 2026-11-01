@@ -150,3 +150,28 @@ func assertClaudePolicy(t *testing.T, root string, req ai.Request) {
 		}
 	}
 }
+
+func TestClaudeOutputCapCrashesEvenWithCompleteAnswer(t *testing.T) {
+	for _, signal := range []string{`"stop_reason":"max_tokens"`, `"subtype":"error_max_output_tokens"`} {
+		root := t.TempDir()
+		script := "#!/bin/sh\nprintf '%s\\n' '{\"type\":\"result\",\"structured_output\":{\"assignments\":[]}," +
+			signal + "}'\n"
+
+		err := disk.Write(filepath.Join(root, "claude"), []byte(script), disk.Shared)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = disk.Executable(filepath.Join(root, "claude"))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		t.Setenv("PATH", root)
+
+		_, err = ai.NewClaudeProvider().Execute(t.Context(), ai.Request{WorkDir: root, ResultSchema: `{"type":"object"}`})
+		if err == nil || !strings.Contains(err.Error(), "output cap reached") {
+			t.Fatalf("cap signal %s: %v", signal, err)
+		}
+	}
+}

@@ -1,7 +1,6 @@
 # Product document for `build-tests-stray-argument`.
 #
-# It declares roles and a glossary but no `catalogue:` key,
-# so no step is held to a phrase and only the stray argument can refuse the run.
+# It declares roles and a glossary, and no concepts.
 
 title: "Fixture host project"
 

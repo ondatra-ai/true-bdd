@@ -1,0 +1,72 @@
+{
+  "architecture": {
+    "services": [
+      {
+        "name": "calc",
+        "path": "services/calc",
+        "language": "go",
+        "public_interface": {
+          "kind": "ui",
+          "elements": [
+            {
+              "page": "Calc",
+              "role": "button",
+              "name": "Halve"
+            },
+            {
+              "page": "Calc",
+              "role": "textbox",
+              "name": "Number"
+            },
+            {
+              "page": "Calc",
+              "role": "button",
+              "name": "Double"
+            }
+          ]
+        }
+      }
+    ],
+    "concepts": [
+      {
+        "concept": "halve",
+        "block": "when",
+        "service": "calc",
+        "references": [
+          {
+            "element": {
+              "page": "Calc",
+              "role": "button",
+              "name": "Halve"
+            }
+          }
+        ],
+        "does": "Press Halve once."
+      },
+      {
+        "concept": "cut",
+        "block": "when",
+        "service": "calc",
+        "references": [
+          {
+            "element": {
+              "page": "Calc",
+              "role": "button",
+              "name": "Halve"
+            }
+          }
+        ],
+        "does": "Press Halve once."
+      }
+    ],
+    "terms": [],
+    "testing": {
+      "framework": "go-test",
+      "commands": {
+        "record": "go test -tags bdd -json ./tests/calc/...",
+        "replay": "go test -tags bdd -json ./tests/calc/...",
+        "live": "go test -tags bdd -json ./tests/calc/..."
+      }
+    }
+  }
+}

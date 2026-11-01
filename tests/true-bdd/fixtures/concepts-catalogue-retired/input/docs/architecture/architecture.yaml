@@ -1,0 +1,12 @@
+architecture:
+  services:
+  - name: greeter
+    path: services/greeter
+    language: go
+    public_interface:
+      kind: cli
+      document: docs/greeter-cli.yaml
+  terms:
+  - term: greeting
+    technical: Text supplied to greet and recorded in the greeted log record.
+    observed_by: Set the greeting configuration and compare the greeted text.

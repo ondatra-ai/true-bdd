@@ -7,7 +7,7 @@
 # expanded with richer merge-correctness checks once the engine is proven.
 
 version: "1.0"
-last_updated: "2026-10-21"
+last_updated: "2026-10-31"
 
 # Per-checklist engine knob, read by `us apply --fix` to bound the outer
 # re-walk loop: any fix applied during walk N re-walks from AC 1 prompt 1;
@@ -36,6 +36,8 @@ sections:
             - "AC <ac id> (lineage <lineage id>): present in <matched scenario id>"
             - "AC <ac id> (lineage <lineage id>): not present"
         rationale: "Every refined-story AC must be reflected as a tracked scenario in the registry."
+        docs:
+          - architecture_yaml
         F: |
           Add this AC as a new scenario in the registry.
 
@@ -47,8 +49,8 @@ sections:
                number or invent another id.
             2. Insert a new entry under `scenarios:` with:
                   description: <short summary derived from the AC description>
-                  service: ""
-                  path: <see below>
+                  service: <see step 3>
+                  path: <see step 4>
                   last_updated: "<today, YYYY-MM-DD>"
                   user_stories:
                     - story: <story file path from subject>
@@ -58,16 +60,24 @@ sections:
                     given: <verbatim from the AC's steps.given>
                     when:  <verbatim from the AC's steps.when>
                     then:  <verbatim from the AC's steps.then>
-            3. `path:` names the generated test file this scenario's Go
+            3. `service:` names one service the architecture document
+               declares, by its `services[].name`: never empty, and never
+               a name the architecture does not declare. When it declares
+               one service, it is that one. When it declares several, it
+               is the `service:` of the existing scenarios whose `path:`
+               step 4 reuses, the suite under `tests/<service>/`. When
+               neither settles it, ask which declared service the
+               scenario belongs to, offering each declared name, before
+               giving the fix.
+            4. `path:` names the generated test file this scenario's Go
                test is written into. REUSE an existing `path:` from a
                scenario of the same command or feature family — several
                scenarios share one file on purpose, so related
                behaviours are read together. Invent a new one only when
                no existing file fits, and then make it
-               `<suite path>/<family>_test.go`, where <suite path> is
-               the tests/<service>/ tree of the scenario
-               whose `service:` matches this scenario's.
-            4. Preserve existing file ordering and indentation. Do not
+               `tests/<service>/<family>_test.go`, the suite of the
+               service step 3 names.
+            5. Preserve existing file ordering and indentation. Do not
                touch any other entry.
 
       - Q: |

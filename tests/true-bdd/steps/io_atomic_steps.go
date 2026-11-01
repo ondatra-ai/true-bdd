@@ -11,11 +11,12 @@ import (
 
 func registerIOAtomicSteps(suite *bddgo.Suite[State]) {
 	suite.Step(`^the System Architect runs "([^"]+)" after planting a stale staging symlink$`, runWithStagingSymlink)
-	suite.Step(`^the project prepares atomic replacement probes$`, prepareAtomicProbes)
+	suite.Step(`^the project tree holds atomic replacement probes$`, prepareAtomicProbes)
 	suite.Step(`^the rewritten file "([^"]+)" keeps private permissions and replaces its old hard link "([^"]+)"$`,
 		assertAtomicReplacement)
 }
 
+//truebdd:concept then "file content"
 func assertAtomicReplacement(state *State, args []string) error {
 	target := filepath.Join(state.Result.TmpDir, args[0])
 	original := filepath.Join(state.Result.TmpDir, args[1])
@@ -51,6 +52,7 @@ func assertAtomicReplacement(state *State, args []string) error {
 	return nil
 }
 
+//truebdd:concept given "project tree"
 func prepareAtomicProbes(state *State, _ []string) error {
 	if state.Fixture == nil || len(state.Fixture.PrepCmds) == 0 {
 		return state.fail("atomic replacement probes require fixture preparation")
@@ -59,6 +61,7 @@ func prepareAtomicProbes(state *State, _ []string) error {
 	return nil
 }
 
+//truebdd:concept when "a command runs under interference"
 func runWithStagingSymlink(state *State, args []string) error {
 	return runObservedIO(state, args[0], "yes", nil, func(root string, _ <-chan struct{}) error {
 		err := awaitIOFile(filepath.Join(root, "tmp/hold-ready"))

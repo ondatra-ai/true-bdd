@@ -1,24 +1,3 @@
-# Story seed for the `us-refine-fix-step-qualifier` BDD fixture.
-#
-# ONE deliberate defect (one defect per --fix fixture: the fix applier
-# rewrites the whole story, so any additional seeded defect would be
-# collaterally cleaned by the first fix and never earn its own
-# fail/fix chain):
-#
-#   - AC-4: the then step contains the forbidden qualifiers "quickly"
-#     and "user-friendly" (listed in the fixture's docs/product/product.yaml
-#     forbidden_qualifiers) -> fails the vague-word-in-steps prompt;
-#     its F replaces the qualifiers with measurable criteria.
-#
-# The fixture also declares checklist_prompts in its manifest, so the
-# harness generates a single-prompt checklist and the walk evaluates
-# ONLY the check above. The story still keeps every
-# other quality dimension healthy (it doubles as documentation):
-# 4 ACs, rule-based must descriptions, full Given/When/Then steps,
-# clean descriptions, two error scenarios (AC-2, AC-3), happy paths
-# (AC-1, AC-4), measurable criteria in every AC, binary outcomes,
-# sketches drawable from the fixture's docs/architecture/architecture.yaml.
-
 story:
     id: "96.7"
     title: Document Summary On Demand

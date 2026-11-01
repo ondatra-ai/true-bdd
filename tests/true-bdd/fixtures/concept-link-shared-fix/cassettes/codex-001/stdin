@@ -1,0 +1,74 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+Apply only the exact concept, binding or step repair approved at the menu.
+Edit only the listed working copies. Preserve every unaffected entry.
+For a Story step rewrite, return the complete Story YAML instead of editing
+a document. For document edits return the requested confirmation markers.
+
+
+### TASK
+
+The responsible person chose apply at the menu for Scenario alpha.
+Approved fix:
+## Proposed repair for Item `alpha` — widen the `when` concept `halve`
+
+**Failed judgement:** when step `activate the Halve button once with the keyboard to halve six` reached no concept (score `{"halve": 5}`, threshold 9), because the means of `halve` closes the kind of use to pointer activation only.
+
+**Owner of this change:** Product Owner (concept wording in the product document).
+
+**Why widen rather than add a concept or rewrite the step:**
+The Public interface item (the single Halve control) and the kind of use (invoke it once to replace the entered number with its half) already exist in `halve`. The product description states: "The calculator has a single Halve control. A pointer click and a keyboard activation of this same control must invoke the same halving operation once." Keyboard activation is therefore a new *variation* of an existing item and use, not a new item or use. Per policy, a new variation widens the existing concept; the step wording is correct and stays as written.
+
+### Exact change — one file only: `docs/product/product.yaml`
+
+Under `concepts` → `when`, in the concept `halve`, replace the `means` value. Nothing else in the file changes: `concept` stays `halve`, `terms` stays `[]`, and the concepts `number ready` (given) and `number result` (then), the `roles`, `glossary` and `description` are untouched.
+
+Before:
+
+```json
+      {
+        "concept": "halve",
+        "means": "Invoke the Halve control once by activating its button with a pointer, replacing the entered number with its half.",
+        "terms": []
+      }
+```
+
+After:
+
+```json
+      {
+        "concept": "halve",
+        "means": "Invoke the Halve control once, replacing the entered number with its half. The control is invoked either by activating its button with a pointer or by activating its button with the keyboard; both are the same single invocation of this one control and admit no other way of invoking it.",
+        "terms": []
+      }
+```
+
+### Effect on Item `alpha`
+
+No change to the Story or Scenario. All three steps stay exactly as written:
+
+- Given: `six is entered` — stays linked to `number ready` (unaffected).
+- When: `activate the Halve button once with the keyboard to halve six` — now an instance of the widened `halve`, since the closed prose admits keyboard activation of the same control as the same single use.
+- Then: `three is displayed` — stays linked to `number result` (unaffected).
+
+### Apply
+
+Nothing has been changed. Apply only on an explicit menu decision by the Product Owner; applying means editing the single `means` string in `docs/product/product.yaml` shown above and leaving the Item untouched.
+Working copies (edit only the approved target):
+
+- `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
+
+- `architecture_yaml`: edit `tmp/{{RUN_DIR}}/architecture_yaml.yaml`, the working copy of `./docs/architecture/architecture.yaml`
+
+
+- `scenarios_yaml`: edit `tmp/{{RUN_DIR}}/scenarios_yaml.yaml`, the working copy of `./docs/scenarios.yaml`
+
+
+Concept changes belong only to product, bindings to architecture_yaml and
+needed Public interface working copies, step rewrites to this Scenario's
+Registry entry. Preserve all unrelated entries. Return confirmation:
+=== FILE_START: tmp/{{RUN_DIR}}/apply-alpha-iter1-result.yaml ===
+applied: true
+target: "<working copy edited>"
+summary: "<approved change applied>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-alpha-iter1-result.yaml ===

@@ -1,0 +1,32 @@
+# Product document for `scen-check-fix-records-concept`.
+#
+# An MCP service host whose concepts say what its steps may state.
+
+title: "Fixture host project"
+
+description:
+  summary: >-
+    A single MCP service, used by the true-bdd fixtures as the host
+    project a scenario registry describes.
+
+roles:
+  - name: Operator
+    definition: Runs the MCP service and watches what it answers.
+  - name: Client Developer
+    definition: Writes the clients that send the MCP service its requests.
+
+glossary: []
+
+concepts:
+  given:
+    - concept: service running
+      means: The MCP service has started and accepts requests.
+      terms: []
+  when:
+    - concept: message sent
+      means: A role sends a stated message to the MCP service, once.
+      terms: []
+  then:
+    - concept: answer
+      means: The MCP service's reply to the message is exactly a stated text.
+      terms: []

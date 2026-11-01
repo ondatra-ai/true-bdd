@@ -1,13 +1,13 @@
 # Registry seed for `scen-check-closure-no-catalogue`.
 #
 # One Scenario a Story claims, held to a product document that declares
-# no catalogue.
+# no concepts.
 
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
   version: "2.0"
   last_updated: "2026-10-21"
-  description: "One claimed scenario, and no catalogue"
+  description: "One claimed scenario, and no concepts"
 
 scenarios:
   E2E-001:

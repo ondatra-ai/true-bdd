@@ -1,4 +1,6 @@
-# EOF stop fixtures reuse existing requests and empty goldens byte-for-byte.
+# EOF stop fixtures reuse existing requests and empty goldens byte-for-byte,
+# but for criterion 007, which runs on a host declaring concepts (#259): its
+# fix asks what an undefined term a concept declares means.
 story:
   id: fix-loop-input
   feature: engine
@@ -17,9 +19,9 @@ story:
       - the Quality Engineer runs "scen check --fix"
     - then:
       - the command exits with code 1
-      - stdout matches What does the step "the service answers within 200 milliseconds" mean
-      - stdout matches It means its reply arrives no later than that many milliseconds after the message was sent.
-      - stdout matches It means the time from sending the message to its reply arriving is at most that many milliseconds.
+      - stdout matches \[1/1\] .*latency
+      - stdout matches 1\) It means
+      - stdout matches 2\) It means
       - stdout matches a person must answer
       - stderr matches a person must answer
       - stdout does not match User answered clarification question

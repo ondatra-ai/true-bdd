@@ -1,0 +1,92 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+Apply only the exact concept, binding or step repair approved at the menu.
+Edit only the listed working copies. Preserve every unaffected entry.
+For a Story step rewrite, return the complete Story YAML instead of editing
+a document. For document edits return the requested confirmation markers.
+
+
+### TASK
+
+The Product Owner chose apply at the menu for Story host.
+Approved fix:
+PROPOSED REPAIR — Item `host`, AC-1 `when` step "square six" (no `when` concept reaches threshold 9; best score: "halve" = 2)
+
+DECISION: add one new `when` concept to the product document. Do NOT widen "halve", and do NOT rewrite the Story.
+
+WHY NOT A REWRITE: the Story wording is already correct against the product description — "The calculator offers separate Halve and Square controls. … Square multiplies the entered number by itself." Squaring six yields thirty-six, so the given/when/then steps are faithful; the gap is a missing meaning, not bad wording.
+
+WHY NOT A WIDENING: widening is allowed only when the Public interface item and the kind of use already exist. "Halve" means "Halve the entered number once." — a closed meaning covering one item (the Halve control) and one use (dividing by two). Square is a separate control in the product description with a different use (multiplying the number by itself). That is a new item and a new use, so it takes a new concept rather than a new variation of "halve".
+
+=== EXACT CHANGE ===
+
+File: docs/product/product.yaml
+Location: `concepts.when`, appended after the existing "halve" entry.
+
+BEFORE:
+
+  "when": [
+    {
+      "concept": "halve",
+      "means": "Halve the entered number once.",
+      "terms": []
+    }
+  ],
+
+AFTER:
+
+  "when": [
+    {
+      "concept": "halve",
+      "means": "Halve the entered number once.",
+      "terms": []
+    },
+    {
+      "concept": "square",
+      "means": "Square the entered number once by multiplying it by itself.",
+      "terms": []
+    }
+  ],
+
+=== SCOPE ===
+
+- One addition to docs/product/product.yaml. No other concept is touched: "number ready" (given), "halve" (when) and "number result" (then) keep their current wording verbatim.
+- No change to the Item: Story `host` and AC-1's given/when/then steps stay exactly as written. The given step stays linked to "number ready" and the then step to "number result".
+- Owner: Product Owner (concept addition to the product document).
+- Follow-up after apply: the System Architect binds AC-1's `when` step "square six" to the new "square" concept; "square six" is a plain instance of "Square the entered number once by multiplying it by itself."
+
+Nothing has been applied. Awaiting an explicit apply decision at the menu.
+Product working copy:
+
+- `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
+
+If the approved fix changes a concept, edit only that product working copy
+and return this confirmation inside these markers:
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
+applied: true
+target: "product"
+summary: "<approved concept repair>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
+If it rewrites a step, return instead the COMPLETE updated Story body inside
+those markers, preserving every other field and criterion. Do not edit
+concepts for a step rewrite. Current Story:
+id: host
+title: Square a number
+as_a: Product Owner
+i_want: to square a number
+so_that: I can read its square
+status: DRAFT
+acceptance_criteria:
+    - id: AC-1
+      description: The number must be squared
+      steps:
+        - given:
+            - six is entered
+        - when:
+            - square six
+        - then:
+            - thirty-six is displayed
+
+This host keeps a confirmation's summary unquoted: write it as plain text
+right after `summary: `, without quotation marks, and name each concept the
+fix adds or widens with its terms in the form `(terms: [...])`.

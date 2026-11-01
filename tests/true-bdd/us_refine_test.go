@@ -26,21 +26,21 @@ import (
 func TestCodexApply001UsRefineWritesScratch(t *testing.T) {
 	s := scenarios.New(t, "codex-apply-001-us-refine-writes-scratch")
 	s.Given(`the "codex-apply-us-refine" project tree`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine doc-outline --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches msg="Codex turn sandboxed" label=codex-turn[0-9]+ sandbox=writer`)
 	s.But(`stdout does not match sandbox=workspace-write`)
-	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=doc-outline promptIndex=1 answer=fail`)
-	s.And(`stdout matches AC-2: then step \\"Claude offers to summarise the document instead\\" matches no template`)
+	s.And(`stdout matches msg="Concept judgement answered" subjectID=doc-outline promptIndex=1 judgement=link answer=fail`)
+	s.And(`stdout matches AC-2 then step .Claude offers to summarise the document instead.: no concept of then reaches the threshold`)
 	s.And(`stdout matches FIX PROMPT GENERATED`)
 	s.And(`stdout matches msg="Fix recorded in the document" document=product`)
-	s.And(`stdout matches check=step-phrases subjectID=doc-outline promptIndex=1 answer=pass`)
+	s.And(`stdout matches msg="Concept judgement answered" subjectID=doc-outline promptIndex=1 judgement=link answer=pass`)
 	s.And(`stdout matches ALL CHECKS PASSED!`)
 	s.And(`stdout matches msg="Story saved"`)
 	s.And(`no file outside "tmp" and "docs/product" changed`)
 	s.And(`the file "docs/product/product.yaml" is modified`)
-	s.And(`the file "docs/product/product.yaml" matches Claude offers to`)
+	s.And(`the file "docs/product/product.yaml" matches (?is)concepts:.*(offer|summari[sz])`)
 	s.And(`the story "docs/product/stories/doc-outline-catalogued.yaml" has 3 acceptance criteria`)
 	s.And(`the file "docs/product/stories/doc-outline-catalogued.yaml" matches Claude offers to summarise the document instead`)
 	s.Done()
@@ -95,7 +95,7 @@ func TestEngineEntry004FailedUsCommandPrintsNoUsage(t *testing.T) {
 func TestFixLoopBounds001OneWalkKeepsStory(t *testing.T) {
 	s := scenarios.New(t, "fix-loop-bounds-001-one-walk-keeps-story")
 	s.Given(`the "fix-loop-attempts-exhausted" project tree`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine 97.2 --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches msg="Walk attempt started" attempt=1 max_attempts=1`)
@@ -114,7 +114,7 @@ func TestFixLoopBounds001OneWalkKeepsStory(t *testing.T) {
 func TestFixLoopBounds002RefixedPromptStopsWalk(t *testing.T) {
 	s := scenarios.New(t, "fix-loop-bounds-002-refixed-prompt-stops-walk")
 	s.Given(`the "fix-loop-refix-stops" project tree`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine 97.3 --fix"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Walk stopped" command="us refine"`)
@@ -131,7 +131,7 @@ func TestFixLoopBounds002RefixedPromptStopsWalk(t *testing.T) {
 func TestFixLoopBounds003UnsettledQuestionsKeepStory(t *testing.T) {
 	s := scenarios.New(t, "fix-loop-bounds-003-unsettled-questions-keep-story")
 	s.Given(`the "fix-loop-unsettled" project tree`)
-	s.And(`the Product Owner answers "I have not decided yet" to every question`)
+	s.And(`the Product Owner's answer to every question is "I have not decided yet"`)
 	s.When(`the Product Owner runs "us refine 97.4 --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches msg="User answered clarification question" .* answer="I have not decided yet"`)
@@ -152,7 +152,7 @@ func TestFixLoopChoices003ExitKeepsStory(t *testing.T) {
 	s := scenarios.New(t, "fix-loop-choices-003-exit-keeps-story")
 	s.Given(`the "fix-loop-exit-story" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "whether its description field contains a vague word" prompt`)
-	s.And(`the Product Owner answers "3" to every question`)
+	s.And(`the Product Owner's answer to every question is "3"`)
 	s.When(`the Product Owner runs "us refine 97.1 --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches msg="User chose fix action" rawInput=3 action=exit`)
@@ -170,7 +170,7 @@ func TestUsRefineFix001VagueDescriptionMadeMeasurable(t *testing.T) {
 	s := scenarios.New(t, "us-refine-fix-001-vague-description-made-measurable")
 	s.Given(`the "us-refine-fix-desc-qualifier" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "whether its description field contains a vague word" prompt`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine 96.6 --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches ALL CHECKS PASSED!`)
@@ -191,7 +191,7 @@ func TestUsRefineFix002GherkinDescriptionStatesARule(t *testing.T) {
 	s := scenarios.New(t, "us-refine-fix-002-gherkin-description-states-a-rule")
 	s.Given(`the "us-refine-fix-descriptions" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "whether its description field follows the rule-based format" prompt`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine 96.2 --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches ALL CHECKS PASSED!`)
@@ -213,7 +213,7 @@ func TestUsRefineFix003ForbiddenVerbMadeObservable(t *testing.T) {
 	s := scenarios.New(t, "us-refine-fix-003-forbidden-verb-made-observable")
 	s.Given(`the "us-refine-fix-forbidden-verb" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "use action verbs from the forbidden_actions list" prompt`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine 96.8 --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches ALL CHECKS PASSED!`)
@@ -234,7 +234,7 @@ func TestUsRefineFix004VagueStepMadeMeasurable(t *testing.T) {
 	s := scenarios.New(t, "us-refine-fix-004-vague-step-made-measurable")
 	s.Given(`the "us-refine-fix-step-qualifier" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "whether its steps field contains a vague word" prompt`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine 96.7 --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches ALL CHECKS PASSED!`)
@@ -255,7 +255,7 @@ func TestUsRefineFix005MissingStepsWritten(t *testing.T) {
 	s := scenarios.New(t, "us-refine-fix-005-missing-steps-written")
 	s.Given(`the "us-refine-fix-steps" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "whether its steps field follows the Given/When/Then format" prompt`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine 96.5 --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches ALL CHECKS PASSED!`)
@@ -275,7 +275,7 @@ func TestUsRefineFix006FeatureLabelSurvives(t *testing.T) {
 	s := scenarios.New(t, "us-refine-fix-006-feature-label-survives")
 	s.Given(`the "us-refine-fix-keeps-feature" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "whether its description field contains a vague word" prompt`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine doc-summary --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches msg="Fix applied; re-running validation"`)
@@ -290,34 +290,12 @@ func TestUsRefineFix006FeatureLabelSurvives(t *testing.T) {
 	s.Done()
 }
 
-// us-refine-fix-007-step-outside-catalogue-gets-phrase: `us refine --fix` must propose a catalogue entry for a Story step that matches no catalogue phrase, record the entry the user applies in the product document and never in the Story, and pass the re-walk
-func TestUsRefineFix007StepOutsideCatalogueGetsPhrase(t *testing.T) {
-	s := scenarios.New(t, "us-refine-fix-007-step-outside-catalogue-gets-phrase")
-	s.Given(`the "us-refine-fix-records-phrase" project tree`)
-	s.And(`the Product Owner answers "1" to every question`)
-	s.When(`the Product Owner runs "us refine doc-outline --fix"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=doc-outline promptIndex=1 answer=fail`)
-	s.And(`stdout matches AC-2: then step \\"Claude offers to summarise the document instead\\" matches no template`)
-	s.And(`stdout matches FIX PROMPT GENERATED`)
-	s.And(`stdout matches msg="Fix recorded in the document" document=product`)
-	s.And(`stdout matches check=step-phrases subjectID=doc-outline promptIndex=1 answer=pass`)
-	s.And(`stdout matches ALL CHECKS PASSED!`)
-	s.And(`stdout matches msg="Story saved"`)
-	s.And(`no file outside "tmp" and "docs/product" changed`)
-	s.And(`the file "docs/product/product.yaml" is modified`)
-	s.And(`the file "docs/product/product.yaml" matches Claude offers to`)
-	s.And(`the story "docs/product/stories/doc-outline-catalogued.yaml" has 3 acceptance criteria`)
-	s.And(`the file "docs/product/stories/doc-outline-catalogued.yaml" matches Claude offers to summarise the document instead`)
-	s.Done()
-}
-
-// us-refine-quality-fix-001-count-proposes-criteria: A Story with two criteria must get a count-fix proposal at the menu, and apply must save a third criterion using Catalogue phrases
+// us-refine-quality-fix-001-count-proposes-criteria: A Story with two criteria must get a count-fix proposal at the menu, and apply must save a third criterion worded in the product's concepts
 func TestUsRefineQualityFix001CountProposesCriteria(t *testing.T) {
 	s := scenarios.New(t, "us-refine-quality-fix-001-count-proposes-criteria")
 	s.Given(`the "us-refine-fix-count" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "Count the total number of acceptance criteria" prompt`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine halve-negative --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches FIX PROMPT GENERATED`)
@@ -326,7 +304,7 @@ func TestUsRefineQualityFix001CountProposesCriteria(t *testing.T) {
 	s.And(`the story "docs/product/stories/halve-negative-cases.yaml" has 3 acceptance criteria`)
 	s.And(`every acceptance criterion in the story "docs/product/stories/halve-negative-cases.yaml" has given, when and then steps`)
 	s.And(`the only file changed outside "tmp" is "docs/product/stories/halve-negative-cases.yaml"`)
-	s.And(`judge: The count proposal adds the missing -1 to 0 boundary criterion, retains both original criteria and uses only the three Catalogue phrases with filled slots.`)
+	s.And(`judge: The count proposal adds the missing -1 to 0 boundary criterion, retains both original criteria, and words every step as a supplied number, the halving or the printed result.`)
 	s.Done()
 }
 
@@ -335,7 +313,7 @@ func TestUsRefineQualityFix002ImplementationRewritten(t *testing.T) {
 	s := scenarios.New(t, "us-refine-quality-fix-002-implementation-rewritten")
 	s.Given(`the "us-refine-fix-implementation" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "whether it describes implementation" prompt`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine halve-negative --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches FIX PROMPT GENERATED`)
@@ -344,7 +322,7 @@ func TestUsRefineQualityFix002ImplementationRewritten(t *testing.T) {
 	s.And(`the story "docs/product/stories/halve-negative-cases.yaml" has 3 acceptance criteria`)
 	s.And(`every acceptance criterion in the story "docs/product/stories/halve-negative-cases.yaml" has given, when and then steps`)
 	s.And(`the only file changed outside "tmp" is "docs/product/stories/halve-negative-cases.yaml"`)
-	s.And(`judge: The first criterion now describes the observable -6 to -3 result instead of SQL persistence; all three original inputs and results survive and every step uses a Catalogue phrase.`)
+	s.And(`judge: The first criterion now describes the observable -6 to -3 result instead of SQL persistence; all three original inputs and results survive, and every step states a supplied number, the halving or the printed result.`)
 	s.Done()
 }
 
@@ -353,7 +331,7 @@ func TestUsRefineQualityFix003HappyPathAdded(t *testing.T) {
 	s := scenarios.New(t, "us-refine-quality-fix-003-happy-path-added")
 	s.Given(`the "us-refine-fix-happy-path" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "whether it describes the happy path" prompt`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine divide-integers --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches FIX PROMPT GENERATED`)
@@ -362,7 +340,7 @@ func TestUsRefineQualityFix003HappyPathAdded(t *testing.T) {
 	s.And(`the story "docs/product/stories/divide-integers-cases.yaml" has 4 acceptance criteria`)
 	s.And(`every acceptance criterion in the story "docs/product/stories/divide-integers-cases.yaml" has given, when and then steps`)
 	s.And(`the only file changed outside "tmp" is "docs/product/stories/divide-integers-cases.yaml"`)
-	s.And(`judge: A new success criterion divides 6 by 2 and observes 3 while retaining the three zero-divisor criteria. Every step uses only Catalogue phrases.`)
+	s.And(`judge: A new success criterion divides 6 by 2 and observes 3 while retaining the three zero-divisor criteria. Every step states a supplied dividend or divisor, the division, or the command's result or error.`)
 	s.Done()
 }
 
@@ -371,7 +349,7 @@ func TestUsRefineQualityFix004UncoveredFailureAdded(t *testing.T) {
 	s := scenarios.New(t, "us-refine-quality-fix-004-uncovered-failure-added")
 	s.Given(`the "us-refine-fix-failure-mode" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "Identify every failure mode" prompt`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine divide-integers --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches FIX PROMPT GENERATED`)
@@ -380,7 +358,7 @@ func TestUsRefineQualityFix004UncoveredFailureAdded(t *testing.T) {
 	s.And(`the story "docs/product/stories/divide-integers-cases.yaml" has 4 acceptance criteria`)
 	s.And(`every acceptance criterion in the story "docs/product/stories/divide-integers-cases.yaml" has given, when and then steps`)
 	s.And(`the only file changed outside "tmp" is "docs/product/stories/divide-integers-cases.yaml"`)
-	s.And(`judge: The proposal and saved Story add exactly one criterion for the real zero-divisor failure, asserting the declared error; all three original successful divisions remain. No invented failure or new Story field is added. Every step uses only Catalogue phrases.`)
+	s.And(`judge: The proposal and saved Story add exactly one criterion for the real zero-divisor failure, asserting the declared error; all three original successful divisions remain. No invented failure or new Story field is added. Every step states a supplied dividend or divisor, the division, or the command's result or error.`)
 	s.Done()
 }
 
@@ -389,7 +367,7 @@ func TestUsRefineQualityFix005CriteriaMadeMeasurable(t *testing.T) {
 	s := scenarios.New(t, "us-refine-quality-fix-005-criteria-made-measurable")
 	s.Given(`the "us-refine-fix-measurable" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "whether it includes specific measurable criteria" prompt`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine summary-views --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches FIX PROMPT GENERATED`)
@@ -398,7 +376,7 @@ func TestUsRefineQualityFix005CriteriaMadeMeasurable(t *testing.T) {
 	s.And(`the story "docs/product/stories/summary-views-cases.yaml" has 3 acceptance criteria`)
 	s.And(`every acceptance criterion in the story "docs/product/stories/summary-views-cases.yaml" has given, when and then steps`)
 	s.And(`the only file changed outside "tmp" is "docs/product/stories/summary-views-cases.yaml"`)
-	s.And(`judge: At least two criteria replace an unmeasurable concise summary with the declared limit of at most 150 words. All three views remain and every step uses only Catalogue phrases.`)
+	s.And(`judge: At least two criteria replace an unmeasurable concise summary with the declared limit of at most 150 words. All three views remain, and every step states the selected document, the requested view or the summary's word count.`)
 	s.Done()
 }
 
@@ -407,7 +385,7 @@ func TestUsRefineQualityFix006OutcomeMadeBinary(t *testing.T) {
 	s := scenarios.New(t, "us-refine-quality-fix-006-outcome-made-binary")
 	s.Given(`the "us-refine-fix-binary" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "whether it has a binary pass/fail outcome" prompt`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine halve-negative --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches FIX PROMPT GENERATED`)
@@ -416,16 +394,16 @@ func TestUsRefineQualityFix006OutcomeMadeBinary(t *testing.T) {
 	s.And(`the story "docs/product/stories/halve-negative-cases.yaml" has 3 acceptance criteria`)
 	s.And(`every acceptance criterion in the story "docs/product/stories/halve-negative-cases.yaml" has given, when and then steps`)
 	s.And(`the only file changed outside "tmp" is "docs/product/stories/halve-negative-cases.yaml"`)
-	s.And(`judge: The first criterion now asserts the objective -6 to -3 result with a runnable CLI observation, retaining the other two criteria and using only Catalogue phrases.`)
+	s.And(`judge: The first criterion now asserts the objective -6 to -3 result with a runnable CLI observation, retaining the other two criteria, and every step states a supplied number, the halving or the printed result.`)
 	s.Done()
 }
 
-// us-refine-quality-fix-007-test-sketch-made-runnable: A criterion without an objective runnable sketch must be rewritten using the declared interface and test helpers through the menu
+// us-refine-quality-fix-007-test-sketch-made-runnable: A criterion without an objective runnable sketch must be rewritten through the menu using the product's concepts and the service's declared kind of Public interface
 func TestUsRefineQualityFix007TestSketchMadeRunnable(t *testing.T) {
 	s := scenarios.New(t, "us-refine-quality-fix-007-test-sketch-made-runnable")
 	s.Given(`the "us-refine-fix-sketch" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "attempt to draft a runnable test sketch" prompt`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine halve-negative --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches FIX PROMPT GENERATED`)
@@ -434,7 +412,7 @@ func TestUsRefineQualityFix007TestSketchMadeRunnable(t *testing.T) {
 	s.And(`the story "docs/product/stories/halve-negative-cases.yaml" has 3 acceptance criteria`)
 	s.And(`every acceptance criterion in the story "docs/product/stories/halve-negative-cases.yaml" has given, when and then steps`)
 	s.And(`the only file changed outside "tmp" is "docs/product/stories/halve-negative-cases.yaml"`)
-	s.And(`judge: The first criterion now asserts the objective -6 to -3 result with a runnable CLI observation, retaining the other two criteria and using only Catalogue phrases.`)
+	s.And(`judge: The first criterion now asserts the objective -6 to -3 result with a runnable CLI observation, retaining the other two criteria, and every step states a supplied number, the halving or the printed result.`)
 	s.Done()
 }
 
@@ -563,11 +541,11 @@ func TestUsRefineRefusals007SharedPrefixReadsOwnFile(t *testing.T) {
 	s.Done()
 }
 
-// us-refine-shipped-001-shipped-checklist-reaches-menu: The full shipped checklist must reach a fix proposal, and exit at the menu must leave the Story and Catalogue unchanged
+// us-refine-shipped-001-shipped-checklist-reaches-menu: The full shipped checklist must reach a fix proposal, and exit at the menu must leave the Story and the product document unchanged
 func TestUsRefineShipped001ShippedChecklistReachesMenu(t *testing.T) {
 	s := scenarios.New(t, "us-refine-shipped-001-shipped-checklist-reaches-menu")
 	s.Given(`the "us-refine-shipped-menu-exit" project tree`)
-	s.And(`the Product Owner answers "3" to every question`)
+	s.And(`the Product Owner's answer to every question is "3"`)
 	s.When(`the Product Owner runs "us refine halve-negative --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches US REFINE`)
@@ -580,11 +558,11 @@ func TestUsRefineShipped001ShippedChecklistReachesMenu(t *testing.T) {
 	s.Done()
 }
 
-// us-refine-shipped-002-shipped-checklist-adds-phrase: The full shipped checklist must add a missing Catalogue phrase only after apply and retain the Story words
+// us-refine-shipped-002-shipped-checklist-adds-phrase: The full shipped checklist must add a missing concept only after apply and retain the Story words
 func TestUsRefineShipped002ShippedChecklistAddsPhrase(t *testing.T) {
 	s := scenarios.New(t, "us-refine-shipped-002-shipped-checklist-adds-phrase")
 	s.Given(`the "us-refine-shipped-catalogue" project tree`)
-	s.And(`the Product Owner answers "1" to every question`)
+	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine halve-negative --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches US REFINE`)
@@ -597,7 +575,7 @@ func TestUsRefineShipped002ShippedChecklistAddsPhrase(t *testing.T) {
 	s.And(`the file "docs/product/product.yaml" is modified`)
 	s.And(`the file "docs/product/stories/halve-negative-cases.yaml" matches the Calculator User halves the number`)
 	s.And(`no file outside "tmp" and "docs/product" changed`)
-	s.And(`judge: The menu proposal adds a Catalogue entry for the existing halving action. The Story keeps all of its original descriptions and step words; no substitute action, error criterion or new Story field is introduced.`)
+	s.And(`judge: The menu proposal adds a product concept for the existing halving action. The Story keeps all of its original descriptions and step words; no substitute action, error criterion or new Story field is introduced.`)
 	s.Done()
 }
 
@@ -645,7 +623,6 @@ func TestUsRefineVerdicts002NoHappyPathFails(t *testing.T) {
 	s.And(`stdout matches REFINE COMPLETE`)
 	s.But(`no file outside "tmp" changed`)
 	s.And(`the file "docs/product/stories/96.4-summary-error-messages.yaml" is unchanged`)
-	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=96\.4 promptIndex=13 answer=pass context="\[96\.4: not checked: the product document declares no catalogue\]"`)
 	s.And(`stdout does not match ALL CHECKS PASSED!`)
 	s.And(`stdout does not match msg="Story saved"`)
 	s.Done()
@@ -663,26 +640,5 @@ func TestUsRefineVerdicts003ImplementationAndSubjectiveFail(t *testing.T) {
 	s.And(`the file "docs/product/stories/96.3-summary-service-internals.yaml" is unchanged`)
 	s.And(`stdout does not match ALL CHECKS PASSED!`)
 	s.And(`stdout does not match msg="Story saved"`)
-	s.Done()
-}
-
-// us-refine-verdicts-004-step-outside-catalogue-fails: When the product document declares a catalogue, a Story with a step that matches no catalogue phrase, or only a phrase of another block, must fail the step-phrase check, naming each such step under its acceptance criterion, skip every model check, and leave the Story unchanged without an AI turn
-func TestUsRefineVerdicts004StepOutsideCatalogueFails(t *testing.T) {
-	s := scenarios.New(t, "us-refine-verdicts-004-step-outside-catalogue-fails")
-	s.Given(`the "us-refine-step-outside-catalogue" project tree`)
-	s.When(`the Product Owner runs "us refine doc-outline"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=doc-outline promptIndex=13 answer=fail`)
-	s.And(`stdout matches AC-1: 3 steps match one template each`)
-	s.And(`stdout matches AC-2: then step \\"Claude offers to summarise the document instead\\" matches no template`)
-	s.And(`stdout matches AC-3: given step \\"the Claude User asks Claude to outline the document\\" matches \\"the \{actor:role\} asks Claude to outline the document\\", declared for when`)
-	s.And(`stdout matches msg="Prompt skipped after a failed check" subjectID=doc-outline promptIndex=1`)
-	s.And(`stdout matches us-refine/term_closure +D: step-phrases +fail +FAIL`)
-	s.And(`stdout matches SKIP: 12\n`)
-	s.And(`stdout matches Validation failed. Use --fix flag to enter interactive fix mode.`)
-	s.But(`stdout does not match msg="Story saved"`)
-	s.And(`no file outside "tmp" changed`)
-	s.And(`the file "docs/product/stories/doc-outline-catalogued.yaml" is unchanged`)
-	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }

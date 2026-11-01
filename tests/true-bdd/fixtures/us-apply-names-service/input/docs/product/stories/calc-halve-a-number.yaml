@@ -1,0 +1,18 @@
+story:
+    id: calc-halve
+    feature: calculator
+    title: Halve a number
+    as_a: Owner
+    i_want: to halve a whole number with the calculator, rounding toward zero
+    so_that: I can read half of a number without working it out myself
+    status: DRAFT
+    acceptance_criteria:
+        - id: 001-even
+          description: The calculator must print 3 when the Owner halves 6.
+          steps:
+            - given:
+                - the calculator is installed
+            - when:
+                - the Owner halves 6
+            - then:
+                - the result is 3

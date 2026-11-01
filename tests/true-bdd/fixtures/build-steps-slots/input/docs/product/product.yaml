@@ -1,16 +1,19 @@
-catalogue:
-  - template: 'the number is {value:number}'
-    block: given
-    means: The number supplies the input to double.
-    terms: [number]
-  - template: 'the command "{operation}" doubles {value:number}'
-    block: when
-    means: The quoted operation is the CLI command name; the numeric slot is its operand, replacing any previously stored number. Store the observed integer stdout.
-    terms: [number]
-  - template: 'the result is {value:number}'
-    block: then
-    means: The result equals twice the supplied number.
-    terms: [number]
+roles:
+  - name: Owner
+    description: Uses the calculator.
+concepts:
+  given:
+    - concept: installation
+      means: The calculator program is built from its source and ready for the Owner to run.
+      terms: []
+  when:
+    - concept: running
+      means: The Owner runs the calculator command the step names on a whole number.
+      terms: [number]
+  then:
+    - concept: result
+      means: The calculator prints the whole number the command produced.
+      terms: [number]
 glossary:
   - term: number
     means: An integer operand whose double is its sum with itself.

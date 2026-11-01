@@ -1,12 +1,3 @@
-# Story seed for the `us-apply-reordered-criteria` BDD fixture.
-#
-# This story was applied once with its criteria in id order, 001 then 002;
-# the seeded registry is what that apply wrote. Since then the author moved
-# 002 above 001, and nothing else. Applying it again must find both
-# Scenarios where they are, keyed `<story-id>-<ac-id>` (ADR 0014), and
-# change nothing: a key taken from a criterion's POSITION would now name
-# 002's Scenario `...-001` and add both again.
-
 story:
     id: mcp-endpoint
     feature: mcp-server

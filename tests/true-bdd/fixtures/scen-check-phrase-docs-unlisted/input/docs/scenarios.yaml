@@ -1,12 +1,12 @@
 # Registry seed for `scen-check-phrase-docs-unlisted`.
 #
-# One Scenario a Story claims, its last step matching no catalogue phrase.
+# One Scenario a Story claims, its last step under no concept.
 
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
   version: "2.0"
   last_updated: "2026-10-21"
-  description: "One claimed scenario with a step outside the catalogue"
+  description: "One claimed scenario with a step outside the concepts"
 
 scenarios:
   E2E-001:

@@ -96,10 +96,13 @@ Claude must state that only the first 10000 words were summarized when the docum
 
 ## Fix Prompt to Apply
 
+=== FILE_START: tmp/{{RUN_DIR}}/01-96.8-fix-prompts.md ===
 # Fix Prompt for Story 96.8: Document Summary On Demand
 
 ## Instructions
 Apply the following changes to the acceptance criteria for this story.
+
+Scope: ONLY AC-1's `then` step changes. AC-2, AC-3 and AC-4 are reproduced word for word — do not touch them.
 
 ## Original Acceptance Criteria
 1. AC-1: Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc. [has steps]
@@ -109,12 +112,13 @@ Apply the following changes to the acceptance criteria for this story.
 
 ## Required Changes
 
-Only AC-1 is faulted by the failed check. AC-2, AC-3 and AC-4 already use concrete, observable verbs (`displays`, `states`) and are reproduced below unchanged.
-
 ### Change #1: AC-1
 **Before (then step):** "Claude handles the summary request and displays a summary of 150 words or fewer in the conversation"
-**Issue:** The step uses the forbidden action verb 'handle' from the product document's `vocabulary.forbidden_actions` — it "hides what the system observably does with the input." The clause "Claude handles the summary request and" adds no observable outcome beyond the display that the same step already states, so it is dropped rather than replaced with another verb. The description already names the observable action (`display`) and needs no change.
-**After (description):** "Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc."
+
+**Issue:** The step uses the forbidden action verb `handle` from the product document's `vocabulary.forbidden_actions` (reason: "Hides what the system observably does with the input."; replacement guidance: "Name the observable action: displays, returns, lists, rejects."). The clause "Claude handles the summary request and" contributes no observable outcome beyond the display that follows it, so it is dropped rather than reworded — the remaining verb `displays` is already the concrete observable action the guidance asks for.
+
+**After (description):** unchanged — "Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc." (the description contains no forbidden verb)
+
 **After (steps):**
 ```yaml
 - given:
@@ -125,7 +129,8 @@ Only AC-1 is faulted by the failed check. AC-2, AC-3 and AC-4 already use concre
     - "Claude displays a summary of 150 words or fewer in the conversation"
 ```
 
-No acceptance criteria are added, merged or removed.
+### No change: AC-2, AC-3, AC-4
+Their steps already use concrete observable verbs (`displays`, `does not display`, `states`) and contain no verb from `forbidden_actions` (`handle`, `process`, `parse`). Reproduce them exactly as they stand. No acceptance criteria are added, merged or removed.
 
 ## Complete Fixed Acceptance Criteria
 
@@ -173,6 +178,8 @@ No acceptance criteria are added, merged or removed.
         - "Claude displays a summary of the first 10000 words"
         - "Claude states that only the first 10000 words were summarized"
 ```
+
+=== FILE_END: tmp/{{RUN_DIR}}/01-96.8-fix-prompts.md ===
 
 ---
 

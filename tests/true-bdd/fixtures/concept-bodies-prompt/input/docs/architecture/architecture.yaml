@@ -1,0 +1,44 @@
+architecture:
+  services:
+  - name: calc
+    path: services/calc
+    language: go
+    public_interface:
+      kind: cli
+      document: docs/architecture/calc-cli.yaml
+  concepts:
+  - concept: toolchain
+    block: given
+    service: calc
+    references:
+    - command: halve
+    does: Makes the next halving run the named fixture's Go stand-in, tests/calc/fixtures/<name>/bin/go, in place of go.
+  - concept: halving
+    block: when
+    service: calc
+    references:
+    - command: halve
+    does: Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result.
+  - concept: result
+    block: then
+    service: calc
+    references:
+    - command: halve
+    does: Compare the kept halve stdout with the step's expected whole number.
+  terms:
+  - term: number
+    technical: The integer argument and stdout of the calculator halve command.
+    observed_by: The step runs halve as a process and compares its integer stdout
+      with the expected value.
+  - term: toolchain
+    technical: A fixture's Go stand-in, tests/calc/fixtures/<name>/bin/go, run in place of go.
+    observed_by: The halving step runs the calculator's halve command with it.
+  testing:
+    framework: go-test
+    libraries:
+    - module: github.com/ondatra-ai/true-bdd/pkg
+      version: v0.0.0-20261027174914-58543b8e324b
+    commands:
+      record: go test -tags bdd -json -count=1 ./tests/calc/...
+      replay: go test -tags bdd -json -count=1 ./tests/calc/...
+      live: go test -tags bdd -json -count=1 ./tests/calc/...

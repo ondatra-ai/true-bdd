@@ -17,9 +17,9 @@ const changeKindCreated = "created"
 // (State.Result.Diff, kind changeKindCreated/"modified"/"deleted"); a line
 // count reads the file on disk instead — the diff says THAT it changed, not its content.
 
-// assertFileCreated pins that the run created the named file: its path
-// appears in the diff with kind changeKindCreated. A file modified,
-// deleted, or untouched instead is named in the failure.
+// A file modified, deleted or untouched instead is named in the failure.
+//
+//truebdd:concept then "file changes"
 func assertFileCreated(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -42,9 +42,9 @@ func assertFileCreated(state *State, args []string) error {
 	return state.fail("expected file %q to be created, but the run did not create it", path)
 }
 
-// assertFileModified pins that the run modified the named file: its path
-// appears in the diff with kind "modified". A file created, deleted, or
-// untouched instead is named in the failure.
+// A file created, deleted or untouched instead is named in the failure.
+//
+//truebdd:concept then "file changes"
 func assertFileModified(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -67,9 +67,9 @@ func assertFileModified(state *State, args []string) error {
 	return state.fail("expected file %q to be modified, but the run left it unchanged", path)
 }
 
-// assertFileUnchanged pins that the named file is absent from the diff
-// AND still exists on disk — a mistyped or nonexistent path would
-// otherwise pass "unchanged" vacuously.
+// The file must still exist, so a mistyped path cannot pass as unchanged.
+//
+//truebdd:concept then "file changes"
 func assertFileUnchanged(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -97,9 +97,9 @@ func assertFileUnchanged(state *State, args []string) error {
 	return nil
 }
 
-// assertFileLineCount pins the final line count of the named file. It is
-// how a scenario proves a fix loop re-ran only the test it fixed: a canary
-// log gaining one line per suite run must hold exactly one after a narrowed rerun.
+// A canary log gaining one line per suite run proves a narrowed rerun ran once.
+//
+//truebdd:concept then "file content"
 func assertFileLineCount(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -131,9 +131,9 @@ func assertFileLineCount(state *State, args []string) error {
 	return nil
 }
 
-// assertFileMatches pins that the named file's content matches a regexp,
-// read from disk — proof the fix loop wrote a file that says the right
-// thing, e.g. a page whose markup carries the heading a browser test asserts.
+// Read from disk after the run, e.g. a page carrying the heading a browser test asserts.
+//
+//truebdd:concept then "file content"
 func assertFileMatches(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -165,9 +165,9 @@ func assertFileMatches(state *State, args []string) error {
 	return nil
 }
 
-// assertFilesMatchingCreated pins that the run created EXACTLY the named
-// number of files matching a glob — the count assertion no single-path
-// `is created` step can make when the fix loop chooses the filename.
+// The count no single-path step can pin when the fix loop chooses the file names.
+//
+//truebdd:concept then "file changes"
 func assertFilesMatchingCreated(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -194,9 +194,9 @@ func assertFilesMatchingCreated(state *State, args []string) error {
 	return nil
 }
 
-// assertNoFileMatchingCreated is the negative twin of
-// assertFilesMatchingCreated: the run created NO file matching a glob —
-// e.g. proving a relocated registry left the old conventional path uncreated.
+// E.g. a relocated registry left the old conventional path uncreated.
+//
+//truebdd:concept then "file changes"
 func assertNoFileMatchingCreated(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -260,6 +260,7 @@ func countLines(content []byte) int {
 	return strings.Count(text, "\n") + 1
 }
 
+//truebdd:concept then "file changes"
 func assertNoChanges(state *State, _ []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)

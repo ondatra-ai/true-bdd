@@ -13,7 +13,7 @@ story:
     - given:
       - the "claude-replay-whole-command" project tree
       - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - claude pipes a "foreground" shell call in directory "." with command go test ./...
+      - the tool call is a "foreground" shell call in directory "." with command go test ./...
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -24,7 +24,7 @@ story:
     - given:
       - the "claude-replay-selected-command" project tree
       - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - claude pipes a "foreground" shell call in directory "." with command go test ./... -run '^TestSlow$'
+      - the tool call is a "foreground" shell call in directory "." with command go test ./... -run '^TestSlow$'
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -35,7 +35,7 @@ story:
     - given:
       - the "claude-replay-shell-operator" project tree
       - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - claude pipes a "foreground" shell call in directory "." with command go test ./...; cat /etc/passwd
+      - the tool call is a "foreground" shell call in directory "." with command go test ./...; cat /etc/passwd
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -47,7 +47,7 @@ story:
     - given:
       - the "claude-replay-assignment" project tree
       - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - claude pipes a "foreground" shell call in directory "." with command X=1 go test ./...
+      - the tool call is a "foreground" shell call in directory "." with command X=1 go test ./...
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -59,7 +59,7 @@ story:
     - given:
       - the "claude-replay-another-program" project tree
       - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - claude pipes a "foreground" shell call in directory "." with command cat /etc/passwd
+      - the tool call is a "foreground" shell call in directory "." with command cat /etc/passwd
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -71,7 +71,7 @@ story:
     - given:
       - the "claude-replay-extra-flag" project tree
       - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - claude pipes a "foreground" shell call in directory "." with command go test ./... -v
+      - the tool call is a "foreground" shell call in directory "." with command go test ./... -v
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -83,7 +83,7 @@ story:
     - given:
       - the "claude-replay-double-quotes" project tree
       - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - claude pipes a "foreground" shell call in directory "." with command go test ./... -run "^TestSlow$"
+      - the tool call is a "foreground" shell call in directory "." with command go test ./... -run "^TestSlow$"
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -95,7 +95,7 @@ story:
     - given:
       - the "claude-replay-wrong-directory" project tree
       - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - claude pipes a "foreground" shell call in directory "tests" with command go test ./...
+      - the tool call is a "foreground" shell call in directory "tests" with command go test ./...
     - when:
       - claude asks the guard about the tool call
     - then:
@@ -106,7 +106,7 @@ story:
     steps:
     - given:
       - the "claude-replay-no-command" project tree
-      - claude pipes a "foreground" shell call in directory "." with command go test ./...
+      - the tool call is a "foreground" shell call in directory "." with command go test ./...
     - when:
       - claude asks the guard about the tool call
     - then:

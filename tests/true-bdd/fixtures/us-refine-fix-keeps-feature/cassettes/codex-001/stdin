@@ -96,13 +96,10 @@ Claude must state that only the first 10000 words were summarized when the docum
 
 ## Fix Prompt to Apply
 
-=== FILE_START: tmp/{{RUN_DIR}}/01-doc-summary-fix-prompts.md ===
 # Fix Prompt for Story doc-summary: Document Summary On Demand
 
 ## Instructions
 Apply the following changes to the acceptance criteria for this story.
-
-Scope note: the failed check (`us-refine/acceptance_criteria`, forbidden qualifiers) faults **only AC-3**. AC-1, AC-2 and AC-4 contain no forbidden qualifier from the product document's `vocabulary.forbidden_qualifiers` list (properly, correctly, appropriate, appropriately, user-friendly, fast, quickly, easily, seamless, intuitive) and must be reproduced exactly as they stand — same description, same steps, word for word. Do not reword, split, merge or re-order them.
 
 ## Original Acceptance Criteria
 1. AC-1: Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc. [has steps]
@@ -112,31 +109,28 @@ Scope note: the failed check (`us-refine/acceptance_criteria`, forbidden qualifi
 
 ## Required Changes
 
+Only AC-3 is faulted by the failed check (`us-refine/acceptance_criteria` — forbidden qualifiers). AC-1, AC-2 and AC-4 contain no word from the product document's `forbidden_qualifiers` list (properly, correctly, appropriate, appropriately, user-friendly, fast, quickly, easily, seamless, intuitive) and are reproduced below exactly as they stand — same descriptions, same steps, word for word. Do not rewrite them.
+
 ### Change #1: AC-3
 **Before:** Claude must properly display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.
 
-**Issue:** The description contains the forbidden qualifier **'properly'** (listed in `vocabulary.forbidden_qualifiers` of the product document). 'Properly' is not testable: displaying the exact message string is already the observable, measurable outcome, so the qualifier adds no verifiable meaning while making the criterion fail the vague-word check.
+**Issue:** The description contains the forbidden qualifier "properly". "Properly display" is not observable — it gives a tester no way to tell a passing display from a failing one. The measurable outcome is the exact message text appearing in the conversation with no partial summary text alongside it.
 
-**After (description):** Claude must display the message 'The summary timed out - please try again' in the conversation when no summary is produced within 30 seconds of the Claude User asking for a summary.
+**After (description):** Claude must display the message 'The summary timed out - please try again' in the conversation, with no partial summary text, when the summary backend does not respond within 30 seconds.
 
-**After (steps):** The existing Given/When/Then steps are already correct, use the exact role "Claude User" from the story's as_a clause, and stay aligned with the revised description. Keep them, with the single clarification that the message is displayed *in the conversation* so the step matches the revised description:
+**After (steps):** Keep the four existing steps unchanged and add one `and` step so the steps cover the "no partial summary text" part of the revised description.
 ```yaml
 steps:
   - given: "a Google Doc is shared with the Claude User's account"
   - given: "the summary backend does not respond within 30 seconds"
   - when: "the Claude User asks Claude to summarize the document"
-  - then: "Claude displays the message 'The summary timed out - please try again' in the conversation"
+  - then: "Claude displays the message 'The summary timed out - please try again'"
+  - and: "Claude does not display any partial summary text"
 ```
 
-### No other changes
-- **AC-1** — unchanged. Description and both `then` steps (including the `and`-joined "the summary names the document title") are kept verbatim.
-- **AC-2** — unchanged. Description and both `then` steps (including the `and`-joined "Claude does not display any content from the document") are kept verbatim.
-- **AC-4** — unchanged. Description and both `then` steps (including the `and`-joined "Claude states that only the first 10000 words were summarized") are kept verbatim.
-- No new ACs are added and no ACs are merged or removed. The four criteria cover four distinct behaviours (normal summary, no-access error, timeout, oversized document), so there are no duplicates to reconcile.
+No new acceptance criteria are added, and none are merged or removed. AC-1 (summary produced), AC-2 (document not accessible), AC-3 (backend timeout) and AC-4 (document over the 10000-word limit) each cover a distinct trigger condition, so there are no duplicates to collapse.
 
 ## Complete Fixed Acceptance Criteria
-
-This block replaces the whole acceptance-criteria list. Preserve the `and` conjunction markers on the second `then` of AC-1, AC-2 and AC-4 exactly as they exist in the story file today — only AC-3's description (and the "in the conversation" wording of its `then`) changes.
 
 ```yaml
 - ac_id: AC-1
@@ -145,7 +139,7 @@ This block replaces the whole acceptance-criteria list. Preserve the `and` conju
     - given: "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
     - when: "the Claude User asks Claude to summarize the document"
     - then: "Claude displays a summary of 150 words or fewer in the conversation"
-    - and_then: "the summary names the document title"
+    - and: "the summary names the document title"
 
 - ac_id: AC-2
   description: "Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access."
@@ -153,15 +147,16 @@ This block replaces the whole acceptance-criteria list. Preserve the `and` conju
     - given: "a Google Doc exists that is not shared with the Claude User's account"
     - when: "the Claude User asks Claude to summarize that document"
     - then: "Claude displays the message 'This document is not shared with your account'"
-    - and_then: "Claude does not display any content from the document"
+    - and: "Claude does not display any content from the document"
 
 - ac_id: AC-3
-  description: "Claude must display the message 'The summary timed out - please try again' in the conversation when no summary is produced within 30 seconds of the Claude User asking for a summary."
+  description: "Claude must display the message 'The summary timed out - please try again' in the conversation, with no partial summary text, when the summary backend does not respond within 30 seconds."
   steps:
     - given: "a Google Doc is shared with the Claude User's account"
     - given: "the summary backend does not respond within 30 seconds"
     - when: "the Claude User asks Claude to summarize the document"
-    - then: "Claude displays the message 'The summary timed out - please try again' in the conversation"
+    - then: "Claude displays the message 'The summary timed out - please try again'"
+    - and: "Claude does not display any partial summary text"
 
 - ac_id: AC-4
   description: "Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words."
@@ -169,12 +164,15 @@ This block replaces the whole acceptance-criteria list. Preserve the `and` conju
     - given: "a Google Doc with more than 10000 words is shared with the Claude User's account"
     - when: "the Claude User asks Claude to summarize the document"
     - then: "Claude displays a summary of the first 10000 words"
-    - and_then: "Claude states that only the first 10000 words were summarized"
+    - and: "Claude states that only the first 10000 words were summarized"
 ```
 
-Note on step keys: AC-1, AC-2 and AC-4 each have a second `then` marked as an `and` conjunction in the source file. Write those continuation steps using whatever key the story file already uses for an `and`-joined `then` (shown above as `and_then`) — do not change the conjunction structure, only carry it over unchanged.
-
-=== FILE_END: tmp/{{RUN_DIR}}/01-doc-summary-fix-prompts.md ===
+## Verification
+After applying the change, re-run the `us-refine/acceptance_criteria` check. Expected output:
+  - AC-1: ok
+  - AC-2: ok
+  - AC-3: ok
+  - AC-4: ok
 
 ---
 

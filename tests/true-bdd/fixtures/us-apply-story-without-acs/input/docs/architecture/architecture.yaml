@@ -1,0 +1,5 @@
+architecture:
+  services:
+    - name: mcp
+      path: services/mcp
+      language: go

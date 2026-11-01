@@ -121,7 +121,7 @@ func (p *Prompt) ShapeError() error {
 		return fmt.Errorf("%s %w", p.Label(), ErrModelOnCheck)
 	}
 
-	return nil
+	return p.conceptShapeError()
 }
 
 // Label names the prompt in one line: `D: <check>` for a check, else the

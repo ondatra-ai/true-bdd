@@ -7,7 +7,7 @@ approval: never
 sandbox: read-only
 reasoning effort: medium
 reasoning summaries: none
-session id: 01a172ff-ca7d-7bd3-8510-f7a943446a9d
+session id: 01a18ea0-55e3-7463-8fb0-9f5e97a64a01
 --------
 user
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
@@ -90,7 +90,7 @@ is a question this checklist does not ask — answer the one it does.
 ## Subject — Registry Scenario
 
 **Scenario ID:** E2E-001
-**Description:** The greeter must print the configured greeting followed by the name it is given and exit within 100 milliseconds
+**Description:** The greeter must print the configured greeting followed by the name it is given and exit with code 0 within 100 milliseconds
 **Service:** greeter
 **Generated test file:** tests/greeter/greet_test.go
 
@@ -154,19 +154,11 @@ markdown fences. Reasoning before the object is fine and is ignored.
 
 
 codex
-I’ll read the product’s forbidden qualifiers and check the scenario description against them.
+I’ll read the product’s forbidden qualifiers and check the scenario description against that list.
 
 exec
 /bin/zsh -lc 'cat ./docs/product/product.yaml' in {{CWD}}
  succeeded in 0ms:
-# Product document for the greeter, the host project of the scen-check
-# fixtures that walk the shipped checklist.
-#
-# Its catalogue phrases every step of the claimed Scenario, and its
-# glossary defines every term those phrases declare; the architecture
-# document maps each of them. The vocabulary is what the quality
-# prompts rule against.
-
 title: "Greeter"
 
 description:
@@ -222,37 +214,35 @@ glossary:
       The lines the command prints for its user, its answer and its log
       records alike. It is the greeter's only visible output.
 
-catalogue:
-  - template: 'the greeting is configured as "{greeting}"'
-    block: given
-    means: >-
-      The project's config file sets the greeting, the word the greeter
-      prints before a name, to the quoted text.
-    terms: [greeting]
-  - template: 'the {actor:role} runs "{command}"'
-    block: when
-    means: >-
-      That role runs the quoted command line once, in the project
-      directory, and waits for it to exit.
-    terms: [command]
-  - template: 'the command exits with code {code:number}'
-    block: then
-    means: >-
-      The command that role ran ended with that exit code; 0 means it
-      succeeded.
-    terms: [command, exit code]
-  - template: 'stdout matches {expected:pattern}'
-    block: then
-    means: >-
-      A line the command printed to its standard output matches the
-      pattern, a regular expression: either the answer line the command
-      prints for its user, or a log record's message or fields.
-    terms: [command, standard output]
+concepts:
+  given:
+    - concept: configured greeting
+      means: >-
+        The project's config file sets the greeting to a stated text
+        before the command runs.
+      terms: [greeting, command]
+  when:
+    - concept: a role runs a command
+      means: >-
+        A role runs one stated command line once, in the project
+        directory, and waits for it to exit.
+      terms: [command]
+  then:
+    - concept: exit code
+      means: >-
+        The command the role ran ended with a stated exit code; 0 means
+        it succeeded.
+      terms: [command, exit code]
+    - concept: standard output
+      means: >-
+        A line the command printed on its standard output has a match for
+        a stated pattern, a regular expression.
+      terms: [command, standard output]
 
 codex
-The description contains none of the listed forbidden qualifiers. “Within 100 milliseconds” states a measurable limit.
+The description contains none of the forbidden qualifiers. “Within 100 milliseconds” states a measurable limit.
 
 codex
-{"answer":"pass","context":["E2E-001: ok"] , "fix_prompt":""}
+{"answer":"pass","context":["E2E-001: ok"] ,"fix_prompt":""}
 tokens used
-18,183
+18,292

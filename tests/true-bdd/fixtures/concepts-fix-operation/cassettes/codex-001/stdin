@@ -1,0 +1,108 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+The user has already chosen Apply at the engine menu, authorizing this turn.
+Apply the approved Concept binding now to the architecture working copy, and any
+declaration it adds to the working copy of the Public interface document it names,
+without asking for another choice. Menu reminders inside the approved proposal are
+satisfied. Do not edit any other file, including the Registry, product, tests or step
+definitions. Read each working copy and replace the exact text the fix provides.
+
+
+### TASK
+
+Service: greeter
+The menu action was apply. Perform the approved fix now.
+Approved fix:
+Proposed fix for host-001 / service greeter / check concept-bindings — review before apply.
+
+The product declares the `when` concept verbatim as `translation` ("Translate the configured greeting once into the stated language"), and `architecture.concepts` already binds it correctly:
+
+```yaml
+  - concept: translation
+    block: when
+    service: greeter
+    references:
+    - command: translate
+    does: Call translate once with the stated language.
+```
+
+A `when` calls an operation, and this binding references the operation `command: translate` with a `does` that calls it once. Per the System Architect's answers, that reference is right and the gap is in the Public interface, which does not declare `translate`. So **no change to `docs/architecture/architecture.yaml`** — no change to the `given` or `then` bindings either (the `then` keeps observing and comparing `log_record: greeted`), and no change to `architecture.terms` or the product glossary, which this check does not name. The Scenario `host-001`, its generated test `tests/greeter/scenario_test.go` and its step definitions are not touched.
+
+Two edits to the named Public interface document, `docs/greeter-cli.yaml`, so every binding reference is declared there.
+
+EDIT 1 — declare the `translate` command under `commands:` (person required argument, language required argument, loud optional flag behaving as it does for `greet`).
+
+File: `docs/greeter-cli.yaml`
+
+old_string:
+```
+    responses:
+      '0':
+        description: Greeting printed
+      '1':
+        description: Invalid input
+extensions:
+```
+
+new_string:
+```
+    responses:
+      '0':
+        description: Greeting printed
+      '1':
+        description: Invalid input
+  translate:
+    description: Read greeter.yaml in the working directory, translate its greeting string into the language given by the language argument, and print the translated greeting, followed by a newline. The person argument identifies the recipient and does not interpolate or otherwise change the configured or the translated greeting. With loud omitted (false), the translated greeting is unchanged; with --loud, uppercase the translated greeting before printing and logging it. Each successful call emits one greeted log record on stderr with the supplied person and the exact translated greeting printed, without the trailing newline.
+    parameters:
+    - name: person
+      in: argument
+      required: true
+      schema:
+        type: string
+    - name: language
+      in: argument
+      required: true
+      schema:
+        type: string
+    - name: loud
+      in: flag
+      required: false
+      schema:
+        type: boolean
+        default: false
+    responses:
+      '0':
+        description: Translated greeting printed
+      '1':
+        description: Invalid input
+extensions:
+```
+
+EDIT 2 — the `greeted` log record declaration stays (the `then` binding keeps referencing it); only its format text is clarified to say the recorded greeting is the translated text that was printed.
+
+File: `docs/greeter-cli.yaml`
+
+old_string:
+```
+      format: logfmt on stderr with person equal to the person argument and greeting equal to the printed greeting without its trailing newline
+```
+
+new_string:
+```
+      format: logfmt on stderr with person equal to the person argument and greeting equal to the printed greeting without its trailing newline; for translate the printed greeting is the translated text
+```
+
+After apply, write only `docs/greeter-cli.yaml`.
+Architecture working copy:
+
+Edit `tmp/{{RUN_DIR}}/architecture_yaml.yaml`, the working copy of `./docs/architecture/architecture.yaml`.
+Public interface working copies:
+
+Edit `tmp/{{RUN_DIR}}/interface-1-greeter-cli.yaml`, the working copy of `docs/greeter-cli.yaml`, only where the approved fix changes that document.
+
+After editing, return:
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===
+applied: true
+target: "<architecture working copy>"
+summary: "Bound the concept to the service's Public interface"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===

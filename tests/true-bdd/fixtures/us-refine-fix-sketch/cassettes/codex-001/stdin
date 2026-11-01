@@ -93,14 +93,15 @@ The calculator must return 0 when the Calculator User halves -1.
 
 ## Fix Prompt to Apply
 
+=== FILE_START: tmp/{{RUN_DIR}}/01-halve-negative-fix-prompts.md ===
 # Fix Prompt for Story halve-negative: Halve negative integers
 
 ## Instructions
 Apply the following changes to the acceptance criteria for this story.
 
-Scope: repair the Story's criteria and steps only. Do not modify test code, `docs/architecture/architecture.yaml`, or `docs/product/product.yaml`. Use only catalogue phrases (with slots filled) in their declared blocks; never invent a phrase or an oracle that is absent from the Specification.
-
-Discovered: framework go-test (architecture.yaml `architecture.testing.framework`); helpers os/exec.CommandContext (architecture.yaml `architecture.testing.helpers[0]`)
+## Reference Documentation Consulted
+- `docs/architecture/architecture.yaml` — service `calculator`, `public_interface.kind: cli`; testing framework `go-test` (architecture.yaml `architecture.testing.framework`); helper `os/exec.CommandContext` (architecture.yaml `architecture.testing.helpers`), which runs the CLI with explicit arguments and captures stdout and exit code.
+- `docs/product/product.yaml` — `then` concept `result` means: "The halve command succeeds and prints exactly a stated integer, the half rounded toward zero." Summary states: "Negative inputs -6, -7 and -1 produce -3, -3 and 0 respectively." Role from `roles`: Calculator User. `vocabulary.forbidden_qualifiers` bans vague qualifiers.
 
 ## Original Acceptance Criteria
 1. 001-even: The calculator must return a satisfying result when the Calculator User halves -6. [has steps]
@@ -109,36 +110,37 @@ Discovered: framework go-test (architecture.yaml `architecture.testing.framework
 
 ## Required Changes
 
-Change ONLY what the failed check requires. 002-odd and 003-near-zero are already convertible and are reproduced word for word below — do not reword their descriptions or steps.
+Change ONLY AC 001-even. AC 002-odd and AC 003-near-zero are not faulted by the failed check — they already convert to runnable `go-test` sketches — so they are reproduced below exactly as they stand, description and steps word for word. Do not rewrite them.
 
 ### Change #1: 001-even
 **Before:** The calculator must return a satisfying result when the Calculator User halves -6.
-**Issue:** The `then` step uses the catalogue phrase `the result is satisfying`, which product.yaml declares as "A subjective judgement with no objective pass/fail oracle". A test sketch can state the input (-6) and run the action, but there is no value to assert stdout against, so the AC is not convertible. The description inherits the same subjective wording.
+
+**Before (then step):** `the result is satisfying`
+
+**Issue:** The `then` outcome states no integer and uses the vague qualifier "satisfying", which violates the product `result` concept means ("The halve command succeeds and prints exactly a stated integer, the half rounded toward zero"). There is no objective oracle: a test cannot decide pass/fail for "satisfying" without human judgement, so no runnable test sketch can be drafted. The product document fixes the expected value: -6 produces -3.
+
 **After (description):** The calculator must return -3 when the Calculator User halves -6.
-**After (steps):**
+
+**After (steps):** keep the `given` and `when` steps verbatim; replace only the `then` outcome with the stated integer.
 ```yaml
 - given:
-    - "the number is \"-6\""
+    - 'the number is "-6"'
 - when:
     - "the Calculator User halves the number"
 - then:
-    - "the result is \"-3\""
+    - 'the result is "-3"'
 ```
 
-Notes on this change:
-- The `given` step (`the number is "-6"`, block: given) and the `when` step (`the Calculator User halves the number`, block: when) are unchanged — both are declared catalogue phrases already used in their correct blocks.
-- The new `then` step uses the already-declared catalogue phrase `the result is "{value}"` (block: then, means: "The command succeeds and prints exactly that integer, rounded toward zero"), with the slot filled as `-3` — the value product.yaml's description already fixes for input -6 ("Negative inputs -6, -7 and -1 produce -3, -3 and 0 respectively").
-- The description contains no forbidden qualifier (properly, correctly, appropriate, fast).
-- The catalogue entry `the result is satisfying` is no longer used by any Story step after this change.
+No new ACs are added and no ACs are removed or merged. The three ACs cover distinct inputs (-6 even, -7 odd rounding toward zero, -1 near zero) and are not duplicates, even though -6 and -7 share the expected output -3.
 
-No new ACs are added and none are removed.
+## Why this makes the check pass
 
-## Runnable Test Sketches (go-test, os/exec.CommandContext)
+With the fix, each AC converts to a `go-test` sketch using the declared `os/exec.CommandContext` helper:
+- 001-even: run `calculator halve -6` once; assert exit code 0 and stdout exactly `-3`.
+- 002-odd: run `calculator halve -7` once; assert exit code 0 and stdout exactly `-3`.
+- 003-near-zero: run `calculator halve -1` once; assert exit code 0 and stdout exactly `0`.
 
-- 001-even: convertible (framework: go-test) -- `cmd := exec.CommandContext(ctx, calcBin, "halve", "-6"); out, err := cmd.Output()`; assert `err == nil` (exit 0) and `strings.TrimSpace(string(out)) == "-3"`.
-- 002-odd: convertible (framework: go-test) -- `cmd := exec.CommandContext(ctx, calcBin, "halve", "-7"); out, err := cmd.Output()`; assert `err == nil` (exit 0) and `strings.TrimSpace(string(out)) == "-3"`.
-- 003-near-zero: convertible (framework: go-test) -- `cmd := exec.CommandContext(ctx, calcBin, "halve", "-1"); out, err := cmd.Output()`; assert `err == nil` (exit 0) and `strings.TrimSpace(string(out)) == "0"`.
-- Totals: 3/3 = 100%
+Totals: 3/3 = 100% convertible.
 
 ## Complete Fixed Acceptance Criteria
 
@@ -147,38 +149,34 @@ No new ACs are added and none are removed.
   description: "The calculator must return -3 when the Calculator User halves -6."
   steps:
     - given:
-        - "the number is \"-6\""
+        - 'the number is "-6"'
     - when:
         - "the Calculator User halves the number"
     - then:
-        - "the result is \"-3\""
+        - 'the result is "-3"'
 
 - ac_id: 002-odd
   description: "The calculator must return -3 when the Calculator User halves -7."
   steps:
     - given:
-        - "the number is \"-7\""
+        - 'the number is "-7"'
     - when:
         - "the Calculator User halves the number"
     - then:
-        - "the result is \"-3\""
+        - 'the result is "-3"'
 
 - ac_id: 003-near-zero
   description: "The calculator must return 0 when the Calculator User halves -1."
   steps:
     - given:
-        - "the number is \"-1\""
+        - 'the number is "-1"'
     - when:
         - "the Calculator User halves the number"
     - then:
-        - "the result is \"0\""
+        - 'the result is "0"'
 ```
 
-## Fields to Preserve Exactly
-
-Leave all Story fields untouched: `id: halve-negative`, `feature`, `title: Halve negative integers`, `as_a: Calculator User`, `i_want`, `so_that`, `status`.
-
-Present this proposal at the fix menu; apply it only after the Product Owner answers apply.
+=== FILE_END: tmp/{{RUN_DIR}}/01-halve-negative-fix-prompts.md ===
 
 ---
 

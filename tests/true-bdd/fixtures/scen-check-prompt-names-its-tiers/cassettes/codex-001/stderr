@@ -7,7 +7,7 @@ approval: never
 sandbox: read-only
 reasoning effort: medium
 reasoning summaries: none
-session id: 01a172ff-532e-7f72-a766-3c8be46ecb44
+session id: 01a18e9f-a364-7ab0-9993-0021f2579c59
 --------
 user
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
@@ -159,14 +159,6 @@ I’ll read the product document and check the description against its forbidden
 exec
 /bin/zsh -lc 'cat ./docs/product/product.yaml' in {{CWD}}
  succeeded in 0ms:
-# Product document for the greeter, the host project of the scen-check
-# fixtures that walk the shipped checklist.
-#
-# Its catalogue phrases every step of the claimed Scenario, and its
-# glossary defines every term those phrases declare; the architecture
-# document maps each of them. The vocabulary is what the quality
-# prompts rule against.
-
 title: "Greeter"
 
 description:
@@ -222,37 +214,35 @@ glossary:
       The lines the command prints for its user, its answer and its log
       records alike. It is the greeter's only visible output.
 
-catalogue:
-  - template: 'the greeting is configured as "{greeting}"'
-    block: given
-    means: >-
-      The project's config file sets the greeting, the word the greeter
-      prints before a name, to the quoted text.
-    terms: [greeting]
-  - template: 'the {actor:role} runs "{command}"'
-    block: when
-    means: >-
-      That role runs the quoted command line once, in the project
-      directory, and waits for it to exit.
-    terms: [command]
-  - template: 'the command exits with code {code:number}'
-    block: then
-    means: >-
-      The command that role ran ended with that exit code; 0 means it
-      succeeded.
-    terms: [command, exit code]
-  - template: 'stdout matches {expected:pattern}'
-    block: then
-    means: >-
-      A line the command printed to its standard output matches the
-      pattern, a regular expression: either the answer line the command
-      prints for its user, or a log record's message or fields.
-    terms: [command, standard output]
+concepts:
+  given:
+    - concept: configured greeting
+      means: >-
+        The project's config file sets the greeting to a stated text
+        before the command runs.
+      terms: [greeting, command]
+  when:
+    - concept: a role runs a command
+      means: >-
+        A role runs one stated command line once, in the project
+        directory, and waits for it to exit.
+      terms: [command]
+  then:
+    - concept: exit code
+      means: >-
+        The command the role ran ended with a stated exit code; 0 means
+        it succeeded.
+      terms: [command, exit code]
+    - concept: standard output
+      means: >-
+        A line the command printed on its standard output has a match for
+        a stated pattern, a regular expression.
+      terms: [command, standard output]
 
 codex
-The description contains “quickly,” which is explicitly listed under `forbidden_qualifiers`.
+The description contains “quickly,” which appears in the product document’s `forbidden_qualifiers` list.
 
 codex
 {"answer":"fail","context":["E2E-001: contains 'quickly'"],"fix_prompt":"Replace each forbidden qualifier in this Scenario's description, in its registry entry, with the measurable criterion it stands for, taken from the Scenario's steps, asking for that criterion first when the steps do not state it. Change no step."}
 tokens used
-18,303
+37,290

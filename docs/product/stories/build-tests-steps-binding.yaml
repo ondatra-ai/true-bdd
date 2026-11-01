@@ -1,10 +1,10 @@
 story:
     id: build-tests-steps
     feature: build-tests
-    title: Render tests named after their Scenario keys and refuse an unreadable Catalogue
+    title: Render tests named after their Scenario keys and refuse unreadable concepts
     as_a: System Architect
-    i_want: build tests to render named tests and refuse a Catalogue it cannot decode
-    so_that: rendering is deterministic and cannot bypass the declared Catalogue
+    i_want: build tests to render named tests and refuse product concepts it cannot decode
+    so_that: rendering is deterministic and cannot bypass the concepts the product declares
     status: IMPLEMENTED
     acceptance_criteria:
         - id: 002-test-named-after-key
@@ -23,7 +23,7 @@ story:
                 - and: the engine dispatched no AI turns
                 - but: no file outside "tmp" and "tests" changed
         - id: 007-unreadable-catalogue-refused
-          description: '`build tests --fix` must refuse a product document whose catalogue it cannot read, before it writes a generated test and before any AI turn, rather than author steps blind to the spec the host declared'
+          description: '`build tests --fix` must refuse a product document whose concepts it cannot read, before it writes a generated test and before any AI turn, rather than author steps blind to the spec the host declared'
           steps:
             - given:
                 - the "build-tests-fix-unreadable-catalogue" project tree
@@ -32,6 +32,6 @@ story:
             - then:
                 - the command exits with code 1
                 - stdout matches level=ERROR msg="Refusing to start" command="build tests"
-                - and: 'stdout matches read the catalogue: product document \./docs/product/product\.yaml: catalogue: must hold a list of phrases'
+                - and: 'stdout matches product document \./docs/product/product\.yaml: concepts: requires given, when or then lists with concept, means and terms'
                 - and: the engine dispatched no AI turns
                 - but: no file outside "tmp" changed

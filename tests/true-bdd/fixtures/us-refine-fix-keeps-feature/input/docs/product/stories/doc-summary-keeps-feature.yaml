@@ -1,23 +1,3 @@
-# Story seed for the `us-refine-fix-keeps-feature` BDD fixture.
-#
-# What it pins: the `feature:` label survives `us refine` rewriting the
-# story, both through the fix applier (which is never shown the label and
-# writes the whole story body back) and through the final save.
-#
-# The id is a slug (`doc-summary`), not a numeric `<N>.<M>`, so the whole walk
-# also runs on a slug id: per-cell tmp files, versions and the in-place save.
-#
-# ONE deliberate defect, so the walk takes exactly one fix:
-#
-#   - AC-3: description contains the forbidden qualifier "properly"
-#     (listed in the fixture's docs/product/product.yaml
-#     forbidden_qualifiers) -> fails the vague-word-in-description
-#     prompt; its F replaces the qualifier with measurable criteria.
-#
-# checklist-prompts.yaml narrows the walk to that one prompt. The rest of
-# the story is healthy: 4 ACs, rule-based must descriptions, full
-# Given/When/Then steps, two happy paths and two error scenarios.
-
 story:
     id: doc-summary
     feature: document-summaries

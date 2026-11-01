@@ -1,0 +1,107 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Term Document Editor applying an approved fix to the working
+copy of one term document: the product document's glossary or
+concepts, or the architecture document's word mapping.
+
+**Your Task:**
+1. Read the working copy the fix names.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described, with the Edit tool on the
+   working copy.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read to inspect the working copy before editing.
+- Use Edit to change it: append an entry at the end of its list, at the
+  list's own indentation, or replace an old_string verbatim.
+- Do NOT touch the document the working copy stands for: the engine
+  replaces it with your copy once the copy parses.
+- Do NOT touch the scenario registry, a generated test file or a step
+  definition. A term is defined where every Scenario reads it, never in
+  the Scenario that lacked it.
+
+**Output Requirements:**
+- After your Edit calls succeed, output a YAML confirmation inside
+  FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target:` — the working copy you edited (QUOTED)
+  - `summary:` — one line on what changed
+
+
+### TASK
+
+## Subject — Registry Scenario
+
+**Scenario ID:** host-001
+**Description:** The number must be halved
+
+### Steps
+Given:
+  - six is entered
+When:
+  - halve six once with idempotency key alpha
+Then:
+  - three is displayed
+
+---
+
+## Fix Prompt to Apply
+
+Propose to the System Architect (owner of Word mappings) a single `architecture.terms` entry mapping the product term "idempotency key", used by the `when` concept `halve`, and apply it only after the owner accepts at the menu.
+
+Finding addressed: host-001, service `calc`, check `term-mappings` — when concept 'halve': "idempotency key" has no mapping in the architecture.
+
+Nothing else changes: do not touch the Scenario `host-001`, its generated test or any step definition; do not touch `architecture.concepts` (the `halve` binding already references the Calc/textbox/'Idempotency key' element, which is declared in the calc service's Public interface); do not touch the product glossary (the term "idempotency key" is already declared there and carries the product meaning).
+
+Edit exactly one file — `./docs/architecture/architecture.yaml`:
+
+old_string:
+    "terms": []
+
+new_string:
+    "terms": [
+      {
+        "term": "idempotency key",
+        "technical": "The text typed into the Calc page's 'Idempotency key' textbox, carried with the halving request so the calculator applies a given label at most once",
+        "observed_by": "The when step definition fills the Calc page's 'Idempotency key' textbox with a fresh label before pressing Halve, and reuses that same label for a repeated request, so the unchanged Number shows the repeat was ignored"
+      }
+    ]
+
+Checks on the proposal: `term` is the product's verbatim glossary term "idempotency key"; `technical` and `observed_by` are nonempty prose strings and neither is a reference object; `technical` says what the word is in the implementation (the text in the Calc 'Idempotency key' textbox carried with the halving request) and `observed_by` says how the when step definition sets it up and how the unchanged Number shows the repeat was ignored. `old_string` occurs exactly once in `architecture.yaml` (the empty `architecture.terms` list), so the edit is unambiguous.
+
+---
+
+## Where to write
+
+Each term document has a working copy in this run's tmp directory. Edit
+the working copy, never the document itself:
+- `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
+- `architecture_yaml`: edit `tmp/{{RUN_DIR}}/architecture_yaml.yaml`, the working copy of `./docs/architecture/architecture.yaml`
+
+The engine replaces each document with its working copy once the copy
+reads as valid YAML, so a copy you leave unparseable changes nothing.
+
+Word mapping entries have term, technical and observed_by, all strings.
+observed_by is prose describing setup or observation, never a reference object.
+## Instructions
+
+1. Use the Read tool to load the working copy the fix prompt's
+   document names, and find the list it changes (`concepts:` or
+   `glossary:` in the product document, `architecture.terms:` in the
+   architecture document).
+2. Apply the changes described in the "Fix Prompt to Apply" section
+   above with the Edit tool on that working copy: append a new entry at
+   the end of its list, at the list's own indentation, or replace the
+   old_string verbatim.
+3. Copy each entry's YAML exactly as the fix prompt gives it.
+4. You MAY only edit the working copies listed above. The documents
+   themselves, the scenario registry, a generated test file and a step
+   definition are all out of bounds.
+5. After the edits succeed, output the confirmation block below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===
+applied: true
+target: "<path of the working copy you edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===

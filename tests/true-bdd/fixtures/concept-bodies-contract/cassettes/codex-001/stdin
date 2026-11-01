@@ -1,0 +1,245 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You apply the approved bodies of one concept's step definitions in one suite.
+Preserve the engine's registrations, patterns, signatures and //truebdd:concept
+records. Modify only those bodies and the suite's shared state. Use the declared
+Public interface and the concept's binding; never implement the product's
+operation inside a step definition.
+
+**Output Requirements:**
+- After your Write/Edit calls succeed, output a YAML confirmation
+  inside FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other content in the target file — only write the
+  selected body and extend shared State as needed.
+
+**Output Format:**
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply-given-toolchain-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-given-toolchain-iter1-result.yaml ===
+```
+
+If the declared Public interface cannot set up or observe the concept, stop without
+inventing an operation. Return the same confirmation markers with:
+```yaml
+applied: false
+interface_cannot_serve:
+  concept: "given concept \"toolchain\""
+  lacks: "<what the interface offers no way to set up or observe>"
+```
+
+Author solely from the supplied Specification and the suite's state and helpers.
+Do not read service implementation code. Do not execute Scenarios, replay the
+suite against the target, or require a Scenario to pass: the target may be absent
+or not built yet. The engine owns compilation and the whole-suite checks. If you
+compile the steps package while writing, preserve the inherited Go cache and
+temporary-directory environment; never create a separate build cache.
+
+Keep every new constant and local helper value inside the selected function body.
+Do not add package-level constants, variables, helper functions or types; only
+shared State fields and the selected file's imports may change outside that body.
+
+
+### TASK
+
+# Apply step definition bodies
+
+Suite: tests/calc/steps
+Service: calc
+Concept: toolchain (given)
+Meaning: The calculator runs on a named toolchain of the suite's fixtures before the Owner acts.
+
+## Complete concept context
+concept:
+    concept: toolchain
+    block: given
+    means: The calculator runs on a named toolchain of the suite's fixtures before the Owner acts.
+    terms:
+        - toolchain
+binding:
+    concept: toolchain
+    block: given
+    service: calc
+    references:
+        - command: halve
+    does: Makes the next halving run the named fixture's Go stand-in, tests/calc/fixtures/<name>/bin/go, in place of go.
+glossary:
+    - term: toolchain
+      means: The Go tool a halving is run with, a named fixture's stand-in or the installed one.
+word_mapping:
+    - term: toolchain
+      technical: A fixture's Go stand-in, tests/calc/fixtures/<name>/bin/go, run in place of go.
+      observed_by: The halving step runs the calculator's halve command with it.
+public_interface:
+    kind: cli
+    document: docs/architecture/calc-cli.yaml
+interface_document: |
+    opencli: 0.1
+    info:
+      title: Calculator CLI
+      version: '1.0'
+    commands:
+      halve:
+        description: Run go run ./services/calc halve VALUE from the host root; stdout
+          is VALUE halved and rounded toward zero, as an integer, and a newline.
+        parameters:
+        - name: value
+          in: argument
+          required: true
+          schema:
+            type: integer
+        responses:
+          '0':
+            description: Halved integer on stdout
+          '1':
+            description: Invalid arguments
+definitions:
+    - function: concept47f741283eda70d7a0d1d2aaa90ad59f9b70d6cc753b4652aced0fd106d24dd9
+      file: tests/calc/steps/concept47f741283eda70d7a0d1d2aaa90ad59f9b70d6cc753b4652aced0fd106d24dd9.go
+      pattern: ^the calculator runs on the "([^"]+)" toolchain$
+      steps:
+        - text: the calculator runs on the "offline" toolchain
+          captures:
+            - offline
+scenarios:
+    - id: calc-001-halve
+      description: Halving an even number on the offline toolchain
+      service: calc
+      path: tests/calc/calc_test.go
+      steps: |
+        Given:
+          - the calculator runs on the "offline" toolchain
+        When:
+          - the Owner halves 6
+        Then:
+          - the result is 3
+fixture_inputs:
+    - fixture: tests/calc/fixtures/offline
+      scenarios:
+        - calc-001-halve
+      files:
+        - path: tests/calc/fixtures/offline/bin/go
+          content: |
+            #!/bin/sh
+            # The calculator's offline Go toolchain: a stand-in for go that runs the
+            # real toolchain, named by CALC_REAL_GO, with module downloads turned off.
+            if [ -z "${CALC_REAL_GO:-}" ]; then
+              echo "CALC_REAL_GO must name the real go" >&2
+              exit 97
+            fi
+            GOPROXY=off exec "$CALC_REAL_GO" "$@"
+
+
+# Fix Prompt for Item given-toolchain: given concept "toolchain"
+
+## Target
+tests/calc/steps
+
+## Required Changes
+
+Change only the body (and the import block) of the existing Given definition in
+`tests/calc/steps/concept47f741283eda70d7a0d1d2aaa90ad59f9b70d6cc753b4652aced0fd106d24dd9.go`.
+Keep the function name, signature and the `//truebdd:concept given "toolchain"` record exactly as
+the engine wrote them. Do not touch `tests/calc/steps/register.go`, `halving.go`, `definitions.go`,
+the generated test, the Specification or service code.
+
+No shared-state change is needed: `State.Go` and `State.Env` already exist in
+`tests/calc/steps/state.go` and are exactly what the When step (`halving`) reads — it runs
+`state.Go` (defaulting to `go`) as `<tool> run ./services/calc halve VALUE` from the host root with
+`cmd.Env = state.Env`. So this Given only points those two fields at the named fixture's Go
+stand-in, `tests/calc/fixtures/<name>/bin/go`, and gives that stand-in the `CALC_REAL_GO` it
+requires. The definition performs no halving and computes no result itself.
+
+The test binary's working directory is `tests/calc` (the suite resolves `../../docs/scenarios.yaml`
+and `halving` sets `cmd.Dir = "../.."`), so the fixture lives at `fixtures/<name>/bin/go` relative
+to the working directory and must be made absolute before it is handed to a command that runs in the
+host root. The inherited environment is copied wholesale so the Go build cache and temporary
+directory settings are preserved; only `CALC_REAL_GO` is replaced.
+
+Replace the whole file with exactly this content:
+
+```go
+package steps
+
+import (
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+)
+
+//truebdd:concept given "toolchain"
+func concept47f741283eda70d7a0d1d2aaa90ad59f9b70d6cc753b4652aced0fd106d24dd9(state *State, args []string) error {
+	name := args[0]
+	// The suite runs with tests/calc as its working directory, and the halving step
+	// runs the tool from the host root, so the stand-in must be an absolute path.
+	standIn, err := filepath.Abs(filepath.Join("fixtures", name, "bin", "go"))
+	if err != nil {
+		return err
+	}
+	info, err := os.Stat(standIn)
+	if err != nil {
+		return fmt.Errorf("toolchain %q: %w", name, err)
+	}
+	if info.Mode()&0o111 == 0 {
+		if err := os.Chmod(standIn, info.Mode()|0o755); err != nil {
+			return fmt.Errorf("toolchain %q: %w", name, err)
+		}
+	}
+	// The stand-in defers to the installed go, which it expects in CALC_REAL_GO.
+	realGo, err := exec.LookPath("go")
+	if err != nil {
+		return fmt.Errorf("toolchain %q: no installed go: %w", name, err)
+	}
+	if realGo, err = filepath.Abs(realGo); err != nil {
+		return err
+	}
+	// Keep the inherited environment, including the Go build cache and temporary
+	// directory, and only name the real go for the stand-in.
+	inherited := os.Environ()
+	env := make([]string, 0, len(inherited)+1)
+	for _, entry := range inherited {
+		if strings.HasPrefix(entry, "CALC_REAL_GO=") {
+			continue
+		}
+		env = append(env, entry)
+	}
+	state.Go = standIn
+	state.Env = append(env, "CALC_REAL_GO="+realGo)
+	return nil
+}
+```
+
+## Notes
+- The `fmt` import is still used (the wrapped errors), so the import block stays valid; `os`,
+  `os/exec`, `path/filepath` and `strings` are the only additions.
+- No package-level constant, variable, type or helper is introduced; every value lives in the body.
+- The step only sets up; it neither invokes `halve` nor asserts anything, leaving the When step to
+  call the declared `halve` command and the Then step to compare its stdout.
+
+Read existing state and helpers first. Write only the bodies of the definitions the
+context lists and shared state. Preserve the engine's patterns, registrations,
+signatures and //truebdd:concept records. Reach the service through its declared
+Public interface. Preserve generated tests, the
+Specification and service code. Report the changes in the confirmation below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-given-toolchain-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path of the file you wrote/edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-given-toolchain-iter1-result.yaml ===
+
+If the declared Public interface cannot set up or observe the concept, stop without
+inventing an operation. Return the same confirmation markers with:
+```yaml
+applied: false
+interface_cannot_serve:
+  concept: "given concept \"toolchain\""
+  lacks: "<what the interface offers no way to set up or observe>"
+```

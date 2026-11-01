@@ -1,16 +1,3 @@
-# Story seed for the `us-refine-no-happy-path` BDD fixture.
-#
-# Designed to FAIL exactly one us-refine prompt: the happy-path check.
-# All three ACs are error scenarios (unshared document, timeout, empty
-# document), so no AC describes the primary success scenario. Every
-# other prompt is designed to PASS: 3 ACs (in range), rule-based must
-# descriptions, full Given/When/Then steps, no vague qualifiers or
-# forbidden verbs, observable behavior, >= 2 error scenarios, exact
-# messages everywhere (measurable), binary outcomes, sketches drawable
-# from the fixture's docs/architecture/architecture.yaml.
-#
-# The non-fix run therefore ends NotFixed (exit 0, no story write).
-
 story:
     id: "96.4"
     title: Summary Error Messages

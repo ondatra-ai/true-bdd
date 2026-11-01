@@ -1,9 +1,3 @@
-# Registry seed for `scen-check-codex-turn-fails`.
-#
-# One Scenario for the walk's first validation turn to be about. That
-# turn never gets an answer: the tier it resolves to names a model id the
-# codex CLI does not know, so the CLI exits non-zero and the run stops.
-
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
   version: "2.0"

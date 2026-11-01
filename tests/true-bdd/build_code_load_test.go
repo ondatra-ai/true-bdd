@@ -27,7 +27,7 @@ func TestBuildCodeFrameworks010JestLoadFixed(t *testing.T) {
 	s := scenarios.New(t, "build-code-frameworks-010-jest-load-fixed")
 	s.Given(`the "build-code-jest-load" project tree`)
 	s.And(`the project's test dependencies are installed`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches msg="Suite failures" failures=1 framework=jest`)

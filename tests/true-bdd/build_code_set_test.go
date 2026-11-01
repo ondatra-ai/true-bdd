@@ -26,7 +26,7 @@ import (
 func TestBuildCodeSet001PartialRepair(t *testing.T) {
 	s := scenarios.New(t, "build-code-set-001-partial-repair")
 	s.Given(`the "build-code-partial" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches BUILD CODE COMPLETE`)
@@ -44,7 +44,7 @@ func TestBuildCodeSet001PartialRepair(t *testing.T) {
 func TestBuildCodeSet002SharedEvidence(t *testing.T) {
 	s := scenarios.New(t, "build-code-set-002-shared-evidence")
 	s.Given(`the "build-code-grouped" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`the engine dispatched 1 fix AI turn to "claude"`)
@@ -61,7 +61,7 @@ func TestBuildCodeSet002SharedEvidence(t *testing.T) {
 func TestBuildCodeSet003MixedSynthetic(t *testing.T) {
 	s := scenarios.New(t, "build-code-set-003-mixed-synthetic")
 	s.Given(`the "build-code-mixed-build" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches msg="Suite failures" failures=2 framework=go-test`)
@@ -77,7 +77,7 @@ func TestBuildCodeSet003MixedSynthetic(t *testing.T) {
 func TestBuildCodeSet004MissingResult(t *testing.T) {
 	s := scenarios.New(t, "build-code-set-004-missing-result")
 	s.Given(`the "build-code-missing-member" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`the engine dispatched 2 fix AI turns to "claude"`)
@@ -92,7 +92,7 @@ func TestBuildCodeSet004MissingResult(t *testing.T) {
 func TestBuildCodeSet005ShrinkingCounter(t *testing.T) {
 	s := scenarios.New(t, "build-code-set-005-shrinking-counter")
 	s.Given(`the "build-code-shrinking-bound" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches gave up after 2 applied fix`)
@@ -108,7 +108,7 @@ func TestBuildCodeSet005ShrinkingCounter(t *testing.T) {
 func TestBuildCodeSet006NoTestFiles(t *testing.T) {
 	s := scenarios.New(t, "build-code-set-006-no-test-files")
 	s.Given(`the "build-code-no-test-files" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
+	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches BUILD CODE COMPLETE`)

@@ -1,0 +1,38 @@
+{
+  "scenarios": {
+    "alpha": {
+      "description": "Keyboard activation of Halve must halve the entered number",
+      "service": "calc",
+      "path": "tests/calc/number_test.go",
+      "user_stories": [],
+      "merged_steps": {
+        "given": [
+          "six is entered"
+        ],
+        "when": [
+          "activate the Halve button once with the keyboard to halve six"
+        ],
+        "then": [
+          "three is displayed"
+        ]
+      }
+    },
+    "beta": {
+      "description": "Keyboard activation of Halve must halve the entered number",
+      "service": "calc",
+      "path": "tests/calc/number_test.go",
+      "user_stories": [],
+      "merged_steps": {
+        "given": [
+          "six is entered"
+        ],
+        "when": [
+          "activate the Halve button once with the keyboard to halve six"
+        ],
+        "then": [
+          "three is displayed"
+        ]
+      }
+    }
+  }
+}

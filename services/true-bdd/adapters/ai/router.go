@@ -55,7 +55,11 @@ func (r *Router) ExecutePromptWithSystem(
 	}
 
 	turn := r.turns.Add(1)
+
 	label := fmt.Sprintf("%s-turn%03d", model.CLI, turn)
+	if role == provider.RolePrompt && len(options) > 0 && options[0].ArtifactLabel != "" {
+		label = options[0].ArtifactLabel
+	}
 
 	slog.Info(enginelog.MsgDispatch,
 		"turn", turn,

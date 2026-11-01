@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "concept-link-rewrite",
+  "files": [
+    {
+      "path": "docs/product/stories/host-story.yaml",
+      "kind": "modified",
+      "size": 420,
+      "sha256": "a296db3d8a47038610a5da6853388d1a3a57f1473402723720bc2bc25f863b67",
+      "text": "story:\n    id: host\n    title: Halve a number\n    as_a: Product Owner\n    i_want: to halve a number\n    so_that: I can read its half\n    status: DRAFT\n    acceptance_criteria:\n        - id: AC-1\n          description: The number must be halved\n          steps:\n            - given:\n                - six is entered\n            - when:\n                - halve six\n            - then:\n                - three is displayed\n"
+    }
+  ]
+}

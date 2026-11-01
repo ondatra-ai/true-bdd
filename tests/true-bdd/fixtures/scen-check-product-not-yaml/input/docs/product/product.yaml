@@ -31,32 +31,16 @@ glossary:
       What the MCP service sends back for one message. A client waits on
       it, so its content is behaviour.
 
-catalogue:
-  - template: 'the mcp service is running'
-    block: given
-    means: The MCP service has started and accepts requests.
-    terms: [mcp service]
-  - template: 'the {actor:role} sends "{message}"'
-    block: when
-    means: That role sends the quoted message to the MCP service, once.
-    terms: [mcp service, message]
-  - template: 'the service answers "{reply}"'
-    block: then
-    means: The MCP service's reply to the message is exactly the quoted text.
-    terms: [mcp service, reply]
-  - template: 'the service restarts'
-    block: when
-    means: The MCP service stops and starts again, dropping no request.
-    terms: [mcp service, restart]
-  - template: 'nothing is running'
-    block: given
-    means: No process of the project has started.
-    terms: []
-  - template: 'the {actor:role} waits {seconds:number} seconds'
-    block: when
-    means: That role does nothing for that many seconds.
-    terms: []
-  - template: 'nothing is answered'
-    block: then
-    means: No process wrote anything while the role waited.
-    terms: []
+concepts:
+  given:
+    - concept: service running
+      means: The MCP service has started and accepts requests.
+      terms: [mcp service]
+  when:
+    - concept: message sent
+      means: A role sends a stated message to the MCP service, once.
+      terms: [mcp service, message]
+  then:
+    - concept: answer
+      means: The MCP service's reply to the message is exactly a stated text.
+      terms: [mcp service, reply]

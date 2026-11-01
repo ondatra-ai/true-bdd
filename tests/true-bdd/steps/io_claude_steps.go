@@ -13,6 +13,8 @@ func registerIOClaudeSteps(suite *bddgo.Suite[State]) {
 }
 
 // Prepending only Claude leaves codex behind the existing lifecycle-observing proxy.
+//
+//truebdd:concept given "fixture AI CLIs"
 func observeFixtureClaude(state *State, _ []string) error {
 	fixture, err := filepath.Abs(state.Fixture.Dir)
 	if err != nil {

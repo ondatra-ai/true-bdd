@@ -1,7 +1,6 @@
 # Product document for `scen-check-terms-no-catalogue`.
 #
-# A glossary, but no `catalogue:` key: this host has not adopted the
-# catalogue, so no step declares a term and no Scenario is checked.
+# A glossary, but no `concepts:` key: this host has not adopted concepts.
 
 title: "Fixture host project"
 

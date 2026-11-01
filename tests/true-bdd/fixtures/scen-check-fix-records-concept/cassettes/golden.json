@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "scen-check-fix-records-concept",
+  "files": [
+    {
+      "path": "docs/product/product.yaml",
+      "kind": "modified",
+      "size": 1005,
+      "sha256": "c97e562eb12bdb98a9fed99b8314550e77698639e6b9eda4769c4e580e3870c7",
+      "text": "# Product document for `scen-check-fix-records-concept`.\n#\n# An MCP service host whose concepts say what its steps may state.\n\ntitle: \"Fixture host project\"\n\ndescription:\n  summary: \u003e-\n    A single MCP service, used by the true-bdd fixtures as the host\n    project a scenario registry describes.\n\nroles:\n  - name: Operator\n    definition: Runs the MCP service and watches what it answers.\n  - name: Client Developer\n    definition: Writes the clients that send the MCP service its requests.\n\nglossary: []\n\nconcepts:\n  given:\n    - concept: service running\n      means: The MCP service has started and accepts requests.\n      terms: []\n  when:\n    - concept: message sent\n      means: A role sends a stated message to the MCP service, once.\n      terms: []\n  then:\n    - concept: answer\n      means: The MCP service's reply to the message is exactly a stated text.\n      terms: []\n    - concept: log line\n      means: The MCP service wrote a log line whose text is exactly the stated text.\n      terms: []\n"
+    }
+  ]
+}

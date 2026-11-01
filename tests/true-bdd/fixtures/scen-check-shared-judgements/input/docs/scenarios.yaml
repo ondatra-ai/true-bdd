@@ -1,0 +1,25 @@
+scenarios:
+  host-001:
+    description: Six is halved
+    service: calc
+    path: tests/calc/number_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - six is entered
+      when:
+        - the number is halved
+      then:
+        - three is displayed
+  host-002:
+    description: Eight is halved
+    service: calc
+    path: tests/calc/number_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - eight is entered
+      when:
+        - halve the number
+      then:
+        - four is displayed

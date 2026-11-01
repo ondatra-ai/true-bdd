@@ -12,7 +12,7 @@ story:
     steps:
     - given:
       - the "build-code-writer-nonzero" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:
@@ -35,7 +35,7 @@ story:
     steps:
     - given:
       - the "build-code-writer-empty" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:
@@ -57,7 +57,7 @@ story:
     steps:
     - given:
       - the "build-code-writer-bound" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:

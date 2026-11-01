@@ -1,0 +1,4 @@
+# Which prompts of the shipped checklist this fixture's run walks: the
+# presence check alone, whose fix is the merge.
+us-apply:
+- already appear as a scenario in the registry

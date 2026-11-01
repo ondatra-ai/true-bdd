@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
+
 	"sync"
 	"syscall"
 	"time"
@@ -21,7 +23,8 @@ import (
 // tmp/ deliberately stays IN: the AI writes result files there for the
 // engine to read back, so replay must reproduce them (isEngineOwned filters engine-owned tmp/ paths separately).
 func snapshotSkipDirs() []string {
-	return []string{".git", "node_modules", "tmp/library-download", "tmp/codex-homes", "tmp/codex-shell-home",
+	return []string{".git", "node_modules", "tmp/library-download", "tmp/aiproxy-state",
+		"tmp/codex-homes", "tmp/codex-shell-home",
 		"tmp/codex-go-build", "tmp/codex-tmp"}
 }
 
@@ -44,7 +47,7 @@ func record(cfg config, name string, argv []string) (int, error) {
 		return 0, err
 	}
 
-	before, err := fstree.Snapshot(cwd, snapshotSkipDirs()...)
+	before, err := recordingSnapshot(cwd, argv)
 	if err != nil {
 		return 0, fmt.Errorf("snapshot before call: %w", err)
 	}
@@ -54,7 +57,7 @@ func record(cfg config, name string, argv []string) (int, error) {
 		return 0, err
 	}
 
-	after, err := fstree.Snapshot(cwd, snapshotSkipDirs()...)
+	after, err := recordingSnapshot(cwd, argv)
 	if err != nil {
 		return 0, fmt.Errorf("snapshot after call: %w", err)
 	}
@@ -190,4 +193,58 @@ func waitExitCode(proc *cli.Process) (int, error) {
 	}
 
 	return code, nil
+}
+
+// Validation artifacts belong to the engine except codex's own answer file.
+// Filtering before traversal avoids races with concurrent engine staging writes.
+func recordingSnapshot(cwd string, argv []string) (map[string][]byte, error) {
+	readOnly, answer := recordingRequest(argv)
+	if filepath.IsAbs(answer) {
+		relative, err := filepath.Rel(cwd, answer)
+		if err != nil {
+			return nil, fmt.Errorf("relative answer path: %w", err)
+		}
+
+		answer = relative
+	}
+
+	run := findCurrentRunDir(cwd)
+	omit := func(rel string) bool {
+		if !readOnly || run == "" {
+			return false
+		}
+
+		path := filepath.Join("tmp", run)
+		inRun := strings.HasPrefix(rel, path+string(filepath.Separator))
+
+		return inRun && filepath.Clean(rel) != filepath.Clean(answer)
+	}
+
+	snapshot, err := fstree.SnapshotFiltered(cwd, omit, snapshotSkipDirs()...)
+	if err != nil {
+		return nil, fmt.Errorf("snapshot recording: %w", err)
+	}
+
+	return snapshot, nil
+}
+
+func recordingRequest(argv []string) (bool, string) {
+	readOnly := os.Getenv("CLAUDE_HISTORY_ROLE") == "prompt"
+	answer := ""
+
+	for index, arg := range argv {
+		if index+1 >= len(argv) {
+			continue
+		}
+
+		if arg == "-s" && argv[index+1] == "read-only" {
+			readOnly = true
+		}
+
+		if arg == "-o" {
+			answer = argv[index+1]
+		}
+	}
+
+	return readOnly, answer
 }

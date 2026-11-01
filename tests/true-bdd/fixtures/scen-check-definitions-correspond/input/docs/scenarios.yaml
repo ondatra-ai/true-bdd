@@ -1,14 +1,14 @@
 # Registry seed for `scen-check-definitions-correspond`.
 #
-# Two claimed Scenarios whose templates each bind one step definition,
-# one with a model-run step and one with a step no definition binds yet,
-# and an unclaimed one.
+# Two claimed Scenarios whose steps each bind one step definition
+# recording their concept, one with a model-run step and one with a step
+# no definition binds yet, and an unclaimed one, checked all the same.
 
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
   version: "2.0"
   last_updated: "2026-10-21"
-  description: "Templates and step definitions in one to one correspondence"
+  description: "Steps bound to step definitions that record their concepts"
 
 scenarios:
   E2E-001:

@@ -112,9 +112,9 @@ func (s *RegistryScenario) FormatSteps() string {
 	return result.String()
 }
 
-// Phrases is every step as the closure checks read it: its own text,
+// CheckedSteps is every step as the closure checks read it: its own text,
 // trimmed, without its and:/but: keyword, beside the block it sits in.
-func (s *RegistryScenario) Phrases() []catalogue.Step {
+func (s *RegistryScenario) CheckedSteps() []catalogue.Step {
 	steps := make([]catalogue.Step, 0, len(s.Statements))
 
 	for _, statement := range s.Statements {

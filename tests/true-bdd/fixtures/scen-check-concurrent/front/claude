@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+import json, os, pathlib, subprocess, sys, time
+text = sys.argv[sys.argv.index('-p') + 1]
+role = os.environ['CLAUDE_HISTORY_ROLE']
+state = pathlib.Path('tmp/aiproxy-state')
+state.mkdir(parents=True, exist_ok=True)
+mode = os.environ.get('TRUE_BDD_AIPROXY_MODE', 'live')
+first = role == 'prompt' and 'rule-based format' in text and 'broken' in text
+alpha = 'alpha broken' in text
+if first and not (state / 'first-pair-done').exists():
+    deadline = time.monotonic() + 15
+    if mode == 'replay' and alpha:
+        while not (state / 'beta-forwarded').exists():
+            assert time.monotonic() < deadline, 'beta did not arrive first'
+            time.sleep(0.01)
+    elif mode == 'record' and not alpha:
+        while not (state / 'cursor-claude').exists():
+            assert time.monotonic() < deadline, 'alpha did not arrive first'
+            time.sleep(0.01)
+    if not alpha:
+        (state / 'beta-forwarded').write_text('beta\n')
+        if mode == 'replay':
+            # The other launcher waits for the claim, not merely this marker.
+            pass
+    if mode == 'replay' and alpha:
+        while not (state / 'consumed-claude').exists():
+            assert time.monotonic() < deadline
+            time.sleep(0.01)
+    (state / ('arrival-' + ('alpha' if alpha else 'beta'))).write_text(str(time.monotonic_ns()))
+os.environ['TRUE_BDD_AIPROXY_KNOWN_SHIMS'] += os.pathsep + str(pathlib.Path(__file__).parent.resolve())
+proxy = os.environ['TRUE_BDD_CONCURRENT_PROXY']
+proc = subprocess.run([proxy, *sys.argv[1:]])
+if first and not alpha:
+    (state / 'first-pair-done').write_text('done\n')
+sys.exit(proc.returncode)

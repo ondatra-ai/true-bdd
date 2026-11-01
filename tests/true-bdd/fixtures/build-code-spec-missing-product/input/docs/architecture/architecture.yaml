@@ -20,19 +20,22 @@ architecture:
     technical: The integer argument and stdout of the calculator double command.
     observed_by: The step runs double as a process and compares its integer stdout
       with the expected value.
-  phrases:
-  - template: the number is {value:number}
+  concepts:
+  - concept: installation
+    block: given
     service: calc
     references:
     - command: double
-    does: Store the number as the next double command argument.
-  - template: the number is doubled
+    does: Build the declared calculator command as a program under the host's tmp directory and keep its path for the When.
+  - concept: doubling
+    block: when
     service: calc
     references:
     - command: double
-    does: Run the declared double command as a process and keep its integer stdout.
-  - template: the result is {value:number}
+    does: Run the kept calculator program's double command as a process with the step's whole number and keep its integer stdout.
+  - concept: result
+    block: then
     service: calc
     references:
     - command: double
-    does: Compare the double command stdout with the expected integer.
+    does: Compare the kept double command stdout with the step's expected whole number.

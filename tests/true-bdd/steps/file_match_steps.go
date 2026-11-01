@@ -8,6 +8,8 @@ import (
 )
 
 // assertFileMatchCount counts occurrences in one user-visible file chosen by glob.
+//
+//truebdd:concept then "file content"
 func assertFileMatchCount(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)

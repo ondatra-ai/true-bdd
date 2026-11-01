@@ -1,0 +1,137 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+Apply only the exact concept, binding or step repair approved at the menu.
+Edit only the listed working copies. Preserve every unaffected entry.
+For a Story step rewrite, return the complete Story YAML instead of editing
+a document. For document edits return the requested confirmation markers.
+
+
+### TASK
+
+The Product Owner chose apply at the menu. Apply this approved word repair:
+PROPOSED REPAIR — Product Owner word repair for Item host-001 (not applied)
+
+Failed judgement: `when:halve` — undeclared domain word "idempotency key".
+
+Chosen option: declare the term. The product's `language_policy` says "The request label
+is presented to users as an idempotency key. Keep this exact domain name in the product
+meanings and declare it when needed." So the domain name stays in the means, and is
+declared by a glossary entry plus the word in the affected concept's `terms`.
+Rewording the means to drop "idempotency key" is rejected: it would contradict the
+language policy.
+
+Scope: `docs/product/product.yaml` only. No Story, Scenario or architecture change.
+The `means` text of every concept is unchanged, so all meanings are preserved.
+`given:number ready`, `then:number result` and `then:unused` are untouched.
+No new variation is added: this widens no concept and adds no item or use.
+
+Two edits, both in docs/product/product.yaml, keeping the document's existing
+JSON-style (JSON is valid YAML) and the document's schema (glossary entries use
+`term` and `means`; never a `meaning` field).
+
+--- EDIT 1 of 2: add "idempotency key" to the terms of the when:halve concept ---
+
+Before:
+
+  "when": [
+    {
+      "concept": "halve",
+      "means": "Halve the entered number once with the supplied idempotency key.",
+      "terms": []
+    }
+  ],
+
+After:
+
+  "when": [
+    {
+      "concept": "halve",
+      "means": "Halve the entered number once with the supplied idempotency key.",
+      "terms": ["idempotency key"]
+    }
+  ],
+
+--- EDIT 2 of 2: add the glossary entry ---
+
+Before:
+
+  "glossary": [],
+
+After:
+
+  "glossary": [
+    {
+      "term": "idempotency key",
+      "means": "The request label supplied with a halving. Repeating a halving with the same idempotency key changes the number only once."
+    }
+  ],
+
+--- Resulting document (docs/product/product.yaml) in full, for review ---
+
+{
+  "roles": [
+    {
+      "name": "Product Owner",
+      "description": "Owns meanings."
+    }
+  ],
+  "concepts": {
+    "given": [
+      {
+        "concept": "number ready",
+        "means": "A number is entered before the action.",
+        "terms": []
+      }
+    ],
+    "when": [
+      {
+        "concept": "halve",
+        "means": "Halve the entered number once with the supplied idempotency key.",
+        "terms": ["idempotency key"]
+      }
+    ],
+    "then": [
+      {
+        "concept": "number result",
+        "means": "Compare the displayed number with an expected value.",
+        "terms": []
+      },
+      {
+        "concept": "unused",
+        "means": "The settlement ledger has a reconciled nostro balance.",
+        "terms": []
+      }
+    ]
+  },
+  "glossary": [
+    {
+      "term": "idempotency key",
+      "means": "The request label supplied with a halving. Repeating a halving with the same idempotency key changes the number only once."
+    }
+  ],
+  "description": "A calculator accepts a number and a request label. Repeating a request with the same label changes the number only once.",
+  "language_policy": "The request label is presented to users as an idempotency key. Keep this exact domain name in the product meanings and declare it when needed."
+}
+
+Why this clears the judgement: "Halve", "entered number" and "once" stay ordinary
+English; "idempotency key" is now declared in the terms of the very concept that uses
+it, and the glossary gives its means, so the reader can recover it in this context.
+
+Follow-up, not part of this fix: the newly declared term "idempotency key" needs a Word
+mapping from the System Architect, through scen check's D: term-mappings. Refinement
+does not wait for it.
+
+Nothing has been changed. Apply only on an explicit menu decision to apply.
+Edit ONLY the product working copy below, adding the glossary entry AND the
+concept's terms (a string list), or rewording its means. Glossary entries
+have term and means fields. Preserve unrelated product content.
+Do not edit the Story, Scenario or architecture; the Word mapping comes later.
+
+Edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`.
+
+Return confirmation inside these markers:
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===
+applied: true
+target: "product"
+summary: "<approved word repair>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===

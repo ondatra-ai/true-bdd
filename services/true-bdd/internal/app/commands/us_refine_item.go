@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/engine"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/validate"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/runner"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/story"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/docs"
@@ -22,8 +23,9 @@ func refineSubject(item *template.StoryRefineData) (string, string) {
 	return item.ID, item.Title
 }
 
-// refinePostFix takes the Story body a model Prompt's fix wrote as the
-// Story's next version, keeping the documents the walk seeded.
+// refinePostFix commits the product working copy a concept fix confirmed,
+// reading the confirmation as the applier does, and otherwise takes the
+// Story body a rewrite returned as the Story's next version.
 func refinePostFix(
 	versionMgr *fs.StoryVersionManager,
 ) func(context.Context, *template.StoryRefineData, string) (*template.StoryRefineData, error) {
@@ -34,6 +36,20 @@ func refinePostFix(
 		item *template.StoryRefineData,
 		applierContent string,
 	) (*template.StoryRefineData, error) {
+		if validate.IsConfirmation(applierContent) {
+			productDocuments := make([]template.FixDocument, 0)
+
+			for _, document := range item.TermDocuments {
+				if document.Key == docs.KeyProduct {
+					productDocuments = append(productDocuments, document)
+				}
+			}
+
+			_, err := commitDocuments(productDocuments, nil)
+
+			return item, err
+		}
+
 		latest, err := postFix(ctx, &item.Story, applierContent)
 		if err != nil {
 			return nil, err
@@ -43,22 +59,7 @@ func refinePostFix(
 	}
 }
 
-// refinePostCheckFix commits the term document a closure fix edited. The
-// Story keeps its version: the fix phrased its step in the catalogue.
-func refinePostCheckFix(
-	_ context.Context,
-	item *template.StoryRefineData,
-	_ string,
-) (*template.StoryRefineData, error) {
-	_, err := commitDocuments(item.TermDocuments, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return item, nil
-}
-
-// seedRefineDocuments gives the loaded Story the working copies a closure
+// seedRefineDocuments gives the loaded Story the working copies a concept
 // fix edits under --fix: one per term document the host has.
 func seedRefineDocuments(
 	load func(context.Context) ([]*template.StoryRefineData, error),

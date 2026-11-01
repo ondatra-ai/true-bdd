@@ -146,9 +146,9 @@ func uniqueScenarioFromCriterion(
 	}
 }
 
-// assertRegistryScenarioCount pins how many registry entries descend
-// from one acceptance criterion — how the duplicate-collapse scenario
-// proves two entries sharing a lineage became one.
+// How the duplicate-collapse Scenario proves two entries sharing a lineage became one.
+//
+//truebdd:concept then "Registry content"
 func assertRegistryScenarioCount(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -181,9 +181,9 @@ func assertRegistryScenarioCount(state *State, args []string) error {
 	return nil
 }
 
-// assertRegistryScenarioCitesStory pins that the single entry descending
-// from a criterion cites a given story — the lineage survived the collapse
-// still pointing back at the right source.
+// The lineage survived the collapse still pointing back at the right Story.
+//
+//truebdd:concept then "Registry content"
 func assertRegistryScenarioCitesStory(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -225,9 +225,9 @@ func assertRegistryScenarioCitesStory(state *State, args []string) error {
 		entryID, criterion, registryRel, story, cited)
 }
 
-// assertRegistryScenarioKeyed pins the Registry key of the single entry
-// descending from a criterion: `us apply` keys it by that lineage (ADR 0014),
-// never by a number it picked.
+// us apply keys the entry by its lineage (ADR 0014), never by a number it picked.
+//
+//truebdd:concept then "Registry content"
 func assertRegistryScenarioKeyed(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -256,9 +256,9 @@ func assertRegistryScenarioKeyed(state *State, args []string) error {
 	return nil
 }
 
-// assertRegistryScenarioMatches pins that the single entry descending
-// from a criterion, re-serialized to YAML, matches a regexp — proof the
-// collapse preserved behaviour, not merely the entry id.
+// Re-serialized to YAML: the collapse preserved behaviour, not merely the entry id.
+//
+//truebdd:concept then "Registry content"
 func assertRegistryScenarioMatches(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -296,9 +296,9 @@ func assertRegistryScenarioMatches(state *State, args []string) error {
 	return nil
 }
 
-// assertNoDuplicateScenarioSteps pins the duplicate-collapse invariant
-// positively: no two registry entries share merged_steps — a check no
-// per-criterion count can make, since a collision can span two criteria.
+// A collision can span two criteria, which no per-criterion count sees.
+//
+//truebdd:concept then "Registry content"
 func assertNoDuplicateScenarioSteps(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)

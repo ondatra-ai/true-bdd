@@ -1,0 +1,222 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You apply the approved bodies of one concept's step definitions in one suite.
+Preserve the engine's registrations, patterns, signatures and //truebdd:concept
+records. Modify only those bodies and the suite's shared state. Use the declared
+Public interface and the concept's binding; never implement the product's
+operation inside a step definition.
+
+**Output Requirements:**
+- After your Write/Edit calls succeed, output a YAML confirmation
+  inside FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other content in the target file — only write the
+  selected body and extend shared State as needed.
+
+**Output Format:**
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply-when-halving-iter2-result.yaml ===
+applied: true
+target: "<repo-relative path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-when-halving-iter2-result.yaml ===
+```
+
+If the declared Public interface cannot set up or observe the concept, stop without
+inventing an operation. Return the same confirmation markers with:
+```yaml
+applied: false
+interface_cannot_serve:
+  concept: "when concept \"halving\""
+  lacks: "<what the interface offers no way to set up or observe>"
+```
+
+Author solely from the supplied Specification and the suite's state and helpers.
+Do not read service implementation code. Do not execute Scenarios, replay the
+suite against the target, or require a Scenario to pass: the target may be absent
+or not built yet. The engine owns compilation and the whole-suite checks. If you
+compile the steps package while writing, preserve the inherited Go cache and
+temporary-directory environment; never create a separate build cache.
+
+Keep every new constant and local helper value inside the selected function body.
+Do not add package-level constants, variables, helper functions or types; only
+shared State fields and the selected file's imports may change outside that body.
+
+
+### TASK
+
+# Apply step definition bodies
+
+Suite: tests/calc/steps
+Service: calc
+Concept: halving (when)
+Meaning: The Owner halves a whole number, positive, zero or negative, with the calculator.
+
+## Complete concept context
+concept:
+    concept: halving
+    block: when
+    means: The Owner halves a whole number, positive, zero or negative, with the calculator.
+    terms:
+        - number
+binding:
+    concept: halving
+    block: when
+    service: calc
+    references:
+        - command: halve
+    does: Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result.
+glossary:
+    - term: number
+      means: A whole number, positive, zero or negative.
+word_mapping:
+    - term: number
+      technical: The integer argument and stdout of the calculator halve command.
+      observed_by: The step runs halve as a process and compares its integer stdout with the expected value.
+public_interface:
+    kind: cli
+    document: docs/architecture/calc-cli.yaml
+interface_document: |
+    opencli: 0.1
+    info:
+      title: Calculator CLI
+      version: '1.0'
+    commands:
+      halve:
+        description: Run go run ./services/calc halve VALUE from the host root; stdout
+          is VALUE halved and rounded toward zero, as an integer, and a newline.
+        parameters:
+        - name: value
+          in: argument
+          required: true
+          schema:
+            type: integer
+        responses:
+          '0':
+            description: Halved integer on stdout
+          '1':
+            description: Invalid arguments
+definitions:
+    - function: concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87
+      file: tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go
+      pattern: ^the Owner halves (-?\d+)$
+      steps:
+        - text: the Owner halves 6
+          captures:
+            - "6"
+        - text: the Owner halves -7
+          captures:
+            - "-7"
+scenarios:
+    - id: calc-001-halve
+      description: Halving an even number
+      service: calc
+      path: tests/calc/calc_test.go
+      steps: |
+        When:
+          - the Owner halves 6
+        Then:
+          - the result is 3
+    - id: calc-002-halve
+      description: Halving a negative odd number rounds toward zero
+      service: calc
+      path: tests/calc/calc_test.go
+      steps: |
+        When:
+          - the Owner halves -7
+        Then:
+          - the result is -3
+
+
+# Fix Prompt for Item when-halving: when concept "halving"
+
+## Target
+`tests/calc/steps` (service `calc`, concept `halving`, block `when`)
+
+## Why
+`build-steps/step-coverage` failed because the definition body delegated to `State.Halve`, whose first act is to require a `CALC_LICENCE` environment variable. No licence or environment variable appears in the concept binding ("Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result"), in the declared CLI interface for `halve` (one integer argument, integer stdout, exit 0/1), or in the inputs of scenarios `calc-001-halve` / `calc-002-halve`. The body must therefore do exactly what the binding says — run the declared `halve` command as a process and keep its integer stdout — and require nothing more. The product's halving is still performed only by the command; the body never computes a half.
+
+## Required Changes
+
+### 1. Replace the body of the step definition
+
+Keep the `//truebdd:concept when "halving"` record, the function name and the signature exactly as generated. Write `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go` with exactly this content:
+
+```go
+package steps
+
+import (
+	"fmt"
+	"os/exec"
+	"strconv"
+	"strings"
+)
+
+//truebdd:concept when "halving"
+func concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {
+	const hostRoot = "../.."
+	number := args[0]
+	if _, err := strconv.Atoi(number); err != nil {
+		return fmt.Errorf("the step's number %q is not a whole number: %w", number, err)
+	}
+	cmd := exec.Command("go", "run", "./services/calc", "halve", number)
+	cmd.Dir = hostRoot
+	stdout, err := cmd.Output()
+	if err != nil {
+		if exit, ok := err.(*exec.ExitError); ok {
+			return fmt.Errorf("halve %s exited %d: %s", number, exit.ExitCode(), strings.TrimSpace(string(exit.Stderr)))
+		}
+		return fmt.Errorf("running halve %s: %w", number, err)
+	}
+	halved, err := strconv.Atoi(strings.TrimSpace(string(stdout)))
+	if err != nil {
+		return fmt.Errorf("halve %s printed %q, not an integer: %w", number, strings.TrimSpace(string(stdout)), err)
+	}
+	state.Result = halved
+	return nil
+}
+```
+
+Notes on this body:
+- `hostRoot` is `"../.."` because the generated suite runs from `tests/calc` (see `tests/calc/calc_test.go`), and the declared interface says `halve` is run as `go run ./services/calc halve VALUE` **from the host root**. This is the same relative directory the suite already used.
+- The only input is the step's captured whole number; no environment variable, licence or other fixture is read, so the definition requires nothing beyond its binding and the scenarios' inputs.
+- The body stores the command's integer stdout in `state.Result` and never halves anything itself; `the result is N` (the existing `result` definition in `tests/calc/steps/definitions.go`) does the comparison.
+- `const hostRoot` stays inside the function body; no package-level constants, variables, types or helper functions are added. Use the inline `err.(*exec.ExitError)` type assertion shown above — do not add an `errors` import or any package-level helper for it.
+
+### 2. Shared state
+
+No change. `State.Result int` in `tests/calc/steps/state.go` already carries the observed integer that the `then` concept reads.
+
+### 3. Do not change
+
+- Do **not** touch `tests/calc/steps/register.go` (registrations and patterns stay as generated).
+- Do **not** touch `tests/calc/steps/definitions.go` (the `then "result"` definition belongs to another concept).
+- Do **not** touch `tests/calc/calc_test.go`, the Specification, `docs/architecture/calc-cli.yaml`, or any service source under `services/calc`.
+- Leave `State.Halve` in `tests/calc/steps/state.go` as it is; it is simply no longer called by this definition, and `state.go` is outside the selected body (its `errors`/`os` imports remain used by that method, so the package still compiles). Only this definition's file and its imports change.
+
+### 4. Expected outcome
+
+`build-steps/step-coverage` passes for `concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87`: the body runs the declared `halve` command as a process with the step's whole number, keeps its integer stdout as the result, and demands no setup that the binding, the declared CLI interface or the scenarios' inputs do not state. Do not run the scenarios to verify; the engine owns compilation and the whole-suite checks. If the steps package is compiled while writing, preserve the inherited Go build cache and temporary-directory environment.
+
+Read existing state and helpers first. Write only the bodies of the definitions the
+context lists and shared state. Preserve the engine's patterns, registrations,
+signatures and //truebdd:concept records. Reach the service through its declared
+Public interface. Preserve generated tests, the
+Specification and service code. Report the changes in the confirmation below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-when-halving-iter2-result.yaml ===
+applied: true
+target: "<repo-relative path of the file you wrote/edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-when-halving-iter2-result.yaml ===
+
+If the declared Public interface cannot set up or observe the concept, stop without
+inventing an operation. Return the same confirmation markers with:
+```yaml
+applied: false
+interface_cannot_serve:
+  concept: "when concept \"halving\""
+  lacks: "<what the interface offers no way to set up or observe>"
+```

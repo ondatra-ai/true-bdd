@@ -1,5 +1,0 @@
-=== FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
-applied: true
-target: "tmp/{{RUN_DIR}}/scenarios_yaml.yaml"
-summary: "Changed only E2E-001's final then step to and: stdout matches ^Hello Ada$."
-=== FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===

@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "binary": "claude",
+  "argv": [
+    "--setting-sources",
+    "",
+    "--strict-mcp-config",
+    "--safe-mode",
+    "--allowedTools",
+    "Read(**),Write(./tmp/**),Glob(**),Grep(**)",
+    "--disallowed-tools",
+    "Bash,Edit(**),MultiEdit(**),Agent,Task",
+    "--model",
+    "claude-opus-5",
+    "--system-prompt",
+    "You propose a fix to a concept's Term documents with their owner.\nRead every reference document and every finding. A concept is identified by its name\nand block. Ask what is missing before proposing exact old_string/new_string YAML.\nFor declared-terms, propose a glossary entry in the product document. For term-mappings,\npropose architecture.terms. For concept-bindings, propose architecture.concepts with\nconcept, block, service, references and does, or intent replacing does and references\nfor a UI service only. Remove duplicate bindings or correct undeclared concept names\nusing the product declarations; never invent a concept's meaning from Internal code.\nA Given sets up state, a When calls, and a Then observes and compares. References must\nbe declared in the service's Public interface; when the answers name a missing declaration,\npropose its exact addition to the named interface document too. Never change a Scenario,\na generated test or a step definition. The Product Owner owns product meanings and the\nSystem Architect owns bindings and Word mappings. Propose at the menu before apply.\n\nReturn exactly one JSON object with fix_prompt (string) and questions (array of\n{id, question, context, options}). Exactly one carries content. When clarification is\nneeded return fix_prompt: \"\"; when proposing return questions: [].\n\n",
+    "--permission-mode",
+    "acceptEdits",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--json-schema",
+    "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"fix_prompt\": {\"type\": \"string\"},\n    \"questions\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"id\": {\"type\": \"string\"},\n          \"question\": {\"type\": \"string\"},\n          \"context\": {\"type\": \"string\"},\n          \"options\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}\n        },\n        \"required\": [\"id\", \"question\", \"context\", \"options\"],\n        \"additionalProperties\": false\n      }\n    }\n  },\n  \"required\": [\"fix_prompt\", \"questions\"],\n  \"additionalProperties\": false\n}",
+    "-p",
+    "**Actual:** fail\n## Reference documents\nRead(`./docs/architecture/architecture.yaml`) — architecture_yaml\nRead(`./docs/product/product.yaml`) — product\nRead(`docs/greeter-cli.yaml`) — Public interface\n\n## Concept document findings\nScenario: host-001\nService: greeter\nCheck: concept-bindings\n- host-001: when concept 'translation' for service greeter references [command: translate], which its Public interface does not declare\n\nFix instruction: Ask the System Architect what a step of the concept does through the service's Public interface, by block: a when calls an operation, a given sets up state, a then observes and compares. Propose architecture.concepts with the declared concept name and block, service, references and does, or intent for a UI service, and add to the Public interface document what the answers name that it does not declare yet. Write the architecture and that document only after apply, never the Scenario.\ntranslate-observation: The existing `greeted` log record carries the translated greeting — no change to the then binding or the `greeted` declaration; I also update the `greeted` format text to say the greeting is the translated text that was printed\ntranslate-operation-shape: A new `translate` command — the when binding references `command: translate` and I add a `translate` entry under `commands:` in docs/greeter-cli.yaml\ntranslate-signature: Language is a required argument; `person` is still a required argument; `loud` stays an optional flag behaving as it does for `greet`\n\nAsk for the missing meaning or operation before proposing exact YAML to the owner.\nFix the product glossary, architecture.terms or architecture.concepts as the check names.\nBindings use the product's verbatim concept name and block, and their own service.\nEvery binding reference must be declared in that service's Public interface. For a missing\ndeclaration, also propose its addition to the named Public interface document.\nNever propose rewriting a Scenario to repair a concept, term or binding.\n\nReturn exactly one JSON object with fix_prompt (string) and questions (array of\n{id, question, context, options}). Exactly one carries content. When clarification is\nneeded return fix_prompt: \"\"; when proposing return questions: [].\n\n"
+  ],
+  "exit_code": 0,
+  "duration_ms": 41805,
+  "request_hash": "sha256:6c41ae03532784e5f2b7fcd92344a21392ec2cef05fc7d57f6fa61eb5704c6db",
+  "fsdiff": {
+    "created": [],
+    "modified": [],
+    "deleted": []
+  },
+  "recorded_at": "2026-10-31T07:44:29Z"
+}

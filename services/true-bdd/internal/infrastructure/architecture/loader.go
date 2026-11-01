@@ -74,7 +74,7 @@ type Service struct {
 // Architecture is the loaded view of architecture.yaml — only the
 // fields the build pipeline needs are decoded.
 type Architecture struct {
-	Phrases  []PhraseMapping
+	Concepts []ConceptBinding
 	Testing  Testing
 	Services []Service
 }
@@ -104,9 +104,10 @@ type rawTesting struct {
 // host writes under it — dependencies, patterns, design systems — is
 // spec for its own readers and stays undecoded.
 type rawDef struct {
-	Testing  rawTesting      `yaml:"testing"`
-	Services []Service       `yaml:"services"`
-	Phrases  []PhraseMapping `yaml:"phrases"`
+	Concepts []ConceptBinding `yaml:"concepts"`
+	Testing  rawTesting       `yaml:"testing"`
+	Services []Service        `yaml:"services"`
+	Phrases  yaml.Node        `yaml:"phrases"`
 }
 
 // rawArchitecture mirrors the top-level shape of architecture.yaml.
@@ -130,6 +131,10 @@ func Load(path string) (*Architecture, error) {
 		return nil, fmt.Errorf("failed to parse architecture file %s: %w", path, err)
 	}
 
+	if raw.Architecture.Phrases.Kind != 0 {
+		return nil, fmt.Errorf("%s: %w", path, ErrPhrasesRetired)
+	}
+
 	if len(raw.Architecture.Services) == 0 {
 		return nil, fmt.Errorf("%s: %w", path, ErrNoServices)
 	}
@@ -140,7 +145,7 @@ func Load(path string) (*Architecture, error) {
 	}
 
 	arch := &Architecture{
-		Phrases: raw.Architecture.Phrases,
+		Concepts: raw.Architecture.Concepts,
 		Testing: Testing{
 			Framework:  raw.Architecture.Testing.Framework,
 			Libraries:  raw.Architecture.Testing.Libraries,

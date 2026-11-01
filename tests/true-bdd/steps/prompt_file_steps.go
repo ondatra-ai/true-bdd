@@ -6,8 +6,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
-// assertEveryFileMatches checks saved rendered prompts, including scratch
-// artifacts omitted from the outcome diff. No matches is a failure.
+// Saved rendered prompts count, scratch artifacts the outcome diff omits included; no match fails.
+//
+//truebdd:concept then "file content"
 func assertEveryFileMatches(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)

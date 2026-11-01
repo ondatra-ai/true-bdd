@@ -1,9 +1,3 @@
-# Registry seed for `scen-check-fix-rewrites-description-qualifier`.
-#
-# One Scenario whose description says "quickly", a forbidden qualifier,
-# where its then step states the measurable criterion: 100 milliseconds.
-# The fix rewrites the description in this entry.
-
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
   version: "2.0"

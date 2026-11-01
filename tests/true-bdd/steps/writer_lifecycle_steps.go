@@ -15,6 +15,7 @@ func registerWriterLifecycleSteps(suite *bddgo.Suite[State]) {
 	suite.Step(`^the codex writer provisioned and removed its fixture authentication$`, assertWriterLifecycle)
 }
 
+//truebdd:concept given "fixture AI CLIs"
 func useFixtureWriter(state *State, _ []string) error {
 	if state.Fixture == nil {
 		return state.fail("%w", ErrNoTreePrepared)
@@ -46,6 +47,7 @@ func useFixtureWriter(state *State, _ []string) error {
 	return nil
 }
 
+//truebdd:concept then "AI CLI observations"
 func assertWriterLifecycle(state *State, _ []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)

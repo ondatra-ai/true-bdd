@@ -1,0 +1,19 @@
+{
+  "scenarios": {
+    "host-001": {
+      "description": "A calculator operation",
+      "service": "calc",
+      "path": "tests/calc/number_test.go",
+      "user_stories": [],
+      "merged_steps": {
+        "when": [
+          "Press Halve once for one.",
+          "Press Halve once for two.",
+          "Press Halve once for three.",
+          "Press Halve once for four.",
+          "Press Halve once for five."
+        ]
+      }
+    }
+  }
+}

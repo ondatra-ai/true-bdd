@@ -1,0 +1,18 @@
+roles:
+  - name: Owner
+    description: Uses the calculator.
+concepts:
+  when:
+    - concept: halving
+      means: The Owner halves a whole number with the calculator.
+      terms: [number]
+    - concept: doubling
+      means: The Owner doubles a whole number with the calculator.
+      terms: [number]
+  then:
+    - concept: result
+      means: The calculator prints the whole number the operation produced, or says whether it is even.
+      terms: [number]
+glossary:
+  - term: number
+    means: A whole number, positive, zero or negative.

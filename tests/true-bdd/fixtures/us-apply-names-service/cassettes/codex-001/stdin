@@ -1,0 +1,151 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Registry Merge Editor applying fixes to the requirements
+registry (the scratch copy of `docs/scenarios.yaml` for this run).
+
+**Your Task:**
+1. Read the current state of the scratch registry file.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described — using the Edit tool on the
+   scratch registry file path. Do NOT touch the canonical
+   `docs/scenarios.yaml`.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read to inspect the scratch file before editing.
+- Use Edit to mutate the scratch file in place.
+- Do not write to any other path.
+
+**Output Requirements:**
+- After your Edit calls succeed, output a YAML confirmation inside
+  FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<scratch path>"` (QUOTED)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other registry entries — only mutate what the fix prompt
+  specifies.
+
+**Output Format:**
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-halve-001-even-iter1-result.yaml ===
+applied: true
+target: "<scratch path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-halve-001-even-iter1-result.yaml ===
+```
+
+**CRITICAL:**
+- Apply changes EXACTLY as described in the fix prompt.
+- Do NOT add, remove, or modify entries beyond what the fix prompt
+  specifies.
+- Edit the scratch file directly during this turn — the confirmation
+  block is informational only.
+
+
+### TASK
+
+## Subject — Acceptance Criterion
+
+**Story ID:** calc-halve
+**Story Path:** docs/product/stories/calc-halve-a-number.yaml
+**AC ID:** 001-even
+**Lineage Scenario ID:** calc-halve-001-even
+**Description:** The calculator must print 3 when the Owner halves 6.
+**Scratch Registry Path:** tmp/{{RUN_DIR}}/scenarios.yaml
+
+### Steps
+Given:
+  - the calculator is installed
+When:
+  - the Owner halves 6
+Then:
+  - the result is 3
+
+
+---
+
+## Fix Prompt to Apply
+
+=== FILE_START: tmp/{{RUN_DIR}}/01-calc-halve-001-even-fix-prompts.md ===
+# Fix Prompt for AC calc-halve-001-even: The calculator must print 3 when the Owner halves 6.
+
+## Target
+Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
+
+## Context gathered
+- The registry currently holds exactly two scenarios: `calc-001-double` (service `calc`, path `tests/calc/calc_test.go`) and `neighbour-001-greets` (service `neighbour`, path `tests/neighbour/neighbour_test.go`). Neither has a `user_stories:` list, so the subject AC (story `docs/product/stories/calc-halve-a-number.yaml`, lineage id `calc-halve-001-even`) is not present anywhere — the `us-apply/merge` check fails until a new entry is added.
+- `docs/architecture/architecture.yaml` declares two services: `calc` and `neighbour`. The AC is a calculator behaviour ("the calculator is installed" / "the Owner halves 6"), the same command family as the existing `calc-001-double` scenario, whose generated test file is `tests/calc/calc_test.go`. So the new scenario REUSES that existing path, and per step 3 its `service:` is the service of that reused suite: `calc` (a name the architecture declares).
+- Today's date: `2026-10-31`.
+
+## Required Changes
+
+### Change #1: Add scenario `calc-halve-001-even` to the registry
+**Issue:** No entry under `scenarios:` has a `user_stories[]` member pairing story `docs/product/stories/calc-halve-a-number.yaml` with lineage scenario id `calc-halve-001-even`, so the AC does not appear in the registry.
+
+**Action:** Use the Edit tool on `tmp/{{RUN_DIR}}/scenarios.yaml` with the exact `old_string` and `new_string` below. This appends the new entry at the end of the `scenarios:` mapping, leaving `calc-001-double` and `neighbour-001-greets` byte-for-byte untouched and preserving the existing 2-space indentation style.
+
+**old_string:**
+```
+  neighbour-001-greets:
+    description: The neighbour greets the Owner who knocks
+    service: neighbour
+    path: tests/neighbour/neighbour_test.go
+    merged_steps:
+      given: [the neighbour is at home]
+      when: [the Owner knocks]
+      then: [the greeting is "hello"]
+```
+
+**new_string:**
+```
+  neighbour-001-greets:
+    description: The neighbour greets the Owner who knocks
+    service: neighbour
+    path: tests/neighbour/neighbour_test.go
+    merged_steps:
+      given: [the neighbour is at home]
+      when: [the Owner knocks]
+      then: [the greeting is "hello"]
+  calc-halve-001-even:
+    description: Halving an even number returns half its value
+    service: calc
+    path: tests/calc/calc_test.go
+    last_updated: "2026-10-31"
+    user_stories:
+      - story: docs/product/stories/calc-halve-a-number.yaml
+        scenario_id: calc-halve-001-even
+        merge_date: "2026-10-31"
+    merged_steps:
+      given: [the calculator is installed]
+      when: [the Owner halves 6]
+      then: [the result is 3]
+```
+
+## Constraints for the applier
+- The registry key MUST be the lineage id verbatim: `calc-halve-001-even`. Do not renumber it, do not invent another id.
+- `service:` MUST remain `calc` — it is declared in `docs/architecture/architecture.yaml` under `services[].name` and matches the reused `tests/calc/` suite. Never leave it empty and never use a name the architecture does not declare.
+- `path:` MUST reuse the existing `tests/calc/calc_test.go` — do not create a new test file for this scenario.
+- `merged_steps` given/when/then MUST stay verbatim from the AC: `the calculator is installed`, `the Owner halves 6`, `the result is 3`.
+- Do not modify `metadata:`, `calc-001-double`, or `neighbour-001-greets`. Make no other edits to the file.
+
+## Verification after the edit
+- The file still parses as YAML and `scenarios:` has three keys: `calc-001-double`, `neighbour-001-greets`, `calc-halve-001-even`.
+- The `us-apply/merge` check line should now read: `AC 001-even (lineage calc-halve-001-even): present in calc-halve-001-even`.
+=== FILE_END: tmp/{{RUN_DIR}}/01-calc-halve-001-even-fix-prompts.md ===
+
+---
+
+## Instructions
+
+1. Use the Read tool to load `tmp/{{RUN_DIR}}/scenarios.yaml` and
+   inspect its current state.
+2. Apply the changes described in the "Fix Prompt to Apply" section
+   above by invoking the Edit tool on
+   `tmp/{{RUN_DIR}}/scenarios.yaml`. Do NOT touch any other path.
+3. After the edits succeed, output the confirmation block below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-halve-001-even-iter1-result.yaml ===
+applied: true
+target: "tmp/{{RUN_DIR}}/scenarios.yaml"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-halve-001-even-iter1-result.yaml ===

@@ -40,7 +40,7 @@ story:
     - given:
       - the "build-code-jest-fix-named-test" project tree
       - and: the project's test dependencies are installed
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:
@@ -66,7 +66,7 @@ story:
     - given:
       - the "build-code-playwright-failing-assertion" project tree
       - and: the project's browser test dependencies are installed
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:
@@ -90,7 +90,7 @@ story:
     steps:
     - given:
       - the "build-code-go-package-does-not-compile" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:
@@ -112,7 +112,7 @@ story:
     steps:
     - given:
       - the "build-code-not-applied" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:
@@ -134,7 +134,7 @@ story:
     steps:
     - given:
       - the "build-code-not-applied-bound" project tree
-      - the System Architect answers "1" to every question
+      - the System Architect's answer to every question is "1"
     - when:
       - the System Architect runs "build code --fix"
     - then:

@@ -1,4 +1,3 @@
-# Proposed Public interface: CLI at docs/greeter-cli.yaml; ask the System Architect to confirm.
 architecture:
   services:
   - name: greeter

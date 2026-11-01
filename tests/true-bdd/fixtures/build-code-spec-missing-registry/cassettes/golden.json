@@ -5,9 +5,9 @@
     {
       "path": "services/calc/calc.go",
       "kind": "modified",
-      "size": 233,
-      "sha256": "3e7bcc34143e225054890d4c9b212160050814ae6c3754f05526d0f4011968d2",
-      "text": "package main\n\nimport (\n\t\"fmt\"\n\t\"os\"\n\t\"strconv\"\n)\n\nfunc main() {\n\tif len(os.Args) != 3 || os.Args[1] != \"double\" {\n\t\tos.Exit(1)\n\t}\n\tvalue, err := strconv.Atoi(os.Args[2])\n\tif err != nil {\n\t\tos.Exit(1)\n\t}\n\tfmt.Println(value + value)\n}\n"
+      "size": 220,
+      "sha256": "f09fff29985392236aeda8f7bb075472b8e47965a70323f89c5c51ff7117911e",
+      "text": "package main\n\nimport (\"fmt\"; \"os\"; \"strconv\")\n\nfunc main() {\n if len(os.Args) != 3 || os.Args[1] != \"double\" { os.Exit(1) }\n value, err := strconv.Atoi(os.Args[2]); if err != nil { os.Exit(1) }\n fmt.Println(value * 2)\n}\n"
     }
   ]
 }

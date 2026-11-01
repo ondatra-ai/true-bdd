@@ -38,6 +38,8 @@ func TestInitDefaultsMatchProjectFiles(t *testing.T) {
 		})
 	}
 
+	assertInitSchemasMatchProjectFiles(t)
+
 	source := defaultConfig(t, "../../true-bdd/true-bdd.yaml")
 	copies := defaultConfig(t, filepath.Join(initCopies, "true-bdd/true-bdd.yaml"))
 
@@ -49,6 +51,26 @@ func TestInitDefaultsMatchProjectFiles(t *testing.T) {
 
 	if !reflect.DeepEqual(source, copies) {
 		t.Error("init configuration drift: must equal repository configuration less scripts")
+	}
+}
+
+func assertInitSchemasMatchProjectFiles(t *testing.T) {
+	t.Helper()
+
+	for _, name := range []string{"product-schema.yaml", "architecture_yaml-schema.yaml", "scenarios_yaml-schema.yaml"} {
+		source, err := disk.Read(filepath.Join("../../true-bdd", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		copied, err := disk.Read(filepath.Join(initCopies, "true-bdd", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !bytes.Equal(source, copied) {
+			t.Errorf("init schema drift: %s", name)
+		}
 	}
 }
 

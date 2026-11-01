@@ -20,19 +20,17 @@
     "stream-json",
     "--verbose",
     "-p",
-    "Service: greeter\nApproved fix:\nEdit only the working copy of the architecture document `docs/architecture/architecture.yaml`. Do not touch `docs/scenarios.yaml`, `docs/product/product.yaml`, `docs/greeter-cli.yaml`, or any other file.\n\nThe System Architect answered:\n- interface-kind: `cli` — a command-line interface declared in an OpenCLI-like document.\n- interface-document: `docs/greeter-cli.yaml` — the existing OpenCLI document (it exists at the Host project root and already declares `commands.greet` plus `extensions.files.greeting-config`, `extensions.log_records.greeted`, and `extensions.outgoing_calls.notify`).\n- document-completeness: complete as written — name it from the architecture document unchanged, so `docs/greeter-cli.yaml` needs NO edit.\n- ui-elements: not applicable — greeter offers no user interface, so declare no `elements`.\n\nMake exactly one edit, adding `public_interface` to the `greeter` entry in `architecture.services` and changing nothing else (leave the existing line-1 comment, `name`, `path`, and `language` exactly as they are).\n\nFile: docs/architecture/architecture.yaml\n\nold_string:\n```\n  - name: greeter\n    path: services/greeter\n    language: go\n```\n\nnew_string:\n```\n  - name: greeter\n    path: services/greeter\n    language: go\n    public_interface:\n      kind: cli\n      document: docs/greeter-cli.yaml\n```\n\nNotes for the applier:\n- Indentation is two spaces per level; `public_interface` sits at the same indent as `name`/`path`/`language` (four spaces), and its `kind`/`document` keys at six spaces.\n- `kind` must be the literal string `cli`; `document` must be the project-root-relative path `docs/greeter-cli.yaml`, exactly as the Architect named it.\n- Do not add an `elements` list — that key belongs to `ui` interfaces only, and greeter offers no user interface.\n- Do not add, remove, or reorder any other key in the document, and do not create or modify any interface document.\nArchitecture working copy:\n\nEdit `tmp/{{RUN_DIR}}/architecture_yaml.yaml`, the working copy of `./docs/architecture/architecture.yaml`.\n\nAfter editing, return:\n=== FILE_START: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===\napplied: true\ntarget: \"\u003carchitecture working copy\u003e\"\nsummary: \"Declared the service's Public interface\"\n=== FILE_END: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===\n"
+    "Service: greeter\nApproved fix:\nThe System Architect's answers settle the Public interface of service `greeter`: it is offered across the process boundary as a command-line program (`kind: cli`), declared by the existing OpenCLI-like document `docs/greeter-cli.yaml`, whose coverage the Architect confirmed Complete — it already declares every command (`greet`), flag (`loud`), argument (`person`), file (`greeting-config`), log record (`greeted`) and outgoing call (`notify`) that greeter offers. `ui_elements` is Not applicable for kind `cli`. Therefore change only the architecture document's working copy; make no edit to `docs/greeter-cli.yaml`, no edit to `docs/scenarios.yaml`, and no edit to `docs/product/product.yaml`.\n\nApply exactly one edit, to `docs/architecture/architecture.yaml`:\n\nold_string:\n```yaml\n  - name: greeter\n    path: services/greeter\n    language: go\n```\n\nnew_string:\n```yaml\n  - name: greeter\n    path: services/greeter\n    language: go\n    public_interface:\n      kind: cli\n      document: docs/greeter-cli.yaml\n```\n\nThis adds `public_interface` to the `greeter` entry in `architecture.services` and changes nothing else: `name`, `path` and `language` keep their existing values and order, no other service or top-level key is touched, and `elements` is omitted because it applies only to kind `ui`. The document path is given relative to the Host project root and names an existing document.\nArchitecture working copy:\n\nEdit `tmp/{{RUN_DIR}}/architecture_yaml.yaml`, the working copy of `./docs/architecture/architecture.yaml`.\n\nAfter editing, return:\n=== FILE_START: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===\napplied: true\ntarget: \"\u003carchitecture working copy\u003e\"\nsummary: \"Declared the service's Public interface\"\n=== FILE_END: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===\n"
   ],
   "exit_code": 0,
-  "duration_ms": 18880,
-  "request_hash": "sha256:9ff3191305cb6003eeaf68a23f1fae885491c9e28a648e79a277ed90075e451e",
+  "duration_ms": 14873,
+  "request_hash": "sha256:fd2be5f32a424360e0f45d8d9d99a3fbf084207e08c89e7bddc80a1a4359640b",
   "fsdiff": {
-    "created": [
-      "tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml"
-    ],
+    "created": [],
     "modified": [
       "tmp/{{RUN_DIR}}/architecture_yaml.yaml"
     ],
     "deleted": []
   },
-  "recorded_at": "2026-10-29T07:59:06Z"
+  "recorded_at": "2026-10-30T17:32:04Z"
 }

@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-halve-001-even-iter1-result.yaml ===
+applied: true
+target: "tmp/{{RUN_DIR}}/scenarios.yaml"
+summary: "Added calc-halve-001-even exactly as specified; preserved all existing content."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-halve-001-even-iter1-result.yaml ===

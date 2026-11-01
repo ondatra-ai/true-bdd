@@ -3,8 +3,8 @@
 #
 # The `D: public-interface` built-in check, the start-time refusal of a
 # document a declaration names but cannot be loaded, the three supported
-# kinds and the check's fix (#239; ADR-0030). The Phrase mapping is the Story
-# phrase-mappings.
+# kinds and the check's fix (#239; ADR-0030). The concept bindings are the
+# Story concepts.
 #
 # Each criterion's id is the second half of its Scenario's Registry key,
 # `public-interface-<id>` (ADR 0014), and its steps are that Scenario's steps.
@@ -96,7 +96,7 @@ story:
         steps:
         -   given:
             - the "public-interface-fix" project tree
-            - the System Architect answers "1" to every question
+            - the System Architect's answer to every question is "1"
         -   when:
             - the System Architect runs "scen check --fix"
         -   then:

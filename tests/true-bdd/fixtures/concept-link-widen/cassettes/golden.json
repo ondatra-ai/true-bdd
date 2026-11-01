@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "concept-link-widen",
+  "files": [
+    {
+      "path": "docs/product/product.yaml",
+      "kind": "modified",
+      "size": 885,
+      "sha256": "19095f6c4720433c5ff4f2b9a718b892ef61c11dde86108543781f7706212f79",
+      "text": "{\n  \"roles\": [\n    {\n      \"name\": \"Product Owner\",\n      \"description\": \"Owns meanings.\"\n    }\n  ],\n  \"concepts\": {\n    \"given\": [\n      {\n        \"concept\": \"number ready\",\n        \"means\": \"A number is entered before the action.\",\n        \"terms\": []\n      }\n    ],\n    \"when\": [\n      {\n        \"concept\": \"halve\",\n        \"means\": \"Halve the entered number, either once or twice in succession; halving it more than twice is not admitted.\",\n        \"terms\": []\n      }\n    ],\n    \"then\": [\n      {\n        \"concept\": \"number result\",\n        \"means\": \"Compare the displayed number with an expected value.\",\n        \"terms\": []\n      }\n    ]\n  },\n  \"glossary\": [],\n  \"description\": {\n    \"summary\": \"The calculator supports exactly one or two Halve presses per request: one displays half the entered number; two displays its quarter. Three or more presses are not supported.\"\n  }\n}\n"
+    }
+  ]
+}

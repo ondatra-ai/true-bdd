@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -39,10 +40,21 @@ type Spec[I any] struct {
 	// Fix mirrors the --fix flag. Propagated into the engine's
 	// CellHandler.FixMode.
 	Fix bool
+	// ValidationConcurrency enables parallel item validation above one.
+	ValidationConcurrency int
+	// ShareConceptJudgements judges each binding and each linked concept's words once per walk, after
+	// every Scenario's link: scen check walks with the concurrent walker whatever its concurrency (#264).
+	ShareConceptJudgements bool
 	// DeferCompletion lets a caller announce success after post-run validation.
 	DeferCompletion bool
 	// RecoverWriterFailures lets build code rerun files left by a failed writer.
 	RecoverWriterFailures bool
+	// OmitConceptJudgements walks no concept judgement: build steps answers
+	// its grouping and proposals before the walk, on Items of their own.
+	OmitConceptJudgements bool
+	// PromptsLogged means LoadItems logged the run's one "Loaded prompts"
+	// record, which the coverage census reads as the start of a run's log.
+	PromptsLogged bool
 	// ConfineClaudeWriter runs a Claude applier as the guarded writer, held to
 	// the applier's write roots; build steps' writer may write only the tests.
 	ConfineClaudeWriter bool
@@ -136,12 +148,14 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 		maxAttempts = doc.Config.MaxApplyAttempts
 	}
 
-	slog.Info("Loaded prompts",
-		"command", spec.Name,
-		"items", len(items),
-		"prompts", len(prompts),
-		"max_apply_attempts", maxAttempts,
-	)
+	if !spec.PromptsLogged {
+		slog.Info("Loaded prompts",
+			"command", spec.Name,
+			"items", len(items),
+			"prompts", len(prompts),
+			"max_apply_attempts", maxAttempts,
+		)
+	}
 
 	builder := newReportBuilder()
 	eng := buildSpecEngine(spec, builder, items, maxAttempts)
@@ -197,7 +211,7 @@ func validateSpec[I any](spec Spec[I]) (
 		return nil, nil, RefuseStartup(spec.Name, fmt.Errorf("failed to load checklist: %w", err))
 	}
 
-	prompts := flattenChecklistPrompts(doc, spec.ChecklistName)
+	prompts := walkedPrompts(spec, doc)
 
 	err = validateChecklistHasPrompts(spec.ChecklistName, prompts)
 	if err != nil {
@@ -239,6 +253,16 @@ func validateSpec[I any](spec Spec[I]) (
 	return doc, prompts, validateCommandTemplates(spec)
 }
 
+// walkedPrompts are the checklist's Prompts this command's walk answers.
+func walkedPrompts[I any](spec Spec[I], doc *checklistmodels.Checklist) []checklistmodels.PromptWithContext {
+	prompts := conceptPrompts(flattenChecklistPrompts(doc, spec.ChecklistName), spec.DocResolver)
+	if spec.OmitConceptJudgements {
+		return withoutConceptJudgements(prompts)
+	}
+
+	return prompts
+}
+
 // loadAndPrepare sources the items and lets the command narrow or
 // refuse them, reporting either failure as a startup refusal — both
 // mean the walk about to start would measure the wrong thing.
@@ -271,10 +295,13 @@ func buildSpecEngine[I any](
 ) *engine.Engine[I, checklistmodels.PromptWithContext, *checklistmodels.PromptWithContext] {
 	var latestResult checklistmodels.ValidationResult
 
+	fixCount := 0
+	refusals := newFixRefusals()
+
 	cell := &engine.CellHandler[I, *checklistmodels.PromptWithContext]{
-		Query:   buildQueryClosure(spec, builder, &latestResult),
+		Query:   buildQueryClosure(spec, builder, &latestResult, refusals),
 		GenFix:  buildGenFixClosure(spec, &latestResult),
-		Fix:     buildFixClosure(spec, &latestResult),
+		Fix:     buildFixClosure(spec, &latestResult, &fixCount, refusals),
 		UI:      spec.UI,
 		FixMode: spec.Fix,
 	}
@@ -288,8 +315,14 @@ func buildSpecEngine[I any](
 		OnSkip:   recordSkip(spec, builder),
 	}
 
+	var selected engine.Walker[I, *checklistmodels.PromptWithContext] = walker
+
+	if spec.ValidationConcurrency > 1 || spec.ShareConceptJudgements {
+		selected = concurrentWalker(spec, builder, items, maxAttempts, refusals, &fixCount)
+	}
+
 	eng := engine.New(
-		renderPrompt, walker,
+		renderPrompt, selected,
 		engine.Options{
 			MaxApplyAttempts: maxAttempts,
 			OnAttemptStart:   reWalkBanner,
@@ -313,6 +346,37 @@ func buildSpecEngine[I any](
 	}
 
 	return eng
+}
+
+// concurrentWalker validates items in parallel; sharing concept judgements, it starts each validation round on
+// the evaluator and holds the bindings Prompt until every item's link has answered.
+func concurrentWalker[I any](
+	spec Spec[I], builder *reportBuilder, items []I, maxAttempts int, refusals *fixRefusals, fixCount *int,
+) *engine.ConcurrentWalker[I, *checklistmodels.PromptWithContext] {
+	for _, item := range items {
+		id, title := spec.GetSubject(item)
+		builder.Ensure(id, title)
+	}
+
+	walker := &engine.ConcurrentWalker[I, *checklistmodels.PromptWithContext]{
+		Limit: max(1, spec.ValidationConcurrency), MaxFixes: maxAttempts, Gate: isCheckQuery,
+		OnSkip: recordSkip(spec, builder),
+		CellFor: func(_ I, _ *checklistmodels.PromptWithContext) *engine.CellHandler[I, *checklistmodels.PromptWithContext] {
+			var result checklistmodels.ValidationResult
+
+			return &engine.CellHandler[I, *checklistmodels.PromptWithContext]{
+				Query: buildQueryClosure(spec, builder, &result, refusals), GenFix: buildGenFixClosure(spec, &result),
+				Fix: buildFixClosure(spec, &result, fixCount, refusals), UI: spec.UI, FixMode: spec.Fix,
+			}
+		},
+	}
+
+	if spec.ShareConceptJudgements {
+		walker.Waits = judgesBindings
+		walker.OnValidate = func([]I) { spec.Evaluator.StartWalk() }
+	}
+
+	return walker
 }
 
 // reWalkBanner emits the "RE-WALK N/M (fixes applied — verifying)"
@@ -339,6 +403,7 @@ func buildQueryClosure[I any](
 	spec Spec[I],
 	builder *reportBuilder,
 	latestResult *checklistmodels.ValidationResult,
+	refusals *fixRefusals,
 ) engine.QueryFn[I, *checklistmodels.PromptWithContext] {
 	return func(
 		ctx context.Context,
@@ -366,9 +431,9 @@ func buildQueryClosure[I any](
 		if isCheckQuery(query) {
 			result, err = answerCheck(spec, item, subjectID, query)
 		} else {
-			result, err = spec.Evaluator.EvaluateOne(
-				ctx, item, subjectID, *query, spec.TmpDir,
-			)
+			slog.Info("Cell validation started", "subjectID", subjectID, "promptIndex", query.Index)
+			result, err = evaluateModelCell(ctx, spec, item, subjectID, query)
+			slog.Info("Cell validation finished", "subjectID", subjectID, "promptIndex", query.Index)
 		}
 
 		if err != nil {
@@ -382,6 +447,7 @@ func buildQueryClosure[I any](
 			}
 		}
 
+		result.Context = refusals.attach(subjectID, result)
 		*latestResult = result
 		builder.Add(subjectID, subjectTitle, result)
 
@@ -435,15 +501,15 @@ func (s Spec[I]) claudeWriter() bool { return s.RecoverWriterFailures || s.Confi
 func buildFixClosure[I any](
 	spec Spec[I],
 	latestResult *checklistmodels.ValidationResult,
+	fixCount *int,
+	refusals *fixRefusals,
 ) engine.FixFn[I] {
-	fixCount := 0
-
 	return func(
 		ctx context.Context,
 		item I,
 		decision engine.FixDecision,
 	) (I, error) {
-		fixCount++
+		*fixCount++
 		subjectID, _ := spec.GetSubject(item)
 
 		content, err := spec.FixApplier.Apply(ctx, validate.ApplyParams{
@@ -451,8 +517,9 @@ func buildFixClosure[I any](
 			SubjectID:    subjectID,
 			FixPrompt:    decision.FixPrompt,
 			Check:        latestResult.Check,
+			Judgement:    latestResult.Judgement,
 			TmpDir:       spec.TmpDir,
-			Iteration:    fixCount,
+			Iteration:    *fixCount,
 			ModelTier:    latestResult.ApplyModelTier,
 			ClaudeWriter: spec.claudeWriter(),
 			CodexWriter:  spec.RecoverWriterFailures,
@@ -473,12 +540,41 @@ func buildFixClosure[I any](
 			return item, fmt.Errorf("fix applier failed: %w", err)
 		}
 
-		if latestResult.Check != "" && spec.PostCheckFix != nil {
-			return spec.PostCheckFix(ctx, item, latestResult.Check)
-		}
-
-		return spec.PostFix(ctx, item, content)
+		return commitApplied(ctx, spec, item, content, *latestResult, refusals)
 	}
+}
+
+// commitApplied hands a completed apply to the Spec's commit hook. A fix
+// the hook did not take leaves the Item as it was, and the walk asks the
+// Prompt again with the refusal held for its next fix (#268).
+func commitApplied[I any](
+	ctx context.Context,
+	spec Spec[I],
+	item I,
+	content string,
+	failed checklistmodels.ValidationResult,
+	refusals *fixRefusals,
+) (I, error) {
+	var (
+		next I
+		err  error
+	)
+
+	if failed.Check != "" && spec.PostCheckFix != nil {
+		next, err = spec.PostCheckFix(ctx, item, failed.Check)
+	} else {
+		next, err = spec.PostFix(ctx, item, content)
+	}
+
+	if !errors.Is(err, ErrFixNotTaken) {
+		return next, err
+	}
+
+	subjectID, _ := spec.GetSubject(item)
+	slog.Warn("Fix not committed", "subjectID", subjectID, "promptIndex", failed.PromptIndex, "reason", err)
+	refusals.hold(subjectID, failed.PromptIndex, err.Error())
+
+	return item, nil
 }
 
 // headerLine builds the opening banner for one runner.Run. Story-based
@@ -523,4 +619,16 @@ func flattenChecklistPrompts(
 	}
 
 	return prompts
+}
+
+func evaluateModelCell[I any](
+	ctx context.Context, spec Spec[I], item I, subjectID string, query *checklistmodels.PromptWithContext,
+) (checklistmodels.ValidationResult, error) {
+	if spec.ValidationConcurrency > 1 {
+		label := fmt.Sprintf("validation-%02d-%x", query.Index, sha256.Sum256([]byte(subjectID)))
+
+		return spec.Evaluator.EvaluateOne(ctx, item, subjectID, *query, spec.TmpDir, label)
+	}
+
+	return spec.Evaluator.EvaluateOne(ctx, item, subjectID, *query, spec.TmpDir)
 }
