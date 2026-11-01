@@ -2114,11 +2114,14 @@ architecture:
         - file: project-tree
         - outgoing_call: go-toolchain
       does: >-
-        Sets the next run's machine: requires the fixture to declare a
-        preparation, which installs the project's test dependencies (and with
-        browser its browser, through playwright install) while the tree is
-        assembled, the step failing when the fixture declares none, or with
-        browser none running playwright install; points Go module downloads at
+        Sets the next run's machine: for the test dependencies it changes
+        nothing itself and requires the fixture the Scenario's project tree
+        Given named to have a prep.sh at its root
+        (tests/true-bdd/fixtures/<name>/prep.sh), the script the harness runs
+        in the assembled tree before the run's starting snapshot, which
+        installs those dependencies; the step fails when the fixture has no
+        prep.sh, and with browser also when that script's text does not
+        contain playwright install; points Go module downloads at
         an empty local file proxy under the run directory, with GOSUMDB=off,
         GONOPROXY=none and an empty GOPRIVATE, so an uncached Library download
         fails; or sets GIT_DIR and GIT_INDEX_FILE to paths outside the project
@@ -2322,12 +2325,19 @@ architecture:
         - file: project-tree
       does: >-
         Compares the pre-run and post-run snapshots of the project tree, tmp
-        included: requires an empty diff; or every changed path inside the one
-        named directory, or inside one of the two; or the named file as the
-        only change outside the directory; or the named file created, modified,
-        or present and unchanged (a path naming no file fails); or counts the
-        created files whose path matches the glob and compares them with the
-        number, "no" meaning zero, a malformed glob failing the step.
+        included, every changed path relative to the tree's root; a path is
+        inside a named directory when it is that directory or begins with it
+        followed by "/", so docs-notes/a.yaml is outside docs: requires an
+        empty diff; or every changed path inside the one named directory, or
+        inside one of the two; or the named file as the only change outside
+        the directory; or the named file created, modified, or present and
+        unchanged (a path naming no file fails); or counts the created files
+        whose whole path matches the glob and compares them with the number,
+        "no" meaning zero. The glob matches as Go's filepath.Match does: *
+        any run of characters but "/", so ** is no wider than * and never
+        crosses a "/" (docs/** matches docs/a.yaml, never docs/a/b.yaml), ?
+        one such character and […] one character of a set; a malformed glob
+        fails the step even when the run created no file.
     - concept: file content
       block: then
       service: true-bdd
@@ -2445,19 +2455,26 @@ architecture:
       references:
         - outgoing_call: claude
         - outgoing_call: codex
+        - file: project-tree
       does: >-
         Observes what the fixture's AI CLI programs and the suite's claude and
-        codex programs left in the project tree after the run: reads the
-        process id the cancelled AI CLI's descendant wrote to
+        codex programs left under tmp/ of the project tree after the run. The
+        suite's mode is the services: value of the -mode flag the suite was
+        started with (services:replay, services:record or services:live, as
+        architecture.testing.commands runs it), which every step of the suite
+        reads from that flag and no file or log record states. The step reads
+        the process id the cancelled AI CLI's descendant wrote to
         tmp/descendant.pid and requires no process with that id to exist
         within three seconds; requires the codex program's receipt
         tmp/aiproxy-state/writer-spawn.txt to hold exactly "fixture
         authentication and edit roots verified" and a newline, which it writes
-        only when the one writer spawn held an exact private copy of the
-        fixture's auth.json in a private generated home, and requires exactly
-        one generated home matching tmp/codex-homes/*/*-codex-home with no
-        auth.json left in it; or, only when the suite replays, reads the
+        in every mode only when the one writer spawn held an exact private
+        copy of the fixture's auth.json in a private generated home, and
+        requires exactly one generated home matching
+        tmp/codex-homes/*/*-codex-home with no auth.json left in it; or, for
+        the reverse-order replay, when the suite's mode is replay reads the
         claude program's receipt tmp/aiproxy-state/consumed-claude, a JSON
         list of the recorded calls it consumed in order, and requires it to
-        begin with "claude-002", the call recorded after claude-001; recording
-        or live, that observation passes.
+        begin with "claude-002", the call recorded after claude-001, while
+        under record or live, where no recording answers the calls, the step
+        passes without reading any file.
