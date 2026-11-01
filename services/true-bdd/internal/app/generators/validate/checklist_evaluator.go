@@ -122,7 +122,7 @@ func (e *ChecklistEvaluator) EvaluateOne(
 		e.artifactLabel = artifactLabel[0]
 	}
 
-	if kind, ok := promptCtx.Prompt.With["concepts"].(string); ok && kind != "sketch" {
+	if kind := promptCtx.Prompt.Judgement(); kind != "" && kind != checklist.JudgementSketch {
 		return e.evaluateConcepts(ctx, subject, subjectID, promptCtx, kind)
 	}
 

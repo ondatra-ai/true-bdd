@@ -26,7 +26,7 @@ last_updated: "2026-10-21"
 sections:
   - id: term_closure
     name: "Term Closure"
-    description: "Every concept's words must be defined and mapped, every binding must name a declared concept and its service's Public interface, and every step must bind one step definition recording a declared concept of its block."
+    description: "Every concept's words must be defined and mapped, every binding must name a declared concept and its service's Public interface, and every step a step definition binds must bind exactly one, recording a declared concept of its block; a step no definition binds yet waits for build steps."
     validation_prompts:
       - D: declared-terms
         rationale: "A concept whose meaning relies on an undefined word still has no stated meaning, so no step definition follows from the spec."

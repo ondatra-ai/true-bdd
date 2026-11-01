@@ -6264,7 +6264,7 @@ scenarios:
       - stdout matches Scenario list passed
       - no file outside "tmp" and "tests" changed
       - stdout matches All step skeletons written.*items=3
-      - the engine dispatched 10 validation AI turns to "claude"
+      - the engine dispatched 12 validation AI turns to "claude"
       - the engine spawned exactly 1 test runner with arguments matching -list \.
       - the engine spawned exactly 1 test runner with arguments matching -run \^\(Test
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
@@ -6292,6 +6292,29 @@ scenarios:
       - the engine dispatched 4 validation AI turns to "claude"
       - the engine spawned exactly 1 test runner with arguments matching -list \.
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+  build-steps-writing-004-interface-cannot-serve:
+    description: A writer's verdict that the Public interface cannot serve its concept stops the walk distinctly after that one writer turn, naming the concept and what the interface lacks
+    service: true-bdd
+    path: tests/true-bdd/build_steps_test.go
+    user_stories:
+    - story: docs/product/stories/build-steps-writing.yaml
+      scenario_id: build-steps-writing-004-interface-cannot-serve
+      merge_date: '2026-11-01'
+    timeout: 15m
+    merged_steps:
+      given:
+      - the "build-steps-cannot-serve" project tree
+      - the codex writer is controlled to answer that the interface cannot serve
+      - the System Architect's answer to every question is "1"
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - the command exits with code 1
+      - stdout matches msg="Walk stopped".*public interface cannot serve
+      - 'stderr matches public interface cannot serve when concept "halving": a halve command that reads its value from standard input; extend the Public interface declaration'
+      - stdout does not match BUILD STEPS COMPLETE
+      - the engine dispatched 1 apply AI turn to "codex"
+      - no file outside "tmp" and "tests" changed
   fix-loop-choices-006-exit-fails-build-steps:
     description: Exiting the body-writing Fix loop ends build steps non-zero with no COMPLETE banner
     service: true-bdd

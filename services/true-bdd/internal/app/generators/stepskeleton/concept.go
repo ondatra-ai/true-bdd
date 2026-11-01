@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/catalogue"
 )
 
 // conceptDirective records a skeleton's concept on its function, as
@@ -22,7 +24,7 @@ const conceptDirective = "//truebdd:concept "
 type ConceptDefinition struct {
 	Definition
 
-	Block   string
+	Block   catalogue.Block
 	Concept string
 }
 
@@ -106,7 +108,7 @@ func Concepts(dir string) ([]ConceptDefinition, error) {
 				continue
 			}
 
-			found = append(found, ConceptDefinition{Block: block, Concept: concept, Definition: Definition{
+			found = append(found, ConceptDefinition{Block: catalogue.Block(block), Concept: concept, Definition: Definition{
 				File: file.path, Function: fun.Name.Name, Pattern: patterns[fun.Name.Name]}})
 		}
 	}

@@ -41,7 +41,7 @@ func (e *ChecklistEvaluator) evaluateBindings(ctx context.Context, subject any, 
 			failConcept(&result, finding)
 		}
 	case len(linked) > 0:
-		err = e.judgeLinkedBindings(ctx, item, prompt, linked, services, &result)
+		err = e.judgeSharedBindings(ctx, prompt, item.Service, linked, services, &result)
 	default:
 		result.Context = []string{"no linked concepts require a binding"}
 	}
@@ -55,55 +55,6 @@ func (e *ChecklistEvaluator) evaluateBindings(ctx context.Context, subject any, 
 	return result, nil
 }
 
-// judgeLinkedBindings judges the bindings once per scen check walk, else in this subject's own turn.
-func (e *ChecklistEvaluator) judgeLinkedBindings(ctx context.Context, item *template.ScenarioCheckData,
-	prompt checklist.PromptWithContext, linked map[string]linkedBinding, services []architecture.Service,
-	result *checklist.ValidationResult,
-) error {
-	if e.shares(item) {
-		return e.judgeSharedBindings(ctx, prompt, item.Service, linked, services, result)
-	}
-
-	return e.judgeBindings(ctx, prompt, item.Service, linked, services, conceptSteps(item), result)
-}
-
-func (e *ChecklistEvaluator) judgeBindings(ctx context.Context, prompt checklist.PromptWithContext,
-	service string, linked map[string]linkedBinding, services []architecture.Service,
-	steps []conceptStep, result *checklist.ValidationResult,
-) error {
-	interfaceContext, err := conceptInterfaceContext(services, service)
-	if err != nil {
-		return err
-	}
-
-	productText, err := e.conceptProduct()
-	if err != nil {
-		return err
-	}
-
-	payload := struct {
-		Product         string                   `json:"product"`
-		Steps           []conceptStep            `json:"steps"`
-		Service         string                   `json:"service"`
-		Bindings        map[string]linkedBinding `json:"bindings"`
-		PublicInterface map[string]any           `json:"public_interface"`
-	}{productText, steps, service, linked, interfaceContext}
-
-	schema, err := bindingSchema(linked)
-	if err != nil {
-		return err
-	}
-
-	response, err := e.conceptTurn(ctx, prompt, payload, schema)
-	if err != nil {
-		return err
-	}
-
-	gradeBindings(response, linked, result)
-
-	return nil
-}
-
 func scenarioBindings(item *template.ScenarioCheckData, concepts []product.Concept,
 	bindings []architecture.ConceptBinding,
 ) (map[string]linkedBinding, []string) {
@@ -111,7 +62,7 @@ func scenarioBindings(item *template.ScenarioCheckData, concepts []product.Conce
 	findings := make([]string, 0)
 
 	for _, link := range item.ConceptLinks {
-		key := string(link.Block) + ":" + link.Concept
+		key := link.Key()
 
 		matches := matchingConceptBindings(bindings, link, item.Service)
 		if len(matches) != 1 {

@@ -65,7 +65,7 @@ func (e *ChecklistEvaluator) finishLink(subject any, grade linkGrade, err error,
 		}
 
 		for index, link := range grade.links {
-			linked = append(linked, linkedStep{service: service, key: linkKey(link), step: grade.steps[index]})
+			linked = append(linked, linkedStep{service: service, key: link.Key(), step: grade.steps[index]})
 		}
 	}
 

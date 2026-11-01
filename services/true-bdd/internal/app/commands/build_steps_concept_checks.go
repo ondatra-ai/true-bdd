@@ -52,7 +52,7 @@ func conceptRecorded(item *BuildStepsItem) error {
 
 		for _, candidate := range recorded {
 			found = found || (candidate.Function == definition.Function &&
-				candidate.Block == string(item.Concept.Block) && candidate.Concept == item.Concept.Name)
+				candidate.Block == item.Concept.Block && candidate.Concept == item.Concept.Name)
 		}
 
 		if !found {

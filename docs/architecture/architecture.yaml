@@ -1324,9 +1324,11 @@ architecture:
         and any approved missing Public interface declaration, never a Scenario.
         The existing fix ledger restores documents when a walk fails. The link and means word judgements run in us refine and scen check;
         scen check judges each binding and each linked concept's words once per walk.
-        build steps reuses the binding judgement after suite grouping, and its
+        build steps judges each binding the same way after suite grouping, one
+        turn per binding over the steps of every Item reaching it, and its
         proposal turn reads the binding before the engine checks the patterns.
-        step-definitions holds each Scenario step to one definition recording a declared concept of its block.
+        step-definitions holds each Scenario step a definition binds to exactly one, recording a declared concept of its block;
+        a step no definition binds yet passes as build steps' gap, since scen check runs before build steps writes it.
     - term: Public interface
       technical: >-
         Each architecture.services entry optionally carries public_interface with kind,
@@ -1423,7 +1425,7 @@ architecture:
 
     - term: command
       technical: >-
-        The pipeline is us refine, us apply, build tests, build steps, build code. build tests only renders Registry test files: --fix writes stale files; without it stale files refuse startup. It never reads definitions, starts a test runner or dispatches an AI turn. build steps loads its build-steps checklist, groups the suites' unbound steps into concept Items and, without --fix, lists them and checks coverage without a runner. With --fix the AI proposes each Item's patterns, the engine checks them and writes all skeletons first, compiles, then writes each Item's bodies through the shared Fix loop. Per-apply compilation, exact binding, concept-record and pending-body checks and then a separate semantic critique of the patterns and bodies precede whole-suite coverage, generated-test listing and a run without every service path. A red result requires each named Scenario to fail at an executed definition; compilation, harness bring-up, skipped or missing results fail the check. Green Scenarios send their written Items back together, retaining apply counts and the bounded walk. The critique turn reads the concept context the writer reads and judges each pattern against the concept and its bound steps, and each body against the binding by block (when calls its named operation, given puts the stated state in place, then observes and compares as stated), against what each step means, and for computing what it asserts. Failures name the definition and discrepancy and return to the proposal or to the same Fix loop within its configured attempts. The turn uses build-steps checklist engine.critique_model, falling back to engine.default_prompt_model, and states no time, turn, token or cost budget. The writer receives the complete concept context, writes only protected tests and shared state, and reports interface_cannot_serve with the concept and what it lacks to stop immediately when the declared interface cannot serve the meaning. The quoted text, split into arguments at whitespace (no quoting, so
+        The pipeline is us refine, us apply, build tests, build steps, build code. build tests only renders Registry test files: --fix writes stale files; without it stale files refuse startup. It never reads definitions, starts a test runner or dispatches an AI turn. build steps loads its build-steps checklist and scen check's bindings Prompt, refusing startup before any grouping turn when its grouping Prompt or that bindings Prompt is missing, groups the suites' unbound steps into concept Items, judges each Item's binding as scen check does and, without --fix, lists them and checks coverage without a runner. With --fix the AI proposes each Item's patterns, the engine checks them and writes all skeletons first, compiles, then writes each Item's bodies through the shared Fix loop. Per-apply compilation, exact binding, concept-record and pending-body checks and then a separate semantic critique of the patterns and bodies precede whole-suite coverage, generated-test listing and a run without every service path. A red result requires each named Scenario to fail at an executed definition; compilation, harness bring-up, skipped or missing results fail the check. Green Scenarios send their written Items back together, retaining apply counts and the bounded walk. The critique turn reads the concept context the writer reads and judges each pattern against the concept and its bound steps, and each body against the binding by block (when calls its named operation, given puts the stated state in place, then observes and compares as stated), against what each step means, and for computing what it asserts. Failures name the definition and discrepancy and return to the proposal or to the same Fix loop within its configured attempts. The turn uses build-steps checklist engine.critique_model, falling back to engine.default_prompt_model, and states no time, turn, token or cost budget. The writer receives the complete concept context, writes only protected tests and shared state, and reports interface_cannot_serve with the concept and what it lacks to stop immediately when the declared interface cannot serve the meaning. The quoted text, split into arguments at whitespace (no quoting, so
         an argument cannot hold a space) and run as the engine binary's
         arguments in a subprocess; `{{CWD}}` in an argument stands for the
         run directory's absolute path, so a command can name a file of the
@@ -2173,7 +2175,11 @@ architecture:
         concept-link-incomplete, concept-grouping-missing,
         concept-grouping-repeat, concept-grouping-rank, concept-grouping-cap,
         concept-grouping-unknown and concept-grouping-same, the step failing
-        for any other; concurrent arrival puts the fixture's front/ launchers
+        for any other; the codex writer controlled to answer that the
+        interface cannot serve puts the fixture's cli/ directory, whose codex
+        answers that verdict for the halving Item, right behind the suite's
+        programs the same way, allowed only for build-steps-cannot-serve;
+        concurrent arrival puts the fixture's front/ launchers
         before the suite's programs and its cli/ programs behind them, the
         launchers admitting the alpha Scenario's validation request before
         beta's when recording and beta's before alpha's when replaying, once

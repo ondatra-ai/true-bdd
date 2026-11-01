@@ -117,7 +117,7 @@ A specification document holding declared meanings and their implementation: the
 _Avoid_: vocabulary file, dictionary
 
 **Closure check**:
-One of the five Built-in checks over a Scenario and its Term documents. public-interface holds its service to a valid Public interface declaration. declared-terms and term-mappings hold every declared concept's terms to the glossary and the Word mapping, concept-bindings holds every Concept binding to a declared concept and its service's Public interface, and step-definitions holds each step of the Scenario to one step definition recording a declared concept of the step's block, a Story claiming the Scenario or not. These four pass every Scenario of a host declaring no concepts as not checked. Model Prompts link steps and judge their service bindings; the Closure checks answer without an AI turn.
+One of the five Built-in checks over a Scenario and its Term documents. public-interface holds its service to a valid Public interface declaration. declared-terms and term-mappings hold every declared concept's terms to the glossary and the Word mapping, concept-bindings holds every Concept binding to a declared concept and its service's Public interface, and step-definitions holds each step of the Scenario that a step definition binds to exactly one, recording a declared concept of the step's block, a Story claiming the Scenario or not; a step no definition binds yet passes as build steps' gap, since scen check runs before build steps writes it. These four pass every Scenario of a host declaring no concepts as not checked. Model Prompts link steps and judge their service bindings; the Closure checks answer without an AI turn.
 _Avoid_: spec check, term check
 
 **Services**:

@@ -53,29 +53,9 @@ type conceptDiscovery struct {
 
 func discoverConceptItems(ctx context.Context, deps BuildStepsDeps, registryFile, architectureFile string,
 ) (*conceptDiscovery, error) {
-	scenarios, err := deps.RegistryLoader.Load(registryFile)
+	scenarios, answer, err := scanConceptHost(deps, registryFile, architectureFile)
 	if err != nil {
-		return nil, runner.RefuseStartup("build steps", err)
-	}
-
-	arch, err := architecture.Load(architectureFile)
-	if err != nil {
-		return nil, runner.RefuseStartup("build steps", err)
-	}
-
-	root, err := os.Getwd()
-	if err != nil {
-		return nil, fmt.Errorf("locate concept host: %w", err)
-	}
-
-	_, err = scenariogen.BuildPlan(scenarios, arch, root, registryFile)
-	if err != nil {
-		return nil, runner.RefuseStartup("build steps", err)
-	}
-
-	answer, err := stepcoverage.Scan(scenarios, root)
-	if err != nil {
-		return nil, runner.RefuseStartup("build steps", err)
+		return nil, err
 	}
 
 	suites, err := conceptSuites(deps, scenarios, answer)
@@ -83,7 +63,12 @@ func discoverConceptItems(ctx context.Context, deps BuildStepsDeps, registryFile
 		return nil, err
 	}
 
-	groups, err := groupConceptSuites(ctx, deps, suites)
+	asked, err := loadConceptJudgements(deps)
+	if err != nil {
+		return nil, err
+	}
+
+	groups, err := groupConceptSuites(ctx, deps, suites, asked)
 	if err != nil {
 		return nil, err
 	}
@@ -95,12 +80,83 @@ func discoverConceptItems(ctx context.Context, deps BuildStepsDeps, registryFile
 		return nil, err
 	}
 
-	err = judgeConceptSuites(ctx, deps, suites)
+	err = judgeConceptBindings(ctx, deps, suites, discovery.items, asked.bindings)
 	if err != nil {
 		return nil, err
 	}
 
 	return discovery, nil
+}
+
+// scanConceptHost reads the Registry, refuses one build tests could not render, and scans its unbound steps.
+func scanConceptHost(deps BuildStepsDeps, registryFile, architectureFile string,
+) ([]*registry.RegistryScenario, *stepcoverage.Answer, error) {
+	scenarios, err := deps.RegistryLoader.Load(registryFile)
+	if err != nil {
+		return nil, nil, runner.RefuseStartup("build steps", err)
+	}
+
+	arch, err := architecture.Load(architectureFile)
+	if err != nil {
+		return nil, nil, runner.RefuseStartup("build steps", err)
+	}
+
+	root, err := os.Getwd()
+	if err != nil {
+		return nil, nil, fmt.Errorf("locate concept host: %w", err)
+	}
+
+	_, err = scenariogen.BuildPlan(scenarios, arch, root, registryFile)
+	if err != nil {
+		return nil, nil, runner.RefuseStartup("build steps", err)
+	}
+
+	answer, err := stepcoverage.Scan(scenarios, root)
+	if err != nil {
+		return nil, nil, runner.RefuseStartup("build steps", err)
+	}
+
+	return scenarios, answer, nil
+}
+
+// conceptJudgements are the grouping Prompt, its batch size and scen check's bindings Prompt, read before any turn.
+type conceptJudgements struct {
+	group    checklist.PromptWithContext
+	limit    int
+	bindings checklist.PromptWithContext
+}
+
+func loadConceptJudgements(deps BuildStepsDeps) (conceptJudgements, error) {
+	document, err := deps.ChecklistLoader.LoadFull(buildStepsChecklistName)
+	if err != nil {
+		return conceptJudgements{}, runner.RefuseStartup("build steps", err)
+	}
+
+	limit := defaultGroupingBatchTexts
+	if document.Config != nil && document.Config.GroupingBatchTexts != 0 {
+		limit = document.Config.GroupingBatchTexts
+	}
+
+	if limit < 1 {
+		return conceptJudgements{}, runner.RefuseStartup("build steps", errGroupingBatchSize)
+	}
+
+	group, err := conceptBuildPrompt(document, checklist.JudgementGroup)
+	if err != nil {
+		return conceptJudgements{}, runner.RefuseStartup("build steps", err)
+	}
+
+	scenCheck, err := deps.ChecklistLoader.LoadFull(scenCheckChecklistName)
+	if err != nil {
+		return conceptJudgements{}, runner.RefuseStartup("build steps", err)
+	}
+
+	bindings, err := conceptBuildPrompt(scenCheck, checklist.JudgementBindings)
+	if err != nil {
+		return conceptJudgements{}, runner.RefuseStartup("build steps", err)
+	}
+
+	return conceptJudgements{group: group, limit: limit, bindings: bindings}, nil
 }
 
 // conceptSuites lists the suites whose unbound steps grouping reads. A host
@@ -121,33 +177,15 @@ func conceptSuites(deps BuildStepsDeps, scenarios []*registry.RegistryScenario,
 }
 
 func groupConceptSuites(ctx context.Context, deps BuildStepsDeps, suites []*template.ScenarioCheckData,
+	asked conceptJudgements,
 ) (map[string]map[catalogue.Step]string, error) {
-	document, err := deps.ChecklistLoader.LoadFull(buildStepsChecklistName)
-	if err != nil {
-		return nil, err
-	}
-
-	limit := defaultGroupingBatchTexts
-	if document.Config != nil && document.Config.GroupingBatchTexts != 0 {
-		limit = document.Config.GroupingBatchTexts
-	}
-
-	if limit < 1 {
-		return nil, runner.RefuseStartup("build steps", errGroupingBatchSize)
-	}
-
-	prompt, err := conceptBuildPrompt(document, "group")
-	if err != nil {
-		return nil, runner.RefuseStartup("build steps", err)
-	}
-
 	slog.Info("Loaded prompts", "command", "build steps", "items", len(suites), "prompts", 1)
 
 	findings := make([]string, 0)
 	groups := make(map[string]map[catalogue.Step]string)
 
 	for _, suite := range suites {
-		failed, grouped, err := groupConceptSuite(ctx, deps, suite, prompt, limit)
+		failed, grouped, err := groupConceptSuite(ctx, deps, suite, asked.group, asked.limit)
 		if err != nil {
 			return nil, err
 		}
@@ -163,15 +201,16 @@ func groupConceptSuites(ctx context.Context, deps BuildStepsDeps, suites []*temp
 	return groups, nil
 }
 
-func judgeConceptSuites(ctx context.Context, deps BuildStepsDeps, suites []*template.ScenarioCheckData) error {
-	bindings, err := deps.ChecklistLoader.LoadFull("scen-check")
-	if err != nil {
-		return err
-	}
+// judgeConceptBindings judges each binding as scen check does (ADR-0037): one turn per binding, over the steps
+// of every Item that reaches its concept for the service.
+func judgeConceptBindings(ctx context.Context, deps BuildStepsDeps, suites []*template.ScenarioCheckData,
+	items []*BuildStepsItem, bindingPrompt checklist.PromptWithContext,
+) error {
+	deps.Evaluator.StartWalk()
 
-	bindingPrompt, err := conceptBuildPrompt(bindings, "bindings")
-	if err != nil {
-		return err
+	for _, item := range items {
+		deps.Evaluator.ShareSteps(item.Suite+" "+item.Label(), item.Service,
+			template.ConceptLink{Concept: item.Concept.Name, Block: item.Concept.Block}, item.Concept.Steps)
 	}
 
 	for _, suite := range suites {
@@ -222,14 +261,15 @@ func unboundConceptSuites(scenarios []*registry.RegistryScenario,
 	return suites
 }
 
-func conceptBuildPrompt(document *checklist.Checklist, kind string) (checklist.PromptWithContext, error) {
+func conceptBuildPrompt(document *checklist.Checklist, kind checklist.ConceptJudgement,
+) (checklist.PromptWithContext, error) {
 	index := 0
 
 	for _, section := range document.Sections {
 		for _, prompt := range section.ValidationPrompts {
 			index++
 
-			if prompt.With["concepts"] != kind || prompt.ShouldSkip() {
+			if prompt.Judgement() != kind || prompt.ShouldSkip() {
 				continue
 			}
 
@@ -239,8 +279,8 @@ func conceptBuildPrompt(document *checklist.Checklist, kind string) (checklist.P
 			}
 
 			stem := buildStepsChecklistName
-			if kind == "bindings" {
-				stem = "scen-check"
+			if kind == checklist.JudgementBindings {
+				stem = scenCheckChecklistName
 			}
 
 			return checklist.PromptWithContext{SectionID: stem, CriterionID: section.ID, Index: index, Prompt: prompt,

@@ -195,14 +195,11 @@ func (w *ConcurrentWalker[I, Q]) validate(
 	for index := begin; index < len(queries); index++ {
 		query := queries[index]
 
-		gate := w.Gate != nil && w.Gate(query)
-		if result.gateFailed && !gate {
-			if w.OnSkip != nil {
-				w.OnSkip(item, query)
-			}
-
+		if skippedByGate(result.gateFailed, w.Gate, w.OnSkip, item, query) {
 			continue
 		}
+
+		gate := isGate(w.Gate, query)
 
 		contextErr := ctx.Err()
 		if contextErr != nil {
@@ -247,12 +244,7 @@ func (w *ConcurrentWalker[I, Q]) repair(
 			key := [2]int{index, cell.index}
 			counts[key]++
 
-			limit := w.MaxFixes
-			if limit <= 0 {
-				limit = defaultMaxApplyAttempts
-			}
-
-			if counts[key] > limit {
+			if counts[key] > fixLimit(w.MaxFixes) {
 				return run, pkgerrors.ErrFixLoopNotConverging(counts[key])
 			}
 

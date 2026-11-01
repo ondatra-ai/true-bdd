@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	pkgerrors "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/pkg/errors"
 	"log/slog"
 	"strings"
 
@@ -15,10 +14,11 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/product"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/template"
+	pkgerrors "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/pkg/errors"
 )
 
 func (e *ChecklistEvaluator) evaluateConcepts(ctx context.Context, subject any, subjectID string,
-	prompt checklist.PromptWithContext, kind string,
+	prompt checklist.PromptWithContext, kind checklist.ConceptJudgement,
 ) (checklist.ValidationResult, error) {
 	path, err := e.docResolver.Resolve(docs.KeyProduct)
 	if err != nil {
@@ -42,30 +42,31 @@ func (e *ChecklistEvaluator) evaluateConcepts(ctx context.Context, subject any, 
 		return result, nil
 	}
 
-	if kind == "group" {
-		return e.evaluateGroup(ctx, subject, prompt, source, result)
-	}
-
-	if kind == "propose" {
-		return e.evaluatePropose(ctx, subject, prompt, source, result)
-	}
-
-	if kind == "words" {
-		return e.evaluateWords(ctx, subject, prompt, source, result)
-	}
-
-	if kind == "bindings" {
-		return e.evaluateBindings(ctx, subject, prompt, source, result)
-	}
-
-	if kind != "link" {
-		return checklist.ValidationResult{}, fmt.Errorf("concept judgement %q: %w", kind, errConceptAnswer)
-	}
-
-	return e.evaluateLink(ctx, subject, prompt, source, result)
+	return e.judgeConcepts(ctx, subject, prompt, kind, source, result)
 }
 
-func conceptResult(prompt checklist.PromptWithContext, kind string) checklist.ValidationResult {
+// judgeConcepts answers the judgement on a concept host.
+func (e *ChecklistEvaluator) judgeConcepts(ctx context.Context, subject any, prompt checklist.PromptWithContext,
+	kind checklist.ConceptJudgement, source product.Document, result checklist.ValidationResult,
+) (checklist.ValidationResult, error) {
+	switch kind {
+	case checklist.JudgementGroup:
+		return e.evaluateGroup(ctx, subject, prompt, source, result)
+	case checklist.JudgementPropose:
+		return e.evaluatePropose(ctx, subject, prompt, source, result)
+	case checklist.JudgementWords:
+		return e.evaluateWords(ctx, subject, prompt, source, result)
+	case checklist.JudgementBindings:
+		return e.evaluateBindings(ctx, subject, prompt, source, result)
+	case checklist.JudgementLink:
+		return e.evaluateLink(ctx, subject, prompt, source, result)
+	case checklist.JudgementSketch:
+	}
+
+	return checklist.ValidationResult{}, fmt.Errorf("concept judgement %q: %w", kind, errConceptAnswer)
+}
+
+func conceptResult(prompt checklist.PromptWithContext, kind checklist.ConceptJudgement) checklist.ValidationResult {
 	return checklist.ValidationResult{SectionPath: prompt.GetFullSectionPath(), Question: prompt.Prompt.Question,
 		Judgement: kind, ActualAnswer: AnswerPass, Status: checklist.StatusPass, Rationale: prompt.Prompt.Rationale,
 		FixPrompt: strings.TrimSpace(prompt.Prompt.FixTemplate), PromptIndex: prompt.Index, Docs: prompt.GetEffectiveDocs(),

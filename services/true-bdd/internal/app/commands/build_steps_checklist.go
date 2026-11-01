@@ -13,6 +13,9 @@ import (
 
 const buildStepsChecklistName = "build-steps"
 
+// scenCheckChecklistName is the checklist whose bindings Prompt build steps judges bindings with.
+const scenCheckChecklistName = "scen-check"
+
 func buildStepsPrompts(
 	loader *checklist.ChecklistLoader, resolver *docs.Resolver,
 ) ([]checklistmodels.PromptWithContext, error) {
@@ -93,5 +96,6 @@ func resolveStepCoverageDocs(prompts []checklistmodels.PromptWithContext, resolv
 }
 
 func skipBuildStepPrompt(prompt checklistmodels.Prompt) bool {
-	return prompt.ShouldSkip() || prompt.With["concepts"] == "group" || prompt.With["concepts"] == "propose"
+	return prompt.ShouldSkip() || prompt.Judgement() == checklistmodels.JudgementGroup ||
+		prompt.Judgement() == checklistmodels.JudgementPropose
 }

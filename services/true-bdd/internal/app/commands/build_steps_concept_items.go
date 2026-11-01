@@ -37,11 +37,11 @@ func (d *conceptDiscovery) collect(suites []*template.ScenarioCheckData,
 		for _, step := range d.suiteSteps(suite.ID) {
 			entry := catalogue.SuiteStep{Block: step.Block, Text: step.Text}
 			if concept, grouped := groups[suite.ID][step]; grouped {
-				entry.Item = conceptKey(step.Block, concept)
-				order = d.addConceptStep(items, order, suite, dir, entry, concept, definitions)
+				entry.Item = catalogue.ConceptKey(step.Block, concept)
+				order = addConceptStep(items, order, suite, dir, entry, concept, definitions)
 			} else if definition, resumed := pendingBinding(bound.Bind(step.Text), definitions); resumed {
 				entry.Bound = definition.Pattern
-				order = d.resumeConceptStep(items, order, suite, dir, entry, definition, definitions)
+				order = resumeConceptStep(items, order, suite, dir, entry, definition, definitions)
 			} else if found := bound.Bind(step.Text); len(found) == 1 {
 				entry.Bound = found[0].Pattern
 			}
@@ -57,7 +57,7 @@ func (d *conceptDiscovery) collect(suites []*template.ScenarioCheckData,
 	return nil
 }
 
-func (d *conceptDiscovery) addConceptStep(items map[string]*BuildStepsItem, order []string,
+func addConceptStep(items map[string]*BuildStepsItem, order []string,
 	suite *template.ScenarioCheckData, dir string, entry catalogue.SuiteStep, concept string,
 	definitions []stepskeleton.ConceptDefinition,
 ) []string {
@@ -73,19 +73,19 @@ func (d *conceptDiscovery) addConceptStep(items map[string]*BuildStepsItem, orde
 	return order
 }
 
-func (d *conceptDiscovery) resumeConceptStep(items map[string]*BuildStepsItem, order []string,
+func resumeConceptStep(items map[string]*BuildStepsItem, order []string,
 	suite *template.ScenarioCheckData, dir string, entry catalogue.SuiteStep,
 	definition stepskeleton.ConceptDefinition, definitions []stepskeleton.ConceptDefinition,
 ) []string {
-	key := conceptKey(catalogue.Block(definition.Block), definition.Concept)
+	key := catalogue.ConceptKey(definition.Block, definition.Concept)
 
 	item, known := items[key]
 	if !known {
-		item = newConceptItem(suite, dir, catalogue.Block(definition.Block), definition.Concept, definitions)
+		item = newConceptItem(suite, dir, definition.Block, definition.Concept, definitions)
 		items[key] = item
 		order = append(order, key)
 		suite.ConceptLinks = append(suite.ConceptLinks,
-			template.ConceptLink{Concept: definition.Concept, Block: catalogue.Block(definition.Block)})
+			template.ConceptLink{Concept: definition.Concept, Block: definition.Block})
 	}
 
 	item.Concept.Resumed = true
@@ -106,7 +106,7 @@ func newConceptItem(suite *template.ScenarioCheckData, dir string, block catalog
 		Concept: &BuildStepsConcept{Block: block, Name: concept}}
 
 	for _, definition := range definitions {
-		if definition.Block == string(block) && definition.Concept == concept {
+		if definition.Block == block && definition.Concept == concept {
 			item.Concept.Existing = append(item.Concept.Existing, definition.Pattern)
 		}
 	}
@@ -148,8 +148,4 @@ func (d *conceptDiscovery) suiteSteps(suite string) []catalogue.Step {
 	}
 
 	return steps
-}
-
-func conceptKey(block catalogue.Block, concept string) string {
-	return string(block) + ":" + concept
 }

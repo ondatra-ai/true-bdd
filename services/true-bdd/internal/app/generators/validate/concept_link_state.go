@@ -25,8 +25,3 @@ func conceptLinks(subject any) ([]template.ConceptLink, bool) {
 		return nil, false
 	}
 }
-
-// linkKey names a linked concept as the binding and word judgements answer it: block:concept.
-func linkKey(link template.ConceptLink) string {
-	return string(link.Block) + ":" + link.Concept
-}

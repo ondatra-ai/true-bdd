@@ -129,7 +129,7 @@ func (s *codeConceptSuite) concept(step catalogue.Step, concepts []product.Conce
 	}
 
 	for _, record := range s.recorded {
-		if record.Pattern != bound[0].Pattern || record.Block != string(step.Block) {
+		if record.Pattern != bound[0].Pattern || record.Block != step.Block {
 			continue
 		}
 

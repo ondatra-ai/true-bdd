@@ -51,11 +51,7 @@ func (w *SequentialWalker[I, Q]) Walk(
 	for walk.idx < len(queries) {
 		query := queries[walk.idx]
 
-		if walk.gateFailed && !w.isGate(query) {
-			if w.OnSkip != nil {
-				w.OnSkip(walk.out.Item, query)
-			}
-
+		if skippedByGate(walk.gateFailed, w.Gate, w.OnSkip, walk.out.Item, query) {
 			walk.idx++
 
 			continue
@@ -66,7 +62,7 @@ func (w *SequentialWalker[I, Q]) Walk(
 			return walk.out, err
 		}
 
-		done, err := w.advance(walk, result, w.isGate(query))
+		done, err := w.advance(walk, result, isGate(w.Gate, query))
 		if err != nil || done {
 			return walk.out, err
 		}
@@ -93,7 +89,7 @@ func (w *SequentialWalker[I, Q]) advance(walk *itemWalk[I], result CellResult[I]
 		// Strictly greater, not >=: MaxFixes fixes are allowed and
 		// each gets re-validated by the restart below, so failing on
 		// the last one would reject a fix that actually worked.
-		if walk.fixesByQuery[walk.idx] > w.maxFixes() {
+		if walk.fixesByQuery[walk.idx] > fixLimit(w.MaxFixes) {
 			return true, pkgerrors.ErrFixLoopNotConverging(walk.fixesByQuery[walk.idx])
 		}
 
@@ -106,18 +102,4 @@ func (w *SequentialWalker[I, Q]) advance(walk *itemWalk[I], result CellResult[I]
 	}
 
 	return false, nil
-}
-
-// isGate reports whether a failure of the query skips the item's others.
-func (w *SequentialWalker[I, Q]) isGate(query Q) bool {
-	return w.Gate != nil && w.Gate(query)
-}
-
-// maxFixes is MaxFixes, defaulted.
-func (w *SequentialWalker[I, Q]) maxFixes() int {
-	if w.MaxFixes <= 0 {
-		return defaultMaxApplyAttempts
-	}
-
-	return w.MaxFixes
 }

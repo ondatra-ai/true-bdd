@@ -175,11 +175,7 @@ func (e *Engine[I, P, Q]) completedWalk(ctx context.Context, summary walkSummary
 }
 
 func (e *Engine[I, P, Q]) attemptLimit() int {
-	if e.opts.MaxApplyAttempts > 0 {
-		return e.opts.MaxApplyAttempts
-	}
-
-	return defaultMaxApplyAttempts
+	return fixLimit(e.opts.MaxApplyAttempts)
 }
 
 type itemWalker[I, Q any] interface {

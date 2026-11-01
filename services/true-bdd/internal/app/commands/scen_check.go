@@ -59,7 +59,7 @@ func RunScenCheck(
 
 	err := runner.Run(ctx, runner.Spec[*template.ScenarioCheckData]{
 		Name:          "scen check",
-		ChecklistName: "scen-check",
+		ChecklistName: scenCheckChecklistName,
 		// Stays empty: it is a Story id, validated as a slug, and a
 		// scenario id is not one. Ids travel in LoadItems instead.
 		StoryID:                "",

@@ -86,7 +86,7 @@ func conceptRecordFinding(step catalogue.Step, definition catalogue.StepDefiniti
 	}
 
 	record := recorded[index]
-	if record.Block == string(step.Block) && slices.ContainsFunc(concepts, func(concept product.Concept) bool {
+	if record.Block == step.Block && slices.ContainsFunc(concepts, func(concept product.Concept) bool {
 		return concept.Block == step.Block && concept.Name == record.Concept
 	}) {
 		return ""

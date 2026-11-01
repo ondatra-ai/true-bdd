@@ -142,7 +142,7 @@ func TestBuildStepsWriting002AllSkeletonsFirst(t *testing.T) {
 	s.And(`stdout matches Scenario list passed`)
 	s.And(`no file outside "tmp" and "tests" changed`)
 	s.And(`stdout matches All step skeletons written.*items=3`)
-	s.And(`the engine dispatched 10 validation AI turns to "claude"`)
+	s.And(`the engine dispatched 12 validation AI turns to "claude"`)
 	s.And(`the engine spawned exactly 1 test runner with arguments matching -list \.`)
 	s.And(`the engine spawned exactly 1 test runner with arguments matching -run \^\(Test`)
 	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
@@ -163,6 +163,22 @@ func TestBuildStepsWriting003SlotOrder(t *testing.T) {
 	s.And(`the engine dispatched 4 validation AI turns to "claude"`)
 	s.And(`the engine spawned exactly 1 test runner with arguments matching -list \.`)
 	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
+	s.Done()
+}
+
+// build-steps-writing-004-interface-cannot-serve: A writer's verdict that the Public interface cannot serve its concept stops the walk distinctly after that one writer turn, naming the concept and what the interface lacks
+func TestBuildStepsWriting004InterfaceCannotServe(t *testing.T) {
+	s := scenarios.New(t, "build-steps-writing-004-interface-cannot-serve")
+	s.Given(`the "build-steps-cannot-serve" project tree`)
+	s.And(`the codex writer is controlled to answer that the interface cannot serve`)
+	s.And(`the System Architect's answer to every question is "1"`)
+	s.When(`the System Architect runs "build steps --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches msg="Walk stopped".*public interface cannot serve`)
+	s.And(`stderr matches public interface cannot serve when concept "halving": a halve command that reads its value from standard input; extend the Public interface declaration`)
+	s.And(`stdout does not match BUILD STEPS COMPLETE`)
+	s.And(`the engine dispatched 1 apply AI turn to "codex"`)
+	s.And(`no file outside "tmp" and "tests" changed`)
 	s.Done()
 }
 

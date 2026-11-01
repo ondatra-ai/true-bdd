@@ -1,0 +1,6 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-when-halving-iter1-result.yaml ===
+applied: false
+interface_cannot_serve:
+  concept: "when concept \"halving\""
+  lacks: "a halve command that reads its value from standard input"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-when-halving-iter1-result.yaml ===

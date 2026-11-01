@@ -17,29 +17,15 @@ type conceptRun struct {
 	rounds        map[*BuildStepsItem]int
 }
 
-// prepareConceptRun loads the proposal Prompt, its attempts and the
-// Specification every concept Item's context reads.
-func (e *buildStepsExecution) prepareConceptRun(discovery *conceptDiscovery, arch *architecture.Architecture) error {
-	run, err := e.loadConceptRun()
-	if err != nil {
-		return err
-	}
-
-	run.discovery, run.arch = discovery, arch
-	e.concepts = run
-
-	return nil
-}
-
-// loadConceptRun reads them before any turn, so a malformed term list is
-// refused before grouping.
+// loadConceptRun reads the proposal Prompt, its attempts and the Specification every concept Item's context
+// reads before any turn, so a malformed term list is refused before grouping.
 func (e *buildStepsExecution) loadConceptRun() (*conceptRun, error) {
 	document, err := e.deps.ChecklistLoader.LoadFull(buildStepsChecklistName)
 	if err != nil {
 		return nil, err
 	}
 
-	prompt, err := conceptBuildPrompt(document, "propose")
+	prompt, err := conceptBuildPrompt(document, checklist.JudgementPropose)
 	if err != nil {
 		return nil, err
 	}

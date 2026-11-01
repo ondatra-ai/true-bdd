@@ -11,6 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/adapters/ai"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/provider"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/ports"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/config"
@@ -30,7 +31,7 @@ type FixApplierData struct {
 	SubjectID  string // Subject identifier
 	FixPrompt  string // The fix prompt to apply
 	ResultPath string // Path for FILE_START/FILE_END output
-	Judgement  string
+	Judgement  checklist.ConceptJudgement
 	// Check names the `D:` check whose finding the fix closes; empty for
 	// a model's `Q:`, so a template can tell the two kinds of fix apart.
 	Check string
@@ -43,7 +44,7 @@ type ApplyParams struct {
 	Subject      any    // Current subject to modify
 	SubjectID    string // Subject identifier
 	FixPrompt    string // The concrete fix prompt to apply
-	Judgement    string
+	Judgement    checklist.ConceptJudgement
 	Check        string // The failed `D:` check's name; "" for a `Q:` prompt
 	TmpDir       string // Run artifact directory
 	Iteration    int    // 1-based apply counter, for file naming

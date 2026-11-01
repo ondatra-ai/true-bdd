@@ -130,26 +130,34 @@ scenarios:
           - the result is -3
 
 
+=== FILE_START: tmp/{{RUN_DIR}}/01-when-halving-fix-prompts.md ===
 # Fix Prompt for Item when-halving: when concept "halving"
 
 ## Target
-`tests/calc/steps`
-
-## Scope
-Replace ONLY the body of the existing function `concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87` in `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go`, and update that file's import block. Do not touch `register.go`, `definitions.go`, `state.go`, `tests/calc/calc_test.go`, the scenarios package, the Specification or `services/calc`. Keep the `//truebdd:concept when "halving"` record, the function name and the `(state *State, args []string) error` signature exactly as they are.
-
-## Shared state
-No change needed: `State.Result int` in `tests/calc/steps/state.go` already carries the result that the existing `then` definition (`result`) observes. Do not add fields, package-level constants, variables, helpers or types.
+tests/calc/steps
 
 ## Required Changes
-Rewrite `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go` to exactly this content:
+
+### 1. Shared state: no change
+
+`tests/calc/steps/state.go` already carries everything this concept needs
+(`State.Result int`, which the existing `then "result"` definition observes).
+Do not touch `state.go`, `register.go`, `definitions.go`, the generated
+`tests/calc/calc_test.go`, the Specification or `services/calc`.
+
+### 2. Replace the body of the one listed definition
+
+Overwrite `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go`
+with exactly this content. The package clause, the `//truebdd:concept when "halving"`
+record and the function name/signature are unchanged; only the import block and the
+function body change.
 
 ```go
 package steps
 
 import (
-	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
@@ -158,45 +166,78 @@ import (
 
 //truebdd:concept when "halving"
 func concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {
-	if len(args) != 1 {
-		return fmt.Errorf("halve: want 1 capture, got %d", len(args))
-	}
-	number, err := strconv.Atoi(args[0])
-	if err != nil {
-		return fmt.Errorf("halve: whole number %q: %w", args[0], err)
+	value := args[0]
+	if _, err := strconv.Atoi(value); err != nil {
+		return fmt.Errorf("the Owner halves %q: not a whole number: %w", value, err)
 	}
 
-	// The suite runs with tests/calc as its working directory (see the
-	// registry path the scenarios package passes to bddgo), and the halve
-	// command is declared to run from the host root.
-	hostRoot, err := filepath.Abs(filepath.Join("..", ".."))
+	root, err := os.Getwd()
 	if err != nil {
-		return fmt.Errorf("halve %d: host root: %w", number, err)
+		return fmt.Errorf("the Owner halves %s: working directory: %w", value, err)
+	}
+	for {
+		if _, statErr := os.Stat(filepath.Join(root, "go.mod")); statErr == nil {
+			break
+		}
+		parent := filepath.Dir(root)
+		if parent == root {
+			return fmt.Errorf("the Owner halves %s: host root with go.mod not found above the working directory", value)
+		}
+		root = parent
 	}
 
-	cmd := exec.Command("go", "run", "./services/calc", "halve", strconv.Itoa(number))
-	cmd.Dir = hostRoot
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("halve %d: %w: %s", number, err, strings.TrimSpace(stderr.String()))
+	command := exec.Command("go", "run", "./services/calc", "halve", value)
+	command.Dir = root
+	var stdout, stderr strings.Builder
+	command.Stdout = &stdout
+	command.Stderr = &stderr
+	if runErr := command.Run(); runErr != nil {
+		return fmt.Errorf("the Owner halves %s: %s: %w: %s",
+			value,
+			strings.Join(command.Args, " "),
+			runErr,
+			strings.TrimSpace(stderr.String()),
+		)
 	}
 
-	result, err := strconv.Atoi(strings.TrimSpace(stdout.String()))
+	printed := strings.TrimSpace(stdout.String())
+	halved, err := strconv.Atoi(printed)
 	if err != nil {
-		return fmt.Errorf("halve %d: integer stdout %q: %w", number, stdout.String(), err)
+		return fmt.Errorf("the Owner halves %s: stdout %q is not an integer: %w", value, printed, err)
 	}
-	state.Result = result
+
+	state.Result = halved
 	return nil
 }
 ```
 
-## Why this satisfies the binding
-- The binding says: run the declared `halve` command as a process with the step's whole number and keep its integer stdout as the result. The body shells out to `go run ./services/calc halve VALUE` from the host root, exactly as `docs/architecture/calc-cli.yaml` declares, and stores the parsed stdout integer in `State.Result`.
-- No halving is computed in the step: the single capture is only parsed and re-rendered as the command argument, and the answer comes solely from the command's stdout. Rounding toward zero (scenario calc-002-halve) is the command's concern, not the step's.
-- Observation stays in the existing `then` definition `result`, which compares `State.Result` with the expected value; this `when` body only sets up and records.
-- Exit status 1 (declared as invalid arguments) surfaces as a step error carrying the command's stderr, rather than being silently treated as a result.
+## Why this body
+
+- **Binding**: "Run the declared halve command as a process with the step's whole
+  number and keep its integer stdout as the result." The body runs
+  `go run ./services/calc halve VALUE` from the host root — the invocation the
+  public interface document (`docs/architecture/calc-cli.yaml`, command `halve`)
+  declares — passing the step's capture `args[0]` verbatim as the single
+  positional `value` argument.
+- **When block**: it only calls the operation and records what the process
+  printed. It never halves the number itself; the halving and the
+  rounding-toward-zero rule stay entirely inside the service, and nothing in the
+  body computes or predicts an expected value.
+- **Host root**: the suite's tests run from `tests/calc`, so the body walks up
+  from the working directory to the nearest directory containing `go.mod` (the
+  module/host root) rather than hard-coding `../..`, and sets it as the process
+  `Dir`.
+- **Stdout as the result**: stdout is trimmed of the declared trailing newline
+  and parsed with `strconv.Atoi`; a non-zero exit (interface response `'1'`,
+  invalid arguments) or non-integer stdout fails the step with the command line
+  and captured stderr, so a broken target reports instead of silently leaving a
+  stale `state.Result`.
+- **Observation stays in Then**: `state.Result` is the only thing written, which
+  is what the existing `^the result is (-?\d+)$` definition compares against for
+  both `calc-001-halve` and `calc-002-halve`.
+- No package-level constants, variables, helpers or types are added; every value
+  is local to the function body.
+=== FILE_END ===
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists and shared state. Preserve the engine's patterns, registrations,

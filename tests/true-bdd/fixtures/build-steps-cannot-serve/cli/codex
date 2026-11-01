@@ -1,0 +1,14 @@
+#!/bin/sh
+# The writer's verdict that the Public interface cannot serve the Item's concept,
+# written as data: a real writer never reaches it, since the binding judgement
+# refuses an unservable binding first.
+set -eu
+cat >/dev/null
+answer=
+while [ "$#" -gt 0 ]; do
+  if [ "$1" = -o ]; then shift; answer=$1; fi
+  shift
+done
+result="$(dirname "$answer")/apply-when-halving-iter1-result.yaml"
+printf '%s\n' '{"type":"turn.completed"}'
+printf '=== FILE_START: %s ===\napplied: false\ninterface_cannot_serve:\n  concept: "when concept \\"halving\\""\n  lacks: "a halve command that reads its value from standard input"\n=== FILE_END: %s ===\n' "$result" "$result" > "$answer"

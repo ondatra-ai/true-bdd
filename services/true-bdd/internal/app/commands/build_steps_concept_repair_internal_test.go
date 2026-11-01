@@ -173,10 +173,13 @@ func repairRun(t *testing.T, deps BuildStepsDeps) *buildStepsExecution {
 		{Block: catalogue.BlockThen, Text: "the result is -3", Bound: resultPattern},
 	}}}
 
-	err = execution.prepareConceptRun(discovery, arch)
+	run, err := execution.loadConceptRun()
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	run.discovery, run.arch = discovery, arch
+	execution.concepts = run
 
 	return execution
 }
