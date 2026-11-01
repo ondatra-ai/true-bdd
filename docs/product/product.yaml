@@ -814,11 +814,12 @@ concepts:
         Before the run, an AI CLI the engine will reach is a program the
         fixture supplies, so the engine's handling of it can be observed:
         claude, checking how the engine starts it; codex as the writer of a
-        command's changes, with the fixture's dummy authentication and programs;
-        claude giving malformed answers where a Prompt asks it to link steps to
+        command's changes, with the fixture's dummy authentication and programs,
+        or answering that the Public interface cannot serve a Concept; claude
+        giving malformed answers where a Prompt asks it to link steps to
         a Concept or group them by Concept; or claude controlling which of two
         Scenarios' validation AI turns arrives first.
-      terms: [AI CLI, engine, fixture, claude, codex, command, Prompt, step, Concept, Scenario, AI turn]
+      terms: [AI CLI, engine, fixture, claude, codex, command, Prompt, step, Concept, Scenario, AI turn, Public interface]
     - concept: scripted answers
       means: >-
         What a role will answer at the command's questions and fix menus is set

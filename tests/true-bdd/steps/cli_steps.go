@@ -134,6 +134,7 @@ func registerWhenSteps(suite *bddgo.Suite[State]) {
 // from and the preconditions the fixture establishes on it.
 func registerGivenSteps(suite *bddgo.Suite[State]) {
 	suite.Step(`^the (?:link|grouping) answer CLI is controlled for invalid replies$`, useInvalidLinkCLI)
+	suite.Step(`^the codex writer is controlled to answer that the interface cannot serve$`, useCannotServeWriter)
 	suite.Step(`^library downloads use an empty offline proxy$`, useOfflineLibraryProxy)
 	suite.Step(`^the "([^"]+)" project tree$`, prepareTree)
 	// Given preconditions the scenario states and the fixture materialises

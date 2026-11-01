@@ -166,6 +166,22 @@ func TestBuildStepsWriting003SlotOrder(t *testing.T) {
 	s.Done()
 }
 
+// build-steps-writing-004-interface-cannot-serve: A writer's verdict that the Public interface cannot serve its concept stops the walk distinctly after that one writer turn, naming the concept and what the interface lacks
+func TestBuildStepsWriting004InterfaceCannotServe(t *testing.T) {
+	s := scenarios.New(t, "build-steps-writing-004-interface-cannot-serve")
+	s.Given(`the "build-steps-cannot-serve" project tree`)
+	s.And(`the codex writer is controlled to answer that the interface cannot serve`)
+	s.And(`the System Architect's answer to every question is "1"`)
+	s.When(`the System Architect runs "build steps --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches msg="Walk stopped".*public interface cannot serve`)
+	s.And(`stderr matches public interface cannot serve when concept "halving": a halve command that reads its value from standard input; extend the Public interface declaration`)
+	s.And(`stdout does not match BUILD STEPS COMPLETE`)
+	s.And(`the engine dispatched 1 apply AI turn to "codex"`)
+	s.And(`no file outside "tmp" and "tests" changed`)
+	s.Done()
+}
+
 // build-steps-writing-005-outside-tests-refused: The confined body writer refuses writes to the service and Specification while completing the test body
 func TestBuildStepsWriting005OutsideTestsRefused(t *testing.T) {
 	s := scenarios.New(t, "build-steps-writing-005-outside-tests-refused")
