@@ -2066,10 +2066,10 @@ architecture:
         target, keeping the target's existing permissions
         (services[true-bdd].patterns.owned_io).
       observed_by: >-
-        The When step plants a stale staging symlink beside the file the
-        command rewrites once the run has started, after the pre-run snapshot;
-        the Then steps read the rewritten file, its permissions and inode, and
-        the old hard link the project tree's probes kept.
+        The When step keeps an old hard link to the file the command rewrites
+        and plants a stale staging symlink beside it after the pre-run
+        snapshot, before the engine starts; the Then steps read the rewritten
+        file, its permissions and inode, and that old hard link.
 
   # Concept bindings (ADR-0035): what a step definition of each product
   # concept does through docs/architecture/true-bdd-cli.yaml, by block.
@@ -2083,13 +2083,25 @@ architecture:
         - file: checklists
         - file: prompt-templates
         - file: staging-files
+        - outgoing_call: claude
+        - outgoing_call: codex
       does: >-
         Lays the named fixture's input/ files
         (tests/true-bdd/fixtures/<name>/input/) over a fresh copy of the
         repository's own true-bdd/ and templates/ as the Host project the next
-        command runs in, the fixture's recorded AI turns under its cassettes/
-        answering that run; the fixture's prep.sh, when it has one, runs in
-        that tree before the run's starting snapshot. A further Given on the
+        command runs in, assembled in the run's own directory
+        (tmp/test_run/<session>/<name>/ of the repository) when the When step
+        runs; the fixture's prep.sh, when it has one, runs in that tree, and
+        the run's starting snapshot is taken after it, just before the command
+        starts. The same Given sets how the run's AI turns are answered, by
+        the suite's mode, the services: value of the -mode flag the suite was
+        started with: under replay the suite's claude and codex programs,
+        first on the run's PATH, answer each turn from the fixture's
+        cassettes/, the step failing when the fixture has no cassettes/ or no
+        cassettes/golden.json; under record those programs pass each turn to
+        the real CLI and write it to a staging copy of cassettes/, published
+        only once the Scenario passes; under live the run reaches the real
+        claude and codex with no recording. A further Given on the
         same tree changes it before that snapshot: removes the named file or
         directory from the assembled tree, failing the run when the path is
         not there or leads out of it; appends to the preparation the shell
@@ -2103,10 +2115,14 @@ architecture:
         checklist-prompts.yaml lists exactly one question snippet under the
         named checklist's file stem and that it equals the quoted text, the
         harness keeping only the Prompt whose question contains it when it
-        assembles the tree; or, for the atomic replacement probes, requires
-        the fixture to have a prep.sh, failing when it has none, the
-        engine-io-atomic fixture's making tests/mcp/ticket_test.go private
-        (0600) and writing the sentinel tmp/staging-target.txt.
+        assembles the tree; or, for the atomic replacement probes, changes
+        nothing itself and requires the fixture to have a prep.sh that is not
+        blank, failing otherwise: that script puts the probes in place before
+        the starting snapshot, and the step checks nothing else. In
+        engine-io-atomic, the one fixture with this Given, the script makes
+        tests/mcp/ticket_test.go, the file the command replaces, private (mode
+        0600) and writes tmp/staging-target.txt holding sentinel and a
+        newline, the target of the stale staging file the When then plants.
     - concept: machine environment
       block: given
       service: true-bdd
@@ -2114,14 +2130,17 @@ architecture:
         - file: project-tree
         - outgoing_call: go-toolchain
       does: >-
-        Sets the next run's machine: requires the fixture to declare a
-        preparation, which installs the project's test dependencies (and with
-        browser its browser, through playwright install) while the tree is
-        assembled, the step failing when the fixture declares none, or with
-        browser none running playwright install; points Go module downloads at
-        an empty local file proxy under the run directory, with GOSUMDB=off,
-        GONOPROXY=none and an empty GOPRIVATE, so an uncached Library download
-        fails; or sets GIT_DIR and GIT_INDEX_FILE to paths outside the project
+        Sets the next run's machine: for the test dependencies it changes
+        nothing itself and requires the fixture the Scenario's project tree
+        Given named to have a prep.sh at its root
+        (tests/true-bdd/fixtures/<name>/prep.sh), the script the harness runs
+        in the assembled tree before the run's starting snapshot, which
+        installs those dependencies; the step fails when the fixture has no
+        prep.sh or only a blank one, and with browser also when that script's
+        text does not contain playwright install; points Go module downloads
+        at an empty local file proxy under the run directory, with
+        GOSUMDB=off, GONOPROXY=none and an empty GOPRIVATE, so an uncached
+        Library download fails; or sets GIT_DIR and GIT_INDEX_FILE to paths outside the project
         and TRUE_BDD_REAL_GO to the genuine go on PATH, which the fixture's Go
         programs call once they have checked the Git variables.
     - concept: fixture AI CLIs
@@ -2322,12 +2341,19 @@ architecture:
         - file: project-tree
       does: >-
         Compares the pre-run and post-run snapshots of the project tree, tmp
-        included: requires an empty diff; or every changed path inside the one
-        named directory, or inside one of the two; or the named file as the
-        only change outside the directory; or the named file created, modified,
-        or present and unchanged (a path naming no file fails); or counts the
-        created files whose path matches the glob and compares them with the
-        number, "no" meaning zero, a malformed glob failing the step.
+        included, every changed path relative to the tree's root; a path is
+        inside a named directory when it is that directory or begins with it
+        followed by "/", so docs-notes/a.yaml is outside docs: requires an
+        empty diff; or every changed path inside the one named directory, or
+        inside one of the two; or the named file as the only change outside
+        the directory; or the named file created, modified, or present and
+        unchanged (a path naming no file fails); or counts the created files
+        whose whole path matches the glob and compares them with the number,
+        "no" meaning zero. The glob matches as Go's filepath.Match does: *
+        any run of characters but "/", so ** is no wider than * and never
+        crosses a "/" (docs/** matches docs/a.yaml, never docs/a/b.yaml), ?
+        one such character and […] one character of a set; a malformed glob
+        fails the step even when the run created no file.
     - concept: file content
       block: then
       service: true-bdd
@@ -2445,19 +2471,26 @@ architecture:
       references:
         - outgoing_call: claude
         - outgoing_call: codex
+        - file: project-tree
       does: >-
         Observes what the fixture's AI CLI programs and the suite's claude and
-        codex programs left in the project tree after the run: reads the
-        process id the cancelled AI CLI's descendant wrote to
+        codex programs left under tmp/ of the project tree after the run. The
+        suite's mode is the services: value of the -mode flag the suite was
+        started with (services:replay, services:record or services:live, as
+        architecture.testing.commands runs it), which the suite's steps read
+        from that flag. The step reads
+        the process id the cancelled AI CLI's descendant wrote to
         tmp/descendant.pid and requires no process with that id to exist
         within three seconds; requires the codex program's receipt
         tmp/aiproxy-state/writer-spawn.txt to hold exactly "fixture
         authentication and edit roots verified" and a newline, which it writes
-        only when the one writer spawn held an exact private copy of the
-        fixture's auth.json in a private generated home, and requires exactly
-        one generated home matching tmp/codex-homes/*/*-codex-home with no
-        auth.json left in it; or, only when the suite replays, reads the
+        in every mode only when the one writer spawn held an exact private
+        copy of the fixture's auth.json in a private generated home, and
+        requires exactly one generated home matching
+        tmp/codex-homes/*/*-codex-home with no auth.json left in it; or, for
+        the reverse-order replay, when the suite's mode is replay reads the
         claude program's receipt tmp/aiproxy-state/consumed-claude, a JSON
         list of the recorded calls it consumed in order, and requires it to
-        begin with "claude-002", the call recorded after claude-001; recording
-        or live, that observation passes.
+        begin with "claude-002", the call recorded after claude-001, while
+        under record or live, where no recording answers the calls, the step
+        passes without reading any file.
