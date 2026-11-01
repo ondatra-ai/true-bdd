@@ -2120,11 +2120,11 @@ architecture:
         (tests/true-bdd/fixtures/<name>/prep.sh), the script the harness runs
         in the assembled tree before the run's starting snapshot, which
         installs those dependencies; the step fails when the fixture has no
-        prep.sh, and with browser also when that script's text does not
-        contain playwright install; points Go module downloads at
-        an empty local file proxy under the run directory, with GOSUMDB=off,
-        GONOPROXY=none and an empty GOPRIVATE, so an uncached Library download
-        fails; or sets GIT_DIR and GIT_INDEX_FILE to paths outside the project
+        prep.sh or only a blank one, and with browser also when that script's
+        text does not contain playwright install; points Go module downloads
+        at an empty local file proxy under the run directory, with
+        GOSUMDB=off, GONOPROXY=none and an empty GOPRIVATE, so an uncached
+        Library download fails; or sets GIT_DIR and GIT_INDEX_FILE to paths outside the project
         and TRUE_BDD_REAL_GO to the genuine go on PATH, which the fixture's Go
         programs call once they have checked the Git variables.
     - concept: fixture AI CLIs
@@ -2461,8 +2461,8 @@ architecture:
         codex programs left under tmp/ of the project tree after the run. The
         suite's mode is the services: value of the -mode flag the suite was
         started with (services:replay, services:record or services:live, as
-        architecture.testing.commands runs it), which every step of the suite
-        reads from that flag and no file or log record states. The step reads
+        architecture.testing.commands runs it), which the suite's steps read
+        from that flag. The step reads
         the process id the cancelled AI CLI's descendant wrote to
         tmp/descendant.pid and requires no process with that id to exist
         within three seconds; requires the codex program's receipt
