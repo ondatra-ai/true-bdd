@@ -48,11 +48,13 @@ Then:
 
 ## Fix Prompt to Apply
 
-Proposal for the System Architect (owner of Word mappings) — add the one missing Word mapping for the term `idempotency key`, used by the `when` concept `halve` in service `calc`.
+Propose to the System Architect (owner of Word mappings) a single `architecture.terms` entry mapping the product term "idempotency key", used by the `when` concept `halve`, and apply it only after the owner accepts at the menu.
 
-Why: check `term-mappings` on Scenario host-001 reports that the product term `idempotency key` (declared in `docs/product/product.yaml` glossary and listed under the `when` concept `halve`) has no entry in `architecture.terms`, which is currently an empty list. The product meaning stays as declared ("A label identifying a requested halving; repeats with the same label must not halve the number again."); only the implementation mapping is added. The `Calc` / `textbox` / `Idempotency key` element is already declared in the `calc` service Public interface, so no interface change is required, and no Scenario, generated test or step definition is touched.
+Finding addressed: host-001, service `calc`, check `term-mappings` — when concept 'halve': "idempotency key" has no mapping in the architecture.
 
-Apply exactly one edit, to `docs/architecture/architecture.yaml`:
+Nothing else changes: do not touch the Scenario `host-001`, its generated test or any step definition; do not touch `architecture.concepts` (the `halve` binding already references the Calc/textbox/'Idempotency key' element, which is declared in the calc service's Public interface); do not touch the product glossary (the term "idempotency key" is already declared there and carries the product meaning).
+
+Edit exactly one file — `./docs/architecture/architecture.yaml`:
 
 old_string:
     "terms": []
@@ -61,15 +63,12 @@ new_string:
     "terms": [
       {
         "term": "idempotency key",
-        "technical": "The text value of the \"Idempotency key\" textbox on the Calc page, submitted with the halving request as the request label",
-        "observed_by": "A step definition generates a fresh unique label for a requested halving and types it into the Idempotency key textbox before pressing Halve; for a repeated request it types the same label again"
+        "technical": "The text typed into the Calc page's 'Idempotency key' textbox, carried with the halving request so the calculator applies a given label at most once",
+        "observed_by": "The when step definition fills the Calc page's 'Idempotency key' textbox with a fresh label before pressing Halve, and reuses that same label for a repeated request, so the unchanged Number shows the repeat was ignored"
       }
     ]
 
-Notes for the owner:
-- `term` is the product's verbatim glossary term `idempotency key`.
-- `technical` and `observed_by` are nonempty strings taken verbatim from the architect's answers; neither is a reference object.
-- No other key in the document changes: `architecture.concepts` and the `calc` Public interface are left as they are.
+Checks on the proposal: `term` is the product's verbatim glossary term "idempotency key"; `technical` and `observed_by` are nonempty prose strings and neither is a reference object; `technical` says what the word is in the implementation (the text in the Calc 'Idempotency key' textbox carried with the halving request) and `observed_by` says how the when step definition sets it up and how the unchanged Number shows the repeat was ignored. `old_string` occurs exactly once in `architecture.yaml` (the empty `architecture.terms` list), so the edit is unambiguous.
 
 ---
 

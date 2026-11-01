@@ -1999,7 +1999,7 @@ scenarios:
         - and: 'stdout matches PASS: 16 '
         - and: stdout matches ALL CHECKS PASSED!
         - and: stdout matches SCEN CHECK COMPLETE
-        - and: the engine dispatched 11 AI turns
+        - and: the engine dispatched 17 AI turns
         - and: no file outside "tmp" changed
 
   scen-check-002-failed-scenario-exits-1:
@@ -6748,6 +6748,32 @@ scenarios:
         - 'stdout matches Exiting\.'
         - 'stdout does not match Walk stopped'
         - "replay consumes the recorded validation requests in reverse order"
+  scen-check-speed-003-shared-judgements:
+    description: A walk judges each binding and each linked concept's words once, and every Scenario using them answers from those verdicts
+    service: true-bdd
+    path: tests/true-bdd/scen_check_speed_test.go
+    timeout: 20m
+    user_stories:
+      - story: docs/product/stories/scen-check-speed.yaml
+        scenario_id: scen-check-speed-003-shared-judgements
+        merge_date: "2026-10-31"
+    merged_steps:
+      given:
+        - "the \"scen-check-shared-judgements\" project tree"
+      when:
+        - "the Quality Engineer runs \"scen check\""
+      then:
+        - "the command exits with code 0"
+        - "the engine dispatched 8 AI turns"
+        - 'the file matching "tmp/true-bdd.log.json" has exactly 1 matches for "msg":"Shared concept judgement answered","promptIndex":2,"judgement":"bindings","concept":"when:halve"'
+        - 'every file matching "tmp/*/02-shared-02-bindings-when-halve-*-user.txt" matches the number is halved'
+        - 'every file matching "tmp/*/02-shared-02-bindings-when-halve-*-user.txt" matches halve the number'
+        - 'the file matching "tmp/true-bdd.log.json" has exactly 1 matches for "msg":"Concept judgement answered","subjectID":"host-001","promptIndex":2,"judgement":"bindings","answer":"pass"'
+        - 'the file matching "tmp/true-bdd.log.json" has exactly 1 matches for "msg":"Concept judgement answered","subjectID":"host-002","promptIndex":2,"judgement":"bindings","answer":"pass"'
+        - 'the file matching "tmp/true-bdd.log.json" has exactly 1 matches for "msg":"Shared concept judgement answered","promptIndex":3,"judgement":"words","concept":"when:halve"'
+        - 'the file matching "tmp/true-bdd.log.json" has exactly 1 matches for "msg":"Concept judgement answered","subjectID":"host-001","promptIndex":3,"judgement":"words","answer":"pass"'
+        - 'the file matching "tmp/true-bdd.log.json" has exactly 1 matches for "msg":"Concept judgement answered","subjectID":"host-002","promptIndex":3,"judgement":"words","answer":"pass"'
+        - 'no file outside "tmp" changed'
   concept-link-001-add-concept:
     description: An unlinked Story step must offer a new concept through the menu
     service: true-bdd
@@ -7227,7 +7253,7 @@ scenarios:
       - the Product Owner runs "scen check"
       then:
       - the command exits with code 0
-      - the engine dispatched 4 AI turns
+      - the engine dispatched 5 AI turns
       - stdout matches judgement=words answer=pass
       - stdout does not match undeclared domain word
       - stdout does not match then:unused

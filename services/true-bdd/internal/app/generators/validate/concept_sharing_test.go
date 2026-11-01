@@ -24,7 +24,6 @@ const (
 	resultConcept = "result"
 	displayedStep = "36 is displayed"
 	squaredStep   = "6 is squared"
-	halvedStep    = "6 is halved"
 )
 
 type sharedTurn struct {
@@ -143,18 +142,9 @@ func evaluateTogether(t *testing.T, evaluator *validate.ChecklistEvaluator, prom
 	return results
 }
 
-func walkSubjects(subjects ...*template.ScenarioCheckData) []any {
-	walked := make([]any, 0, len(subjects))
-	for _, subject := range subjects {
-		walked = append(walked, subject)
-	}
-
-	return walked
-}
-
-func sharedPrompt(kind string) checklist.PromptWithContext {
+func conceptPrompt(kind string) checklist.PromptWithContext {
 	return checklist.PromptWithContext{Index: 3, SectionID: "concept", Prompt: checklist.Prompt{
-		Question: "Judge " + kind, With: map[string]any{conceptsParameter: kind, "share": true},
+		Question: "Judge " + kind, With: map[string]any{conceptsParameter: kind},
 	}}
 }
 
@@ -166,7 +156,7 @@ func wordAnswer(key, _ string) string {
 	return `{"undeclared_words":[],"reason":"Plain English."}`
 }
 
-func TestSharedWordsJudgeEachLinkedConceptOncePerWalk(t *testing.T) {
+func TestWordsJudgeEachLinkedConceptOncePerWalk(t *testing.T) {
 	reply := newSharedReply(2, wordAnswer)
 	evaluator, _ := conceptRequestEvaluatorWith(t, reply)
 	square := template.ConceptLink{Concept: linkTestConcept, Block: catalogue.BlockWhen}
@@ -177,8 +167,8 @@ func TestSharedWordsJudgeEachLinkedConceptOncePerWalk(t *testing.T) {
 		ConceptLinkPassed: true}
 	unlinked := &template.ScenarioCheckData{ID: "scenario-unlinked"}
 
-	evaluator.StartWalk(walkSubjects(both, one, unlinked))
-	results := evaluateTogether(t, evaluator, sharedPrompt("words"), both, one, unlinked)
+	evaluator.StartWalk()
+	results := evaluateTogether(t, evaluator, conceptPrompt("words"), both, one, unlinked)
 
 	turns := reply.judged()
 	if len(turns) != 2 || !reply.overlap {
@@ -199,22 +189,22 @@ func TestSharedWordsJudgeEachLinkedConceptOncePerWalk(t *testing.T) {
 	assertContext(t, results["scenario-unlinked"], checklist.StatusFail,
 		"word judgement requires this walk's successful link")
 
-	evaluator.StartWalk(walkSubjects(one))
-	evaluateTogether(t, evaluator, sharedPrompt("words"), one)
+	evaluator.StartWalk()
+	evaluateTogether(t, evaluator, conceptPrompt("words"), one)
 
 	if len(reply.judged()) != 3 {
 		t.Fatalf("a new walk judges its concepts again: %+v", reply.judged())
 	}
 }
 
-func TestASharedJudgementOutsideAWalkJudgesItsScenarioAlone(t *testing.T) {
+func TestAWordJudgementOutsideAWalkJudgesItsSubjectAlone(t *testing.T) {
 	reply := newSharedReply(0, wordAnswer)
 	evaluator, _ := conceptRequestEvaluatorWith(t, reply)
 	both := &template.ScenarioCheckData{ID: sharedBothID, ConceptLinkPassed: true, ConceptLinks: []template.ConceptLink{
 		{Concept: linkTestConcept, Block: catalogue.BlockWhen}, {Concept: resultConcept, Block: catalogue.BlockThen},
 	}}
 
-	evaluateTogether(t, evaluator, sharedPrompt("words"), both)
+	evaluateTogether(t, evaluator, conceptPrompt("words"), both)
 
 	turns := reply.judged()
 	if len(turns) != 1 || len(turns[0].keys) != 2 || !strings.Contains(turns[0].user, sharedBothID) {

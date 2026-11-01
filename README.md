@@ -231,13 +231,13 @@ holds the init copies to the repository checklists and prompt templates byte for
 byte and to the configuration values after removing `scripts`.
 
 `engine.scen_check_concurrency` bounds the number of Scenarios validating at once in
-`scen check`. `init` writes `1`; an older configuration omitting it retains the
-sequential walk. Set a positive integer such as `10` to overlap validation turns.
-Within each Scenario, all `D:` Prompts precede sequential `Q:` Prompts, and a failed
-`D:` skips its `Q:` Prompts. Above 1, fix menus run after validation, one at a time
-in ascending Scenario id order. An applied fix discards pending verdicts and
-rejudges the whole walk, within `max_apply_attempts`. At 1, the existing cell-by-cell
-validation and fix walk is preserved.
+`scen check`. `init` writes `1`, the value an older configuration omitting it gets.
+Set a positive integer such as `10` to overlap validation turns. Within each Scenario,
+all `D:` Prompts precede sequential `Q:` Prompts, and a failed `D:` skips its `Q:`
+Prompts. The binding judgement starts only once every Scenario of the walk has
+answered the Prompts before it, its link among them. At every concurrency, fix menus
+run after validation, one at a time in ascending Scenario id order. An applied fix
+discards pending verdicts and rejudges the whole walk, within `max_apply_attempts`.
 
 ### Deterministic prompts
 
@@ -330,7 +330,7 @@ A binding's `does` says what the definition does: a Given puts state in place, a
 
 For concept hosts, `us refine` and `scen check` each run one link `Q:` Prompt per Item. Every step is scored from 0 to 10 against every concept of its own block. Exactly one must reach the threshold; two reaching it fail as ambiguous and name both, and a step of a block that declares no concept has none to reach it and fails. The answer schema requires every score, the reason for the highest and the other-block concept or none. Missing, malformed or incomplete answers fail the Cell. Every score, reason and verdict is recorded in context. `means` is closed: an unstated variation scores at most 8; a wrong-block step scores at most 4. `judge:` clauses pass unlinked; `llm:` steps link by intent.
 
-After the link, a separate `Q:` Prompt (`with: {concepts: words}`) judges the `means` of every linked concept, once per Story in `us refine` and once per Scenario in `scen check`, claimed or not. Each concept needs a verdict naming every domain word its meaning relies on that is neither in that concept's `terms` nor readable as plain English in context. Ordinary English passes. Every verdict is saved in context; a missing, malformed or incomplete answer fails the Cell. Scenario validation remains concurrent across Scenarios, with the word turn after its own link, and a failure exits `scen check` with code 1.
+After the link, a separate `Q:` Prompt (`with: {concepts: words}`) judges the `means` of every linked concept: once per Story in `us refine`, and in `scen check` once per walk for each concept a Scenario's link reached, claimed or not, in a turn reading the product document and that concept alone, every Scenario linking it answering from that verdict with its own context lines. Each concept needs a verdict naming every domain word its meaning relies on that is neither in that concept's `terms` nor readable as plain English in context. Ordinary English passes. Every verdict is saved in context; a missing, malformed or incomplete answer fails the Cell. Each Scenario's word cell follows its own link, and a failure exits `scen check` with code 1.
 
 The word fix belongs to the Product Owner and changes only the product document after menu apply: add a glossary entry and the word to the concept's `terms`, or reword its `means` in product words. `us refine` never waits for a Word mapping. On the next `scen check` walk, `D: term-mappings` fails a newly declared unmapped term; its separate System Architect menu fix adds `architecture.terms`. Every walk judges the words afresh after shared fixes.
 
@@ -350,7 +350,7 @@ The link Prompt's checklist setting is `with: {concepts: link, threshold: 9}`. O
 
 Refinement reads only product concepts for the link. Its fix offers the Product Owner a rewritten Story step, a wider existing concept for a new variation of the same item and use, or a new concept for a new item or use. Concept edits go to the product document; rewrites go to the Story. Prompt 12 uses the concept's `means` and the service's interface kind, so a Story can pass before the System Architect writes a binding.
 
-`scen check` judges every Scenario afresh, claimed or unclaimed. Every concept its steps link to needs a binding for that Scenario's service; unused unbound concepts are not that Scenario's findings. After a successful link, a further `Q:` Prompt judges those bindings against their instructions, references and complete Public interface: they must be unambiguous enough for an LLM to write a step. An `llm:` step requires an intent binding. Any failure fails the Scenario and exits 1. Fixes offer the Product Owner a concept repair and the System Architect a binding repair, applied only after the menu's apply decision. An applied shared change causes all Scenarios to be judged again, within the configured validation concurrency; each binding judgement waits for its link.
+`scen check` judges every Scenario afresh, claimed or unclaimed. Every concept its steps link to needs a binding for that Scenario's service; unused unbound concepts are not that Scenario's findings. After a successful link, a further `Q:` Prompt judges those bindings against their instructions, references and complete Public interface: they must be unambiguous enough for an LLM to write a step. Each binding (concept, block and service) is judged once per walk, after every Scenario's link, for every variation its concept's `means` admits: its turn reads the product document, the concept, the binding, the service's complete Public interface and every distinct step of the walk's passing links that reached the concept for that service, and every Scenario whose link reached it answers from that verdict with its own context lines. `build steps` judges a suite's bindings in one turn per suite Item. An `llm:` step requires an intent binding. Any failure fails the Scenario and exits 1. Fixes offer the Product Owner a concept repair and the System Architect a binding repair, applied only after the menu's apply decision. An applied shared change causes all Scenarios to be judged again, within the configured validation concurrency; the binding judgements wait for every Scenario's link.
 
 `D: step-definitions` (`docs: [product]`) holds every step of the Scenario, except `judge:` and `llm:` ones, to its suite's step definitions: no step binds two, and the one a step binds records, in its `//truebdd:concept <block> "<concept>"` comment, a concept the product document declares under that step's block. A step two definitions bind, a definition recording no concept, and one recording another block's concept or an undeclared one each fail the Scenario, naming the step and the definitions by pattern, file and line. A step no definition binds yet is a gap `build steps` writes, reported but not failed. A pattern that does not fold to a constant stops the walk with `msg="Check could not answer"`. TrueBDD's own product document declares concepts and its architecture binds them (#259): every step definition of its suite records the concept of its steps.
 

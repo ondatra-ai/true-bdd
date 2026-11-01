@@ -1,0 +1,100 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+Apply only the exact concept, binding or step repair approved at the menu.
+Edit only the listed working copies. Preserve every unaffected entry.
+For a Story step rewrite, return the complete Story YAML instead of editing
+a document. For document edits return the requested confirmation markers.
+
+
+### TASK
+
+The responsible person chose apply at the menu for Scenario host-001.
+Approved fix:
+Repair for Item host-001, service `calc`, failed judgement: `when:halve` — binding is ambiguous.
+
+## Diagnosis
+
+The step `When halve six` names a number, while the `when` concept `halve` declares no terms and its binding `does` gives no instruction for that number. An LLM writing the step definition cannot tell whether it must type `6` into Calc / textbox / Number and then click, or treat `six` as a restatement of state the Given already placed.
+
+The product meaning is not at fault and needs no repair: `when / halve` already means "Halve the entered number once" — "the entered number" is the number already in the field, placed by `given / number ready` ("A number is entered before the action."). So the number in the When step is not a second input to the action; it restates the Given's state. Only the binding must say this explicitly. One change is therefore offered, and it belongs to the **System Architect**.
+
+No change is proposed to `docs/product/product.yaml`. No change is proposed to the declared Public interface: both elements needed (Calc / button / Halve and Calc / textbox / Number) are already declared, so nothing is guessed and no extension is required. `given / number ready` and `then / number result` and their bindings are preserved unchanged. No new variation is added — this widens the existing `when / halve` concept binding for the same item and use.
+
+## Change 1 — System Architect — `docs/architecture/architecture.yaml`
+
+In `architecture.concepts`, replace the single entry with `"concept": "halve"`, `"block": "when"`, `"service": "calc"`.
+
+Exact text to remove:
+
+```json
+      {
+        "concept": "halve",
+        "block": "when",
+        "service": "calc",
+        "references": [
+          {
+            "element": {
+              "page": "Calc",
+              "role": "button",
+              "name": "Halve"
+            }
+          }
+        ],
+        "does": "Click the Halve button once to halve the number currently entered in the Number field."
+      },
+```
+
+Exact text to insert in its place:
+
+```json
+      {
+        "concept": "halve",
+        "block": "when",
+        "service": "calc",
+        "references": [
+          {
+            "element": {
+              "page": "Calc",
+              "role": "button",
+              "name": "Halve"
+            }
+          },
+          {
+            "element": {
+              "page": "Calc",
+              "role": "textbox",
+              "name": "Number"
+            }
+          }
+        ],
+        "does": "Click the Halve button once. The number named in the step is the number the Given has already placed in the Number field, not a new input: do not type it again. Read the Number field first and fail the step if it does not already hold that number, then click the Halve button exactly once and do nothing else."
+      },
+```
+
+### Why this closes the judgement
+
+- The admitted variation (the number carried by the When step) now has an explicit instruction: it is read and checked against the Number field, never re-entered.
+- The second reference, Calc / textbox / Number, is already in the ui Public interface, so the field the `does` now reads is declared rather than guessed.
+- The action remains one concrete call on a declared element (Calc / button / Halve), performed exactly once, with no branches and no hidden dependency.
+- The binding targets concrete declared elements, not an `llm:` UI intent, so no intent text is required.
+- An LLM can now write the step definition directly: assert Calc "Number" already holds the step's number, then click Calc "Halve" once.
+
+Apply nothing until an explicit menu decision approves this change.
+Working copies (edit only the approved target):
+
+- `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
+
+- `architecture_yaml`: edit `tmp/{{RUN_DIR}}/architecture_yaml.yaml`, the working copy of `./docs/architecture/architecture.yaml`
+
+
+- `scenarios_yaml`: edit `tmp/{{RUN_DIR}}/scenarios_yaml.yaml`, the working copy of `./docs/scenarios.yaml`
+
+
+Concept changes belong only to product, bindings to architecture_yaml and
+needed Public interface working copies, step rewrites to this Scenario's
+Registry entry. Preserve all unrelated entries. Return confirmation:
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-001-iter2-result.yaml ===
+applied: true
+target: "<working copy edited>"
+summary: "<approved change applied>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-001-iter2-result.yaml ===

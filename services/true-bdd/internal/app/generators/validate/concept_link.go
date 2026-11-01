@@ -14,13 +14,6 @@ func (e *ChecklistEvaluator) evaluateLink(ctx context.Context, subject any, prom
 	resetConceptLinks(subject)
 	steps := conceptSteps(subject)
 
-	if e.shares(subject, prompt) {
-		handled, err := e.evaluateSharedLink(ctx, subject, prompt, source, steps, &result)
-		if handled || err != nil {
-			return result, err
-		}
-	}
-
 	productText, err := e.conceptProduct()
 	if err != nil {
 		return result, err

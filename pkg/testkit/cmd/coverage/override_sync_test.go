@@ -234,6 +234,7 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 	fixtures := append(interfaceCheckFixtures(), conceptLinkFixtures()...)
 	fixtures = append(fixtures, conceptWordFixtures()...)
 	fixtures = append(fixtures, groupingOverrideFixtures()...)
+	fixtures = append(fixtures, sharedJudgementFixtures()...)
 
 	for _, fixture := range fixtures {
 		allowed[fixture] = overrideChecks
@@ -590,6 +591,11 @@ func normalizeGroupingConfig(t *testing.T, override overrideFile, shipped, overr
 }
 
 const groupingBatchesFixture = "concept-grouping-batches"
+
+// A scen check walk judging one binding and one concept's words for two Scenarios ships its narrowed checklist (#264).
+func sharedJudgementFixtures() []string {
+	return []string{"scen-check-shared-judgements"}
+}
 
 func groupingOverrideFixtures() []string {
 	return []string{"concept-grouping-ambiguous", "concept-grouping-binding", groupingBatchesFixture}

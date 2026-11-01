@@ -56,15 +56,20 @@ description:
     binding for its service; an unused unbound concept is not its finding.
     After the link, a further Q: Prompt judges every linked binding unambiguous
     enough for an LLM to write a step, given does, references and the complete
-    Public interface. An llm: step needs an intent binding. A failed link, word judgement or
+    Public interface. scen check judges each binding (concept, block, service)
+    once per walk, once every Scenario has its link, for every variation the
+    concept's means admits, with every distinct step of the walk's passing links
+    that reached it; every Scenario whose link reached it answers from that
+    verdict with its own context. An llm: step needs an intent binding. A failed link, word judgement or
     binding fails the Scenario and exits 1. Fixes offer the Product Owner a
     concept repair and the System Architect a binding, only applied after the
     menu's apply decision. Shared fixes cause every Scenario to be judged
-    again; binding judgements wait for their links within concurrent Scenario
-    validation. No prompt states a time, turn, token or cost budget.
+    again; binding judgements wait for every Scenario's link. No prompt states a time, turn, token or cost budget.
     A separate Q: Prompt, with concepts set to words, judges the means of every
-    linked concept once per Story in us refine and per Scenario in scen check,
-    claimed or not, after its link within the concurrent validation order.
+    linked concept once per Story in us refine and, in scen check, once per walk
+    for each concept a Scenario's link reached, claimed or not, from that
+    concept's means and the product document alone; every Scenario linking it
+    answers from that verdict, each word cell after its own Scenario's link.
     It names every domain word neither declared in that concept's terms nor
     readable as plain English in the context of its means. Plain English passes.
     Every required concept verdict carries undeclared_words and a reason in a
@@ -291,11 +296,11 @@ glossary:
       naming the file and true-bdd init; an invalid file names the file
       and parse error and asks to fix it, without init advice.
       scen check validates different Scenarios concurrently up to engine.scen_check_concurrency.
-      Init writes 1; an older configuration without the setting keeps its sequential walk.
-      Above 1, each Scenario answers D Prompts before sequential Q Prompts; a failed D skips its Q Prompts.
-      Fix menus follow validation one at a time in ascending Scenario id order. An applied fix
-      discards all remaining verdicts and rejudges the walk, within max_apply_attempts.
-      At 1 the existing cell-by-cell walk and fix ordering are preserved.
+      Init writes 1, which an older configuration without the setting also gets.
+      Each Scenario answers D Prompts before sequential Q Prompts; a failed D skips its Q Prompts.
+      The binding judgement starts once every Scenario has answered the Prompts before it.
+      At every concurrency, fix menus follow validation one at a time in ascending Scenario id
+      order. An applied fix discards all remaining verdicts and rejudges the walk, within max_apply_attempts.
       The pipeline is us refine, us apply, build tests, build steps, build code.
       build tests renders test files deterministically from the Registry, refuses
       stale files without --fix and writes them with --fix. It preserves Registry,

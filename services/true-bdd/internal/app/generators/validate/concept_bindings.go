@@ -55,12 +55,12 @@ func (e *ChecklistEvaluator) evaluateBindings(ctx context.Context, subject any, 
 	return result, nil
 }
 
-// judgeLinkedBindings judges the bindings once per walk when the Prompt shares them, else in this Scenario's turn.
+// judgeLinkedBindings judges the bindings once per scen check walk, else in this subject's own turn.
 func (e *ChecklistEvaluator) judgeLinkedBindings(ctx context.Context, item *template.ScenarioCheckData,
 	prompt checklist.PromptWithContext, linked map[string]linkedBinding, services []architecture.Service,
 	result *checklist.ValidationResult,
 ) error {
-	if e.shares(item, prompt) {
+	if e.shares(item) {
 		return e.judgeSharedBindings(ctx, prompt, item.Service, linked, services, result)
 	}
 

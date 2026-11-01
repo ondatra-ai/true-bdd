@@ -42,6 +42,9 @@ type Spec[I any] struct {
 	Fix bool
 	// ValidationConcurrency enables parallel item validation above one.
 	ValidationConcurrency int
+	// ShareConceptJudgements judges each binding and each linked concept's words once per walk, after
+	// every Scenario's link: scen check walks with the concurrent walker whatever its concurrency (#264).
+	ShareConceptJudgements bool
 	// DeferCompletion lets a caller announce success after post-run validation.
 	DeferCompletion bool
 	// RecoverWriterFailures lets build code rerun files left by a failed writer.
@@ -155,7 +158,7 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 	}
 
 	builder := newReportBuilder()
-	eng := buildSpecEngine(spec, builder, items, maxAttempts, sharesJudgements(prompts))
+	eng := buildSpecEngine(spec, builder, items, maxAttempts)
 
 	result, err := eng.Run(ctx, items, walkOrder(prompts))
 	if err != nil {
@@ -289,7 +292,6 @@ func buildSpecEngine[I any](
 	builder *reportBuilder,
 	items []I,
 	maxAttempts int,
-	shares bool,
 ) *engine.Engine[I, checklistmodels.PromptWithContext, *checklistmodels.PromptWithContext] {
 	var latestResult checklistmodels.ValidationResult
 
@@ -315,9 +317,8 @@ func buildSpecEngine[I any](
 
 	var selected engine.Walker[I, *checklistmodels.PromptWithContext] = walker
 
-	// A shared concept judgement needs the walk's every subject, which only the concurrent walker hands it (#264).
-	if spec.ValidationConcurrency > 1 || shares {
-		selected = concurrentWalker(spec, builder, items, maxAttempts, shares, refusals, &fixCount)
+	if spec.ValidationConcurrency > 1 || spec.ShareConceptJudgements {
+		selected = concurrentWalker(spec, builder, items, maxAttempts, refusals, &fixCount)
 	}
 
 	eng := engine.New(
@@ -347,11 +348,10 @@ func buildSpecEngine[I any](
 	return eng
 }
 
-// concurrentWalker validates items in parallel; with a shared judgement it starts each walk of the subjects on
-// the evaluator and holds a shared binding judgement until every subject's link has answered.
+// concurrentWalker validates items in parallel; sharing concept judgements, it starts each validation round on
+// the evaluator and holds the bindings Prompt until every item's link has answered.
 func concurrentWalker[I any](
-	spec Spec[I], builder *reportBuilder, items []I, maxAttempts int, shares bool, refusals *fixRefusals,
-	fixCount *int,
+	spec Spec[I], builder *reportBuilder, items []I, maxAttempts int, refusals *fixRefusals, fixCount *int,
 ) *engine.ConcurrentWalker[I, *checklistmodels.PromptWithContext] {
 	for _, item := range items {
 		id, title := spec.GetSubject(item)
@@ -361,7 +361,6 @@ func concurrentWalker[I any](
 	walker := &engine.ConcurrentWalker[I, *checklistmodels.PromptWithContext]{
 		Limit: max(1, spec.ValidationConcurrency), MaxFixes: maxAttempts, Gate: isCheckQuery,
 		OnSkip: recordSkip(spec, builder),
-		Waits:  func(query *checklistmodels.PromptWithContext) bool { return query.Prompt.WaitsForLinks() },
 		CellFor: func(_ I, _ *checklistmodels.PromptWithContext) *engine.CellHandler[I, *checklistmodels.PromptWithContext] {
 			var result checklistmodels.ValidationResult
 
@@ -372,29 +371,12 @@ func concurrentWalker[I any](
 		},
 	}
 
-	if shares {
-		walker.OnValidate = func(walked []I) {
-			subjects := make([]any, 0, len(walked))
-			for _, item := range walked {
-				subjects = append(subjects, item)
-			}
-
-			spec.Evaluator.StartWalk(subjects)
-		}
+	if spec.ShareConceptJudgements {
+		walker.Waits = judgesBindings
+		walker.OnValidate = func([]I) { spec.Evaluator.StartWalk() }
 	}
 
 	return walker
-}
-
-// sharesJudgements reports a checklist whose concept Prompt judges once per walk.
-func sharesJudgements(prompts []checklistmodels.PromptWithContext) bool {
-	for _, prompt := range prompts {
-		if prompt.Prompt.SharesJudgement() {
-			return true
-		}
-	}
-
-	return false
 }
 
 // reWalkBanner emits the "RE-WALK N/M (fixes applied — verifying)"

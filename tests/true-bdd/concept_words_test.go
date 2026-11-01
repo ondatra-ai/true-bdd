@@ -60,7 +60,7 @@ func TestConceptWords003Plain(t *testing.T) {
 	s.Given(`the "concept-words-plain" project tree`)
 	s.When(`the Product Owner runs "scen check"`)
 	s.Then(`the command exits with code 0`)
-	s.And(`the engine dispatched 4 AI turns`)
+	s.And(`the engine dispatched 5 AI turns`)
 	s.And(`stdout matches judgement=words answer=pass`)
 	s.And(`stdout does not match undeclared domain word`)
 	s.And(`stdout does not match then:unused`)

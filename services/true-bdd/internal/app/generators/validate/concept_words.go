@@ -32,7 +32,7 @@ func (e *ChecklistEvaluator) evaluateWords(ctx context.Context, subject any, pro
 		return result, err
 	}
 
-	if e.shares(subject, prompt) {
+	if e.shares(subject) {
 		err = e.judgeSharedWords(ctx, prompt, linked, productText, &result)
 		if err != nil {
 			return result, err

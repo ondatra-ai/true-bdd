@@ -83,7 +83,7 @@ func (w *ConcurrentWalker[I, Q]) WalkItems(
 func validationError[I, Q any](validated []validationRun[I, Q]) error {
 	for index, result := range validated {
 		if result.err != nil {
-			return fmt.Errorf("validation failed on item %d: %w", index, result.err)
+			return fmt.Errorf("walker failed on item %d: %w", index, result.err)
 		}
 	}
 

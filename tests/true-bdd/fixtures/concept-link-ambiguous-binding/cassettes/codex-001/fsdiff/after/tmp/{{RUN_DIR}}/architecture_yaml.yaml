@@ -49,9 +49,16 @@
               "role": "button",
               "name": "Halve"
             }
+          },
+          {
+            "element": {
+              "page": "Calc",
+              "role": "textbox",
+              "name": "Number"
+            }
           }
         ],
-        "does": "Activate the Calc page ‘Halve’ button exactly once. Perform no other interaction, enter no value and assert nothing."
+        "does": "Leave the Number textbox value set by the Given untouched — do not retype, clear or edit it. Press the Calc page’s Halve button exactly once, then wait until the Number textbox value has settled. Take no other action: press no other control, press Halve no second time, and make no assertion here."
       },
       {
         "concept": "number result",

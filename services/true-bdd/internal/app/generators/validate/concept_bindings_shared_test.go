@@ -1,6 +1,7 @@
 package validate_test
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -16,6 +17,32 @@ const boundArchitecture = "architecture:\n  services:\n  - name: calc\n    publi
 	"  - {concept: halve, block: when, service: calc, does: Press Halve.}\n" +
 	"  - {concept: result, block: then, service: calc, does: Read the display.}\n"
 
+// linkAnswer scores a step by its text.
+func linkAnswer(key, user string) string {
+	var payload struct {
+		Steps []struct {
+			Key  string `json:"key"`
+			Text string `json:"text"`
+		} `json:"steps"`
+	}
+
+	_ = json.Unmarshal([]byte(user), &payload)
+
+	for _, step := range payload.Steps {
+		switch {
+		case step.Key != key:
+		case strings.Contains(step.Text, "squared"):
+			return `{"scores":{"square":10,"halve":0},"reason":"Squares.","other_block_concept":null}`
+		case strings.Contains(step.Text, "halved"):
+			return `{"scores":{"square":0,"halve":10},"reason":"Halves.","other_block_concept":null}`
+		default:
+			return `{"scores":{"result":10},"reason":"Shows the result.","other_block_concept":null}`
+		}
+	}
+
+	return `{}`
+}
+
 func bindingAnswer(key, user string) string {
 	switch {
 	case !strings.Contains(key, ":"):
@@ -27,7 +54,7 @@ func bindingAnswer(key, user string) string {
 	}
 }
 
-func TestSharedBindingsJudgeEachBindingOncePerWalkWithEveryStepLinkingIt(t *testing.T) {
+func TestBindingsJudgeEachBindingOncePerWalkWithEveryStepLinkingIt(t *testing.T) {
 	reply := newSharedReply(0, bindingAnswer)
 	evaluator, _ := conceptRequestEvaluatorWith(t, reply)
 
@@ -40,21 +67,21 @@ func TestSharedBindingsJudgeEachBindingOncePerWalkWithEveryStepLinkingIt(t *test
 		{Block: catalogue.BlockWhen, Text: squaredStep}, {Block: catalogue.BlockThen, Text: displayedStep},
 	}}
 	both := &template.ScenarioCheckData{ID: sharedBothID, Service: linkTestService, CheckedSteps: []catalogue.Step{
-		{Block: catalogue.BlockWhen, Text: "7 is squared"}, {Block: catalogue.BlockWhen, Text: halvedStep},
+		{Block: catalogue.BlockWhen, Text: "7 is squared"}, {Block: catalogue.BlockWhen, Text: "6 is halved"},
 	}}
 	unlinked := &template.ScenarioCheckData{ID: "scenario-unlinked", Service: linkTestService,
 		CheckedSteps: []catalogue.Step{{Block: catalogue.BlockWhen, Text: "8 is cubed"}}}
 
-	evaluator.StartWalk(walkSubjects(square, both, unlinked))
-	evaluateTogether(t, evaluator, sharedPrompt(linkJudgement), square, both, unlinked)
-	results := evaluateTogether(t, evaluator, sharedPrompt("bindings"), square, both, unlinked)
+	evaluator.StartWalk()
+	evaluateTogether(t, evaluator, conceptPrompt(linkJudgement), square, both, unlinked)
+	results := evaluateTogether(t, evaluator, conceptPrompt("bindings"), square, both, unlinked)
 
-	turns := reply.judged()
-	if len(turns) != 4 {
-		t.Fatalf("one link batch and one turn per linked binding, got %+v", turns)
+	turns := reply.judged()[3:]
+	if len(reply.judged()) != 6 {
+		t.Fatalf("a link turn per Scenario and one turn per linked binding, got %+v", reply.judged())
 	}
 
-	for _, turn := range turns[1:] {
+	for _, turn := range turns {
 		if len(turn.keys) != 1 || strings.Contains(turn.user, "8 is cubed") {
 			t.Fatalf("a binding turn judges one binding with the walk's passing links only: %+v", turn)
 		}

@@ -48,7 +48,7 @@ story:
       - the Product Owner runs "scen check"
     - then:
       - the command exits with code 0
-      - the engine dispatched 4 AI turns
+      - the engine dispatched 5 AI turns
       - stdout matches judgement=words answer=pass
       - stdout does not match undeclared domain word
       - stdout does not match then:unused

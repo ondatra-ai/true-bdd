@@ -84,8 +84,8 @@
     "terms": [
       {
         "term": "idempotency key",
-        "technical": "The text value of the \"Idempotency key\" textbox on the Calc page, submitted with the halving request as the request label",
-        "observed_by": "A step definition generates a fresh unique label for a requested halving and types it into the Idempotency key textbox before pressing Halve; for a repeated request it types the same label again"
+        "technical": "The text typed into the Calc page's 'Idempotency key' textbox, carried with the halving request so the calculator applies a given label at most once",
+        "observed_by": "The when step definition fills the Calc page's 'Idempotency key' textbox with a fresh label before pressing Halve, and reuses that same label for a repeated request, so the unchanged Number shows the repeat was ignored"
       }
     ]
   }

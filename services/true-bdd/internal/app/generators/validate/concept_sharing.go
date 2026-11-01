@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
+	"strconv"
 	"sync"
 )
 
@@ -12,12 +14,10 @@ var errSharedVerdictLost = errors.New("shared concept verdict lost: the walk res
 
 // conceptSharing is one walk's shared concept verdicts (#264): each key is judged once, by the first cell needing it.
 type conceptSharing struct {
-	mutex    sync.Mutex
-	started  bool
-	entries  map[string]*sharedVerdict
-	subjects []any
-	links    map[string][]linkedStep
-	plans    map[int]linkPlan
+	mutex   sync.Mutex
+	started bool
+	entries map[string]*sharedVerdict
+	links   map[string][]linkedStep
 }
 
 type sharedVerdict struct {
@@ -37,15 +37,13 @@ func newConceptSharing() *conceptSharing {
 	return &conceptSharing{}
 }
 
-func (s *conceptSharing) start(subjects []any) {
+func (s *conceptSharing) start() {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
 	s.started = true
 	s.entries = make(map[string]*sharedVerdict)
-	s.subjects = slices.Clone(subjects)
 	s.links = make(map[string][]linkedStep)
-	s.plans = make(map[int]linkPlan)
 }
 
 func (s *conceptSharing) active() bool {
@@ -147,16 +145,13 @@ func (s *conceptSharing) stepsLinking(key, service string) []conceptStep {
 	return rekeyedSteps(unique)
 }
 
-// linkPlan is the walk's distinct steps cut into the batches one shared link turn judges each.
-func (s *conceptSharing) linkPlan(index, size int) linkPlan {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	plan, planned := s.plans[index]
-	if !planned {
-		plan = newLinkPlan(s.subjects, size)
-		s.plans[index] = plan
+// rekeyedSteps orders distinct steps by block and text and keys them from 1.
+func rekeyedSteps(unique map[string]conceptStep) []conceptStep {
+	ordered := make([]conceptStep, 0, len(unique))
+	for index, identity := range slices.Sorted(maps.Keys(unique)) {
+		step := unique[identity]
+		ordered = append(ordered, conceptStep{Key: strconv.Itoa(index + 1), Block: step.Block, Text: step.Text})
 	}
 
-	return plan
+	return ordered
 }

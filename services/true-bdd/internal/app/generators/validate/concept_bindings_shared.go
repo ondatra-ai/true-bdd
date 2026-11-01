@@ -27,7 +27,7 @@ func (e *ChecklistEvaluator) judgeSharedBindings(ctx context.Context, prompt che
 	keys := make(map[string]string, len(linked))
 
 	for _, key := range sortedBindingKeys(linked) {
-		name := sharedKey(prompt, "bindings", key+"@"+service)
+		name := sharedKey(prompt, sharedBindings, key+"@"+service)
 		names = append(names, name)
 		keys[name] = key
 	}
@@ -48,7 +48,9 @@ func (e *ChecklistEvaluator) judgeSharedBindings(ctx context.Context, prompt che
 			PublicInterface map[string]any           `json:"public_interface"`
 		}{productText, e.sharing.stepsLinking(keys[name], service), service, one, interfaceContext}
 
-		return e.sharedTurn(ctx, prompt, name, payload, schema)
+		attrs := []any{"judgement", sharedBindings, sharedConceptAttr, keys[name], "service", service}
+
+		return e.sharedTurn(ctx, prompt, name, attrs, payload, schema)
 	})
 	if err != nil {
 		return err

@@ -48,17 +48,13 @@ Then:
 
 ## Fix Prompt to Apply
 
-Propose to the **System Architect** (owner of Word mappings) a single addition to `architecture.terms` in `./docs/architecture/architecture.yaml`, and present it at the menu for confirmation before applying.
+Proposal for the System Architect — add the missing Word mapping for the term `idempotency key` used by the `when` concept `halve` (service `calc`, Scenario host-001).
 
-## Finding addressed
-- Scenario `host-001`, service `calc`, check `term-mappings`: the `when` concept `halve` declares the term `idempotency key` (product `concepts.when[halve].terms`, meaning already present in `product.glossary`), but `architecture.terms` is empty, so the word has no mapping.
+Finding addressed: host-001 — when concept 'halve': "idempotency key" has no mapping in the architecture (check: term-mappings).
 
-## Why this is the right document
-The product side is already complete and must not be touched: `idempotency key` is declared on the `halve` concept and defined in `product.glossary` ("The request label supplied with a halve request, so that repeating the request with the same label changes the number only once."), consistent with `language_policy`. What is missing is only the architecture-side Word mapping. The existing binding for `halve` (block `when`, service `calc`) already references the `Calc` / `textbox` / `Idempotency key` element, and that element is declared in the `calc` service's Public interface — so no binding change and no Public interface addition is needed. Do not modify the Scenario, any generated test, or any step definition.
+The term is already declared in the product document: `glossary` carries `idempotency key` — "The request label supplied with a halving. Repeating a halving with the same idempotency key changes the number only once." — and the `when` concept `halve` lists it under `terms`. Nothing in the product document needs to change. Only `architecture.terms` is missing the mapping, so this is a single edit to the architecture document. No Scenario, generated test or step definition is touched.
 
-## Exact edit to apply
-
-File: `./docs/architecture/architecture.yaml`
+Apply exactly one edit to `./docs/architecture/architecture.yaml`:
 
 old_string:
 ```
@@ -70,19 +66,21 @@ new_string:
     "terms": [
       {
         "term": "idempotency key",
-        "technical": "The text held in the Calc page's 'Idempotency key' textbox, submitted together with the number when Halve is pressed, so the backend applies a label it has already seen only once",
-        "observed_by": "The When step definition types the label named in the scenario into the 'Idempotency key' textbox before pressing Halve, and for a repeated request types the same label again, so the Then step can see Number unchanged"
+        "technical": "The text value held in the Calc page \"Idempotency key\" textbox, which the UI sends with the halving request and uses to suppress a repeated halving of the same label",
+        "observed_by": "The when step definition types a fresh label into the Calc page \"Idempotency key\" textbox before pressing Halve, and for a repeated request types the same label again, so the key is set up by the step rather than asserted on"
       }
     ]
 ```
 
-## Checks on the proposal
-- `term` is the product's verbatim word `idempotency key`, matching the declaration on the `halve` concept.
-- `technical` says what the word is in the implementation (the text in the `Idempotency key` textbox submitted with the number on Halve) — prose, not a reference object.
-- `observed_by` is prose describing how the step definition sets it up and how it is observed (When types the label and presses Halve; a repeat types the same label; Then sees Number unchanged) — prose, not a reference object.
-- All three fields are nonempty strings; `old_string` `    "terms": []` occurs exactly once in the document.
+Why this mapping is well formed:
+- `term` is the product's verbatim glossary name, `idempotency key`, as the `halve` concept lists it.
+- `technical` is prose saying what the word is in the implementation — the text value of the Calc page "Idempotency key" textbox that the UI sends with the halving request — not a reference object.
+- `observed_by` is prose saying how the step definition sets the word up: the `when` step types a fresh label into that textbox before pressing Halve and types the same label again for a repeated request, so the key is established by the step rather than asserted on. It is prose, not a reference object.
+- All three fields are nonempty strings.
 
-Make no other change in this pass. In particular, leave `architecture.concepts`, the `calc` Public interface, and the product document exactly as they are.
+No other change is needed: the `Calc` / `textbox` / `Idempotency key` element is already declared in the `calc` service's Public interface (`architecture.services[0].public_interface.elements`) and is already referenced by the `halve` binding, so no Public interface addition is required.
+
+Confirm at the menu before applying.
 
 ---
 

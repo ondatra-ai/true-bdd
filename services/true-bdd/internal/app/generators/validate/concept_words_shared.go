@@ -35,7 +35,7 @@ func (e *ChecklistEvaluator) judgeSharedWords(ctx context.Context, prompt checkl
 			Concepts map[string]product.Concept `json:"concepts"`
 		}{productText, one}
 
-		return e.sharedTurn(ctx, prompt, name, payload, schema)
+		return e.sharedTurn(ctx, prompt, name, []any{"judgement", "words", sharedConceptAttr, keys[name]}, payload, schema)
 	})
 	if err != nil {
 		return err
