@@ -533,9 +533,9 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           </tr>
           <tr>
             <td><span class="cmd">build tests</span></td>
-            <td>every <strong>registry scenario</strong>; the suite that owns it, and the step definitions under that suite's <code>path:</code></td>
-            <td><span class="cl">build-tests.yaml</span></td>
-            <td>with <code>--fix</code> only: the <strong>generated test file</strong> each scenario's <code>path:</code> names, rendered deterministically, and the missing <strong>step definition</strong> in that suite. Without <code>--fix</code> nothing is written — the same renderer verifies the tree by regenerating and comparing. The registry is never modified either way</td>
+            <td>every <strong>registry scenario</strong> and the <strong>architecture</strong> service and suite that own it; steps are free text, held to nothing, and no step definition is read</td>
+            <td>none: deterministic codegen, no AI turn</td>
+            <td>with <code>--fix</code> only: the <strong>generated test file</strong> each scenario's <code>path:</code> names, rendered deterministically — nothing else, no step definition among it. Without <code>--fix</code> nothing is written — the same renderer verifies the tree by regenerating and comparing. The registry is never modified either way</td>
           </tr>
           <tr>
             <td><span class="cmd">build code</span></td>
@@ -547,7 +547,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <td><span class="cmd">scen check [id...]</span></td>
             <td>one <strong>registry scenario</strong> at a time — its own description, <code>service:</code>, <code>path:</code>, lineage and steps, and never the registry file itself</td>
             <td><span class="cl">scen-check.yaml</span></td>
-            <td><strong>nothing</strong>. It exits 1 when any scenario fails, so it can gate a change. With <code>--fix</code>, through a scratch copy: a failed <code>D:</code> check's fix writes only the <strong>product</strong> or <strong>architecture</strong> document, never the Scenario; a failed model question's fix writes the Scenario's own entry in <strong>scenarios.yaml</strong></td>
+            <td><strong>nothing</strong>. It exits 1 when any scenario fails, so it can gate a change. With <code>--fix</code>, through a scratch copy: a failed <code>D:</code> check's fix writes only the <strong>product</strong> or <strong>architecture</strong> document, never the Scenario; a failed link's fix writes a wider or new concept to the <strong>product</strong> document, or a rewritten step to the Scenario's own entry in <strong>scenarios.yaml</strong>; a failed word judgement's fix writes the <strong>product</strong> document only; a failed binding judgement's fix writes a binding to the <strong>architecture</strong> document, extending its service's Public interface document where needed, or a corrected concept to the <strong>product</strong> document; any other failed model question's fix writes the Scenario's own entry in <strong>scenarios.yaml</strong></td>
           </tr>
         </tbody>
       </table>

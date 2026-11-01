@@ -57,9 +57,15 @@ The CLI exits 1 when any scenario fails a check, so scen check can gate
 a change. --fix walks the same checklist, every shipped prompt of which
 carries a fix template, and is refused at startup while a prompt it
 would walk carries none. A failed D: check's fix defines what it found
-undefined in the product document, or maps it in the architecture
-document, never in the scenario; a failed Q: prompt's fix rewrites the
-scenario's own registry entry.
+undefined in the product document, or maps or binds it in the
+architecture document, never in the scenario. A failed link's fix
+offers the Product Owner a wider or new concept in the product document
+or a rewritten step in the scenario's own registry entry; a failed word
+judgement's fix rewrites the product document only; a failed binding
+judgement's fix offers the System Architect a binding in the
+architecture document, extending the Public interface where needed, or
+the Product Owner a corrected concept. Any other failed Q: prompt's fix
+rewrites the scenario's own registry entry.
 
 Example:
   true-bdd scen check
