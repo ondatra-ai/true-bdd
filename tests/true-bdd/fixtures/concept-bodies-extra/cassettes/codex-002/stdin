@@ -133,22 +133,21 @@ scenarios:
 # Fix Prompt for Item when-halving: when concept "halving"
 
 ## Target
-tests/calc/steps
+`tests/calc/steps` (service `calc`, concept `halving`, block `when`)
 
 ## Why
-The current body delegates to `State.Halve`, which refuses to run unless the environment variable `CALC_LICENCE` is set non-empty. No part of this concept declares such a precondition: the binding says only "Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result", the Public interface document (docs/architecture/calc-cli.yaml) declares only `go run ./services/calc halve VALUE` with an integer argument and integer stdout, and scenarios calc-001-halve / calc-002-halve name no fixture input beyond the whole number. `State.Halve` therefore demands more than the binding plus the scenarios' fixture inputs supply, so the definition must not depend on it. Because only this file's body/imports and shared `State` fields may change, the process run moves into the definition body itself and keeps using the existing shared `State.Result` field that the `then` "result" definition already observes.
+`build-steps/step-coverage` failed because the definition body delegated to `State.Halve`, whose first act is to require a `CALC_LICENCE` environment variable. No licence or environment variable appears in the concept binding ("Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result"), in the declared CLI interface for `halve` (one integer argument, integer stdout, exit 0/1), or in the inputs of scenarios `calc-001-halve` / `calc-002-halve`. The body must therefore do exactly what the binding says — run the declared `halve` command as a process and keep its integer stdout — and require nothing more. The product's halving is still performed only by the command; the body never computes a half.
 
 ## Required Changes
 
-### 1. Replace the whole contents of `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go`
+### 1. Replace the body of the step definition
 
-Keep the package clause, the `//truebdd:concept when "halving"` record and the engine's function name and signature exactly as they are; add the imports this body needs to this file only, and replace just the body. Write the file as:
+Keep the `//truebdd:concept when "halving"` record, the function name and the signature exactly as generated. Write `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go` with exactly this content:
 
 ```go
 package steps
 
 import (
-	"bytes"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -159,42 +158,47 @@ import (
 func concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {
 	const hostRoot = "../.."
 	number := args[0]
+	if _, err := strconv.Atoi(number); err != nil {
+		return fmt.Errorf("the step's number %q is not a whole number: %w", number, err)
+	}
 	cmd := exec.Command("go", "run", "./services/calc", "halve", number)
 	cmd.Dir = hostRoot
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	out, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
-		if message := strings.TrimSpace(stderr.String()); message != "" {
-			return fmt.Errorf("halve %s: %w: %s", number, err, message)
+		if exit, ok := err.(*exec.ExitError); ok {
+			return fmt.Errorf("halve %s exited %d: %s", number, exit.ExitCode(), strings.TrimSpace(string(exit.Stderr)))
 		}
-		return fmt.Errorf("halve %s: %w", number, err)
+		return fmt.Errorf("running halve %s: %w", number, err)
 	}
-	result, err := strconv.Atoi(strings.TrimSpace(string(out)))
+	halved, err := strconv.Atoi(strings.TrimSpace(string(stdout)))
 	if err != nil {
-		return fmt.Errorf("halve %s: stdout %q is not an integer", number, string(out))
+		return fmt.Errorf("halve %s printed %q, not an integer: %w", number, strings.TrimSpace(string(stdout)), err)
 	}
-	state.Result = result
+	state.Result = halved
 	return nil
 }
 ```
 
+Notes on this body:
+- `hostRoot` is `"../.."` because the generated suite runs from `tests/calc` (see `tests/calc/calc_test.go`), and the declared interface says `halve` is run as `go run ./services/calc halve VALUE` **from the host root**. This is the same relative directory the suite already used.
+- The only input is the step's captured whole number; no environment variable, licence or other fixture is read, so the definition requires nothing beyond its binding and the scenarios' inputs.
+- The body stores the command's integer stdout in `state.Result` and never halves anything itself; `the result is N` (the existing `result` definition in `tests/calc/steps/definitions.go`) does the comparison.
+- `const hostRoot` stays inside the function body; no package-level constants, variables, types or helper functions are added. Use the inline `err.(*exec.ExitError)` type assertion shown above — do not add an `errors` import or any package-level helper for it.
+
 ### 2. Shared state
 
-No change. The body keeps the halve command's integer stdout in the existing shared field `State.Result`, which the `then` "result" definition already compares against the expected value. Do not add new `State` fields.
+No change. `State.Result int` in `tests/calc/steps/state.go` already carries the observed integer that the `then` concept reads.
 
-### 3. Do not touch
+### 3. Do not change
 
-- Do not edit `tests/calc/steps/state.go`. Leave `State.Halve` exactly as it is (an unused method is not a Go compile error); the definition simply no longer depends on its undeclared licence precondition.
-- Do not edit `tests/calc/steps/register.go`, `tests/calc/steps/definitions.go`, `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, the Specification or any service code.
-- Do not set, read or require `CALC_LICENCE` anywhere, and do not add package-level constants, variables, helpers or types — `hostRoot` stays a local constant inside the body.
+- Do **not** touch `tests/calc/steps/register.go` (registrations and patterns stay as generated).
+- Do **not** touch `tests/calc/steps/definitions.go` (the `then "result"` definition belongs to another concept).
+- Do **not** touch `tests/calc/calc_test.go`, the Specification, `docs/architecture/calc-cli.yaml`, or any service source under `services/calc`.
+- Leave `State.Halve` in `tests/calc/steps/state.go` as it is; it is simply no longer called by this definition, and `state.go` is outside the selected body (its `errors`/`os` imports remain used by that method, so the package still compiles). Only this definition's file and its imports change.
 
-## Notes
+### 4. Expected outcome
 
-- The step never computes the halved value itself; it only runs the declared `halve` command as a process and records the integer it prints, exactly as the binding and the Word mapping describe ("The integer argument and stdout of the calculator halve command").
-- `cmd.Dir = "../.."` keeps the interface document's requirement that `go run ./services/calc halve VALUE` is run "from the host root", given the suite's generated test runs from `tests/calc`.
-- The captured whole number is passed through verbatim, so a negative value such as `-7` reaches the command as declared; the engine's pattern `^the Owner halves (-?\d+)$` already guarantees it is a whole number.
-- Do not run the scenarios or otherwise attempt to make them green; the engine owns compilation and the whole-suite checks. If you do compile the steps package, preserve the inherited Go build cache and temporary-directory environment.
+`build-steps/step-coverage` passes for `concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87`: the body runs the declared `halve` command as a process with the step's whole number, keeps its integer stdout as the result, and demands no setup that the binding, the declared CLI interface or the scenarios' inputs do not state. Do not run the scenarios to verify; the engine owns compilation and the whole-suite checks. If the steps package is compiled while writing, preserve the inherited Go build cache and temporary-directory environment.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists and shared state. Preserve the engine's patterns, registrations,

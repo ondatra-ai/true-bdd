@@ -58,7 +58,7 @@ func (e *buildStepsExecution) repairPatterns(ctx context.Context, item *BuildSte
 // repairSubject is the Item's proposal again: its own steps are its own
 // whatever binds them now, its own patterns refused with the findings.
 func (run *conceptRun) repairSubject(item *BuildStepsItem, critique []string) *template.ConceptProposalData {
-	key := conceptKey(item.Concept.Block, item.Concept.Name)
+	key := catalogue.ConceptKey(item.Concept.Block, item.Concept.Name)
 	subject := &template.ConceptProposalData{ID: key, Suite: item.Suite, Service: item.Service,
 		Block: item.Concept.Block, Concept: item.Concept.Name, Steps: append([]string{}, item.Concept.Steps...),
 		Previous: item.Concept.proposed(), Critique: critique}

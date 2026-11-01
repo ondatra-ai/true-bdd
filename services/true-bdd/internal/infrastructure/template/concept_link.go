@@ -8,3 +8,8 @@ type ConceptLink struct {
 	Block   catalogue.Block
 	Intent  bool
 }
+
+// Key names the linked concept within its block, as its binding and words are judged.
+func (l ConceptLink) Key() string {
+	return catalogue.ConceptKey(l.Block, l.Concept)
+}

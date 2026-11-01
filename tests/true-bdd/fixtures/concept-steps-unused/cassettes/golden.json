@@ -5,9 +5,9 @@
     {
       "path": "tests/calc/steps/conceptec8b881314b929394828fe6c21c7db729a95bc1a93ad8abf8ec578b93a9e83f2.go",
       "kind": "created",
-      "size": 860,
-      "sha256": "00f79d99e991d7f9d8e630331e4e481e20d8831c059caf14957156fa988aab2a",
-      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"halving\"\nfunc conceptec8b881314b929394828fe6c21c7db729a95bc1a93ad8abf8ec578b93a9e83f2(state *State, args []string) error {\n\tconst (\n\t\thostRoot = \"../..\"\n\t\tpkgPath  = \"./services/calc\"\n\t\tcommand  = \"halve\"\n\t)\n\tnumber := args[0]\n\tcmd := exec.Command(\"go\", \"run\", pkgPath, command, number)\n\tcmd.Dir = hostRoot\n\tvar stdout, stderr strings.Builder\n\tcmd.Stdout = \u0026stdout\n\tcmd.Stderr = \u0026stderr\n\tif err := cmd.Run(); err != nil {\n\t\treturn fmt.Errorf(\"run %s %s %s: %w: %s\", pkgPath, command, number, err, strings.TrimSpace(stderr.String()))\n\t}\n\tprinted := strings.TrimSpace(stdout.String())\n\thalved, err := strconv.Atoi(printed)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"%s %s printed %q, not an integer: %w\", command, number, printed, err)\n\t}\n\tstate.Result = halved\n\treturn nil\n}\n"
+      "size": 906,
+      "sha256": "42f4156674af7eb3af4e1084364134b0e51d41348ef1a1db5aa6c54a496ee028",
+      "text": "package steps\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"halving\"\nfunc conceptec8b881314b929394828fe6c21c7db729a95bc1a93ad8abf8ec578b93a9e83f2(state *State, args []string) error {\n\tconst (\n\t\thostRoot    = \"../..\"\n\t\tpackagePath = \"./services/calc\"\n\t\tcommand     = \"halve\"\n\t)\n\tnumber := args[0]\n\tcmd := exec.Command(\"go\", \"run\", packagePath, command, number)\n\tcmd.Dir = hostRoot\n\tstdout, err := cmd.Output()\n\tif err != nil {\n\t\tvar exit *exec.ExitError\n\t\tif errors.As(err, \u0026exit) {\n\t\t\treturn fmt.Errorf(\"%s %s: %w: %s\", command, number, err, strings.TrimSpace(string(exit.Stderr)))\n\t\t}\n\t\treturn fmt.Errorf(\"%s %s: %w\", command, number, err)\n\t}\n\thalved, err := strconv.Atoi(strings.TrimSpace(string(stdout)))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"%s %s: stdout %q is not an integer: %w\", command, number, string(stdout), err)\n\t}\n\tstate.Result = halved\n\treturn nil\n}\n"
     },
     {
       "path": "tests/calc/steps/register.go",

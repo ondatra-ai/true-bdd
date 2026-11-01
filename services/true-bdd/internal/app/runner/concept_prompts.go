@@ -6,14 +6,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/product"
 )
 
-const (
-	linkJudgement     = "link"
-	bindingsJudgement = "bindings"
-)
-
 // judgesBindings marks the bindings Prompt, which a shared walk starts only after every Scenario's link.
 func judgesBindings(query *checklist.PromptWithContext) bool {
-	return !query.Prompt.IsCheck() && query.Prompt.With["concepts"] == bindingsJudgement
+	return !query.Prompt.IsCheck() && query.Prompt.Judgement() == checklist.JudgementBindings
 }
 
 // conceptPrompts drops the concept judgements of a host declaring no concepts,
@@ -35,9 +30,9 @@ func conceptPrompts(prompts []checklist.PromptWithContext, resolver *docs.Resolv
 func withoutConceptJudgements(prompts []checklist.PromptWithContext) []checklist.PromptWithContext {
 	filtered := make([]checklist.PromptWithContext, 0, len(prompts))
 	for _, prompt := range prompts {
-		kind := prompt.Prompt.With["concepts"]
-		if !prompt.Prompt.IsCheck() && prompt.Prompt.ShapeError() == nil &&
-			(kind == linkJudgement || kind == bindingsJudgement || kind == "words" || kind == "group" || kind == "propose") {
+		kind := prompt.Prompt.Judgement()
+		if !prompt.Prompt.IsCheck() && prompt.Prompt.ShapeError() == nil && kind.Declared() &&
+			kind != checklist.JudgementSketch {
 			continue
 		}
 

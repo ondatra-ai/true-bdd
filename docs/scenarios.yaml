@@ -6264,7 +6264,7 @@ scenarios:
       - stdout matches Scenario list passed
       - no file outside "tmp" and "tests" changed
       - stdout matches All step skeletons written.*items=3
-      - the engine dispatched 10 validation AI turns to "claude"
+      - the engine dispatched 12 validation AI turns to "claude"
       - the engine spawned exactly 1 test runner with arguments matching -list \.
       - the engine spawned exactly 1 test runner with arguments matching -run \^\(Test
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0

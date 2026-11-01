@@ -7,7 +7,7 @@ import (
 	checklistmodels "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/checklist"
 )
 
-// fixRefusals holds, per subject and Prompt, why its last fix was not
+// fixRefusals holds, per Item and Prompt, why its last fix was not
 // taken, until that Prompt answers again.
 type fixRefusals struct {
 	mu   sync.Mutex

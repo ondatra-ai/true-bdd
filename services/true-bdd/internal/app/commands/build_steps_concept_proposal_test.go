@@ -78,12 +78,7 @@ func conceptHost(t *testing.T, reply *conceptReplies) commands.BuildStepsDeps {
 		t.Fatal(err)
 	}
 
-	models, err := provider.NewRegistry(map[string]string{groupTestTier: "claude:test"}, map[provider.Role]string{
-		provider.RolePrompt: groupTestTier, provider.RoleFix: groupTestTier, provider.RoleApply: groupTestTier,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	models := testModels(t)
 
 	deps.Evaluator = validate.NewChecklistEvaluator(reply, cfg, models)
 	deps.FixGenerator = validate.NewFixPromptGenerator(reply, cfg, models)

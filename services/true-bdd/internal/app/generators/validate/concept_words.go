@@ -24,7 +24,7 @@ func (e *ChecklistEvaluator) evaluateWords(ctx context.Context, subject any, pro
 
 	linked := make(map[string]product.Concept)
 	for _, link := range links {
-		linked[string(link.Block)+":"+link.Concept] = linkedConcept(source.Concepts, link)
+		linked[link.Key()] = linkedConcept(source.Concepts, link)
 	}
 
 	productText, err := e.conceptProduct()

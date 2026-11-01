@@ -11,7 +11,7 @@ import (
 )
 
 func (e *ChecklistEvaluator) conceptSketch(prompt checklist.PromptWithContext, data *ChecklistPromptData) error {
-	if prompt.Prompt.With["concepts"] != "sketch" {
+	if prompt.Prompt.Judgement() != checklist.JudgementSketch {
 		return nil
 	}
 

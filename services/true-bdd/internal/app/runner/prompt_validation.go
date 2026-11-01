@@ -8,6 +8,7 @@ import (
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/checks"
 	checklistmodels "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/checklist"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/docs"
 )
 
 // errPromptsNotWalkable is the canonical error returned by
@@ -170,7 +171,7 @@ func promptPhase(prompt *checklistmodels.PromptWithContext) int {
 		return phaseCheck
 	}
 
-	if prompt.Prompt.With["concepts"] == linkJudgement {
+	if prompt.Prompt.Judgement() == checklistmodels.JudgementLink {
 		return phaseLink
 	}
 
@@ -178,14 +179,17 @@ func promptPhase(prompt *checklistmodels.PromptWithContext) int {
 }
 
 func conceptPromptDocs(prompt *checklistmodels.PromptWithContext) error {
-	kind, configured := prompt.Prompt.With["concepts"]
+	_, configured := prompt.Prompt.With["concepts"]
 	if !configured {
 		return nil
 	}
 
-	required := []string{"product"}
-	if kind == "bindings" || kind == "sketch" || kind == "propose" {
-		required = append(required, "architecture_yaml")
+	required := []string{docs.KeyProduct}
+
+	kind := prompt.Prompt.Judgement()
+	if kind == checklistmodels.JudgementBindings || kind == checklistmodels.JudgementSketch ||
+		kind == checklistmodels.JudgementPropose {
+		required = append(required, docs.KeyArchitectureYAML)
 	}
 
 	return uncitedDoc(prompt, required)

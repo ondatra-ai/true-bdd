@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/stepskeleton"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/catalogue"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/architecture"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/template"
@@ -105,7 +106,7 @@ func conceptInterfaces(items []*BuildStepsItem, arch *architecture.Architecture)
 
 func (e *buildStepsExecution) proposeConcepts(ctx context.Context, discovery *conceptDiscovery) error {
 	for _, item := range discovery.items {
-		subject := &template.ConceptProposalData{ID: conceptKey(item.Concept.Block, item.Concept.Name),
+		subject := &template.ConceptProposalData{ID: catalogue.ConceptKey(item.Concept.Block, item.Concept.Name),
 			Suite: item.Suite, Service: item.Service, Block: item.Concept.Block, Concept: item.Concept.Name,
 			Existing: item.Concept.Existing, Suites: discovery.steps[item.Suite]}
 
@@ -185,11 +186,11 @@ func writeConceptSkeletons(items []*BuildStepsItem) error {
 func nameConceptItems(items []*BuildStepsItem) {
 	counts := make(map[string]int)
 	for _, item := range items {
-		counts[conceptKey(item.Concept.Block, item.Concept.Name)]++
+		counts[catalogue.ConceptKey(item.Concept.Block, item.Concept.Name)]++
 	}
 
 	for _, item := range items {
-		key := conceptKey(item.Concept.Block, item.Concept.Name)
+		key := catalogue.ConceptKey(item.Concept.Block, item.Concept.Name)
 
 		item.subjectID = strings.ReplaceAll(key, ":", "-")
 		if counts[key] > 1 {

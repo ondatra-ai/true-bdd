@@ -2,17 +2,34 @@ package validate
 
 import (
 	"context"
+	"errors"
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/architecture"
 )
 
-// judgeSharedBindings gives the Scenario each linked binding's verdict, judged once per walk with every step of
-// the walk's passing links that reached its concept for the service; the walker starts it after every link.
+var errBindingsOutsideWalk = errors.New("a binding judgement needs a started walk (ADR-0037)")
+
+// bindingRequest is one binding's turn: the product, every step reaching its concept for the service, the binding
+// and the service's Public interface.
+type bindingRequest struct {
+	Product         string                   `json:"product"`
+	Steps           []conceptStep            `json:"steps"`
+	Service         string                   `json:"service"`
+	Bindings        map[string]linkedBinding `json:"bindings"`
+	PublicInterface map[string]any           `json:"public_interface"`
+}
+
+// judgeSharedBindings gives the Scenario or suite each linked binding's verdict, judged once per walk with every
+// step of the walk that reached its concept for the service; scen check's walker starts it after every link.
 func (e *ChecklistEvaluator) judgeSharedBindings(ctx context.Context, prompt checklist.PromptWithContext,
 	service string, linked map[string]linkedBinding, services []architecture.Service,
 	result *checklist.ValidationResult,
 ) error {
+	if !e.sharing.active() {
+		return errBindingsOutsideWalk
+	}
+
 	interfaceContext, err := conceptInterfaceContext(services, service)
 	if err != nil {
 		return err
@@ -23,41 +40,22 @@ func (e *ChecklistEvaluator) judgeSharedBindings(ctx context.Context, prompt che
 		return err
 	}
 
-	names := make([]string, 0, len(linked))
-	keys := make(map[string]string, len(linked))
+	keys := sortedBindingKeys(linked)
 
-	for _, key := range sortedBindingKeys(linked) {
-		name := sharedKey(prompt, sharedBindings, key+"@"+service)
-		names = append(names, name)
-		keys[name] = key
-	}
+	answers, err := e.judgeShared(ctx, prompt, sharedJudgement{judgement: checklist.JudgementBindings, keys: keys,
+		scope: "@" + service, attrs: []any{"service", service}, request: func(key string) (any, string, error) {
+			one := map[string]linkedBinding{key: linked[key]}
+			schema, err := bindingSchema(one)
 
-	answers, err := e.sharing.resolve(ctx, names, func(name string) (string, error) {
-		one := map[string]linkedBinding{keys[name]: linked[keys[name]]}
-
-		schema, err := bindingSchema(one)
-		if err != nil {
-			return "", err
-		}
-
-		payload := struct {
-			Product         string                   `json:"product"`
-			Steps           []conceptStep            `json:"steps"`
-			Service         string                   `json:"service"`
-			Bindings        map[string]linkedBinding `json:"bindings"`
-			PublicInterface map[string]any           `json:"public_interface"`
-		}{productText, e.sharing.stepsLinking(keys[name], service), service, one, interfaceContext}
-
-		attrs := []any{"judgement", sharedBindings, sharedConceptAttr, keys[name], "service", service}
-
-		return e.sharedTurn(ctx, prompt, name, attrs, payload, schema)
-	})
+			return bindingRequest{productText, e.sharing.stepsLinking(key, service), service, one, interfaceContext},
+				schema, err
+		}})
 	if err != nil {
 		return err
 	}
 
-	for _, name := range names {
-		gradeBindings(answers[name], map[string]linkedBinding{keys[name]: linked[keys[name]]}, result)
+	for _, key := range keys {
+		gradeBindings(answers[key], map[string]linkedBinding{key: linked[key]}, result)
 	}
 
 	return nil

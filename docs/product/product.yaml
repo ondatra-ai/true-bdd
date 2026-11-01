@@ -320,8 +320,10 @@ glossary:
       past it use the fewest batches with sizes differing by at most one.
       Remeasure this default when claude-opus-5 or the answer format changes.
       Every grouped concept and suite is one Item. All Items must have a binding
-      for the suite service, judged afresh by scen check's binding judgement;
-      a missing or ambiguous binding stops before any skeleton, naming the concept.
+      for the suite service, judged as scen check judges it: one turn per
+      binding (concept, block and service) over the steps of every Item that
+      reaches it; a missing or ambiguous binding stops before any skeleton,
+      naming the concept.
       A host declaring no concepts has no Item: its unbound steps are Step
       coverage's findings. Without --fix, build steps then lists every concept
       Item still to write, checks Step coverage in-process and exits non-zero

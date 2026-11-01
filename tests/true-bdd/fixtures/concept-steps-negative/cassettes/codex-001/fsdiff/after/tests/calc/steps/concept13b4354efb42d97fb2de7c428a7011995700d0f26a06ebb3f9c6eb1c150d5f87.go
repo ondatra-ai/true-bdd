@@ -3,47 +3,35 @@ package steps
 import (
 	"bytes"
 	"fmt"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
 )
 
 //truebdd:concept when "halving"
 func concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {
-	number := args[0]
+	const hostRoot = "../.."
+	const pkg = "./services/calc"
+	const command = "halve"
 
-	// The declared halve command runs from the host root: walk up from the
-	// suite's working directory to the directory holding go.mod.
-	root, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("halve %s: locating the host root: %w", number, err)
-	}
-	for {
-		if _, statErr := os.Stat(filepath.Join(root, "go.mod")); statErr == nil {
-			break
-		}
-		parent := filepath.Dir(root)
-		if parent == root {
-			return fmt.Errorf("halve %s: no host root with go.mod above the working directory", number)
-		}
-		root = parent
+	value := args[0]
+	if _, err := strconv.Atoi(value); err != nil {
+		return fmt.Errorf("halve value %q is not a whole number: %w", value, err)
 	}
 
+	cmd := exec.Command("go", "run", pkg, command, value)
+	cmd.Dir = hostRoot
 	var stdout, stderr bytes.Buffer
-	cmd := exec.Command("go", "run", "./services/calc", "halve", number)
-	cmd.Dir = root
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("halve %s: %w: %s", number, err, strings.TrimSpace(stderr.String()))
+		return fmt.Errorf("go run %s %s %s failed: %w: %s", pkg, command, value, err, strings.TrimSpace(stderr.String()))
 	}
 
-	printed := strings.TrimSpace(stdout.String())
-	halved, err := strconv.Atoi(printed)
+	out := strings.TrimSpace(stdout.String())
+	halved, err := strconv.Atoi(out)
 	if err != nil {
-		return fmt.Errorf("halve %s: stdout %q is not an integer: %w", number, printed, err)
+		return fmt.Errorf("go run %s %s %s printed %q, want an integer: %w", pkg, command, value, out, err)
 	}
 
 	state.Result = halved

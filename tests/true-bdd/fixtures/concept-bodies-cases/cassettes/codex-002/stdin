@@ -125,10 +125,10 @@ definitions:
       pattern: ^the calculator's output (matches|does not match) (.+)$
       captures:
         - name: comparison
-          means: The literal alternative "matches" or "does not match", captured because it decides whether the body requires a match of the pattern against the kept stdout or requires no match.
+          means: 'Which outcome the step requires: the literal "matches" (a match is required) or "does not match" (no match is required). Captured because it is the alternative that changes what the body asserts.'
         - name: pattern
-          means: The regular expression, taken as the whole rest of the step after the comparison word, that the body matches against the kept stdout stripped of its trailing newline.
-      serves: 'Serves the whole does clause: "Match the step''s pattern, a regular expression taken as the rest of the step, against the kept stdout without its trailing newline" (capture 2, free text ending the step) "and require a match or, when the step says does not match, no match" (capture 1, the negation alternative). The words "the calculator''s output" are stated literally so the pattern is this concept and not any text, while both halves and both commands (halve, double) share the one shape the binding describes.'
+          means: The regular expression taken as the rest of the step, free text running to the end of the step, which the body matches against the kept stdout stripped of its trailing newline.
+      serves: 'Serves the whole of "Match the step''s pattern, a regular expression taken as the rest of the step, against the kept stdout without its trailing newline, and require a match or, when the step says does not match, no match": the second capture is the pattern clause, the first capture is the "require a match or ... no match" clause.'
       steps:
         - text: the calculator's output matches ^3$
           captures:
@@ -186,15 +186,13 @@ scenarios:
 
 
 ## Target
-tests/calc/steps
+`tests/calc/steps/concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e.go`
+
+## Scope
+Only this file's body and import block change. Do not touch `tests/calc/steps/state.go` (the existing `State.Output` field is the kept stdout and is sufficient — no shared-state change is needed), `tests/calc/steps/register.go`, the other concept file, the generated test, the Specification or service code. Preserve the `//truebdd:concept then "output"` record, the function name and the signature exactly as they are.
 
 ## Required Changes
-
-Only the body of the one `then` "output" definition changes. No shared-state change is needed: the suite's `State` already has `Output string` (tests/calc/steps/state.go), and the `when` "operation" definition already stores the command's stdout there with its trailing newline stripped (`strings.TrimRight(stdout.String(), "\r\n")`), which is exactly the "kept stdout without its trailing newline" the binding names. Do not touch tests/calc/steps/state.go, tests/calc/steps/register.go, the `when` definition, tests/calc/calc_test.go, tests/calc/scenarios/scenarios.go, the Specification or the service.
-
-### 1. Replace the whole contents of `tests/calc/steps/concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e.go`
-
-Keep the package clause, the `//truebdd:concept then "output"` record and the function name/signature byte-for-byte as below; only the import block and the body differ from the skeleton.
+Replace the whole contents of `tests/calc/steps/concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e.go` with:
 
 ```go
 package steps
@@ -202,52 +200,45 @@ package steps
 import (
 	"fmt"
 	"regexp"
+	"strings"
 )
 
 //truebdd:concept then "output"
 func concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e(state *State, args []string) error {
-	if len(args) != 2 {
-		return fmt.Errorf("then output: expected 2 captures (comparison, pattern), got %d", len(args))
-	}
 	comparison, pattern := args[0], args[1]
 
-	// The when "operation" step keeps the command's stdout in state.Output with
-	// its trailing newline already stripped; this step only observes it.
-	output := state.Output
+	// The When step kept the command's stdout; drop a trailing newline here too so
+	// the pattern is matched against the printed value alone, as the binding says.
+	output := strings.TrimRight(state.Output, "\r\n")
 
 	expression, err := regexp.Compile(pattern)
 	if err != nil {
-		return fmt.Errorf("then output: the step's pattern %q is not a valid regular expression: %w", pattern, err)
+		return fmt.Errorf("the step's pattern %q is no Go regular expression: %w", pattern, err)
 	}
+
 	matched := expression.MatchString(output)
 
 	switch comparison {
 	case "matches":
 		if !matched {
-			return fmt.Errorf("then output: the calculator's output %q does not match %q", output, pattern)
+			return fmt.Errorf("the calculator's output %q has no match for %q", output, pattern)
 		}
 	case "does not match":
 		if matched {
-			return fmt.Errorf("then output: the calculator's output %q matches %q, but the step requires no match", output, pattern)
+			return fmt.Errorf("the calculator's output %q has a match for %q", output, pattern)
 		}
 	default:
-		return fmt.Errorf("then output: the step says %q, which is neither matches nor does not match", comparison)
+		return fmt.Errorf("the step names no declared comparison: %q", comparison)
 	}
+
 	return nil
 }
 ```
 
-### Why this body
-
-- It serves the binding's whole `does` clause: capture 2 (`pattern`, the free text ending the step) is compiled as a Go regular expression and matched against the kept stdout; capture 1 (`comparison`) decides whether a match is required or forbidden.
-- It performs no arithmetic and never halves or doubles anything — the half or double is produced only by the `go run ./services/calc ...` invocation the `when` step makes through the declared Calculator CLI, and this Then step merely observes the recorded stdout. The four scenario steps (`^3$`, `^12$`, `\.`, `^3\.5$`) are each just a pattern handed to `regexp`.
-- A malformed capture count, an uncompilable pattern or an unknown comparison word each fail with a descriptive error rather than silently passing.
-
-### Notes for the applier
-
-- The import block must be the grouped form shown (`fmt` plus `regexp`); the skeleton's single `import "fmt"` line is replaced.
-- Add no package-level constants, variables, types or helper functions: everything new lives inside the function body.
-- Leave the registration line in tests/calc/steps/register.go and the pattern string `^the calculator's output (matches|does not match) (.+)$` untouched.
+## Why this serves the binding
+- `args[0]` is the `comparison` capture and `args[1]` is the `pattern` capture, in the order the definition's captures name them.
+- The body compiles the step's pattern as a Go regular expression and matches it against the kept stdout stripped of its trailing newline, requiring a match for `matches` and no match for `does not match` — exactly the binding's observation.
+- Nothing is computed about halving or doubling: the body only observes `state.Output`, which the `when "operation"` definition filled from the declared CLI's stdout.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists and shared state. Preserve the engine's patterns, registrations,

@@ -19,7 +19,7 @@ import (
 // disk. A scenario needing a new answer is what `build tests --fix` writes.
 func Register(suite *bddgo.Suite[State]) {
 	registerGivenSteps(suite)
-	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) runs "([^"]+)"$`, runCLI)
+	registerWhenSteps(suite)
 	suite.Step(`^the command exits with code (\d+|no)$`, assertExitCode)
 	// Undelimited on purpose: several patterns carry double quotes of
 	// their own (`msg="Refusing to start"`), and a quoting scheme would
@@ -124,11 +124,16 @@ func registerEngineLogSteps(suite *bddgo.Suite[State]) {
 	suite.Step(`^the engine dispatched (\d+|no) (validation|fix|apply) AI turns? to "([^"]+)"$`, assertAITurnsTo)
 }
 
+// registerWhenSteps binds the When steps: a role running a command, alone or after another.
+func registerWhenSteps(suite *bddgo.Suite[State]) {
+	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) runs "([^"]+)"$`, runCLI)
+	suite.Step(`^the System Architect runs build steps after scen check and a binding change$`, runGroupingChangedBinding)
+}
+
 // registerGivenSteps binds the Given steps: the tree a scenario starts
 // from and the preconditions the fixture establishes on it.
 func registerGivenSteps(suite *bddgo.Suite[State]) {
 	suite.Step(`^the (?:link|grouping) answer CLI is controlled for invalid replies$`, useInvalidLinkCLI)
-	suite.Step(`^the System Architect runs build steps after scen check and a binding change$`, runGroupingChangedBinding)
 	suite.Step(`^library downloads use an empty offline proxy$`, useOfflineLibraryProxy)
 	suite.Step(`^the "([^"]+)" project tree$`, prepareTree)
 	// Given preconditions the scenario states and the fixture materialises

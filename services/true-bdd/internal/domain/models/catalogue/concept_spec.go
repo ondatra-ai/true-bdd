@@ -36,4 +36,4 @@ func SpecifyConcepts(concepts []ConceptSpec, definitions []Definition, mappings 
 }
 
 // Key names a concept within its block.
-func (c ConceptSpec) Key() string { return string(c.Block) + ":" + c.Concept }
+func (c ConceptSpec) Key() string { return ConceptKey(c.Block, c.Concept) }

@@ -124,13 +124,13 @@ definitions:
       file: tests/calc/steps/concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba.go
       pattern: ^the Owner (?:(exactly) )?(halves|doubles) (-?\d+)$
       captures:
-        - name: exact
-          means: The literal word "exactly" when the step says the Owner halves exactly, empty otherwise; it is the alternative that makes the body pass --exact to the halve command so an odd number's half keeps its half instead of rounding toward zero.
+        - name: exactly
+          means: The literal word "exactly" when the step asks for an exact halving, empty when the step omits it; the body passes --exact to halve only when this is non-empty, which is what keeps an odd number's half instead of rounding it toward zero.
         - name: operation
-          means: Which declared command the step names, either "halves" or "doubles", selecting the halve or the double command to run as a process.
+          means: The operation the step names, either "halves" or "doubles"; the body runs the declared halve command for "halves" and the declared double command for "doubles".
         - name: number
-          means: The step's whole number, positive, zero or negative (an optional leading minus and digits), passed as the command's VALUE argument.
-      serves: 'The whole of "Run the declared halve or double command, as the step names the operation, as a process with the step''s whole number, passing --exact to halve when the step says exactly, and keep its stdout as the output": operation serves "as the step names the operation", number serves "with the step''s whole number", exact serves "passing --exact to halve when the step says exactly", and the single stdout outcome needs no capture.'
+          means: The step's whole number, with an optional leading minus so positive, zero and negative numbers all bind; the body passes it as the command's VALUE argument.
+      serves: 'The whole of Does: "Run the declared halve or double command, as the step names the operation" is served by the operation capture, "as a process with the step''s whole number" by the number capture, and "passing --exact to halve when the step says exactly" by the exactly capture; "keep its stdout as the output" needs no capture. The words "the Owner", "halves"/"doubles" and "exactly" fix the pattern to this concept, while the plural-only verb forms carry no variant that needs a non-capturing group.'
       steps:
         - text: the Owner halves 6
           captures:
@@ -191,37 +191,16 @@ scenarios:
           - the calculator's output matches ^3\.5$
 
 
-# Fix Prompt for Item when-operation: when concept "operation"
+## Fix Prompt for Item when-operation: when concept "operation"
 
-## Target
-tests/calc/steps
-
-## Scope
-Change only the body (and that file's import block) of
-`tests/calc/steps/concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba.go`.
-
-Do NOT touch:
-- `tests/calc/steps/register.go` (registration and pattern stay exactly as they are),
-- the function name or signature `func concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba(state *State, args []string) error`,
-- the `//truebdd:concept when "operation"` record,
-- `tests/calc/steps/concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e.go` (the then "output" definition),
-- `tests/calc/state.go`-equivalent `tests/calc/steps/state.go`, the generated tests, the Specification, or `services/calc`.
-
-## Shared state
-No change needed. `State` already has the single field the binding requires:
-
-```go
-type State struct{ Output string }
-```
-
-The body writes the command's stdout into `state.Output`; the separate then "output"
-concept reads it.
-
-## Required Changes
-
-Replace the whole contents of
+### Target
 `tests/calc/steps/concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba.go`
-with exactly this:
+
+### Shared state
+No change. `State.Output` in `tests/calc/steps/state.go` already carries the calculator's stdout, and the `then "output"` concept reads it. Do not touch `state.go`, `register.go`, the other definition file, the generated test or the Specification.
+
+### Required Changes
+Replace the whole contents of `tests/calc/steps/concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba.go` with the code below. The `//truebdd:concept` record, the function name and the signature are preserved exactly; only the body and the import block change.
 
 ```go
 package steps
@@ -235,15 +214,12 @@ import (
 
 //truebdd:concept when "operation"
 func concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba(state *State, args []string) error {
-	if len(args) != 3 {
-		return fmt.Errorf("when operation: expected 3 captures (exact, operation, number), got %d", len(args))
-	}
-	exact, operation, number := args[0], args[1], args[2]
+	exactly, operation, number := args[0], args[1], args[2]
 
-	// The Calculator CLI document declares both commands as
-	// "go run ./services/calc <command> ... from the host root"; the suite's
-	// tests run in tests/calc, so the host root is two levels up.
+	// The suite's tests run in tests/calc, so the host root the declared CLI
+	// documents its commands from is two directories up.
 	const hostRoot = "../.."
+	const servicePackage = "./services/calc"
 
 	var command string
 	switch operation {
@@ -252,43 +228,39 @@ func concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba(sta
 	case "doubles":
 		command = "double"
 	default:
-		return fmt.Errorf("when operation: the step names operation %q, which is neither halves nor doubles", operation)
+		return fmt.Errorf("the step names no declared operation: %q", operation)
 	}
 
-	cmdArgs := []string{"run", "./services/calc", command}
-	if exact != "" {
+	argv := []string{"run", servicePackage, command}
+	if exactly != "" {
 		if command != "halve" {
-			return fmt.Errorf("when operation: the Calculator CLI declares --exact only for halve, not for %s", command)
+			return fmt.Errorf("the declared %s command takes no --exact flag", command)
 		}
-		cmdArgs = append(cmdArgs, "--exact")
+		argv = append(argv, "--exact")
 	}
-	cmdArgs = append(cmdArgs, number)
+	argv = append(argv, number)
 
-	cmd := exec.Command("go", cmdArgs...)
+	cmd := exec.Command("go", argv...)
 	cmd.Dir = hostRoot
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("when operation: go %s: %w: %s", strings.Join(cmdArgs, " "), err, strings.TrimSpace(stderr.String()))
+		return fmt.Errorf("go %s in %s: %w: %s", strings.Join(argv, " "), hostRoot, err, strings.TrimSpace(stderr.String()))
 	}
 
+	// Keep the command's stdout as the output, without the trailing newline the
+	// declared interface says it prints after the value.
 	state.Output = strings.TrimRight(stdout.String(), "\r\n")
 	return nil
 }
 ```
 
-## Why this body serves the binding
-- `operation` selects the declared command (`halves` → `halve`, `doubles` → `double`) and nothing else is run.
-- `number` is passed verbatim as the command's required `value` argument, so a leading minus reaches the CLI unchanged; the body never parses or arithmetically touches it.
-- `exact` adds the declared `--exact` flag before `VALUE`, only for `halve`, matching `halve [--exact] VALUE` in `docs/architecture/calc-cli.yaml`.
-- The command runs as a process from the host root, inheriting the ambient environment (so the inherited Go build cache and temp dir are used as-is — no `cmd.Env` override, no separate `GOCACHE`).
-- Only the command's stdout is kept, with just the documented trailing newline stripped, so the then "output" concept can compare it against the scenarios' anchored patterns (`^3$`, `^12$`, `^3\.5$`, `\.`). No halving, doubling, rounding or formatting happens in the step.
-- A non-zero exit (the document's `'1'` response) fails the step with stderr attached, instead of silently leaving a stale `Output`.
-
-## Constants and helpers
-`hostRoot` is declared inside the function body. No package-level constants,
-variables, types or helper functions are added.
+### Why this body serves the binding
+- It runs the declared command as a process — `go run ./services/calc halve [--exact] VALUE` or `go run ./services/calc double VALUE` from the host root — exactly as the `halve` and `double` entries of `docs/architecture/calc-cli.yaml` document them.
+- `operation` chooses the declared command (`halves` → `halve`, `doubles` → `double`); `number` is passed verbatim as the required `value` argument, so positive, zero and negative integers all pass through unchanged; a non-empty `exactly` adds the declared `exact` flag, and only to `halve`.
+- It never halves or doubles anything itself and never inspects the service's source: the whole result comes from the process's stdout, stored in `state.Output` for the `then "output"` concept to observe.
+- A non-zero exit (the interface's `'1': Invalid arguments`) fails the step with the command line and the process's stderr, rather than leaving a stale or empty output behind.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists and shared state. Preserve the engine's patterns, registrations,
