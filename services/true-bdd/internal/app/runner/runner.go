@@ -42,6 +42,9 @@ type Spec[I any] struct {
 	Fix bool
 	// ValidationConcurrency enables parallel item validation above one.
 	ValidationConcurrency int
+	// ShareConceptJudgements judges each binding and each linked concept's words once per walk, after
+	// every Scenario's link: scen check walks with the concurrent walker whatever its concurrency (#264).
+	ShareConceptJudgements bool
 	// DeferCompletion lets a caller announce success after post-run validation.
 	DeferCompletion bool
 	// RecoverWriterFailures lets build code rerun files left by a failed writer.
@@ -314,23 +317,8 @@ func buildSpecEngine[I any](
 
 	var selected engine.Walker[I, *checklistmodels.PromptWithContext] = walker
 
-	if spec.ValidationConcurrency > 1 {
-		for _, item := range items {
-			id, title := spec.GetSubject(item)
-			builder.Ensure(id, title)
-		}
-
-		selected = &engine.ConcurrentWalker[I, *checklistmodels.PromptWithContext]{
-			Limit: spec.ValidationConcurrency, MaxFixes: maxAttempts, Gate: isCheckQuery, OnSkip: recordSkip(spec, builder),
-			CellFor: func(_ I, _ *checklistmodels.PromptWithContext) *engine.CellHandler[I, *checklistmodels.PromptWithContext] {
-				var result checklistmodels.ValidationResult
-
-				return &engine.CellHandler[I, *checklistmodels.PromptWithContext]{
-					Query: buildQueryClosure(spec, builder, &result, refusals), GenFix: buildGenFixClosure(spec, &result),
-					Fix: buildFixClosure(spec, &result, &fixCount, refusals), UI: spec.UI, FixMode: spec.Fix,
-				}
-			},
-		}
+	if spec.ValidationConcurrency > 1 || spec.ShareConceptJudgements {
+		selected = concurrentWalker(spec, builder, items, maxAttempts, refusals, &fixCount)
 	}
 
 	eng := engine.New(
@@ -358,6 +346,37 @@ func buildSpecEngine[I any](
 	}
 
 	return eng
+}
+
+// concurrentWalker validates items in parallel; sharing concept judgements, it starts each validation round on
+// the evaluator and holds the bindings Prompt until every item's link has answered.
+func concurrentWalker[I any](
+	spec Spec[I], builder *reportBuilder, items []I, maxAttempts int, refusals *fixRefusals, fixCount *int,
+) *engine.ConcurrentWalker[I, *checklistmodels.PromptWithContext] {
+	for _, item := range items {
+		id, title := spec.GetSubject(item)
+		builder.Ensure(id, title)
+	}
+
+	walker := &engine.ConcurrentWalker[I, *checklistmodels.PromptWithContext]{
+		Limit: max(1, spec.ValidationConcurrency), MaxFixes: maxAttempts, Gate: isCheckQuery,
+		OnSkip: recordSkip(spec, builder),
+		CellFor: func(_ I, _ *checklistmodels.PromptWithContext) *engine.CellHandler[I, *checklistmodels.PromptWithContext] {
+			var result checklistmodels.ValidationResult
+
+			return &engine.CellHandler[I, *checklistmodels.PromptWithContext]{
+				Query: buildQueryClosure(spec, builder, &result, refusals), GenFix: buildGenFixClosure(spec, &result),
+				Fix: buildFixClosure(spec, &result, fixCount, refusals), UI: spec.UI, FixMode: spec.Fix,
+			}
+		},
+	}
+
+	if spec.ShareConceptJudgements {
+		walker.Waits = judgesBindings
+		walker.OnValidate = func([]I) { spec.Evaluator.StartWalk() }
+	}
+
+	return walker
 }
 
 // reWalkBanner emits the "RE-WALK N/M (fixes applied — verifying)"

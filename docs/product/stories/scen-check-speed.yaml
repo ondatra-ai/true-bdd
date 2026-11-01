@@ -3,7 +3,7 @@ story:
   feature: scen-check
   title: Validate Scenarios concurrently with faithful replay
   as_a: Quality Engineer
-  i_want: concurrent Scenario validation with ordered fixes and replay by request
+  i_want: concurrent Scenario validation with ordered fixes, each binding and each linked concept's words judged once per walk, and replay by request
   so_that: a large Registry can be checked promptly and replayed offline
   status: IMPLEMENTED
   acceptance_criteria:
@@ -36,3 +36,22 @@ story:
             - 'stdout matches Exiting\.'
             - 'stdout does not match Walk stopped'
             - "replay consumes the recorded validation requests in reverse order"
+    - id: 003-shared-judgements
+      description: A walk judges each binding and each linked concept's words once, and every Scenario using them answers from those verdicts
+      steps:
+        - given:
+            - "the \"scen-check-shared-judgements\" project tree"
+        - when:
+            - "the Quality Engineer runs \"scen check\""
+        - then:
+            - "the command exits with code 0"
+            - "the engine dispatched 8 AI turns"
+            - 'the file matching "tmp/true-bdd.log.json" has exactly 1 matches for "msg":"Shared concept judgement answered","promptIndex":2,"judgement":"bindings","concept":"when:halve"'
+            - 'every file matching "tmp/*/02-shared-02-bindings-when-halve-*-user.txt" matches the number is halved'
+            - 'every file matching "tmp/*/02-shared-02-bindings-when-halve-*-user.txt" matches halve the number'
+            - 'the file matching "tmp/true-bdd.log.json" has exactly 1 matches for "msg":"Concept judgement answered","subjectID":"host-001","promptIndex":2,"judgement":"bindings","answer":"pass"'
+            - 'the file matching "tmp/true-bdd.log.json" has exactly 1 matches for "msg":"Concept judgement answered","subjectID":"host-002","promptIndex":2,"judgement":"bindings","answer":"pass"'
+            - 'the file matching "tmp/true-bdd.log.json" has exactly 1 matches for "msg":"Shared concept judgement answered","promptIndex":3,"judgement":"words","concept":"when:halve"'
+            - 'the file matching "tmp/true-bdd.log.json" has exactly 1 matches for "msg":"Concept judgement answered","subjectID":"host-001","promptIndex":3,"judgement":"words","answer":"pass"'
+            - 'the file matching "tmp/true-bdd.log.json" has exactly 1 matches for "msg":"Concept judgement answered","subjectID":"host-002","promptIndex":3,"judgement":"words","answer":"pass"'
+            - 'no file outside "tmp" changed'

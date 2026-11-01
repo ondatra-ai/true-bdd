@@ -5,6 +5,7 @@ import (
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/product"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/template"
 )
 
 func (e *ChecklistEvaluator) evaluateLink(ctx context.Context, subject any, prompt checklist.PromptWithContext,
@@ -35,27 +36,41 @@ func (e *ChecklistEvaluator) evaluateLink(ctx context.Context, subject any, prom
 		return result, err
 	}
 
-	threshold := linkThreshold(prompt)
+	grade, err := gradeLinks(response, steps, source.Concepts, linkThreshold(prompt))
+	e.finishLink(subject, grade, err, &result)
 
-	links, findings, passed, err := gradeLinks(response, steps, source.Concepts, threshold)
+	return result, nil
+}
 
-	result.Context = findings
+// finishLink records the link's verdict on the cell and, when it passed, its links on the subject.
+func (e *ChecklistEvaluator) finishLink(subject any, grade linkGrade, err error, result *checklist.ValidationResult) {
+	result.Context = grade.findings
 	if err != nil {
-		failConcept(&result, "link answer malformed or incomplete: "+err.Error())
+		failConcept(result, "link answer malformed or incomplete: "+err.Error())
 	}
 
-	if !passed {
+	if !grade.passed {
 		result.Status = checklist.StatusFail
 		result.ActualAnswer = AnswerFail
 	}
 
+	linked := make([]linkedStep, 0)
+
 	if result.Status == checklist.StatusPass {
-		storeConceptLinks(subject, links, true)
+		storeConceptLinks(subject, grade.links, true)
+
+		service := ""
+		if item, ok := subject.(*template.ScenarioCheckData); ok {
+			service = item.Service
+		}
+
+		for index, link := range grade.links {
+			linked = append(linked, linkedStep{service: service, key: linkKey(link), step: grade.steps[index]})
+		}
 	}
 
-	e.saveConceptResult(result)
-
-	return result, nil
+	e.sharing.publish(e.subjectID, linked)
+	e.saveConceptResult(*result)
 }
 
 func linkThreshold(prompt checklist.PromptWithContext) int {

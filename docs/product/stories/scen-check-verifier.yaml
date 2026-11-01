@@ -39,7 +39,7 @@ story:
                 - and: 'stdout matches PASS: 16 '
                 - and: stdout matches ALL CHECKS PASSED!
                 - and: stdout matches SCEN CHECK COMPLETE
-                - and: the engine dispatched 11 AI turns
+                - and: the engine dispatched 17 AI turns
                 - and: no file outside "tmp" changed
         - id: 002-failed-scenario-exits-1
           description: A registry scenario that fails a walked prompt of the shipped checklist, a model question or a closure check, must be reported as failed and make the command exit 1, so a bare `scen check` can gate a change

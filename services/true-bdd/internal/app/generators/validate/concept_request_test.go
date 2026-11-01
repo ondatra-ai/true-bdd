@@ -14,12 +14,22 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/catalogue"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/provider"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/ports"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/config"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/disk"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/template"
 )
 
 func conceptRequestEvaluator(t *testing.T) (*validate.ChecklistEvaluator, *linkReply, string) {
+	t.Helper()
+
+	reply := &linkReply{response: `{"answer":"pass","context":["convertible"]}`}
+	evaluator, repository := conceptRequestEvaluatorWith(t, reply)
+
+	return evaluator, reply, repository
+}
+
+func conceptRequestEvaluatorWith(t *testing.T, port ports.AIPort) (*validate.ChecklistEvaluator, string) {
 	t.Helper()
 
 	repository, err := filepath.Abs("../../../../../..")
@@ -59,12 +69,11 @@ func conceptRequestEvaluator(t *testing.T) (*validate.ChecklistEvaluator, *linkR
 		t.Fatal(err)
 	}
 
-	reply := &linkReply{response: `{"answer":"pass","context":["convertible"]}`}
-	evaluator := validate.NewChecklistEvaluatorWithPaths(reply, cfg, models,
+	evaluator := validate.NewChecklistEvaluatorWithPaths(port, cfg, models,
 		filepath.Join(repository, "templates/us-checklist.system.prompt.tpl"),
 		filepath.Join(repository, "templates/us-checklist.prompt.tpl"))
 
-	return evaluator, reply, repository
+	return evaluator, repository
 }
 
 func shippedConceptPrompt(t *testing.T, repository, kind string) checklist.PromptWithContext {

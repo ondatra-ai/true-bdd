@@ -50,3 +50,22 @@ func TestScenCheckSpeed002ReverseRequestReplay(t *testing.T) {
 	s.And(`replay consumes the recorded validation requests in reverse order`)
 	s.Done()
 }
+
+// scen-check-speed-003-shared-judgements: A walk judges each binding and each linked concept's words once, and every Scenario using them answers from those verdicts
+func TestScenCheckSpeed003SharedJudgements(t *testing.T) {
+	s := scenarios.New(t, "scen-check-speed-003-shared-judgements")
+	s.Given(`the "scen-check-shared-judgements" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`the engine dispatched 8 AI turns`)
+	s.And(`the file matching "tmp/true-bdd.log.json" has exactly 1 matches for "msg":"Shared concept judgement answered","promptIndex":2,"judgement":"bindings","concept":"when:halve"`)
+	s.And(`every file matching "tmp/*/02-shared-02-bindings-when-halve-*-user.txt" matches the number is halved`)
+	s.And(`every file matching "tmp/*/02-shared-02-bindings-when-halve-*-user.txt" matches halve the number`)
+	s.And(`the file matching "tmp/true-bdd.log.json" has exactly 1 matches for "msg":"Concept judgement answered","subjectID":"host-001","promptIndex":2,"judgement":"bindings","answer":"pass"`)
+	s.And(`the file matching "tmp/true-bdd.log.json" has exactly 1 matches for "msg":"Concept judgement answered","subjectID":"host-002","promptIndex":2,"judgement":"bindings","answer":"pass"`)
+	s.And(`the file matching "tmp/true-bdd.log.json" has exactly 1 matches for "msg":"Shared concept judgement answered","promptIndex":3,"judgement":"words","concept":"when:halve"`)
+	s.And(`the file matching "tmp/true-bdd.log.json" has exactly 1 matches for "msg":"Concept judgement answered","subjectID":"host-001","promptIndex":3,"judgement":"words","answer":"pass"`)
+	s.And(`the file matching "tmp/true-bdd.log.json" has exactly 1 matches for "msg":"Concept judgement answered","subjectID":"host-002","promptIndex":3,"judgement":"words","answer":"pass"`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}

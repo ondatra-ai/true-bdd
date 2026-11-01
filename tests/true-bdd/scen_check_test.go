@@ -478,7 +478,7 @@ func TestScenCheck001ClaimedScenarioPasses(t *testing.T) {
 	s.And(`stdout matches PASS: 16 `)
 	s.And(`stdout matches ALL CHECKS PASSED!`)
 	s.And(`stdout matches SCEN CHECK COMPLETE`)
-	s.And(`the engine dispatched 11 AI turns`)
+	s.And(`the engine dispatched 17 AI turns`)
 	s.And(`no file outside "tmp" changed`)
 	s.Done()
 }

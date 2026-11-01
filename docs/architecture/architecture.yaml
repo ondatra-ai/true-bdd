@@ -60,7 +60,7 @@ architecture:
   prompt_data:
     checklist:
       rendering: &prompt-rendering >-
-        Render the configured template file verbatim through Go text/template with Sprig FuncMap and the engine toYaml override (yaml.v3 Marshal). Template literal bytes, leading/trailing newlines, trim markers, field order and conditional branches are authoritative; no final trim or YAML/Markdown escaping is applied to rendered prompts. Lists retain their input order; map ranges sort string keys. Dot paths below are reads, including methods and collection tests/ranges; [] denotes one ranged value. All strings are YAML-decoded values rather than their source spelling. The same role data reaches system and user templates. Structured concept Q protocols bypass these templates: the Q text plus a JSON-only instruction is the system prompt, and indented JSON is the user prompt. Link embeds the Item id/title, steps with numeric keys and optional criterion ids, and the whole product including roles/glossary. Its schema requires every non-judge step and every own-block concept score (integer 0..10), reason and nullable other_block_concept. with.threshold defaults to 9 and accepts integers 1..10. Binding embeds the product, Scenario steps, linked means, bindings and full Public interface; its schema requires every block:name key, an unambiguous boolean and reason. Raw model answers are saved as model-answer.txt, and the engine-derived canonical answer/context JSON is saved in both response.txt and result.yaml for the coverage census. Links live only in the current walk Item. Walking orders D prompts, then concept links, then other Q prompts, preserving file-position indices; a host declaring no concepts omits the concept cells and keeps its order.
+        Render the configured template file verbatim through Go text/template with Sprig FuncMap and the engine toYaml override (yaml.v3 Marshal). Template literal bytes, leading/trailing newlines, trim markers, field order and conditional branches are authoritative; no final trim or YAML/Markdown escaping is applied to rendered prompts. Lists retain their input order; map ranges sort string keys. Dot paths below are reads, including methods and collection tests/ranges; [] denotes one ranged value. All strings are YAML-decoded values rather than their source spelling. The same role data reaches system and user templates. Structured concept Q protocols bypass these templates: the Q text plus a JSON-only instruction is the system prompt, and indented JSON is the user prompt. Link embeds the Item id/title, steps with numeric keys and optional criterion ids, and the whole product including roles/glossary. Its schema requires every non-judge step and every own-block concept score (integer 0..10), reason and nullable other_block_concept. with.threshold defaults to 9 and accepts integers 1..10. In scen check, Binding is one turn per binding (concept, block, service) per walk, started once every Scenario has answered the Prompts before it: it embeds the product, every distinct step (block and text, keyed from 1 in block and text order) of the walk's passing links that reached the concept for that service, the service, that one linked means and binding, and the full Public interface; its schema requires that block:name key, an unambiguous boolean and reason, and each Scenario's cell grades the verdicts of the bindings its link reached. build steps' Binding turn, outside a walk, embeds one suite Item's steps and all its linked means and bindings, requiring every block:name key. In scen check, Words is one turn per linked concept per walk embedding the product and that concept; in us refine one turn per Story embeds the item id, the product and every linked concept. A shared turn's artifacts are named shared-<index> <judgement> <key>, and each walk validation round, --fix ones included, judges afresh. Raw model answers are saved as model-answer.txt, and the engine-derived canonical answer/context JSON is saved in both response.txt and result.yaml for the coverage census. Links live only in the current walk Item. Walking orders D prompts, then concept links, then other Q prompts, preserving file-position indices; a host declaring no concepts omits the concept cells and keeps its order.
       fields:
         Docs: &docs >-
           Checklist effective docs: a nonempty Prompt docs list replaces the checklist defaults; even an explicitly empty list falls back. Keys resolve through config documents.<key>; duplicate keys collapse in a map, unsatisfiable keys warn and are skipped after preflight. Template map range sorts string keys lexically, not checklist order; empty emits no documentation section.
@@ -1322,7 +1322,8 @@ architecture:
         references, duplicates, incomplete entries and non-UI intent. Fix proposals
         go to the System Architect at the menu and apply writes architecture.concepts
         and any approved missing Public interface declaration, never a Scenario.
-        The existing fix ledger restores documents when a walk fails. The link and means word judgements run in us refine and scen check.
+        The existing fix ledger restores documents when a walk fails. The link and means word judgements run in us refine and scen check;
+        scen check judges each binding and each linked concept's words once per walk.
         build steps reuses the binding judgement after suite grouping, and its
         proposal turn reads the binding before the engine checks the patterns.
         step-definitions holds each Scenario step to one definition recording a declared concept of its block.
@@ -1603,12 +1604,12 @@ architecture:
         `true-bdd/checklists/<command stem>.yaml` in the run directory (`scen
         check` reads `scen-check.yaml`): sections of Prompts the command reads
         at startup. Different Scenarios of scen check validate concurrently up to
-        engine.scen_check_concurrency (init writes 1; absence retains legacy sequential behavior).
-        Above 1, runner uses per-Cell verdict state and a bounded worker pool. Each worker
-        finishes a Scenario's D Prompts before its ordered Q Prompts, skipping Q after a failed D.
+        engine.scen_check_concurrency (init writes 1, also the value when absent).
+        At every concurrency the runner uses per-Cell verdict state and a bounded worker pool. Each worker
+        finishes a Scenario's D Prompts before its ordered Q Prompts, skipping Q after a failed D;
+        the bindings Prompt starts only after every Scenario has answered the Prompts before it.
         After all validation joins, fixes run serially in ascending Scenario id order. Each apply
         discards pending verdicts and starts a new whole walk, bounded by max_apply_attempts.
-        At 1 the original cell-by-cell walker remains in use.
       observed_by: >-
         A fixture narrows a checklist in `checklist-prompts.yaml` at its root,
         mapping a checklist's stem to snippets of its Prompts' questions; the
