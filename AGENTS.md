@@ -46,7 +46,7 @@ Each triage role's label is the role's own name. Read `docs/agents/triage-labels
 
 ### Domain docs
 
-Single-context: `GLOSSARY.md` at the repo root, ADRs in `docs/adr/`. Read `docs/agents/domain.md` before you explore the codebase. An ADR ends by naming the grilling Q&A log entries that decided it: the `docs/qna/<file>.yaml` path and each `Q<n>`. A grilling's log quotes every message of the Owner verbatim, including one sent while you work: in the `answer` of the entry it bears on, or in an entry of its own.
+Single-context: `GLOSSARY.md` at the repo root, ADRs in `docs/adr/`. Read `docs/agents/domain.md` before you explore the codebase. Name a thing the glossary defines by its English term as written there, in a reply in any language: "Scenario", "Suite wiring", in a Russian sentence too. An ADR ends by naming the grilling Q&A log entries that decided it: the `docs/qna/<file>.yaml` path and each `Q<n>`. A grilling's log quotes every message of the Owner verbatim, including one sent while you work: in the `answer` of the entry it bears on, or in an entry of its own.
 
 ## Codex
 
