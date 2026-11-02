@@ -40,7 +40,7 @@ architecture:
 term_mapping:
   term: str()
   technical: str()
-  observed_by: str()
+  observed_by: str(required=False)
 
 ---
 # How this repository's tests run. `framework` routes to a runner and

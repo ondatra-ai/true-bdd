@@ -1,0 +1,22 @@
+roles:
+- name: System Architect
+  description: Owns the service and its concept bindings.
+concepts:
+  given:
+  - concept: greeting
+    means: The greeting configuration file contains the greeting before a request.
+    terms:
+    - greeting
+  when:
+  - concept: request greeting
+    means: Call greet once.
+    terms:
+    - greeting
+  then:
+  - concept: greeting
+    means: Compare the greeted log record with the expected greeting.
+    terms:
+    - greeting
+glossary:
+- term: greeting
+  means: One two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty twenty-one twenty-two twenty-three twenty-four twenty-five twenty-six. Two! Three? Four.

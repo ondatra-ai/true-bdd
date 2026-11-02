@@ -49,15 +49,13 @@ Then:
 
 ## Fix Prompt to Apply
 
-Fix for E2E-001 / mcp-service — check: declared-terms
+To the Product Owner — proposed fix for E2E-001, check `declared-terms`, service `mcp-service`.
 
-Finding: the Then concept `reply time` declares the term `latency`, but `docs/product/product.yaml` glossary defines only `mcp service` and `reply`. The term must be defined as a product meaning.
+Finding: the `then` concept `reply time` in `docs/product/product.yaml` declares `terms: [mcp service, reply, latency]`, but the product glossary defines only `mcp service` and `reply`. `latency` has no declared meaning, so the Word the concept leans on is undefined.
 
-Owner: **Product Owner** (product meanings). Nothing in `architecture.terms` or `architecture.concepts` changes, and the Scenario, its generated test and its step definitions stay untouched.
+This is a product meaning, so it belongs in the product document's glossary. The Scenario is not touched, and neither `architecture.terms` nor `architecture.concepts` needs to change: the concept already declares the term correctly, only its meaning is missing.
 
-The existing glossary already says a reply is "What the MCP service sends back for one message, and how long it took to arrive... its content and its delay are both behaviour." The new entry names that delay, so `reply time` can observe it; it adds no new behaviour.
-
-Proposed edit — one new glossary entry in `docs/product/product.yaml`, appended after the `reply` entry:
+Apply exactly one edit to `docs/product/product.yaml`:
 
 old_string:
 ```
@@ -77,14 +75,14 @@ new_string:
       are both behaviour.
   - term: latency
     means: >-
-      The delay of a reply: the time in milliseconds from the moment a
-      client sends a message to the MCP service until that message's
-      reply arrives.
+      How long a reply takes to arrive, counted from the moment the MCP
+      service receives the message until the client has the reply.
+      Measured in milliseconds.
 ```
 
-After this, `reply time`'s declared terms `[mcp service, reply, latency]` are all defined by the glossary, and the concept's meaning — "The latency of the MCP service's reply to the message is at most a stated number of milliseconds" — reads against a defined term.
+The new meaning stays inside the product document's stated limit of at most three sentences of at most 25 words each, in one paragraph, and it is phrased in the Operator's and Client Developer's words rather than from any Internal code. It reuses the already declared term `reply`, which the same concept also declares, so `reply time` now rests only on defined Words.
 
-Present this at the menu for the Product Owner's approval before applying.
+No Scenario, generated test or step definition changes. No Public interface declaration is needed, because this check concerns a declared term and not a binding reference.
 
 ---
 

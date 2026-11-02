@@ -49,27 +49,25 @@ Then:
 
 ## Fix Prompt to Apply
 
-Proposal for the Product Owner — add one glossary entry to the product document.
+Proposal for the Product Owner — one glossary entry in `docs/product/product.yaml`.
 
-Context: Scenario E2E-001, service mcp-service, check `declared-terms`. The then concept `reply time` (docs/product/product.yaml, `concepts.then`) declares the term `latency`, but the product glossary defines only `mcp service` and `reply`. The missing meaning is a product meaning, so it belongs in the glossary of the product document, owned by the Product Owner. No Scenario, generated test or step definition is touched, and no concept, binding or architecture.terms mapping changes.
+Finding (E2E-001, mcp-service, declared-terms): the `then` concept `reply time` declares the term `latency`, but the product glossary defines only `mcp service` and `reply`. The concept's meaning — "The latency of the MCP service's reply to the message is at most a stated number of milliseconds." — therefore rests on an undefined word.
 
-Per the refinement, the meaning states that the client clock measures it.
+Fix: add a `latency` glossary entry. It stays inside the product document's glossary; the Scenario, the `reply time` concept meaning and its `terms: [mcp service, reply, latency]` declaration are all untouched. Per your refinement, the meaning states that the client clock measures it. It keeps the glossary's house style: one paragraph, two sentences, each under 25 words.
 
-File: docs/product/product.yaml
+File: `docs/product/product.yaml`
 
 old_string:
-```
+```yaml
   - term: reply
     means: >-
       What the MCP service sends back for one message, and how long it
       took to arrive. A client waits on it, so its content and its delay
       are both behaviour.
-
-concepts:
 ```
 
 new_string:
-```
+```yaml
   - term: reply
     means: >-
       What the MCP service sends back for one message, and how long it
@@ -77,14 +75,14 @@ new_string:
       are both behaviour.
   - term: latency
     means: >-
-      How long a reply takes to arrive, measured by the client clock from
-      the moment the client sends the message to the moment the reply
-      arrives, in milliseconds.
-
-concepts:
+      The time from a client sending a message to its reply arriving, as
+      the client clock measures it. A larger latency means a slower
+      reply.
 ```
 
-After this edit the glossary defines `latency`, so every term declared by the then concept `reply time` (`mcp service`, `reply`, `latency`) is declared, and the `declared-terms` check for E2E-001 passes.
+No other document changes: this check names the product glossary only, so `architecture.terms` and `architecture.concepts` stay as they are, and no Public interface declaration is involved.
+
+Apply this edit?
 
 ---
 
