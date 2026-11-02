@@ -1,0 +1,349 @@
+intent: |
+  #285: every AI turn's prompt fits a 150,000-byte limit the engine checks
+  before it starts claude or codex; whatever is over it is a turn to optimize,
+  through paths, filtering and portions in place of one whole embedded context.
+  The Owner, 2 November, in three messages before the session:
+
+  «Я в целом думаю, что это надо выделить в отдельную задачу и взять сразу
+  после 84-й. Вот. И здесь надо подумать, потому как оптимизировать эти
+  промпты, то есть задача с тем, чтобы промпты оптимизировать. Под
+  оптимизировать понимается, что там есть больше, чем три, ну, больше, чем
+  один способ. Один способ – это передавать пути. Второй способ – это,
+  например, можно было бы фильтровать. То есть тут бы интересно попробовать
+  пофильтровать что-нибудь. Например, поразбивать их на какие-то части,
+  давать порциями. Там не один большой промпт, а делать 10 итераций
+  Claude-кода там с 10 разными промптами. Ну, как-то так. В любом случае
+  нужно сделать так, чтобы в целом объем задачи, да, которая туда попадает,
+  он был вменяемый, для того, чтобы его можно было сделать на контекстном
+  окне в несколько килобайт. Вообще желательно, чтобы его можно было сделать
+  на контекстном окне в 250 килобайт, даже не в 1 мегабайт. Ну, в смысле, не
+  1 миллион токенов. Вот. И для этого нужно уменьшить промпты, увеличить их
+  количество, сделать какую-то фильтрацию. В общем, как-то это собрать в
+  какую-то такую картинку. То есть это немножко задача обратная от того,
+  когда мы оптимизировали скорость, да, теперь надо оптимизировать размер.
+  И, но это надо сделать после того, как будет работать, ну, на какой-то
+  стабильной версии. Вот.»
+
+  «конкретно к задаче с оптимизацией промптов, я бы подошел с еще одного
+  жесткого ракурса, чтобы вот там есть движок, да, мы же где-то вызываем вот
+  эту всю вещь, чтобы перед вызовом Claude-P прям была проверка, что размер
+  промпта, который в него сейчас отправляется, меньше 100 килобайт. Кстати,
+  100 килобайт я взял с потолка. Я бы сказал тебе, да, что... Ну, я бы
+  передал тебе... То есть я бы сказал, что тебе нужно было бы, да, самому
+  посчитать, какой должен быть размер промпта, чтобы уложиться вместе с
+  ответом и с ризонингом в 250 тысяч токенов. Мне почему-то кажется, что 0,6
+  мегабайта — это даже многовато. Вот. Я бы еще уменьшал, но это уже ты
+  должен опираться на какие-то данные, а не на guess feelings. Вот, поэтому
+  проапдейть эту задачу и поехали дальше.»
+
+  «Смотри, я бы взял бы лимит в конце концов, да, я бы взял лимит в 150
+  килобайт. И все, что выше, да, было бы предложением для оптимизации, и мы
+  бы эту вещь оптимизировали. Настолько, насколько это возможно.»
+
+log:
+  - decision_trace:
+      research:
+        - |
+          The body turns run claude with Read(**), Glob(**), Grep(**) and
+          Write(./tmp/**) (recorded argv, e.g.
+          tests/true-bdd/fixtures/concept-bodies-cases/cassettes/claude-001/meta.json);
+          the codex writer reads its worktree; only the critique turn is
+          stripped of Read, Glob and Grep
+          (services/true-bdd/internal/app/generators/validate/step_critic.go:73).
+        - |
+          Agentic turns already read files themselves: over 708 recorded
+          calls, context grew from the first to the peak request by 11,542
+          tokens at p99, 18,105 at most.
+        - |
+          The record and replay proxy hashes argv and stdin only
+          (pkg/testkit/aiproxy, requestHash); a file read through a tool is
+          outside the hash, so a changed fixture would replay an old answer
+          unless the prompt carries the file's digest.
+        - |
+          Anthropic, "Effective context engineering for AI agents"
+          (https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents):
+          agents "maintain lightweight identifiers (file paths, stored queries,
+          web links, etc.)" and load data just in time; context is "a finite
+          resource with diminishing marginal returns"; "a hybrid strategy,
+          retrieving some data up front for speed".
+        - |
+          In round 4's `project tree` body prompt, fixture contents are
+          2,457,752 of 2,916,161 bytes (84%).
+      recommendation: |
+        (1): turns with read tools get each file by path, size and digest and
+        read what they need; the core (concept, binding, the Item's steps)
+        stays embedded; the critique decided separately.
+      settled: |
+        Option (1), paths with digests, is accepted as an approach, but the
+        Owner's next message reframes #285 as experiments: several approaches
+        are tried and compared, (1) among them, and no implementation is fixed
+        before their results.
+    question: |
+      Q1 - May a turn get a file by path instead of its content? (1) Yes, for
+      turns with read tools: path, size and digest of each file in the prompt,
+      the turn reads what it needs, the core stays embedded, the critique
+      decided separately. (2) No: only filtering and portions, everything
+      embedded. (3) Yes, paths without digests.
+    answer: |
+      1.
+
+      Я хотел бы подойти к этой задаче в виде экспериментов. То есть не фиксировать конкретную реализацию, а попробовать несколько, в том числе и тот, который мы только что обсудили.
+
+  - decision_trace:
+      research:
+        - |
+          Round 4 saved both turns over the limit whole (system, user and
+          response): `15-shared-15-bindings-then-console-output-…` and
+          `01-given-project-tree-fix-iter1-…` under the cut's
+          tmp/2026-11-02-12-39-35-77541/. The recorded cassettes carry the
+          flags the engine starts claude with for each kind of turn.
+        - |
+          References: the `console output` binding judgement passed whole in
+          round 4 (unambiguous); the `project tree` body never reached the
+          model, but the base's hand-written `prepareTree`
+          (tests/true-bdd/steps/cli_steps.go) shows what its body does.
+        - |
+          A variant under 150 KB costs about $1–2 a run (55,000–70,000 input
+          tokens); a full `build steps` round about 36 minutes and $19.
+      recommendation: |
+        (1): offline on round 4's saved turns, a script per approach builds the
+        variant and runs the same claude-opus-5 turn three times; measure
+        bytes, tokens, cost, time and agreement with the reference; build the
+        winner into the engine and let the next round check it.
+      settled: |
+        Neither option as asked. One isolated call, a script that takes a
+        prompt, runs it as the engine would and shows the result, judged by
+        looking at it; no test suite for it. A result is judged by whether it
+        leads, through the pipeline, to a building code (the tests the next
+        stages need), and the build algorithm itself may change as well.
+        Scale: a few at first (3), then more (10), isolated from the engine;
+        the engine is then fitted to generate the prompt that worked best.
+    question: |
+      Q2 - How are the experiments run and what picks the winner? (1)
+      Offline on round 4's saved turns: a script per approach builds the
+      variant and runs the same claude-opus-5 turn three times, measuring
+      bytes, tokens, cost, time and agreement with a reference; the winner
+      goes into the engine and the next drill round checks it. (2) In the
+      engine: every approach behind a switch, full `build steps` runs on a
+      cut. (3) Mixed: filter offline, then the best two in the engine through
+      a full round. Winner: under 150 KB and agreeing with the reference in
+      all three repeats; on a tie, the cheaper.
+    answer: |
+      Смотри, я бы выносил это в какие-то, изолировал бы сам вызов и просто передавал бы в этот вызов и смотрел, что получается. То есть я бы не делал для этого там какие-то скрипты, какие-то тесты. Я бы просто вот вынес бы в виде какого-то, не знаю, можно там сказать, например, сделать какой-нибудь скрипт. Мы ему передаем вот этот промпт, смотрим, что он там делает, да, смотрим на результат, смотрим, подходит, не подходит. Тут смотри, какая вещь. Нам наша конкретная задача, то есть нам как-то нужно будет это все дело свести к тому, чтобы код билдился. А для того, чтобы код билдился, да, то есть там какие-то... Нам нужно получить тесты. Для этого... В общем, для этого у нас больше рычагов влияния, чем только вот конкретно этот рычаг влияния, на котором мы сейчас говорим. Поэтому я не уверен, моя идея, которая... Да, я это говорю к тому, что нам надо как-то смотреть и анализировать, а будут ли эти результаты, в конце концов, правильно приводить к билду кода, исходя из нашего алгоритма. Или нам нужно будет изменить алгоритм билда кода, да, что-то, короче, с ним переделать, ну, как-то его тоже, может быть, изменить. То есть... Это не выглядит как абсолютно изолированная задача. То есть нам точно нужно ускорить и оптимизировать промпты. Это цель этой задачи. Но результаты мы должны оценивать через призму того, как они будут влиять на следующую переделку. Вот, поэтому я не уверен, к какому пункту это относится. Скорее всего, это второй, только... я бы не гонял бы полный build steps, да, я бы гонял бы 3-4 каких-то build steps, да, там, ну, то есть сперва 3, потом 10, вот что-то такое, как бы. То есть я бы гонял это как-то изолированно от самого движка, для того, чтобы понять, а какой промпт там лучше всего работать. А потом, поняв, какой промпт начинает лучше всего работать, подогнал бы движок для того, чтобы он генерил такой промпт.
+
+  - decision_trace:
+      research:
+        - |
+          TrueBDD's suite has 19 concepts, each an Item; hand-written
+          definitions per concept range from 1 (`exit code`) to 9
+          (`engine activity`, `file changes`); `project tree` has 5,
+          `console output` 4.
+        - |
+          An Item's body is a chain in the engine: the claude fix turn proposes
+          it, the codex apply turn writes it, the engine compiles and checks
+          bindings, a tool-less claude critique judges it. Round 4's cut holds
+          the skeletons, `State` and the wiring a chain can compile against.
+      recommendation: |
+        (1): 3, then 10 Items of TrueBDD's suite with the whole suite as
+        context; a run is one Item's whole chain outside the engine (variant
+        prompt, claude's proposal, codex's write, compilation in round 4's
+        cut); first `project tree`, `console output` and `exit code`.
+      settled: |
+        "3, then 10" is an abstraction, not a unit: an experiment starts small
+        and scales (for example 3 prompts, then 10, then 19) as its own design
+        calls for. The design of each experiment is left to the executor at
+        run time, and the experiments may differ in design. What matters: in
+        the end an understanding of which implementation to go on with, and a
+        mechanism that will not work is known to fail within about ten
+        minutes, not after hours of runs.
+    question: |
+      Q3 - What is "first 3, then 10", and what is one run's result? (1) 3,
+      then 10 Items of TrueBDD's suite with the whole suite as context; a run
+      is one Item's whole chain outside the engine (variant prompt, claude's
+      proposal, codex's write, compilation in round 4's cut), judged by
+      whether the code builds and the body does what its binding says;
+      first `project tree`, `console output`, `exit code`. (2) The same, but
+      a run is only the proposal, judged by reading it. (3) 3, then 10
+      Scenarios of a reduced Registry through a full `build steps`.
+    answer: |
+      Что такое сперва 3, потом 10, я не могу точно сказать. Относись к этому как к некоторой абстракции, не конкретике. Ну, то есть, например, если мы захотим разбить все эти промпты на все 19 штук, да, то давай сперва проверим сперва 3 промпта, да, потом 10, а потом 19. Но это зависит от дизайна конкретного эксперимента. Вот. То есть я бы дизайн эксперимента на самом деле оставил бы на время выполнения команды и оставил бы самому экзекьютору там, задизайнить этот эксперимент. То есть, потому что их же будет несколько, да, и ну, пусть каждый из них будет задизайлен как-то по-разному. Самое главное, чтобы в конце мы получили какое-то понимание, с какой из возможных реализаций нам двигаться дальше. И тут вторая фишка, да, что если этот механизм не будет работать, то чтобы мы узнали об этом через 10 минут, а не через 4 часа прогонов, и потом вдруг обнаружили, что это не будет работать. Так что это вопрос про дизайн экспериментов.
+
+  - decision_trace:
+      research:
+        - |
+          The 150,000-byte check (the Owner's three messages) and the change
+          to `CLAUDE.md`'s "full embedded context" rule (Q1) do not depend on
+          the experiments. With the check in place, a round stops at the
+          `console output` binding judgement (157,777 bytes) at about
+          25 minutes instead of meeting the model's window.
+        - |
+          Codex writes the code and runs research (CLAUDE.md); experiments
+          call claude and codex, which a Codex code run can reach.
+      recommendation: |
+        (1): two steps. The executor designs and runs experiments over the
+        approaches (paths with digests, filtering, portions, and what it
+        proposes) and reports data with a recommendation; Claude reads it,
+        the Owner picks; a separate ticket builds the pick into the engine
+        with the 150 KB check, an ADR and the CLAUDE.md change.
+      settled: |
+        Three steps: first a small separate ticket builds the 150,000-byte
+        check into the engine, before the experiments; then the executor
+        designs and runs the experiments and reports data with a
+        recommendation, which Claude reads and the Owner picks from; then a
+        separate ticket builds the pick into the engine with an ADR and the
+        CLAUDE.md change, checked by the next drill round.
+    question: |
+      Q4 - How is the work cut, and who picks the winner? (1) Two steps:
+      experiments and a report with a recommendation, the Owner picks, then a
+      separate ticket builds the pick with the 150 KB check, an ADR and the
+      CLAUDE.md change. (2) One step: the executor picks and builds the
+      winner. (3) As (1), but the 150 KB check goes in at once, as a small
+      ticket of its own before the experiments.
+    answer: |
+      3
+
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        Q4's option (1), as recommended before.
+      settled: |
+        Overrides Q4's answer (3): two steps. The executor designs and runs the
+        experiments and reports data with a recommendation, Claude reads it and
+        the Owner picks; then one ticket builds the pick into the engine
+        together with the 150,000-byte check, an ADR and the CLAUDE.md change.
+        No separate check ticket before the experiments.
+    question: |
+      Q4, revisited - The Owner's message after Q5 returns to Q4.
+    answer: |
+      Окей, слушай, по Q4 давай все-таки пойдем первым шагом, как ты предложил. Я неправильно прочитал тикет про Q5. Да, это один. И задается в трубе DD yaml.
+
+  - decision_trace:
+      research:
+        - |
+          TrueBDD's engine models (true-bdd/true-bdd.yaml): claude-fable-5
+          (xhigh), claude-opus-5 (high), claude-sonnet-5 (quick), and
+          codex:gpt-6.1-sol (coder). The 150,000 bytes were derived from
+          claude-opus-5's window and output cap.
+        - |
+          Recorded codex prompts are small (largest 14,790 bytes, in
+          build-code-cross-walk); no round has reached a codex turn on
+          TrueBDD's scale.
+        - |
+          The prompt the engine sends is its own system and user prompt;
+          claude's own system prompt and tool definitions are outside it and
+          already reserved as about 15,000 tokens in the derivation. The
+          refusal is hard, after the Owner's "жёсткий ракурс": the walk stops
+          with a distinct error naming the turn, the size and the limit.
+      recommendation: |
+        (1): claude and codex turns both; the limit in the host configuration
+        (true-bdd.yaml), defaulting to 150,000, so a project on another model
+        changes it there.
+      settled: |
+        The check covers every claude and codex turn; the limit is set in
+        true-bdd.yaml, 150,000 bytes by default.
+    question: |
+      Q5 - What does the check cover and where does the limit live? (1)
+      claude and codex turns, the limit in the host configuration
+      (true-bdd.yaml), 150,000 by default. (2) claude only, a constant in the
+      code. (3) claude and codex, a constant. (4) claude only, in the
+      configuration.
+    answer: |
+      Окей, слушай, по Q4 давай все-таки пойдем первым шагом, как ты предложил. Я неправильно прочитал тикет про Q5. Да, это один. И задается в трубе DD yaml.
+
+  - decision_trace:
+      research:
+        - |
+          The executor is a Codex code run, since the experiments call claude
+          and codex and Codex research runs have no network; an attempt is
+          capped at 115 minutes, stalls at 12 minutes without log growth, and
+          may be resumed once.
+        - |
+          A turn under 150 KB costs about $1–2 (55,000–70,000 input tokens at
+          the recorded prices); a chain with codex writing the body about
+          $3–5 an Item; three approaches through 3, 10 and 19 come to tens of
+          runs, about $50–150. Every claude answer reports `total_cost_usd`.
+      recommendation: |
+        (1): up to $100 of model spend and one Codex attempt; at about $50 the
+        executor weighs going on; an approach that clearly fails is dropped at
+        once; the report covers what was reached.
+      settled: |
+        Up to $250 of model spend, with the right to continue in a second
+        Codex attempt.
+    question: |
+      Q6 - How much may the experiments spend? (1) Up to $100 of model spend
+      and one Codex attempt (up to 115 minutes), a check at about $50, failing
+      approaches dropped at once, the report covering what was reached. (2)
+      Up to $250, with the right to continue in another Codex attempt. (3) No
+      limit.
+    answer: |
+      2
+
+  - decision_trace:
+      research:
+        - |
+          docs/ holds adr/, agents/, architecture/, product/ and qna/, no place
+          for research notes yet; mpc_research saves where the repo keeps such
+          notes, or somewhere sensible.
+        - |
+          CLAUDE.md has an ADR name the grilling entries that decided it; the
+          experiments' figures (variants, answers, sizes, costs) do not fit a
+          log entry, and their raw data runs to megabytes under the ignored
+          tmp/.
+      recommendation: |
+        (1): the report committed at docs/research/<date>-prompt-size-experiments.md
+        with each experiment, its measurements, the conclusion and the
+        recommendation; raw data in tmp/codex/<run>/, named by the report; a
+        summary comment on #285; the second step's ADR cites the report.
+      settled: |
+        The report is committed under docs/research/, raw data stays in the
+        run's tmp/ folder named by the report, a summary goes to #285, and the
+        second step's ADR cites the report.
+    question: |
+      Q7 - Where does the experiments' report live? (1) Committed at
+      docs/research/2026-11-…-prompt-size-experiments.md, raw data in
+      tmp/codex/<run>/ named by the report, a summary on #285, the second
+      step's ADR citing it. (2) Only a comment on #285 and raw data in tmp/.
+      (3) As (1), with the raw data committed too.
+    answer: |
+      1
+
+  - decision_trace:
+      research:
+        - |
+          The Owner named three ways in the session's intent (paths,
+          filtering, portions over several turns); Q1 accepted paths with
+          digests as one approach; Q3 left each experiment's design to the
+          executor.
+      recommendation: |
+        The experiments cover at least paths with digests, filtering and
+        portions, on at least the two turns over the limit, and the executor
+        may add approaches and turns.
+      settled: |
+        Forced by the intent, Q1 and Q3: at least those three approaches and
+        those two turns (`project tree`'s body, 2,916,161 bytes, and the
+        `console output` binding judgement, 157,777); anything more is the
+        executor's design.
+    question: |
+      Which approaches and turns must the experiments cover?
+    answer: |
+      Claude, no question asked: at least paths with digests (Q1), filtering
+      and portions (the intent), on the two turns over the limit; the rest is
+      the executor's design (Q3).
+
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        Claude's summary had put the 150,000-byte check in the second step, as
+        Q4, revisited, decided; offered also a small ticket before the
+        experiments.
+      settled: |
+        The check stays in the second step, built together with the picked
+        approach. The Owner confirms the summary.
+    question: |
+      The Owner asked where the hard check before claude and codex went.
+    answer: |
+      А куда делось, что нужно вставить хард-чек перед вызовом самого Клода и кодекса?
+
+      Да не важно, главное, чтобы было сделано. Если не забыл, то отлично, пусть будет во втором шаге вместе с выбранным подходом, как сейчас.
