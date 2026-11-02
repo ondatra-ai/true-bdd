@@ -29,6 +29,8 @@ func interfaceFixture(t *testing.T, script string) (drill.Runner, drill.Record) 
       public_interface: {kind: http, document: z-contracts/http.yaml}
     - path: services/nested
       public_interface: {kind: cli, document: services/true-bdd/interface.yaml}
+    - path: services/suite
+      public_interface: {kind: cli, document: tests/true-bdd/scenarios/interface.yaml}
     - path: services/fixture
       public_interface: {kind: http, document: tests/true-bdd/fixtures/public/cassettes/interface.yaml}
     - path: services/web
@@ -37,11 +39,13 @@ func interfaceFixture(t *testing.T, script string) (drill.Runner, drill.Record) 
         elements: [{page: /, role: button, name: Save}]
   document: api/undeclared.yaml
 `,
-		cliDocument:                        interfacePassage,
-		"api/undeclared.yaml":              unrelatedDocument,
-		"z-contracts/http.yaml":            "openapi: 3.0.0",
-		"z-contracts/other.yaml":           unrelatedDocument,
-		"services/true-bdd/interface.yaml": interfacePassage,
+		cliDocument:                                               interfacePassage,
+		"api/undeclared.yaml":                                     unrelatedDocument,
+		"z-contracts/http.yaml":                                   "openapi: 3.0.0",
+		"z-contracts/other.yaml":                                  unrelatedDocument,
+		"services/true-bdd/interface.yaml":                        interfacePassage,
+		"tests/true-bdd/scenarios/interface.yaml":                 interfacePassage,
+		"tests/true-bdd/scenarios/other.yaml":                     unrelatedDocument,
 		"tests/true-bdd/fixtures/public/cassettes/interface.yaml": interfacePassage,
 		"tests/true-bdd/fixtures/public/cassettes/other.yaml":     unrelatedDocument,
 	})
@@ -60,7 +64,12 @@ func TestCutsKeepExactlyBaseInterfaceDocuments(t *testing.T) {
 		files := strings.Split(git(t, cut.Directory, "ls-files"), "\n")
 
 		expected := append(expectedCutFiles(name), cliDocument, "z-contracts/http.yaml",
-			"services/true-bdd/interface.yaml", "tests/true-bdd/fixtures/public/cassettes/interface.yaml")
+			"services/true-bdd/interface.yaml", "tests/true-bdd/scenarios/interface.yaml",
+			"tests/true-bdd/fixtures/public/cassettes/interface.yaml")
+		if name == "a" {
+			expected = append(expected, "tests/true-bdd/scenarios/other.yaml")
+		}
+
 		if name == "a" || name == "b" {
 			expected = append(expected, "tests/true-bdd/fixtures/public/cassettes/other.yaml")
 		}

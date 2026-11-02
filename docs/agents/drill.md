@@ -23,6 +23,17 @@ go run ./scripts/cmd/drill run b b-code --iteration <dir> -- build code --fix
 
 Every cut keeps `docs/product/`, `docs/architecture/architecture.yaml`, `docs/scenarios.yaml`, `true-bdd/`, `templates/`, `pkg/`, `scripts/`, `go.mod`, `go.sum`, `.gitignore` and the portions of `tests/true-bdd/` its layers do not delete. It also keeps each exact interface document named by a service's `public_interface.document` in the base's architecture, relative to the Host project root, wherever the document lives, including inside a deleted layer. Naming one file keeps neither its siblings nor its directory. UI declarations have inline elements and add no document. The architecture is read from the base's archive, so later checkout changes cannot change a cut's kept documents. So every cut keeps what concepts need: the product document's `concepts:` and glossary, the architecture's concept bindings and Word mappings, and the Public interface documents the bindings reference.
 
+The cuts delete these layers, always preserving the named interface documents above:
+
+| Cut | Deleted layers |
+|---|---|
+| A | `services/true-bdd/`. |
+| B | Cut A plus everything under `tests/true-bdd/` except `tests/true-bdd/fixtures/`. |
+| C | Cut B plus every `cassettes/` directory under the fixtures. |
+| D | Cut B plus the whole `tests/true-bdd/fixtures/` folder. |
+
+Cut B keeps the fixtures with their cassettes; cut C keeps their input and fixture-root files such as `prep.sh`; cut D keeps nothing under `tests/true-bdd/`, apart from named interface documents. Cuts B, C and D keep no Suite wiring, step definitions, generated test files, hand-written tests or other suite files unless they are named interface documents (ADR-0038).
+
 `run` accepts exactly `-- build tests --fix`, `-- build steps --fix` or `-- build code --fix`, optionally followed by repeated `--model <tier>=<cli>:<model>` pairs; every other command line is refused. Each maps to its own typed engine operation. The engine validates model overrides; deterministic `build tests` does not support them. `run` and `oracle` return after launching a detached worker. Read the run's log and state under `record.json`; the worker keeps the three-hour limit, including clarification pauses, without a terminal or launcher. Only one unfinished run is permitted per iteration. Tags cannot be reused. Each rerun remains an operator decision. The fix menu receives `1`; a clarification receives nothing automatically.
 
 The drill recognizes the fix menu by its three option lines in order at the end of the engine output so far, and a clarification by suggested answers numbered from 1, each starting a line, then a line starting with `0) Other` at the end of the output so far. Only whitespace or the original engine's optional `Your answer:` prompt may follow the clarification. Both forms wait for 50 milliseconds without output before recognition, so a quoted form followed by more output across chunks does not trigger an answer or pause. The original engine's line-starting `Your choice (1/2/3):` prompt is also accepted; a prompt following an already recognized form does not trigger a second response. A clarification does not require the original engine's `[current/total]` question marker.

@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // Cut exports only the specified layers into an unrelated single-commit repository.
@@ -69,12 +68,7 @@ func validateTree(directory, cut string) error {
 			return fmt.Errorf("locating cut file: %w", err)
 		}
 
-		data, err := disk.Read(path)
-		if err != nil {
-			return err
-		}
-
-		if !keptInCut(cut, relative, data, documents) || entry.Type()&fs.ModeSymlink != 0 {
+		if !keptInCut(cut, relative, documents) || entry.Type()&fs.ModeSymlink != 0 {
 			return fmt.Errorf("%w: unexpected cut file %s", errRefused, relative)
 		}
 
