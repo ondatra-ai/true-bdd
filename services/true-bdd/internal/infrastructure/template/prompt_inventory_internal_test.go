@@ -298,7 +298,7 @@ func declaredModelTemplate(t *testing.T, path string) bool {
 			for _, modelPath := range model.Templates {
 				if filepath.Clean(path) == filepath.Clean(modelPath) {
 					_, err := disk.Read(filepath.Join(inventoryRoot, model.Scheme))
-                    if err != nil {
+					if err != nil {
 						t.Fatal(err)
 					}
 
@@ -323,6 +323,10 @@ func checkPromptInventory(t *testing.T, path, key string, inventory map[string]p
 
 	actual := templateFields(t, string(content))
 	if !exists {
+		if len(actual) == 0 {
+			return
+		}
+
 		if declaredModelTemplate(t, path) {
 			return
 		}

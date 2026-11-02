@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"maps"
 	"path/filepath"
+	"regexp"
 	"slices"
-	"strings"
-	"unicode"
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/disk"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/docs"
@@ -72,11 +71,9 @@ func (m Model) check(name, root string, steps []string) error {
 		return fmt.Errorf("scheme: %w", err)
 	}
 
+	reference := regexp.MustCompile(`(^|[^\pL\pN_])` + regexp.QuoteMeta(name) + `($|[^\pL\pN_])`)
 	for _, step := range steps {
-		words := strings.FieldsFunc(step, func(character rune) bool {
-			return !unicode.IsLetter(character) && !unicode.IsDigit(character) && character != '_'
-		})
-		if slices.Contains(words, name) {
+		if name != "" && reference.MatchString(step) {
 			return nil
 		}
 	}

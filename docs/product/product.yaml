@@ -292,8 +292,11 @@ concepts:
         stated file holds a stated number of lines; the one file matching a glob
         holds a stated number of matches for a pattern; or a rewritten file
         keeps its private permissions and is a new file, its old hard link
-        keeping the previous content.
-      terms: [project tree, glob, pattern, file change, engine, hard link]
+        keeping the previous content. A Model's saved checklist prompt preserves the named construction rule:
+        criterion selection and lineage, step block and source order, and/but modifiers, Story embedding and Feature,
+        Scenario key and fields, ordered lineage without merge_date, or question and fix verbatim from its checklist.
+        A shipped Model scheme equals its declared file.
+      terms: [project tree, glob, pattern, file change, engine, hard link, Model, checklist, Prompt, Story, Feature, Acceptance Criterion, step, Scenario, Registry, lineage, Scenario key]
     - concept: Story content
       means: >-
         The Story in a stated file of the project tree, read as a Story after

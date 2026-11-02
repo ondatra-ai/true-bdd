@@ -34,7 +34,7 @@ type scenarioTriple struct {
 // scenario-walking command's evaluator / fix-generator / fix-applier
 // templates.
 type scenarioTripleConfigKeys struct {
-model string
+	model              string
 	checklistSystem    string
 	checklist          string
 	fixGeneratorSystem string
@@ -54,7 +54,7 @@ func newScenarioTriple(
 			aiClient, cfg, models,
 			cfg.GetString(keys.checklistSystem),
 			cfg.GetString(keys.checklist),
-keys.model,
+			keys.model,
 		),
 		fixGenerator: validate.NewFixPromptGeneratorWithPaths(
 			aiClient, cfg, models,
@@ -240,7 +240,7 @@ func newTriples(
 	models *provider.Registry,
 ) triples {
 	applyTrip := newScenarioTriple(aiClient, cfg, models, scenarioTripleConfigKeys{
-model: "us_apply_checklist",
+		model:              "us_apply_checklist",
 		checklistSystem:    "templates.prompts.apply_checklist_system",
 		checklist:          "templates.prompts.apply_checklist",
 		fixGeneratorSystem: "templates.prompts.apply_fix_generator_system",
@@ -261,7 +261,7 @@ model: "us_apply_checklist",
 	buildCodeTrip.fixApplier.UseEditMode()
 
 	scenCheckTrip := newScenarioTriple(aiClient, cfg, models, scenarioTripleConfigKeys{
-model: "scen_check_checklist",
+		model:              "scen_check_checklist",
 		checklistSystem:    "templates.prompts.scen_check_checklist_system",
 		checklist:          "templates.prompts.scen_check_checklist",
 		fixGeneratorSystem: "templates.prompts.scen_check_fix_generator_system",
@@ -274,7 +274,7 @@ model: "scen_check_checklist",
 	scenCheckTrip.fixApplier.UseEditMode()
 
 	buildStepsTrip := newScenarioTriple(aiClient, cfg, models, scenarioTripleConfigKeys{
-model: "build_steps_checklist",
+		model:              "build_steps_checklist",
 		checklistSystem:    "templates.prompts.build_steps_checklist_system",
 		checklist:          "templates.prompts.build_steps_checklist",
 		fixGeneratorSystem: "templates.prompts.build_steps_fix_generator_system",

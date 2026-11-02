@@ -7,7 +7,7 @@ architecture:
   # fields keys are Go template access paths; [] means a range element.
   # A whole-object read describes its serialised shape, not a wildcard.
   model_rendering: &prompt-rendering >-
-    Render Go text/template with Sprig and toYaml = yaml.v3 Marshal, retaining its final newline. Preserve literal bytes, trim markers and YAML-decoded strings; no final trim. Lists retain order; string map keys sort. Both templates receive the same typed data; FormatSteps and FormatUserStories remain methods. Models validate an explicit YAML view without replacing typed Subjects. Question, Rationale and FixTemplate are unchanged decoded checklist values; sketch replacements remain in concept_protocols. Effective nonempty Prompt docs replace defaults; keys resolve through documents unchanged, duplicate keys collapse, map keys sort. Structured follows the resolved CLI result-schema support. ResultPath retains the run join, file-position index and sanitised subject/section naming used by saved artifacts. Schemes resolve through templates.schemes.<model>, default true-bdd/models/<model>.schema.yaml, relative to the host working directory just like template paths; no embedded runtime fallback. Missing or malformed schemes refuse rendering. Before its walk, scen check checks every declared Model's scheme and two template files, and requires its name as a whole word in a Scenario step of its service anywhere in the complete Registry, even when ids select a subset.
+    Render Go text/template with Sprig and toYaml = yaml.v3 Marshal, retaining its final newline. Preserve literal bytes, trim markers and YAML-decoded strings; no final trim. Lists retain order; string map keys sort. Both templates receive the same typed data; FormatSteps and FormatUserStories remain methods. Models validate an explicit YAML view without replacing typed Subjects. Question, Rationale and FixTemplate are unchanged decoded checklist values; sketch replacements remain in concept_protocols. Effective nonempty Prompt docs replace defaults; keys resolve through documents unchanged, duplicate keys collapse, map keys sort. Structured follows the resolved CLI result-schema support. ResultPath is <run_dir>/<index:%02d>-<safe subject>-checklist-<safe section>-result.yaml: run_dir is the cleaned paths.tmp_dir/date-pid join; safe replaces each run outside [A-Za-z0-9._-] with one hyphen. Section is the checklist stem and slash-joined section ids. Index is the selected file position before walk reordering; subject is the Story id, StoryID-ACID, Registry key or concept block/name (suite-prefixed on collision), respectively. Schemes resolve through templates.schemes.<model>, default true-bdd/models/<model>.schema.yaml, relative to the host working directory just like template paths; no embedded runtime fallback. Missing or malformed schemes refuse rendering. Before its walk, scen check checks every declared Model's scheme and two template files, and requires its name as a whole word in a Scenario step of its service anywhere in the complete Registry, even when ids select a subset.
   concept_protocols: >-
     Structured concept Q protocols bypass these templates: the Q text plus a JSON-only instruction is the system prompt, and indented JSON is the user prompt. Link embeds the Item id/title, steps with numeric keys and optional criterion ids, and the whole product including roles/glossary. Its schema requires every non-judge step and every own-block concept score (integer 0..10), reason and nullable other_block_concept. with.threshold defaults to 9 and accepts integers 1..10. In scen check, Binding is one turn per binding (concept, block, service) per walk, started once every Scenario has answered the Prompts before it: it supplies product_path for reading the complete product document and embeds every distinct step (block and text, keyed from 1 in block and text order) of the walk's passing links that reached the concept for that service, the service, that one linked means and binding, and the full Public interface; its schema requires that block:name key, an unambiguous boolean and reason, and each Scenario's cell grades the verdicts of the bindings its link reached. build steps starts its own walk and shares Item steps before using the same binding judgement. In scen check, Words is one turn per linked concept per walk embedding the product and that concept; in us refine one turn per Story embeds the item id, the product and every linked concept. A shared turn's artifacts are named shared-<index> <judgement> <key>, and each walk validation round, --fix ones included, judges afresh. Raw model answers are saved as model-answer.txt, and the engine-derived canonical answer/context JSON is saved in both response.txt and result.yaml for the coverage census. Links live only in the current walk Item. Walking orders D prompts, then concept links, then other Q prompts, preserving file-position indices; a host declaring no concepts omits the concept cells and keeps its order.
   prompt_data:
@@ -220,12 +220,6 @@ architecture:
     build_steps_critique_system:
       rendering: >-
         Static semantic review policy and JSON verdict contract. Answer pass with no findings, or fail with at least one finding. Each finding requires a nonempty definition, category and finding. The patterns are an AI's proposal, checked by the engine only for binding, and are judged as well as the bodies: the categories are pattern_captures and pattern_scope against a pattern, and concept_binding, concept_meaning and computes_assertion against a body, judged against the binding, each pattern's bound steps and the bound Scenarios' fixture inputs. The binding criterion follows the concept's block: when calls its operation, given puts the state in place, then observes and compares; not every definition must itself call a command. A body requiring anything beyond its binding and those fixture inputs is a concept_binding finding. Unusable replies are errors, never passes.
-      fields: {}
-    build_code_checklist:
-      rendering: *prompt-rendering
-      fields: {}
-    build_code_checklist_system:
-      rendering: *prompt-rendering
       fields: {}
     build_code_fix_generator:
       rendering: *prompt-rendering
@@ -1547,12 +1541,20 @@ architecture:
     - file: project-tree
     - file: engine-log
     - file: run-artifacts
+    - file: checklists
+    - file: model-schemes
     - file: staging-files
-    does: Read confined regular files after the run. Match the rest-of-step regex in one named file; count lines with
+    does: >-
+      Read confined regular files after the run. Match the rest-of-step regex in one named file; count lines with
       a final newline closing the last; require at least one glob match and every file matching, or none matching
       for does not match; or require one glob-matched file and count non-overlapping regex matches. Every-file patterns
       expand CWD/ENGINE/GOROOT/GOMODCACHE using the pattern mapping’s escaping. Atomic replacement requires mode 0600,
-      different inode from the named old hard link, and differing content.
+      different inode from the named old hard link, and differing content. For a named Model construction rule,
+      read its saved user prompt and compare the named fixture expectations: criterion chosen by id and StoryID-ACID
+      lineage; Given/When/Then and within-block order with modifiers; inlined Story with Feature; Scenario Registry key,
+      fields and ordered lineage without merge_date. Question and fix comparisons read their decoded scalars and rationale
+      from the configured checklist, preserving all whitespace. These assertions run before exit-code assertions so a stale
+      AI recording cannot mask a construction failure. A shipped Model scheme is byte-equal to its declared scheme file.
   - concept: Story content
     block: then
     service: true-bdd

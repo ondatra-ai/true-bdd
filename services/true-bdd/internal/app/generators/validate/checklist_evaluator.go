@@ -84,8 +84,8 @@ func NewChecklistEvaluator(
 	userTemplatePath := cfg.GetString("templates.prompts.checklist")
 
 	return NewChecklistEvaluatorWithPaths(
- aiClient, cfg, models, systemTemplatePath, userTemplatePath, "us_refine_checklist",
-)
+		aiClient, cfg, models, systemTemplatePath, userTemplatePath, "us_refine_checklist",
+	)
 }
 
 // NewChecklistEvaluatorWithPaths creates a new checklist evaluator with explicit template paths.
