@@ -1,4 +1,4 @@
-package steps_test
+package testkit_test
 
 import (
 	"errors"
@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
 	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/steps"
 )
 
 // The record hint must name the test `build tests` generated, so the mirror
@@ -26,7 +26,7 @@ func TestTestNameCamelCasesTheKey(t *testing.T) {
 		"mcp-endpoint-001-initialize-ok":    "TestMcpEndpoint001InitializeOk",
 		"scen-check-001-unknown-id-refused": "TestScenCheck001UnknownIdRefused",
 	} {
-		got := steps.TestName(bddgo.Scenario{ID: key})
+		got := testkit.TestName(bddgo.Scenario{ID: key})
 		if got != want {
 			t.Errorf("TestName(%q) = %q, want %q", key, got, want)
 		}
@@ -46,7 +46,7 @@ func treeScenario(tree string) bddgo.Scenario {
 func TestARecordRunWithoutAFixturePublishesUnderTheTreesName(t *testing.T) {
 	t.Parallel()
 
-	harness := &steps.Harness{
+	harness := &testkit.Harness{
 		SessionRoot: t.TempDir(),
 		FixturesDir: t.TempDir(),
 		Modes:       runner.Modes{Services: runner.ProxyModeRecord, Tests: runner.ProxyModeReplay},
@@ -68,17 +68,17 @@ func TestARecordRunWithoutAFixturePublishesUnderTheTreesName(t *testing.T) {
 	// runs after the State has published (cleanups run last-in, first-out).
 	t.Cleanup(func() { assertPublishedAs(t, harness, "kept-nowhere") })
 
-	state, err := steps.NewState(harness)(&bddgo.World{T: t, Scenario: treeScenario("kept-nowhere")})
+	state, err := testkit.NewScenarioRun(harness)(&bddgo.World{T: t, Scenario: treeScenario("kept-nowhere")})
 	if err != nil {
 		t.Fatalf("NewState: %v", err)
 	}
 
-	state.Proxy = steps.ProxySetup{Staging: staging, Cassettes: staging}
+	state.Proxy = testkit.ProxySetup{Staging: staging, Cassettes: staging}
 	state.Result = &runner.RunResult{}
 }
 
 // assertPublishedAs checks a record run's cassettes reached the named tree.
-func assertPublishedAs(t *testing.T, harness *steps.Harness, tree string) {
+func assertPublishedAs(t *testing.T, harness *testkit.Harness, tree string) {
 	t.Helper()
 
 	cassettes, err := harness.CassetteDir(tree)
@@ -105,15 +105,15 @@ func assertPublishedAs(t *testing.T, harness *steps.Harness, tree string) {
 func TestTheJudgeRefusesAStateThatRanWithoutAFixture(t *testing.T) {
 	t.Parallel()
 
-	state := &steps.State{
+	state := &testkit.ScenarioRun{
 		T:        t,
 		Scenario: treeScenario("kept-nowhere"),
-		Harness:  &steps.Harness{JudgeTimeout: time.Second},
+		Harness:  &testkit.Harness{JudgeTimeout: time.Second},
 		Result:   &runner.RunResult{},
 	}
 
 	err := state.Judge([]bddgo.Step{{Keyword: "Then", Mode: bddgo.ModeRule, Text: "the story reads well"}})
-	if !errors.Is(err, steps.ErrNoTreePrepared) {
-		t.Fatalf("Judge without a fixture = %v, want %v", err, steps.ErrNoTreePrepared)
+	if !errors.Is(err, testkit.ErrNoTreePrepared) {
+		t.Fatalf("Judge without a fixture = %v, want %v", err, testkit.ErrNoTreePrepared)
 	}
 }

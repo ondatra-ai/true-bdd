@@ -1,6 +1,7 @@
 package steps
 
 import (
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,7 +14,7 @@ import (
 func TestTheExitCodeStepReadsNoAsZero(t *testing.T) {
 	t.Parallel()
 
-	state := &State{T: t, Result: &runner.RunResult{ExitCode: 0}}
+	state := &State{ScenarioRun: &testkit.ScenarioRun{T: t, Result: &runner.RunResult{ExitCode: 0}}}
 
 	err := assertExitCode(state, []string{"no"})
 	if err != nil {
@@ -32,7 +33,7 @@ func TestTheLineCountStepReadsNoAsZero(t *testing.T) {
 		t.Fatalf("write the empty file: %v", err)
 	}
 
-	state := &State{T: t, Result: &runner.RunResult{TmpDir: dir}}
+	state := &State{ScenarioRun: &testkit.ScenarioRun{T: t, Result: &runner.RunResult{TmpDir: dir}}}
 
 	err = assertFileLineCount(state, []string{"empty.txt", "no"})
 	if err != nil {
@@ -44,7 +45,7 @@ func TestTheLineCountStepReadsNoAsZero(t *testing.T) {
 func TestTheCreatedFilesCountStepReadsNoAsZero(t *testing.T) {
 	t.Parallel()
 
-	state := &State{T: t, Result: &runner.RunResult{}}
+	state := &State{ScenarioRun: &testkit.ScenarioRun{T: t, Result: &runner.RunResult{}}}
 
 	err := assertFilesMatchingCreated(state, []string{"no", "tests/*.go"})
 	if err != nil {
@@ -64,7 +65,7 @@ func TestTheStoryCriteriaCountStepReadsNoAsZero(t *testing.T) {
 		t.Fatalf("write the story: %v", err)
 	}
 
-	state := &State{T: t, Result: &runner.RunResult{TmpDir: dir}}
+	state := &State{ScenarioRun: &testkit.ScenarioRun{T: t, Result: &runner.RunResult{TmpDir: dir}}}
 
 	err = assertStoryCriteriaExactCount(state, []string{"story.yaml", "no"})
 	if err != nil {
@@ -85,7 +86,7 @@ func TestTheRegistryCountStepReadsNoAsZero(t *testing.T) {
 		t.Fatalf("write the registry: %v", err)
 	}
 
-	state := &State{T: t, Result: &runner.RunResult{TmpDir: dir}}
+	state := &State{ScenarioRun: &testkit.ScenarioRun{T: t, Result: &runner.RunResult{TmpDir: dir}}}
 
 	err = assertRegistryScenarioCount(state, []string{"no", "scenarios.yaml", "s-001-x"})
 	if err != nil {
@@ -111,7 +112,7 @@ func TestTheTestRunnerCountStepReadsNoAsZero(t *testing.T) {
 		t.Fatalf("write the engine log: %v", err)
 	}
 
-	state := &State{T: t, Result: &runner.RunResult{TmpDir: dir}}
+	state := &State{ScenarioRun: &testkit.ScenarioRun{T: t, Result: &runner.RunResult{TmpDir: dir}}}
 
 	err = assertTestRunnerCount(state, []string{"no"})
 	if err != nil {
@@ -123,7 +124,7 @@ func TestTheTestRunnerCountStepReadsNoAsZero(t *testing.T) {
 func TestTheShellCommandStepReadsNoAsZero(t *testing.T) {
 	t.Parallel()
 
-	state := &State{T: t, Result: &runner.RunResult{TmpDir: t.TempDir()}}
+	state := &State{ScenarioRun: &testkit.ScenarioRun{T: t, Result: &runner.RunResult{TmpDir: t.TempDir()}}}
 
 	err := assertCommandExitCode(state, []string{"true", ".", "no"})
 	if err != nil {
