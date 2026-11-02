@@ -134,6 +134,9 @@ story:
             - when:
                 - the Product Owner runs "us refine doc-summary --fix"
             - then:
+                - and: 'every file matching "tmp/*/01-doc-summary-checklist-*-user.txt" matches ## User Story\n```yaml\nid: doc-summary\nfeature: document-summaries\ntitle: Document Summary On Demand\n'
+                - and: 'every file matching "tmp/*/01-doc-summary-checklist-*-user.txt" does not match (?m)^story:'
+                - and: 'every file matching "tmp/*/01-doc-summary-checklist-*-user.txt" matches ## Validation Question\n\nFor every AC, decide whether its description field contains a vague\nword from the forbidden_qualifiers list of the product document''s\nvocabulary \(properly, correctly, appropriate, user-friendly, fast,\netc\.\)\.\n\nPass when no AC description contains forbidden qualifiers\.\nFail when one or more AC descriptions contain them\.\n\nContext: emit one line per AC\.\n  - "<AC-id>: ok"\n  - "<AC-id>: contains ''<word>''\[, ''<word2>''\.\.\.\]"\n SO THAT WE ENSURE [^\n]*\n\n## If Validation Fails\n(?s:.*?)\n\nReplace each vague word in the description with specific, measurable\ncriteria\.\n\nUse the forbidden_qualifiers list of the product document''s\nvocabulary\. Replace each forbidden qualifier with specific,\nmeasurable criteria\.\n\n\n## Answer Format'
                 - the command exits with code 0
                 - stdout matches msg="Fix applied; re-running validation"
                 - stdout matches ALL CHECKS PASSED!

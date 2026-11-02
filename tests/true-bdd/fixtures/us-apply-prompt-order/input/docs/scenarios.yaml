@@ -1,0 +1,23 @@
+---
+scenarios:
+  mcp-endpoint-007-ordered:
+    description: The MCP server must return HTTP 405 for a GET request without changing
+      its greeting.
+    service: mcp
+    path: tests/mcp/mcp_endpoint_test.go
+    user_stories:
+    - story: docs/product/stories/mcp-endpoint-requests.yaml
+      scenario_id: mcp-endpoint-007-ordered
+      merge_date: '2026-11-02'
+    merged_steps:
+      then:
+      - the server returns HTTP 405
+      - and: the greeting is still "Hello"
+      - but: no response body is printed
+      when:
+      - the Claude User opens a connection
+      - and: the Claude User sends an HTTP GET request to /mcp
+      given:
+      - the MCP server is running on its configured port
+      - and: the greeting is "Hello"
+      - but: no request has been sent

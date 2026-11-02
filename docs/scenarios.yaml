@@ -583,6 +583,7 @@ scenarios:
       when:
         - the Product Owner runs "us apply 95.1 --fix"
       then:
+        - and: 'every file matching "tmp/*/01-95.1-001-mcp-initialize-checklist-*-user.txt" matches ### Steps\nGiven:\n  - the MCP server is running on its configured port\n  - the server accepts JSON-RPC over HTTP POST at /mcp\nWhen:\n  - the Claude User posts a valid JSON-RPC initialize request to /mcp\nThen:\n  - the server returns HTTP 200\n  - and the response body is a well-formed JSON-RPC envelope referencing the request id\n\n\n---'
         - the command exits with code 0
         - 'stdout matches msg=AC index=1 total=1'
         - 'stdout matches msg="RE-WALK \(fixes applied, verifying\)" attempt=2'
@@ -1075,6 +1076,9 @@ scenarios:
       when:
         - the Product Owner runs "us refine doc-summary --fix"
       then:
+        - and: 'every file matching "tmp/*/01-doc-summary-checklist-*-user.txt" matches ## User Story\n```yaml\nid: doc-summary\nfeature: document-summaries\ntitle: Document Summary On Demand\n'
+        - and: 'every file matching "tmp/*/01-doc-summary-checklist-*-user.txt" does not match (?m)^story:'
+        - and: 'every file matching "tmp/*/01-doc-summary-checklist-*-user.txt" matches ## Validation Question\n\nFor every AC, decide whether its description field contains a vague\nword from the forbidden_qualifiers list of the product document''s\nvocabulary \(properly, correctly, appropriate, user-friendly, fast,\netc\.\)\.\n\nPass when no AC description contains forbidden qualifiers\.\nFail when one or more AC descriptions contain them\.\n\nContext: emit one line per AC\.\n  - "<AC-id>: ok"\n  - "<AC-id>: contains ''<word>''\[, ''<word2>''\.\.\.\]"\n SO THAT WE ENSURE [^\n]*\n\n## If Validation Fails\n(?s:.*?)\n\nReplace each vague word in the description with specific, measurable\ncriteria\.\n\nUse the forbidden_qualifiers list of the product document''s\nvocabulary\. Replace each forbidden qualifier with specific,\nmeasurable criteria\.\n\n\n## Answer Format'
         - the command exits with code 0
         - stdout matches msg="Fix applied; re-running validation"
         - stdout matches ALL CHECKS PASSED!
@@ -1230,6 +1234,9 @@ scenarios:
       when:
         - the Product Owner runs "us apply mcp-endpoint --fix"
       then:
+        - and: 'every file matching "tmp/*/01-mcp-endpoint-002-get-refused-checklist-*-user.txt" matches \*\*Story ID:\*\* mcp-endpoint\n\*\*Story Path:\*\* docs/product/stories/mcp-endpoint-requests\.yaml\n\*\*AC ID:\*\* 002-get-refused\n\*\*Lineage Scenario ID:\*\* mcp-endpoint-002-get-refused\n\*\*Description:\*\* The MCP server must respond with HTTP 405 Method Not Allowed when a Claude User sends a GET request to the /mcp endpoint\.\n'
+        - and: 'every file matching "tmp/*/01-mcp-endpoint-002-get-refused-checklist-*-user.txt" matches ## Validation Question\n\nDoes this acceptance criterion already appear as a scenario in the\nregistry\?\n\nThe registry is the requirements YAML referenced by the subject\n\(the scratch copy for this run\)\. An AC "appears" when there is an\nentry under `scenarios:` whose `user_stories\[\]` list contains the\nsubject''s story path AND the subject''s lineage scenario id\.\n\nPass when at least one such entry exists\.\nFail otherwise\.\n\nContext: emit one line\.\n  - "AC <ac id> \(lineage <lineage id>\): present in <matched scenario id>"\n  - "AC <ac id> \(lineage <lineage id>\): not present"\n SO THAT WE ENSURE [^\n]*\n\n## If Validation Fails\n(?s:.*?)\n\nAdd this AC as a new scenario in the registry\.\n\nUse the Edit tool against the registry file referenced by the\nsubject\. Steps:\n  1\. Key the new entry by the subject''s lineage scenario id,\n     verbatim \(`<story id>-<ac id>`\)\. That id is the scenario''s\n     registry key and names its generated test, so never pick a\n     number or invent another id\.\n  2\. Insert a new entry under `scenarios:` with:\n        description: <short summary derived from the AC description>\n        service: <see step 3>\n        path: <see step 4>\n        last_updated: "<today, YYYY-MM-DD>"\n        user_stories:\n          - story: <story file path from subject>\n            scenario_id: <lineage id from subject>\n            merge_date: "<today, YYYY-MM-DD>"\n        merged_steps:\n          given: <verbatim from the AC''s steps\.given>\n          when:  <verbatim from the AC''s steps\.when>\n          then:  <verbatim from the AC''s steps\.then>\n  3\. `service:` names one service the architecture document\n     declares, by its `services\[\]\.name`: never empty, and never\n     a name the architecture does not declare\. When it declares\n     one service, it is that one\. When it declares several, it\n     is the `service:` of the existing scenarios whose `path:`\n     step 4 reuses, the suite under `tests/<service>/`\. When\n     neither settles it, ask which declared service the\n     scenario belongs to, offering each declared name, before\n     giving the fix\.\n  4\. `path:` names the generated test file this scenario''s Go\n     test is written into\. REUSE an existing `path:` from a\n     scenario of the same command or feature family — several\n     scenarios share one file on purpose, so related\n     behaviours are read together\. Invent a new one only when\n     no existing file fits, and then make it\n     `tests/<service>/<family>_test\.go`, the suite of the\n     service step 3 names\.\n  5\. Preserve existing file ordering and indentation\. Do not\n     touch any other entry\.\n\n\n## Answer Format'
+        - and: 'every file matching "tmp/*/01-mcp-endpoint-001-initialize-ok-checklist-*-user.txt" matches \*\*AC ID:\*\* 001-initialize-ok\n\*\*Lineage Scenario ID:\*\* mcp-endpoint-001-initialize-ok\n\*\*Description:\*\* The MCP server must respond with a 200 status'
         - the command exits with code 0
         - 'stdout matches msg=AC index=1 total=2 description="The MCP server must respond with HTTP 405'
         - stdout matches ALL CHECKS PASSED!
@@ -1988,6 +1995,9 @@ scenarios:
       when:
         - the Quality Engineer runs "scen check"
       then:
+        - and: 'every file matching "tmp/*/06-E2E-001-checklist-*-user.txt" matches \*\*Scenario ID:\*\* E2E-001\n\*\*Description:\*\* The greeter must print the configured greeting followed by the name it is given, and exit with code 0\n\*\*Service:\*\* greeter\n\*\*Generated test file:\*\* tests/greeter/greet_test\.go\n'
+        - and: 'every file matching "tmp/*/06-E2E-001-checklist-*-user.txt" matches Then:\n  - the command exits with code 0\n  - and stdout matches \^Hello Ada\$\n\n### Lineage — user_stories\[\]\n  - docs/product/stories/greet-by-name\.yaml \(greet-by-name-001-prints-greeting\)\n\n---'
+        - and: 'every file matching "tmp/*/06-E2E-001-checklist-*-user.txt" does not match merge_date'
         - the command exits with code 0
         - stdout matches SCEN CHECK
         - and: stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=pass
@@ -7941,4 +7951,67 @@ scenarios:
       - the command exits with code 1
       - stdout matches Refusing to start.*glossary term .*greeting.*4 sentences, longest sentence 26 words, 1 paragraphs.*one paragraph of at most 3 sentences, each at most 25 words
       - the engine dispatched 0 AI turns
+      - no file outside "tmp" changed
+  us-apply-007-prompt-step-order:
+    description: The apply checklist prompt must group steps as Given, When, Then, preserving
+      every block's order and every and or but modifier from the selected Acceptance
+      Criterion
+    service: true-bdd
+    path: tests/true-bdd/us_apply_test.go
+    user_stories:
+    - story: docs/product/stories/us-apply-registry-merge.yaml
+      scenario_id: us-apply-007-prompt-step-order
+      merge_date: '2026-11-02'
+    merged_steps:
+      given:
+      - the "us-apply-prompt-order" project tree
+      when:
+      - the Product Owner runs "us apply mcp-endpoint"
+      then:
+      - and: 'every file matching "tmp/*/*-mcp-endpoint-007-ordered-checklist-*-user.txt"
+          matches ### Steps\nGiven:\n  - the MCP server is running on its configured
+          port\n  - and the greeting is "Hello"\n  - but no request has been sent\nWhen:\n  -
+          the Claude User opens a connection\n  - and the Claude User sends an HTTP
+          GET request to /mcp\nThen:\n  - the server returns HTTP 405\n  - and the greeting
+          is still "Hello"\n  - but no response body is printed\n\n\n---'
+      - the command exits with code 0
+      - the engine dispatched 2 AI turns
+      - no file outside "tmp" changed
+  scen-check-007-prompt-lineage-order:
+    description: The Scenario checklist prompt must identify the Registry key, keep
+      and or but modifiers, reproduce lineage in source order without merge_date, and
+      preserve the multiline Q and F text
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
+    user_stories:
+    - story: docs/product/stories/scen-check-verifier.yaml
+      scenario_id: scen-check-007-prompt-lineage-order
+      merge_date: '2026-11-02'
+    merged_steps:
+      given:
+      - the "scen-check-prompt-lineage" project tree
+      when:
+      - the Quality Engineer runs "scen check E2E-001"
+      then:
+      - and: every file matching "tmp/*/01-E2E-001-checklist-*-user.txt" matches \*\*Scenario
+          ID:\*\* E2E-001\n
+      - and: every file matching "tmp/*/01-E2E-001-checklist-*-user.txt" matches Then:\n  -
+          the command exits with code 0\n  - and stdout matches \^Hello Ada\$\n  - but
+          stderr has no lines\n\n### Lineage — user_stories\[\]\n  - docs/product/stories/z-greeting\.yaml
+          \(z-greeting-002-name\)\n  - docs/product/stories/a-greeting\.yaml \(a-greeting-001-name\)\n\n---
+      - and: every file matching "tmp/*/01-E2E-001-checklist-*-user.txt" does not match
+          merge_date
+      - and: 'every file matching "tmp/*/01-E2E-001-checklist-*-user.txt" matches ##
+          Validation Question\n\nDecide whether this scenario''s description follows
+          the\nrule-based format\. A violation is any of:\n- missing the keyword "must"
+          or "should"\n- exceeds one sentence\n- contains Gherkin Given/When/Then text
+          \(Gherkin belongs in the\n  steps, not the description\)\n\nPass when the
+          description follows the rule-based format\.\nFail when it violates any of
+          the above\.\n\nContext: emit one line\.\n  - "<scenario id>: ok"\n  - "<scenario
+          id>: <violation> — <quoted offending phrase>"\n SO THAT WE ENSURE [^\n]*\n\n##
+          If Validation Fails\n(?s:.*?)\n\nRewrite this Scenario''s description as one
+          sentence with must or should\.\n\nKeep its steps and lineage unchanged\.\n  Preserve
+          every quoted value\.\n\n\n\n## Answer Format'
+      - the command exits with code 0
+      - the engine dispatched 1 AI turns
       - no file outside "tmp" changed
