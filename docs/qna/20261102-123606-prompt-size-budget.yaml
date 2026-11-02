@@ -347,3 +347,78 @@ log:
       А куда делось, что нужно вставить хард-чек перед вызовом самого Клода и кодекса?
 
       Да не важно, главное, чтобы было сделано. Если не забыл, то отлично, пусть будет во втором шаге вместе с выбранным подходом, как сейчас.
+
+  - decision_trace:
+      research:
+        - |
+          #285's report (docs/research/2026-11-02-prompt-size-experiments.md):
+          lossless compact JSON took the `console output` binding judgement
+          from 157,777 to 140,280 bytes (about 11%) and cannot fit the body
+          (2,446,999 bytes compacted).
+        - |
+          The fixture inputs entered the body and critique turns from spike
+          #255: a generated Given missed `TRUE_BDD_REAL_GO`, a contract only the
+          `engine-io-events` fixture's Go stand-in states. The spike offered to
+          state such contracts in the binding's `does` or to hand the body turn
+          the fixture inputs; #258's brief, amended by Claude, took the second.
+          No Owner answer in the logs bears on it. "Whole" comes from CLAUDE.md's
+          runtime rule, added in #83 (23 August).
+        - |
+          Digests in a prompt serve only the record and replay proxy
+          (pkg/testkit/aiproxy): an edited fixture file changes the prompt and
+          so stales its cassette; a live run gains nothing from them. A cleaner
+          variant would keep it in the test library, the proxy remembering the
+          files a recorded turn read.
+      recommendation: |
+        Decide in #286 whether digests are needed or paths suffice, and whether
+        fixture contracts belong in the binding's `does` instead of fixture
+        files in the prompt.
+      settled: |
+        Compaction is dropped as an approach: too small a gain. No digests:
+        turns get files by path alone. The Owner's view, left for later: what a
+        Scenario needs of its fixture (which one, how it is loaded) belongs in
+        the Scenario itself; and removing a Scenario should remove what hangs
+        on it (its fixture, its recordings, related code and records).
+    question: |
+      After #285's report: is compaction worth keeping, are digests needed in
+      the prompt or do paths suffice, and should fixture contracts move into
+      the Specification instead of fixture files in the prompt?
+    answer: |
+      Я так понимаю, сжатие вообще не интересно, не дает особого выигрыша, что, в общем-то, логично. Так подожди, если это не нужно моделям, то где конкретно мы собираемся эти хэши использовать? И
+
+      У меня такое впечатление, что информация о фикстуре должна где-то лежать в этом в самом сценарии. Вот. А как загружать фикстуру, да, там. Но это уже дело десятое, то есть я ее не очень хорошо понимаю. В общем, короче, слушай, и хэши я бы не использовал. Мне кажется, они здесь совершенно лишние. Я как-то действительно плохо понимаю, как это. Как это использовать? Я не понимаю, при каком кейсе у нас получится стейл-кассета. Ну, то есть, если мы там ее будем переписывать. Это только в том случае, если у нас удалится какой-то там тест, да, и потом какая-то кассета не перепишется, но как будто вместе с тестом мы должны удалять привязанную к нему фикстуру, ну, то есть мы удаляем сценарий, да, то есть откуда все идет? Идет все из удаления сценария, все пляшет от этого. И потом как будто надо автоматически удалять там все, что с ним было связано в коде, в каких-то других записях и так далее.
+
+  - decision_trace:
+      research:
+        - |
+          #285's report: the `console output` binding judgement with the
+          product document as a file the turn reads is 92,447 bytes and agrees
+          with the whole prompt ($0.84); filtering the product to the concept
+          and its terms' glossary entries is 103,387 bytes, also agreeing, but
+          amends ADR-0037; three portions pass at $1.44.
+        - |
+          docs/product/product.yaml is 63,544 bytes: 52 glossary terms with
+          6,007 words (median 64 a term), 64% of the file's bytes; 13 of the 52
+          fit three sentences of at most 25 words; `command` alone is 1,487
+          words in 64 sentences, `fix loop` 678. The 19 concepts hold 1,141
+          words (median 64, at most 116).
+      recommendation: |
+        Paths for the binding judgement too: the product document goes to a
+        file the turn reads, the same mechanism as the body turns.
+      settled: |
+        The binding judgement reads the product document from a file, for now,
+        to see how it goes. Further, by the Owner: the product document is too
+        large and should become about ten times smaller; every term's
+        explanation is concise, plain to a person, and fits one paragraph of
+        at most three sentences of at most 25 words each, held by a hard
+        check; fewer terms; detail such as the commands' behaviour moves out
+        or up. Portions may split the work and give each prompt only the terms
+        its Scenarios need, through the terms linked to those Scenarios.
+    question: |
+      With compaction gone, how does the `console output` binding judgement
+      fit: (1) paths, the product document as a file; (2) filtering the
+      product to the concept and its terms; (3) portions?
+    answer: |
+      Продуктовий документ — це стрьомна річ. Продуктовий документ, наверное, хотілося б читати повністю. Ну, коротше, давай продуктовий документ поки теж віднесемо в файл і посмотрим, що буде виходити. Вот. Но смысл в том, что даже текущий продуктовый документ чересчур большой, и смотри, информация, то есть информация, которая находится в этом продуктовом документе, она ну, чересчур большая. То есть вообще каждому термину его объяснение должно быть емким, понятным человеку и вкладываться в абзац, состоящий из трех предложений, состоящий максимум, каждое максимум 25 слов. Мне кажется, это тоже хорошо было бы сделать как hard фильтр и пытаться продуктовую стратегию, вот этот продуктовый документ тоже сжимать в такую компактную вещь. То есть, на мой взгляд, он должен быть раз в среднем в 10 меньше, чем то, что есть сейчас, за счет того, что, по-моему, мы больше, чем нужно, терминов там делаем, и больше, чем нужно, ставим и сами термины, да, их определения, они гораздо больше словами, они, ну, короче, бессмысленно. Вот. Например, да, там про команды. То есть команды можно четко сказать, да, что это какая-то конкретная команда. А зачем там нужна информация, что такое детерминистичное, что такое недетерминистичное, и так далее, и так далее. Это команда, это команда. Вот. Какую-то часть информации, конечно, нужно вынести в там, какую-то верхнюю часть. В общем, я не знаю. И опять же, если у нас будет команда, да, и мы бы так попытаемся разбивать, то есть ты сказал, что порции, не очень хорошо подходит, но мне кажется, что порции тоже можно было бы делить, и тогда мы могли бы сливать в этот промпт только те термины, которые нужны для того, чтобы провалидировать эти конкретные сценарии. Потому что у нас же есть привязка, да, там терминов к сценарию. Понимаешь, о чем я говорю?
+
+      (The Owner pasted the product glossary's `command` entry, about 1,500 words, as the example.)
