@@ -152,6 +152,10 @@ _Avoid_: dependency (a service's dependencies are the processes and CLIs it talk
 The generated code in a suite's folder that hooks its tests to their step definitions and to the test library: it builds the suite, registers the definitions, creates each Scenario's state and hands each test its Scenario's run. The engine writes it when `build steps` writes the step definitions, with no model turn.
 _Avoid_: glue, shim, bootstrap, harness (the harness is the test library's mechanisms the wiring calls)
 
+**Scenario run**:
+The harness's state for one Scenario, carried by `testkit.ScenarioRun`: its test, Scenario, prepared fixture, proxy setup, result, run recorder and grading, with access to the suite's modes, recordings, judge and built service. A suite using the harness embeds it in `State` as its one harness field and adds only the definitions' own data.
+_Avoid_: world (for the harness's type), harness state, test context
+
 ## Repository vocabulary
 
 Words for how this repository plans and executes its own work. Not the engine's domain — nothing here reaches a host project.

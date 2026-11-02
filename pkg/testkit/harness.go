@@ -1,9 +1,4 @@
-// Package steps holds the true-bdd suite's step definitions: the Go code
-// that executes the Given/When/Then lines of every registry scenario
-// whose `service:` is true-bdd.
-//
-// build tests renders Scenarios; build steps writes their missing definitions.
-package steps
+package testkit
 
 import (
 	"errors"
@@ -21,9 +16,6 @@ import (
 // subdirectory per fixture, at the session root — not inside the run
 // directory, whose contents land in the judge's graded diff/prompt.
 const StagingDirName = ".cassettes-staging"
-
-// stagingPerm is the mode of the per-fixture staging directory: the
-// same 0o755 every other directory this harness creates uses.
 
 // ErrNoCassettes is returned when a replay run finds no recording for a
 // scenario. Not a skip: an un-recorded scenario is an un-run scenario,
@@ -44,7 +36,7 @@ var ErrNoJudgeRecording = errors.New("no recorded judge verdict for this scenari
 // and every scenario then shares: the binary under test, where the
 // session's run directories go, the shim, and the judge.
 type Harness struct {
-	// BinPath is the true-bdd binary this run built.
+	// BinPath is the service executable this run resolved.
 	BinPath string
 	// Binary builds the service only when a definition needs it.
 	Binary *runner.LazyBinary
@@ -55,7 +47,7 @@ type Harness struct {
 	Shims runner.ShimDirs
 	// Modes is the per-caller mode this run was given.
 	Modes runner.Modes
-	// Judge grades live and record runs. Never called in replay.
+	// Judge grades clauses in every mode; replay serves recorded verdicts.
 	Judge runner.Judge
 	// FixturesDir is where a scenario's Given step looks for its tree.
 	FixturesDir string
@@ -204,7 +196,7 @@ func (h *Harness) promoteCassettes(name, staging string) error {
 // replaying, so the recording costs one model call and nothing else.
 func JudgeRecordHint(scenario bddgo.Scenario) string {
 	return "record it with: go test -tags bdd -run '^" + TestName(scenario) +
-		"$' ./tests/true-bdd/ '-mode=services:replay,tests:record'  # fixture: " +
+		"$' ./tests/" + scenario.Service + "/ '-mode=services:replay,tests:record'  # fixture: " +
 		FixtureName(scenario)
 }
 
@@ -213,15 +205,5 @@ func JudgeRecordHint(scenario bddgo.Scenario) string {
 // as a trailing comment, since a reader thinks in trees, not scenario ids.
 func RecordHint(scenario bddgo.Scenario) string {
 	return "record it with: go test -tags bdd -run '^" + TestName(scenario) +
-		"$' ./tests/true-bdd/ -mode=record  # fixture: " + FixtureName(scenario)
-}
-
-// Options builds the bddgo options for this suite: where the registry
-// and the spec live, and which suite entry to run.
-func Options(repoRoot string) bddgo.Options {
-	return bddgo.Options{
-		Registry:     filepath.Join(repoRoot, "docs", "scenarios.yaml"),
-		Architecture: filepath.Join(repoRoot, "docs", "architecture", "architecture.yaml"),
-		Suite:        "true-bdd",
-	}
+		"$' ./tests/" + scenario.Service + "/ -mode=services:record,tests:record  # fixture: " + FixtureName(scenario)
 }

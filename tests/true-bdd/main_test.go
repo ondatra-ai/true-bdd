@@ -1,7 +1,7 @@
 //go:build bdd
 
 // Package truebdd_test is the true-bdd suite: one generated Go test per
-// registry scenario whose `service:` is true-bdd, plus the three guards
+// registry scenario whose `service:` is true-bdd, plus the four guards
 // that keep the generated set honest.
 package truebdd_test
 

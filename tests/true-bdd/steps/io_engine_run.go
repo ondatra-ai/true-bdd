@@ -45,19 +45,13 @@ func runObservedIO(
 		return state.fail("make IO launcher executable: %w", err)
 	}
 
-	harness := *original
-	harness.BinPath = wrapper
-
-	state.Harness = &harness
-	defer func() { state.Harness = original }()
-
 	env = append(env, "TRUE_BDD_IO_ENGINE="+original.BinPath, "TRUE_BDD_IO_BARRIER="+barrier)
 	root := runner.RunDir(original.SessionRoot, state.Fixture.Name)
 	ended := make(chan struct{})
 
 	var runErr error
 	go func() {
-		runErr = runEngine(state, command, env...)
+		runErr = executeEngine(state, command, wrapper, env...)
 
 		close(ended)
 	}()
