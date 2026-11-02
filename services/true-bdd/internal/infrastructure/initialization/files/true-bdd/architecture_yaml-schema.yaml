@@ -47,6 +47,7 @@ term_mapping:
 # decides what `build tests` renders; `commands` is how each mode is
 # invoked. Declaring neither describes a project nothing can build.
 testing:
+  testkit: include('testkit', required=False)
   libraries: list(include('library'), required=False)
   framework: enum('go-test', 'jest', 'playwright')
   # Framework config file. Its containing directory is the working
@@ -54,6 +55,10 @@ testing:
   # the engine was invoked.
   config: str(required=False)
   commands: include('commands')
+
+---
+testkit:
+  ai_clis: list(str(), required=False)
 
 ---
 library:

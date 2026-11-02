@@ -149,11 +149,11 @@ Code supplied apart from a service's own source that the service or its tests bu
 _Avoid_: dependency (a service's dependencies are the processes and CLIs it talks to while it runs), package, framework
 
 **Suite wiring**:
-The generated code in a suite's folder that hooks its tests to their step definitions and to the test library: it builds the suite, registers the definitions, creates each Scenario's state and hands each test its Scenario's run. The engine writes it when `build steps` writes the step definitions, with no model turn.
+The generated code in a suite's folder that hooks its tests to their step definitions and to the test library: it builds the suite, registers the definitions, creates each Scenario's state and hands each test its Scenario's run. The engine writes it before compilation in `build steps --fix`, with no model turn, even with no pending Item. `architecture.testing.testkit` (a mapping, optionally `ai_clis: [claude, codex]` naming service AI CLIs to record and replay) selects wiring calling `testkit.NewSuite` and a `TestMain` file calling `scenarios.Main`. An empty mapping selects the harness with no service AI CLIs. Both files carry the build-steps generated marker and are refreshed when their render changes; unmarked files are preserved. Without the declaration, the plain bddgo wiring and `State` remain unchanged.
 _Avoid_: glue, shim, bootstrap, harness (the harness is the test library's mechanisms the wiring calls)
 
 **Scenario run**:
-The harness's state for one Scenario, carried by `testkit.ScenarioRun`: its test, Scenario, prepared fixture, proxy setup, result, run recorder and grading, with access to the suite's modes, recordings, judge and built service. A suite using the harness embeds it in `State` as its one harness field and adds only the definitions' own data.
+The harness's state for one Scenario, carried by `testkit.ScenarioRun`: its test, Scenario, prepared fixture, proxy setup, result, run recorder and grading, with access to the suite's modes, recordings, judge and built service. A suite declaring `architecture.testing.testkit` embeds `*testkit.ScenarioRun` in `State` as its one harness field (ensured even when no new skeleton is written) and adds only the definitions' own data.
 _Avoid_: world (for the harness's type), harness state, test context
 
 ## Repository vocabulary

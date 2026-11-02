@@ -65,7 +65,8 @@ type PlannedFile struct {
 
 // Plan is every file one registry renders into, in path order.
 type Plan struct {
-	Files []PlannedFile
+	Testkit *architecture.Testkit
+	Files   []PlannedFile
 }
 
 // BuildPlan groups scenarios by `path:`, resolves each one's owning suite,
@@ -109,7 +110,7 @@ func BuildPlan(
 
 	sort.Strings(order)
 
-	plan := &Plan{Files: make([]PlannedFile, 0, len(order))}
+	plan := &Plan{Testkit: arch.Testing.Testkit, Files: make([]PlannedFile, 0, len(order))}
 
 	for _, filePath := range order {
 		file, fileErr := planFile(filePath, grouped[filePath], arch, repoRoot, registryPath)

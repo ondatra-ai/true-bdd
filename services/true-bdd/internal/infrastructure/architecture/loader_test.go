@@ -186,3 +186,34 @@ func TestLoadKeepsEverySuite(t *testing.T) {
 		t.Errorf("ServicePath(web) = %q, %v", path, ok)
 	}
 }
+
+func TestLoadTestkitDeclaration(t *testing.T) {
+	t.Parallel()
+
+	for _, declaration := range []string{"", "    testkit: {}\n", "    testkit:\n      ai_clis: [claude, codex]\n"} {
+		t.Run(declaration, func(t *testing.T) {
+			t.Parallel()
+
+			arch, err := architecture.Load(writeSpec(t, specWith(allThreeCommands+declaration)))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if declaration == "" {
+				if arch.Testing.Testkit != nil {
+					t.Fatal("undeclared harness enabled")
+				}
+
+				return
+			}
+
+			if arch.Testing.Testkit == nil {
+				t.Fatal("harness declaration lost")
+			}
+
+			if strings.Contains(declaration, "ai_clis") && strings.Join(arch.Testing.Testkit.AICLIs, ",") != "claude,codex" {
+				t.Fatalf("AI CLIs lost: %+v", arch.Testing.Testkit)
+			}
+		})
+	}
+}
