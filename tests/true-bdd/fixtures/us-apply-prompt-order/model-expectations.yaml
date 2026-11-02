@@ -1,0 +1,4 @@
+"the us_apply_checklist prompt groups Given, When, Then in source order with and/but modifiers":
+  glob: "tmp/*/*-mcp-endpoint-007-ordered-checklist-*-user.txt"
+  pattern: "### Steps\\nGiven:\\n  - the MCP server is running on its configured port\\n  - and the greeting is \"Hello\"\\n  - but no request has been sent\\nWhen:\\n  - the Claude User opens a connection\\n  - and the Claude User sends an HTTP GET request to /mcp\\nThen:\\n  - the server returns HTTP 405\\n  - and the greeting is still \"Hello\"\\n  - but no response body is printed\\n\\n\\n---"
+  operator: "matches"

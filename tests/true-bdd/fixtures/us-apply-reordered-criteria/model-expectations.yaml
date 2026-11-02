@@ -1,0 +1,13 @@
+"the us_apply_checklist prompt selects the criterion by id and sets lineage to StoryID-ACID":
+  glob: "tmp/*/01-mcp-endpoint-002-get-refused-checklist-*-user.txt"
+  pattern: "\\*\\*Story ID:\\*\\* mcp-endpoint\\n\\*\\*Story Path:\\*\\* docs/product/stories/mcp-endpoint-requests\\.yaml\\n\\*\\*AC ID:\\*\\* 002-get-refused\\n\\*\\*Lineage Scenario ID:\\*\\* mcp-endpoint-002-get-refused\\n\\*\\*Description:\\*\\* The MCP server must respond with HTTP 405 Method Not Allowed when a Claude User sends a GET request to the /mcp endpoint\\.\\n"
+  operator: "matches"
+"the us_apply_checklist prompt holds the checklist's question and fix verbatim":
+  glob: "tmp/*/01-mcp-endpoint-002-get-refused-checklist-*-user.txt"
+  operator: "matches"
+  pattern: "## Validation Question\\n\\n{{Q}} SO THAT WE ENSURE {{rationale}}\\n\\n## If Validation Fails\\n(?s:.*?)\\n\\n{{F}}\\n\\n## Answer Format"
+  checklist: "us-apply"
+"the us_apply_checklist prompt keeps the other criterion's id, lineage and description":
+  glob: "tmp/*/01-mcp-endpoint-001-initialize-ok-checklist-*-user.txt"
+  pattern: "\\*\\*AC ID:\\*\\* 001-initialize-ok\\n\\*\\*Lineage Scenario ID:\\*\\* mcp-endpoint-001-initialize-ok\\n\\*\\*Description:\\*\\* The MCP server must respond with a 200 status"
+  operator: "matches"

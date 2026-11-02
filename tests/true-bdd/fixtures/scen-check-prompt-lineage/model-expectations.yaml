@@ -1,0 +1,17 @@
+"the scen_check_checklist prompt uses the Scenario's Registry key":
+  glob: "tmp/*/01-E2E-001-checklist-*-user.txt"
+  pattern: "\\*\\*Scenario ID:\\*\\* E2E-001\\n"
+  operator: "matches"
+"the scen_check_checklist prompt keeps Scenario modifiers and lineage in source order":
+  glob: "tmp/*/01-E2E-001-checklist-*-user.txt"
+  pattern: "Then:\\n  - the command exits with code 0\\n  - and stdout matches \\^Hello Ada\\$\\n  - but stderr has no lines\\n\\n### Lineage — user_stories\\[\\]\\n  - docs/product/stories/z-greeting\\.yaml \\(z-greeting-002-name\\)\\n  - docs/product/stories/a-greeting\\.yaml \\(a-greeting-001-name\\)\\n\\n---"
+  operator: "matches"
+"the scen_check_checklist prompt does not mention merge_date":
+  glob: "tmp/*/*-E2E-001-checklist-*-user.txt"
+  pattern: "merge_date"
+  operator: "does not match"
+"the scen_check_checklist prompt holds the checklist's question and fix verbatim":
+  glob: "tmp/*/01-E2E-001-checklist-*-user.txt"
+  operator: "matches"
+  pattern: "## Validation Question\\n\\n{{Q}} SO THAT WE ENSURE {{rationale}}\\n\\n## If Validation Fails\\n(?s:.*?)\\n\\n{{F}}\\n\\n## Answer Format"
+  checklist: "scen-check"
