@@ -1411,38 +1411,63 @@ architecture:
     - file: staging-files
     - outgoing_call: claude
     - outgoing_call: codex
-    does: 'Select the named fixture and defer assembly until When: overlay input/ on repository true-bdd/ and templates/
-      in tmp/test_run/<session>/<name>/, run prep.sh, then snapshot. The test library supplies the services mode:
-      replay requires cassettes/golden.json; record stages real CLI calls and publishes on Scenario success; live
-      uses real CLIs. Further Givens remove an existing confined path; queue shell-quoted mkdir/ln commands for a
-      relative confined symlink inside a snapshot-excluded directory; verify exactly one matching checklist-prompts.yaml
-      snippet without editing a checklist; or require nonblank prep.sh for atomic probes. engine-io-atomic preparation
-      makes tests/mcp/ticket_test.go mode 0600 and tmp/staging-target.txt contain sentinel plus newline. Teardown
-      runs after all Then steps.'
+    does: >-
+      Select tests/true-bdd/fixtures/<name>/ from the named project-tree Given; retain its name and
+      directory for later steps. Defer assembly until When: overlay input/ on repository true-bdd/ and
+      templates/ in tmp/test_run/<session>/<name>/, run optional fixture-root prep.sh, then snapshot. The
+      suite's -mode services value selects replay (PATH-first claude/codex programs answer from fixture
+      cassettes/; require cassettes/golden.json), record (those programs record real CLI calls; publish on
+      Scenario success), or live (real CLIs without recording). Further Givens remove an existing confined
+      path; or queue shell-quoted mkdir -p <link-directory> && ln -s <target> <link> before snapshots,
+      confining only the relative link path, preserving the target literally even outside the tree. Links
+      belong inside snapshot-excluded node_modules, .git, .next, test-results or playwright-report.
+      Checklist narrowing asserts fixture-root checklist-prompts.yaml has exactly one snippet under the
+      named checklist stem, equal to the quoted text; the harness then keeps only questions containing that
+      snippet during assembly, without the Given editing checklists. Atomic probes require nonblank
+      fixture-root prep.sh; engine-io-atomic's script makes tests/mcp/ticket_test.go mode 0600 and
+      tmp/staging-target.txt contain sentinel plus newline. Teardown runs after all Then steps.
   - concept: machine environment
     block: given
     service: true-bdd
     references:
     - file: project-tree
     - outgoing_call: go-toolchain
-    does: Require nonblank fixture prep.sh for test dependencies, and text playwright install for browser dependencies.
-      For failed downloads, select an empty file proxy under the run with GOSUMDB=off, GONOPROXY=none and empty GOPRIVATE.
-      For Git-environment probes set GIT_DIR/GIT_INDEX_FILE outside the project and TRUE_BDD_REAL_GO to genuine go
-      on PATH.
+    does: >-
+      Change only the next command's environment. The project-tree Given identifies
+      tests/true-bdd/fixtures/<name>/: dependencies require its root prep.sh nonblank, browser dependencies
+      additionally require that script to contain literal "playwright install". The harness runs it in the
+      assembled tree before snapshots to install dependencies; these Givens only verify preparation. Failed
+      downloads set GOPROXY=file://<absolute-run-root>/empty-module-proxy (an empty local source),
+      GOSUMDB=off, GONOPROXY=none and GOPRIVATE="". Git probes set GIT_DIR=/outside/nonexistent-git and
+      GIT_INDEX_FILE=/outside/index, without creating either. Resolve genuine go on the step process's PATH
+      before fixture programs are prepended; set TRUE_BDD_REAL_GO to that executable's absolute path for
+      fixture Go programs to delegate after checking Git variables, not as an engine option.
   - concept: fixture AI CLIs
     block: given
     service: true-bdd
     references:
     - outgoing_call: claude
     - outgoing_call: codex
-    does: Change the next run’s PATH/environment; the library supplies record/replay/live programs. Observed Claude
-      puts fixture claude-only/ first in every mode, CLAUDE_CONFIG_DIR in tmp/claude-state, and poisons CLAUDECODE,
-      CLAUDE_HISTORY_ROLE, CLAUDE_CODE_SAFE_MODE, CLAUDE_CODE_SIMPLE, CLAUDE_RELAUNCH_SESSION_ADD_DIRS and CLAUDE_CODE_DISABLE_ADVISOR_TOOL
-      with parent-session values. Controlled codex puts fixture cli/ behind the proxy, CODEX_HOME at dummy auth/ and
-      TRUE_BDD_AIPROXY_WRITER_FIXTURE at the fixture, observing spawn even live. Invalid-answer controls put input/cli/
-      behind the proxy only for concept-link-malformed/missing-answer/incomplete and concept-grouping-missing/repeat/rank/cap/unknown/same.
-      The cannot-serve writer uses cli/ only for build-steps-cannot-serve. Concurrent arrival places front/ before
-      and cli/ after proxies, admitting alpha before beta in record, beta before alpha in replay, once both wait.
+    does: >-
+      Change the next command's PATH/environment. The project-tree Given selects F=absolute
+      tests/true-bdd/fixtures/<name>; R is its assembled run root. The suite reads
+      services:record/replay/live from -mode: PATH-first claude/codex proxies record real calls or replay
+      fixture cassettes/; ordinary live runs reach real CLIs directly. Controlled writer/concurrent variants
+      retain observing proxies even live. Observed Claude prepends F/claude-only before proxies in every
+      mode; set TRUE_BDD_IO_FIXTURE=F, CLAUDE_CONFIG_DIR=R/tmp/claude-state,
+      CLAUDECODE=fixture-parent-session, CLAUDE_HISTORY_ROLE=inherited-parent-role, CLAUDE_CODE_SAFE_MODE=1,
+      CLAUDE_CODE_SIMPLE=1, CLAUDE_RELAUNCH_SESSION_ADD_DIRS=/outside/inherited and
+      CLAUDE_CODE_DISABLE_ADVISOR_TOOL=0. Controlled codex inserts F/cli immediately after proxies, sets
+      CODEX_HOME=F/auth (dummy auth.json) and TRUE_BDD_AIPROXY_WRITER_FIXTURE=F for the proxy's spawn
+      verification. Invalid link/grouping replies both insert F/input/cli after proxies, first in live; the
+      selected fixture's claude supplies its particular invalid answer. Accept only concept-link-malformed,
+      concept-link-missing-answer, concept-link-incomplete, concept-grouping-missing,
+      concept-grouping-repeat, concept-grouping-rank, concept-grouping-cap, concept-grouping-unknown or
+      concept-grouping-same; fail otherwise or if claude is absent. Cannot-serve inserts F/cli similarly,
+      requiring codex and fixture build-steps-cannot-serve. Concurrent arrival orders PATH as F/front,
+      proxies, F/cli, remaining PATH; set TRUE_BDD_CONCURRENT_PROXY to the proxy claude's absolute path.
+      Existing front launchers coordinate alpha/beta requests, alpha first in record, beta first in replay;
+      the Given installs them without implementing ordering.
   - concept: scripted answers
     block: given
     service: true-bdd
@@ -1505,15 +1530,24 @@ architecture:
     - file: architecture-document
     - outgoing_call: claude
     - outgoing_call: codex
-    does: 'Run through a launcher writing tmp/engine.pid. After the initial snapshot, take the named nonblocking shared/exclusive
-      directory flock before releasing the launcher. Blocks requires an alive, unreturned engine after 300ms, then
-      releases; beyond wait limit holds until exit at 9–12 seconds; permits requires return within three seconds.
-      Atomic replacement keeps tmp/original.go as a hard link to tests/mcp/ticket_test.go and plants .true-bdd.tmp.ticket_test.go
-      pointing to ../../tmp/staging-target.txt before release. Cancellation puts fixture cli/ first, waits up to ten
-      seconds for tmp/descendant.pid, then sends SIGINT. Binding interference runs input/run-after-check with TRUE_BDD_GROUPING_ENGINE:
-      successful scen check, replace architecture with ambiguous-architecture.json, then build steps --fix. Kill and
-      fail observations that fail or leave the engine alive five seconds after observation; otherwise retain the normal
-      run outcome.'
+    does: >-
+      Run the quoted command with normal queued stdin, {{CWD}} substitution and retained status, streams,
+      log and file changes, through a launcher writing the engine PID to run-root tmp/engine.pid.
+      Hold/staging barriers follow the initial snapshot. For holds, open the named existing directory
+      (init's true-bdd directory comes from the base overlay; only its configuration file was removed), take
+      its named nonblocking shared/exclusive flock, then release the launcher. Blocks requires an alive,
+      unreturned engine after 300ms, then releases the hold; beyond wait limit holds until engine exit at
+      9–12 seconds; permits requires return within three seconds while held. Staging keeps tmp/original.go
+      as a hard link to tests/mcp/ticket_test.go and plants tests/mcp/.true-bdd.tmp.ticket_test.go pointing
+      to ../../tmp/staging-target.txt before release. Cancellation puts the selected fixture's root cli/
+      first on PATH in every mode, waits up to ten seconds for run-root tmp/descendant.pid, then sends
+      SIGINT only to the engine PID and waits for return. Kill that engine with SIGKILL and fail if
+      observation fails or execution remains unfinished five seconds after observation. Binding change
+      instead runs selected fixture input/run-after-check as the executable with build steps --fix arguments
+      and TRUE_BDD_GROUPING_ENGINE=<absolute engine executable>. Its existing script runs scen check without
+      arguments, stops on nonzero exit, copies run-root ambiguous-architecture.json (from fixture input/)
+      over docs/architecture/architecture.yaml, then execs the engine with build steps --fix. Retain the
+      normal run outcome.
   - concept: the write guard is asked
     block: when
     service: true-bdd
@@ -1624,8 +1658,14 @@ architecture:
     - outgoing_call: claude
     - outgoing_call: codex
     - file: project-tree
-    does: Inspect actual run artifacts in every services mode. A cancelled descendant named by tmp/descendant.pid
-      must disappear within three seconds. Writer provisioning requires tmp/aiproxy-state/writer-spawn.txt to equal
-      fixture authentication and edit roots verified plus newline, and exactly one tmp/codex-homes/*/*-codex-home
-      without auth.json. The proxy writes that receipt only after verifying the private dummy-auth copy at spawn.
-      Reverse-order replay requires consumed-claude JSON to begin claude-002; record/live skip this replay-only assertion.
+    does: >-
+      Inspect run-root artifacts in every services mode, read from the suite's services: value of -mode
+      (record/replay/live). Cancellation reads tmp/descendant.pid and requires no process with that PID
+      within three seconds. Writer provisioning requires tmp/aiproxy-state/writer-spawn.txt to equal
+      "fixture authentication and edit roots verified\n" and exactly one tmp/codex-homes/*/*-codex-home with
+      no auth.json. The suite's observing codex proxy, enabled by the controlled-writer Given even live,
+      writes this receipt only after checking the spawn's exact dummy-auth copy, file mode 0600, home mode
+      0700, absence of other inherited home files, protected home and deny entry, empty edit root and
+      private shell scratch. Reverse-order replay reads tmp/aiproxy-state/consumed-claude, a JSON array of
+      consumed recording names in order, requiring first name "claude-002"; record/live pass without reading
+      it.
