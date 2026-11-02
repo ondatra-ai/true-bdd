@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-alpha-iter1-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/product.yaml"
-summary: "Replaced only the halve means string with the approved wording admitting pointer or keyboard activation. All other content and Item alpha remain unchanged."
+summary: "Applied the exact approved means wording for the existing when concept halve, admitting pointer and keyboard activation. All other content preserved."
 === FILE_END: tmp/{{RUN_DIR}}/apply-alpha-iter1-result.yaml ===

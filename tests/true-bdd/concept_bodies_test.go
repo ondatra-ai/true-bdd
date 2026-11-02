@@ -38,16 +38,21 @@ func TestConceptBodies001ThreeCases(t *testing.T) {
 	s.Done()
 }
 
-// concept-bodies-002-fixture-prompt: The body turn's saved prompts hold the fixture input of a Scenario the pattern binds
+// concept-bodies-002-fixture-prompt: The body turns' saved prompts should name the Registry, Scenario keys and fixture paths
 func TestConceptBodies002FixturePrompt(t *testing.T) {
 	s := scenarios.New(t, "concept-bodies-002-fixture-prompt")
 	s.Given(`the "concept-bodies-prompt" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 0`)
-	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches CALC_REAL_GO must name the real go`)
-	s.And(`every file matching "tmp/*/apply-*-user.txt" matches CALC_REAL_GO must name the real go`)
-	s.And(`every file matching "tmp/*/apply-*-user.txt" matches fixture: tests/calc/fixtures/offline`)
+	s.And(`every file matching "tmp/*/*fix-iter1-user.txt" matches registry: ./docs/scenarios.yaml`)
+	s.And(`every file matching "tmp/*/*fix-iter1-user.txt" matches fixture_root: tests/calc/fixtures`)
+	s.And(`every file matching "tmp/*/*fix-iter1-user.txt" matches fixture: offline`)
+	s.And(`every file matching "tmp/*/*fix-iter1-user.txt" matches calc-001-halve`)
+	s.And(`every file matching "tmp/*/*fix-iter1-user.txt" does not match CALC_REAL_GO must name the real go`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches fixture_root: tests/calc/fixtures`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches fixture: offline`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches calc-001-halve`)
 	s.And(`stdout matches BUILD STEPS COMPLETE`)
 	s.And(`no file outside "tmp" and "tests" changed`)
 	s.Done()

@@ -1,7 +1,7 @@
 package steps
 
 import (
-	"bytes"
+	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -9,12 +9,13 @@ import (
 
 //truebdd:concept when "operation"
 func concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba(state *State, args []string) error {
-	exactly, operation, number := args[0], args[1], args[2]
+	exact, operation, value := args[0], args[1], args[2]
 
-	// The suite's tests run in tests/calc, so the host root the declared CLI
-	// documents its commands from is two directories up.
+	// The declared CLI is run from the host root. The suite's tests run
+	// with tests/calc as their working directory, the same place the
+	// registry is reached from as "../../docs/scenarios.yaml".
 	const hostRoot = "../.."
-	const servicePackage = "./services/calc"
+	const mainPackage = "./services/calc"
 
 	var command string
 	switch operation {
@@ -26,26 +27,27 @@ func concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba(sta
 		return fmt.Errorf("the step names no declared operation: %q", operation)
 	}
 
-	argv := []string{"run", servicePackage, command}
-	if exactly != "" {
+	runArgs := []string{"run", mainPackage, command}
+	if exact != "" {
 		if command != "halve" {
-			return fmt.Errorf("the declared %s command takes no --exact flag", command)
+			return fmt.Errorf("the declared %s command takes no --exact flag, so the step cannot %s %s", command, exact, operation)
 		}
-		argv = append(argv, "--exact")
+		runArgs = append(runArgs, "--exact")
 	}
-	argv = append(argv, number)
+	runArgs = append(runArgs, value)
 
-	cmd := exec.Command("go", argv...)
+	cmd := exec.Command("go", runArgs...)
 	cmd.Dir = hostRoot
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("go %s in %s: %w: %s", strings.Join(argv, " "), hostRoot, err, strings.TrimSpace(stderr.String()))
+
+	stdout, err := cmd.Output()
+	if err != nil {
+		var exit *exec.ExitError
+		if errors.As(err, &exit) {
+			return fmt.Errorf("go %s exited %d: %s", strings.Join(runArgs, " "), exit.ExitCode(), strings.TrimSpace(string(exit.Stderr)))
+		}
+		return fmt.Errorf("running go %s: %w", strings.Join(runArgs, " "), err)
 	}
 
-	// Keep the command's stdout as the output, without the trailing newline the
-	// declared interface says it prints after the value.
-	state.Output = strings.TrimRight(stdout.String(), "\r\n")
+	state.Output = string(stdout)
 	return nil
 }

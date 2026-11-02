@@ -18,6 +18,7 @@ import (
 var ErrBuildStepsNotConverged = errors.New("step definitions still incomplete after fix walk")
 
 type buildStepsExecution struct {
+	readRoots        []string
 	deps             BuildStepsDeps
 	registryFile     string
 	architectureFile string

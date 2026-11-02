@@ -54,7 +54,12 @@ Service: calc
 Concept: output (then)
 Meaning: What the calculator printed for the operation has, or has no, match for a pattern.
 
-## Complete concept context
+Read the listed Scenario keys from the Registry path and inspect their fixture
+input directories under fixture_root as needed (exclude cassettes/). Read the definitions, State,
+helpers and architecture-declared test libraries. These paths carry the complete
+evidence; no digest or summary replaces it. Never read service implementation.
+
+## Concept context and evidence paths
 concept:
     concept: output
     block: then
@@ -125,10 +130,10 @@ definitions:
       pattern: ^the calculator's output (matches|does not match) (.+)$
       captures:
         - name: comparison
-          means: 'Which outcome the step requires: the literal "matches" (a match is required) or "does not match" (no match is required). Captured because it is the alternative that changes what the body asserts.'
+          means: The alternative that says whether the step requires a match ("matches") or no match ("does not match"), so the body knows which outcome to require.
         - name: pattern
-          means: The regular expression taken as the rest of the step, free text running to the end of the step, which the body matches against the kept stdout stripped of its trailing newline.
-      serves: 'Serves the whole of "Match the step''s pattern, a regular expression taken as the rest of the step, against the kept stdout without its trailing newline, and require a match or, when the step says does not match, no match": the second capture is the pattern clause, the first capture is the "require a match or ... no match" clause.'
+          means: The pattern, the regular expression taken as the rest of the step, matched against the kept stdout without its trailing newline.
+      serves: 'Serves the whole does clause: "Match the step''s pattern, a regular expression taken as the rest of the step, against the kept stdout without its trailing newline, and require a match or, when the step says does not match, no match" — the pattern capture carries the regular expression to match, and the comparison capture carries the required outcome.'
       steps:
         - text: the calculator's output matches ^3$
           captures:
@@ -146,53 +151,30 @@ definitions:
           captures:
             - matches
             - ^3\.5$
+registry: ./docs/scenarios.yaml
 scenarios:
-    - id: calc-001-halve
-      description: Halving an even number
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        When:
-          - the Owner halves 6
-        Then:
-          - the calculator's output matches ^3$
-    - id: calc-002-double
-      description: Doubling a number
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        When:
-          - the Owner doubles 6
-        Then:
-          - the calculator's output matches ^12$
-    - id: calc-003-halve-odd
-      description: Halving an odd number prints a whole number
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        When:
-          - the Owner halves 7
-        Then:
-          - the calculator's output does not match \.
-    - id: calc-004-exact
-      description: Halving an odd number exactly keeps its half
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        When:
-          - the Owner exactly halves 7
-        Then:
-          - the calculator's output matches ^3\.5$
+    - calc-001-halve
+    - calc-002-double
+    - calc-003-halve-odd
+    - calc-004-exact
 
+
+# Fix Prompt for Item then-output: then concept "output"
 
 ## Target
-`tests/calc/steps/concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e.go`
-
-## Scope
-Only this file's body and import block change. Do not touch `tests/calc/steps/state.go` (the existing `State.Output` field is the kept stdout and is sufficient — no shared-state change is needed), `tests/calc/steps/register.go`, the other concept file, the generated test, the Specification or service code. Preserve the `//truebdd:concept then "output"` record, the function name and the signature exactly as they are.
+tests/calc/steps
 
 ## Required Changes
-Replace the whole contents of `tests/calc/steps/concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e.go` with:
+
+### 1. No shared-state change
+
+`tests/calc/steps/state.go` already carries the only field this concept observes: `State.Output`, the stdout the `when "operation"` step keeps (`state.Output = string(stdout)`, raw, including its trailing newline). Leave `state.go` and `register.go` untouched.
+
+### 2. Replace the body of the one definition
+
+File: `tests/calc/steps/concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e.go`
+
+Overwrite the whole file with exactly this content. The package clause, the `//truebdd:concept then "output"` record and the function signature are unchanged; only the import list and the body differ.
 
 ```go
 package steps
@@ -207,25 +189,29 @@ import (
 func concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e(state *State, args []string) error {
 	comparison, pattern := args[0], args[1]
 
-	// The When step kept the command's stdout; drop a trailing newline here too so
-	// the pattern is matched against the printed value alone, as the binding says.
-	output := strings.TrimRight(state.Output, "\r\n")
+	if state.Output == "" {
+		return fmt.Errorf("no output was kept, so the step cannot match %q: the operation step must run first", pattern)
+	}
+
+	// The declared commands print the result and a newline, and the binding
+	// matches the pattern against the kept stdout without that trailing
+	// newline.
+	printed := strings.TrimSuffix(state.Output, "\n")
 
 	expression, err := regexp.Compile(pattern)
 	if err != nil {
-		return fmt.Errorf("the step's pattern %q is no Go regular expression: %w", pattern, err)
+		return fmt.Errorf("the step's pattern %q is no regular expression: %w", pattern, err)
 	}
-
-	matched := expression.MatchString(output)
+	matched := expression.MatchString(printed)
 
 	switch comparison {
 	case "matches":
 		if !matched {
-			return fmt.Errorf("the calculator's output %q has no match for %q", output, pattern)
+			return fmt.Errorf("the calculator's output %q does not match %q", printed, pattern)
 		}
 	case "does not match":
 		if matched {
-			return fmt.Errorf("the calculator's output %q has a match for %q", output, pattern)
+			return fmt.Errorf("the calculator's output %q matches %q", printed, pattern)
 		}
 	default:
 		return fmt.Errorf("the step names no declared comparison: %q", comparison)
@@ -235,10 +221,13 @@ func concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e(sta
 }
 ```
 
-## Why this serves the binding
-- `args[0]` is the `comparison` capture and `args[1]` is the `pattern` capture, in the order the definition's captures name them.
-- The body compiles the step's pattern as a Go regular expression and matches it against the kept stdout stripped of its trailing newline, requiring a match for `matches` and no match for `does not match` — exactly the binding's observation.
-- Nothing is computed about halving or doubling: the body only observes `state.Output`, which the `when "operation"` definition filled from the declared CLI's stdout.
+## Why this body serves the binding
+
+- `args[0]` is the `comparison` capture and `args[1]` the `pattern` capture, in the order the definition's captures name them.
+- "Match the step's pattern, a regular expression taken as the rest of the step, against the kept stdout without its trailing newline" — the body compiles `pattern` as a Go regular expression (the Word mapping's technical term) and matches it against `strings.TrimSuffix(state.Output, "\n")`.
+- "require a match or, when the step says does not match, no match" — the `switch` requires the outcome the `comparison` alternative names and fails with the printed text and the pattern otherwise.
+- The body only observes and compares. It never halves or doubles anything, never re-derives the expected text, and never runs a command; the `when` definition already called the declared CLI and kept its stdout. That keeps the four Scenarios' patterns (`^3$`, `^12$`, `\.`, `^3\.5$`) decided purely by what the calculator printed.
+- No package-level constant, variable, helper or type is added; every value stays inside the function body.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists and shared state. Preserve the engine's patterns, registrations,

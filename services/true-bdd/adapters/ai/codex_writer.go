@@ -87,7 +87,7 @@ func codexWriterConfig(req Request, paths map[string]string) (string, error) {
 		return "", err
 	}
 
-	env, err := codexScratchEnvironment(root, temporary, paths)
+	env, err := codexScratchEnvironment(root, temporary, paths, len(req.Mode.ReadRoots) > 0)
 	if err != nil {
 		return "", err
 	}
@@ -96,7 +96,7 @@ func codexWriterConfig(req Request, paths map[string]string) (string, error) {
 	config.WriteString(codexWriterDefaults)
 	config.WriteString(codexRuntimeProfile)
 
-	for _, path := range []string{root, paths["GOROOT"]} {
+	for _, path := range codexEvidenceRoots(req, root, paths["GOROOT"]) {
 		fmt.Fprintf(&config, "%s = \"read\"\n", strconv.Quote(path))
 	}
 
@@ -115,6 +115,8 @@ func codexWriterConfig(req Request, paths map[string]string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	codexEvidenceReadGrants(&config, req.Mode.ReadRoots)
 
 	for _, path := range []string{filepath.Join(temporary, "library-download"), filepath.Join(temporary, "codex-homes"),
 		"/private/tmp", "/private/var/tmp",
@@ -201,8 +203,14 @@ const codexRuntimeProfile = `
 ":minimal" = "read"
 `
 
-func codexScratchEnvironment(root, temporary string, paths map[string]string) (map[string]string, error) {
+func codexScratchEnvironment(root, temporary string, paths map[string]string, evidence bool,
+) (map[string]string, error) {
 	env := codexCommandEnvironment(temporary, paths)
+	// Go can use PWD without walking unreadable ancestors outside the evidence roots.
+	if evidence {
+		env["PWD"] = root
+	}
+
 	for _, key := range []string{"HOME", "TMPDIR", codexCacheEnv} {
 		resolved, err := codexInsideRoot(root, env[key])
 		if err != nil {
@@ -223,4 +231,23 @@ func codexScratchEnvironment(root, temporary string, paths map[string]string) (m
 	}
 
 	return env, nil
+}
+
+func codexEvidenceRoots(req Request, root, toolchain string) []string {
+	if len(req.Mode.ReadRoots) > 0 {
+		return []string{toolchain}
+	}
+
+	return []string{root, toolchain}
+}
+
+func codexEvidenceReadGrants(config *strings.Builder, roots []string) {
+	for _, path := range roots {
+		path = resolveThroughSymlinks(path)
+
+		key := strconv.Quote(path) + " = "
+		if !strings.Contains(config.String(), key) {
+			fmt.Fprintf(config, "%s\"read\"\n", key)
+		}
+	}
 }

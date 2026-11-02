@@ -5553,7 +5553,7 @@ scenarios:
       - 'every file matching "tmp/true-bdd.log.json" does not match "tool":|"run":'
       - every file matching "tmp/*/*codex.log" matches fixture writer stderr sentinel
       - every file matching "tmp/*/*codex-events.jsonl" does not match fixture writer stderr sentinel
-      - 'every file matching "tmp/true-bdd.log.json" matches "msg":"Dispatching AI turn","turn":1,"label":"claude-turn001","role":"fix","cli":"claude","model":"claude-opus-5","system_length":[0-9]+,"user_length":[0-9]+'
+      - 'every file matching "tmp/true-bdd.log.json" matches "msg":"Dispatching AI turn","turn":1,"label":"claude-turn001","role":"fix","cli":"claude","model":"claude-opus-5","system_length":[0-9]+,"user_length":[0-9]+,"prompt_bytes":[0-9]+,"prompt_limit_bytes":150000'
       - 'every file matching "tmp/true-bdd.log.json" matches "msg":"AI turn returned","turn":1,"label":"claude-turn001","role":"fix","cli":"claude","model":"claude-opus-5","duration_ms":[0-9]+,"length":125'
       - 'every file matching "tmp/true-bdd.log.json" matches "msg":"CLI transcript saved","file":"tmp/[^"\n]+/codex-turn002-codex-events.jsonl"'
       - the file "services/calc/calc.go" is created
@@ -6400,6 +6400,7 @@ scenarios:
       - no file outside "tmp" and "tests" changed
       - stdout matches msg="Codex turn sandboxed" label=codex-turn[0-9]+ sandbox=writer
       - the engine dispatched 4 validation AI turns to "claude"
+      - 'every file matching "tmp/codex-homes/*/*/config.toml" matches (?m)^PWD = "{{CWD}}"$'
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   build-steps-writing-005-outside-tests-refused:
     description: The confined body writer refuses writes to the service and Specification while completing the test body
@@ -7806,7 +7807,7 @@ scenarios:
       - no file outside "tmp" and "tests" changed
       - the shell command "go test -tags bdd -count=1 ./tests/calc/..." run in "." exits with code 0
   concept-bodies-002-fixture-prompt:
-    description: The body turn's saved prompts hold the fixture input of a Scenario the pattern binds
+    description: The body turns' saved prompts should name the Registry, Scenario keys and fixture paths
     service: true-bdd
     path: tests/true-bdd/concept_bodies_test.go
     timeout: 15m
@@ -7822,9 +7823,14 @@ scenarios:
       - the System Architect runs "build steps --fix"
       then:
       - the command exits with code 0
-      - every file matching "tmp/*/*fix-iter*-user.txt" matches CALC_REAL_GO must name the real go
-      - every file matching "tmp/*/apply-*-user.txt" matches CALC_REAL_GO must name the real go
-      - 'every file matching "tmp/*/apply-*-user.txt" matches fixture: tests/calc/fixtures/offline'
+      - 'every file matching "tmp/*/*fix-iter1-user.txt" matches registry: ./docs/scenarios.yaml'
+      - 'every file matching "tmp/*/*fix-iter1-user.txt" matches fixture_root: tests/calc/fixtures'
+      - 'every file matching "tmp/*/*fix-iter1-user.txt" matches fixture: offline'
+      - every file matching "tmp/*/*fix-iter1-user.txt" matches calc-001-halve
+      - every file matching "tmp/*/*fix-iter1-user.txt" does not match CALC_REAL_GO must name the real go
+      - 'every file matching "tmp/*/apply-*-user.txt" matches fixture_root: tests/calc/fixtures'
+      - 'every file matching "tmp/*/apply-*-user.txt" matches fixture: offline'
+      - every file matching "tmp/*/apply-*-user.txt" matches calc-001-halve
       - stdout matches BUILD STEPS COMPLETE
       - no file outside "tmp" and "tests" changed
   concept-bodies-003-fixture-contract:

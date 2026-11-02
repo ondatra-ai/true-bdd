@@ -29,7 +29,7 @@ story:
       - no file outside "tmp" and "tests" changed
       - the shell command "go test -tags bdd -count=1 ./tests/calc/..." run in "." exits with code 0
   - id: 002-fixture-prompt
-    description: The body turn's saved prompts hold the fixture input of a Scenario the pattern binds
+    description: The body turns' saved prompts should name the Registry, Scenario keys and fixture paths
     steps:
     - given:
       - the "concept-bodies-prompt" project tree
@@ -37,9 +37,14 @@ story:
     - when: *id001
     - then:
       - the command exits with code 0
-      - every file matching "tmp/*/*fix-iter*-user.txt" matches CALC_REAL_GO must name the real go
-      - every file matching "tmp/*/apply-*-user.txt" matches CALC_REAL_GO must name the real go
-      - 'every file matching "tmp/*/apply-*-user.txt" matches fixture: tests/calc/fixtures/offline'
+      - 'every file matching "tmp/*/*fix-iter1-user.txt" matches registry: ./docs/scenarios.yaml'
+      - 'every file matching "tmp/*/*fix-iter1-user.txt" matches fixture_root: tests/calc/fixtures'
+      - 'every file matching "tmp/*/*fix-iter1-user.txt" matches fixture: offline'
+      - every file matching "tmp/*/*fix-iter1-user.txt" matches calc-001-halve
+      - every file matching "tmp/*/*fix-iter1-user.txt" does not match CALC_REAL_GO must name the real go
+      - 'every file matching "tmp/*/apply-*-user.txt" matches fixture_root: tests/calc/fixtures'
+      - 'every file matching "tmp/*/apply-*-user.txt" matches fixture: offline'
+      - every file matching "tmp/*/apply-*-user.txt" matches calc-001-halve
       - stdout matches BUILD STEPS COMPLETE
       - no file outside "tmp" and "tests" changed
   - id: 003-fixture-contract

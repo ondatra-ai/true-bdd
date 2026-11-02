@@ -49,7 +49,7 @@ func (p ClaudeGuardPolicy) allowsSearch(target string) (bool, string) {
 		return false, "search root contains the module cache; choose a declared library or narrower host directory"
 	}
 
-	if claudePathWithinRoot(resolved, resolveThroughSymlinks(p.Replay.ReadRoot)) {
+	if len(p.EvidenceRoots) == 0 && claudePathWithinRoot(resolved, resolveThroughSymlinks(p.Replay.ReadRoot)) {
 		return true, ""
 	}
 

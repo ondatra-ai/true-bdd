@@ -47,3 +47,7 @@ type Provider interface {
 	// text; the engine parses its FILE_START/FILE_END markers.
 	Execute(ctx context.Context, req Request) (string, error)
 }
+
+func (r Request) needsCodexProfile() bool {
+	return r.CodexApply || r.CodexWriter || len(r.Mode.ReadRoots) > 0
+}

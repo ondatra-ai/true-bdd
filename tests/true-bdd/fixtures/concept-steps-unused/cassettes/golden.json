@@ -3,18 +3,18 @@
   "fixture": "concept-steps-unused",
   "files": [
     {
-      "path": "tests/calc/steps/conceptec8b881314b929394828fe6c21c7db729a95bc1a93ad8abf8ec578b93a9e83f2.go",
+      "path": "tests/calc/steps/concept51ed02fffcd311c254e473f1ef5f70e51d990908173bb819dd3c0508bb93ef9b.go",
       "kind": "created",
-      "size": 906,
-      "sha256": "42f4156674af7eb3af4e1084364134b0e51d41348ef1a1db5aa6c54a496ee028",
-      "text": "package steps\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"halving\"\nfunc conceptec8b881314b929394828fe6c21c7db729a95bc1a93ad8abf8ec578b93a9e83f2(state *State, args []string) error {\n\tconst (\n\t\thostRoot    = \"../..\"\n\t\tpackagePath = \"./services/calc\"\n\t\tcommand     = \"halve\"\n\t)\n\tnumber := args[0]\n\tcmd := exec.Command(\"go\", \"run\", packagePath, command, number)\n\tcmd.Dir = hostRoot\n\tstdout, err := cmd.Output()\n\tif err != nil {\n\t\tvar exit *exec.ExitError\n\t\tif errors.As(err, \u0026exit) {\n\t\t\treturn fmt.Errorf(\"%s %s: %w: %s\", command, number, err, strings.TrimSpace(string(exit.Stderr)))\n\t\t}\n\t\treturn fmt.Errorf(\"%s %s: %w\", command, number, err)\n\t}\n\thalved, err := strconv.Atoi(strings.TrimSpace(string(stdout)))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"%s %s: stdout %q is not an integer: %w\", command, number, string(stdout), err)\n\t}\n\tstate.Result = halved\n\treturn nil\n}\n"
+      "size": 1061,
+      "sha256": "8e4e09cd483532877c2be18367a8036704d0e6270eb587ced611c9de2272ba3c",
+      "text": "package steps\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"halving\"\nfunc concept51ed02fffcd311c254e473f1ef5f70e51d990908173bb819dd3c0508bb93ef9b(state *State, args []string) error {\n\t// The host root holds ./services/calc; the generated test package runs in\n\t// tests/calc, the same place scenarios.go reads ../../docs/scenarios.yaml from.\n\tconst hostRoot = \"../..\"\n\n\tnumber := args[0]\n\n\tcmd := exec.Command(\"go\", \"run\", \"./services/calc\", \"halve\", number)\n\tcmd.Dir = hostRoot\n\n\tvar stdout, stderr bytes.Buffer\n\tcmd.Stdout = \u0026stdout\n\tcmd.Stderr = \u0026stderr\n\n\tif err := cmd.Run(); err != nil {\n\t\tdetail := strings.TrimSpace(stderr.String())\n\t\tif detail == \"\" {\n\t\t\treturn fmt.Errorf(\"halve %s: %w\", number, err)\n\t\t}\n\t\treturn fmt.Errorf(\"halve %s: %w: %s\", number, err, detail)\n\t}\n\n\tprinted := strings.TrimSpace(stdout.String())\n\thalved, err := strconv.Atoi(printed)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"halve %s printed %q on stdout, want a whole number: %w\", number, printed, err)\n\t}\n\n\tstate.Result = halved\n\treturn nil\n}\n"
     },
     {
       "path": "tests/calc/steps/register.go",
       "kind": "modified",
       "size": 225,
-      "sha256": "41923fcf05407123bb5361670ba23bad51f449d7d72ec7e184913f8f995fc03a",
-      "text": "package steps\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the result is (-?\\d+)$`, result)\n\n\tsuite.Step(\"^the Owner halves[ \\\\x{00A0}](-?\\\\d+)$\", conceptec8b881314b929394828fe6c21c7db729a95bc1a93ad8abf8ec578b93a9e83f2)\n}\n"
+      "sha256": "96cca4814a2ad2d058871e2b91beb5aa304dec03fd5b2029cdd03b7dd890d970",
+      "text": "package steps\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the result is (-?\\d+)$`, result)\n\n\tsuite.Step(\"^the Owner halves[ \\\\x{00a0}](-?\\\\d+)$\", concept51ed02fffcd311c254e473f1ef5f70e51d990908173bb819dd3c0508bb93ef9b)\n}\n"
     }
   ]
 }

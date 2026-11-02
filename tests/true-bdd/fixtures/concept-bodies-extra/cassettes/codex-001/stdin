@@ -54,7 +54,12 @@ Service: calc
 Concept: halving (when)
 Meaning: The Owner halves a whole number, positive, zero or negative, with the calculator.
 
-## Complete concept context
+Read the listed Scenario keys from the Registry path and inspect their fixture
+input directories under fixture_root as needed (exclude cassettes/). Read the definitions, State,
+helpers and architecture-declared test libraries. These paths carry the complete
+evidence; no digest or summary replaces it. Never read service implementation.
+
+## Concept context and evidence paths
 concept:
     concept: halving
     block: when
@@ -109,42 +114,37 @@ definitions:
         - text: the Owner halves -7
           captures:
             - "-7"
+registry: ./docs/scenarios.yaml
 scenarios:
-    - id: calc-001-halve
-      description: Halving an even number
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        When:
-          - the Owner halves 6
-        Then:
-          - the result is 3
-    - id: calc-002-halve
-      description: Halving a negative odd number rounds toward zero
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        When:
-          - the Owner halves -7
-        Then:
-          - the result is -3
+    - calc-001-halve
+    - calc-002-halve
 
 
-# Fix Prompt for Item when-halving: when concept "halving"
+## Fix Prompt for Item when-halving: when concept "halving"
 
 ## Target
 tests/calc/steps
 
+## Finding
+
+The suite already owns the helper that the `halving` binding describes:
+
+`tests/calc/steps/state.go`
+```go
+// Halve runs the calculator's halve command with the whole number and
+// keeps its integer stdout as the result.
+func (s *State) Halve(value string) error
+```
+
+It runs the declared `halve` command as a process (`go run ./services/calc halve VALUE` from the host root, via `cmd.Dir = "../.."`) and keeps its integer stdout in `State.Result` — which is precisely the binding's "Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result", and precisely the field the `then "result"` definition in `tests/calc/steps/definitions.go` compares against.
+
+So the `when` body must only hand its single capture (the whole number, positive, zero or negative — the pattern `^the Owner halves (-?\d+)$` keeps the sign in `args[0]`) to that helper and return its error. The body must not shell out itself, must not parse or halve the number, and must not pre-compute any expected value: the integer in `State.Result` has to come back from the product's own stdout.
+
+No shared-state change is required: `State.Result int` already exists and is written by `Halve`, read by `result`.
+
 ## Required Changes
 
-### 1. Write the body of the `when` definition for concept "halving"
-
-File: `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go`
-
-Replace the whole file content with the following. The only changes outside the
-function body are the file's import block (`fmt` is no longer used); the
-`//truebdd:concept` record, the function name and the signature are preserved
-exactly as the engine wrote them.
+### 1. Write the body — replace the whole contents of `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go` with exactly:
 
 ```go
 package steps
@@ -155,40 +155,17 @@ func concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(sta
 }
 ```
 
-Why this is the whole body:
+Notes for the applier:
+- The `//truebdd:concept when "halving"` record, the function name and the `(state *State, args []string) error` signature are the engine's — keep them byte-for-byte as shown (they are unchanged from the skeleton).
+- The `import "fmt"` line is deleted because the skeleton's `fmt.Errorf` placeholder is gone and `fmt` would otherwise be an unused import. The file then needs no imports at all. This is the only import change, and it is inside the selected file.
+- `args[0]` is passed through as the captured string; `State.Halve` is what converts the product's stdout to an integer. Do not add `strconv` here, do not negate or divide anything, and do not touch `state.Result` from this body.
 
-- The binding says: "Run the declared halve command as a process with the
-  step's whole number and keep its integer stdout as the result." The suite
-  already owns exactly that work in the existing helper `(*State).Halve` in
-  `tests/calc/steps/state.go`, which runs the declared `halve` command
-  (`go run ./services/calc halve VALUE` from the host root) and parses its
-  integer stdout into `State.Result`.
-- `args[0]` is the pattern's single capture `(-?\d+)` — the whole number, which
-  may be positive, zero or negative. It is passed through verbatim as the
-  command's `value` argument; the step never parses, halves or rounds it, so the
-  product's result is never computed inside the definition.
-- The `then` definition `result` in `tests/calc/steps/definitions.go` already
-  compares `State.Result` with the expected value, so the `when` body stores
-  nothing else and observes nothing.
+### 2. Do not change anything else
 
-### 2. Do NOT change anything else
-
-- Do **not** edit `tests/calc/steps/state.go`. Reuse `(*State).Halve` as-is.
-  Its `CALC_LICENCE` guard is stray/leftover helper code and is not part of the
-  declared Public interface (`docs/architecture/calc-cli.yaml` declares only the
-  `halve` command with its required integer `value` argument, exit `0` with the
-  halved integer on stdout and exit `1` for invalid arguments). Satisfying
-  `CALC_LICENCE` is the harness's or operator's responsibility, outside this
-  step's scope — this step is written against the declared interface and ignores
-  that gate.
-- No new `State` fields are needed: `State.Result` already carries the
-  calculator's integer stdout for the `then` step to observe.
-- Do not add package-level constants, variables, helper functions or types.
-- Leave `tests/calc/steps/register.go`, `tests/calc/steps/definitions.go`,
-  `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, the
-  Specification and the service code untouched.
-- Do not run a Scenario or attempt to make one green; the engine owns
-  compilation and the whole-suite checks.
+- Leave `tests/calc/steps/register.go` as is — `suite.Step("^the Owner halves (-?\\d+)$", concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87)` already registers this definition.
+- Leave `tests/calc/steps/state.go` untouched, including `State.Halve`'s existing `CALC_LICENCE` precondition: that gate is the pre-existing contract of a shared helper, it is reached only when the harness runs the step, and neither the concept nor the declared CLI interface gives this `when` body any licence to install or any Given to set one up. Reuse the helper as written rather than re-implementing `exec.Command` in the body to work around it.
+- Leave `tests/calc/steps/definitions.go` (the `then "result"` definition), `tests/calc/scenarios/scenarios.go`, the generated `tests/calc/calc_test.go`, `docs/scenarios.yaml`, `docs/architecture/*` and all service code untouched.
+- Add no package-level constants, variables, types or helper functions.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists and shared state. Preserve the engine's patterns, registrations,

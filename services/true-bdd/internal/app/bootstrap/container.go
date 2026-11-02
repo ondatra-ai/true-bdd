@@ -199,7 +199,12 @@ func newAIRouter(
 		return nil, nil, pkgerrors.ErrCreateAIClientFailed(err)
 	}
 
-	return ai.NewRouter(workDir, runDir.GetTmpOutPath()), models, nil
+	limit, err := cfg.PromptLimitBytes(ai.DefaultPromptLimit)
+	if err != nil {
+		return nil, nil, pkgerrors.ErrInvalidModelConfigFailed(err)
+	}
+
+	return ai.NewRouter(workDir, runDir.GetTmpOutPath(), limit), models, nil
 }
 
 // newTestRunnerDispatcher wires the three framework-specific runners

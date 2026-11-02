@@ -235,7 +235,7 @@ extensions:
       format: ERROR with command and error, before any Item, test run or AI turn.
     dispatching-ai-turn:
       message: Dispatching AI turn
-      format: One record per AI turn before its CLI is spawned, with turn, label, role, cli and model (architecture.terms[AI turn] and [AI CLI]).
+      format: One record per AI turn before its CLI is spawned, with turn, label, role, cli, model, system_length, user_length, prompt_bytes and prompt_limit_bytes (architecture.terms[AI turn] and [AI CLI]). prompt_bytes counts dispatched UTF-8 system/user bytes, including Codex assembly headings; a prompt above engine.max_prompt_bytes is refused before dispatch with turn, size and limit.
     spawning-test-runner:
       message: Spawning test runner
       format: One record per test runner start, with binary, args and dir (architecture.terms[test runner]).

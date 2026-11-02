@@ -62,7 +62,8 @@ func claudeWriterOptions(ctx context.Context, req Request) (*claude.WriterOption
 	dir := artifactPath(req, "claude-config")
 	readRoots := append([]string{roots[0]}, req.Mode.LibraryReadRoots...)
 	readRoots = append(readRoots, spills)
-	policy := ClaudeGuardPolicy{LibraryCache: roots[1],
+	policy := ClaudeGuardPolicy{AllowStructuredOutput: req.ResultSchema != "",
+ LibraryCache: roots[1], EvidenceRoots: req.Mode.ReadRoots,
 		ProtectedRoots: []string{dir, filepath.Join(req.WorkDir, "tmp/library-download")},
 		Replay:         NewReplayPolicy(req.Mode, req.WorkDir),
 		ReadRoots:      readRoots, ExcludedRoots: []string{}}

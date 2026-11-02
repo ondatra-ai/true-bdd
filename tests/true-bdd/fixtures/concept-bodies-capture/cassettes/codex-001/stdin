@@ -54,7 +54,12 @@ Service: calc
 Concept: halving (when)
 Meaning: The Owner halves a whole number, positive, zero or negative, with the calculator.
 
-## Complete concept context
+Read the listed Scenario keys from the Registry path and inspect their fixture
+input directories under fixture_root as needed (exclude cassettes/). Read the definitions, State,
+helpers and architecture-declared test libraries. These paths carry the complete
+evidence; no digest or summary replaces it. Never read service implementation.
+
+## Concept context and evidence paths
 concept:
     concept: halving
     block: when
@@ -112,34 +117,11 @@ definitions:
         - text: the Owner halves -7
           captures:
             - "-7"
+registry: ./docs/scenarios.yaml
 scenarios:
-    - id: calc-001-halve
-      description: Halving an even number
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        When:
-          - the Owner halves 6
-        Then:
-          - the result is 3
-    - id: calc-002-halve
-      description: Halving a two-digit number
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        When:
-          - the Owner halves 64
-        Then:
-          - the result is 32
-    - id: calc-003-halve
-      description: Halving a negative odd number rounds toward zero
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        When:
-          - the Owner halves -7
-        Then:
-          - the result is -3
+    - calc-001-halve
+    - calc-002-halve
+    - calc-003-halve
 
 
 # Fix Prompt for Item when-halving: when concept "halving"
@@ -147,24 +129,38 @@ scenarios:
 ## Target
 tests/calc/steps
 
-## Scope
-Write only the body of the one listed definition. Do not touch `tests/calc/steps/definitions.go`, `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, the Specification or any service code.
+## Required Changes
 
-## Prerequisite owned by the engine (do not hand-edit)
-The skeleton's current pattern `^the Owner halves (-?\d)\d*$` captures only the first digit, so `the Owner halves 64` would hand the body `"6"` and `the Owner halves -7` would hand it `"-7"` only by accident. Per the clarification, the engine corrects the pattern to capture the whole number (`^the Owner halves (-?\d+)$`) and regenerates the skeleton and its registration in `tests/calc/steps/register.go`. The body below assumes `args[0]` is the complete whole number as written in the step. Do not edit the pattern, the registration, the function name, the signature or the `//truebdd:concept` record by hand — keep whatever the engine emits.
+### 1. Correct the registered pattern so the step captures the whole number
 
-## Shared state
-No change. `tests/calc/steps/state.go` already declares `type State struct{ Result int }`, which is the field the `then` definition `result` compares against. Keep it as is.
+The current pattern `^the Owner halves (-?\d)\d*$` captures only the first digit, so `the Owner halves 64` hands the body `6` instead of `64`. Per the user's clarification, widen the capture group to the whole number.
 
-## Required change
+File: `tests/calc/steps/register.go`
 
-Replace the whole contents of `tests/calc/steps/concept8c83e3012dd37395db8aad8a8fafef5f14ca67ae936908b0e63bff4b60526148.go` with the following. The `//truebdd:concept` line, the function name and the signature are reproduced exactly as the engine emitted them — only the import block and the body change.
+Replace this exact line:
+
+```go
+	suite.Step("^the Owner halves (-?\\d)\\d*$", concept8c83e3012dd37395db8aad8a8fafef5f14ca67ae936908b0e63bff4b60526148)
+```
+
+with:
+
+```go
+	suite.Step("^the Owner halves (-?\\d+)$", concept8c83e3012dd37395db8aad8a8fafef5f14ca67ae936908b0e63bff4b60526148)
+```
+
+Change nothing else in `register.go`: the `result` registration, the function name it binds and the file's order stay exactly as they are.
+
+### 2. Write the body of the `when` definition
+
+File: `tests/calc/steps/concept8c83e3012dd37395db8aad8a8fafef5f14ca67ae936908b0e63bff4b60526148.go`
+
+Overwrite the whole file with the content below. The `//truebdd:concept when "halving"` record, the function name and the signature are preserved verbatim; only the import list and the body change.
 
 ```go
 package steps
 
 import (
-	"bytes"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -173,47 +169,52 @@ import (
 
 //truebdd:concept when "halving"
 func concept8c83e3012dd37395db8aad8a8fafef5f14ca67ae936908b0e63bff4b60526148(state *State, args []string) error {
-	// docs/architecture/calc-cli.yaml, command `halve`: run
-	// `go run ./services/calc halve VALUE` from the host root; stdout is the
-	// halved integer and a newline. The tests run from tests/calc, so the host
-	// root is two levels up, the same root the suite reads its registry from.
-	const hostRoot = "../.."
-
-	value, err := strconv.Atoi(args[0])
+	if len(args) != 1 {
+		return fmt.Errorf("the Owner halves: expected 1 capture, got %d", len(args))
+	}
+	value := args[0]
+	if _, err := strconv.Atoi(value); err != nil {
+		return fmt.Errorf("the Owner halves %q: not a whole number: %w", value, err)
+	}
+	cmd := exec.Command("go", "run", "./services/calc", "halve", value)
+	cmd.Dir = "../.."
+	stdout, err := cmd.Output()
 	if err != nil {
-		return fmt.Errorf("halving: %q is not a whole number: %w", args[0], err)
+		if exit, ok := err.(*exec.ExitError); ok {
+			return fmt.Errorf("halve %s: %w: %s", value, err, strings.TrimSpace(string(exit.Stderr)))
+		}
+		return fmt.Errorf("halve %s: %w", value, err)
 	}
-
-	cmd := exec.Command("go", "run", "./services/calc", "halve", strconv.Itoa(value))
-	cmd.Dir = hostRoot
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("halve %d: %w: %s", value, err, strings.TrimSpace(stderr.String()))
-	}
-
-	printed := strings.TrimSpace(stdout.String())
+	printed := strings.TrimSpace(string(stdout))
 	halved, err := strconv.Atoi(printed)
 	if err != nil {
-		return fmt.Errorf("halve %d: stdout %q is not an integer: %w", value, printed, err)
+		return fmt.Errorf("halve %s: stdout %q is not an integer: %w", value, printed, err)
 	}
-
 	state.Result = halved
 	return nil
 }
 ```
 
-## Why this satisfies the binding
-- The binding says "Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result." The body does exactly that: it parses the step's captured number, runs the declared `halve` command as a process with it, and stores the command's integer stdout in `State.Result`.
-- Nothing halves anything inside the definition — no division, no rounding, no expected value. The product's arithmetic stays in the process under test; the `then` definition `result` does the comparison against `State.Result`.
-- The Word mapping's `observed_by` is honoured: the number is the integer argument and the integer stdout of the `halve` command.
-- Every new constant (`hostRoot`) stays inside the function body; no package-level constants, variables, helpers or types are added, and the only change outside the body is this file's import block.
+## Why this body
 
-## Notes for the applier
-- Do not run the scenarios or try to make them green; `services/calc` may not exist in this fixture yet and a failing or absent target is expected here.
-- Preserve the inherited `GOCACHE`/`TMPDIR` if you compile the steps package to check it builds; never create a separate build cache.
-=== FILE_END ===
+- The binding says: *run the declared halve command as a process with the step's whole number and keep its integer stdout as the result*. The body does exactly that and nothing more.
+- The declared Public interface (`docs/architecture/calc-cli.yaml`) states the invocation is `go run ./services/calc halve VALUE` from the host root, with the halved integer on stdout for exit `0` and invalid arguments on exit `1`. The test binary's working directory is `tests/calc` (the package directory of the generated `calc_test.go`), so `cmd.Dir = "../.."` is the host root; the non-zero exit path surfaces the command's stderr as the step's error instead of swallowing it.
+- The step never halves anything itself: it only passes the captured number to the command and parses the integer the command printed. The arithmetic stays in the product.
+- `strconv.Atoi(value)` before the call only guards the step's own capture; it does not compute the product's answer.
+
+## Shared state
+
+No change needed. `tests/calc/steps/state.go` already declares `type State struct{ Result int }`, and the existing `then` definition in `tests/calc/steps/definitions.go` reads `state.Result` to compare it with the expected value. The `when` body writes that same field, so the observation side needs no edit.
+
+## Do not touch
+
+- `tests/calc/steps/definitions.go` (the `then "result"` definition)
+- `tests/calc/steps/state.go`
+- `tests/calc/scenarios/scenarios.go`
+- `tests/calc/calc_test.go` (generated)
+- The Specification (`docs/scenarios.yaml`, `docs/architecture/*`) and any service code
+
+No package-level constants, variables, helper functions or types are added: every literal (`"go"`, `"run"`, `"./services/calc"`, `"halve"`, `"../.."`) stays inside the selected function body, and only this file's import list changes outside it.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists and shared state. Preserve the engine's patterns, registrations,

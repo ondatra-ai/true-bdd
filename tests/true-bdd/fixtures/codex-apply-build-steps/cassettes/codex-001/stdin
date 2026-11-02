@@ -54,7 +54,12 @@ Service: calc
 Concept: doubling (when)
 Meaning: The Owner doubles a whole number with the calculator.
 
-## Complete concept context
+Read the listed Scenario keys from the Registry path and inspect their fixture
+input directories under fixture_root as needed (exclude cassettes/). Read the definitions, State,
+helpers and architecture-declared test libraries. These paths carry the complete
+evidence; no digest or summary replaces it. Never read service implementation.
+
+## Concept context and evidence paths
 concept:
     concept: doubling
     block: when
@@ -94,45 +99,32 @@ definitions:
       file: tests/calc/steps/concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b.go
       pattern: ^the Owner doubles (-?\d+)$
       captures:
-        - name: value
-          means: The whole number the Owner doubles, as written in the step (an optional minus sign followed by digits); passed as the VALUE argument of the calculator's double command.
-      serves: 'Serves the whole of "Run the kept calculator program''s double command as a process from the host root with the step''s whole number and keep its integer stdout": the words "the Owner doubles" make it the doubling concept bound to the double command, and the single capture supplies the step''s whole number that the command is run with, the only value the body needs before it keeps the integer stdout.'
+        - name: number
+          means: The whole number operand to double, written as an optionally negative decimal integer (e.g. 3), passed verbatim as the VALUE argument of the double command.
+      serves: 'Serves "Run the kept calculator program''s double command ... with the step''s whole number": the single capture is the integer argument the process is run with, and the literal words "the Owner doubles" fix the step to the doubling concept; the stdout kept as an integer needs no capture.'
       steps:
         - text: the Owner doubles 3
           captures:
             - "3"
+registry: ./docs/scenarios.yaml
 scenarios:
-    - id: calc-001-double
-      description: Doubling a number returns twice its value
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        Given:
-          - the calculator is installed
-        When:
-          - the Owner doubles 3
-        Then:
-          - the result is 6
+    - calc-001-double
 
-
-# Fix Prompt for Item when-doubling: when concept "doubling"
 
 ## Target
-tests/calc/steps
-
-## Scope
-Change only the body of `concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b` in `tests/calc/steps/concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b.go`, plus that file's import block. Keep the `//truebdd:concept when "doubling"` record, the function name and the signature exactly as they are. Do not touch `tests/calc/steps/register.go`, `tests/calc/steps/state.go`, `tests/calc/calc_test.go`, the Specification or `services/calc`.
-
-## Shared state
-No State change is needed. `State.Program` is already set by the given step `installed`, and `State.Value` is already read by the then step `result`. This body consumes `Program` and writes `Value`.
+tests/calc/steps — the `when` concept "doubling" definition.
 
 ## Required Changes
-Replace the whole contents of `tests/calc/steps/concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b.go` with:
+
+Replace the whole contents of `tests/calc/steps/concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b.go` with the code below. This changes only the selected function's body and that file's import block. Keep the `//truebdd:concept when "doubling"` record, the function name and the signature exactly as shown; do not touch `tests/calc/steps/register.go`, `tests/calc/steps/state.go`, the generated test or any service code.
+
+No shared-state changes are needed: `State.Program` (kept by the given "installation" step) and `State.Value` (observed by the then "result" step) already exist in `tests/calc/steps/state.go`.
 
 ```go
 package steps
 
 import (
+	"errors"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -141,29 +133,38 @@ import (
 
 //truebdd:concept when "doubling"
 func concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b(state *State, args []string) error {
-	const hostRoot = "../.."
 	if state.Program == "" {
-		return fmt.Errorf("the calculator is not installed")
+		return errors.New("double a number: the calculator is not installed")
 	}
-	command := exec.Command(state.Program, "double", args[0])
-	command.Dir = hostRoot
-	output, err := command.Output()
+	number := args[0]
+	if _, err := strconv.Atoi(number); err != nil {
+		return fmt.Errorf("double a number: the step's whole number %q: %w", number, err)
+	}
+	command := exec.Command(state.Program, "double", number)
+	command.Dir = "../.."
+	stdout, err := command.Output()
 	if err != nil {
-		return fmt.Errorf("double %s: %w: %s", args[0], err, output)
+		var exit *exec.ExitError
+		if errors.As(err, &exit) {
+			return fmt.Errorf("double %s: %w: %s", number, err, exit.Stderr)
+		}
+		return fmt.Errorf("double %s: %w", number, err)
 	}
-	value, err := strconv.Atoi(strings.TrimSpace(string(output)))
+	printed := strings.TrimSpace(string(stdout))
+	doubled, err := strconv.Atoi(printed)
 	if err != nil {
-		return fmt.Errorf("double %s: unexpected stdout %q: %w", args[0], string(output), err)
+		return fmt.Errorf("double %s: read the printed integer %q: %w", number, printed, err)
 	}
-	state.Value = value
+	state.Value = doubled
 	return nil
 }
 ```
 
-## Why this serves the binding
-- The binding says to run the kept calculator program's `double` command as a process from the host root with the step's whole number and keep its integer stdout. `state.Program` is the kept absolute program path from the `installation` given; `command.Dir = "../.."` is the host root, matching the `go build` invocation in `installed`; the single capture `args[0]` is passed verbatim as the declared `value` argument of `calc double VALUE`.
-- The declared interface says `calc double VALUE` prints the doubled integer and a newline on exit 0, so the body trims the newline and parses the integer, then keeps it in `state.Value` for the `then` step to compare. No doubling is computed in the test: the only arithmetic source is the product's stdout.
-- `hostRoot` stays a local constant inside the function body; no package-level constants, variables, helpers or types are added.
+## Why this body serves the binding
+- "Run the kept calculator program's double command as a process from the host root": the process is `state.Program` — the binary the given "installation" step built and kept — invoked as `calc double VALUE` per the declared OpenCLI document, with `command.Dir = "../.."`, the same host root the install step builds from (the suite's tests run in `tests/calc`).
+- "with the step's whole number": the single capture `args[0]` is passed verbatim as the `value` argument; it is only validated as a decimal integer, never altered.
+- "and keep its integer stdout": the command's stdout (a doubled integer and a newline, per response `'0'`) is trimmed, parsed and stored in `state.Value` for the then "result" step to compare. The body never computes `2*number` or any other doubling itself — the only source of the value is the process's stdout.
+- A non-zero exit (response `'1'`, invalid arguments) fails the step with the program's stderr attached, rather than being silently treated as a result.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists and shared state. Preserve the engine's patterns, registrations,

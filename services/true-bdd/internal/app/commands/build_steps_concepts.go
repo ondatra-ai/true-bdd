@@ -45,10 +45,11 @@ func runConceptBuildSteps(ctx context.Context, deps BuildStepsDeps, registryFile
 // conceptDiscovery is what a concept walk starts from: the Registry, its
 // unbound steps, and one Item per concept and suite, grouped or resumed.
 type conceptDiscovery struct {
-	scenarios []*registry.RegistryScenario
-	answer    *stepcoverage.Answer
-	items     []*BuildStepsItem
-	steps     map[string][]catalogue.SuiteStep
+	registryFile string
+	scenarios    []*registry.RegistryScenario
+	answer       *stepcoverage.Answer
+	items        []*BuildStepsItem
+	steps        map[string][]catalogue.SuiteStep
 }
 
 func discoverConceptItems(ctx context.Context, deps BuildStepsDeps, registryFile, architectureFile string,
@@ -73,7 +74,7 @@ func discoverConceptItems(ctx context.Context, deps BuildStepsDeps, registryFile
 		return nil, err
 	}
 
-	discovery := &conceptDiscovery{scenarios: scenarios, answer: answer}
+	discovery := &conceptDiscovery{scenarios: scenarios, answer: answer, registryFile: registryFile}
 
 	err = discovery.collect(suites, groups)
 	if err != nil {

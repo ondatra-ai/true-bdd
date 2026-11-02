@@ -10,7 +10,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/template"
 )
 
-// StepCritiqueData embeds the whole specification context and steps package.
+// StepCritiqueData embeds the semantic core, used fixture contracts and steps package.
 type StepCritiqueData struct {
 	Definition string
 	Context    string

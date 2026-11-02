@@ -3,6 +3,8 @@ package validate
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/docs"
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/architecture"
@@ -13,7 +15,7 @@ var errBindingsOutsideWalk = errors.New("a binding judgement needs a started wal
 // bindingRequest is one binding's turn: the product, every step reaching its concept for the service, the binding
 // and the service's Public interface.
 type bindingRequest struct {
-	Product         string                   `json:"product"`
+	ProductPath     string                   `json:"product_path"`
 	Steps           []conceptStep            `json:"steps"`
 	Service         string                   `json:"service"`
 	Bindings        map[string]linkedBinding `json:"bindings"`
@@ -35,9 +37,9 @@ func (e *ChecklistEvaluator) judgeSharedBindings(ctx context.Context, prompt che
 		return err
 	}
 
-	productText, err := e.conceptProduct()
+	productPath, err := e.docResolver.Resolve(docs.KeyProduct)
 	if err != nil {
-		return err
+		return fmt.Errorf("resolve binding product: %w", err)
 	}
 
 	keys := sortedBindingKeys(linked)
@@ -47,7 +49,7 @@ func (e *ChecklistEvaluator) judgeSharedBindings(ctx context.Context, prompt che
 			one := map[string]linkedBinding{key: linked[key]}
 			schema, err := bindingSchema(one)
 
-			return bindingRequest{productText, e.sharing.stepsLinking(key, service), service, one, interfaceContext},
+			return bindingRequest{productPath, e.sharing.stepsLinking(key, service), service, one, interfaceContext},
 				schema, err
 		}})
 	if err != nil {

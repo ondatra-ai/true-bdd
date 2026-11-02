@@ -5,9 +5,9 @@
     {
       "path": "tests/calc/steps/concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb.go",
       "kind": "created",
-      "size": 197,
-      "sha256": "01cb1bbfedb62d044951e6dada6cee6acc0a0adb35ad6dca18f77b1989ff2146",
-      "text": "package steps\n\n//truebdd:concept when \"halving\"\nfunc concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb(state *State, args []string) error {\n\treturn halveNumber(state, args)\n}\n"
+      "size": 843,
+      "sha256": "38eab9368b965c96e9fc90e4d99b760f6723ee252b4085bb092eae364b8719f4",
+      "text": "package steps\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"halving\"\nfunc concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb(state *State, args []string) error {\n\tnumber := args[0]\n\n\tcmd := exec.Command(\"go\", \"run\", \"./services/calc\", \"halve\", number)\n\tcmd.Dir = \"../..\"\n\n\tout, err := cmd.Output()\n\tif err != nil {\n\t\tvar exitErr *exec.ExitError\n\t\tif errors.As(err, \u0026exitErr) \u0026\u0026 len(exitErr.Stderr) \u003e 0 {\n\t\t\treturn fmt.Errorf(\"halve %s: %w: %s\", number, err, strings.TrimSpace(string(exitErr.Stderr)))\n\t\t}\n\t\treturn fmt.Errorf(\"halve %s: %w\", number, err)\n\t}\n\n\tstdout := strings.TrimSpace(string(out))\n\thalved, err := strconv.Atoi(stdout)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"halve %s: stdout %q is not an integer: %w\", number, stdout, err)\n\t}\n\n\tstate.Result = halved\n\treturn nil\n}\n"
     },
     {
       "path": "tests/calc/steps/register.go",

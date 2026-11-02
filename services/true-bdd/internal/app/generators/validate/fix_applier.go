@@ -59,6 +59,7 @@ type ApplyParams struct {
 // FixApplier applies fix prompts to stories using AI.
 type FixApplier struct {
 	libraryReadRoots []string
+	readRoots        []string
 	testCommand      *provider.TestCommand
 	aiClient         ports.AIPort
 	config           *config.ViperConfig
@@ -106,6 +107,9 @@ func NewFixApplierWithPaths(
 		userLoader:   template.NewTemplateLoader[FixApplierData](userPath),
 	}
 }
+
+// UseEvidenceReadRoots limits reads without extending the writer's grants.
+func (a *FixApplier) UseEvidenceReadRoots(roots []string) { a.readRoots = roots }
 
 // UseEditMode configures this applier to allow the Edit and MultiEdit tools
 // against the scratch path on each Apply call — required for the us-apply
@@ -374,6 +378,7 @@ func (a *FixApplier) execute(ctx context.Context, model provider.ModelRef, syste
 	options provider.TurnOptions) (string, error) {
 	mode := a.selectMode()
 	mode.LibraryReadRoots = a.libraryReadRoots
+	mode.ReadRoots = a.readRoots
 	options.CodexWriter = model.CLI == provider.CLICodex && options.CodexWriter
 
 	options.ClaudeWriter = options.ClaudeWriter && model.CLI == provider.CLIClaude

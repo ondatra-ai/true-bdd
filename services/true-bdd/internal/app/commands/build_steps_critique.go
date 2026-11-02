@@ -28,10 +28,15 @@ func (e *buildStepsExecution) critique(ctx context.Context, item *BuildStepsItem
 		fmt.Fprintf(&sources, "\n--- %s ---\n%s\n", path, content)
 	}
 
+	evidence, err := critiqueContext(item, sources.String())
+	if err != nil {
+		return nil, err
+	}
+
 	artifact := filepath.Join(e.deps.TmpDir, fmt.Sprintf("critique-%s-%d", item.subjectID, e.attempts[item]))
 
 	findings, err := e.deps.Critic.Critique(ctx, validate.StepCritiqueData{
-		Definition: definitionLabels(item), Context: item.Context, Sources: sources.String(),
+		Definition: definitionLabels(item), Context: evidence, Sources: sources.String(),
 	}, e.critiqueTier, artifact)
 	if err != nil {
 		return nil, err

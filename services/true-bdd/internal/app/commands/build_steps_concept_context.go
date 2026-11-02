@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"path/filepath"
 	"slices"
 
 	"gopkg.in/yaml.v3"
@@ -20,7 +21,9 @@ type conceptItemContext struct {
 	Interface   *architecture.PublicInterface `yaml:"public_interface"`
 	Document    string                        `yaml:"interface_document"`
 	Definitions []conceptDefinitionContext    `yaml:"definitions"`
-	Scenarios   []stepScenarioContext         `yaml:"scenarios"`
+	Registry    string                        `yaml:"registry,omitempty"`
+	Scenarios   []string                      `yaml:"scenarios,omitempty"`
+	FixtureRoot string                        `yaml:"fixture_root,omitempty"`
 	Fixtures    []conceptFixture              `yaml:"fixture_inputs,omitempty"`
 }
 
@@ -76,11 +79,15 @@ func describeConceptItem(item *BuildStepsItem, arch *architecture.Architecture, 
 	}
 
 	context.Definitions = conceptDefinitionContexts(item)
-	context.Scenarios = conceptScenarios(item, discovery)
 
-	context.Fixtures, err = conceptFixtures(item, discovery.scenarios)
-	if err != nil {
-		return err
+	context.Registry = discovery.registryFile
+	for _, scenario := range conceptScenarios(item, discovery) {
+		context.Scenarios = append(context.Scenarios, scenario.ID)
+	}
+
+	context.Fixtures = conceptFixtures(item, discovery.scenarios)
+	if len(context.Fixtures) > 0 {
+		context.FixtureRoot = filepath.ToSlash(filepath.Join(filepath.Dir(item.Suite), "fixtures"))
 	}
 
 	rendered, err := yaml.Marshal(context)

@@ -10,21 +10,81 @@ a document. For document edits return the requested confirmation markers.
 
 The responsible person chose apply at the menu for Scenario host-001.
 Approved fix:
-Repair for Item host-001, service `calc`, failed judgement: `when:halve` — binding is ambiguous.
+=== FILE_START: tmp/{{RUN_DIR}}/02-host-001-fix-prompts.md ===
 
-## Diagnosis
+# Repair proposal — Item host-001, Scenario step `when: halve six` (service `calc`)
 
-The step `When halve six` names a number, while the `when` concept `halve` declares no terms and its binding `does` gives no instruction for that number. An LLM writing the step definition cannot tell whether it must type `6` into Calc / textbox / Number and then click, or treat `six` as a restatement of state the Given already placed.
+**Failed judgement:** `when:halve` — binding is ambiguous.
 
-The product meaning is not at fault and needs no repair: `when / halve` already means "Halve the entered number once" — "the entered number" is the number already in the field, placed by `given / number ready` ("A number is entered before the action."). So the number in the When step is not a second input to the action; it restates the Given's state. Only the binding must say this explicitly. One change is therefore offered, and it belongs to the **System Architect**.
+**Cause.** The bound step text is `halve six`, so the step definition receives a
+number argument. The concept means ("Halve the entered number once.") declares no
+Terms, and the binding's Does mentions "the number currently entered in the Number
+field" without any instruction or reference for that number. An implementer must
+guess between three step definitions: (a) type `6` into Calc/textbox/Number and
+then click, (b) assert the field already holds `6` and then click, (c) discard the
+argument and only click. The Intent field is empty, so this is a direct UI-element
+binding and no intent prose supplies the missing instruction.
 
-No change is proposed to `docs/product/product.yaml`. No change is proposed to the declared Public interface: both elements needed (Calc / button / Halve and Calc / textbox / Number) are already declared, so nothing is guessed and no extension is required. `given / number ready` and `then / number result` and their bindings are preserved unchanged. No new variation is added — this widens the existing `when / halve` concept binding for the same item and use.
+**Chosen reading.** The Given concept `number ready` already owns entry ("Enter the
+given number into the Number field"), so the When must not re-enter the value — it
+confirms the field holds the number the step names and then presses Halve once.
+This keeps the two blocks' responsibilities disjoint and makes the step's number
+argument explicitly handled and objectively checkable.
 
-## Change 1 — System Architect — `docs/architecture/architecture.yaml`
+**Public interface:** no extension needed. Both Calc/button/Halve and
+Calc/textbox/Number are already declared verbatim under `services[calc].public_interface`.
 
-In `architecture.concepts`, replace the single entry with `"concept": "halve"`, `"block": "when"`, `"service": "calc"`.
+**Unaffected, preserve as-is:** concepts `given: number ready` and `then: number result`
+in both documents (both judged closed and writable), the `calc` service entry and its
+public interface, and all Scenario step wording for host-001.
 
-Exact text to remove:
+---
+
+## Change 1 — Product Owner (owns concepts and Item wording)
+
+File: `docs/product/product.yaml` — widen the existing `when` concept `halve` so the
+variation carried by the step text (the number named in the step) is declared. This
+widens the existing concept for this item and use; no new concept is added.
+
+Before:
+
+```json
+    "when": [
+      {
+        "concept": "halve",
+        "means": "Halve the entered number once.",
+        "terms": []
+      }
+    ],
+```
+
+After:
+
+```json
+    "when": [
+      {
+        "concept": "halve",
+        "means": "Halve the number already entered once. The step names that number, and the named number must be the one standing in the field before the halving.",
+        "terms": [
+          {
+            "term": "number",
+            "means": "The number the step names, which must already be the entered number; it is not entered again by this action."
+          }
+        ]
+      }
+    ],
+```
+
+## Change 2 — System Architect (owns concept bindings)
+
+File: `docs/architecture/architecture.yaml` — in `architecture.concepts`, replace the
+`halve` / `when` binding so the step's number is bound to a declared element and the
+Does states the single confirmation plus the single action. Concept, block and service
+are unchanged (`halve`, `when`, `calc`); the references gain the already-declared
+Number textbox; Does is corrected. No Intent is added — the step is performed directly
+against declared UI elements, not by a model.
+
+Before:
 
 ```json
       {
@@ -40,11 +100,11 @@ Exact text to remove:
             }
           }
         ],
-        "does": "Click the Halve button once to halve the number currently entered in the Number field."
+        "does": "Press the Halve button on the Calc page once to halve the number currently entered in the Number field."
       },
 ```
 
-Exact text to insert in its place:
+After:
 
 ```json
       {
@@ -52,34 +112,43 @@ Exact text to insert in its place:
         "block": "when",
         "service": "calc",
         "references": [
-          {
-            "element": {
-              "page": "Calc",
-              "role": "button",
-              "name": "Halve"
-            }
-          },
           {
             "element": {
               "page": "Calc",
               "role": "textbox",
               "name": "Number"
             }
+          },
+          {
+            "element": {
+              "page": "Calc",
+              "role": "button",
+              "name": "Halve"
+            }
           }
         ],
-        "does": "Click the Halve button once. The number named in the step is the number the Given has already placed in the Number field, not a new input: do not type it again. Read the Number field first and fail the step if it does not already hold that number, then click the Halve button exactly once and do nothing else."
+        "does": "Confirm that the Number textbox on the Calc page holds the number named in the step, then press the Halve button on the Calc page exactly once. Do not type the number into the Number field in this step; the number is put there by the Given."
       },
 ```
 
-### Why this closes the judgement
+---
 
-- The admitted variation (the number carried by the When step) now has an explicit instruction: it is read and checked against the Number field, never re-entered.
-- The second reference, Calc / textbox / Number, is already in the ui Public interface, so the field the `does` now reads is declared rather than guessed.
-- The action remains one concrete call on a declared element (Calc / button / Halve), performed exactly once, with no branches and no hidden dependency.
-- The binding targets concrete declared elements, not an `llm:` UI intent, so no intent text is required.
-- An LLM can now write the step definition directly: assert Calc "Number" already holds the step's number, then click Calc "Halve" once.
+## Effect on the step definition (why this closes the judgement)
 
-Apply nothing until an explicit menu decision approves this change.
+With both changes the `halve six` step reduces to one path: read Calc/textbox/Number,
+assert it equals the step's number (six), click Calc/button/Halve once. Guess (a) is
+excluded by the explicit "Do not type the number into the Number field"; guess (c) is
+excluded because the named number is now a declared Term with a stated obligation.
+Every element is resolvable from the declared Public interface, nothing depends on a
+hidden implementation, log, command or outgoing call, and no behaviour beyond the
+declared interface is implied.
+
+**Apply only after an explicit menu decision.** Change 1 needs the Product Owner's
+approval, Change 2 the System Architect's; Change 2 alone still closes the ambiguity
+in the binding, but the Term in Change 1 is what makes the step's number a declared
+variation rather than an undeclared one.
+
+=== FILE_END: tmp/{{RUN_DIR}}/02-host-001-fix-prompts.md ===
 Working copies (edit only the approved target):
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

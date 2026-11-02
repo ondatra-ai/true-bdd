@@ -10,22 +10,69 @@ a document. For document edits return the requested confirmation markers.
 
 The responsible person chose apply at the menu for Scenario host-001.
 Approved fix:
-## Repair for Item host-001 — one failed judgement: `when:halve` binding is ambiguous
+## Repair proposal for Item host-001 (Scenario service: `calc`)
 
-Owner of this change: **System Architect** (concept binding).
-No Product Owner change is proposed: the concept meaning `when: halve` — "Halve the entered number once." — is already closed, names the action, and admits no undefined variation. The Scenario wording ("halve once") is correct and unchanged.
-No Public interface change is proposed: the declared `calc` interface (`kind: ui`) already publishes both elements this binding needs — `Page "Calc" / role "button" / name "Halve"` and `Page "Calc" / role "textbox" / name "Number"`.
+Two linked concepts failed as ambiguous bindings. Both repairs are owned by the **System Architect** and live in `docs/architecture/architecture.yaml` only. No Product Owner change is proposed: both `means` entries in `docs/product/product.yaml` already fix the meaning exactly ("A number, written using digits, is entered before the action." / "Halve the entered number once."), and the ambiguity was introduced by the bindings, not by the concepts. `docs/product/product.yaml` is unchanged. The declared `ui` Public interface of `calc` already exposes both elements the repair needs (Page `Calc` / button `Halve`, Page `Calc` / textbox `Number`), so the Public interface is **not** extended.
 
-### Why the current binding fails
+---
 
-In `docs/architecture/architecture.yaml`, the `halve` concept carries only `intent: "Do whatever is appropriate with the entered number."` with no `references` and no `does`. An `llm:`/intent binding is only admissible for a UI step a model must perform by judgement; here the step is fully deterministic against two published elements (press one named button exactly once). The placeholder also leaves the action unnamed and the variation open ("whatever is appropriate" admits halve, round, or no-op), which is exactly the inferred behaviour a When binding must state.
+### Change 1 — binding `given:number ready` (System Architect)
 
-### Proposed change — exactly one edit
+File: `docs/architecture/architecture.yaml`, `architecture.concepts[]`, entry `concept: "number ready"`, `block: "given"`, `service: "calc"`.
 
-**File:** `docs/architecture/architecture.yaml`
-**Location:** `architecture.concepts[]`, the entry with `concept: "halve"`, `block: "when"` (currently lines 41–46).
+Keep `concept`, `block`, `service` and `references` exactly as they are. Replace only the `does` string.
 
-Replace this entry:
+Before:
+
+```json
+      {
+        "concept": "number ready",
+        "block": "given",
+        "service": "calc",
+        "references": [
+          {
+            "element": {
+              "page": "Calc",
+              "role": "textbox",
+              "name": "Number"
+            }
+          }
+        ],
+        "does": "Parse the Given step’s numeral as a decimal number, replace the entire Number textbox value with its decimal representation, and leave it set before the action."
+      },
+```
+
+After:
+
+```json
+      {
+        "concept": "number ready",
+        "block": "given",
+        "service": "calc",
+        "references": [
+          {
+            "element": {
+              "page": "Calc",
+              "role": "textbox",
+              "name": "Number"
+            }
+          }
+        ],
+        "does": "Clear the Number textbox on page Calc and type the Given step’s numeral into it verbatim, character for character, with no parsing, reformatting, rounding, padding or stripping of leading or trailing characters, so the textbox value is exactly the text the step wrote, and leave it set before the action."
+      },
+```
+
+Why this resolves the finding: the old `does` ordered a parse-and-reformat step but never defined the output representation, so "6", "007", fractional and long numerals each had an unspecified resulting textbox value, and two reasonable implementations left different state for the Halve When to operate on. Entering the step's numeral verbatim removes the transformation entirely, so no numeral-format rule has to be invented or looked up in the (empty) glossary, and the textbox state is a single determined value for every digit form the closed `means` admits. For step 1 of host-001 the textbox holds exactly `6`. The empty `intent` stays empty and absent, correct for a References-plus-Does binding.
+
+---
+
+### Change 2 — binding `when:halve` (System Architect)
+
+File: `docs/architecture/architecture.yaml`, `architecture.concepts[]`, entry `concept: "halve"`, `block: "when"`, `service: "calc"`.
+
+This is a UI step performed by a model (`llm:`), so it stays an intent binding: keep `concept`, `block`, `service`, add no `references` and no `does`, and replace only the `intent` string.
+
+Before:
 
 ```json
       {
@@ -36,53 +83,29 @@ Replace this entry:
       },
 ```
 
-with this entry:
+After:
 
 ```json
       {
         "concept": "halve",
         "block": "when",
         "service": "calc",
-        "references": [
-          {
-            "element": {
-              "page": "Calc",
-              "role": "button",
-              "name": "Halve"
-            }
-          },
-          {
-            "element": {
-              "page": "Calc",
-              "role": "textbox",
-              "name": "Number"
-            }
-          }
-        ],
-        "does": "Leave the Number textbox value set by the Given untouched — do not retype, clear or edit it. Press the Calc page’s Halve button exactly once, then wait until the Number textbox value has settled. Take no other action: press no other control, press Halve no second time, and make no assertion here."
+        "intent": "On page Calc, activate the button named \"Halve\" exactly once, and do nothing else: do not type into or otherwise modify the Number textbox, do not activate the button a second time, and do not compute or substitute the halved value yourself. The number already entered in the Number textbox is the input the button acts on."
       },
 ```
 
-The `intent` key is removed from this entry; this becomes a direct element binding, matching the style of the two passing bindings (`given: number ready`, `then: number result`).
+Why this resolves the finding: the old intent named no action and delegated the behaviour to the agent's judgement, so the model had to infer the operation from the concept name and then guess which of the two declared elements to use and how often. The new intent names the exact element from the declared Public interface (button `Halve` on page `Calc`), states the single activation the concept's `means` ("Halve the entered number once.") requires, and forbids the two plausible wrong readings — touching the `Number` textbox, and the agent performing the arithmetic instead of the service. No behaviour is left to be guessed, and no `does` or `references` is needed.
 
-### What this binding states explicitly
+---
 
-- **Which elements:** both references name declared elements verbatim, so there is no hidden or undeclared dependency.
-- **The full procedure:** press `Halve` once, and only once.
-- **The input:** the number already in the `Number` textbox, placed there by `given: number ready`; the When step text carries no variation of its own, matching the concept's single invocation ("once").
-- **The boundaries:** no re-entry of the number, no extra presses, no assertion (the assertion belongs to `then: number result`), so the observable outcome is left for the Then to read.
+### Unaffected — preserve exactly as-is
 
-### Unaffected and preserved
+- `architecture.concepts[]` entry `concept: "number result"`, `block: "then"`, `service: "calc"`: unchanged. Its single reference is the declared `Calc` / textbox / `Number` element and its `does` fully closes the observation pipeline (read, parse as decimal, assert numeric equality with the Then step's numeral), which resolves `3` vs `3.0` without further instruction.
+- `architecture.services[]` entry `calc`, including `public_interface` and both elements: unchanged.
+- `architecture.terms`: unchanged (stays `[]`).
+- `docs/product/product.yaml` in full: unchanged — no concept widened, no new variation added, no Story or Scenario wording touched. The Item host-001 text ("6 is entered" / "halve once" / "3 is displayed") stays as written.
 
-- `architecture.concepts[]`: `given: number ready` and `then: number result` — unchanged.
-- `architecture.services[]` incl. `public_interface.elements` — unchanged.
-- `architecture.terms` — unchanged (empty).
-- `docs/product/product.yaml` — unchanged in full: all three concepts, their `means`, `terms`, `roles`, `glossary`.
-- Scenario host-001 Steps and Description — unchanged.
-
-### Menu decision
-
-Apply only on the System Architect's explicit approval of the single `architecture.yaml` edit above. Nothing has been written.
+No new concept variation is proposed: host-001 introduces no new item or use, and the existing `given`/`when`/`then` variations already cover this item and use, so widening would be unwarranted.
 Working copies (edit only the approved target):
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

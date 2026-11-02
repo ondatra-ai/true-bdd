@@ -203,7 +203,7 @@ func claudeWriterFailure(err error) error {
 
 func (c *ClaudeProvider) executeTurn(ctx context.Context, req Request) (claude.Answer, error) {
 	opts := c.options(req)
-	if !req.ClaudeWriter {
+	if !req.ClaudeWriter && len(req.Mode.ReadRoots) == 0 {
 		return claude.RunStreamContext(ctx, req.UserPrompt, opts, logEvent)
 	}
 

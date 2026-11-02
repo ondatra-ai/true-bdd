@@ -77,6 +77,9 @@ func TestFixtureTemplateOverlays(t *testing.T) {
 
 func fixtureTemplateDeclarations() map[string]string {
 	return map[string]string{
+ "build-steps-critique-correct/input/templates/build-steps.fix-generator.system.prompt.tpl": templateExtension,
+ "build-steps-green/input/templates/build-steps.fix-generator.system.prompt.tpl": templateExtension,
+ "build-steps-many/input/templates/build-steps.fix-generator.system.prompt.tpl": templateExtension,
 		"build-steps-critique-assertion/input/templates/build-steps.critique.system.prompt.tpl":    templateReplacement,
 		"build-steps-critique-assertion/input/templates/build-steps.fix-applier.system.prompt.tpl": templateReplacement,
 		"build-steps-critique-correct/input/templates/build-steps.critique.system.prompt.tpl":      templateReplacement,

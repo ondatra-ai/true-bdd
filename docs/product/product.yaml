@@ -64,7 +64,13 @@ description:
     binding fails the Scenario and exits 1. Fixes offer the Product Owner a
     concept repair and the System Architect a binding, only applied after the
     menu's apply decision. Shared fixes cause every Scenario to be judged
-    again; binding judgements wait for every Scenario's link. No prompt states a time, turn, token or cost budget.
+    again; binding judgements wait for every Scenario's link.
+    Binding judgements read the complete product document by path while steps,
+    binding and complete Public interface stay embedded. Every Claude and Codex
+    dispatch counts system and user UTF-8 bytes (Codex assembly included), logs
+    the size, and stops before spawning with a distinct error naming turn, size
+    and limit when over engine.max_prompt_bytes in true-bdd.yaml, a positive
+    integer defaulting to 150000. No digests, compaction or truncation. No prompt states a time, turn, token or cost budget.
     A separate Q: Prompt, with concepts set to words, judges the means of every
     linked concept once per Story in us refine and, in scen check, once per walk
     for each concept a Scenario's link reached, claimed or not, from that
@@ -363,8 +369,11 @@ glossary:
       The Fix loop then writes each Item's bodies, the body turns and the
       critique reading the concept, its binding, its terms' glossary entries
       and Word mappings, the Public interface declaration and document, each
-      pattern's captures and bound steps, every Scenario using the concept's
-      steps, and the fixture inputs of those Scenarios. Only the bodies and
+      pattern's captures and bound steps. Body proposals and applications get
+      the Registry path, using Scenario keys and fixture directories and read
+      needed inputs with confined tools, never service source. The tool-less
+      critique embeds fixture contracts used by source or bound steps and the
+      suite source; unrelated Scenario blocks and fixture documents are omitted. Only the bodies and
       shared state may change. After each apply compilation, one binding per
       step, the concept records and written bodies are required; failures
       return to that Item within the configured attempts. Once those pass, a
@@ -670,10 +679,11 @@ glossary:
       Scenario that names it, by a quoted value of one of its steps, starts
       from: files, programs standing in for the tools the service is run with,
       and their preparation. Its fixture inputs are its files other than the
-      recordings under cassettes/. build steps --fix embeds the fixture inputs
-      of the Scenarios a concept's steps are used in, whole, in its body turns
-      and its critique, since a step definition may meet a contract only a
-      fixture input states, such as an environment variable its program reads.
+      recordings under cassettes/. build steps --fix gives body proposals and
+      applications the Registry path, Scenario keys and fixture directories;
+      they read needed inputs by path. Its tool-less critique embeds contracts
+      selected by use, since a step definition may meet a contract only a fixture
+      input states, such as an environment variable its program reads.
 
   - term: Item
     means: >-
