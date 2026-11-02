@@ -305,3 +305,63 @@ log:
       scheme)?
     answer: |
       Слушай, попробуй взять это как идею и реализовать. Потому что там есть edge cases и ращніе варианты! Я говорю только про checklists. они точто являются моделями давай остальные пока не трогать. или прдумать какие там есть кейсы и как с ними подойти?
+
+  - decision_trace:
+      research:
+        - |
+          ChecklistPromptData fills the checklist templates of four commands
+          with four Subject shapes: us refine a Story (8 fields read), us apply
+          an Acceptance Criterion (14), scen check a Scenario (13), build steps
+          an Item (7); build code's template reads none; every system twin
+          reads only Structured or nothing. The concept judgements' payloads
+          (group, link, binding, words, propose) bypass the templates as JSON
+          built in code. No Go port of Yamale exists.
+      recommendation: |
+        Four checklist models, one per command, each listing its user and
+        system templates with a scheme of its Subject; checked in process on
+        the data before rendering, refusing like the size check; schemas
+        shipped by init; byte-deciding rendering rules kept as text. Open: (A)
+        the judgement payloads as models now; (B) a Go validator of the Yamale
+        subset or JSON Schema in YAML.
+      settled: |
+        Not answered as asked: the Owner wants real experiments on how the idea
+        looks in practice and how far the architecture can be compacted
+        without losing quality.
+    question: |
+      The checklist models' cases, and (A) the judgement payloads as models
+      now, (B) the in-process validator.
+    answer: |
+      слушай, давай проведем реальные эксперименты как маоя идея может выглядеть в реальности и наскольйо удаться скомпактить architecture не теряя при этом качества
+
+  - decision_trace:
+      research:
+        - |
+          #288 (docs/research/2026-11-02-checklist-models-experiments.md): with
+          only the Subject's source every variant rebuilt 0 of 3 prompts; with
+          every call input, V0 prose 3/3, V1 Yamale 2/3, V2 JSON Schema in YAML
+          2/3 and 11/11 once a construction rule sat at the scheme's root, V3
+          templates only 0/3; both validators accepted the real data and
+          rejected 311 mutations. A type-only scheme dropped an `and` modifier.
+        - |
+          The engine saves every prompt under tmp/<run>/, part of the Public
+          interface; the Registry already observes prompts in 128 steps, and a
+          recording matches a prompt byte for byte.
+      recommendation: |
+        Keep the construction rule out of the scheme and pin it in Scenarios on
+        the saved prompt, with fixtures recorded through the declared command;
+        the schemes stay type-only.
+      settled: |
+        The construction rules are described by Scenarios: end-to-end tests on
+        the saved prompts that fail when a rule breaks (#289, done: seven rules
+        in six Scenarios, every one of 19 deliberate breaks caught at its rule's
+        Then step). A scheme then holds fields and types only. Still open: one
+        model per user and system pair, or one per template.
+    question: |
+      After #288: accept a construction rule at the scheme's root, and one
+      model per user and system pair or per template?
+    answer: |
+      А не может ли информация про правило сборки в корне, быть частью сценария? Что если мы будем стараться как система доджна себя вести через тесты и сценарии в том числе и о том как собирать промпты
+
+      моэно ли мы добавить несколько тестов e2e которые бы падали когда что-то не так идет
+
+      в общем попробуй описать сценариями
