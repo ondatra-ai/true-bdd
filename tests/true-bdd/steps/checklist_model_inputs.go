@@ -2,8 +2,10 @@ package steps
 
 import (
 	"bytes"
+	"fmt"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
@@ -18,24 +20,13 @@ type checklistLiteral struct {
 	fix       string
 }
 
-func assertChecklistQuestionAndFix(state *State, model string) error {
-	paths := map[string]struct{ stem, glob string }{
-		"us_refine_checklist":  {"us-refine", modelStoryPromptPattern},
-		"us_apply_checklist":   {"us-apply", "tmp/*/01-mcp-endpoint-002-get-refused-checklist-*-user.txt"},
-		"scen_check_checklist": {"scen-check", modelScenarioPromptPattern},
-	}
-
-	selected, ok := paths[model]
-	if !ok {
-		return state.fail("no checklist for Model %q", model)
-	}
-
-	literals, err := modelChecklistLiterals(state, selected.stem)
+func assertChecklistQuestionAndFix(state *State, rule checklistPromptRule) error {
+	literals, err := modelChecklistLiterals(state, rule.Checklist)
 	if err != nil {
 		return err
 	}
 
-	matches, err := modelPromptFiles(state, selected.glob)
+	matches, err := modelPromptFiles(state, rule.Glob)
 	if err != nil {
 		return err
 	}
@@ -46,29 +37,38 @@ func assertChecklistQuestionAndFix(state *State, model string) error {
 			return state.fail("read saved Model prompt: %w", err)
 		}
 
-		if !matchesChecklistLiteral(content, literals) {
-			return state.fail("%s prompt does not hold its checklist's question and fix verbatim", model)
+		matched, err := matchesChecklistLiteral(content, literals, rule.Pattern)
+		if err != nil {
+			return state.fail("invalid Model expectation: %w", err)
+		}
+
+		if matched != (rule.Operator == modelPatternMatches) {
+			return state.fail("prompt %s does not satisfy its %s checklist expectation", path, rule.Checklist)
 		}
 	}
 
 	return nil
 }
 
-func matchesChecklistLiteral(content []byte, literals []checklistLiteral) bool {
+func matchesChecklistLiteral(content []byte, literals []checklistLiteral, pattern string) (bool, error) {
 	for _, literal := range literals {
-		question := regexp.QuoteMeta(literal.question)
-		if literal.rationale != "" {
-			question += regexp.QuoteMeta(" SO THAT WE ENSURE " + literal.rationale)
+		expanded := strings.NewReplacer(
+			"{{Q}}", regexp.QuoteMeta(literal.question),
+			"{{rationale}}", regexp.QuoteMeta(literal.rationale),
+			"{{F}}", regexp.QuoteMeta(literal.fix),
+		).Replace(pattern)
+
+		compiled, err := regexp.Compile(expanded)
+		if err != nil {
+			return false, fmt.Errorf("compile checklist expectation: %w", err)
 		}
 
-		pattern := "## Validation Question\n\n" + question + "\n\n## If Validation Fails\n(?s:.*?)\n\n" +
-			regexp.QuoteMeta(literal.fix) + "\n\n## Answer Format"
-		if regexp.MustCompile(pattern).Match(content) {
-			return true
+		if compiled.Match(content) {
+			return true, nil
 		}
 	}
 
-	return false
+	return false, nil
 }
 
 func modelChecklistLiterals(state *State, stem string) ([]checklistLiteral, error) {
