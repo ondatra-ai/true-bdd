@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/scenariogen"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/stepskeleton"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/catalogue"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/checklist"
@@ -67,6 +68,11 @@ func (e *buildStepsExecution) skeletonsBeforeBodies(discovery *conceptDiscovery,
 	arch *architecture.Architecture,
 ) error {
 	err := writeConceptSkeletons(discovery.items)
+	if err != nil {
+		return err
+	}
+
+	err = scenariogen.WriteWiring(e.plan, ".", e.registryFile, e.architectureFile)
 	if err != nil {
 		return err
 	}

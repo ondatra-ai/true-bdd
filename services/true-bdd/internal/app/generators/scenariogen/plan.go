@@ -48,11 +48,13 @@ type PlannedScenario struct {
 
 // PlannedFile is one generated file and everything it needs to render.
 type PlannedFile struct {
+	// Service selects the architecture service whose Scenarios the Suite wiring runs.
+	Service string
 	// Path is repo-relative, as the scenarios' `path:` states it.
 	Path string
 	// Package is the file's package clause, derived from the suite name.
 	Package string
-	// ScenariosPkg is the import path of the suite's scenarios shim.
+	// ScenariosPkg is the import path of the Suite wiring.
 	ScenariosPkg string
 	// RegistryPath is quoted into the header so a reader of a generated
 	// file knows which document to edit.
@@ -193,6 +195,7 @@ func planFile(
 	}
 
 	return PlannedFile{
+		Service:      scenarios[0].Service,
 		Path:         filePath,
 		Package:      pkg,
 		ScenariosPkg: scenariosPkg,
