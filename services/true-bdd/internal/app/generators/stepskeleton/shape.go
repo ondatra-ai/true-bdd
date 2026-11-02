@@ -83,7 +83,7 @@ func shapeDeclaration(declaration ast.Decl) ast.Decl {
 
 	specs := make([]ast.Spec, 0, len(general.Specs))
 	for _, spec := range general.Specs {
-		if typed, ok := spec.(*ast.TypeSpec); ok && typed.Name.Name == "State" {
+		if typed, ok := spec.(*ast.TypeSpec); ok && typed.Name.Name == stateTypeName {
 			continue
 		}
 

@@ -62,6 +62,8 @@ func readPackageMode(dir string, mode parser.Mode) ([]sourceFile, error) {
 	return files, nil
 }
 
+const stateTypeName = "State"
+
 func ensureState(dir, packageName string, files []sourceFile) error {
 	for _, file := range files {
 		for _, declaration := range file.tree.Decls {
@@ -71,7 +73,7 @@ func ensureState(dir, packageName string, files []sourceFile) error {
 			}
 
 			for _, spec := range general.Specs {
-				if typed, ok := spec.(*ast.TypeSpec); ok && typed.Name.Name == "State" {
+				if typed, ok := spec.(*ast.TypeSpec); ok && typed.Name.Name == stateTypeName {
 					return nil
 				}
 			}

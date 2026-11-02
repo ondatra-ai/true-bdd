@@ -570,6 +570,8 @@ AI-dependency mode:
 architecture:
   testing:
     framework: go-test            # go-test | jest | playwright
+    testkit:
+      ai_clis: [claude, codex]
     commands:
       record: "go test -tags bdd -json -count=1 ./tests/true-bdd/ -mode=services:record,tests:record"
       replay: "go test -tags bdd -json -count=1 ./tests/true-bdd/ -mode=services:replay,tests:replay"
@@ -579,6 +581,8 @@ architecture:
       path: services/true-bdd
       language: go
 ```
+
+For Go suites, the optional `testing.testkit` mapping enables the testkit harness. Its optional `ai_clis` list names the service AI CLIs the harness records and replays; `{}` enables the harness with no service AI CLIs. `build steps --fix` deterministically writes Suite wiring calling `testkit.NewSuite` and a bdd-tagged `main_test.go` calling `scenarios.Main`. It ensures `State` embeds `*testkit.ScenarioRun`, preserving definition-owned fields even when no new skeleton is needed. Both generated files refresh when their build-steps marker is present; unmarked files are preserved. Without `testkit`, the plain bddgo wiring and `State` are unchanged and no `TestMain` is written. The host's Go module graph must provide `github.com/ondatra-ai/true-bdd/pkg`.
 
 Each service may declare `public_interface`. It is optional in the schema so an older architecture loads, but `scen check`'s `D: public-interface` (`docs: [architecture_yaml]`) fails every Scenario whose service has no valid declaration, naming the service without an AI turn. This check runs even without concepts or a Story. Its `F:` asks the System Architect what the service offers, then writes the architecture document, and an existing document it names where the answers say that document lacks what the service offers, never the Scenario.
 

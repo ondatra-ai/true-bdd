@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/stepskeleton"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/disk"
 )
 
@@ -34,7 +35,17 @@ func WriteWiring(plan *Plan, repoRoot, registryPath, architecturePath string) er
 
 		seen[suiteDir] = true
 
-		err = writeWiring(file, suiteDir, root, registryPath, architecturePath)
+		if plan.Testkit != nil {
+			err = stepskeleton.EnsureScenarioRun(filepath.Join(suiteDir, "steps"))
+			if err != nil {
+				return err
+			}
+
+			err = writeHarnessWiring(file, suiteDir, plan.Testkit.AICLIs)
+		} else {
+			err = writeWiring(file, suiteDir, root, registryPath, architecturePath)
+		}
+
 		if err != nil {
 			return err
 		}
@@ -65,6 +76,10 @@ func writeWiring(file PlannedFile, suiteDir, root, registryPath, architecturePat
 		return fmt.Errorf("render Suite wiring: %w", err)
 	}
 
+	return writeWiringSource(target, source)
+}
+
+func writeWiringSource(target string, source []byte) error {
 	previous, err := disk.Read(target)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("read Suite wiring: %w", err)
