@@ -3,7 +3,8 @@ title: "Fixture host project"
 description:
   summary: >-
     A single MCP service, used by the true-bdd fixtures as the host
-    project a scenario registry describes.
+    project a scenario registry describes. Glossary meanings use at most
+    three sentences, each at most 25 words, in one paragraph.
 
 roles:
   - name: Operator

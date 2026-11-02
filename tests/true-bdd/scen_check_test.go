@@ -467,7 +467,10 @@ func TestScenCheck001ClaimedScenarioPasses(t *testing.T) {
 	s := scenarios.New(t, "scen-check-001-claimed-scenario-passes")
 	s.Given(`the "scen-check-happy-path" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
-	s.Then(`the command exits with code 0`)
+	s.Then(`every file matching "tmp/*/06-E2E-001-checklist-*-user.txt" matches \*\*Scenario ID:\*\* E2E-001\n\*\*Description:\*\* The greeter must print the configured greeting followed by the name it is given, and exit with code 0\n\*\*Service:\*\* greeter\n\*\*Generated test file:\*\* tests/greeter/greet_test\.go\n`)
+	s.And(`every file matching "tmp/*/06-E2E-001-checklist-*-user.txt" matches Then:\n  - the command exits with code 0\n  - and stdout matches \^Hello Ada\$\n\n### Lineage — user_stories\[\]\n  - docs/product/stories/greet-by-name\.yaml \(greet-by-name-001-prints-greeting\)\n\n---`)
+	s.And(`every file matching "tmp/*/06-E2E-001-checklist-*-user.txt" does not match merge_date`)
+	s.And(`the command exits with code 0`)
 	s.And(`stdout matches SCEN CHECK`)
 	s.And(`stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=pass`)
 	s.And(`stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=2 answer=pass`)
@@ -554,6 +557,21 @@ func TestScenCheck006DuplicateIdRefused(t *testing.T) {
 	s.And(`stdout matches scenario id given more than once: E2E-001`)
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// scen-check-007-prompt-lineage-order: The Scenario checklist prompt must identify the Registry key, keep and or but modifiers, reproduce lineage in source order without merge_date, and preserve the multiline Q and F text
+func TestScenCheck007PromptLineageOrder(t *testing.T) {
+	s := scenarios.New(t, "scen-check-007-prompt-lineage-order")
+	s.Given(`the "scen-check-prompt-lineage" project tree`)
+	s.When(`the Quality Engineer runs "scen check E2E-001"`)
+	s.Then(`every file matching "tmp/*/01-E2E-001-checklist-*-user.txt" matches \*\*Scenario ID:\*\* E2E-001\n`)
+	s.And(`every file matching "tmp/*/01-E2E-001-checklist-*-user.txt" matches Then:\n  - the command exits with code 0\n  - and stdout matches \^Hello Ada\$\n  - but stderr has no lines\n\n### Lineage — user_stories\[\]\n  - docs/product/stories/z-greeting\.yaml \(z-greeting-002-name\)\n  - docs/product/stories/a-greeting\.yaml \(a-greeting-001-name\)\n\n---`)
+	s.And(`every file matching "tmp/*/01-E2E-001-checklist-*-user.txt" does not match merge_date`)
+	s.And(`every file matching "tmp/*/01-E2E-001-checklist-*-user.txt" matches ## Validation Question\n\nDecide whether this scenario's description follows the\nrule-based format\. A violation is any of:\n- missing the keyword "must" or "should"\n- exceeds one sentence\n- contains Gherkin Given/When/Then text \(Gherkin belongs in the\n  steps, not the description\)\n\nPass when the description follows the rule-based format\.\nFail when it violates any of the above\.\n\nContext: emit one line\.\n  - "<scenario id>: ok"\n  - "<scenario id>: <violation> — <quoted offending phrase>"\n SO THAT WE ENSURE [^\n]*\n\n## If Validation Fails\n(?s:.*?)\n\nRewrite this Scenario's description as one sentence with must or should\.\n\nKeep its steps and lineage unchanged\.\n  Preserve every quoted value\.\n\n\n\n## Answer Format`)
+	s.And(`the command exits with code 0`)
+	s.And(`the engine dispatched 1 AI turns`)
+	s.And(`no file outside "tmp" changed`)
 	s.Done()
 }
 

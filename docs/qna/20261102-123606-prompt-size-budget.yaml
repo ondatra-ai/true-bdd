@@ -422,3 +422,39 @@ log:
       Продуктовий документ — це стрьомна річ. Продуктовий документ, наверное, хотілося б читати повністю. Ну, коротше, давай продуктовий документ поки теж віднесемо в файл і посмотрим, що буде виходити. Вот. Но смысл в том, что даже текущий продуктовый документ чересчур большой, и смотри, информация, то есть информация, которая находится в этом продуктовом документе, она ну, чересчур большая. То есть вообще каждому термину его объяснение должно быть емким, понятным человеку и вкладываться в абзац, состоящий из трех предложений, состоящий максимум, каждое максимум 25 слов. Мне кажется, это тоже хорошо было бы сделать как hard фильтр и пытаться продуктовую стратегию, вот этот продуктовый документ тоже сжимать в такую компактную вещь. То есть, на мой взгляд, он должен быть раз в среднем в 10 меньше, чем то, что есть сейчас, за счет того, что, по-моему, мы больше, чем нужно, терминов там делаем, и больше, чем нужно, ставим и сами термины, да, их определения, они гораздо больше словами, они, ну, короче, бессмысленно. Вот. Например, да, там про команды. То есть команды можно четко сказать, да, что это какая-то конкретная команда. А зачем там нужна информация, что такое детерминистичное, что такое недетерминистичное, и так далее, и так далее. Это команда, это команда. Вот. Какую-то часть информации, конечно, нужно вынести в там, какую-то верхнюю часть. В общем, я не знаю. И опять же, если у нас будет команда, да, и мы бы так попытаемся разбивать, то есть ты сказал, что порции, не очень хорошо подходит, но мне кажется, что порции тоже можно было бы делить, и тогда мы могли бы сливать в этот промпт только те термины, которые нужны для того, чтобы провалидировать эти конкретные сценарии. Потому что у нас же есть привязка, да, там терминов к сценарию. Понимаешь, о чем я говорю?
 
       (The Owner pasted the product glossary's `command` entry, about 1,500 words, as the example.)
+
+  - decision_trace:
+      research:
+        - |
+          docs/architecture/architecture.yaml is 192,821 bytes: prompt_data
+          50%, the Word mappings 24% (technical 5,555 words, observed_by
+          3,295), services 15%, the Concept bindings 8% (`does` up to 397
+          words). The same behaviour is stated in the product glossary, the
+          Word mappings, true-bdd-cli.yaml, README.md and .claude/rules; the
+          Stories and the Registry already fix the commands' behaviour.
+      recommendation: |
+        Shrink both documents: one statement in one home, the glossary at
+        three sentences of 25 words, command behaviour left to the Scenarios
+        and the Public interface document, what has no other home moved into
+        a Word mapping; `observed_by` dropped; prompt_data down to field lists;
+        an engine refusal of an over-long glossary entry; concepts' means left
+        alone for now. #286 and the shrinking as two parallel Codex runs.
+      settled: |
+        Removed detail goes nowhere: it is deleted, not moved. Less information
+        is needed to rebuild the code than the documents hold now. Each piece
+        of each term is checked for why it is needed and which part of the code
+        it affects; what affects nothing is deleted, what matters a lot is made
+        more compact and clearer. The Owner also wants all current work
+        committed and pushed to a branch first, and the shrinking of
+        product.yaml and architecture.yaml started now, from that branch, as
+        the part where the algorithm itself may change.
+    question: |
+      How are product.yaml and architecture.yaml shrunk: (1) one statement in
+      one home, details without another home moved into the architecture;
+      (2) the architecture's Word mappings at 3×25, observed_by dropped,
+      prompt_data reduced; (3) an engine refusal of an over-long glossary
+      entry; (4) concepts' means untouched for now?
+    answer: |
+      Я не знаю, что бы я делал, но я бы пробовал прямо сейчас поработать над тогда уже и уменьшением и продукт YAML, и архитектур YAML, потому что они чересчур большие. И давай мы будем двигаться в этом направлении тоже, прямо здесь и сейчас. Я не знаю, как создавать задачи или не создавать задачи. Но самое главное, это то, чтобы мы сейчас все закоммитили, все изменения, которые есть сейчас, чтобы мы их куда-то, в какую-то ветку залили, и с этой ветки начали двигаться вот и в этом направлении тоже. И это та часть, когда которую я говорил про то, что мы делаем... то есть, если мы увидим, да, что надо менять алгоритм, мы алгоритм тоже можем менять. Вот эта часть, да, когда мы начинаем работать с алгоритмом. Ну, то есть, как бы вот с этим подходом.
+
+      У меня есть вопрос на то, куда уходят выкинутые детали. Они никуда не уходят, они в принципе не нужны, они выкидываются. То есть они не выносятся, они выкидываются из концепта. То есть идея в том, что в принципе необходимо меньше информации для того, чтобы восстановить код. То есть та информация, которая есть сейчас, она чересчур большая и не несет цели. То есть здесь надо подойти так, чтобы прям вот реально каждый кусок термина начинать проверять, а зачем он нужен, на какую часть кода он влияет, и просто удалять то, что ни на что не влияет. А если что-то очень влияет какой-то большой, ну, каким-то большим способом, то просто делать его компактнее, понятнее.

@@ -383,6 +383,10 @@ architecture:
         Count the "Dispatching AI turn" records in the run's JSON log file.
 ```
 
+Keep a glossary entry’s `means` in one paragraph of at most three sentences, each at most 25 words. Every product reader and command startup refuses a violation with the term, sentence count, longest sentence’s word count, paragraph count and rule. A sentence ends at a run of `.`, `!` or `?` followed by Unicode whitespace or end of text; a remaining nonempty fragment counts. Words are nonempty fields separated by Unicode whitespace, so paths, decimals and hyphenated words stay whole. Blank lines separate paragraphs; wrapping lines does not. Concepts’ `means` are exempt.
+
+The Word mapping’s `observed_by` is optional: keep it only for setup or observation instructions the Concept binding does not already state.
+
 Every term must be mapped exactly once: an unmapped term fails the
 Scenario naming the term, and a term mapped twice fails it naming the
 count.
