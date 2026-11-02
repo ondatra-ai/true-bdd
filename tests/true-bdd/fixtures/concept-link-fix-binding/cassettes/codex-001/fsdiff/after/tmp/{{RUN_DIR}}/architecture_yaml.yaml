@@ -51,7 +51,7 @@
             }
           }
         ],
-        "does": "Click the Halve button once to halve the number currently entered in the Number field."
+        "does": "Press the Halve button on the Calc page once to halve the number currently entered in the Number field."
       },
       {
         "concept": "number result",

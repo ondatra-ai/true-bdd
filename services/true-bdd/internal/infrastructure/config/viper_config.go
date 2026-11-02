@@ -1,7 +1,9 @@
 package config
 
 import (
+	"fmt"
 	"log/slog"
+	"strconv"
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/pkg/errors"
 	"github.com/spf13/viper"
@@ -44,4 +46,19 @@ func (c *ViperConfig) GetStringMapString(key string) map[string]string {
 	}
 
 	return c.viper.GetStringMapString(key)
+}
+
+// PromptLimitBytes reads the positive host override; absence keeps the engine default.
+func (c *ViperConfig) PromptLimitBytes(fallback int) (int, error) {
+	const key = "engine.max_prompt_bytes"
+	if !c.viper.IsSet(key) {
+		return fallback, nil
+	}
+
+	limit, err := strconv.Atoi(c.viper.GetString(key))
+	if err != nil || limit <= 0 {
+		return 0, fmt.Errorf("%s must be a positive integer: %w", key, strconv.ErrSyntax)
+	}
+
+	return limit, nil
 }

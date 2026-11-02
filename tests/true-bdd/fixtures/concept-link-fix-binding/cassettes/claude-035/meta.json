@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "binary": "claude",
+  "argv": [
+    "--setting-sources",
+    "",
+    "--strict-mcp-config",
+    "--safe-mode",
+    "--allowedTools",
+    "Read(**),Write(./tmp/**),Glob(**),Grep(**)",
+    "--disallowed-tools",
+    "Bash,Edit(**),MultiEdit(**),Agent,Task",
+    "--model",
+    "claude-opus-5",
+    "--system-prompt",
+    "You prepare a concept or binding repair for the responsible person's menu.\nChange nothing; propose only the failed judgement's repair. Apply requires\nan explicit menu decision. The Product Owner owns concepts and Item wording,\nthe System Architect bindings. Return the required structured answer.\n",
+    "--permission-mode",
+    "acceptEdits",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--json-schema",
+    "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"fix_prompt\": {\"type\": \"string\"},\n    \"questions\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"id\": {\"type\": \"string\"},\n          \"question\": {\"type\": \"string\"},\n          \"context\": {\"type\": \"string\"},\n          \"options\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}\n        },\n        \"required\": [\"id\", \"question\", \"context\", \"options\"],\n        \"additionalProperties\": false\n      }\n    }\n  },\n  \"required\": [\"fix_prompt\", \"questions\"],\n  \"additionalProperties\": false\n}",
+    "-p",
+    "You propose a repair; change no file. The Product Owner owns concepts and\nStory or Scenario wording; the System Architect owns concept bindings.\nRead the reference documents:\n\n- Read(`./docs/architecture/architecture.yaml`) - architecture_yaml\n\n- Read(`./docs/product/product.yaml`) - product\n\nItem: host-001\n**Actual:** fail\nDescription: The number must be halved\nService: calc\nSteps:\nGiven:\n  - six is entered\nWhen:\n  - halve six\nThen:\n  - three is displayed\n\nFindings:\n\n- given:number ready: The Given binding is closed and directly actionable: its Does (\"Enter the given number into the Number field\") names one explicit action with one admitted variation — the number taken from the step text (\"six is entered\") — and no hidden state setup. Its single reference is a UI Element (Page \"Calc\", Role \"textbox\", Name \"Number\") that is declared verbatim in the ui Public interface, so the target control is resolvable without guessing a locator. The concept Means (\"A number is entered before the action\") matches the Does exactly, no Terms need resolution, and because the reference is a concrete declared element rather than an llm: step, the empty Intent is correct and nothing behavioural is left to inference. An LLM can write the step definition as: type the step's number into the Calc page's \"Number\" textbox.\n\n- then:number result: The Then binding closes the concept's means (\"compare the displayed number with an expected value\") with a single, concrete observation point: it names exactly one reference, the UI element Page \"Calc\" / Role \"textbox\" / Name \"Number\", which is declared verbatim in the ui Public interface (no undeclared or guessed locator, no hidden implementation dependency). The Does — \"Compare the displayed Number text with the expected result\" — states one objective observable (the text displayed by that textbox) and one comparison against the expected value carried by the step (\"three is displayed\" supplies the expectation), so there is a single admitted variation: expected number in, displayed text compared, pass or fail out. It only observes and compares, with no state setup and no call, which is correct for a then block, and it needs no Intent because it resolves to a named declared element rather than an llm: step performed through the UI. An LLM can write this step definition with no inferred behaviour: read the Number textbox on the Calc page and assert its displayed value equals the expected number.\n\n- when:halve: The scenario's When step is \"halve six\", so the step admits a value (\"six\"), but nothing in the binding accounts for it. The closed means (\"Halve the entered number once.\") declares no terms, and the Does (\"Press the Halve button on the Calc page once to halve the number currently entered in the Number field.\") only instructs a single press, while simultaneously naming the declared Calc/textbox/Number element as the source of the value. An LLM writing this step definition therefore has to guess between two incompatible behaviours: type 6 into the Number textbox and then press Halve, or ignore \"six\" entirely and rely on a prior Given having entered it. The binding gives no explicit instruction, no input mapping for the value, and no stated observable to disambiguate, and Intent is empty, so there is no separate statement of the UI intent that would resolve it. The element reference itself is fine (Calc/button/Halve and Calc/textbox/Number are both in the declared ui Public interface) and the press count is explicit, so the only gap is the unhandled admitted value — but that gap cannot be filled without inferring absent instructions.\n\n- when:halve: binding is ambiguous\n\n\nRequired repair policy:\nOffer the System Architect a binding for every missing or ambiguous\nlinked concept, for this Scenario's service: concept, block, service,\nreferences and does, or intent for a UI step performed by a model.\nJudge against the declared Public interface and extend it only where\nneeded. If the meaning needs repair, offer the Product Owner a wider\nor corrected concept in the product document. Show each exact change\nat the menu; apply only the approved change after apply.\n\nReturn the exact proposed changes in fix_prompt for review at the menu.\nDo not apply them. Preserve unaffected steps and concepts. A new variation\nwidens an existing concept of that item and use; add one only for a new item or use.\nReturn JSON with fix_prompt and questions. Exactly one carries content:\na complete proposal with questions: [], or questions with fix_prompt: \"\".\nNever return both a proposal and questions. If no schema is supplied, put the proposed fix between these markers:\n=== FILE_START: tmp/{{RUN_DIR}}/02-host-001-fix-prompts.md ===\n\u003cexact proposed changes\u003e\n=== FILE_END: tmp/{{RUN_DIR}}/02-host-001-fix-prompts.md ===\n"
+  ],
+  "exit_code": 0,
+  "duration_ms": 53296,
+  "request_hash": "sha256:6816d6cb8d7328920c1a46ce764e785f5b9220eda011396a2fe30ee8ab8a0814",
+  "fsdiff": {
+    "created": [],
+    "modified": [],
+    "deleted": []
+  },
+  "recorded_at": "2026-11-02T15:52:47Z"
+}

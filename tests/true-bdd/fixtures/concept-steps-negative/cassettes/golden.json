@@ -3,18 +3,18 @@
   "fixture": "concept-steps-negative",
   "files": [
     {
-      "path": "tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go",
+      "path": "tests/calc/steps/concept4f10677f07b3766e772c413192194a4a2a356211a56a28755e7d4750a7a86e64.go",
       "kind": "created",
-      "size": 996,
-      "sha256": "c87aa442b5c0dd99293e5674532e9c2a7d69cd0835e5f12738c320aa1bae364f",
-      "text": "package steps\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"halving\"\nfunc concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {\n\tconst hostRoot = \"../..\"\n\tconst pkg = \"./services/calc\"\n\tconst command = \"halve\"\n\n\tvalue := args[0]\n\tif _, err := strconv.Atoi(value); err != nil {\n\t\treturn fmt.Errorf(\"halve value %q is not a whole number: %w\", value, err)\n\t}\n\n\tcmd := exec.Command(\"go\", \"run\", pkg, command, value)\n\tcmd.Dir = hostRoot\n\tvar stdout, stderr bytes.Buffer\n\tcmd.Stdout = \u0026stdout\n\tcmd.Stderr = \u0026stderr\n\tif err := cmd.Run(); err != nil {\n\t\treturn fmt.Errorf(\"go run %s %s %s failed: %w: %s\", pkg, command, value, err, strings.TrimSpace(stderr.String()))\n\t}\n\n\tout := strings.TrimSpace(stdout.String())\n\thalved, err := strconv.Atoi(out)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"go run %s %s %s printed %q, want an integer: %w\", pkg, command, value, out, err)\n\t}\n\n\tstate.Result = halved\n\treturn nil\n}\n"
+      "size": 1102,
+      "sha256": "4ba585b7ed3f5842faf9805363787ae49d092ac17a7cfec2fa1c6dfde7dd5d22",
+      "text": "package steps\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"halving\"\nfunc concept4f10677f07b3766e772c413192194a4a2a356211a56a28755e7d4750a7a86e64(state *State, args []string) error {\n\tconst hostRoot = \"../..\"\n\n\tnumber, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn fmt.Errorf(\"halving: step number %q is not a whole number: %w\", args[0], err)\n\t}\n\n\tcmd := exec.Command(\"go\", \"run\", \"./services/calc\", \"halve\", strconv.Itoa(number))\n\tcmd.Dir = hostRoot\n\n\tstdout, err := cmd.Output()\n\tif err != nil {\n\t\tvar exitErr *exec.ExitError\n\t\tif errors.As(err, \u0026exitErr) {\n\t\t\treturn fmt.Errorf(\n\t\t\t\t\"halving: halve %d exited with %d: %s\",\n\t\t\t\tnumber,\n\t\t\t\texitErr.ExitCode(),\n\t\t\t\tstrings.TrimSpace(string(exitErr.Stderr)),\n\t\t\t)\n\t\t}\n\t\treturn fmt.Errorf(\"halving: running halve %d failed: %w\", number, err)\n\t}\n\n\thalved, err := strconv.Atoi(strings.TrimSpace(string(stdout)))\n\tif err != nil {\n\t\treturn fmt.Errorf(\n\t\t\t\"halving: halve %d wrote %q on stdout, which is not an integer: %w\",\n\t\t\tnumber,\n\t\t\tstring(stdout),\n\t\t\terr,\n\t\t)\n\t}\n\n\tstate.Result = halved\n\treturn nil\n}\n"
     },
     {
       "path": "tests/calc/steps/register.go",
       "kind": "modified",
-      "size": 214,
-      "sha256": "65b97563458d35aebdb18e1a26fa783e6bffe507ec3b9b5736acba8670a08932",
-      "text": "package steps\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the result is (-?\\d+)$`, result)\n\n\tsuite.Step(\"^the Owner halves (-?\\\\d+)$\", concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87)\n}\n"
+      "size": 217,
+      "sha256": "3a16430d645e677a2171b2afee0eb2de03f7f65eded163f44b537352042a276e",
+      "text": "package steps\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the result is (-?\\d+)$`, result)\n\n\tsuite.Step(\"^the (?:\\\\w+) halves (-?\\\\d+)$\", concept4f10677f07b3766e772c413192194a4a2a356211a56a28755e7d4750a7a86e64)\n}\n"
     }
   ]
 }

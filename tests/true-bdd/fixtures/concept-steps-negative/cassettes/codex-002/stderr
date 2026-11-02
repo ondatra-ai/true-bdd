@@ -1,0 +1,1 @@
+2026-11-02T15:42:16.945278Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to read file to update {{CWD}}/tests/calc/steps/concept4f10677f07b3766e772c413192194a4a2a356211a56a28755e7d4750a7a86e64.go: fs sandbox helper failed with status exit status: 71: sandbox-exec: execvp() of '/opt/homebrew/bin/codex' failed: Operation not permitted

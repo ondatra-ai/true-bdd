@@ -17,7 +17,7 @@ Beside them: `docs/` holds the specification documents (`docs/scenarios.yaml` is
 
 Before you create or edit a file, read every `.claude/rules/*.md` whose `paths:` front matter matches its path, and follow it: each is the contract its area's gates enforce.
 
-In engine code, an AI turn that must happen gets everything it needs: multi-stage generation, critique passes, full embedded context, whole prompts. This governs the engine's runtime model spend, not how much code you write.
+In engine code, every necessary AI turn receives complete evidence within the configured prompt byte limit. Embed the semantic core; read-enabled body turns get the Registry, Scenario keys and fixture directories by path, and binding judgements get the complete product document by path. Tool-less critiques embed evidence filtered by use. Do not use digests, compact payloads, truncate required evidence, skip critique or reduce reasoning effort to fit. Refuse an oversized prompt distinctly. This governs runtime turns, not how much code you write.
 
 ## Checks
 

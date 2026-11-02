@@ -7,7 +7,15 @@ description:
     or end of text; a remaining nonempty fragment counts. Words are nonempty Unicode-whitespace-separated fields;
     paths, hyphenated words and decimals remain single words. Blank lines separate paragraphs; ordinary line wrapping
     does not. Every product reader and command startup refuses violations, naming the term, sentence count, longest
-    sentence’s word count, paragraph count and rule. Concepts’ means are exempt.'
+    sentence’s word count, paragraph count and rule. Concepts’ means are exempt.
+    Body proposals and applications embed the Concept, binding, glossary entries, Word mappings, complete Public
+    interface, definitions, patterns, captures and bound steps. They read Scenarios and fixtures from Registry paths,
+    Scenario keys and fixture directories through confined tools, never service source. Binding judgements read the
+    complete product document by path, with steps, binding and Public interface embedded. Tool-less critiques embed
+    the semantic core, whole suite source and fixture contracts selected by source or bound captures.
+    Every Claude and Codex dispatch logs system and user UTF-8 bytes, including Codex assembly. Above
+    engine.max_prompt_bytes in true-bdd.yaml, a positive integer defaulting to 150000, the walk stops before spawning
+    with a distinct error naming turn, size and limit. No digests, compaction or truncation replace required evidence.'
   problem: Ambiguous specifications let rebuilds choose different behaviour. Executable Scenarios hold each rebuild
     to observable outcomes.
   vision: ''

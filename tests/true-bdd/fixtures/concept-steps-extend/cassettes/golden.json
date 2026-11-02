@@ -5,9 +5,9 @@
     {
       "path": "tests/calc/steps/concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb.go",
       "kind": "created",
-      "size": 611,
-      "sha256": "cb7127878435fb708e2bf58df311515154a9166f49872f5bbb24d8cad7734dce",
-      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"halving\"\nfunc concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb(state *State, args []string) error {\n\tcmd := exec.Command(\"go\", \"run\", \"./services/calc\", \"halve\", args[0])\n\tcmd.Dir = \"../..\"\n\tout, err := cmd.Output()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"halve %s: %w\", args[0], err)\n\t}\n\tstate.Result, err = strconv.Atoi(strings.TrimSpace(string(out)))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"halve %s: stdout %q is not an integer: %w\", args[0], strings.TrimSpace(string(out)), err)\n\t}\n\treturn nil\n}\n"
+      "size": 480,
+      "sha256": "ea6c5433c31684f0f0da2da0e1beb1e1fd72dfa5e1c501a8765ed878435b48c3",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"halving\"\nfunc concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb(state *State, args []string) error {\n\tcmd := exec.Command(\"go\", \"run\", \"./services/calc\", \"halve\", args[0])\n\tcmd.Dir = \"../..\"\n\tout, err := cmd.Output()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"halve %s: %w\", args[0], err)\n\t}\n\tstate.Result, err = strconv.Atoi(strings.TrimSpace(string(out)))\n\treturn err\n}\n"
     },
     {
       "path": "tests/calc/steps/register.go",

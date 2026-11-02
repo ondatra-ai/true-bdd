@@ -287,6 +287,7 @@ func TestCodexApply002BuildStepsWritesProtectedTests(t *testing.T) {
 	s.And(`no file outside "tmp" and "tests" changed`)
 	s.And(`stdout matches msg="Codex turn sandboxed" label=codex-turn[0-9]+ sandbox=writer`)
 	s.And(`the engine dispatched 4 validation AI turns to "claude"`)
+	s.And(`every file matching "tmp/codex-homes/*/*/config.toml" matches (?m)^PWD = "{{CWD}}"$`)
 	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
 	s.Done()
 }

@@ -16,11 +16,10 @@ import (
 )
 
 // conceptFixture is one fixture a Scenario using the Item's steps names:
-// its directory, the Scenarios naming it, and its input files whole.
+// its directory name under the context's fixture_root.
 type conceptFixture struct {
 	Fixture   string        `yaml:"fixture"`
-	Scenarios []string      `yaml:"scenarios"`
-	Files     []fixtureFile `yaml:"files"`
+	Files     []fixtureFile `yaml:"files,omitempty"`
 }
 
 type fixtureFile struct {
@@ -36,7 +35,7 @@ var quotedValue = regexp.MustCompile(`"([^"]+)"`)
 // conceptFixtures gathers the fixture inputs of every Scenario of the suite
 // using the Item's steps: each quoted value of its steps that names a
 // directory under the suite's fixtures/ is a fixture it starts from.
-func conceptFixtures(item *BuildStepsItem, scenarios []*registry.RegistryScenario) ([]conceptFixture, error) {
+func conceptFixtures(item *BuildStepsItem, scenarios []*registry.RegistryScenario) []conceptFixture {
 	root := filepath.Join(filepath.Dir(filepath.FromSlash(item.Suite)), "fixtures")
 	fixtures := make([]conceptFixture, 0)
 
@@ -46,27 +45,18 @@ func conceptFixtures(item *BuildStepsItem, scenarios []*registry.RegistryScenari
 		}
 
 		for _, name := range namedFixtures(scenario, root) {
-			dir := filepath.ToSlash(filepath.Join(root, name))
+			dir := name
 
 			index := slices.IndexFunc(fixtures, func(fixture conceptFixture) bool { return fixture.Fixture == dir })
 			if index >= 0 {
-				if !slices.Contains(fixtures[index].Scenarios, scenario.ID) {
-					fixtures[index].Scenarios = append(fixtures[index].Scenarios, scenario.ID)
-				}
-
 				continue
 			}
 
-			files, err := fixtureInputs(dir)
-			if err != nil {
-				return nil, err
-			}
-
-			fixtures = append(fixtures, conceptFixture{Fixture: dir, Scenarios: []string{scenario.ID}, Files: files})
+			fixtures = append(fixtures, conceptFixture{Fixture: dir})
 		}
 	}
 
-	return fixtures, nil
+	return fixtures
 }
 
 // namedFixtures lists, in step order, the fixture directories a Scenario names.

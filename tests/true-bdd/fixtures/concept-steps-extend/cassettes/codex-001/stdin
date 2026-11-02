@@ -54,7 +54,12 @@ Service: calc
 Concept: halving (when)
 Meaning: The Owner halves a whole number, positive, zero or negative, with the calculator, which rounds an odd number's half toward zero.
 
-## Complete concept context
+Read the listed Scenario keys from the Registry path and inspect their fixture
+input directories under fixture_root as needed (exclude cassettes/). Read the definitions, State,
+helpers and architecture-declared test libraries. These paths carry the complete
+evidence; no digest or summary replaces it. Never read service implementation.
+
+## Concept context and evidence paths
 concept:
     concept: halving
     block: when
@@ -104,71 +109,131 @@ definitions:
       pattern: ^the Owner halves (-\d+)$
       captures:
         - name: number
-          means: The step's whole number written with its leading minus sign, the negative value the Owner halves, captured sign and digits together so it is passed to the command as the integer it denotes.
-      serves: 'Does: run the declared halve command as a process with the step''s whole number and keep its integer stdout as the result — this pattern supplies that number for the negative case, which the existing unsigned definition cannot match.'
+          means: The negative whole number to halve, captured with its minus sign so the body passes it verbatim as the halve command's value argument.
+      serves: 'Serves "Run the declared halve command as a process with the step''s whole number and keep its integer stdout as the result": the capture supplies the step''s whole number for the command''s value argument, while the words "the Owner halves" state that this is the halving concept. The existing definition already covers the unsigned form, so this pattern states the sign that it cannot match and binds only negative numbers.'
       steps:
         - text: the Owner halves -7
           captures:
             - "-7"
+registry: ./docs/scenarios.yaml
 scenarios:
-    - id: calc-002-halve
-      description: Halving a negative odd number rounds toward zero
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        When:
-          - the Owner halves -7
-        Then:
-          - the result is -3
+    - calc-002-halve
 
 
-## Fix Prompt for Item when-halving: when concept "halving"
+=== FILE_START: tmp/{{RUN_DIR}}/01-when-halving-fix-prompts.md ===
+# Fix Prompt for Item when-halving: when concept "halving"
 
 ## Target
-Suite `tests/calc/steps` — single file to change: `tests/calc/steps/concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb.go`
+tests/calc/steps
 
-## Scope rules
-- Change ONLY the import block and the body of `concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb`.
-- Do NOT touch `tests/calc/steps/register.go`, `tests/calc/steps/halving.go`, `tests/calc/steps/definitions.go`, `tests/calc/steps/state.go`, `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, the Specification, or any service code.
-- Keep the `//truebdd:concept when "halving"` record, the function name and the `(state *State, args []string) error` signature exactly as they are.
-- No new package-level constants, variables, types or helper functions.
-- No shared `State` changes are needed: `State.Result int` already carries the halve result, and the existing `then "result"` definition in `definitions.go` reads it.
+## Scope rules (do not violate)
+- Touch ONLY the body of `concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb`
+  in `tests/calc/steps/concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb.go`,
+  that file's `import` block, and (only if strictly needed, see step 3) one new field on the suite's
+  shared `State` struct.
+- Do NOT change the function signature, the registration, the regex pattern `^the Owner halves (-\d+)$`,
+  or the `//truebdd:concept` record. Do NOT add package-level consts, vars, types or helper funcs.
+- Do NOT edit any other step definition, the generated tests, `docs/` specification files, or
+  `services/calc` source.
+- Do not compute the halved value in Go. The body must only launch the declared `halve` command and
+  keep its stdout. Any arithmetic in this body is a defect.
 
-## Required change
-The binding says: run the declared `halve` command as a process with the step's whole number and keep its integer stdout as the result. The capture `number` already carries sign and digits together (`-7`), so it is passed straight through as the command's integer argument — exactly like the existing unsigned `halving` definition in `tests/calc/steps/halving.go`, which this negative-case body mirrors. The command is invoked per the declared CLI document (`docs/architecture/calc-cli.yaml`): `go run ./services/calc halve VALUE` from the host root, hence `cmd.Dir = "../.."` relative to the suite directory. Nothing in the body computes a half.
+## What this body must do (from the binding)
+Binding: "Run the declared halve command as a process with the step's whole number and keep its
+integer stdout as the result."
+Declared interface (`docs/architecture/calc-cli.yaml`, command `halve`): run
+`go run ./services/calc halve VALUE` from the host root; exit 0 with the halved integer plus a
+newline on stdout, exit 1 for invalid arguments.
+This is a `when` block, so it performs the call and records the outcome in shared state; the matching
+`then` definition does the comparison. `args[0]` is the `number` capture and already carries its minus
+sign, so pass it verbatim as the command's `value` argument — never re-sign, re-parse or re-format it
+before handing it to the process.
 
-Replace the whole file with exactly this content:
+## Step 1 — Mirror the existing unsigned-halving definition (preferred path)
+This suite already contains the `when` definition for the unsigned form of the same concept
+(its pattern is the `^the Owner halves (\d+)$` variant, carrying the same
+`//truebdd:concept halving/when` record). Open it and copy its body verbatim into the new negative-form
+function, adapting only the parameter/receiver identifier names to the new function's generated
+signature.
+
+Both patterns capture exactly one `number` in the same position and both pass it verbatim to the
+command's `value` argument, so the two bodies must be character-for-character the same logic:
+- same host-root resolution (reuse the very same helper or `State` field the sibling uses — e.g. a
+  repo/host-root helper or `state.HostRoot`; do not invent a second way to locate the host root),
+- same process invocation of the declared `halve` command,
+- same error wrapping,
+- same shared `State` field for the captured stdout.
+
+If such a sibling body exists, stop after this step: do not add a `State` field and do not add imports
+beyond those the copied body needs.
+
+## Step 2 — Fallback body (use ONLY if the sibling's body is still empty/unwritten)
+Write a self-contained body with every constant local to the function. Adapt the identifier names
+(`state`, `args`) to whatever the engine generated, and keep the generated `return` type:
 
 ```go
-package steps
-
-import (
-	"fmt"
-	"os/exec"
-	"strconv"
-	"strings"
-)
-
-//truebdd:concept when "halving"
-func concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb(state *State, args []string) error {
 	cmd := exec.Command("go", "run", "./services/calc", "halve", args[0])
-	cmd.Dir = "../.."
-	out, err := cmd.Output()
-	if err != nil {
-		return fmt.Errorf("halve %s: %w", args[0], err)
+	if root := state.HostRoot; root != "" {
+		cmd.Dir = root
 	}
-	state.Result, err = strconv.Atoi(strings.TrimSpace(string(out)))
-	if err != nil {
-		return fmt.Errorf("halve %s: stdout %q is not an integer: %w", args[0], strings.TrimSpace(string(out)), err)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("run calc halve %s: %w (stderr: %s)", args[0], err, strings.TrimSpace(stderr.String()))
 	}
+	printed := strings.TrimSpace(stdout.String())
+	halved, convErr := strconv.Atoi(printed)
+	if convErr != nil {
+		return fmt.Errorf("calc halve %s printed %q, which is not an integer: %w", args[0], printed, convErr)
+	}
+	state.HalveResult = halved
+	state.HalveResultSet = true
 	return nil
-}
 ```
 
-## Notes for the applier
-- The old body `return fmt.Errorf("step not written yet: ...")` is removed; the `"fmt"` import stays because the new body still formats errors.
-- `go run` forwards every argument after the package path to the program, so the leading minus of `-7` reaches the `halve` command as its `value` argument and is never read as a flag of `go run`.
-- Do not run the Scenario `calc-002-halve` or otherwise replay the suite; the engine owns compilation and the whole-suite checks.
+Notes for the applier:
+- If the suite already exposes a helper that runs a declared `calc` command from the host root
+  (for example a `runCalc`/`runCommand`-style helper on `State` or in the suite's helper file), call
+  that helper instead of building `exec.Command` here, and keep only the stdout parsing and the
+  state assignment from the snippet above. Reusing the suite's helper takes priority over the raw
+  `exec.Command` form.
+- If the suite resolves the host root some other way than a `State.HostRoot` field (helper function,
+  `t.TempDir()`-based copy, fixture root field), use that existing mechanism and drop the
+  `cmd.Dir` block above; never add a new host-root mechanism.
+- If the generated signature has no `error` result, replace each `return fmt.Errorf(...)` with the
+  suite's existing failure call on its test handle (e.g. `state.T.Fatalf(...)`) using the same message
+  text, then `return`.
+
+## Step 3 — Shared state (only if the fallback in step 2 was used and no field exists)
+If, and only if, the suite's `State` struct has no field that already carries the halve command's
+integer stdout, add to the `State` struct in the suite's state file:
+
+```go
+	// HalveResult is the integer the declared calc halve command printed on stdout.
+	HalveResult int
+	// HalveResultSet records that the halve command ran and produced HalveResult.
+	HalveResultSet bool
+```
+
+If a field for the halve result already exists (whatever it is named, including a string form holding
+the trimmed stdout), reuse it exactly as the sibling definition does and add nothing. If the existing
+field is a trimmed-stdout `string`, assign `printed` to it and drop the `strconv.Atoi` block, leaving
+the integer conversion and comparison to the `then` definition.
+
+## Step 4 — Imports
+Add to the import block of
+`tests/calc/steps/concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb.go`
+only what the final body actually references — from the fallback that is `bytes`, `fmt`, `os/exec`,
+`strconv`, `strings`. Remove any that the chosen form does not use; `gofmt` the file.
+
+## Acceptance
+- `the Owner halves -7` (scenario `calc-002-halve`) now has a written `when` body that launches the
+  declared `halve` command with `-7` verbatim and stores its stdout in shared state.
+- No arithmetic on the captured number anywhere in the body.
+- Registration, pattern, signature and `//truebdd:concept` record unchanged; no package-level
+  declarations added.
+=== FILE_END ===
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists and shared state. Preserve the engine's patterns, registrations,

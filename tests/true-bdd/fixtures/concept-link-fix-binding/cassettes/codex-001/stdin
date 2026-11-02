@@ -10,25 +10,23 @@ a document. For document edits return the requested confirmation markers.
 
 The responsible person chose apply at the menu for Scenario host-001.
 Approved fix:
-# Proposed repair — Item host-001 (binding only; nothing applied)
+## Repair proposal — Item `host-001`, service `calc`
 
-## Failed judgement
-`when` concept "halve" for service `calc` has 0 Concept bindings.
+**Failed judgement:** `when` concept "halve" for service `calc` has 0 Concept bindings.
 
-## Diagnosis
-- The meaning already exists and is correct: `docs/product/product.yaml` → `concepts.when` → `{ concept: "halve", means: "Halve the entered number once." }`. The Scenario step `halve six` is covered by that meaning, so **no Product Owner change is proposed** (no concept widening, no new variation, no Story/Scenario rewording).
-- The declared Public interface of `calc` already exposes everything the step needs: `{ page: "Calc", role: "button", name: "Halve" }`. So **the Public interface is NOT extended**.
-- The only gap is the missing System Architect binding for the `when` concept in `docs/architecture/architecture.yaml`.
+**Diagnosis**
+- The meaning is already correct and sufficient: `docs/product/product.yaml` → `concepts.when[0]` = `halve` / "Halve the entered number once." → **no Product Owner change required**, no new or widened variation.
+- The declared Public interface of `calc` already exposes everything the step needs: `{page: "Calc", role: "button", name: "Halve"}` → **no interface extension required**.
+- The only gap is the missing concept binding in the architecture document → **System Architect change, one addition**.
+- The step is a deterministic click on a declared element, so the binding uses `references` + `does` (not `intent`).
 
-## Owner
-System Architect — one added concept binding in `docs/architecture/architecture.yaml`.
+**Owner:** System Architect
+**File:** `docs/architecture/architecture.yaml`
+**Change type:** add exactly one entry to `architecture.concepts`; change nothing else.
 
-## Exact change (1 file, 1 insertion)
+### Exact change
 
-File: `docs/architecture/architecture.yaml`
-Location: in `architecture.concepts`, insert a new array element **between** the existing `"number ready"` (given) entry and the existing `"number result"` (then) entry, keeping given → when → then order. Both existing entries stay byte-for-byte unchanged; `services`, `public_interface` and `terms` stay unchanged.
-
-Insert after the object ending at line 39–40 (`"does": "Enter the given number into the Number field."` then `}`) and before the object beginning `{ "concept": "number result",` (line 41–42):
+Insert the following object into `architecture.concepts`, between the existing `number ready` (given) entry and the existing `number result` (then) entry, so the array stays in given/when/then order:
 
 ```json
       {
@@ -44,11 +42,11 @@ Insert after the object ending at line 39–40 (`"does": "Enter the given number
             }
           }
         ],
-        "does": "Click the Halve button once to halve the number currently entered in the Number field."
+        "does": "Press the Halve button on the Calc page once to halve the number currently entered in the Number field."
       },
 ```
 
-## Resulting `architecture.concepts` (for review)
+### Resulting `architecture.concepts` array (context, unaffected entries preserved verbatim)
 
 ```json
     "concepts": [
@@ -57,7 +55,13 @@ Insert after the object ending at line 39–40 (`"does": "Enter the given number
         "block": "given",
         "service": "calc",
         "references": [
-          { "element": { "page": "Calc", "role": "textbox", "name": "Number" } }
+          {
+            "element": {
+              "page": "Calc",
+              "role": "textbox",
+              "name": "Number"
+            }
+          }
         ],
         "does": "Enter the given number into the Number field."
       },
@@ -66,32 +70,41 @@ Insert after the object ending at line 39–40 (`"does": "Enter the given number
         "block": "when",
         "service": "calc",
         "references": [
-          { "element": { "page": "Calc", "role": "button", "name": "Halve" } }
+          {
+            "element": {
+              "page": "Calc",
+              "role": "button",
+              "name": "Halve"
+            }
+          }
         ],
-        "does": "Click the Halve button once to halve the number currently entered in the Number field."
+        "does": "Press the Halve button on the Calc page once to halve the number currently entered in the Number field."
       },
       {
         "concept": "number result",
         "block": "then",
         "service": "calc",
         "references": [
-          { "element": { "page": "Calc", "role": "textbox", "name": "Number" } }
+          {
+            "element": {
+              "page": "Calc",
+              "role": "textbox",
+              "name": "Number"
+            }
+          }
         ],
         "does": "Compare the displayed Number text with the expected result."
       }
     ],
 ```
-(Shown with collapsed `element` objects for readability only — apply using the multi-line insertion block above so the file's existing formatting is preserved.)
 
-## Why this satisfies the policy
-- The binding supplies every required field: `concept`, `block`, `service`, `references`, `does`.
-- `references` is judged against the declared Public interface and resolves to an already-declared element (`Calc` / `button` / `Halve`); the Public interface is therefore extended nowhere.
-- `does` is used rather than `intent`, matching the two existing `calc` bindings; the step is a concrete interaction with a declared element, not a UI step performed by a model.
-- Covers the Scenario end to end: `six is entered` → `number ready`, `halve six` → `halve` (new), `three is displayed` → `number result`.
-- No other step, concept, meaning or service entry is touched.
+### Explicitly unchanged
+- `docs/product/product.yaml` — no edit; `halve` already means "Halve the entered number once."
+- `architecture.services[0].public_interface` — no edit; the `Halve` button is already declared.
+- Item `host-001` Steps wording (`six is entered` / `halve six` / `three is displayed`) — no edit; all three steps link to existing concepts once this binding is added.
+- Concepts `number ready` and `number result`, and `architecture.terms` — untouched.
 
-## Status
-Proposal only — nothing written. Apply the insertion above only after an explicit menu decision by the System Architect.
+**Nothing has been applied.** This awaits an explicit menu decision; on apply, make only the single insertion above.
 Working copies (edit only the approved target):
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

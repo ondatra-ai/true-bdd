@@ -1,4 +1,5 @@
 engine:
+  max_prompt_bytes: 150000
   scen_check_concurrency: 1
   # "<cli>:<model>", split on the FIRST colon only. cli is claude |
   # codex and must be on $PATH; model passes through verbatim to that CLI's

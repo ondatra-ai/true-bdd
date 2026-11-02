@@ -89,7 +89,7 @@ func TestConceptCritiqueJudgesPatternsAndFixtureContracts(t *testing.T) {
 	concept := critiqueRequest(t)
 	requireTerms(t, concept.system, "pattern_captures", "pattern_scope", "fixture inputs")
 	requireTerms(t, concept.schema, "pattern_captures", "pattern_scope")
-	requireTerms(t, concept.user, "fixture inputs")
+	requireTerms(t, concept.user, "fixture contracts")
 
 	for _, leak := range []string{"Catalogue", "Phrase mapping", "template", "phrase_", "Never judge them"} {
 		if strings.Contains(concept.system+concept.user+concept.schema, leak) {

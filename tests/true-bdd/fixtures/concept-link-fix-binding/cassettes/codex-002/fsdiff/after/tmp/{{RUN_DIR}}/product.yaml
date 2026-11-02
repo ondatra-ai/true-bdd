@@ -1,0 +1,37 @@
+{
+  "roles": [
+    {
+      "name": "Product Owner",
+      "description": "Owns meanings."
+    }
+  ],
+  "concepts": {
+    "given": [
+      {
+        "concept": "number ready",
+        "means": "A number is entered before the action.",
+        "terms": []
+      }
+    ],
+    "when": [
+      {
+        "concept": "halve",
+        "means": "Halve the number already entered once. The step names that number, and the named number must be the one standing in the field before the halving.",
+        "terms": [
+          {
+            "term": "number",
+            "means": "The number the step names, which must already be the entered number; it is not entered again by this action."
+          }
+        ]
+      }
+    ],
+    "then": [
+      {
+        "concept": "number result",
+        "means": "Compare the displayed number with an expected value.",
+        "terms": []
+      }
+    ]
+  },
+  "glossary": []
+}

@@ -1,56 +1,50 @@
 package steps
 
 import (
+	"bytes"
+	"context"
 	"fmt"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 //truebdd:concept when "halving"
 func concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {
-	value := args[0]
-	if _, err := strconv.Atoi(value); err != nil {
-		return fmt.Errorf("the Owner halves %q: not a whole number: %w", value, err)
-	}
-
-	root, err := os.Getwd()
+	value, err := strconv.Atoi(args[0])
 	if err != nil {
-		return fmt.Errorf("the Owner halves %s: working directory: %w", value, err)
-	}
-	for {
-		if _, statErr := os.Stat(filepath.Join(root, "go.mod")); statErr == nil {
-			break
-		}
-		parent := filepath.Dir(root)
-		if parent == root {
-			return fmt.Errorf("the Owner halves %s: host root with go.mod not found above the working directory", value)
-		}
-		root = parent
+		return fmt.Errorf("the Owner halves %q: not a whole number: %w", args[0], err)
 	}
 
-	command := exec.Command("go", "run", "./services/calc", "halve", value)
-	command.Dir = root
-	var stdout, stderr strings.Builder
-	command.Stdout = &stdout
-	command.Stderr = &stderr
-	if runErr := command.Run(); runErr != nil {
-		return fmt.Errorf("the Owner halves %s: %s: %w: %s",
-			value,
-			strings.Join(command.Args, " "),
-			runErr,
-			strings.TrimSpace(stderr.String()),
-		)
+	// The declared CLI document says: run `go run ./services/calc halve VALUE`
+	// from the host root. `go test` runs this suite from tests/calc, so the
+	// host root is two directories up.
+	const (
+		hostRoot    = "../.."
+		servicePath = "./services/calc"
+		command     = "halve"
+		timeout     = 2 * time.Minute
+	)
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "go", "run", servicePath, command, strconv.Itoa(value))
+	cmd.Dir = hostRoot
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%s %s %d: %w: %s", servicePath, command, value, err, strings.TrimSpace(stderr.String()))
 	}
 
-	printed := strings.TrimSpace(stdout.String())
-	halved, err := strconv.Atoi(printed)
+	out := strings.TrimSpace(stdout.String())
+	result, err := strconv.Atoi(out)
 	if err != nil {
-		return fmt.Errorf("the Owner halves %s: stdout %q is not an integer: %w", value, printed, err)
+		return fmt.Errorf("%s %s %d: stdout %q is not an integer", servicePath, command, value, out)
 	}
 
-	state.Result = halved
+	state.Result = result
 	return nil
 }
