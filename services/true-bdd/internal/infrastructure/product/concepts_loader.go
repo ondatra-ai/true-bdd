@@ -23,7 +23,7 @@ var ErrUndeclaredConceptKey = errors.New("a concept holds only concept, means an
 // command starts.
 func ValidateForm(path string) error {
 	doc, found, err := readDocument(path)
-	if errors.Is(err, ErrCatalogueRetired) {
+	if errors.Is(err, ErrCatalogueRetired) || errors.Is(err, ErrGlossaryForm) {
 		return err
 	}
 	// Legacy unreadable products keep their command's original finding (#256,

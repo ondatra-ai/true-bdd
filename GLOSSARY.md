@@ -105,7 +105,7 @@ An `architecture.concepts` entry naming a Concept by name and block and its serv
 _Avoid_: concept mapping, step binding
 
 **Word mapping**:
-The architecture document's list of terms, each saying what the term is in the implementation and how a step definition sets it up or observes it, without naming code. Every term a Concept declares is mapped exactly once.
+The architecture document's list of terms, each saying what the term is in the implementation, with optional instructions for setup or observation when the Concept binding does not already fix them, without naming code. Every term a Concept declares is mapped exactly once.
 _Avoid_: architecture glossary, dictionary
 
 **Phrase mapping**:

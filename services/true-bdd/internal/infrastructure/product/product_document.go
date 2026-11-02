@@ -62,5 +62,10 @@ func readDocument(path string) (*rawDocument, bool, error) {
 		return nil, false, fmt.Errorf("product document %s: %w", path, ErrCatalogueRetired)
 	}
 
+	err = validateGlossaryForm(path, &doc.Glossary)
+	if err != nil {
+		return nil, false, err
+	}
+
 	return &doc, true, nil
 }
