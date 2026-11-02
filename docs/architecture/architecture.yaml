@@ -1079,8 +1079,8 @@ architecture:
           protocol: cli
           scope: third_party
           # binary and args match every engine claude cassette's `binary` and
-          # `argv`: the turn's prompts, model, tools and answer schema all ride
-          # in argv, which replay hashes.
+          # `argv`: fitting prompts retain their recorded argument form; larger
+          # prompts use stdin. Replay hashes argv and stdin together.
           invocation:
             binary: claude
             args:
@@ -1109,7 +1109,14 @@ architecture:
                   every fix turn does; an apply turn carries none.
                 args: [--json-schema, "{schema}"]
               - -p
-              - "{user_prompt}"
+              - when: The complete request fits the conservative argument budget below.
+                args: ["{user_prompt}"]
+            stdin:
+              with_system: &claude-stdin >-
+                Empty when user_prompt travels in argv; otherwise the whole {user_prompt},
+                byte for byte, with EOF after its final byte. The default text input
+                format reads it with -p alone, including stream-json output and --json-schema.
+              without_system: *claude-stdin
             # Empty setting sources exclude user/project/local settings; strict MCP admits no servers.
             # Safe mode excludes discovered CLAUDE.md memory, skills, plugins and hooks.
             # Auth and built-in tools remain; --bare would require API-key auth.
@@ -1257,9 +1264,22 @@ architecture:
                 CLAUDE_CODE_SAFE_MODE, CLAUDE_CODE_SIMPLE and inherited
                 CLAUDE_RELAUNCH_SESSION_ADD_DIRS are stripped.
               - >-
-                No stdin: the prompts travel in argv. `CLAUDECODE` is removed
-                from the inherited environment, so the turn does not look
-                launched from a Claude session.
+                Preserve -p {user_prompt} only when argv and the complete child environment
+                together fit 112 KiB (128 KiB minus 16 KiB). Count UTF-8 bytes, one NUL per
+                string, argv[0], and eight bytes per argument/environment pointer including
+                both vector terminators. Freeze that environment for the spawn. Linux
+                guarantees a 128 KiB total argument/environment allowance at its minimum
+                stack setting and a 128 KiB per-string allowance with 4 KiB pages; macOS
+                permits at least 256 KiB total. The 16 KiB reserve covers executable and
+                interpreter paths, PWD and platform bookkeeping. Thus every argument is
+                also below Linux's per-string limit. Above this budget, omit the prompt
+                argument and send it through stdin without truncation or an added newline.
+                The same choice applies to every role, ordinary and writer turns, JSON and
+                streaming output, with or without a schema. Small requests retain their
+                cassette hashes; the proxy and committed recordings do not change.
+              - >-
+                `CLAUDECODE` is removed from the inherited environment, so the turn does
+                not look launched from a Claude session.
               - >-
                 `--setting-sources ""` excludes user, project and local settings; `--strict-mcp-config` loads no MCP
                 server, since the command line names none. The advisor is a
