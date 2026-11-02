@@ -9,7 +9,7 @@
 #
 #   yamale -s true-bdd/architecture_yaml-schema.yaml docs/architecture/architecture.yaml
 #
-# The engine decodes only `testing:`, `services[].{name,path,language,writable,libraries,public_interface}`
+# The engine decodes only `testing:`, `services[].{name,path,language,writable,libraries,public_interface,models}`
 # and, for closure checks, `terms:` and `concepts:`; everything else here is
 # spec a host writes for its own readers and for the checklists' prompts.
 # Which is exactly why it needs a schema: nothing else would notice a typo

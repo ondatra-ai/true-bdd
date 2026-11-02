@@ -126,7 +126,7 @@ commands:
       '1': {description: A test still fails after the walk, an impossible repair, or a refusal.}
   init:
     description: >-
-      Writes the missing configuration, checklists, prompt templates and product,
+      Writes the missing configuration, checklists, prompt templates, Model schemes and product,
       architecture and Registry schemas into
       the directory it runs in, leaving every existing file untouched, and
       reports each path with a Created or Left existing record. It reads no
@@ -166,7 +166,11 @@ extensions:
       access: read-write
     prompt-templates:
       path: templates/*.tpl
-      format: Go text/template files with Sprig; their inputs are architecture.prompt_data. init writes the missing ones.
+      format: Go text/template files with Sprig; checklist inputs are service Models, other inputs are architecture.prompt_data. init writes the missing ones.
+      access: read-write
+    model-schemes:
+      path: true-bdd/models/<model>.schema.yaml
+      format: JSON Schema in YAML; fields and types only. init writes missing schemes; templates.schemes overrides runtime paths.
       access: read-write
     product-document:
       path: docs/product/product.yaml

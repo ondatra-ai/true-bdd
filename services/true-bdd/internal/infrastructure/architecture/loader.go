@@ -69,6 +69,7 @@ func (t Testing) Label() string { return t.Framework }
 
 // Service declares a production folder and any additional exact writable paths.
 type Service struct {
+Models map[string]Model `yaml:"models,omitempty"`
 	PublicInterface *PublicInterface `yaml:"public_interface,omitempty"`
 	Libraries       []Library        `yaml:"libraries,omitempty"`
 	Name            string           `yaml:"name"`

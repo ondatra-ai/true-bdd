@@ -111,7 +111,10 @@ func loadCheckScenarios(
 			return nil, err
 		}
 
-		selected, err := selectByID(scenarios, ids)
+		err = checkScenarioModels(deps, scenarios)
+        if err != nil { return nil, err }
+
+        selected, err := selectByID(scenarios, ids)
 		if err != nil {
 			return nil, err
 		}
