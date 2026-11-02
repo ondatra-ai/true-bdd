@@ -32,6 +32,8 @@ architecture:
   services: list(include('service'), min=1)
   terms: list(include('term_mapping'), required=False)
   concepts: list(include('concept_binding'), required=False)
+  model_rendering: str(required=False)
+  concept_protocols: str(required=False)
   prompt_data: map(include('prompt_data'), required=False)
 
 ---
@@ -67,6 +69,7 @@ library:
 
 ---
 service:
+  models: map(include('model'), required=False)
   libraries: list(include('library'), required=False)
   name: str()
   path: str()
@@ -203,3 +206,13 @@ concept_binding:
   does: str(required=False)
   references: list(include('interface_reference'), min=1, required=False)
   intent: str(required=False)
+
+---
+model:
+  templates: include('model_templates')
+  scheme: str()
+
+---
+model_templates:
+  system: str()
+  user: str()

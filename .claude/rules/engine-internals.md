@@ -31,7 +31,7 @@ The engine drives two agent CLIs — `claude`, `codex` — picked per checklist 
 
 ## Prompt data contract
 
-`docs/architecture/architecture.yaml` states the data each configured prompt template reads under `architecture.prompt_data`, including its source and every transformation before rendering. A change to any transformation stated there updates its `prompt_data` entry in the same change. Keep shared anchors accurate for every template using them. The field-inventory guard in `internal/infrastructure/template/prompt_inventory_internal_test.go` compares template reads with those entries in both directions; it does not verify shaping.
+Checklist Models are declared on the service in `architecture.services[].models`: four paired entries name templates and fields/types-only YAML JSON Schemes. Construction rules belong in short Scenarios naming the Model. The engine checks an explicit YAML view of actual call inputs and Subject before rendering, preserving typed data and every prompt byte. Schemes resolve from `templates.schemes.<model>`, defaulting to `true-bdd/models/<model>.schema.yaml`, like template paths; init ships them, runtime never falls back. `D: models` checks declared resources and Scenario references. Other roles remain in `architecture.prompt_data`; preserve their anchor values and update their prose with any transformation change. Shared byte rules stay in `model_rendering`, concept protocols in `concept_protocols`.
 
 ## Build identity
 

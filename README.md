@@ -770,3 +770,9 @@ The plan first seeks a permitted solution. If no solution exists, it returns `im
 Run `true-bdd build code --fix` to review proposed fixes. Every fix is applied only after a person answers apply at its fix menu. `us refine`, `us apply`, `scen check` and `build steps` use the same menu. The engine offers no way to approve fixes in advance.
 
 A clarifying question at end of stdin prints its question and suggested answers and stops with an error saying a person must answer. End of stdin at a fix menu stops with an error saying a person must choose whether to apply the fix. These stops exit non-zero without a COMPLETE banner. Answers are read from stdin, including pipes used by tests and the drill, with no terminal check. A final non-empty answer without a newline is accepted; a blank line keeps its interactive meaning.
+
+## Checklist Models
+
+The service declares four `models` in the architecture: `us_refine_checklist`, `us_apply_checklist`, `scen_check_checklist` and `build_steps_checklist`. Each names its system/user templates and a fields-and-types-only JSON Schema written in YAML. Construction rules live in Scenarios naming the Model. Before rendering, the engine validates a YAML view of the actual call inputs and Subject in process, refusing a mismatch with the Model and field; rendering still uses the original typed data.
+
+`init` ships `true-bdd/models/<model>.schema.yaml` and preserves existing files. `templates.schemes.<model>` in `true-bdd.yaml` overrides that default path, resolved from the host working directory like template paths; runtime never substitutes an embedded scheme. `D: models` in `scen check` checks declared scheme/template files and requires every declared Model to be named in a Scenario step of its service. The build-code checklist reads no data and declares no Model.

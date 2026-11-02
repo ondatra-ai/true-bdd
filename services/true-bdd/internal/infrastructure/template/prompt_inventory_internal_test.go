@@ -58,19 +58,7 @@ func TestPromptDataInventory(t *testing.T) {
 		t.Run(key, func(t *testing.T) {
 			t.Parallel()
 
-			description, exists := architecture.Architecture.PromptData[key]
-
-			content, err := disk.Read(filepath.Join(inventoryRoot, path))
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			actual := templateFields(t, string(content))
-			if !exists {
-				t.Fatalf("missing template key; reads: %v", slices.Sorted(maps.Keys(actual)))
-			}
-
-			comparePromptFields(t, actual, description.Fields)
+			checkPromptInventory(t, path, key, architecture.Architecture.PromptData)
 		})
 	}
 
@@ -288,4 +276,59 @@ func walkControl(t *testing.T, node parse.Node, scope fieldScope, fields map[str
 	default:
 		walkFieldValue(t, node, scope, fields)
 	}
+}
+
+func declaredModelTemplate(t *testing.T, path string) bool {
+	t.Helper()
+
+	var document struct {
+		Architecture struct {
+			Services []struct {
+				Models map[string]struct {
+					Templates map[string]string `yaml:"templates"`
+					Scheme    string            `yaml:"scheme"`
+				} `yaml:"models"`
+			} `yaml:"services"`
+		} `yaml:"architecture"`
+	}
+	readInventoryYAML(t, "docs/architecture/architecture.yaml", &document)
+
+	for _, service := range document.Architecture.Services {
+		for _, model := range service.Models {
+			for _, modelPath := range model.Templates {
+				if filepath.Clean(path) == filepath.Clean(modelPath) {
+					_, err := disk.Read(filepath.Join(inventoryRoot, model.Scheme))
+                    if err != nil {
+						t.Fatal(err)
+					}
+
+					return true
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+func checkPromptInventory(t *testing.T, path, key string, inventory map[string]promptDescription) {
+	t.Helper()
+
+	description, exists := inventory[key]
+
+	content, err := disk.Read(filepath.Join(inventoryRoot, path))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	actual := templateFields(t, string(content))
+	if !exists {
+		if declaredModelTemplate(t, path) {
+			return
+		}
+
+		t.Fatalf("missing template key; reads: %v", slices.Sorted(maps.Keys(actual)))
+	}
+
+	comparePromptFields(t, actual, description.Fields)
 }

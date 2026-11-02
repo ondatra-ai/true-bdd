@@ -61,6 +61,8 @@ vocabulary:
     reason: Describes internal mechanics, not user-observable behavior.
     replacement: Describe the visible result of reading the input.
 glossary:
+- term: Model
+  means: The YAML data filling a checklist template pair, declared on its service with templates and a scheme. Fields and types are checked before rendering. Scenarios name the Model and pin construction rules.
 - term: Public interface
   means: What a service offers across its process boundary, declared in the architecture as CLI commands, HTTP operations
     or UI elements. Named interface documents belong to the Specification.
