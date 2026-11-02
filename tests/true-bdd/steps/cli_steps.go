@@ -41,59 +41,7 @@ func Register(suite *bddgo.Suite[State]) {
 	// outside the named prefix, and it is the named file — how `us refine
 	// … --fix` proves the run rewrote only its story.
 	suite.Step(`^the only file changed outside "([^"]+)" is "([^"]+)"$`, assertOnlyFileChangedOutside)
-	// File-effect assertions read the run's structural diff (and, for line
-	// counts, the file itself) rather than stdout. Implemented in file_steps.go.
-	suite.Step(`^the file "([^"]+)" is created$`, assertFileCreated)
-	suite.Step(`^the file "([^"]+)" is modified$`, assertFileModified)
-	suite.Step(`^the file "([^"]+)" is unchanged$`, assertFileUnchanged)
-	suite.Step(`^the file "([^"]+)" has exactly (\d+|no) lines?$`, assertFileLineCount)
-	suite.Step(`^the file "([^"]+)" matches (.+)$`, assertFileMatches)
-	suite.Step(`^every file matching "([^"]+)" (matches|does not match) (.+)$`, assertEveryFileMatches)
-	suite.Step(`^the file matching "([^"]+)" has exactly (\d+|no) match(?:es)? for (.+)$`, assertFileMatchCount)
-	// A count-of-files-matching-a-glob assertion, distinct from the named-path
-	// `is created` above: the fix loop chooses the new file's name, so a
-	// scenario can only pin how many .go files appeared under a directory.
-	suite.Step(`^exactly (\d+|no) files? matching "([^"]+)" (?:is|are) created$`, assertFilesMatchingCreated)
-	// The negative twin of the count assertion above: proves the run created
-	// NO file matching a glob. Implemented in file_steps.go.
-	suite.Step(`^no files? matching "([^"]+)" (?:is|are) created$`, assertNoFileMatchingCreated)
-	// Story-shape assertions read a story a `us refine … --fix` run rewrote:
-	// its id, acceptance-criteria count and shape, forbidden vocabulary.
-	// Filenames are resolved by glob. See story_steps.go.
-	suite.Step(`^the story "([^"]+)" has id "([^"]+)"$`, assertStoryID)
-	suite.Step(`^the story "([^"]+)" has feature "([^"]+)"$`, assertStoryFeature)
-	suite.Step(`^the story "([^"]+)" has (\d+|no) acceptance criteria$`, assertStoryCriteriaExactCount)
-	suite.Step(`^every acceptance criterion in the story "([^"]+)" has given, when and then steps$`,
-		assertStoryCriteriaHaveSteps)
-	suite.Step(`^the description of acceptance criterion "([^"]+)" of the story "([^"]+)" does not match (.+)$`,
-		assertStoryCriterionDescNoMatch)
-	suite.Step(`^the description of acceptance criterion "([^"]+)" of the story "([^"]+)" matches (.+)$`,
-		assertStoryCriterionDescMatch)
-	// The step-text twin of the description assertions above: checks a
-	// named criterion's Given/When/Then wording instead of its description,
-	// e.g. that steps name an observable action rather than a forbidden verb.
-	suite.Step(`^the steps of acceptance criterion "([^"]+)" of the story "([^"]+)" do not match (.+)$`,
-		assertStoryCriterionStepsNoMatch)
-	// Registry-executability assertion: after `build tests --fix`, is the
-	// inner project's named scenario now bound by step definitions? Reads
-	// the inner registry and generated Go source under the tmpdir. See registry_steps.go.
-	suite.Step(`^every step of scenario "([^"]+)" in "([^"]+)" is matched by a step definition under "([^"]+)"$`,
-		assertScenarioStepsMatched)
-	// Registry-origin assertions read the registry a `us apply … --fix` run
-	// writes and ask its LINEAGE: which acceptance criterion an entry
-	// descends from, which story it cites, its serialized content. See registry_origin_steps.go.
-	suite.Step(`^exactly (\d+|no) scenarios? in "([^"]+)" comes? from acceptance criterion "([^"]+)"$`,
-		assertRegistryScenarioCount)
-	suite.Step(`^the scenario from acceptance criterion "([^"]+)" in "([^"]+)" cites the story "([^"]+)"$`,
-		assertRegistryScenarioCitesStory)
-	suite.Step(`^the scenario from acceptance criterion "([^"]+)" in "([^"]+)" is keyed "([^"]+)"$`,
-		assertRegistryScenarioKeyed)
-	suite.Step(`^the scenario from acceptance criterion "([^"]+)" in "([^"]+)" matches (.+)$`,
-		assertRegistryScenarioMatches)
-	// The duplicate-collapse invariant stated positively: no two registry
-	// entries carry the same merged_steps. Implemented in
-	// registry_origin_steps.go.
-	suite.Step(`^no two scenarios in "([^"]+)" share the same steps$`, assertNoDuplicateScenarioSteps)
+	registerFileObservationSteps(suite)
 	registerEngineLogSteps(suite)
 	// The independent outcome check: the harness itself runs a shell command the
 	// scenario names, in a directory under the run's tmpdir — e.g. the host
@@ -105,6 +53,7 @@ func Register(suite *bddgo.Suite[State]) {
 	registerWriterLifecycleSteps(suite)
 	registerConcurrentValidationSteps(suite)
 	registerIOSteps(suite)
+	registerChecklistModelSteps(suite)
 }
 
 // registerEngineLogSteps binds the assertions that read the CLI's own
@@ -533,4 +482,60 @@ func (s *State) dumpRun() {
 	for _, change := range s.Result.Diff {
 		s.T.Logf("  %s %s (%d bytes)", change.Kind, change.Path, len(change.After))
 	}
+}
+
+func registerFileObservationSteps(suite *bddgo.Suite[State]) {
+	// File-effect assertions read the run's structural diff (and, for line
+	// counts, the file itself) rather than stdout. Implemented in file_steps.go.
+	suite.Step(`^the file "([^"]+)" is created$`, assertFileCreated)
+	suite.Step(`^the file "([^"]+)" is modified$`, assertFileModified)
+	suite.Step(`^the file "([^"]+)" is unchanged$`, assertFileUnchanged)
+	suite.Step(`^the file "([^"]+)" has exactly (\d+|no) lines?$`, assertFileLineCount)
+	suite.Step(`^the file "([^"]+)" matches (.+)$`, assertFileMatches)
+	suite.Step(`^every file matching "([^"]+)" (matches|does not match) (.+)$`, assertEveryFileMatches)
+	suite.Step(`^the file matching "([^"]+)" has exactly (\d+|no) match(?:es)? for (.+)$`, assertFileMatchCount)
+	// A count-of-files-matching-a-glob assertion, distinct from the named-path
+	// `is created` above: the fix loop chooses the new file's name, so a
+	// scenario can only pin how many .go files appeared under a directory.
+	suite.Step(`^exactly (\d+|no) files? matching "([^"]+)" (?:is|are) created$`, assertFilesMatchingCreated)
+	// The negative twin of the count assertion above: proves the run created
+	// NO file matching a glob. Implemented in file_steps.go.
+	suite.Step(`^no files? matching "([^"]+)" (?:is|are) created$`, assertNoFileMatchingCreated)
+	// Story-shape assertions read a story a `us refine … --fix` run rewrote:
+	// its id, acceptance-criteria count and shape, forbidden vocabulary.
+	// Filenames are resolved by glob. See story_steps.go.
+	suite.Step(`^the story "([^"]+)" has id "([^"]+)"$`, assertStoryID)
+	suite.Step(`^the story "([^"]+)" has feature "([^"]+)"$`, assertStoryFeature)
+	suite.Step(`^the story "([^"]+)" has (\d+|no) acceptance criteria$`, assertStoryCriteriaExactCount)
+	suite.Step(`^every acceptance criterion in the story "([^"]+)" has given, when and then steps$`,
+		assertStoryCriteriaHaveSteps)
+	suite.Step(`^the description of acceptance criterion "([^"]+)" of the story "([^"]+)" does not match (.+)$`,
+		assertStoryCriterionDescNoMatch)
+	suite.Step(`^the description of acceptance criterion "([^"]+)" of the story "([^"]+)" matches (.+)$`,
+		assertStoryCriterionDescMatch)
+	// The step-text twin of the description assertions above: checks a
+	// named criterion's Given/When/Then wording instead of its description,
+	// e.g. that steps name an observable action rather than a forbidden verb.
+	suite.Step(`^the steps of acceptance criterion "([^"]+)" of the story "([^"]+)" do not match (.+)$`,
+		assertStoryCriterionStepsNoMatch)
+	// Registry-executability assertion: after `build tests --fix`, is the
+	// inner project's named scenario now bound by step definitions? Reads
+	// the inner registry and generated Go source under the tmpdir. See registry_steps.go.
+	suite.Step(`^every step of scenario "([^"]+)" in "([^"]+)" is matched by a step definition under "([^"]+)"$`,
+		assertScenarioStepsMatched)
+	// Registry-origin assertions read the registry a `us apply … --fix` run
+	// writes and ask its LINEAGE: which acceptance criterion an entry
+	// descends from, which story it cites, its serialized content. See registry_origin_steps.go.
+	suite.Step(`^exactly (\d+|no) scenarios? in "([^"]+)" comes? from acceptance criterion "([^"]+)"$`,
+		assertRegistryScenarioCount)
+	suite.Step(`^the scenario from acceptance criterion "([^"]+)" in "([^"]+)" cites the story "([^"]+)"$`,
+		assertRegistryScenarioCitesStory)
+	suite.Step(`^the scenario from acceptance criterion "([^"]+)" in "([^"]+)" is keyed "([^"]+)"$`,
+		assertRegistryScenarioKeyed)
+	suite.Step(`^the scenario from acceptance criterion "([^"]+)" in "([^"]+)" matches (.+)$`,
+		assertRegistryScenarioMatches)
+	// The duplicate-collapse invariant stated positively: no two registry
+	// entries carry the same merged_steps. Implemented in
+	// registry_origin_steps.go.
+	suite.Step(`^no two scenarios in "([^"]+)" share the same steps$`, assertNoDuplicateScenarioSteps)
 }

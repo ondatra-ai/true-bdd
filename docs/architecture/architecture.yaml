@@ -6,31 +6,11 @@ architecture:
   # Template inputs are a byte contract beside the CLI invocation contract.
   # fields keys are Go template access paths; [] means a range element.
   # A whole-object read describes its serialised shape, not a wildcard.
+  model_rendering: &prompt-rendering >-
+    Render Go text/template with Sprig and toYaml = yaml.v3 Marshal, retaining its final newline. Preserve literal bytes, trim markers and YAML-decoded strings; no final trim. Lists retain order; string map keys sort. Both templates receive the same typed data; FormatSteps and FormatUserStories remain methods. Models validate an explicit YAML view without replacing typed Subjects. Question, Rationale and FixTemplate are unchanged decoded checklist values; sketch replacements remain in concept_protocols. Effective nonempty Prompt docs replace defaults; keys resolve through documents unchanged, duplicate keys collapse, map keys sort. Structured follows the resolved CLI result-schema support. ResultPath is <run_dir>/<index:%02d>-<safe subject>-checklist-<safe section>-result.yaml: run_dir is the cleaned paths.tmp_dir/date-pid join; safe replaces each run outside [A-Za-z0-9._-] with one hyphen. Section is the checklist stem and slash-joined section ids. Index is the selected file position before walk reordering; subject is the Story id, StoryID-ACID, Registry key or concept block/name (suite-prefixed on collision), respectively. Schemes resolve through templates.schemes.<model>, default true-bdd/models/<model>.schema.yaml, relative to the host working directory just like template paths; no embedded runtime fallback. Missing or malformed schemes refuse rendering. Before its walk, scen check checks every declared Model's scheme and two template files, and requires its name as a whole word in a Scenario step of its service anywhere in the complete Registry, even when ids select a subset.
+  concept_protocols: >-
+    Structured concept Q protocols bypass these templates: the Q text plus a JSON-only instruction is the system prompt, and indented JSON is the user prompt. Link embeds the Item id/title, steps with numeric keys and optional criterion ids, and the whole product including roles/glossary. Its schema requires every non-judge step and every own-block concept score (integer 0..10), reason and nullable other_block_concept. with.threshold defaults to 9 and accepts integers 1..10. In scen check, Binding is one turn per binding (concept, block, service) per walk, started once every Scenario has answered the Prompts before it: it supplies product_path for reading the complete product document and embeds every distinct step (block and text, keyed from 1 in block and text order) of the walk's passing links that reached the concept for that service, the service, that one linked means and binding, and the full Public interface; its schema requires that block:name key, an unambiguous boolean and reason, and each Scenario's cell grades the verdicts of the bindings its link reached. build steps starts its own walk and shares Item steps before using the same binding judgement. In scen check, Words is one turn per linked concept per walk embedding the product and that concept; in us refine one turn per Story embeds the item id, the product and every linked concept. A shared turn's artifacts are named shared-<index> <judgement> <key>, and each walk validation round, --fix ones included, judges afresh. Raw model answers are saved as model-answer.txt, and the engine-derived canonical answer/context JSON is saved in both response.txt and result.yaml for the coverage census. Links live only in the current walk Item. Walking orders D prompts, then concept links, then other Q prompts, preserving file-position indices; a host declaring no concepts omits the concept cells and keeps its order.
   prompt_data:
-    checklist:
-      rendering: &prompt-rendering >-
-        Render the configured template file verbatim through Go text/template with Sprig FuncMap and the engine toYaml override (yaml.v3 Marshal). Template literal bytes, leading/trailing newlines, trim markers, field order and conditional branches are authoritative; no final trim or YAML/Markdown escaping is applied to rendered prompts. Lists retain their input order; map ranges sort string keys. Dot paths below are reads, including methods and collection tests/ranges; [] denotes one ranged value. All strings are YAML-decoded values rather than their source spelling. The same role data reaches system and user templates. Structured concept Q protocols bypass these templates: the Q text plus a JSON-only instruction is the system prompt, and indented JSON is the user prompt. Link embeds the Item id/title, steps with numeric keys and optional criterion ids, and the whole product including roles/glossary. Its schema requires every non-judge step and every own-block concept score (integer 0..10), reason and nullable other_block_concept. with.threshold defaults to 9 and accepts integers 1..10. In scen check, Binding is one turn per binding (concept, block, service) per walk, started once every Scenario has answered the Prompts before it: it supplies product_path for reading the complete product document and embeds every distinct step (block and text, keyed from 1 in block and text order) of the walk's passing links that reached the concept for that service, the service, that one linked means and binding, and the full Public interface; its schema requires that block:name key, an unambiguous boolean and reason, and each Scenario's cell grades the verdicts of the bindings its link reached. build steps starts its own walk and shares Item steps before using the same binding judgement. In scen check, Words is one turn per linked concept per walk embedding the product and that concept; in us refine one turn per Story embeds the item id, the product and every linked concept. A shared turn's artifacts are named shared-<index> <judgement> <key>, and each walk validation round, --fix ones included, judges afresh. Raw model answers are saved as model-answer.txt, and the engine-derived canonical answer/context JSON is saved in both response.txt and result.yaml for the coverage census. Links live only in the current walk Item. Walking orders D prompts, then concept links, then other Q prompts, preserving file-position indices; a host declaring no concepts omits the concept cells and keeps its order.
-      fields:
-        Docs: &docs >-
-          Checklist effective docs: a nonempty Prompt docs list replaces the checklist defaults; even an explicitly empty list falls back. Keys resolve through config documents.<key>; duplicate keys collapse in a map, unsatisfiable keys warn and are skipped after preflight. Template map range sorts string keys lexically, not checklist order; empty emits no documentation section.
-        Docs[].FilePath: &document-file-path >-
-          Config document path as configured, with no cleaning, absolutising or content loading (./ is retained); paired with the map key in each Read line. Only checklist (Story validation) applies Sprig title to the displayed key; other validators print it unchanged.
-        FixTemplate: &fixtemplate >-
-          Checklist F scalar, YAML-decoded unchanged, including its block chomping and trailing newline; empty omits the failure guidance. This input is NOT the trimmed failed-check fix text.
-        Question: &question >-
-          Checklist Q scalar, YAML-decoded without trimming; a literal block retains its trailing newline. For with.concepts: sketch on a concept host only, replace it with instructions to sketch against closed means and service interface kinds, embed the complete product and the service-name-to-kind JSON map, and omit reference Read paths; no architecture binding is read. Inserted immediately before the conditional rationale, so that newline remains before the literal space in " SO THAT WE ENSURE ".
-        Rationale: &rationale >-
-          Checklist rationale scalar, YAML-decoded unchanged; empty omits the suffix, otherwise the template appends " SO THAT WE ENSURE " and this value without trimming.
-        ResultPath: &validation-result-path >-
-          Run result path: run_dir is the cleaned paths.tmp_dir/date-pid join described in invocation.values.run_dir (./tmp yields tmp/<run>, relative; an absolute configured tmp_dir stays absolute); cassettes normalise its date-pid segment to {{RUN_DIR}}. Filename sanitising replaces each run of characters outside [A-Za-z0-9._-] with one hyphen; no other escaping. Format is <run_dir>/<index zero-padded to at least 2 digits>-<safe subject id>-checklist-<safe checklist-stem[/section-id]>-result.yaml. Index counts non-skipped Prompts from 1 in file section/Prompt order, before D Prompts are moved ahead of Q Prompts for walking. Subject id is Story id for us refine, lineage id for us apply, Registry key for scen check, registry for build steps whole-Registry coverage and the concept's block and name (suite-prefixed if two suites hold it) for its body-writing Items, the stable failing-set Item id for build code (discovery BuildID for a singleton, failing-set otherwise). A build-code id begins with / and sanitises to a leading hyphen, producing 01--go-test-...; an empty id likewise leaves two hyphens.
-        Structured: &structured >-
-          Run boolean from the resolved role model CLI: true for both supported CLIs, claude and codex. Validation and generation pass the same populated data to both templates; appliers never receive this field.
-        Subject: >-
-          Subject is StoryRefineData with the loaded Story inlined and TermDocuments, ConceptLinks and ConceptLinkPassed excluded from YAML. toYaml is yaml.v3 Marshal, returning its string including the final newline, not TrimSpace and not wrapped in story:. Serialised field order is id, feature (omitted when empty), title, as_a, i_want, so_that, status, acceptance_criteria. Each criterion is id, description, steps (omitted when empty); each step emits given, when, then in that order, omitting empty blocks. A statement is a scalar when its Type is empty, else a one-key and/but map. Strings and block chomping follow yaml.v3; default indentation is four spaces. Empty acceptance_criteria is retained (as []); TermDocuments and per-walk link evidence never serialise. Marshal failure becomes "# Error marshaling to YAML: <error>".
-    checklist_system:
-      rendering: *prompt-rendering
-      fields: &checklist-system-fields
-        Structured: *structured
     fix_generator:
       rendering: *prompt-rendering
       fields:
@@ -54,7 +34,8 @@ architecture:
           Checklist command stem (us-refine, us-apply, build-steps, build-code or scen-check), with "/" plus the checklist sections[].id only when nonempty. The runner calls these SectionID and CriterionID respectively; display is unsanitised, while artifact filenames sanitise the entire combined path.
         ResultPath: &generation-result-path >-
           Run result path: run_dir is the cleaned paths.tmp_dir/date-pid join described in invocation.values.run_dir (./tmp yields tmp/<run>, relative; an absolute configured tmp_dir stays absolute); cassettes normalise its date-pid segment to {{RUN_DIR}}. Filename sanitising replaces each run of characters outside [A-Za-z0-9._-] with one hyphen; no other escaping. Subject id has the same command-specific source as the validation path. Format is <run_dir>/<failed Prompt index zero-padded to at least 2 digits>-<safe subject id>-fix-prompts.md. Reused across clarification/refinement iterations; iteration appears only in saved debug filenames, not this rendered path.
-        Structured: *structured
+        Structured: &structured >-
+          Run boolean from the resolved role model CLI: true for both supported CLIs, claude and codex. Validation and generation pass the same populated data to both templates; appliers never receive this field.
         Subject.AcceptanceCriteria: &subject-acceptancecriteria >-
           Subject Story criteria in file list order, never sorted; generator numbers them index+1, applier lists ids and descriptions without numbering. Empty emits no entries.
         Subject.AcceptanceCriteria[].Description: &subject-acceptancecriteriaitem-description >-
@@ -130,15 +111,15 @@ architecture:
         Judgement: >-
           The failed structured Q protocol, carried unchanged to the approved applier; empty retains legacy wording.
         ResultPath: *application-result-path
-    apply_checklist:
+    apply_fix_generator:
       rendering: *prompt-rendering
       fields:
-        Docs: *docs
-        Docs[].FilePath: *document-file-path
-        FixTemplate: *fixtemplate
-        Question: *question
-        Rationale: *rationale
-        ResultPath: *validation-result-path
+        DocPaths: *docpaths
+        FailedCheck.ActualAnswer: *failedcheck-actualanswer
+        FailedCheck.FixPrompt: *failedcheck-fixprompt
+        FailedCheck.Question: *failedcheck-question
+        FailedCheck.SectionPath: *failedcheck-sectionpath
+        ResultPath: *generation-result-path
         Structured: *structured
         Subject.ACID: &subject-acid >-
           Subject criterion id as written (<NNN>-<slug>), not its position.
@@ -154,32 +135,13 @@ architecture:
           Requested Story id, validated against the declaring file, unchanged.
         Subject.StoryPath: &subject-storypath >-
           Subject file path found among <id>-*.yaml files declaring the requested id under config paths.stories_dir; filepath.Join cleans it and retains relative/absolute form.
-    apply_checklist_system:
-      rendering: *prompt-rendering
-      fields: *checklist-system-fields
-    apply_fix_generator:
-      rendering: *prompt-rendering
-      fields:
-        DocPaths: *docpaths
-        FailedCheck.ActualAnswer: *failedcheck-actualanswer
-        FailedCheck.FixPrompt: *failedcheck-fixprompt
-        FailedCheck.Question: *failedcheck-question
-        FailedCheck.SectionPath: *failedcheck-sectionpath
-        ResultPath: *generation-result-path
-        Structured: *structured
-        Subject.ACID: *subject-acid
-        Subject.Description: *criterion-description
-        Subject.FormatSteps: *criterion-steps
-        Subject.LineageScenarioID: *subject-lineagescenarioid
-        Subject.RequirementsScratchPath: *subject-requirementsscratchpath
-        Subject.StoryID: *subject-storyid
-        Subject.StoryPath: *subject-storypath
         SubjectID: >-
           Run subject identifier, unchanged for display: Story id + "-" + criterion id (the lineage id). Only artifact filenames sanitise it.
         UserAnswers: *useranswers
     apply_fix_generator_system:
       rendering: *prompt-rendering
-      fields: *checklist-system-fields
+      fields: &checklist-system-fields
+        Structured: *structured
     apply_fix_applier:
       rendering: *prompt-rendering
       fields:
@@ -196,21 +158,6 @@ architecture:
       rendering: *prompt-rendering
       fields: &apply-fix-applier-system-fields
         ResultPath: *application-result-path
-    build_steps_checklist:
-      rendering: >-
-        Build steps uses the shared Fix loop. An Item is a concept and suite whose patterns the proposal Prompt supplied and the engine checked. All skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
-      fields:
-        Subject.Suite: Suite steps directory, relative to the Host root.
-        Subject.Label: The concept Item's label, its block and quoted concept name.
-        Subject.Concept.Means: Verbatim concept meaning.
-        Question: Validation question.
-        Rationale: Validation rationale.
-        FixTemplate: Fix guidance.
-        ResultPath: Result artifact path.
-    build_steps_checklist_system:
-      rendering: >-
-        Build steps uses the shared Fix loop. An Item is a concept and suite whose patterns the proposal Prompt supplied and the engine checked. All skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
-      fields: {}
     build_steps_fix_generator:
       rendering: >-
         Build steps uses the shared Fix loop. An Item is a concept and suite whose patterns the proposal Prompt supplied and the engine checked. All skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
@@ -273,12 +220,6 @@ architecture:
     build_steps_critique_system:
       rendering: >-
         Static semantic review policy and JSON verdict contract. Answer pass with no findings, or fail with at least one finding. Each finding requires a nonempty definition, category and finding. The patterns are an AI's proposal, checked by the engine only for binding, and are judged as well as the bodies: the categories are pattern_captures and pattern_scope against a pattern, and concept_binding, concept_meaning and computes_assertion against a body, judged against the binding, each pattern's bound steps and the bound Scenarios' fixture inputs. The binding criterion follows the concept's block: when calls its operation, given puts the state in place, then observes and compares; not every definition must itself call a command. A body requiring anything beyond its binding and those fixture inputs is a concept_binding finding. Unusable replies are errors, never passes.
-      fields: {}
-    build_code_checklist:
-      rendering: *prompt-rendering
-      fields: {}
-    build_code_checklist_system:
-      rendering: *prompt-rendering
       fields: {}
     build_code_fix_generator:
       rendering: *prompt-rendering
@@ -471,31 +412,6 @@ architecture:
     build_code_fix_applier_system:
       rendering: *prompt-rendering
       fields: {}
-    scen_check_checklist:
-      rendering: *prompt-rendering
-      fields:
-        Docs: *docs
-        Docs[].FilePath: *document-file-path
-        FixTemplate: *fixtemplate
-        Question: *question
-        Rationale: *rationale
-        ResultPath: *validation-result-path
-        Structured: *structured
-        Subject.Description: &registry-description >-
-          Subject description from the Registry, YAML-decoded unchanged; missing strings are empty. Registry Items are selected and fixes offered in ascending id order; scen check may validate them concurrently.
-        Subject.FormatSteps: &registry-steps >-
-          Subject Registry merged_steps: scalar strings unchanged; and/but mappings display their original key + " " + value. Keep within-block order, group Given then When then Then, omit empty blocks; method returns "<Block>:\n" and "  - <text>\n" per line, including a final newline, or "" for no steps. No trimming, escaping or quoting.
-        Subject.FormatUserStories: &subject-formatuserstories >-
-          Subject lineage projected from Registry user_stories in list order, dropping merge_date. Empty returns "(none — no story claims this scenario)\n"; otherwise each line is "  - <story> (<scenario_id>)\n", with strings unchanged.
-        Subject.ID: &registry-id >-
-          Subject Registry map key from the Registry, YAML-decoded unchanged; missing strings are empty. Registry Items are selected and fixes offered in ascending id order; scen check may validate them concurrently.
-        Subject.Path: &subject-scenario-path >-
-          Registry path, YAML-decoded unchanged.
-        Subject.Service: &registry-service >-
-          Subject service from the Registry, YAML-decoded unchanged; missing strings are empty. Registry Items are selected and fixes offered in ascending id order; scen check may validate them concurrently.
-    scen_check_checklist_system:
-      rendering: *prompt-rendering
-      fields: *checklist-system-fields
     scen_check_fix_generator:
       rendering: *prompt-rendering
       fields:
@@ -513,16 +429,22 @@ architecture:
         FailedCheck.SectionPath: *failedcheck-sectionpath
         ResultPath: *generation-result-path
         Structured: *structured
-        Subject.Description: *registry-description
-        Subject.FormatSteps: *registry-steps
-        Subject.FormatUserStories: *subject-formatuserstories
-        Subject.ID: *registry-id
+        Subject.Description: &registry-description >-
+          Subject description from the Registry, YAML-decoded unchanged; missing strings are empty. Registry Items are selected and fixes offered in ascending id order; scen check may validate them concurrently.
+        Subject.FormatSteps: &registry-steps >-
+          Subject Registry merged_steps: scalar strings unchanged; and/but mappings display their original key + " " + value. Keep within-block order, group Given then When then Then, omit empty blocks; method returns "<Block>:\n" and "  - <text>\n" per line, including a final newline, or "" for no steps. No trimming, escaping or quoting.
+        Subject.FormatUserStories: &subject-formatuserstories >-
+          Subject lineage projected from Registry user_stories in list order, dropping merge_date. Empty returns "(none — no story claims this scenario)\n"; otherwise each line is "  - <story> (<scenario_id>)\n", with strings unchanged.
+        Subject.ID: &registry-id >-
+          Subject Registry map key from the Registry, YAML-decoded unchanged; missing strings are empty. Registry Items are selected and fixes offered in ascending id order; scen check may validate them concurrently.
         Subject.InterfaceDocuments: &subject-interfacedocuments >-
           Run working copies seeded under --fix of each cli or http document the architecture's public_interface declarations name, in service order, each path once. Empty outside fix mode or without an architecture document.
         Subject.InterfaceDocuments[].Path: &subject-interfacedocumentsitem-path >-
           The document path as the declaration states it, relative to the Host project root; it names the canonical document.
-        Subject.Path: *subject-scenario-path
-        Subject.Service: *registry-service
+        Subject.Path: &subject-scenario-path >-
+          Registry path, YAML-decoded unchanged.
+        Subject.Service: &registry-service >-
+          Subject service from the Registry, YAML-decoded unchanged; missing strings are empty. Registry Items are selected and fixes offered in ascending id order; scen check may validate them concurrently.
         SubjectID: &registry-subject-id >-
           Run subject identifier, unchanged for display: Registry Scenario id. Only artifact filenames sanitise it.
         UserAnswers: *useranswers
@@ -590,6 +512,27 @@ architecture:
 
   services:
     - name: true-bdd
+      models:
+        us_refine_checklist:
+          templates:
+            system: templates/us-checklist.system.prompt.tpl
+            user: templates/us-checklist.prompt.tpl
+          scheme: true-bdd/models/us_refine_checklist.schema.yaml
+        us_apply_checklist:
+          templates:
+            system: templates/us.apply-checklist.system.prompt.tpl
+            user: templates/us.apply-checklist.prompt.tpl
+          scheme: true-bdd/models/us_apply_checklist.schema.yaml
+        scen_check_checklist:
+          templates:
+            system: templates/scen-check.checklist.system.prompt.tpl
+            user: templates/scen-check.checklist.prompt.tpl
+          scheme: true-bdd/models/scen_check_checklist.schema.yaml
+        build_steps_checklist:
+          templates:
+            system: templates/build-steps.checklist.system.prompt.tpl
+            user: templates/build-steps.checklist.prompt.tpl
+          scheme: true-bdd/models/build_steps_checklist.schema.yaml
       type: "cli"
       path: services/true-bdd
       language: go
@@ -599,6 +542,8 @@ architecture:
         kind: cli
         document: docs/architecture/true-bdd-cli.yaml
       libraries:
+        - module: github.com/santhosh-tekuri/jsonschema/v6
+          version: v6.0.2
         - module: github.com/woodsbury/decimal128
           version: v1.3.0
         - module: github.com/perimeterx/marshmallow
@@ -1200,6 +1145,8 @@ architecture:
                 stay fatal. Other roles retain fatal provider-error handling.
 
   terms:
+  - term: Model
+    technical: Service models map a name to system/user template paths and a JSON Schema in YAML scheme path. Engine checklist roles validate their explicit data view before rendering, without changing template inputs.
   - term: Concept
     technical: Product concepts are ordered given/when/then lists of concept, means and terms; names are unique per
       block. Closure checks define and map every declared term exactly once, even without Story claims. The loader
@@ -1594,12 +1541,20 @@ architecture:
     - file: project-tree
     - file: engine-log
     - file: run-artifacts
+    - file: checklists
+    - file: model-schemes
     - file: staging-files
-    does: Read confined regular files after the run. Match the rest-of-step regex in one named file; count lines with
+    does: >-
+      Read confined regular files after the run. Match the rest-of-step regex in one named file; count lines with
       a final newline closing the last; require at least one glob match and every file matching, or none matching
       for does not match; or require one glob-matched file and count non-overlapping regex matches. Every-file patterns
       expand CWD/ENGINE/GOROOT/GOMODCACHE using the pattern mapping’s escaping. Atomic replacement requires mode 0600,
-      different inode from the named old hard link, and differing content.
+      different inode from the named old hard link, and differing content. For a named Model construction rule,
+      read its saved user prompt and compare the named fixture expectations: criterion chosen by id and StoryID-ACID
+      lineage; Given/When/Then and within-block order with modifiers; inlined Story with Feature; Scenario Registry key,
+      fields and ordered lineage without merge_date. Question and fix comparisons read their decoded scalars and rationale
+      from the configured checklist, preserving all whitespace. These assertions run before exit-code assertions so a stale
+      AI recording cannot mask a construction failure. A shipped Model scheme is byte-equal to its declared scheme file.
   - concept: Story content
     block: then
     service: true-bdd

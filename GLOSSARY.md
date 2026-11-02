@@ -20,6 +20,10 @@ _Avoid_: external API, contract, surface
 The shape of the data a service keeps between its runs, such as a database's schema, and any code that defines that shape. It is not public, but data written by one build must be read by the next, so the architecture document declares it and every rebuild keeps it. A step definition may set up or check stored data through it; how, when code defines the model, is not decided yet.
 _Avoid_: storage format, schema (alone)
 
+**Model**:
+The YAML data a service fills a checklist template pair with, declared in its architecture `models` by templates and a scheme. The scheme states fields and types, checked in process before rendering; Scenarios state construction rules. AI model tiers remain `engine.models`.
+_Avoid_: prompt data (for a declared Model)
+
 **Internal code**:
 Everything in a service that is neither its Public interface nor its Persistent data model. A build chooses it freely, a rebuild need not keep it, and no step definition reaches it.
 _Avoid_: private API, implementation details

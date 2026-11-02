@@ -183,6 +183,9 @@ func (purpose overridePurpose) keepsQuestionOnly() bool {
 func allowedOverrideFixtures() map[string]overridePurpose {
 	allowed := map[string]overridePurpose{
 		"init-existing":                           overridePreserved,
+		"model-declarations-missing-scheme":       overrideChecks,
+		"model-declarations-valid":                overrideChecks,
+		"model-declarations-unreferenced":         overrideChecks,
 		"scen-check-concurrent":                   overrideChecks,
 		"scen-check-prompt-lineage":               overridePromptText,
 		"scen-check-reverse":                      overrideChecks,

@@ -56,7 +56,7 @@ story:
             - when:
                 - the Product Owner runs "us apply 95.1 --fix"
             - then:
-                - and: 'every file matching "tmp/*/01-95.1-001-mcp-initialize-checklist-*-user.txt" matches ### Steps\nGiven:\n  - the MCP server is running on its configured port\n  - the server accepts JSON-RPC over HTTP POST at /mcp\nWhen:\n  - the Claude User posts a valid JSON-RPC initialize request to /mcp\nThen:\n  - the server returns HTTP 200\n  - and the response body is a well-formed JSON-RPC envelope referencing the request id\n\n\n---'
+                - and: "the us_apply_checklist prompt keeps the and modifier of the criterion's steps"
                 - the command exits with code 0
                 - 'stdout matches msg=AC index=1 total=1'
                 - 'stdout matches msg="RE-WALK \(fixes applied, verifying\)" attempt=2'
@@ -81,9 +81,9 @@ story:
             - when:
                 - the Product Owner runs "us apply mcp-endpoint --fix"
             - then:
-                - and: 'every file matching "tmp/*/01-mcp-endpoint-002-get-refused-checklist-*-user.txt" matches \*\*Story ID:\*\* mcp-endpoint\n\*\*Story Path:\*\* docs/product/stories/mcp-endpoint-requests\.yaml\n\*\*AC ID:\*\* 002-get-refused\n\*\*Lineage Scenario ID:\*\* mcp-endpoint-002-get-refused\n\*\*Description:\*\* The MCP server must respond with HTTP 405 Method Not Allowed when a Claude User sends a GET request to the /mcp endpoint\.\n'
-                - and: 'every file matching "tmp/*/01-mcp-endpoint-002-get-refused-checklist-*-user.txt" matches ## Validation Question\n\nDoes this acceptance criterion already appear as a scenario in the\nregistry\?\n\nThe registry is the requirements YAML referenced by the subject\n\(the scratch copy for this run\)\. An AC "appears" when there is an\nentry under `scenarios:` whose `user_stories\[\]` list contains the\nsubject''s story path AND the subject''s lineage scenario id\.\n\nPass when at least one such entry exists\.\nFail otherwise\.\n\nContext: emit one line\.\n  - "AC <ac id> \(lineage <lineage id>\): present in <matched scenario id>"\n  - "AC <ac id> \(lineage <lineage id>\): not present"\n SO THAT WE ENSURE [^\n]*\n\n## If Validation Fails\n(?s:.*?)\n\nAdd this AC as a new scenario in the registry\.\n\nUse the Edit tool against the registry file referenced by the\nsubject\. Steps:\n  1\. Key the new entry by the subject''s lineage scenario id,\n     verbatim \(`<story id>-<ac id>`\)\. That id is the scenario''s\n     registry key and names its generated test, so never pick a\n     number or invent another id\.\n  2\. Insert a new entry under `scenarios:` with:\n        description: <short summary derived from the AC description>\n        service: <see step 3>\n        path: <see step 4>\n        last_updated: "<today, YYYY-MM-DD>"\n        user_stories:\n          - story: <story file path from subject>\n            scenario_id: <lineage id from subject>\n            merge_date: "<today, YYYY-MM-DD>"\n        merged_steps:\n          given: <verbatim from the AC''s steps\.given>\n          when:  <verbatim from the AC''s steps\.when>\n          then:  <verbatim from the AC''s steps\.then>\n  3\. `service:` names one service the architecture document\n     declares, by its `services\[\]\.name`: never empty, and never\n     a name the architecture does not declare\. When it declares\n     one service, it is that one\. When it declares several, it\n     is the `service:` of the existing scenarios whose `path:`\n     step 4 reuses, the suite under `tests/<service>/`\. When\n     neither settles it, ask which declared service the\n     scenario belongs to, offering each declared name, before\n     giving the fix\.\n  4\. `path:` names the generated test file this scenario''s Go\n     test is written into\. REUSE an existing `path:` from a\n     scenario of the same command or feature family — several\n     scenarios share one file on purpose, so related\n     behaviours are read together\. Invent a new one only when\n     no existing file fits, and then make it\n     `tests/<service>/<family>_test\.go`, the suite of the\n     service step 3 names\.\n  5\. Preserve existing file ordering and indentation\. Do not\n     touch any other entry\.\n\n\n## Answer Format'
-                - and: 'every file matching "tmp/*/01-mcp-endpoint-001-initialize-ok-checklist-*-user.txt" matches \*\*AC ID:\*\* 001-initialize-ok\n\*\*Lineage Scenario ID:\*\* mcp-endpoint-001-initialize-ok\n\*\*Description:\*\* The MCP server must respond with a 200 status'
+                - and: "the us_apply_checklist prompt selects the criterion by id and sets lineage to StoryID-ACID"
+                - and: "the us_apply_checklist prompt holds the checklist's question and fix verbatim"
+                - and: "the us_apply_checklist prompt keeps the other criterion's id, lineage and description"
                 - the command exits with code 0
                 - 'stdout matches msg=AC index=1 total=2 description="The MCP server must respond with HTTP 405'
                 - stdout matches ALL CHECKS PASSED!
@@ -157,12 +157,7 @@ story:
           - when:
             - the Product Owner runs "us apply mcp-endpoint"
           - then:
-            - and: 'every file matching "tmp/*/*-mcp-endpoint-007-ordered-checklist-*-user.txt"
-                matches ### Steps\nGiven:\n  - the MCP server is running on its configured
-                port\n  - and the greeting is "Hello"\n  - but no request has been sent\nWhen:\n  -
-                the Claude User opens a connection\n  - and the Claude User sends an HTTP
-                GET request to /mcp\nThen:\n  - the server returns HTTP 405\n  - and the greeting
-                is still "Hello"\n  - but no response body is printed\n\n\n---'
+            - and: "the us_apply_checklist prompt groups Given, When, Then in source order with and/but modifiers"
             - the command exits with code 0
             - the engine dispatched 2 AI turns
             - no file outside "tmp" changed
