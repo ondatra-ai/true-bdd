@@ -873,9 +873,10 @@ concepts:
         released within its wait, one kept beyond its wait limit, or one that
         permits the engine's access; the role plants a stale staging file as a
         symbolic link and then runs the command; the role cancels the run once a
-        process an AI CLI started is running; or the role runs scen check and
-        then build steps with fix, a Concept binding of the architecture
-        document changed in between.
+        process an AI CLI started is running; or the role runs build steps
+        after scen check and a binding change: scen check, then a change to a
+        Concept binding of the architecture document, then build steps with
+        fix.
       terms: [command, engine, project tree, hold, staging file, symbolic link, AI CLI, Concept binding]
     - concept: the write guard is asked
       means: >-
@@ -931,8 +932,9 @@ concepts:
       means: >-
         What the engine did during the run, stated as the engine's own activity
         and never as a file read by path: the test runners it spawned, by
-        program, by number, or those whose arguments match a pattern; the AI
-        turns it dispatched, by number, all of them or those of one kind
+        program, by number, those whose arguments match a pattern, or a stated
+        number of those whose arguments match a pattern; the AI turns it
+        dispatched, by number, all of them or those of one kind
         (validation, fix or apply) sent to a stated AI CLI; that it logged its
         build identity once at start; or that it validated different Scenarios
         at overlapping times, each Scenario's Prompts the engine answers itself
