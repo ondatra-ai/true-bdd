@@ -1794,3 +1794,54 @@ log:
     answer: |
       Claude, delegated in Q24: A, per Scenario by its service, with the
       extension table above and any file counting for a language outside it.
+
+  - decision_trace:
+      research:
+        - |
+          The ticket skills (mpc_to-tickets, mpc_to-spec, mpc_triage,
+          mpc_implement, mpc_implement-spec, mpc_grilling and others) read
+          docs/agents/issue-tracker.md; the mpc_* skills are vendored copies
+          AGENTS.md keeps unchanged. The plan-read before publication is
+          stated in AGENTS.md (Codex) and briefed through
+          .claude/skills/common-codex/briefs/plan-read.md.
+      recommendation: |
+        A living architecture document in docs/adr/ linked from the ADRs and
+        the rule; the architecture check of tickets in issue-tracker.md, with
+        the plan-read brief pointing at it.
+      settled: |
+        docs/adr/generation-architecture.md holds the artifact's picture in
+        Markdown with Mermaid diagrams; ADR-0040 (the pipeline decision,
+        the best fit) and ADR-0041 link it, and .claude/rules/generation.md
+        points at it. The published page is updated to Q20 to Q24. Every
+        ticket must fit that architecture (docs/agents/issue-tracker.md,
+        Architecture fit), and a ticket draft's plan-read checks each change
+        against the rule's invariants (common-codex's plan-read brief;
+        AGENTS.md and common-codex now say spec or ticket draft).
+    question: |
+      The Owner's requests after the tickets were created.
+      «/mp Слушай, смотри, а ты можешь сделать, то есть сейчас я хотел бы
+      сделать, а вообще какой скилл позволяет вносить изменения в процесс
+      скиллов? Вот, потому что мне хочется добавить кое-какие шаги при
+      валидации тикетов. Через какой скилл это сделать?»
+
+      «А если я буду использовать вот этот writing for agents, я имел в виду
+      скилл, который пишет updated скиллы. Именно вот это, то есть мне нужно
+      как раз таки понять, с помощью скилла я мог бы проапдейтить вот этот
+      issue tracker, просто закинув ему информацию, типа, что я хочу сделать,
+      чтобы он сам разобрался, что обновить.»
+
+      «А я тебя где-то просил сохранить информацию вот из артефакта в
+      Markdown про архитектуру. Где она лежит?»
+
+      «Тогда обнови артефакт. И мне все-таки хочется, чтобы был отдельный
+      markdown именно с вот прям артефакт. Отдельный markdown с архитектурой,
+      пусть он лежит в ADR, и хотя бы какая-то из ADR на него ссылается.
+      Найди которая была бы лучше.»
+
+      «/mpc_writing-for-agents  В общем, смотри, когда мы создаем тикеты, я
+      хотел бы, чтобы при вычетке через кодекс, то есть вот у нас есть
+      вычетки через кодекс, я хотел бы, чтобы вот этот степ вычетки через
+      кодекс был расширен на предмет соответствует ли тикеты той
+      архитектуре.»
+    answer: |
+      Claude, no question asked: done as settled above.

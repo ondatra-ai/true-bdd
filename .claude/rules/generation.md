@@ -12,7 +12,7 @@ paths:
 
 # Generation
 
-TrueBDD **generates**; it tests nothing. From a Host project's Specification it writes the steps, then the tests, then the code, and the tests define what the code must be. Hold every change to this picture, drawn in ADR-0040 and ADR-0041. Where the code has not caught up yet, move it toward the picture.
+TrueBDD **generates**; it tests nothing. From a Host project's Specification it writes the steps, then the tests, then the code, and the tests define what the code must be. Hold every change to this picture, drawn in `docs/adr/generation-architecture.md` and decided in ADR-0040 and ADR-0041. Where the code has not caught up yet, move it toward the picture.
 
 1. **People write only the Specification:** the product document, Stories, the Registry and the architecture. A suite's folder but its fixtures, and every service's code, is generated and regenerated at will.
 2. **The order is `build steps`, `build tests`, `build code`.** `build steps` writes the Steps package (`steps/`, `helpers/`); `build tests` renders, in one deterministic pass, one test per Scenario and the tests' main file (`main_test.go`: `TestMain`, the suite, `New`), which import it; `build code` writes the code.

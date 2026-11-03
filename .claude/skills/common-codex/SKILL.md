@@ -11,7 +11,7 @@ Codex takes the code work and readings Claude would otherwise spend its subscrip
 
 - **code**: a ticket or described change, through green checks and a local commit, in a new worktree on its own branch. `mpc_implement-spec`'s implementers are code runs.
 - **fix**: accepted review findings, failing checks or a merge conflict on a code run's branch, in that run's worktree.
-- **plan-read**: a spec draft before publication, a diagnosis before its fix, or a delegated decision whose mistake would be costly.
+- **plan-read**: a spec or ticket draft before publication, a diagnosis before its fix, or a delegated decision whose mistake would be costly.
 - **review**: a diff along one axis. `mpc_code-review`'s standards and spec reviewers are two review runs, started together.
 - **research**: one precise question about the code or public sources; use `--search` when it needs the web.
 

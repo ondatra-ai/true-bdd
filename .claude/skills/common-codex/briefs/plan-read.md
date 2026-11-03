@@ -7,11 +7,13 @@ Claude wrote {{a spec draft, diagnosis or plan}} in TrueBDD and will {{publish i
 - Document: {{path or issue #N saved through `--issue`}}.
 - Evidence: {{files, logs, issues and commands the document rests on}}.
 - The Owner's decisions: {{the `docs/qna/` log and its `Q<n>` this run carries out, or none}}. Read `docs/qna/` as `docs/agents/domain.md` says: oldest to newest, a newer entry overriding an older one.
-- Rules: `CLAUDE.md`, `docs/agents/domain.md`, `GLOSSARY.md`, relevant `docs/adr/` and matching `.claude/rules/*.md`.
+- Rules: `CLAUDE.md`, `docs/agents/domain.md`, `GLOSSARY.md`, relevant `docs/adr/` and matching `.claude/rules/*.md`; for a ticket, also `docs/agents/issue-tracker.md` and `docs/adr/generation-architecture.md`.
 
 ## Question
 
 Where may this be wrong? Check facts against the code and tools themselves with commands that only read. Look for unsupported claims, false facts, steps that break the rules, omitted cases and decisions described as settled without evidence.
+
+For a ticket, check its architecture fit (`docs/agents/issue-tracker.md`): for each change it asks for, the command that writes it and the runtime package or Specification document that holds it, and each invariant of `.claude/rules/generation.md` it keeps or breaks. A broken invariant is an objection unless the ticket names the ADR it amends.
 
 {{What Claude doubts most.}}
 

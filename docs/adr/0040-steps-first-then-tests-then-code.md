@@ -1,6 +1,6 @@
 # Steps first, then tests, then code
 
-TrueBDD tests nothing: from the Specification it generates the steps, then the tests, then the code, and the tests define what the code must be. During #293's grilling on 3 November the Owner fixed the order of the two commands that write a suite and what each owns, reversing ADR-0031's order.
+TrueBDD tests nothing: from the Specification it generates the steps, then the tests, then the code, and the tests define what the code must be. [The generation architecture](generation-architecture.md) draws the whole picture this ADR and ADR-0041 decide. During #293's grilling on 3 November the Owner fixed the order of the two commands that write a suite and what each owns, reversing ADR-0031's order.
 
 We decided:
 

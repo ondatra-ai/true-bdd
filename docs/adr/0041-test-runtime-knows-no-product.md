@@ -41,6 +41,8 @@ flowchart LR
   ENGINE -.->|go doc| SDK
 ```
 
+[The generation architecture](generation-architecture.md) draws this runtime in the whole pipeline.
+
 This amends ADR-0038, whose harness lived whole in the test library: product knowledge now sits in the Specification and the steps' helpers, and tooling in `scripts/`. It amends ADR-0039's critique transport: the critique embeds the `go doc` of the runtime beside the suite source. Of #293's code run only the Glob fix and the evidence-root deduplication remain.
 
 ## Considered Options
