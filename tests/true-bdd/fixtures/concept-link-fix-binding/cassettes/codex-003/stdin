@@ -1,0 +1,111 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+Apply only the exact concept, binding or step repair approved at the menu.
+Edit only the listed working copies. Preserve every unaffected entry.
+For a Story step rewrite, return the complete Story YAML instead of editing
+a document. For document edits return the requested confirmation markers.
+
+
+### TASK
+
+The responsible person chose apply at the menu for Scenario host-001.
+Approved fix:
+REPAIR PROPOSAL — Item host-001 ("The number must be halved"), service `calc`
+Failed judgement: `when:halve` — binding is ambiguous (the step "halve six" admits a value that the binding neither maps nor excludes, so an LLM must choose between "type 6, then press Halve" and "press Halve only").
+
+Unaffected and NOT to be touched: `given:number ready` (both documents), `then:number result` (both documents), the `calc` service entry, and the `ui` Public interface. No Public interface extension is needed — `Calc / button / Halve` is already declared verbatim.
+
+Repair direction: the When block performs the action only; entering the number is already the Given's job (`given:number ready` types the step's number into `Calc / textbox / Number`). The value "six" in the When step is therefore a restatement of already-entered state, not a new input. The repair makes that explicit in the meaning (Product Owner) and closes the binding to a single admitted variation by removing the Number-field reference that invited the second reading (System Architect). The rejected alternative — a self-contained When that types the number and then presses Halve — was not proposed because it would duplicate the Given's state setup and leave two bindings writing the same field in one Scenario.
+
+================================================================
+CHANGE 1 — Product Owner — docs/product/product.yaml
+Widen the existing `when` concept "halve" (same item, same use — this widens, it does not add a new variation) so the admitted value in the step text has a declared meaning.
+
+REPLACE (lines 16-22):
+  "when": [
+    {
+      "concept": "halve",
+      "means": "Halve the entered number once.",
+      "terms": []
+    }
+  ],
+
+WITH:
+  "when": [
+    {
+      "concept": "halve",
+      "means": "Halve the already-entered number once. The number named in the step is that already-entered number, not a new input.",
+      "terms": [
+        {
+          "term": "number",
+          "means": "The number named in the When step. It is the number the Given already entered, so the action does not enter it again."
+        }
+      ]
+    }
+  ],
+
+No other concept, role or glossary entry in product.yaml changes. Scenario wording stays as written ("halve six") — the meaning, not the Story text, was underspecified.
+
+================================================================
+CHANGE 2 — System Architect — docs/architecture/architecture.yaml
+Rebind `when:halve` to one reference and one explicit action, so the admitted value is accounted for without inference.
+
+REPLACE (lines 41-55):
+      {
+        "concept": "halve",
+        "block": "when",
+        "service": "calc",
+        "references": [
+          {
+            "element": {
+              "page": "Calc",
+              "role": "button",
+              "name": "Halve"
+            }
+          }
+        ],
+        "does": "Press the Halve button on the Calc page once to halve the number currently entered in the Number field."
+      },
+
+WITH:
+      {
+        "concept": "halve",
+        "block": "when",
+        "service": "calc",
+        "references": [
+          {
+            "element": {
+              "page": "Calc",
+              "role": "button",
+              "name": "Halve"
+            }
+          }
+        ],
+        "does": "Press the Halve button on the Calc page exactly once. The number named in the step is already present in the Number field from the Given: do not type it, do not re-enter or clear it, and do not read or assert the Number field here."
+      },
+
+Notes for the apply step:
+- `references` stays a single declared element (`Calc / button / Halve`). The `Calc / textbox / Number` mention is removed from `does` only; the element itself remains declared in the Public interface and is still referenced by `given:number ready` and `then:number result`.
+- No `intent` is added: the binding resolves to a named declared element rather than an `llm:` UI step, matching the other two bindings of this Scenario.
+- `architecture.terms` stays `[]`: the new term "number" is a concept term in the product document and needs no architecture binding of its own.
+- Resulting step definition, with nothing left to guess: click the Calc page's "Halve" button once; assert nothing.
+
+Apply only after an explicit menu decision; Change 1 is the Product Owner's to approve and Change 2 the System Architect's. Change 2 is sound on its own, but without Change 1 the admitted value "six" has no declared meaning, so both are proposed together.
+Working copies (edit only the approved target):
+
+- `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
+
+- `architecture_yaml`: edit `tmp/{{RUN_DIR}}/architecture_yaml.yaml`, the working copy of `./docs/architecture/architecture.yaml`
+
+
+- `scenarios_yaml`: edit `tmp/{{RUN_DIR}}/scenarios_yaml.yaml`, the working copy of `./docs/scenarios.yaml`
+
+
+Concept changes belong only to product, bindings to architecture_yaml and
+needed Public interface working copies, step rewrites to this Scenario's
+Registry entry. Preserve all unrelated entries. Return confirmation:
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-001-iter3-result.yaml ===
+applied: true
+target: "<working copy edited>"
+summary: "<approved change applied>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-001-iter3-result.yaml ===

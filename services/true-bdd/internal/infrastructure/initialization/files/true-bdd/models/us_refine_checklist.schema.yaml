@@ -1,0 +1,103 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+type: object
+properties:
+  Question: &id001
+    type: string
+  Rationale: *id001
+  ResultPath: *id001
+  FixTemplate: *id001
+  Docs:
+    type: object
+    additionalProperties:
+      $ref: '#/$defs/doc'
+  Structured:
+    type: boolean
+  Subject:
+    type: object
+    properties:
+      id: *id001
+      feature: *id001
+      title: *id001
+      as_a: *id001
+      i_want: *id001
+      so_that: *id001
+      status: *id001
+      acceptance_criteria:
+        type: array
+        items:
+          $ref: '#/$defs/criterion'
+    required:
+    - id
+    - title
+    - as_a
+    - i_want
+    - so_that
+    - status
+    - acceptance_criteria
+    additionalProperties: false
+required:
+- Question
+- Rationale
+- ResultPath
+- FixTemplate
+- Docs
+- Structured
+- Subject
+additionalProperties: false
+$defs:
+  doc:
+    type: object
+    properties:
+      FilePath: *id001
+    required:
+    - FilePath
+    additionalProperties: false
+  and:
+    type: object
+    properties:
+      and: *id001
+    required:
+    - and
+    additionalProperties: false
+  but:
+    type: object
+    properties:
+      but: *id001
+    required:
+    - but
+    additionalProperties: false
+  statement:
+    anyOf:
+    - *id001
+    - $ref: '#/$defs/and'
+    - $ref: '#/$defs/but'
+  step:
+    type: object
+    properties:
+      given:
+        type: array
+        items:
+          $ref: '#/$defs/statement'
+      when:
+        type: array
+        items:
+          $ref: '#/$defs/statement'
+      then:
+        type: array
+        items:
+          $ref: '#/$defs/statement'
+    required: []
+    additionalProperties: false
+  criterion:
+    type: object
+    properties:
+      id: *id001
+      description: *id001
+      steps:
+        type: array
+        items:
+          $ref: '#/$defs/step'
+    required:
+    - id
+    - description
+    additionalProperties: false

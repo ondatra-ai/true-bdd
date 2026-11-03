@@ -1,0 +1,2049 @@
+intent: |
+  #293: split pkg/testkit so it becomes an abstract library holding nothing a
+  step critique must check against the Specification. No prompt embeds whole
+  source files. What the Specification describes about this product moves into
+  tests/true-bdd/ (for example helpers) and build steps writes it; the
+  repository's tooling leaves the harness. Evidence:
+  tmp/codex/research-293-testkit-truebdd/final.md (43 generic, 12 framework,
+  52 product files of 107).
+  The Owner, 3 November, in six messages before the session, after the
+  #293 code run's critique selected 141,414 bytes of whole testkit files:
+
+  «кстати а что в 293 как critique size надло фиксить?»
+
+  «Нет, стой, подожди, тут надо разобраться, а зачем мы вообще туда передаем
+  полные сорцы файлов? Что это за промпт? Можешь дать мне темплейт промпта? И
+  что именно он критикует?»
+
+  «В общем, смотри, нам нужно отказаться от вставки полного файла, а тем более
+  нескольких файлов в целый промпт. Так, это не очень хорошая идея. И то есть
+  ну да, давай попробуем его описать в... Да, и, короче говоря, я бы здесь
+  поресерчил разные варианты. Во-первых, возможно, удастся его тоже сгенерить.
+  Ну, то есть, как бы, может быть, эти файлы можно прям сгенерить в коде.
+  Во-вторых, объявить спецкик, тест-кит в specification, это что, о чем мы,
+  по-моему, договаривались. Ну да, пиши сценарий run и suit по одному смыслу
+  на метод. Вот. Отбор по прямому использованию, я вообще не понимаю. Короче,
+  это путь в никуда. Нам вообще нужно отказаться от того, чтобы файлы
+  вставлялись полностью в дальше смотри, вместо того, чтобы загружать весь
+  файл, я, кстати, ну да, то есть смотри, я вообще не понимаю, зачем
+  загружать тест-кит, потому что, подожди, реально, зачем, вот, а какой вот,
+  вот все-таки, покажи мне пример, зачем мы загружаем тест-кит и что
+  произойдет, если мы его не будем загружать в промпт? Ну, потому что по мне
+  так это достаточно тупо загружать пакет, то есть файлы из пакетжа, которых
+  у тебя, кстати, не будет, потому что будет просто в дальнейшем импорт
+  пакетжа и все, как в библиотеке. То есть пакетж должен быть абстрактный, в
+  нем не должно быть никакой информации, на которую, ну, которую надо
+  сверять. Все, что сверяется, оно должно быть внутри этого, ну, то есть
+  внутри самих тестов, внутри папочки тест. И здесь надо еще определиться,
+  что все-таки с чем. Что с чем все-таки критикуется? То есть, что мы хотим
+  найти в результате этой критики? Различие между чем и чем?»
+
+  «Это тот случай, когда нам нужно было бы записать эти файлы внутри
+  test/true/bdd/, например, я не знаю, helpers. То есть вот как будто бы эти
+  файлы должны были бы быть сгенерены внутри true/bdd папочки. То есть если
+  мы их описываем, если мы описываем поведение всей этой вещи. Понял
+  концепт?»
+
+  «Нам тест-кит надо разделить. Вообще, смотри, давай посмотрим. Вот этот
+  конкретный пример, он делает state prepare three args. State у нас берется
+  из тест-кит. Правильно? А что внутри state prepare three? Покажи мне, как
+  это, блин, зачем его проверять?»
+
+  «Пробуй найти, имеет ли тест-кит какую-то информацию, которая бы относилась
+  к TrueBDD как к харнесу.»
+
+  The session started on «Ну, поехали».
+
+log:
+  - decision_trace:
+      research:
+        - |
+          pkg/testkit serves every Go Host project, not only this repository:
+          README.md:150 (go get .../pkg/testkit/bddgo), README.md:591
+          (testing.testkit enables the harness), and the calc hosts in the
+          fixtures import it (for example
+          tests/true-bdd/fixtures/build-steps-slots/input/tests/calc/scenarios/scenarios.go).
+        - |
+          Codex research (tmp/codex/research-293-testkit-truebdd/final.md):
+          43 generic files (4,711 lines), 12 framework files (2,655 lines:
+          host_config.go, harness.go, suite.go, bddgo/registry.go,
+          bddgo/model_steps.go and others), 52 product files (10,517 lines:
+          runner/runner.go:46, runner/checklist_filter.go, scenario_names.go:13,
+          aiproxy/writer_spawn.go:138, reporter/*, cmd/coverage/*).
+        - |
+          Framework code is called by the Suite wiring the engine writes
+          deterministically, not by step bodies. TrueBDD's product is itself
+          the framework, so the Registry format, true-bdd.yaml and the fixture
+          layout are in its Specification too; they are the same for every
+          host, whereas product knowledge holds only when the system under
+          test is TrueBDD's engine.
+      recommendation: |
+        A: testkit keeps what is the same for every Host project, generic and
+        framework knowledge; whatever holds only for this Host project leaves.
+        testkit ships to every Go host, step critiques never check the
+        framework code, and its own tests cover it. B would make every host's
+        build steps rewrite Registry decoding and coverage checks, about 2,655
+        lines, for no gain in critique.
+      settled: |
+        pkg/testkit keeps generic and framework knowledge, what is the same for
+        every Host project; knowledge that holds only because the system under
+        test is TrueBDD's engine leaves it.
+    question: |
+      Q1 - Граница: что может остаться в pkg/testkit?
+      A. Правило «одинаково для любого хоста»: testkit оставляет generic и
+      framework, то есть то, что TrueBDD требует от каждого хоста (его
+      true-bdd/ и true-bdd.yaml, Registry, раскладку фикстур, синтаксис
+      llm:/judge:, объявленные ai_clis). Всё, что верно только для этого Host
+      project, уходит из testkit, то есть всё, где тестируемый продукт —
+      движок TrueBDD.
+      B. Строго: testkit не знает о TrueBDD вообще: только запуск Gherkin,
+      proxy, snapshots. Framework-знание тоже уходит в код, который движок
+      генерирует для каждого хоста, и Suite wiring разрастается.
+      C. Своя граница.
+    answer: |
+      A
+
+  - decision_trace:
+      research:
+        - |
+          The product files mix categories: runner/runner.go keeps a generic
+          fixture lifecycle (overlay, prep.sh and teardown.sh at :174,
+          execution at :310) beside the TrueBDD-only RepoLayer list at :44;
+          aiproxy/record.go streams generically (:113) beside engine scratch
+          exclusions; aiproxy/normalize.go normalizes paths generically (:46)
+          beside engine directory names.
+      recommendation: |
+        Split each mixed file by Q1's rule.
+      settled: |
+        Forced by Q1: in a file mixing categories, the host-invariant mechanism
+        stays in pkg/testkit and the TrueBDD-only values and rules leave it.
+    question: |
+      What happens to a file that mixes a host-invariant mechanism with
+      TrueBDD-only values?
+    answer: |
+      Claude, no question asked: Q1 keeps in testkit exactly what is the same
+      for every Host project, so the mechanism stays and the TrueBDD-only
+      values and rules leave.
+
+  - decision_trace:
+      research:
+        - |
+          RepoLayer() is a two-item list, true-bdd and templates
+          (pkg/testkit/runner/runner.go:44); the judge label is the literal
+          "true-bdd %s" (runner/judge.go:319); the fixture name is a regex
+          (scenario_names.go:13). Checklist narrowing is 389 lines over the
+          engine's checklist format (runner/checklist_filter.go); writer
+          verification is 172 lines including services/calc
+          (aiproxy/writer_spawn.go).
+        - |
+          The proxy is a separate binary the harness builds from
+          github.com/ondatra-ai/true-bdd/pkg/testkit/aiproxy (suite.go:301)
+          and puts first on PATH as claude and codex; it cannot call the
+          suite's code in process.
+      recommendation: |
+        A: values (repo_layer, judge label, fixture name pattern) are declared
+        in the Specification under the architecture's testing.testkit and
+        testkit reads them; logic (checklist narrowing, writer checks) is
+        helpers in tests/true-bdd/helpers/ written by build steps and plugged
+        in through declared testkit hooks the Suite wiring passes; for the
+        proxy a hook can only be data or an external program.
+      settled: |
+        The Owner did not pick A, B or C; the answer moves the proxy instead.
+        Proxy binaries leave pkg/testkit as separate tools, one per kind (CLI,
+        REST, web), generic and for every host; scripts/ was proposed, with no
+        hardcoded path. testkit gains SDK packages per kind (testkit/cli,
+        testkit/rest, testkit/web), included as needed and selected from the
+        architecture. Their description comes from a file the engine knows how
+        to find, not from architecture.yaml: which proxy packages exist, what
+        they hold and how to use them. The test runner calls something like
+        testkit/cli.Init() without knowing it drives a proxy. Q2's choice for
+        the non-proxy values and logic stays open.
+    question: |
+      Q2 - Как продуктовое попадает обратно в testkit? Жизненный цикл фикстуры
+      (наложение, prep.sh, snapshot, запуск, teardown.sh) по Q1 остаётся в
+      testkit. Ему нужно откуда-то получить продуктовые значения и правила.
+      A. Значения объявлены, логика в helpers. Значения (repo_layer, метка
+      судьи, шаблон имени фикстуры) объявлены в Specification, в
+      testing.testkit архитектуры, и testkit их читает. Ни писать, ни
+      критиковать их не нужно. Логика (сужение checklist, проверки writer) —
+      это helpers в tests/true-bdd/helpers/, их пишет build steps. Они
+      подключаются через объявленные hooks testkit, а hooks передаёт Suite
+      wiring. Для proxy hook может быть только данными или внешней программой.
+      B. Всё в helpers. Даже списки и строки — это код helpers, который
+      подключается через Suite wiring.
+      C. Helpers сами ведут поток. Шаги вызывают helpers, а helpers —
+      низкоуровневые примитивы testkit (скопировать дерево, запустить
+      программу, записать результат). Жизненный цикл тогда пишется в каждом
+      хосте заново.
+    answer: |
+      The Owner, in two messages, the first interrupted:
+
+      «Этот бианрнит вдимо надо вобще вытащить из pkg/testkit (что в тесткит
+      делает бинарник это ж пекеджи) и положить его отдельной тулой. Куда? ну
+      пусть будет scripts. путь не должен быть закодирован строго. в
+      archutecture есть целая секция dependencies. и вот тут интересно - что»
+
+      «этот бинарник - это утилита которая не продуктовая. она будет у всех.
+      Внешним зависимостям (не всем но некоторым) нужен будет прокси. он
+      будет работать по разному для cli или web service. например нам
+      понадобятся прокси для каких нибуть stripe slack и так далее. понимаешь
+      о чем я? эти прокси я пока вижу чтоб шли отдельными утилитами, в
+      testkit должен при этом как бы иметь много дополнительных SDK
+      testkit/cli, testkit/REST testkit/web.
+
+      эти пекеджи включаются по необходимости и витягиваются из архитектуры.
+      их описание дожно как-то идти не из architecture.yaml а из каких-то
+      других источников. движок должен бы знать где найти файл в котором
+      указано какие пекеджи для прокси есть и что в них и как ими
+      пользоваться. сам тестраннер не должен знать что он вызывает именно
+      прокси он просто дергает pkg/testkit/cli.init() или что-то такое. А ну
+      посмотри внимательно получится так или нет?»
+
+  - decision_trace:
+      research:
+        - |
+          Every binary under pkg/ sits inside testkit today: aiproxy,
+          cmd/coverage, cmd/report-server, materializer. A host already
+          requires github.com/ondatra-ai/true-bdd/pkg; the harness builds the
+          proxy with go build <import path> in the host's module graph
+          (pkg/testkit/suite.go:301).
+        - |
+          scripts/ is in the root module github.com/ondatra-ai/true-bdd with
+          the tests and 109 MB of fixtures; CLAUDE.md and .alint.yml define it
+          as this repository's own tooling. .alint.yml go-known-roots allows
+          four Go roots; a new package under pkg/ needs an ADR and an entry in
+          pkg-is-the-declared-channels.
+      recommendation: |
+        A: the utilities in the pkg/ module beside testkit, for example
+        pkg/proxy/cli/, with their import path in the SDK catalogue; hosts
+        already require pkg, and building from the host's module graph works
+        unchanged. C (an own module) is cleaner but adds a module and a
+        version for hosts to follow.
+      settled: |
+        The SDKs live in pkg/, beside testkit, for example pkg/proxy/cli or
+        pkg/proxy/airbyte; this places them outside testkit, overriding Q2's
+        testkit/cli. The proxy utilities themselves live in their own root,
+        cli/ or utilities/ (for example the Airbyte proxy there), not in pkg/.
+        Open: SDKs per protocol or per vendor, the root's name and module, and
+        the .alint.yml change a fifth root needs.
+    question: |
+      Q3 - Где живут proxy-утилиты?
+      A. В модуле pkg/, рядом с testkit, но не внутри, например
+      pkg/proxy/cli/. Хост уже требует этот модуль, и harness собирает
+      утилиту из его графа модулей, как сейчас. Путь импорта утилиты записан
+      в каталоге SDK, а не в коде. Нужны ADR и запись в .alint.yml с вашего
+      разрешения.
+      B. scripts/, как вы предложили. Это работает только для этого
+      репозитория: хосту пришлось бы требовать корневой модуль с тестами и
+      фикстурами.
+      C. Свой Go-модуль для proxy, например proxies/ со своим go.mod. Это
+      пятый корень, нужно ваше разрешение на .alint.yml. Версии у него
+      отдельные, и хост требует его дополнительно.
+    answer: |
+      Я бы сказал, что я бы сделал не ПКГ, а сделал бы CLI. Вот. Ну, то есть
+      имеется в виду, что SDK должно лежать, наверное, там, где ты сказал,
+      ПКГ, прокси CLI, например, да, там какой-то прокси для Airbyte. Ну, то
+      есть ПКГ, прокси Airbyte, можно его назвать. А сам Airbyte должен
+      лежать, наверное, как бы CLI или Utilities. И там Airbyte у нас лежит. Я
+      ответил на твой вопрос, как я это себе видел бы? Или тут остались
+      непонятки?
+
+  - decision_trace:
+      research:
+        - |
+          The CLI proxy is 1,684 lines, nearly all shared by claude and codex:
+          the PATH shim, argv and stdin hashing, the cassette store,
+          record/replay/live. Vendor differences are a few rules: claude's
+          session id and spill paths as {{CLAUDE_SESSION}} and
+          {{CLAUDE_SPILLS}} (aiproxy/normalize.go:122-145) and the AdvisorOff
+          env (aiproxy/record.go:121); codex-homes paths are the engine's
+          choice, not the vendor's (aiproxy/fsdiff_filter.go:23).
+        - |
+          HTTP services such as Stripe or Slack share a mechanism too
+          (redirect the base URL, match, record, replay) and differ in
+          normalization rules; per-dependency rules already have a place in
+          the architecture's dependencies, under invocation
+          (docs/architecture/architecture.yaml:736).
+      recommendation: |
+        A: per protocol, pkg/proxy/cli with one CLI utility and pkg/proxy/http
+        with one HTTP utility; vendor specifics are normalization rules
+        declared on the dependency, and a vendor package appears only when
+        data is not enough.
+      settled: |
+        Only the CLI protocol is handled now; HTTP, GraphQL, WebSockets and
+        webhooks wait until the next application needs them. Per protocol or
+        per vendor goes to whichever needs fewer changes, which the Owner
+        handed to Claude (next entry).
+    question: |
+      Q4 - SDK и утилиты: под протокол или под вендора?
+      A. Под протокол. Пары pkg/proxy/cli + одна CLI-утилита и pkg/proxy/http
+      + одна HTTP-утилита. Особенности вендора (session id у claude,
+      idempotency key у Stripe) — это правила нормализации, объявленные на
+      самой зависимости. Пакет под вендора появляется, только когда данных не
+      хватает.
+      B. Под вендора. pkg/proxy/claude, pkg/proxy/codex, pkg/proxy/airbyte,
+      pkg/proxy/stripe, у каждого своя утилита, общий механизм — в общем
+      пакете.
+      C. Два слоя кодом. Механизм под протокол и поверх него обязательный
+      пакет-адаптер под каждого вендора.
+    answer: |
+      Меня здесь нет ответа на этот вопрос. Как будто нужно и то, но смотри, я
+      бы сейчас пошел простым путем. Давай посмотрим, что проще всего. Если
+      проще под вендора, меньше изменений надо сделать для того, чтобы выбрать
+      под вендора, пусть будет под вендора. Если под протокол, то давай под
+      протокол. Смотри, у нас-то сейчас готов только CLI протокол. Давай мы
+      только его будем обрабатывать. А веб скорее всего, HTTP, там, я не знаю,
+      какие-нибудь GraphQL, какие еще могут быть протоколы. Да, там элементы
+      интеграции, веб-сокеты. И не знаю, там веб-хуки, потом сделаем, причем
+      настолько потом, что когда будем писать следующее глобальное
+      приложение, вот тогда мы подумаем, как его туда добавить.
+
+  - decision_trace:
+      research:
+        - |
+          pkg/testkit/suite.go:288-330: installShims builds the aiproxy binary
+          once and installs it under every AI CLI's name, one directory per
+          caller. The proxy is already one CLI-protocol binary, not one per
+          vendor.
+      recommendation: |
+        Per protocol: it is the current shape, so it needs the fewest changes.
+      settled: |
+        Per protocol, CLI only: one SDK package (pkg/proxy/cli) and one CLI
+        proxy utility serving claude and codex. Their vendor rules stay in the
+        utility's code for now, as knowledge that is the same for every host
+        (Q1); no rules move into declarations in this change.
+    question: |
+      Which needs fewer changes, per protocol or per vendor?
+    answer: |
+      Claude, delegated in Q4: per protocol. The current proxy is already one
+      binary built once and installed under each AI CLI's name, so per
+      protocol keeps its shape, while per vendor would split it into two
+      binaries over a shared package. The claude and codex rules stay in the
+      CLI utility's code.
+
+  - decision_trace:
+      research:
+        - |
+          The harness builds the proxy with go build <import path> from the
+          host root (pkg/testkit/suite.go:301), so the proxy's module must be
+          in the host's module graph.
+        - |
+          Go 1.24 added the go.mod tool directive (go get -tool, go tool
+          <name>) for executable dependencies
+          (https://go.dev/doc/go1.24#tools); this repository is on go 1.25.0.
+        - |
+          A utilities root inside the root module github.com/ondatra-ai/true-bdd
+          would bring the tests and 109 MB of fixtures to a host; the name cli/
+          is easily confused with pkg/cli/, the typed wrappers over the CLIs
+          we spawn.
+      recommendation: |
+        A: utilities/ with its own go.mod (module
+        github.com/ondatra-ai/true-bdd/utilities), the CLI proxy in
+        utilities/cliproxy/, which the host declares as a tool dependency; the
+        harness builds it from the host's module graph with the import path
+        from the SDK catalogue, and the Owner allows a fifth root in
+        .alint.yml go-known-roots.
+      settled: |
+        The host declares nothing for the proxy utility: no tool or require
+        line. The SDK builds the proxy binary and substitutes it for the
+        declared CLIs at its init, as installShims does today. The root's
+        module and name stay open: the SDK can build only source in the host's
+        module graph.
+    question: |
+      Q5 - Как устроить корень утилит?
+      A. utilities/ со своим go.mod (модуль
+      github.com/ondatra-ai/true-bdd/utilities), CLI-proxy лежит в
+      utilities/cliproxy/. Хост объявляет его как tool-зависимость в своём
+      go.mod, harness собирает его из графа модулей хоста, а путь импорта
+      берёт из каталога SDK. Вы разрешаете добавить пятый корень в
+      go-known-roots в .alint.yml.
+      B. utilities/ внутри корневого модуля. Без нового go.mod, но хосту
+      придётся требовать корневой модуль с тестами и фикстурами.
+      C. Как A, но корень называется cli/.
+    answer: |
+      Смотри, какая вещь. Utilities и CLI proxy, по идее, не надо объявлять
+      как зависимость в каком-то коу, потому что это же бинарь, который
+      должен быть билджен. То есть, вот если мы сейчас билдим вот этот CLI
+      proxy, вот где он лежит? Он же лежит в каких-то binary, да? И мы его
+      потом подставляем. Вот здесь то же самое. То есть код этого air proxy,
+      если я правильно понимаю, он у нас лежит. То есть SDK, которая вызывает
+      этот air proxy, правильно подставляет под нужную. Там мы, например,
+      говорим в SDK, что-то там подмени, ну, в нити, да, там, например,
+      подмени Claude Code на что-нибудь. То есть вот это делается SDK.
+
+  - decision_trace:
+      research:
+        - |
+          The harness builds the proxy today with go build
+          github.com/ondatra-ai/true-bdd/pkg/testkit/aiproxy from the host root
+          (pkg/testkit/suite.go:288-301) into <os temp>/true-bdd-shim-XXXX/aiproxy,
+          symlinks claude and codex to it in one directory per caller
+          (suite.go:346), and puts that directory first on PATH
+          (runner/aiproxy_env.go:27).
+        - |
+          go build from the host root finds only source in the host's module
+          graph. Outside it, the only build is GOBIN=<tmp> go install
+          <path>@<version>, which needs a fetchable version, the module cache
+          for offline replay, and a local path while TrueBDD itself is
+          developed. SDK and utility share the TRUE_BDD_AIPROXY_* env and the
+          cassette format, so separate modules can drift apart.
+      recommendation: |
+        A: the utility's source in the pkg module beside its SDK
+        (pkg/proxy/cli/ the SDK, pkg/proxy/cli/cliproxy/ the utility); the
+        build stays as it is, versions always match, local development uses
+        the existing replace ./pkg; an ADR and an .alint.yml entry for
+        pkg/proxy, no fifth root.
+      settled: |
+        The SDK lives in pkg/proxy/cli/ and the proxy binary's source in
+        utilities/cliproxy/, a root of its own outside pkg; A's placement
+        inside pkg is rejected. The utilities module, how the SDK builds from
+        it, and the .alint.yml change stay open.
+    question: |
+      Q6 - В каком модуле лежит исходник proxy-утилиты?
+      A. В модуле pkg, рядом со своим SDK, но не в testkit: pkg/proxy/cli/ —
+      SDK, pkg/proxy/cli/cliproxy/ — утилита. Сборка остаётся как сейчас,
+      только путь импорта знает SDK. Версии SDK и утилиты всегда совпадают,
+      локальная разработка идёт через уже существующий replace ./pkg. Пятый
+      корень не нужен, нужны ADR и запись для pkg/proxy в .alint.yml.
+      B. В корне utilities/ со своим go.mod. SDK собирает утилиту через go
+      install …@<версия>. Версию закрепляет SDK, а для разработки самого
+      TrueBDD нужен локальный путь. Пятый корень, нужно ваше разрешение на
+      .alint.yml.
+      C. В корне utilities/ внутри корневого модуля. То же go install, но хост
+      скачивает корневой модуль с тестами и 109 MB фикстур.
+    answer: |
+      pkg/proxy/cli/ - SDK, utilities/cliproxy/ - бинарь.
+
+  - decision_trace:
+      research:
+        - |
+          ondatra-ai/true-bdd is public, so proxy.golang.org serves any of its
+          commits; hosts already take pkg by commit (README.md:150). Only one
+          tag exists, services/true-bdd/v0.1.0.
+        - |
+          go help install: with a version suffix, the module providing the
+          named packages must not contain replace or exclude directives. The
+          root go.mod has replace github.com/ondatra-ai/true-bdd/pkg => ./pkg
+          (go.mod:18), and a module zip leaves out subdirectories holding
+          their own go.mod, so a downloaded root module has no pkg/. The proxy
+          imports eight pkg packages (pkg/cli, pkg/cli/claude, pkg/disk,
+          pkg/logging, pkg/testkit/fstree and others).
+        - |
+          There is no go.work; the gates build and test three modules.
+      recommendation: |
+        A: utilities/ gets its own go.mod (module
+        github.com/ondatra-ai/true-bdd/utilities) requiring pkg by version
+        without a replace. Init() builds the proxy from the same commit as
+        the host's pkg: through a temporary go.work over the sibling
+        utilities/ and the local pkg when the host replaces pkg locally, as
+        this repository does, otherwise GOBIN=<tmp> go install
+        .../utilities/cliproxy@<that commit>. B works in this repository only:
+        go install refuses the root module for its replace.
+      settled: |
+        utilities/ is its own Go module, github.com/ondatra-ai/true-bdd/utilities,
+        requiring pkg by version with no replace. Init() builds the proxy from
+        the commit the host's pkg came from, through a temporary go.work when
+        the host replaces pkg locally. The Owner allows the fifth root in
+        .alint.yml go-known-roots, and the module joins the gates. The
+        SDK/proxy contract (TRUE_BDD_AIPROXY_* env, cassette format) is not
+        kept in shared pkg code.
+    question: |
+      Q7 - Как utilities/ оформлен как модуль и как SDK его собирает?
+      A. Свой go.mod (модуль github.com/ondatra-ai/true-bdd/utilities). Init()
+      собирает proxy с того же коммита, что и pkg, который использует хост:
+      если pkg у хоста подключён локальной копией, как в этом репозитории,
+      сборка идёт из соседнего каталога utilities/; иначе — GOBIN=<tmp> go
+      install github.com/ondatra-ai/true-bdd/utilities/cliproxy@<тот же
+      коммит>. Путь нигде не захардкожен, версии SDK и утилиты совпадают
+      всегда. Вы разрешаете добавить пятый корень в go-known-roots в
+      .alint.yml, а модуль добавляется в gates.
+      B. Внутри корневого модуля. Схема та же, но go install скачивает
+      корневой модуль с тестами, 109 MB фикстур и всеми его зависимостями.
+      C. Другая схема.
+      Asked again after the Owner's second message, with both layouts shown
+      in folders and code: у utilities/ свой go.mod, Init() собирает proxy с
+      того же коммита, что и pkg хоста, а локально — через временный go.work.
+      Вы разрешаете добавить пятый корень в .alint.yml, а модуль добавляется в
+      gates. Так?
+    answer: |
+      The Owner, in three messages:
+
+      «B»
+
+      «Стой, я не уверен, что V правильный, что B правильный ответ. Ты можешь
+      мне показать больше примеров? То есть, возможно, что нам пока что нужно
+      идти A, но я не понимаю примеры в коде. Покажи мне, как это будет
+      выглядеть в коде и в структуре папок.»
+
+      «Да, окей.»
+
+  - decision_trace:
+      research:
+        - |
+          The #293 branch already resolves the testkit directory in the host's
+          module graph with go list -find -f={{.Dir}}
+          (services/true-bdd/internal/infrastructure/cli/gotool/package_directory.go);
+          go list -m -f {{.Dir}} github.com/ondatra-ai/true-bdd/pkg returns
+          ./pkg here and the module cache directory in a host.
+        - |
+          The exported code has doc comments, but they describe the
+          implementation ("PrepareTree loads fixture data and resolves both
+          callers' recording shelves"). The steps read fields as well as call
+          methods (state.Result 53 times, state.Fixture 47, state.Proxy 20,
+          state.Harness 11) and call runner.* directly (runner.Execute,
+          runner.CheckExitCode, runner.RunResult).
+        - |
+          Checklists live in true-bdd/checklists/ beside true-bdd.yaml, the
+          schemas and models/; true-bdd init writes them into a host from the
+          binary's copies (services/true-bdd/internal/infrastructure/initialization/files,
+          go:embed) and never overwrites a file (README.md:139, :202).
+      recommendation: |
+        A: a catalogue generated from doc comments into the pkg module
+        (pkg/catalogue.yaml), found through the host's module graph, so it
+        always has the version of the code it describes. D (true-bdd/, as the
+        checklists) keeps the engine binary's version, while the code it
+        describes has the version the host's go.mod pins, and init never
+        refreshes it.
+      settled: |
+        The catalogue lives at true-bdd/catalogue.yaml, like the rest of the
+        engine's files: this repository keeps it in true-bdd/ and in the
+        binary's copies, and init writes it into a host. The drift between it
+        and the host's pkg version is accepted for now. Where the API meanings
+        come from is a separate question, asked anew as Q9.
+    question: |
+      Q8 - Откуда берётся описание API testkit и SDK: какие пакеты есть, что
+      в них и как ими пользоваться?
+      A. Каталог, сгенерированный из doc comments. Скрипт из scripts/cmd/
+      пишет, например, pkg/catalogue.yaml: каждый экспортированный тип, поле,
+      функция и метод testkit и SDK, сигнатура и первое предложение doc
+      comment как его единственный смысл. Для SDK указано, какая зависимость
+      его включает (protocol: cli, scope: third_party). Файл коммитится, gate
+      падает, если он устарел. Движок находит каталог в графе модулей хоста:
+      ходам, которые пишут тела, называет его путь; в критику без
+      инструментов вставляет записи только тех пакетов, которые импортирует
+      код тестов.
+      B. Тот же каталог, но написан руками. Gate проверяет только, что
+      сигнатуры совпадают с кодом.
+      C. testkit описан в architecture.yaml каждого хоста, SDK — в каталоге.
+      Asked again with D (the catalogue in the host's true-bdd/, as the
+      checklists, written by init), and a third time with concrete paths and
+      file contents for A, B and D.
+    answer: |
+      The Owner, in three messages:
+
+      «а где у нас лежат checklists? это скоерее всего ./true-bdd»
+
+      «Смотри, я не могу ответить на этот вопрос без конкретных примеров.
+      Покажи мне конкретные примеры A, и B, потому что там очень много может
+      быть разночтений. Где именно он будет в конце концов лежать?»
+
+      «Так, вопрос все-таки в том, где лежит каталог, да? Вот каталог у меня
+      должен лежать в TrueBDD каталог YAML. Вот как все остальные вещи. То
+      есть проблем с версиями, да, она будет, но мы, скорее всего, его не
+      сделаем. Но ты же спрашивал про API. То есть я, опять же, я не могу
+      ответить на этот вопрос, потому что он теперь другой.»
+
+  - decision_trace:
+      research:
+        - |
+          The #293 branch already resolves the testkit directory in the host's
+          module graph with go list -find -f={{.Dir}}
+          (services/true-bdd/internal/infrastructure/cli/gotool/package_directory.go);
+          go list -m -f {{.Dir}} github.com/ondatra-ai/true-bdd/pkg returns
+          ./pkg here and the module cache directory in a host.
+        - |
+          The exported code has doc comments, but they describe the
+          implementation ("PrepareTree loads fixture data and resolves both
+          callers' recording shelves"). The steps read fields as well as call
+          methods (state.Result 53 times, state.Fixture 47, state.Proxy 20,
+          state.Harness 11) and call runner.* directly (runner.Execute,
+          runner.CheckExitCode, runner.RunResult).
+        - |
+          Checklists live in true-bdd/checklists/ beside true-bdd.yaml, the
+          schemas and models/; true-bdd init writes them into a host from the
+          binary's copies (services/true-bdd/internal/infrastructure/initialization/files,
+          go:embed) and never overwrites a file (README.md:139, :202).
+      recommendation: |
+        A: a catalogue generated from doc comments into the pkg module
+        (pkg/catalogue.yaml), found through the host's module graph, so it
+        always has the version of the code it describes. D (true-bdd/, as the
+        checklists) keeps the engine binary's version, while the code it
+        describes has the version the host's go.mod pins, and init never
+        refreshes it.
+      settled: |
+        The catalogue would live at true-bdd/catalogue.yaml, like the rest of
+        the engine's files, the drift against the host's pkg version accepted
+        for now; where the API meanings come from was asked anew as Q9. Q9
+        then removed the catalogue.
+    question: |
+      Q8 - Откуда берётся описание API testkit и SDK: какие пакеты есть, что
+      в них и как ими пользоваться?
+      A. Каталог, сгенерированный из doc comments. Скрипт из scripts/cmd/
+      пишет, например, pkg/catalogue.yaml: каждый экспортированный тип, поле,
+      функция и метод testkit и SDK, сигнатура и первое предложение doc
+      comment как его единственный смысл. Для SDK указано, какая зависимость
+      его включает (protocol: cli, scope: third_party). Файл коммитится, gate
+      падает, если он устарел. Движок находит каталог в графе модулей хоста:
+      ходам, которые пишут тела, называет его путь; в критику без
+      инструментов вставляет записи только тех пакетов, которые импортирует
+      код тестов.
+      B. Тот же каталог, но написан руками. Gate проверяет только, что
+      сигнатуры совпадают с кодом.
+      C. testkit описан в architecture.yaml каждого хоста, SDK — в каталоге.
+      Asked again with D (the catalogue in the host's true-bdd/, as the
+      checklists, written by init), and a third time with concrete paths and
+      file contents for A, B and D.
+    answer: |
+      The Owner, in three messages:
+
+      «а где у нас лежат checklists? это скоерее всего ./true-bdd»
+
+      «Смотри, я не могу ответить на этот вопрос без конкретных примеров.
+      Покажи мне конкретные примеры A, и B, потому что там очень много может
+      быть разночтений. Где именно он будет в конце концов лежать?»
+
+      «Так, вопрос все-таки в том, где лежит каталог, да? Вот каталог у меня
+      должен лежать в TrueBDD каталог YAML. Вот как все остальные вещи. То
+      есть проблем с версиями, да, она будет, но мы, скорее всего, его не
+      сделаем. Но ты же спрашивал про API. То есть я, опять же, я не могу
+      ответить на этот вопрос, потому что он теперь другой.»
+
+  - decision_trace:
+      research:
+        - |
+          Go's runtime reflection cannot list a package's functions or read
+          their comments; the standard go doc command reads a package's code
+          and prints its exported declarations with their doc comments.
+          go doc -short is 1,174 bytes for pkg/testkit, 1,966 for bddgo and
+          4,699 for runner; go doc -all is 9,591, 15,531 and 30,064.
+        - |
+          The only use the 2 November round needed: the body of the project
+          tree step, return state.PrepareTree(args[0]), where the writer must
+          know what the library offers and the critique what PrepareTree does
+          (tests/true-bdd/steps/cli_steps.go:86 registers the pattern,
+          :107 the function; the engine writes both, the AI only the body,
+          ADR-0035).
+        - |
+          Checked after the answer, in a throwaway host example.com/calc
+          requiring github.com/ondatra-ai/true-bdd/pkg@7e714a90 from the module
+          cache: once a host file imports testkit, go doc
+          github.com/ondatra-ai/true-bdd/pkg/testkit ScenarioRun.PrepareTree
+          prints the signature and comment of that version; before any import
+          it answers "no such package". The current comments describe the
+          implementation and name the proxy ("Run executes under the proxy,
+          preserving results even on infrastructure failure"). The suite
+          imports nine pkg packages: testkit, bddgo, runner, reporter, disk,
+          cli, cli/gotool, cli/spec, enginelog.
+      recommendation: |
+        Yes: no catalogue. The engine takes the library's table of contents
+        with go doc from the version the host uses; each function's meaning is
+        its doc comment; the rule cli -> pkg/proxy/cli lives in the engine's
+        code while there is one protocol (Q4). The description sits in one
+        place beside the code and never goes stale.
+      settled: |
+        No catalogue file. The engine reads the library's description with go
+        doc from the version the host's module graph resolves; a function's
+        meaning is its doc comment, rewritten to state the meaning; the rule
+        selecting pkg/proxy/cli for a cli dependency lives in the engine's
+        code. This overrides Q8 and Q2's file the engine knows how to find.
+        How much of go doc a prompt gets is not settled.
+    question: |
+      Q9 - Обходимся без каталога? Движок берёт оглавление библиотеки через go
+      doc, с той версии, которая стоит у проекта. Смысл каждой функции — это
+      её комментарий в коде. Правило «cli → pkg/proxy/cli» живёт в коде
+      движка. Тогда вопрос Q8 о месте каталога снимается.
+    answer: |
+      The Owner, in five messages; the first two came before the question
+      and prompted it:
+
+      «Еще есть вопрос. Может быть, нам этот каталог YAML вообще-то и не
+      нужен? Не может ли система вытаскивать, что находится внутри пэкэджа,
+      ну, через какую-то рефлексию?»
+
+      «Вообще я немножко забыл, а какую проблему мы вообще сейчас решаем? То
+      есть зачем нам вообще понадобился этот каталог и YAML? И как можно... То
+      есть у меня сейчас вопрос в том, как можно было бы избежать этой
+      информации через, например... Короче, сейчас напомню мне пример, где нам
+      нужно было что-то импортить из пакеджа, и вот где мы уперлись в этот в
+      эту проблему, я просто забыл, какую проблему в целом мы сейчас начали
+      решать. Ты можешь мне вот очень четко, емко и там на конкретном примере
+      объяснить, что вот сейчас происходит вот так, LLM-ке нужна эта
+      информация для вот этого и вот этого, для того, чтобы связать конкретно
+      вот эту вещь, там ее как-то подсвети жирным, с конкретно вот этой вещью
+      тоже подсвети ее жирным. Ну, то есть, как бы вот какой-то такой вещь
+      очень простым человеческим языком, русским, без жаргонов и терминов, и
+      говоря, что стоит за этими терминами, очень емко и кратко.»
+
+      «то вызывает функцию prepare3. Которая маленькая. Вот с маленькой
+      буквы.»
+
+      «Подожди, не переходи, пожалуйста, к следующим вопросам до тех пор, пока
+      я не скажу и не выясню, потому что это важно, и мы сейчас как будто бы
+      начинаем уходить в неправильное направление.»
+
+      «Так, окей, поїхали з GoDoc. Посмотрим, буде ли там работать.»
+
+  - decision_trace:
+      research:
+        - |
+          go test compiles the test files with the code they import (for
+          TrueBDD tests/true-bdd/*_test.go, scenarios/, steps/, pkg/testkit,
+          bddgo) into one temporary program, runs it and prints each test's
+          result; Go's own testing package is the frame, bddgo runs inside it.
+          A host's product code never imports testkit; its tests do, so the
+          host's go.mod lists github.com/ondatra-ai/true-bdd/pkg (README.md:150).
+        - |
+          Checked in throwaway modules with pkg@7e714a90: a go.mod requiring
+          pkg, even indirect, with no Go file importing it, lets go doc
+          github.com/ondatra-ai/true-bdd/pkg/testkit ScenarioRun.PrepareTree
+          answer; a directory with no go.mod, or a module whose go.mod does not
+          name pkg, answers "no such package"; go doc run inside the package's
+          module cache directory answers too.
+      recommendation: |
+        Correct Q9's research: go doc needs the package's code located, by the
+        host's go.mod or by its directory, not an import.
+      settled: |
+        go doc does not need the host to import testkit. It needs to find the
+        package's code: through the module list in the host's go.mod, which
+        the host's tests already require, or by running in the package's
+        directory. This overrides Q9's research line saying go doc answers
+        "no such package" before any import; that observation came from a
+        commit without the testkit package.
+    question: |
+      The Owner's question during the pause after Q9.
+      «Стой, подожди. А правильно ли я понимаю, что тесты сами по себе это
+      тоже отдельный бинарный файл, который там сам по себе запускается,
+      что-то прогоняет и просто печатает результаты? Это так? Или это тесты,
+      которые импортятся в какой-то другой фреймворк? В общем, что с ними
+      происходит? Почему я это спрашиваю? Потому что я не понимаю, почему хост
+      должен импортировать пакет. Мы же сейчас говорили, что это он
+      импортируется в тесты. Или ты имеешь в виду, что хост должен
+      импортировать пакет для того, чтобы в принципе GoDoc стал для него
+      возможным? Но тогда я не очень понимаю, ведь GoDoc, ты ей скармливаешь
+      именно как бы пакет, он тебе дает результат. То есть вроде бы как нет.
+      Зачем его импортить в хост? Если, особенно, давай скажем так, особенно
+      если это generic хост. Ну, то есть представь себе, что хост это не
+      TurbyDD, а другой. Зачем этому хосту импортировать тест-кит?»
+    answer: |
+      Claude, no question asked: tests are one temporary program go test
+      builds and runs; only the host's tests import testkit, and go doc needs
+      the package's code located, not imported.
+
+  - decision_trace:
+      research:
+        - |
+          Delegated to a Codex research run with web search,
+          research-293-agent-context-tool (brief
+          tmp/codex-briefs/research-293-agent-context-tool.md): exposure of one
+          tool to claude -p and codex exec, what it would answer, fit with
+          ADR-0039's tool-less critiques, the guard, the Codex sandbox and
+          record/replay, and prior art on agent-pulled versus pushed context.
+      recommendation: |
+        Research before any question.
+      settled: |
+        Nothing decided: the idea goes to research and comes back to the
+        Owner as a trade-off.
+    question: |
+      The Owner's idea during the pause after Q9.
+      «Еще сразу кусок ресерча надо сделать. Это, а что если в utilities как
+      бы добавить свой бинарь, который, собственно говоря, будет вызывать, то
+      есть дать возможность Claude Code вызывать этот бинарь с какими-то там
+      данными. В общем, короче, я вот не знаю, да, то есть, ну, типа как CLI
+      утилиту и дать вызываемому харнесу, вот мы же вызываем Claude-P или
+      ChatGPT, ой, Codex Exec и так далее. Что если мы дадим им возможность
+      вызывать вот эту утилиту для того, чтобы она сама разбиралась, какие
+      данные сделать? Это сейчас исключительно в виде идеи. Я не уверен, что
+      это правильно, но хотелось бы это тоже подумать.»
+    answer: |
+      Claude, no question asked: researched first by the Codex run named above.
+
+  - decision_trace:
+      research:
+        - |
+          Codex research run research-293-agent-context-tool
+          (tmp/codex/research-293-agent-context-tool/final.md): a utility the
+          turns call could be exposed to Claude through one allowed Bash
+          command (the guard admits only the test command today,
+          services/true-bdd/adapters/ai/claude_guard_policy.go:42) or one MCP
+          server, and to Codex through mcp_servers with enabled_tools, which
+          does not by itself remove Codex's other tools. Retrieved results
+          escape ADR-0039's byte measurement, replay never re-runs the tool,
+          and Anthropic's context-engineering guidance reports missed and
+          excess retrieval. The critique stays tool-less
+          (internal/app/generators/validate/step_critic.go:73). It recommends
+          engine-pushed go doc, with retrieval at most a measured experiment
+          on body proposals.
+      recommendation: |
+        Confirm Q9 in its three parts: no catalogue, go doc of the host's
+        version; a function's meaning is its doc comment, rewritten as a
+        meaning; the cli -> pkg/proxy/cli rule in the engine's code.
+      settled: |
+        Q9 confirmed in all three parts. The engine runs go doc itself; the
+        utility the AI turns would call is not pursued now.
+    question: |
+      Q9, confirmed after the research run: каталога нет, описание библиотеки
+      движок берёт из go doc той версии, которая стоит у хоста; смысл функции
+      — её doc comment в Go-коде, переписанный как смысл; правило
+      «зависимость с protocol: cli → pkg/proxy/cli» пока живёт в коде движка.
+    answer: |
+      The Owner, in two messages:
+
+      «Тогда смотри, давай мы идем с GoDoc. Вот, походу, это достаточно
+      неплохая идея. И какой Q9? В чем был вопрос Q9? Повтори мне сейчас, я до
+      него уже отвечу.»
+
+      «Да, пиши Q9 по ходу закрыт. И давай следующий вопрос.»
+
+  - decision_trace:
+      research:
+        - |
+          The judge prompt hardcodes the binary as "true-bdd %s"
+          (pkg/testkit/runner/judge.go:319) around the When's command
+          (JudgeRequest.Cmd = s.Fixture.Cmd, pkg/testkit/scenario_run.go:88);
+          the Suite wiring already hands testkit the service name,
+          testkit.NewSuite("true-bdd", ...) (tests/true-bdd/scenarios/scenarios.go:16,
+          pkg/testkit/suite.go:47).
+      recommendation: |
+        Take the judge's label from the service name the Suite wiring passes.
+      settled: |
+        Forced by Q1: the literal leaves testkit, and the judge names the
+        command with the suite's service name, which the Suite wiring already
+        passes to testkit.NewSuite.
+    question: |
+      Where does the judge's "true-bdd" label come from once testkit holds no
+      product knowledge?
+    answer: |
+      Claude, no question asked: from the service name the Suite wiring
+      already passes to testkit.NewSuite; Q1 removes the literal from testkit.
+
+  - decision_trace:
+      research:
+        - |
+          Three product pieces remain in testkit's runtime path, all from the
+          project tree binding (docs/architecture/architecture.yaml:1350): the
+          repository layer true-bdd and templates copied before the fixture's
+          input/ (pkg/testkit/runner/runner.go:44), the fixture-name regex
+          the "([^"]+)" project tree needed before any step runs
+          (pkg/testkit/scenario_names.go:13), and checklist narrowing, 389
+          lines reading the fixture's checklist-prompts.yaml and cutting the
+          engine's checklists while the run directory is prepared
+          (pkg/testkit/runner/checklist_filter.go, runner.go:144).
+      recommendation: |
+        A: the two values declared under the architecture's testing.testkit
+        and copied by the engine into the Suite wiring as testkit options;
+        checklist narrowing a helper in tests/true-bdd/helpers/ written by
+        build steps and passed as a PrepareWith hook. B (values as helper
+        code) makes the AI write constants and ties the generated wiring to
+        AI-chosen names; C (helpers assemble the run directory from testkit
+        primitives) copies the lifecycle into every host, against Q1.
+        Examples for A, B and C were shown in folders and code.
+      settled: |
+        A: repo_layer and fixture_step are declared under the architecture's
+        testing.testkit and the engine copies them into the Suite wiring as
+        testkit options; checklist narrowing is a helper in
+        tests/true-bdd/helpers/ that build steps writes, passed to testkit as
+        a hook run after input/ and before the snapshot. The fixture
+        lifecycle stays in testkit.
+    question: |
+      Q10 - Как эти три куска уходят из testkit? Жизненный цикл фикстуры
+      (наложение, prep.sh, snapshot) по Q1 остаётся в testkit.
+      A. Значения объявлены, логика в helpers: testing.testkit.repo_layer и
+      fixture_step в architecture.yaml, движок переносит их в Suite wiring
+      (testkit.RepoLayer, testkit.FixtureStep); сужение checklist —
+      tests/true-bdd/helpers/checklist_narrowing.go, его пишет build steps, а
+      Suite wiring передаёт его как testkit.PrepareWith.
+      B. Всё в helpers, даже значения: helpers.RepoLayer() и
+      helpers.FixtureStep() пишет AI, Suite wiring передаёт их так же.
+      C. Helpers сами собирают папку из примитивов testkit (CopyTree,
+      Overlay, RunScript, Snapshot, OnScenarioEnd); жизненный цикл пишет
+      каждый хост сам.
+    answer: |
+      The Owner, in two messages:
+
+      «Слушай, ты говоришь один, ну, ты примеры даешь только для A, а для B и
+      C не даешь. Это не дает мне возможность посмотреть реальную разницу в
+      том, как ты мыслишь. Давай покажи мне B и C примеры.»
+
+      «A»
+
+  - decision_trace:
+      research:
+        - |
+          Checklist narrowing is described inside the project tree binding,
+          mixed with the step's meaning and the harness lifecycle: "the
+          harness then keeps only questions containing that snippet during
+          assembly" (docs/architecture/architecture.yaml:1371-1373).
+        - |
+          ADR-0038 already has the writer write the utilities the step bodies
+          share, inside an Item, checked by the critique like bodies. The
+          Suite wiring is generated deterministically
+          (services/true-bdd/internal/app/generators/scenariogen/wiring.go), so
+          naming a helper in it needs the name in advance.
+      recommendation: |
+        A: a separate declaration under testing.testkit.prepare with the
+        helper's name and does:, from which the engine writes the helper's
+        skeleton, the Suite wiring line and an Item whose body the critique
+        checks against that does:.
+      settled: |
+        Helpers are declared nowhere and the Specification says nothing about
+        them. They are auxiliary code the AI writes while writing the steps,
+        moved into tests/true-bdd/helpers/ when the steps need it. This
+        overrides Q10's helper passed by the Suite wiring: the generated
+        wiring cannot name an undeclared helper.
+    question: |
+      Q11 - Как Specification объявляет helper, чтобы build steps его
+      написал?
+      A. Отдельное объявление со своим описанием: testing.testkit.prepare с
+      helper: NarrowChecklists и does:. Движок пишет заготовку func
+      NarrowChecklists(runDir, fixtureDir string) error в
+      tests/true-bdd/helpers/, строку в Suite wiring и отдельный Item; AI
+      пишет тело, критика сверяет его с этим does:. Binding project tree
+      описывает только сам шаг.
+      B. Описание остаётся в binding, helper пишется внутри Item project tree;
+      в testing.testkit.prepare только имя для Suite wiring.
+      C. Своя схема.
+    answer: |
+      Хелперы не должны быть нигде объявлены. Хелперы должны просто... То есть
+      никакого спецификации про хелперов не должно быть. В них просто должна
+      попадать какие-то вспомогательные вещи, которые AI просто тупо пишет для
+      того, чтобы написать тесты. Ну, точнее, написать степы. То есть если
+      степам нужна какая-то вспомогательная функция или еще что-то, то AI ее
+      просто выносит в helpers.
+
+  - decision_trace:
+      research:
+        - |
+          32 Scenarios and 32 fixtures with checklist-prompts.yaml use the
+          Given the "<stem>" checklist is narrowed to its "<prompt>" prompt, a
+          step of the project tree Concept
+          (tests/true-bdd/steps/cli_steps.go:221); today it only checks the
+          fixture's file and testkit narrows during assembly, after that Given,
+          since assembly is deferred until When. A fixture's own files win the
+          overlay, but coverage credits a checklist question only when copied
+          verbatim.
+        - |
+          The writer is told today: "Do not add package-level constants,
+          variables, helper functions or types; only shared State fields and
+          the selected file's imports may change outside that body"
+          (templates/build-steps.fix-applier.system.prompt.tpl:41-43). The
+          shape check covers only the steps package
+          (services/true-bdd/internal/app/generators/stepskeleton/shape.go:20);
+          the writer may write the suite's test directories
+          (services/true-bdd/internal/infrastructure/architecture/declared_tests.go:56),
+          which likely include tests/true-bdd/helpers/, still to confirm.
+      recommendation: |
+        A: the Given's body registers the work on assembly through a general
+        testkit hook, state.BeforeSnapshot(...); the narrowing code goes to
+        tests/true-bdd/helpers/; the writer's prompt names
+        tests/<suite>/helpers/ as the place for helpers instead of today's
+        ban. Without the hook the narrowing has nowhere to run, since the run
+        directory is assembled inside Run.
+      settled: |
+        Checklist narrowing: the narrowed-checklist Given's body registers the
+        work through a general testkit hook run after input/ and before the
+        snapshot (state.BeforeSnapshot), and the AI writes the narrowing code
+        in tests/true-bdd/helpers/. The body-writing prompts name
+        tests/<suite>/helpers/ as where helpers go, replacing today's ban; the
+        steps package stays as strict as now.
+    question: |
+      Q12 - Кто теперь сужает checklist?
+      A. Тело шага ставит действие на сборку, сам код сужения — в helper:
+      state.BeforeSnapshot(func(runDir string) error { return
+      helpers.NarrowChecklist(...) }); binding project tree описывает сужение
+      как смысл этого шага.
+      B. Сужения больше нет: каждая из 32 фикстур кладёт уже суженный
+      checklist в input/true-bdd/checklists/<stem>.yaml.
+      C. Сужает prep.sh фикстуры (32 скрипта и yq).
+      Asked again: правильно ли я понимаю, что сужение идёт по A — тело Given
+      ставит работу на сборку через общий hook testkit, код сужения AI
+      выносит в tests/true-bdd/helpers/, а prompt writer'а называет
+      tests/<suite>/helpers/ местом для helpers вместо нынешнего запрета?
+    answer: |
+      The Owner, in two messages:
+
+      «Тут просто надо как-то знать, дать знать Клоду или вот кодеру, да,
+      который пишет код, куда эти хелперы складывать, и все.»
+
+      «Да, окей.»
+
+  - decision_trace:
+      research:
+        - |
+          Step bodies reach into testkit today: state.Result 76 times,
+          state.Fixture 47, state.Proxy 20, state.Harness 11, and runner.*
+          directly (runner.CheckExitCode, runner.Execute, runner.ProxyModeLive,
+          runner.RunResult). state.Proxy serves three uses: adding env to the
+          run (CODEX_HOME, GOPROXY, TRUE_BDD_CONCURRENT_PROXY), reordering PATH
+          to put a fixture CLI ahead of the stand-ins, and reading the proxy's
+          receipts (state.Proxy.StateDir/writer-spawn.txt, consumed-claude).
+          go doc -all is 9.6 KB for testkit, 15.5 KB for bddgo, 30 KB for
+          runner.
+      recommendation: |
+        A: step bodies use only the pkg/testkit root and the pkg/proxy/cli
+        SDK; runner and reporter move under pkg/testkit/internal/, Proxy and
+        Harness become unexported, and testkit gains small methods for today's
+        uses (SetEnv, PrependPath, Mode, its own Result type) with cli.Receipt
+        in the SDK. Each visible method then has one meaning, go doc stays
+        small, steps do not know about the proxy, and Go's internal/ rule
+        holds the boundary.
+      settled: |
+        Step bodies may use only the pkg/testkit root and the pkg/proxy/cli
+        SDK. runner and reporter move under pkg/testkit/internal/; Proxy and
+        Harness become unexported; testkit offers small methods for what the
+        steps do today (env and PATH for the next run, the mode, its own
+        result type) and the SDK what its stand-ins observed. The existing
+        step bodies that touch runner, Proxy or Harness are rewritten.
+    question: |
+      Q13 - Что из testkit разрешено телам шагов?
+      A. Только корень pkg/testkit и SDK pkg/proxy/cli; runner и reporter
+      уезжают в pkg/testkit/internal/, Proxy и Harness скрываются, testkit
+      получает state.SetEnv, state.PrependPath, state.Mode(), свой тип
+      результата, SDK — cli.Receipt.
+      B. Как сейчас: шаги вправе брать runner, bddgo, Proxy, Harness; go doc
+      около 55 КБ, шаги знают про proxy.
+      C. Посередине: runner открыт, скрыты только Proxy и Harness.
+    answer: |
+      Окей, поехали как A.
+
+  - decision_trace:
+      research:
+        - |
+          README.md (Background, Vision): Spec-as-Source, the specification is
+          the source of truth and code a regenerable artifact; delete the code,
+          regenerate it, and every behavioural assertion must pass.
+          docs/roadmap.md: "I have Idea; I create user story with all
+          artifacts and scenarios; I build tests; I build code; It works",
+          without a person writing the middle.
+        - |
+          The architecture says third_party dependencies are mocked by
+          record/replay in builds (docs/architecture/architecture.yaml:729-735)
+          and that each CLI states its invocation exactly because a rebuilt
+          engine must send the same requests (:737-739).
+        - |
+          Diagrams published at https://claude.ai/artifact/SYhGb7WK9jaN6Bu2Lex6HH:
+          first a Mermaid dependency map, then, after this correction, an
+          English page drawing generation from the specification.
+      recommendation: |
+        Redraw from the specification: people write only the specification;
+        the engine generates the Scenarios, the tests and the code; the
+        generated tests use the generic runtime; a dependency's declared
+        contract reaches cliproxy through the Suite wiring and the SDK.
+      settled: |
+        TrueBDD tests nothing: it generates the tests from the specification
+        and the code from the tests, so the tests define the code. Data flows
+        from the product's specification to the CLI proxy, never the other
+        way: cliproxy knows no product, and the product's specification
+        declares what its stand-in must know.
+    question: |
+      The Owner's correction during Q14, after Q14 asked where the generic
+      cliproxy gets a product's placeholders and unrecorded paths.
+      «А зачем CLI прокси данные о конкретном продукте? Это наоборот.
+      Продукты должны быть, у продукта должны быть данные о CLI прокси. Что,
+      не переходи. Здесь опять путаница. Не переходи на наступный шаг, на
+      следующий шаг до тех пор, пока мы не решим этот. То есть я плохо
+      понимаю, как мы попали сюда, если мы вот вынесли все эту схему. Вообще,
+      наверное, стоило бы нарисовать схему, что от чего зависит. Может, так
+      пойдем?»
+
+      «Нет, нарисуй это в виде артефакта. Или не, нарисуй это в виде markdown
+      схемой mermaid диаграммы. И можешь и в виде артефакта тоже. Давай
+      артефакты, mermaid диаграмму.»
+
+      «Слушай, нет, это не совпадает с моей картиной. Почему? Во-первых, давай
+      разберемся, зачем, что такое TrueBDD. То есть, вот мне кажется, что ты
+      вообще не сейчас делаешь весь непонимание того, зачем нужен TrueBDD.
+      Посмотри, как бы, goal.»
+
+      «И напиши эту диаграмму на английском и сделай в виде, все-таки давай в
+      виде HTML красивую, чтобы было красивые зависимости. И там написал, что
+      он тестирует. Он не тестирует ничего. Он все генерирует. То есть TrueBDD
+      не тестирует никакой продукт. Он генерирует тесты и из тестов генерирует
+      код. И вот тут большая разница. Смотри, мы всегда привыкли, что у нас
+      есть код, да, и для него тесты, которые его тестируют. А здесь нету
+      кода, который тестирует тесты. Тесты определяют то, каким будет код.»
+    answer: |
+      Claude, no question asked: the diagram is redrawn from the
+      specification, in English; Q14 waits for the Owner.
+
+  - decision_trace:
+      research:
+        - |
+          Go allows it and the suite is already shaped for it: a generated
+          test (tests/true-bdd/build_code_claude_test.go) imports
+          .../tests/true-bdd/scenarios, whose scenarios.go imports
+          .../tests/true-bdd/steps; the steps package compiles on its own, and
+          build tests reads no step definitions (ADR-0031).
+        - |
+          What the swap breaks: build steps ends with checkConvergence
+          (services/true-bdd/internal/app/commands/build_steps_red.go:27),
+          which lists the generated tests with go test -list (:85) and runs
+          them in a copy without the code (runWithoutTarget, :95); with steps
+          first those tests do not exist yet.
+        - |
+          The diagram was republished with build steps first, the steps
+          package as the only checked artifact and the tests importing it
+          (https://claude.ai/artifact/SYhGb7WK9jaN6Bu2Lex6HH).
+      recommendation: |
+        Draw and build the order steps, then tests, then code.
+      settled: |
+        The order is build steps, then build tests, then build code. build
+        steps writes the steps package (steps/ and helpers/); build tests
+        then renders the tests folder deterministically in one pass, each
+        test importing the steps package and calling its steps. Only the
+        steps are checked; the tests are generated and bound by construction
+        and are never checked. This overrides ADR-0031's order (build tests,
+        then build steps).
+    question: |
+      The Owner's corrections of the diagram and the order.
+      «Ой, смотри, почти попал. Только смотри, там, где, во-первых, надо
+      поменять build steps и build tests местами. Мы сперва делаем steps,
+      потом тесты. И смотри, build steps генерит папочку steps. И helper. А
+      build tests генерит папочку tests. Достаточно детерминированно. Один
+      раз, и там вообще не ошибешься. Понял идею? Ты можешь это поправить?»
+
+      «То есть, если говорить в терминах пэкэджа, кстати, мы можем как-то
+      сказать, что тесты, и вообще на это можно прям сделать акцент, и вообще
+      все переписать под это, что тесты, build steps, генерят package,
+      который называется test steps, а build tests импортит этот package и
+      использует его степы для того, чтобы написать сами тесты. Что
+      интересно? Интересно, что тесты проверять не надо. Они генерируются
+      автоматически, и там все будет привязано. Проверять надо степсы.»
+
+      «Ты только проверь, что buildsteps может создать пакет, а buildtests
+      импортировать. Это feasible идея или нет?»
+
+      «Что значит для уже готовых тестов? Тестов нет.»
+    answer: |
+      Claude, no question asked: feasible in Go and already the suite's
+      import shape; the one engine part the swap breaks is build steps'
+      final check, which runs the generated tests (asked next as Q15).
+
+  - decision_trace:
+      research:
+        - |
+          ADR-0031 (28 October) introduced the check: a definition halved the
+          number itself in a live run, the test passed with no code, and
+          build code had nothing to build. GLOSSARY.md:95 defines Red without
+          the target as a check of build steps --fix. The critique's
+          computes_assertion category judges the same fault, by a model
+          rather than by a run.
+      recommendation: |
+        Withdrawn first: build steps rendering the tests into its scratch
+        copy. Then: keep the check and make it build code's first step,
+        before any code is written; a green test sends its steps back to
+        build steps. It is the only check that catches such a step by a run
+        rather than a model's opinion.
+      settled: |
+        build steps never renders tests. Red without the target stays and is
+        build code's first step: while the code is not built, every test is
+        red precisely because there is no code; a test that passes then has
+        steps doing the product's work, and they go back to build steps. The
+        term is recorded in the glossary so it is not reopened. This
+        overrides ADR-0031's and ADR-0035's placement of the check in build
+        steps.
+    question: |
+      Q15 - Где идёт проверка «красные без кода», если шаги пишутся раньше
+      тестов? Asked first with three options (A: build steps renders the
+      tests into its scratch copy; B: the check moves to build code's start;
+      C: build steps runs the Scenarios straight from the Registry), then,
+      after the Owner's objection, as: убрать проверку или сделать её первым
+      шагом build code — до того как писать код, все тесты должны быть
+      красными, а зелёный тест возвращает свои шаги в build steps.
+    answer: |
+      The Owner, in three messages:
+
+      «Build steps не рендерит тесты сам. Почему, откуда это взялось? В
+      том-то же фишка, что build steps генерит степсы. Этого должно быть
+      достаточно, чтобы потом детерминированно сгенерить тесты. Как, о чем
+      вообще речь? Почему мы, блядь, об этом говорим? Не читай предыдущие
+      диалоги. Мы же это уже обсуждали, что в каком порядке выполняется. Вот
+      опять ты какие-то красные тесты. Почему?»
+
+      «Вот, смотри, теперь измени все под ту архитектуру, которая есть
+      сейчас. Найди все места, где должны быть изменения в ADR-ах и везде,
+      где нужно, чтобы мы больше не путались. Мы сперва делаем степсы, потом
+      тесты. Валидируй ответы, то есть посмотри, нет ли в этой диаграмме, не
+      можешь ли ты сам вывести из этой диаграммы ответы на вопросы, которые у
+      тебя сейчас были. То есть на какие вопросы мы сейчас отвечаем ответ,
+      ну, даем ответы.»
+
+      «Да, хорошо, про красные тесты я согласен, и давай это зафиксируем, что
+      если нет и код еще не сбилжен, то тесты красные, потому что именно кода
+      нет. То есть давай это где-то зафиксируем, чтобы еще раз не
+      возвращаться к терминологии.»
+
+  - decision_trace:
+      research:
+        - |
+          ADR-0038 gave the Suite wiring to build steps because build tests
+          "runs before build steps and reads no definitions, while the wiring
+          names State and Register, which build steps writes" (its considered
+          options). The wiring is deterministic and lives in the suite's
+          tests folder (tests/<suite>/scenarios/, main_test.go).
+      recommendation: |
+        build tests writes the Suite wiring.
+      settled: |
+        Forced by the order entry above: build steps writes only the steps
+        package, and the wiring is deterministic code in the tests folder
+        that build tests renders; ADR-0038's reason for the opposite is gone
+        once steps come first. This overrides ADR-0038's "build steps writes
+        the wiring".
+    question: |
+      Which command writes the Suite wiring once steps come before tests?
+    answer: |
+      Claude, no question asked: build tests, since the order entry gives
+      build steps only the steps package and the wiring is the tests
+      folder's deterministic code.
+
+  - decision_trace:
+      research:
+        - |
+          build steps' final check lists every Scenario's generated test
+          before it runs them without the target
+          (services/true-bdd/internal/app/commands/build_steps_red.go:85, :95);
+          ADR-0031 made the listing a build steps check because it needs the
+          step definitions to compile.
+      recommendation: |
+        The listing goes with the red check to the start of build code.
+      settled: |
+        Forced by Q15: the red check runs the generated tests, which must
+        compile and be listed first, so the test listing moves with it to
+        build code's first step. build tests keeps only its deterministic
+        rendering and ADR-0038's folder checks.
+    question: |
+      Where does the check that every Scenario's test is listed go?
+    answer: |
+      Claude, no question asked: with the red check, to build code's first
+      step, since that run needs the tests compiled and listed.
+
+  - decision_trace:
+      research:
+        - |
+          The architecture's dependency entries already state the volatile
+          parts in prose: the host root recorded as {{CWD}}
+          (docs/architecture/architecture.yaml:780) and the run directory's
+          <YYYY-MM-DD-HH-MM-SS>-<pid> part as {{RUN_DIR}} (:787-788); codex's
+          CODEX_HOME under tmp/codex-homes (:813) and CLAUDE_HISTORY_ROLE
+          (:695, :1051) are stated there too.
+      recommendation: |
+        A: declared on the dependency in the Specification, copied by the
+        engine into the Suite wiring.
+      settled: |
+        Q14 answered by the Owner's correction and Q10: the product's
+        Specification declares, on each third-party dependency, the parts of
+        its requests that change between runs, the paths a recording leaves
+        out and the marker of a read-only request; the engine copies them
+        into the Suite wiring (now build tests' output) and the SDK hands
+        them to cliproxy, which knows no product.
+    question: |
+      Q14 - Откуда generic cliproxy берёт данные о конкретном продукте:
+      заменители и пути, которые не записываются?
+      A. Объявлены на зависимости в Specification (dependencies[].recording:
+      placeholders, unrecorded, read_only_when), движок переносит их в Suite
+      wiring, SDK передаёт в cliproxy.
+      B. Их пишет AI в helpers, а тело Given передаёт их в SDK.
+      C. Отдельный файл настроек хоста вне Specification
+      (tests/true-bdd/cliproxy.yaml).
+    answer: |
+      Claude, no question asked: the Owner's correction after Q14 («у
+      продукта должны быть данные о CLI прокси») and Q10 (values declared in
+      the Specification, copied into the Suite wiring) leave only A.
+
+  - decision_trace:
+      research:
+        - |
+          The codex shim checks the writer's spawn contract before dispatch,
+          in every mode (pkg/testkit/aiproxy/main.go:56,
+          aiproxy/writer_spawn.go, including services/calc), and writes a
+          receipt the Then steps read (tests/true-bdd/steps/writer_lifecycle_steps.go:28-59).
+      recommendation: |
+        The checks leave cliproxy; it records what it was handed at spawn,
+        and the steps judge it.
+      settled: |
+        Forced by the Owner's correction after Q14 (cliproxy knows no
+        product) and Q13 (steps read what a stand-in observed through the
+        SDK): cliproxy records, in every mode, what the product handed it
+        when it spawned (environment, arguments, the files it was pointed
+        at), and the writer-spawn checks become Then steps of the Scenarios
+        that pin them.
+    question: |
+      Where do the writer-spawn checks go once cliproxy knows no product?
+    answer: |
+      Claude, no question asked: into the steps, over a generic record of
+      the spawn that cliproxy keeps in every mode and the SDK exposes.
+
+  - decision_trace:
+      research:
+        - |
+          pkg/testkit/reporter, reportserver, cmd/report-server and
+          cmd/coverage decode the engine's log, Cells, Fix loops and
+          checklists; only reporter.ContainedFile, which is generic, is used
+          by the steps (tests/true-bdd/steps/contained.go:24); materializer
+          has no importer and no caller. CLAUDE.md places this repository's
+          own tooling in scripts/.
+      recommendation: |
+        Move the engine-specific tooling to scripts/.
+      settled: |
+        Forced by Q1 and CLAUDE.md's layout: reporter (but ContainedFile,
+        which stays generic), reportserver, cmd/report-server and
+        cmd/coverage leave pkg/testkit for scripts/, as this repository's
+        tooling. What happens to materializer is not settled.
+    question: |
+      Where do the engine-specific report and coverage tools go?
+    answer: |
+      Claude, no question asked: to scripts/, the root CLAUDE.md gives this
+      repository's own tooling; Q1 removes them from testkit.
+
+  - decision_trace:
+      research:
+        - |
+          The #293 code run (impl/293-testkit-read, c1374ad8) resolves the
+          testkit directory, grants it to body turns, embeds whole testkit
+          files in the critique (testkit_sources), fixes the relative Glob
+          denial and deduplicates evidence roots.
+      recommendation: |
+        Reshape #293 around go doc.
+      settled: |
+        Forced by the Owner's rejection of whole files in prompts and Q9:
+        testkit_sources is dropped; body turns and the critique get the go doc
+        of pkg/testkit and pkg/proxy/cli the engine runs itself; the Glob fix
+        and the evidence-root deduplication stay.
+    question: |
+      What survives of #293's code run?
+    answer: |
+      Claude, no question asked: the Glob fix and the deduplication;
+      whole-file testkit evidence gives way to go doc.
+
+  - decision_trace:
+      research:
+        - |
+          The project tree binding mixes the step's meaning with the harness
+          lifecycle and checklist narrowing
+          (docs/architecture/architecture.yaml:1361-1375).
+      recommendation: |
+        Bindings state what the step does through the declared API.
+      settled: |
+        Forced by Q10 and Q12: a Concept binding states what its steps mean
+        through the Public interface and the test library's declared API;
+        the fixture lifecycle is testkit's and is no longer retold in
+        bindings such as project tree, and checklist narrowing is the
+        narrowed-checklist Given's meaning.
+    question: |
+      What do Concept bindings such as project tree say once the lifecycle
+      is testkit's?
+    answer: |
+      Claude, no question asked: only what their steps mean; Q10 and Q12
+      move the lifecycle and narrowing out of their prose.
+
+  - decision_trace:
+      research:
+        - |
+          testing.testkit.ai_clis: [claude, codex]
+          (docs/architecture/architecture.yaml:501) names the same CLIs as the
+          dependencies claude and codex, both protocol: cli and scope:
+          third_party (:740, :922); the architecture already says third_party
+          dependencies are mocked by record/replay in builds (:729-735). The
+          engine copies ai_clis into testkit.NewSuite
+          (services/true-bdd/internal/app/generators/scenariogen/wiring.go:44).
+      recommendation: |
+        A: retire ai_clis; every dependency with protocol: cli and scope:
+        third_party gets a stand-in, and the Suite wiring writes
+        cli.Substitute for each; internal and self_hosted dependencies run
+        for real. B (keep the list, checked against dependencies) names each
+        CLI twice.
+      settled: |
+        testing.testkit.ai_clis is retired. The stand-ins come from the
+        architecture's dependencies: each one with protocol: cli and scope:
+        third_party gets one, which the Suite wiring requests from the SDK.
+    question: |
+      Q16 - Нужен ли ещё testing.testkit.ai_clis: [claude, codex]?
+      A. Убрать: подмены выводятся из dependencies — каждая зависимость с
+      protocol: cli и scope: third_party получает свою подмену, и Suite
+      wiring пишет для неё cli.Substitute(…); internal и self_hosted работают
+      по-настоящему.
+      B. Оставить как явный список тех сторонних CLI, которые подменяются;
+      движок сверяет его с dependencies.
+    answer: |
+      Убирай.
+
+  - decision_trace:
+      research:
+        - |
+          pkg/testkit/materializer/doc.go says its caller, the Playwright
+          harness suite's TypeScript helper, has since been deleted; it reads a
+          fixture.yaml manifest, while fixtures have no manifest any more
+          (.claude/rules/bdd-harness.md); nothing imports or calls it.
+      recommendation: |
+        A: delete it; its caller and its fixture format are gone, and git
+        keeps it.
+      settled: |
+        pkg/testkit/materializer is deleted with the testkit split.
+    question: |
+      Q17 - Удаляем pkg/testkit/materializer при разделении testkit?
+      A. Удалить.
+      B. Перенести в scripts/ вместе с остальными инструментами.
+    answer: |
+      Да, удаляй этот материалайзер. Если его никто не использует, то бог с
+      ним.
+
+  - decision_trace:
+      research:
+        - |
+          The Owner's question during Q18, before it was answered.
+          «Еще вопрос. Мы можем эту схему, эту диаграмму зафиксировать в
+          ADR-ах где-то, да, и в рулсах, и постоянно придерживаться ее при
+          работе?»
+      recommendation: |
+        Three places: the decisions in ADR-0040 and in an ADR-0041 for the
+        testkit split, each with a Mermaid diagram; a rule
+        .claude/rules/generation.md over services/**, pkg/**, utilities/**,
+        tests/**, docs/**, templates/** and true-bdd/** stating six
+        invariants; one line in CLAUDE.md pointing at it; the HTML page kept
+        as the visual version.
+      settled: |
+        Nothing decided yet: the three places wait for the Owner's
+        confirmation.
+    question: |
+      Where is the generation diagram fixed so that work keeps to it?
+    answer: |
+      Claude, no question asked: proposed above; the Owner has not confirmed
+      it yet.
+
+  - decision_trace:
+      research:
+        - |
+          The engine waits for codex exec and claude -p to exit by themselves,
+          with no deadline (ADR-0025):
+          services/true-bdd/internal/infrastructure/cli/codex/codex.go:89-102
+          and cli/claude/stream.go:44. WaitDelay: 10s only stops waiting for a
+          leftover process holding the output after codex has exited; it
+          sends no signal. The engine kills a CLI's process group with
+          SIGKILL only when its own run is cancelled, by Ctrl-C or SIGTERM to
+          true-bdd (services/true-bdd/cmd/build.go:77,
+          internal/infrastructure/shell/shell.go:123-125), or when a caller
+          set a timeout (the judge in the tests, the harness's five-minute
+          cap on a run, whose partial recording is discarded).
+        - |
+          The rule recording a signal-killed CLI as exit 0
+          (pkg/testkit/aiproxy/record.go, waitExitCode) and its comment about
+          a "stdin-close→SIGTERM→5s→SIGKILL schedule" came with #120
+          (1ab3489b, 2026-09-04), when the engine still ran claude through the
+          vendored claudecode SDK, which killed the process itself
+          (services/bdd-cli/claudecode/internal/subprocess/process_terminator.go:13,
+          proc.Signal(os.Kill)); the same commit deleted that SDK. Claude's
+          first explanation repeated that outdated comment and was wrong.
+      recommendation: |
+        Remove the rule: when the real CLI dies from a signal while
+        recording, cliproxy records nothing for that call, reports it loudly
+        and exits with its failure code, so the AI turn fails, the walk
+        stops and nothing is published; the outdated comment goes with it.
+      settled: |
+        The rule is removed and its traces cleaned. A real CLI ended by a
+        signal while recording fails the recording loudly: nothing is
+        recorded for that call, the shim exits with its failure code, the
+        walk stops and no cassette is published. Done in
+        pkg/testkit/aiproxy/record.go with
+        record_exit_internal_test.go; the comment at the signal relay now
+        says only that an interrupted run stops the real CLI too.
+    question: |
+      Q18 - Чьё это правило: общее для cliproxy или продукта? A. Общее
+      правило cliproxy: вызов, который вызывающий завершил сигналом уже после
+      того, как закрыл stdin, — успех. B. Объявлено на зависимости. C.
+      Записывать честно «убит сигналом», а при replay ждать сигнала. Asked
+      again after the explanation was corrected: убираем правило? Если
+      настоящий CLI при записи умер от сигнала, cliproxy ничего не пишет в
+      кассету за этот вызов, громко сообщает и выходит с отдельным кодом
+      ошибки; запись останавливается целиком, а устаревший комментарий в
+      record.go:30 удаляется.
+    answer: |
+      The Owner, in three messages:
+
+      «Я не могу ответить на этот вопрос. На вопрос Q18. Потому что я не
+      знаю, что значит правило вызов убытый сигналом. Записывается как
+      успешный. Это я вообще не понимаю, почему вызов убитый сигналом.
+      Вообще должен как-то записываться. Мне не очень понятно. А что будет,
+      если то есть, а что именно было убито? Что убивается сигналом? Я не
+      могу понять.»
+
+      «Слушай, здесь надо провести ресерч. То есть, во-первых, это
+      категорически неправильный подход. То есть, когда движок прочитал
+      ответ, кодекс ему больше не нужен, он его выключает. Для этого нужно
+      посмотреть, как, во-первых, что значит кодекс ему больше не нужен, и он
+      его выключает. Если я правильно понимаю, то все, что мы делаем, мы же
+      делаем кодекс exec. Он, по идее, сам должен выключиться. Почему? Ему
+      нужно отправлять вообще seek term и seek kill. И это точно неправильно.
+      То есть это бага, и это надо как бы остановить сам рекординг. Да? То
+      есть как бы сделать большой какой-то аларм юзеру, что у него что-то
+      пошло не так. То есть здесь система должна просто сделать в целом
+      хальт. Не только сам кодекс, а еще вот все в целом. Вот. И поэтому,
+      смотри, здесь можно сделать так. Во-первых, надо понять... Мне надо
+      понять, что значит мы выключаем кодекс. Он должен завершиться сам,
+      потому что мы вызываем команду exec. А она не стримовая. То есть она же
+      работает как просто как работает. Или там другой подход. То есть, если
+      там другой подход, тогда нужно посмотреть, а можно ли в кодекс
+      отправить команду, как с помощью стрима отправить команду вот этого
+      плавного завершения. Ну, то есть, вменяемого завершения, чтобы не
+      делать seek kill. Может быть, надо ждать больше. Может быть, надо
+      ждать, пока стрим закончится. В общем... Напиши мне здесь больше
+      деталей, как конкретно это сейчас работает.»
+
+      «Конечно, убираем это правило и внимательно почисть все, что у нас есть
+      от этой информации.»
+
+  - decision_trace:
+      research:
+        - |
+          Written on the Owner's word: ADR-0040 gains a Mermaid diagram of the
+          pipeline; ADR-0041 (docs/adr/0041-test-runtime-knows-no-product.md)
+          records Q1 to Q18 with a Mermaid diagram of the runtime;
+          .claude/rules/generation.md states the six invariants over
+          services/true-bdd/**, pkg/**, utilities/**, tests/**, scripts/**,
+          docs/**, templates/** and true-bdd/**; CLAUDE.md's first paragraph
+          says TrueBDD generates the steps, the tests and the code and points
+          at the rule.
+      recommendation: |
+        The three places proposed during Q18.
+      settled: |
+        The generation picture is fixed in ADR-0040, ADR-0041,
+        .claude/rules/generation.md and CLAUDE.md.
+    question: |
+      Where is the generation diagram fixed so that work keeps to it
+      (proposed during Q18: the ADRs with Mermaid, a rule, one CLAUDE.md
+      line)?
+    answer: |
+      The Owner, in four messages, the last three sent while Claude wrote:
+
+      «да пиши»
+
+      «так что там осталось ответить?»
+
+      «Try again»
+
+      «ой то случайго»
+
+  - decision_trace:
+      research:
+        - |
+          Q1 to Q18 are answered and recorded in ADR-0040 and ADR-0041. Three
+          pieces of work remain: the order swap (engine, TrueBDD's own
+          Specification and its fixtures, README, drill and rules), the testkit
+          split (pkg/proxy/cli, the utilities module, internal/, product values
+          and helpers, ai_clis retired, tooling to scripts/, materializer
+          deleted, bindings rewritten), and go doc for the body turns and the
+          critique (#293 reshaped). go doc should describe the final API, so it
+          follows the split.
+      recommendation: |
+        T1 (the order) and T2 (the split) in parallel, T3 (go doc) after T2,
+        then the drill's round 8; close #293 in favour of T3.
+      settled: |
+        Three tickets, T1, T2 and T3, worked strictly one after another in
+        that order; the grilling's changes are committed. Closing #293 is not
+        decided.
+    question: |
+      Q19 - План тикетов и порядок: T1 (новый порядок, ADR-0040), T2
+      (разделение testkit, ADR-0041), T3 (go doc вместо исходников, #293 в
+      новом виде); T1 и T2 параллельно, T3 после T2, потом прогон 8 на cut B.
+      Коммитить в impl/249-suite-folder?
+    answer: |
+      да, коммить и заводи тикеты T1, T2, T3 только давай все делать
+      последовательно
+
+  - decision_trace:
+      research:
+        - |
+          Shown on this repository's code: a Scenario's steps are lines of text
+          in docs/scenarios.yaml; a step definition is the Go function that
+          runs one, registered against a pattern in Register
+          (tests/true-bdd/steps/cli_steps.go:86, :107); a generated test states
+          its Scenario's steps literally (tests/true-bdd/build_code_claude_test.go);
+          the Suite wiring is tests/true-bdd/scenarios/scenarios.go and
+          main_test.go, which build the suite, hook in steps.Register and hand
+          each test its run. A Scenario green without the code has a step
+          definition doing the product's work, such as a Then that computes
+          the half itself, and that definition must be rewritten.
+          GLOSSARY.md has no entry for a single step definition.
+      recommendation: |
+        Name the four things apart: step, step definition, test, Suite
+        wiring; add Step definition to the glossary.
+      settled: |
+        Nothing decided: the terms were laid out on the code before Q20 and
+        Q21.
+    question: |
+      The Owner's question on Q20's terms.
+      «Подожди, я сейчас вообще не понимаю. Шаги зеленого сценария
+      возвращаются в build steps. Что это такое? Подожди, давай разберемся
+      еще, что, а что такое suit wiring? То есть, что мы подразумеваем под
+      steps, что мы подразумеваем под wiring? То есть, давай, приведи мне
+      пример степа, приведи мне пример wiring. Тут что-то опять же не то, то
+      есть у нас разрыв в терминологии.»
+    answer: |
+      Claude, no question asked: the four things shown on the code above.
+
+  - decision_trace:
+      research:
+        - |
+          The scenarios package tests/true-bdd/scenarios/ is imported only by
+          the 37 generated test files in tests/true-bdd/ (package
+          truebdd_test) and by the engine's renderer
+          (services/true-bdd/internal/app/generators/scenariogen); _test.go
+          files of one package share their identifiers, so TestMain, the suite
+          and New can live in the tests' own main_test.go.
+      recommendation: |
+        A: retire both the term and the package; tests/<suite>/main_test.go
+        holds TestMain, the suite and New, the generated tests call New(t,
+        id), and the glossary drops Suite wiring.
+      settled: |
+        The Suite wiring is no layer of its own: it is the tests' main file.
+        build tests writes tests/<suite>/main_test.go with TestMain, the suite
+        and New, the generated tests call New(t, id), and the scenarios
+        package goes. The term Suite wiring is retired; ADR-0040, ADR-0041,
+        the generation rule and the glossary say the tests' main file.
+    question: |
+      Q21 - Как быть с «Suite wiring»? A. Убрать и термин, и пакет:
+      tests/<suite>/main_test.go содержит TestMain, suite и New, а
+      сгенерированные тесты вызывают просто New(t, id). B. Код оставить,
+      убрать только термин. C. Переименовать в runner
+      (tests/<suite>/runner/runner.go, термин «Test runner»).
+    answer: |
+      The Owner, in three messages:
+
+      «Правильно ли я понимаю, что... Подожди. Это у нас сценариус Go, BDD
+      сценариус, да? То есть это у нас тест. Это фактически это часть... То
+      есть смотри, то, что ты называешь тест suite wiring, как будто это
+      тест-раннер. По сути-то. Ну, то есть это тест... Это можно было бы
+      назвать run.go или runner.go, правильно? Или main.go. Вот. И я просто
+      про что? Я про то, что... Я против такого названия suite wiring. То есть
+      это и есть тесты. Для меня suite wiring это тесты. Ну все, ну то есть
+      это часть тестов. Вот просто тест, да. То есть, ну это как будто это
+      тест-раннер. Нет?»
+
+      «Да, я бы пошел с A, потому что вот эта прослойка в suit wiring как
+      будто не имеет смысла.»
+
+      «продолжи работу. .»
+
+  - decision_trace:
+      research:
+        - |
+          Today build steps returns the Items of a Scenario green without the
+          target to its Fix loop with the finding
+          (services/true-bdd/internal/app/commands/build_steps_red.go:52-55,
+          returnGreenItems). ADR-0031 lets build code start from existing code
+          and repair only the failing tests.
+      recommendation: |
+        A: build code stops with a distinct error naming the green Scenarios
+        and the step definitions they ran, and build steps --fix --redo
+        <Scenario> reopens those definitions for the writer.
+      settled: |
+        No fix path. When build code starts and the code is not built, every
+        test must be red; a green test stops build code with a distinct error
+        naming the Scenario, since correctly written steps cannot pass
+        without the code. When code already exists, green tests are expected
+        and build code goes on to the failing ones. Nothing is sent back to
+        build steps. This overrides ADR-0040's "they go back to build steps".
+    question: |
+      Q20 - Как build code сообщает build steps, какое определение шага
+      переписать? A. build code останавливается, а build steps получает флаг
+      --redo <Scenario> и заново открывает эти определения. B. build code сам
+      переписывает определения, перерисовывает тесты и проверяет снова. C.
+      build code останавливается, и всё; что делать с определением, человек
+      решает сам.
+    answer: |
+      Тут смотри, какая штука. Build steps, да, после того, как он... То есть
+      смотри, build steps. Короче, если мы все сделали правильно, то такого
+      просто не может быть. Поэтому если там... нету кода и есть какой-то
+      зеленый тест, то, ну, это просто, просто надо падать и говорить, что вот
+      нет кода, есть зеленый тест. Но если код уже есть, то, ну, код уже
+      есть. Так тоже может быть. И, то есть, получается, что это build code
+      останавливается. А как build step получает флаг, я не знаю, потому что
+      что ты имеешь в виду под build steps получает флаг? Получает флаг. О,
+      господи, получает параметр минус-минус ряду, и с этим флагом build step
+      заново открывает эти предыдущие. В общем, нет, смотри, этого так делать
+      не надо. Я бы сейчас на это вообще забил, потому что это не очень
+      реалистичный сценарий, когда мы понимаем, как пишутся степы. То есть
+      степ не может генерить код, правильно? Степ генерит только... тесты. То
+      есть, как step будет генерить код, если он given when then? Ну, типа, он
+      либо given, либо when, либо then. То есть, это мы где-то внутри
+      сгенерили код. Я бы сказал, что здесь, наверное, C. Никаких фиксов тут
+      нету. Ничего мы с build steps не делаем. Тем более, что там еще между
+      build steps и build test, build code есть build tests. Ты опять, по-моему,
+      про него забыл. Вот, поэтому давай C. Просто останавливаемся. И то
+      останавливаемся в том случае, если существующего кода нет.
+
+  - decision_trace:
+      research:
+        - |
+          The generated tests and main_test.go import the Steps package
+          (steps.Register, steps.State) and do not compile without it; build
+          tests compiles and runs nothing, and already refuses problems in its
+          own folder (ADR-0038: stale tests, a missing fixture, a fixture no
+          Scenario names).
+      recommendation: |
+        A: refuse at startup, naming the missing package and build steps
+        --fix; B (render anyway) moves the error to build code's compiler.
+      settled: |
+        build tests refuses at startup when the suite's Steps package is
+        missing, naming it and build steps --fix.
+    question: |
+      Q22 - Что делает build tests, если Steps package ещё нет? A.
+      Отказывается при старте, называя пакет и команду «сначала build steps
+      --fix». B. Всё равно рендерит; ошибка всплывёт в build code как ошибка
+      компиляции.
+    answer: |
+      Да, эй, конечно, просто отказывается при старте, и все.
+
+  - decision_trace:
+      research:
+        - |
+          #293 is open with one comment (the code run done, its whole-file
+          critique evidence blocking the merge); its branch
+          impl/293-testkit-read (c1374ad8) and worktree remain, holding the
+          relative-Glob fix and the evidence-root deduplication T3 keeps.
+      recommendation: |
+        A: close #293 as not planned, superseded by T3, naming ADR-0041 and
+        the Q&A log; T3 is a new ticket with a clean body; the branch and
+        worktree go once T3 has taken what it keeps.
+      settled: |
+        #293 is closed as not planned, superseded by T3, once T3 exists; the
+        branch and worktree are removed after T3 takes the Glob fix and the
+        deduplication.
+    question: |
+      Q23 - Что делать с #293? A. Закрыть как not planned с комментарием
+      «заменён тикетом T3»; T3 — новый тикет с чистым описанием. B.
+      Переписать описание #293 под T3.
+    answer: |
+      Ну да, закрою его как Not Planet и замененный, да-да-да.
+
+  - decision_trace:
+      research:
+        - |
+          Codex plan-read plan-read-293-tickets
+          (tmp/codex/plan-read-293-tickets/final.md) over #294, #295 and #296,
+          each claim checked against the code: build steps refuses without
+          generated tests today
+          (services/true-bdd/internal/app/commands/build_steps_generated.go:18-25)
+          and compiles through the suite's listing
+          (internal/infrastructure/testrunner/go_definition.go:12-13, 48-55);
+          the hand-written guards call the scenarios package
+          (tests/true-bdd/coverage_test.go:19, :25); the critique collects
+          only the steps directory
+          (internal/app/commands/build_steps_critique.go:15); a bare go doc of
+          a package lists ScenarioRun without its methods' comments; the
+          writer-spawn checks need modes, symlink status and directory
+          listings at spawn (pkg/testkit/aiproxy/writer_spawn.go:106-148).
+      recommendation: |
+        Add each to its ticket; take go doc -all of the two packages the
+        steps may use.
+      settled: |
+        #294 drops build steps' generated-test prerequisite, compiles the
+        Steps package itself and moves the guards' calls; #295's spawn
+        receipt carries what the writer-spawn checks need at spawn; #296's
+        critique embeds the helpers with the fixture contracts they name.
+        Forced by Q13 and CLAUDE.md's complete-evidence rule: the turns get
+        go doc -all of the pkg/testkit root and pkg/proxy/cli, the complete
+        exported API with its comments. How build code tells that no code
+        is built is left to the Owner (Q24).
+    question: |
+      What does the plan-read of the three tickets change?
+    answer: |
+      Claude, no question asked: five findings went into the tickets; the
+      sixth, the predicate for "no code is built", is a decision for the
+      Owner.
+
+  - decision_trace:
+      research:
+        - |
+          A service declares path, language and writable paths
+          (services/true-bdd/internal/infrastructure/architecture/loader.go:71-78);
+          language is a free string in the schema
+          (true-bdd/architecture_yaml-schema.yaml:79) and nothing in the
+          engine maps it to file kinds today.
+      recommendation: |
+        A: no code is built for a service when its path and writable paths
+        hold no source file of its language; manifests do not count; decided
+        per Scenario by its service.
+      settled: |
+        Delegated to Claude; see the next entry.
+    question: |
+      Q24 - Когда считается, что «кода нет», и красная проверка обязательна?
+      A. В пути сервиса (services[].path и его writable) нет ни одного
+      исходного файла его языка; манифесты вроде go.mod и package.json не
+      считаются; решается для каждого Scenario по его service:. B. Путь
+      сервиса пуст или отсутствует, считается любой файл. C. Сервис не
+      собирается.
+    answer: |
+      Слушай, давай ты как-нибудь пока что сам решишь, каким там способом. То
+      есть, да, это надо решить однозначно сейчас, но как именно... Бог его
+      знает.
+
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        A, with a fixed table of source extensions per language.
+      settled: |
+        A service has no code built when no regular file under its
+        services[].path or its writable paths has a source extension of its
+        declared language: go .go; typescript .ts, .tsx; javascript .js,
+        .jsx, .mjs, .cjs. Manifests and lockfiles never count. A language
+        outside the table counts any regular file as code, so the check is
+        skipped rather than misapplied. The check applies per Scenario, by
+        its service: a Scenario whose service has no code must be red.
+    question: |
+      How build code tells that no code is built.
+    answer: |
+      Claude, delegated in Q24: A, per Scenario by its service, with the
+      extension table above and any file counting for a language outside it.
+
+  - decision_trace:
+      research:
+        - |
+          The ticket skills (mpc_to-tickets, mpc_to-spec, mpc_triage,
+          mpc_implement, mpc_implement-spec, mpc_grilling and others) read
+          docs/agents/issue-tracker.md; the mpc_* skills are vendored copies
+          AGENTS.md keeps unchanged. The plan-read before publication is
+          stated in AGENTS.md (Codex) and briefed through
+          .claude/skills/common-codex/briefs/plan-read.md.
+      recommendation: |
+        A living architecture document in docs/adr/ linked from the ADRs and
+        the rule; the architecture check of tickets in issue-tracker.md, with
+        the plan-read brief pointing at it.
+      settled: |
+        docs/adr/generation-architecture.md holds the artifact's picture in
+        Markdown with Mermaid diagrams; ADR-0040 (the pipeline decision,
+        the best fit) and ADR-0041 link it, and .claude/rules/generation.md
+        points at it. The published page is updated to Q20 to Q24. Every
+        ticket must fit that architecture (docs/agents/issue-tracker.md,
+        Architecture fit), and a ticket draft's plan-read checks each change
+        against the rule's invariants (common-codex's plan-read brief;
+        AGENTS.md and common-codex now say spec or ticket draft).
+    question: |
+      The Owner's requests after the tickets were created.
+      «/mp Слушай, смотри, а ты можешь сделать, то есть сейчас я хотел бы
+      сделать, а вообще какой скилл позволяет вносить изменения в процесс
+      скиллов? Вот, потому что мне хочется добавить кое-какие шаги при
+      валидации тикетов. Через какой скилл это сделать?»
+
+      «А если я буду использовать вот этот writing for agents, я имел в виду
+      скилл, который пишет updated скиллы. Именно вот это, то есть мне нужно
+      как раз таки понять, с помощью скилла я мог бы проапдейтить вот этот
+      issue tracker, просто закинув ему информацию, типа, что я хочу сделать,
+      чтобы он сам разобрался, что обновить.»
+
+      «А я тебя где-то просил сохранить информацию вот из артефакта в
+      Markdown про архитектуру. Где она лежит?»
+
+      «Тогда обнови артефакт. И мне все-таки хочется, чтобы был отдельный
+      markdown именно с вот прям артефакт. Отдельный markdown с архитектурой,
+      пусть он лежит в ADR, и хотя бы какая-то из ADR на него ссылается.
+      Найди которая была бы лучше.»
+
+      «/mpc_writing-for-agents  В общем, смотри, когда мы создаем тикеты, я
+      хотел бы, чтобы при вычетке через кодекс, то есть вот у нас есть
+      вычетки через кодекс, я хотел бы, чтобы вот этот степ вычетки через
+      кодекс был расширен на предмет соответствует ли тикеты той
+      архитектуре.»
+    answer: |
+      Claude, no question asked: done as settled above.
+
+  - decision_trace:
+      research:
+        - |
+          The re-read of #294 to #296 (plan-read-294-296-architecture) kept
+          the plan-read template's general question beside the architecture
+          check, so it reported logic findings: of five, two bear on the
+          architecture (#295's hand-written helper before helpers are
+          generated, invariants 1 to 3; #295's spawn receipt selectors in the
+          utility, invariant 5) and three do not (the red check being Go-only,
+          the architecture schema, the prompt_data prose).
+      recommendation: |
+        Rerun the reading on architecture fit alone, and make the ticket's
+        two readings separate.
+      settled: |
+        A ticket draft gets two separate Codex readings before publication,
+        started together: a plan-read for its logic (briefs/plan-read.md, with
+        no architecture paragraph) and an architecture read for its fit to the
+        generation architecture alone (briefs/architecture-read.md). AGENTS.md,
+        common-codex's SKILL.md and docs/agents/issue-tracker.md say so. The
+        architecture-only rerun of #294 to #296 is that second reading; the
+        first run's findings stand as the logic reading's, applied only on
+        the Owner's word.
+    question: |
+      The Owner's messages on the re-read of #294 to #296.
+      «Да, слушай, а вычитай, только пока что не применяй. Если будут найдены
+      какие-то изменения. А сами правки, ну, в смысле, вот эти все изменения
+      в скиллах и так далее, да, закоммить, пожалуйста, эту интеграционную
+      бранчу.»
+
+      «Стой, подожди, тут что-то пошло не в ту сторону. Он должен был
+      проверить исключительно на архитектуру. Почему он проверил? То есть где
+      разногласие с архитектурой? Он просто нашел логические несостыковки,
+      что может быть окей, но с архитектурой-то что? Ты ему его промпт
+      отправил. То есть я не знаю, зачем ты его просил смотреть это. Я же
+      просил тебя сделать на соответствие архитектуре. Соответствует ли тикет
+      этой архитектуре? А ты что сделал?»
+
+      «Нет, подожди. Задача была запустить это отдельным агентом
+      исключительно на предмет архитектуры, и все. Там, то есть, когда
+      создается тикет, чтобы было два шага, типа там, первый просто проверить
+      на, там, на логику и найти вот эти вещи, да, это то, что ты делаешь. А
+      второй это на архитектуру. Понимаешь? То есть отдельным агентом,
+      отдельным кодексом, чтобы он отдельно именно нашел несоответствие с
+      архитектурой.»
+    answer: |
+      Claude, no question asked: the two readings are split as settled above.
+
+  - decision_trace:
+      research:
+        - |
+          The architecture-only reading (plan-read-294-296-architecture-only)
+          found one broken invariant: #294 keeps the hand-written guards in
+          tests/true-bdd/coverage_test.go ("Hand-written, not generated",
+          :27), against invariants 1 to 3. ADR-0038 gave the four folder
+          checks to build tests, but the engine has none of them and no
+          ticket builds them. #295 fits but does not name build steps as the
+          writer of its Steps-package changes; #296 fits.
+        - |
+          Checks 1 (one generated test per Scenario, in its file) and 2 (every
+          fixture named by a Scenario) hold for any Host project; checks 3
+          (fixture copies of the shipped prompt templates declared as
+          extension or replacement) and 4 (no fixture document comment names
+          a Scenario beside an outcome) concern only fixtures that exercise
+          TrueBDD's own engine.
+      recommendation: |
+        A: split; checks 1 and 2 into build tests for every host, checks 3
+        and 4 into a repository gate in scripts/; coverage_test.go deleted;
+        ADR-0038 amended.
+      settled: |
+        coverage_test.go is deleted; checks 1 and 2 move into build tests,
+        for every host. Where checks 3 and 4 go is asked next (Q27).
+    question: |
+      Q26 - Куда уходят проверки из coverage_test.go? Asked first as where
+      the four folder checks live (in #294, in a ticket after #294, or kept
+      hand-written), then, after the Owner's questions, as: A. Разделить:
+      общие 1 и 2 в build tests, 3 и 4 — gate в scripts/. B. Все четыре в
+      build tests, как решил ADR-0038. C. Все четыре в gate в scripts/.
+    answer: |
+      The Owner, in four messages:
+
+      «Подожди, давай разберемся, что значит build tests получает 4
+      проверки, а кто ему их дает?»
+
+      «Так все-таки ты можешь правильно оформить вопрос вот так, как ты
+      описал?»
+
+      «Слушай, если я правильно понимаю, то этот coverage-test Go должен быть
+      просто удален. А что там с ним происходит, ну, да, куда-то надо это
+      перенести. Но если их перенести в билд-тест, не будет ли это
+      hardness-specific? Ну, в смысле, не будет ли это хост-специфик?»
+
+      «Так, хорошо, но 1.2 точно надо перенести в build-тест. Это понятно. А
+      ты можешь точнее расшифровать, что делают 3.4?»
+
+  - decision_trace:
+      research:
+        - |
+          Fixtures are not generated: ADR-0038 leaves them out of the
+          generated suite folder, and they change with every new Scenario and
+          re-record. Check 3 fails when a shipped prompt template changes and a
+          fixture's extension copy still begins with the old text (editing the
+          first line of templates/build-steps.fix-generator.system.prompt.tpl
+          fails build-steps-green, -critique-correct and -many); prompts change
+          often (#286, #289). Check 4 fails only when a fixture's author writes
+          a comment naming a Scenario beside an outcome, the hint #259 caught.
+      recommendation: |
+        A: a gate of this repository in scripts/, with the same logic.
+      settled: |
+        Checks 3 and 4 become a gate of this repository in scripts/cmd/gates,
+        with the same logic, run with the other gates. With Q26 this amends
+        ADR-0038: build tests holds only the folder checks every Host project
+        needs.
+    question: |
+      Q27 - Что делать с проверками 3 и 4? A. Gate этого репозитория в
+      scripts/ (например go run ./scripts/cmd/gates fixtures) с той же
+      логикой. B. Убрать.
+    answer: |
+      The Owner, in two messages:
+
+      «А насколько проверки 3 и 4 в принципе необходимы при условии, что у
+      нас нет кода? То есть я что-то вот плохо понимаю, как такая ситуация,
+      вот как воспроизвести ситуацию, когда они упадут? То есть два,
+      предположим, что никто никогда не меняет то, что те фикстуры, которые
+      были сгенерированы, да, то есть их никто никогда не меняет. Как может
+      получиться, что там что-то будет не так?»
+
+      «Окей, хорошо. Перенеси их пока что в CMD Gates. Ну, CMD Gates.»
+
+  - decision_trace:
+      research:
+        - |
+          The writer-spawn check writes tmp/aiproxy-state/writer-spawn.txt
+          ("fixture authentication and edit roots verified",
+          pkg/testkit/aiproxy/writer_spawn.go:59-67), which the Then reads
+          (tests/true-bdd/steps/writer_lifecycle_steps.go:50-56); the code
+          calls it the writer spawn receipt. Its paths (services/calc,
+          tmp/codex-homes, tmp/codex-shell-home and others) are hardcoded in
+          the proxy (:138-148).
+      recommendation: |
+        A: a Given names the paths through the SDK before the When; they live
+        in the step definition, in the Steps package.
+      settled: |
+        The paths cliproxy observes when a writer is spawned are named by a
+        Given through the SDK before the When; they live in that step's
+        definition in the Steps package, and cliproxy holds none of its own.
+    question: |
+      Q25 - Кто называет proxy пути, которые надо записать в момент запуска
+      writer'а? A. Given шага, через SDK, до When (пути в определении шага, в
+      Steps package). B. Архитектура, на зависимости codex. C. Файл в корне
+      фикстуры.
+    answer: |
+      The Owner, in two messages:
+
+      «Что такое квитанция? Откуда ты берешь эти слова?»
+
+      «Хорошо, смотри, вообще-то это, конечно, должно быть что-то типа given,
+      пути лежат в определении шагов steps, пусть там пока будет.»
+
+  - decision_trace:
+      research:
+        - |
+          AGENTS.md and common-codex allowed parallel work: mpc_implement-spec's
+          implementers on the frontier, up to four writers at once, and
+          mpc_code-review's two reviewers started together. A review had no
+          architecture axis.
+      recommendation: |
+        One writer at a time with tickets in order; readers up to three at
+        once; a third review run for architecture fit with its own brief.
+      settled: |
+        One writer at a time: code and fix runs run alone, and each ticket
+        goes through its code run, its review and its merge before the next
+        ticket's code run starts, overriding any skill's parallel
+        implementers. Readers (research, plan-read, review) may run up to
+        three at once; a ticket's review runs start after its code run. A code
+        review is three review runs: standards, spec, and architecture, whose
+        brief (common-codex briefs/architecture-review.md) checks every file
+        of the ticket's diff against docs/adr/generation-architecture.md and
+        the rule's invariants, and nothing else.
+    question: |
+      The Owner's requests on how work runs.
+      «/mpc_writing-for-agents Я хочу сделать еще одну вещь. Я хочу, чтобы все
+      задачи выполнялись исключительно последовательно. И чтобы мы не
+      запускали несколько кодексов, несколько агентов параллельно. То есть
+      мне хотелось бы, чтобы каждая следующая задача шла как бы один за
+      другим. То есть задача, да, код-ревью. И еще момент. Я хотел бы, чтобы
+      при коде ревью кодекс делал еще проверял и пытался найти, есть ли
+      соответствует ли код, который был сгенерирован, код ревью, соответствует
+      ли код именно архитектуре. То есть там и так уже есть две вещи, да, там
+      уже есть в принципе правило, но я хотел бы вот именно с таким промптом,
+      типа посмотри на Посмотри на файл с архитектурой и проверь,
+      соответствуют ли изменения, как бы, вот, связанные с этой задачей. Я
+      просто не знаю, как ты оформишь, да, типа, где взять эти изменения, это
+      надо будет там ему уточнить, наверное, да. Но именно вот эти конкретные
+      изменения, ложатся ли они в архитектуру, которую мы определили?»
+
+      «Есть важная уточнение к предыдущей задаче. Когда я говорю
+      последовательно, то именно вот кодинг, то есть задачи выполняются
+      исключительно последовательно. Наверное, 2-3 ресерча одновременно
+      запускать вполне себе»
+    answer: |
+      Claude, no question asked: written as settled above.

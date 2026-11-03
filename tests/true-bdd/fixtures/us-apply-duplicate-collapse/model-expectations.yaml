@@ -1,0 +1,4 @@
+"the us_apply_checklist prompt keeps the and modifier of the criterion's steps":
+  glob: "tmp/*/01-95.1-001-mcp-initialize-checklist-*-user.txt"
+  pattern: "### Steps\\nGiven:\\n  - the MCP server is running on its configured port\\n  - the server accepts JSON-RPC over HTTP POST at /mcp\\nWhen:\\n  - the Claude User posts a valid JSON-RPC initialize request to /mcp\\nThen:\\n  - the server returns HTTP 200\\n  - and the response body is a well-formed JSON-RPC envelope referencing the request id\\n\\n\\n---"
+  operator: "matches"

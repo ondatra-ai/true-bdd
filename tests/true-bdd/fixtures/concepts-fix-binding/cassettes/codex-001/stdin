@@ -10,32 +10,33 @@ a document. For document edits return the requested confirmation markers.
 
 The responsible person chose apply at the menu for Scenario host-001.
 Approved fix:
-Repair for Item host-001 (service: greeter) — one binding change for the System Architect. No Product Owner change is needed (see rationale). Nothing has been applied; apply only after an explicit menu decision.
+# Repair proposal — Item host-001 (fail)
 
 ## Failed judgement
 
-Finding: `when concept "request greeting" for service greeter has 0 Concept bindings`.
+`concept-bindings`: when concept "request greeting" for service `greeter` has 0 Concept bindings.
 
-`docs/product/product.yaml` declares the `when` concept `request greeting` ("Call greet once for the named person with the optional loud flag omitted"), and Item host-001 uses it in its When step ("the greeting is requested for person \"Alice\" with loud omitted"). `docs/architecture/architecture.yaml` binds only `greeting/given` and `greeting/then` for service `greeter`; it has no binding at all for `request greeting/when`, so the step has nothing to execute against the Public interface.
+The product document declares the `when` concept `request greeting` (`docs/product/product.yaml`, lines 10-14), used by the Scenario step `the greeting is requested for person "Alice" with loud omitted`. `docs/architecture/architecture.yaml` binds only `greeting/given` and `greeting/then`, so the `when` concept of this Scenario's service has no binding.
 
-## Owner: System Architect — add the missing concept binding
+## Owner
 
-File: `docs/architecture/architecture.yaml`
+**System Architect** — a single missing concept binding. No Product Owner change is proposed: the declared meaning ("Call greet once for the named person with the optional loud flag omitted") already covers this Scenario's `when` step, and the glossary term `greeting` is unchanged.
 
-Insert one new entry into `architecture.concepts`, between the existing `greeting/given` entry and the existing `greeting/then` entry (given → when → then order). Both existing concept bindings and the `terms` list stay exactly as they are.
+## Judgement against the declared Public interface
 
-Exact change (new lines marked `+`):
+`greeter` declares `public_interface: {kind: cli, document: docs/greeter-cli.yaml}`. That document already declares everything the binding needs — **no extension is required**:
 
-```yaml
- architecture:
-   services:
-   - name: greeter
-     path: services/greeter
-     language: go
-     public_interface:
-       kind: cli
-       document: docs/greeter-cli.yaml
-   concepts:
+- command `greet` (`docs/greeter-cli.yaml`, line 6)
+- parameter `person`, `in: argument`, required, string (lines 9-13)
+- parameter `loud`, `in: flag`, optional, boolean, `default: false` (lines 14-19)
+
+So the reference selector is `command: greet`, and "loud omitted" is expressible as the declared flag default. This is a **new use** (the `when` block, which has no binding at all), not a widening of the existing `greeting/given` or `greeting/then` bindings — therefore one new binding entry is added and no existing concept is altered.
+
+## Exact change — `docs/architecture/architecture.yaml`
+
+Insert one new entry into the top-level `concepts:` list, between the `greeting/given` entry (ends line 15) and the `greeting/then` entry (begins line 16), keeping given → when → then order.
+
+```diff
    - concept: greeting
      block: given
      service: greeter
@@ -47,9 +48,8 @@ Exact change (new lines marked `+`):
 +    service: greeter
 +    references:
 +    - command: greet
-+    does: Run greet once with the person argument set to the named person and the
-+      loud flag omitted, so the configured greeting is printed verbatim and one greeted
-+      log record is emitted.
++    does: Run greet once with the person argument from the step and the loud flag omitted,
++      so its default false applies and the configured greeting is printed and logged unchanged.
    - concept: greeting
      block: then
      service: greeter
@@ -58,7 +58,7 @@ Exact change (new lines marked `+`):
      does: Observe the greeted log record and compare its greeting to the expected text.
 ```
 
-Resulting `architecture.concepts` block after the change:
+Resulting `concepts:` block after the change:
 
 ```yaml
   concepts:
@@ -73,9 +73,8 @@ Resulting `architecture.concepts` block after the change:
     service: greeter
     references:
     - command: greet
-    does: Run greet once with the person argument set to the named person and the
-      loud flag omitted, so the configured greeting is printed verbatim and one greeted
-      log record is emitted.
+    does: Run greet once with the person argument from the step and the loud flag omitted,
+      so its default false applies and the configured greeting is printed and logged unchanged.
   - concept: greeting
     block: then
     service: greeter
@@ -84,17 +83,21 @@ Resulting `architecture.concepts` block after the change:
     does: Observe the greeted log record and compare its greeting to the expected text.
 ```
 
-## Judgement against the declared Public interface
+## Unaffected and preserved
 
-`docs/greeter-cli.yaml` (the `greeter` CLI document) already declares everything the binding references, so the Public interface needs no extension:
+- `architecture.services`, `architecture.terms` — unchanged.
+- Existing bindings `greeting/given` and `greeting/then` — unchanged, byte for byte.
+- `docs/product/product.yaml` — unchanged (concepts and glossary both adequate).
+- `docs/greeter-cli.yaml` — unchanged (no interface extension needed).
+- `docs/scenarios.yaml` — unchanged; all three steps of host-001 preserved.
 
-- `commands.greet` exists, with `person` as a required argument and `loud` as an optional flag defaulting to `false` — exactly the "loud omitted" shape the Item's When step requires. `command: greet` is the matching `interface_reference` selector for a `cli` interface.
-- The same command's description states that each successful call emits one `greeted` log record with the exact greeting printed, which is what the existing `greeting/then` binding observes; the new When binding only has to perform the call.
-- `extensions.files.greeting-config` and `extensions.log_records.greeted` are already declared and already bound by the Given and Then concepts — untouched.
+## Conformance with `true-bdd/architecture_yaml-schema.yaml`
 
-## Why no Product Owner change is offered
+`concept_binding` requires `concept`, `block` ∈ {given, when, then}, `service`; the operation form requires `does` plus a nonempty `references` list (`intent` is UI-only and is correctly omitted for this CLI service). Each `interface_reference` carries exactly one selector — here `command`, which is a declared selector and resolves against the loaded `opencli` document.
 
-The declared meaning of `request greeting` ("Call greet once for the named person with the optional loud flag omitted") already covers this Item's use exactly: one call, a named person, loud omitted. The failure is a missing binding, not a too-narrow or incorrect concept, so no wider concept and no new variation is warranted here. A variation (e.g. a loud-enabled request) should be added only when an Item or use actually needs `--loud`, and Item host-001 does not. Item wording and all other concepts stay unchanged.
+## Apply
+
+Apply only on an explicit menu decision by the System Architect. Nothing has been written.
 Working copies (edit only the approved target):
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

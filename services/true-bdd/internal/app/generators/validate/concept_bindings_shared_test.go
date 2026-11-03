@@ -82,6 +82,8 @@ func TestBindingsJudgeEachBindingOncePerWalkWithEveryStepLinkingIt(t *testing.T)
 	}
 
 	for _, turn := range turns {
+		assertBindingProductPath(t, turn.user)
+
 		if len(turn.keys) != 1 || strings.Contains(turn.user, "8 is cubed") {
 			t.Fatalf("a binding turn judges one binding with the walk's passing links only: %+v", turn)
 		}
@@ -97,4 +99,12 @@ func TestBindingsJudgeEachBindingOncePerWalkWithEveryStepLinkingIt(t *testing.T)
 		"when:halve: binding is ambiguous", "when:square: Clear.")
 	assertContext(t, results["scenario-unlinked"], checklist.StatusFail,
 		"binding judgement requires this walk's successful link")
+}
+
+func assertBindingProductPath(t *testing.T, user string) {
+	t.Helper()
+
+	if !strings.Contains(user, `"product_path": "product.yaml"`) || strings.Contains(user, "glossary:") {
+		t.Fatalf("binding must read complete product by path: %s", user)
+	}
 }

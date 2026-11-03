@@ -5,7 +5,12 @@ Service: {{ .Subject.Service }}
 Concept: {{ .Subject.Concept.Name }} ({{ .Subject.Concept.Block }})
 Meaning: {{ .Subject.Concept.Means }}
 
-## Complete concept context
+Read the listed Scenario keys from the Registry path and inspect their fixture
+input directories under fixture_root as needed (exclude cassettes/). Read the definitions, State,
+helpers and architecture-declared test libraries. These paths carry the complete
+evidence; no digest or summary replaces it. Never read service implementation.
+
+## Concept context and evidence paths
 {{ .Subject.Context }}
 
 {{ .FixPrompt }}

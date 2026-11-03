@@ -1,15 +1,13 @@
 package steps
 
 import (
-	"context"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
 	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
 )
@@ -43,59 +41,7 @@ func Register(suite *bddgo.Suite[State]) {
 	// outside the named prefix, and it is the named file — how `us refine
 	// … --fix` proves the run rewrote only its story.
 	suite.Step(`^the only file changed outside "([^"]+)" is "([^"]+)"$`, assertOnlyFileChangedOutside)
-	// File-effect assertions read the run's structural diff (and, for line
-	// counts, the file itself) rather than stdout. Implemented in file_steps.go.
-	suite.Step(`^the file "([^"]+)" is created$`, assertFileCreated)
-	suite.Step(`^the file "([^"]+)" is modified$`, assertFileModified)
-	suite.Step(`^the file "([^"]+)" is unchanged$`, assertFileUnchanged)
-	suite.Step(`^the file "([^"]+)" has exactly (\d+|no) lines?$`, assertFileLineCount)
-	suite.Step(`^the file "([^"]+)" matches (.+)$`, assertFileMatches)
-	suite.Step(`^every file matching "([^"]+)" (matches|does not match) (.+)$`, assertEveryFileMatches)
-	suite.Step(`^the file matching "([^"]+)" has exactly (\d+|no) match(?:es)? for (.+)$`, assertFileMatchCount)
-	// A count-of-files-matching-a-glob assertion, distinct from the named-path
-	// `is created` above: the fix loop chooses the new file's name, so a
-	// scenario can only pin how many .go files appeared under a directory.
-	suite.Step(`^exactly (\d+|no) files? matching "([^"]+)" (?:is|are) created$`, assertFilesMatchingCreated)
-	// The negative twin of the count assertion above: proves the run created
-	// NO file matching a glob. Implemented in file_steps.go.
-	suite.Step(`^no files? matching "([^"]+)" (?:is|are) created$`, assertNoFileMatchingCreated)
-	// Story-shape assertions read a story a `us refine … --fix` run rewrote:
-	// its id, acceptance-criteria count and shape, forbidden vocabulary.
-	// Filenames are resolved by glob. See story_steps.go.
-	suite.Step(`^the story "([^"]+)" has id "([^"]+)"$`, assertStoryID)
-	suite.Step(`^the story "([^"]+)" has feature "([^"]+)"$`, assertStoryFeature)
-	suite.Step(`^the story "([^"]+)" has (\d+|no) acceptance criteria$`, assertStoryCriteriaExactCount)
-	suite.Step(`^every acceptance criterion in the story "([^"]+)" has given, when and then steps$`,
-		assertStoryCriteriaHaveSteps)
-	suite.Step(`^the description of acceptance criterion "([^"]+)" of the story "([^"]+)" does not match (.+)$`,
-		assertStoryCriterionDescNoMatch)
-	suite.Step(`^the description of acceptance criterion "([^"]+)" of the story "([^"]+)" matches (.+)$`,
-		assertStoryCriterionDescMatch)
-	// The step-text twin of the description assertions above: checks a
-	// named criterion's Given/When/Then wording instead of its description,
-	// e.g. that steps name an observable action rather than a forbidden verb.
-	suite.Step(`^the steps of acceptance criterion "([^"]+)" of the story "([^"]+)" do not match (.+)$`,
-		assertStoryCriterionStepsNoMatch)
-	// Registry-executability assertion: after `build tests --fix`, is the
-	// inner project's named scenario now bound by step definitions? Reads
-	// the inner registry and generated Go source under the tmpdir. See registry_steps.go.
-	suite.Step(`^every step of scenario "([^"]+)" in "([^"]+)" is matched by a step definition under "([^"]+)"$`,
-		assertScenarioStepsMatched)
-	// Registry-origin assertions read the registry a `us apply … --fix` run
-	// writes and ask its LINEAGE: which acceptance criterion an entry
-	// descends from, which story it cites, its serialized content. See registry_origin_steps.go.
-	suite.Step(`^exactly (\d+|no) scenarios? in "([^"]+)" comes? from acceptance criterion "([^"]+)"$`,
-		assertRegistryScenarioCount)
-	suite.Step(`^the scenario from acceptance criterion "([^"]+)" in "([^"]+)" cites the story "([^"]+)"$`,
-		assertRegistryScenarioCitesStory)
-	suite.Step(`^the scenario from acceptance criterion "([^"]+)" in "([^"]+)" is keyed "([^"]+)"$`,
-		assertRegistryScenarioKeyed)
-	suite.Step(`^the scenario from acceptance criterion "([^"]+)" in "([^"]+)" matches (.+)$`,
-		assertRegistryScenarioMatches)
-	// The duplicate-collapse invariant stated positively: no two registry
-	// entries carry the same merged_steps. Implemented in
-	// registry_origin_steps.go.
-	suite.Step(`^no two scenarios in "([^"]+)" share the same steps$`, assertNoDuplicateScenarioSteps)
+	registerFileObservationSteps(suite)
 	registerEngineLogSteps(suite)
 	// The independent outcome check: the harness itself runs a shell command the
 	// scenario names, in a directory under the run's tmpdir — e.g. the host
@@ -107,6 +53,7 @@ func Register(suite *bddgo.Suite[State]) {
 	registerWriterLifecycleSteps(suite)
 	registerConcurrentValidationSteps(suite)
 	registerIOSteps(suite)
+	registerChecklistModelSteps(suite)
 }
 
 // registerEngineLogSteps binds the assertions that read the CLI's own
@@ -158,147 +105,7 @@ func registerGivenSteps(suite *bddgo.Suite[State]) {
 //
 //truebdd:concept given "project tree"
 func prepareTree(state *State, args []string) error {
-	name := args[0]
-
-	fixture, err := runner.LoadFixture(state.Harness.FixtureDir(name))
-	if err != nil {
-		return state.fail("loading the %q tree: %w", name, err)
-	}
-
-	state.Fixture = fixture
-
-	proxy, err := state.resolveProxy(name)
-	if err != nil {
-		return err
-	}
-
-	state.Proxy = proxy
-
-	return nil
-}
-
-// resolveProxy decides where this scenario's AI calls come from, per
-// caller: the services caller's turns and the judge's verdict are independent.
-func (s *State) resolveProxy(name string) (ProxySetup, error) {
-	setup := ProxySetup{}
-
-	err := s.resolveTargetProxy(name, &setup)
-	if err != nil {
-		return ProxySetup{}, err
-	}
-
-	err = s.resolveJudgeProxy(name, &setup)
-	if err != nil {
-		return ProxySetup{}, err
-	}
-
-	return setup, nil
-}
-
-// resolveTargetProxy wires the engine's turns: live is unmediated, replay
-// REFUSES a scenario with no recording (never skips), and record writes to
-// staging, published only once the scenario passes.
-func (s *State) resolveTargetProxy(name string, setup *ProxySetup) error {
-	if s.Harness.Modes.Services == runner.ProxyModeLive {
-		return nil
-	}
-
-	cassettes, err := s.Harness.CassetteDir(name)
-	if err != nil {
-		return s.fail("resolving cassettes dir: %w", err)
-	}
-
-	setup.Cassettes = cassettes
-
-	if s.Harness.Modes.Services == runner.ProxyModeReplay {
-		_, statErr := os.Stat(setup.Cassettes)
-		if statErr != nil {
-			return s.fail("%w: %s\n%s", ErrNoCassettes, name, RecordHint(s.Scenario))
-		}
-
-		golden, goldenErr := runner.ReadGolden(setup.Cassettes)
-		if goldenErr != nil {
-			return s.fail("%w: %s: %w\n%s",
-				ErrNoGolden, name, goldenErr, RecordHint(s.Scenario))
-		}
-
-		setup.Golden = golden
-	}
-
-	if s.Harness.Modes.Services == runner.ProxyModeRecord {
-		staging, stagingErr := s.Harness.prepareStaging(name)
-		if stagingErr != nil {
-			return s.fail("preparing staging cassettes: %w", stagingErr)
-		}
-
-		setup.Staging = staging
-		setup.Cassettes = staging
-	}
-
-	// Cursor state lives under the run's engine-scratch tmp/ — inside
-	// the snapshot window but excluded from the graded diff, and wiped
-	// with the run dir.
-	setup.StateDir = filepath.Join(
-		runner.RunDir(s.Harness.SessionRoot, name), "tmp", "aiproxy-state")
-	setup.Env = runner.AIProxyEnv(
-		s.Harness.Modes.Services, s.Harness.Shims.Services,
-		setup.Cassettes, setup.StateDir, s.Harness.Shims.All())
-
-	return nil
-}
-
-// resolveJudgeProxy wires the verdict call, checked at SETUP rather than
-// where the judge runs: the judge is a scenario's last act, so a missing
-// shelf would otherwise burn a whole replay before saying so.
-func (s *State) resolveJudgeProxy(name string, setup *ProxySetup) error {
-	mode := s.Harness.Modes.Tests
-
-	// A scenario with no `judge:` clause never reaches a judge, so it owes
-	// no recording — demanding one would refuse most of the suite for a
-	// call it was never going to make.
-	if mode == runner.ProxyModeLive || !asksJudge(s.Scenario) {
-		return nil
-	}
-
-	shelf, err := s.Harness.JudgeShelf(name)
-	if err != nil {
-		return s.fail("resolving judge shelf: %w", err)
-	}
-
-	if mode == runner.ProxyModeReplay {
-		_, statErr := os.Stat(shelf)
-		if statErr != nil {
-			return s.fail("%w: %s\n%s", ErrNoJudgeRecording, name, JudgeRecordHint(s.Scenario))
-		}
-	}
-
-	if mode == runner.ProxyModeRecord {
-		staging, stagingErr := s.Harness.prepareJudgeStaging(name)
-		if stagingErr != nil {
-			return s.fail("preparing judge staging: %w", stagingErr)
-		}
-
-		setup.JudgeStaging = staging
-		shelf = staging
-	}
-
-	stateDir := filepath.Join(
-		runner.RunDir(s.Harness.SessionRoot, name), "tmp", "aiproxy-state-judge")
-	setup.JudgeEnv = runner.AIProxyEnv(
-		mode, s.Harness.Shims.Tests, shelf, stateDir, s.Harness.Shims.All())
-
-	return nil
-}
-
-// asksJudge reports whether this scenario carries a `judge:` clause.
-func asksJudge(scenario bddgo.Scenario) bool {
-	for _, step := range scenario.Steps {
-		if step.Mode == bddgo.ModeRule {
-			return true
-		}
-	}
-
-	return false
+	return state.PrepareTree(args[0])
 }
 
 // The captured role names who wants the behaviour and changes nothing in the run.
@@ -311,55 +118,28 @@ func runCLI(state *State, args []string) error {
 // runEngine runs the engine once with the given command; extraEnv rides on
 // top of the proxy's environment and wins ties.
 func runEngine(state *State, command string, extraEnv ...string) error {
-	if state.Fixture == nil {
-		return state.fail("%w", ErrNoTreePrepared)
-	}
-
-	err := state.Fixture.UseCommand(command)
+	err := state.Run(command, testkit.RunOptions{Env: extraEnv})
 	if err != nil {
-		return state.fail("%w", err)
+		state.dumpRun()
 	}
 
-	engineErr := state.Harness.RequireEngine()
-	if engineErr != nil {
-		return state.fail("%w", engineErr)
-	}
-
-	return executeEngine(state, command, state.Harness.BinPath, extraEnv...)
+	return err
 }
 
 func executeEngine(state *State, command, binary string, extraEnv ...string) error {
-	timeout := state.runTimeout()
-
-	state.T.Logf("running %q (%s, timeout %s) — this can take several minutes",
-		command, state.Fixture.Name, timeout)
-
-	env := append(slices.Clone(state.Proxy.Env), extraEnv...)
-
-	result, err := runner.Execute(context.Background(), state.Fixture,
-		binary, state.Harness.SessionRoot, timeout, env...)
-
-	// Observed before the branch: a run that errored still has a diff
-	// worth recording, and the tmpdir path is what makes it findable.
-	state.Recorder.ObserveRun(result, err)
-	state.Result = result
-
+	err := state.Run(command, testkit.RunOptions{Binary: binary, Env: extraEnv})
 	if err != nil {
 		state.dumpRun()
-
-		return state.fail("executing %q: %w", command, err)
 	}
 
-	return nil
+	return err
 }
 
-// ErrNoTreePrepared is returned when a scenario runs the CLI without
-// naming a project tree first.
-var ErrNoTreePrepared = errors.New("no Given step prepared a project tree")
-
-// ErrNoRun is returned when a Then step asserts on a run that never
-// happened.
-var ErrNoRun = errors.New("no When step ran the CLI")
+// Harness refusals remain shared with definitions that check their prerequisites.
+var (
+	ErrNoTreePrepared = testkit.ErrNoTreePrepared
+	ErrNoRun          = testkit.ErrNoRun
+)
 
 // ErrNoDependencyInstall means a scenario states the project's
 // dependencies are installed, but the fixture declares no prep commands
@@ -702,4 +482,60 @@ func (s *State) dumpRun() {
 	for _, change := range s.Result.Diff {
 		s.T.Logf("  %s %s (%d bytes)", change.Kind, change.Path, len(change.After))
 	}
+}
+
+func registerFileObservationSteps(suite *bddgo.Suite[State]) {
+	// File-effect assertions read the run's structural diff (and, for line
+	// counts, the file itself) rather than stdout. Implemented in file_steps.go.
+	suite.Step(`^the file "([^"]+)" is created$`, assertFileCreated)
+	suite.Step(`^the file "([^"]+)" is modified$`, assertFileModified)
+	suite.Step(`^the file "([^"]+)" is unchanged$`, assertFileUnchanged)
+	suite.Step(`^the file "([^"]+)" has exactly (\d+|no) lines?$`, assertFileLineCount)
+	suite.Step(`^the file "([^"]+)" matches (.+)$`, assertFileMatches)
+	suite.Step(`^every file matching "([^"]+)" (matches|does not match) (.+)$`, assertEveryFileMatches)
+	suite.Step(`^the file matching "([^"]+)" has exactly (\d+|no) match(?:es)? for (.+)$`, assertFileMatchCount)
+	// A count-of-files-matching-a-glob assertion, distinct from the named-path
+	// `is created` above: the fix loop chooses the new file's name, so a
+	// scenario can only pin how many .go files appeared under a directory.
+	suite.Step(`^exactly (\d+|no) files? matching "([^"]+)" (?:is|are) created$`, assertFilesMatchingCreated)
+	// The negative twin of the count assertion above: proves the run created
+	// NO file matching a glob. Implemented in file_steps.go.
+	suite.Step(`^no files? matching "([^"]+)" (?:is|are) created$`, assertNoFileMatchingCreated)
+	// Story-shape assertions read a story a `us refine … --fix` run rewrote:
+	// its id, acceptance-criteria count and shape, forbidden vocabulary.
+	// Filenames are resolved by glob. See story_steps.go.
+	suite.Step(`^the story "([^"]+)" has id "([^"]+)"$`, assertStoryID)
+	suite.Step(`^the story "([^"]+)" has feature "([^"]+)"$`, assertStoryFeature)
+	suite.Step(`^the story "([^"]+)" has (\d+|no) acceptance criteria$`, assertStoryCriteriaExactCount)
+	suite.Step(`^every acceptance criterion in the story "([^"]+)" has given, when and then steps$`,
+		assertStoryCriteriaHaveSteps)
+	suite.Step(`^the description of acceptance criterion "([^"]+)" of the story "([^"]+)" does not match (.+)$`,
+		assertStoryCriterionDescNoMatch)
+	suite.Step(`^the description of acceptance criterion "([^"]+)" of the story "([^"]+)" matches (.+)$`,
+		assertStoryCriterionDescMatch)
+	// The step-text twin of the description assertions above: checks a
+	// named criterion's Given/When/Then wording instead of its description,
+	// e.g. that steps name an observable action rather than a forbidden verb.
+	suite.Step(`^the steps of acceptance criterion "([^"]+)" of the story "([^"]+)" do not match (.+)$`,
+		assertStoryCriterionStepsNoMatch)
+	// Registry-executability assertion: after `build tests --fix`, is the
+	// inner project's named scenario now bound by step definitions? Reads
+	// the inner registry and generated Go source under the tmpdir. See registry_steps.go.
+	suite.Step(`^every step of scenario "([^"]+)" in "([^"]+)" is matched by a step definition under "([^"]+)"$`,
+		assertScenarioStepsMatched)
+	// Registry-origin assertions read the registry a `us apply … --fix` run
+	// writes and ask its LINEAGE: which acceptance criterion an entry
+	// descends from, which story it cites, its serialized content. See registry_origin_steps.go.
+	suite.Step(`^exactly (\d+|no) scenarios? in "([^"]+)" comes? from acceptance criterion "([^"]+)"$`,
+		assertRegistryScenarioCount)
+	suite.Step(`^the scenario from acceptance criterion "([^"]+)" in "([^"]+)" cites the story "([^"]+)"$`,
+		assertRegistryScenarioCitesStory)
+	suite.Step(`^the scenario from acceptance criterion "([^"]+)" in "([^"]+)" is keyed "([^"]+)"$`,
+		assertRegistryScenarioKeyed)
+	suite.Step(`^the scenario from acceptance criterion "([^"]+)" in "([^"]+)" matches (.+)$`,
+		assertRegistryScenarioMatches)
+	// The duplicate-collapse invariant stated positively: no two registry
+	// entries carry the same merged_steps. Implemented in
+	// registry_origin_steps.go.
+	suite.Step(`^no two scenarios in "([^"]+)" share the same steps$`, assertNoDuplicateScenarioSteps)
 }

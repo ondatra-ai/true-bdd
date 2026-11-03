@@ -67,7 +67,7 @@ func TestEngineIo003Events(t *testing.T) {
 	s.And(`every file matching "tmp/true-bdd.log.json" does not match "tool":|"run":`)
 	s.And(`every file matching "tmp/*/*codex.log" matches fixture writer stderr sentinel`)
 	s.And(`every file matching "tmp/*/*codex-events.jsonl" does not match fixture writer stderr sentinel`)
-	s.And(`every file matching "tmp/true-bdd.log.json" matches "msg":"Dispatching AI turn","turn":1,"label":"claude-turn001","role":"fix","cli":"claude","model":"claude-opus-5","system_length":[0-9]+,"user_length":[0-9]+`)
+	s.And(`every file matching "tmp/true-bdd.log.json" matches "msg":"Dispatching AI turn","turn":1,"label":"claude-turn001","role":"fix","cli":"claude","model":"claude-opus-5","system_length":[0-9]+,"user_length":[0-9]+,"prompt_bytes":[0-9]+,"prompt_limit_bytes":150000`)
 	s.And(`every file matching "tmp/true-bdd.log.json" matches "msg":"AI turn returned","turn":1,"label":"claude-turn001","role":"fix","cli":"claude","model":"claude-opus-5","duration_ms":[0-9]+,"length":125`)
 	s.And(`every file matching "tmp/true-bdd.log.json" matches "msg":"CLI transcript saved","file":"tmp/[^"\n]+/codex-turn002-codex-events.jsonl"`)
 	s.And(`the file "services/calc/calc.go" is created`)

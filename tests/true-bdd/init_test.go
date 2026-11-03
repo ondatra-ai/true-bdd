@@ -22,7 +22,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
-// init-001-empty-folder: Init creates the host configuration without scripts, every checklist, every prompt template and three document schemas without needing configuration or Specification documents
+// init-001-empty-folder: Init creates the host configuration without scripts, every checklist, every prompt template, four Model schemes and three document schemas without needing configuration or Specification documents
 func TestInit001EmptyFolder(t *testing.T) {
 	s := scenarios.New(t, "init-001-empty-folder")
 	s.Given(`the "init-empty" project tree`)
@@ -36,6 +36,10 @@ func TestInit001EmptyFolder(t *testing.T) {
 	s.And(`exactly 5 files matching "true-bdd/checklists/*.yaml" are created`)
 	s.And(`exactly 32 files matching "templates/*.tpl" are created`)
 	s.And(`exactly 3 files matching "true-bdd/*schema.yaml" are created`)
+	s.And(`the us_refine_checklist Model scheme is shipped`)
+	s.And(`the us_apply_checklist Model scheme is shipped`)
+	s.And(`the scen_check_checklist Model scheme is shipped`)
+	s.And(`the build_steps_checklist Model scheme is shipped`)
 	s.And(`every file matching "true-bdd/true-bdd.yaml" does not match (?m)^scripts:`)
 	s.And(`no file matching "docs/**" is created`)
 	s.Done()
@@ -55,6 +59,7 @@ func TestInit002ExistingFiles(t *testing.T) {
 	s.And(`the file "true-bdd/true-bdd.yaml" is unchanged`)
 	s.And(`the file "true-bdd/checklists/build-code.yaml" is unchanged`)
 	s.And(`the file "templates/build-code.fix-generator.prompt.tpl" is unchanged`)
+	s.And(`the file "true-bdd/models/us_apply_checklist.schema.yaml" is unchanged`)
 	s.And(`the file "templates/build-code.fix-applier.prompt.tpl" is created`)
 	s.Done()
 }

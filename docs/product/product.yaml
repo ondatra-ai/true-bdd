@@ -1,793 +1,193 @@
-# Product document for this repository (TrueBDD itself).
-#
-# Path resolved from `documents.product` in true-bdd/true-bdd.yaml.
-
-title: "TrueBDD"
-
+# Product document for TrueBDD. Concepts retain their closed meanings.
+title: TrueBDD
 description:
-  summary: >-
-    TrueBDD moves the source of truth from the code to the
-    specification, so an agent can rebuild the code from the
-    documentation alone. It is a Go console harness that walks a
-    project's user stories and scenarios through checklists, turns
-    each scenario into an executable test, and drives an agent until
-    those tests pass. The harness and the project's files stay on the
-    developer's machine and are the only state. It works with any
-    technology stack. A Host project declares the concepts its steps state,
-    which replaced the retired Catalogue's templates (ADR-0034). Concepts are
-    grouped under given, when and then, with concept,
-    means and terms and no other key; names are unique within a block. A concept is one Public
-    interface item and kind of use per block. The item is what the use is about,
-    reached through one or several declared references. What a step definition
-    does, as the step wording fixes it, decides the concept, never an argument's
-    target. A Given states a state. The closed means names the item, use and
-    every admitted variation in prose without slots or brackets, relying only
-    on declared terms and plain English. A new variation widens that concept
-    by rewriting its means; only a new item or kind of use needs a new concept.
-    A product document still declaring the retired catalogue key, or an
-    architecture still declaring architecture.phrases, even empty or null, is
-    refused at startup, naming concepts or architecture.concepts as its
-    replacement. A concept carrying any other key is refused wherever concepts
-    are read, startup included, naming its block, concept and key. A fix that
-    leaves its edited copy of a document unreadable as that document writes no
-    document: the fix did not take, its copies are reset, and the refusal becomes a
-    finding of that Prompt's next failed result, so the bounded fix loop tries again. The declared-terms and term-mappings built-in checks hold every
-    concept's terms to the glossary and Word mapping, and concept-bindings holds
-    all Concept bindings to declared concepts and Public interface references,
-    without AI and regardless of Story claims; a product declaring no concepts
-    passes them, and step-definitions, as not checked. Bindings are unique per name,
-    block and service. The walk answers D: Prompts first, then the link before the other Q:
-    Prompts, preserving artifact indices so a new concept reaches refinement
-    sketches after its link fix. The link pass in us refine and scen check scores every
-    concept of each step's own block from 0 to 10, using a required-key schema
-    built for the Item. Exactly one must reach the checklist threshold, 9 by
-    default; ambiguity names both, and a step of a block declaring no concept
-    has none to reach it and fails. Missing, malformed or incomplete answers fail
-    the Cell. Every score, reason for the highest and verdict is recorded in
-    context, with the other-block concept or none. Closed means admits only
-    stated variations; an unstated one scores at most 8 and a wrong-block step
-    at most 4. A judge: clause passes unlinked; an llm: step links by intent.
-    Refinement links only against product concepts. Its menu offers the Product
-    Owner a rewritten Story step, a wider concept for a variation of an existing
-    item and use, or else a new concept, applied to the product document.
-    Prompt 12 sketches from means and the service interface kind, so a new
-    concept passes refinement before its binding exists. scen check judges
-    every Scenario afresh, claimed or not. Only linked concepts require a
-    binding for its service; an unused unbound concept is not its finding.
-    After the link, a further Q: Prompt judges every linked binding unambiguous
-    enough for an LLM to write a step, given does, references and the complete
-    Public interface. scen check judges each binding (concept, block, service)
-    once per walk, once every Scenario has its link, for every variation the
-    concept's means admits, with every distinct step of the walk's passing links
-    that reached it; every Scenario whose link reached it answers from that
-    verdict with its own context. An llm: step needs an intent binding. A failed link, word judgement or
-    binding fails the Scenario and exits 1. Fixes offer the Product Owner a
-    concept repair and the System Architect a binding, only applied after the
-    menu's apply decision. Shared fixes cause every Scenario to be judged
-    again; binding judgements wait for every Scenario's link. No prompt states a time, turn, token or cost budget.
-    A separate Q: Prompt, with concepts set to words, judges the means of every
-    linked concept once per Story in us refine and, in scen check, once per walk
-    for each concept a Scenario's link reached, claimed or not, from that
-    concept's means and the product document alone; every Scenario linking it
-    answers from that verdict, each word cell after its own Scenario's link.
-    It names every domain word neither declared in that concept's terms nor
-    readable as plain English in the context of its means. Plain English passes.
-    Every required concept verdict carries undeclared_words and a reason in a
-    schema-bearing answer. Missing, malformed or incomplete answers fail the
-    Cell, and every verdict is recorded in context. Its Product Owner menu fix
-    changes only the product document: a glossary entry and the word in terms,
-    or a reworded means in product words. Refinement never waits for architecture.
-    On the next walk, D: term-mappings fails for a newly declared unmapped term;
-    its System Architect menu fix adds the Word mapping. Every Scenario judges
-    again after fixes, trusting no earlier result. build steps writes step definitions per concept and
-    build code embeds the concepts a failing Scenario's steps link to, both
-    described under the pipeline below.
-
-  problem: >-
-    AI removed the bottleneck on writing code, but not on deciding
-    whether the code is right. Deciding is slow because the written
-    spec is ambiguous: several different behaviours all satisfy it. So
-    the real decision about behaviour is made late, in review and QA,
-    through human conversation, and its result lands in code and
-    defect tickets instead of going back into the spec. This has two
-    consequences. First, nobody can verify anything by reading the
-    doc, because the doc does not determine behaviour; the only
-    trusted check is to run the application and watch it. Tests do not
-    escape this: a test is also code, written to one reviewer's
-    interpretation. Second, the decision does not last: the next time
-    someone — human or agent — reimplements, they can pick a different
-    behaviour that also matches the doc, and the argument happens
-    again. Agents make this worse, because they reimplement more
-    often. So writing got 10x faster, checking stayed at human speed,
-    and delivery caps at around 2x.
-
-
-    The fix is not a better agent. It is a spec with a guarantee: a
-    spec precise enough that any code satisfying it behaves the same
-    for the user — the way different compilers produce different
-    bytecode but the same behaviour. The guarantee is enforced, not
-    promised: every scenario in the spec becomes an executable test
-    that runs outside the model, and the test result — not the agent's
-    own opinion — decides whether the work is done. Decisions made
-    during refinement go back into the scenario registry, so the final
-    choice is recorded in the document, not in code and defects.
-
-
-    Once that guarantee holds, code becomes a disposable artifact:
-    delete it, regenerate it from the spec, and the new build must
-    pass every behavioural assertion the spec carries. Human attention
-    moves to the one place it is still needed — reviewing the
-    document. Reading a document is far faster than checking an
-    application by hand, so the checking bottleneck goes away and the
-    expected speedup becomes reachable.
-
-  # Vision, goals, releases and not_goals are declared empty until the
-  # session that settles them; an empty value is a decision on the record.
-  vision: ""
-
+  summary: 'TrueBDD rebuilds tests and code from the Host project’s Specification through checklists and the pipeline:
+    us refine, us apply, build tests, build steps, build code. A glossary means must be one paragraph of at most
+    three sentences, each at most 25 words. A sentence ends at a run of . ! or ? followed by Unicode whitespace
+    or end of text; a remaining nonempty fragment counts. Words are nonempty Unicode-whitespace-separated fields;
+    paths, hyphenated words and decimals remain single words. Blank lines separate paragraphs; ordinary line wrapping
+    does not. Every product reader and command startup refuses violations, naming the term, sentence count, longest
+    sentence’s word count, paragraph count and rule. Concepts’ means are exempt.
+    Body proposals and applications embed the Concept, binding, glossary entries, Word mappings, complete Public
+    interface, definitions, patterns, captures and bound steps. They read Scenarios and fixtures from Registry paths,
+    Scenario keys and fixture directories through confined tools, never service source. Binding judgements read the
+    complete product document by path, with steps, binding and Public interface embedded. Tool-less critiques embed
+    the semantic core, whole suite source and fixture contracts selected by source or bound captures.
+    Every Claude and Codex dispatch logs system and user UTF-8 bytes, including Codex assembly. Above
+    engine.max_prompt_bytes in true-bdd.yaml, a positive integer defaulting to 150000, the walk stops before spawning
+    with a distinct error naming turn, size and limit. No digests, compaction or truncation replace required evidence.'
+  problem: Ambiguous specifications let rebuilds choose different behaviour. Executable Scenarios hold each rebuild
+    to observable outcomes.
+  vision: ''
   goals: []
-
   releases: []
-
   not_goals: []
-
-# The closed list of values for a story's `as_a:` clause. These are roles —
-# responsibilities a person holds — not personas: one person often holds
-# two of them, and nothing here depends on personality or team size.
 roles:
-  - name: Product Owner
-    definition: >-
-      Accountable for the value the product delivers. Owns the product
-      document and the user stories, writing each story directly out of
-      a discussion of a Feature, and decides which behaviour the system
-      must show.
-    primary_use_case: "Turning a product goal into registered scenarios — discusses Features, writes stories, runs us refine and us apply"
-    characteristics:
-      - "Writes acceptance criteria as behaviour the user can observe, never as implementation"
-      - "Writes each step as an instance of one of the product document's concepts"
-      - "Answers each failed check in the --fix loop: apply, refine, or exit"
-      - "May hand the writing to someone else, but keeps the accountability"
-
-  - name: System Architect
-    definition: >-
-      Defines the technical shape of the system — its services, their
-      dependencies, and the test suite that observes behaviour.
-    primary_use_case: "Owning the architecture and running the regeneration loop — runs build tests, build steps and build code"
-    characteristics:
-      - "Owns architecture.yaml: services, their dependencies, and how the test suite runs"
-      - "Designs so behaviour can be tested — every scenario must be observable through a declared service"
-      - "Fixes the contracts that must survive regeneration and leaves the rest free to change"
-      - "Never edits a scenario to make a failing test pass"
-
-  - name: Quality Engineer
-    definition: >-
-      Accountable for the scenario set being complete and executable:
-      the failure cases are written down, and every step can be
-      automated.
-    primary_use_case: "Verifying the scenarios in the registry — runs scen check"
-    characteristics:
-      - "Asks what could go wrong: permission denied, not found, timeout, boundary values"
-      - "Rejects steps that no test runner could execute"
-      - "Reads a build steps failure as a sign that a scenario cannot be observed, not just that a test is missing"
-      - "Often the same person as the Product Owner; the accountability stays separate"
-
-# The words `us refine` rejects in stories and scenarios. What a step may
-# state is the `concepts` below. The product document is its only
-# home: the architecture document holds no `vocabulary:`.
+- name: Product Owner
+  definition: Owns product value, the product document and Stories.
+  primary_use_case: Runs us refine and us apply.
+  characteristics:
+  - Approves behaviour and concept changes at the fix menu.
+- name: System Architect
+  definition: Owns services, Public interfaces, libraries and test execution.
+  primary_use_case: Runs build tests, build steps and build code.
+  characteristics:
+  - Repairs contracts rather than changing a Scenario to fit code.
+- name: Quality Engineer
+  definition: Owns complete, executable Scenarios.
+  primary_use_case: Runs scen check.
+  characteristics:
+  - Requires observable outcomes and failure cases.
 vocabulary:
-  # Vague words that must not appear in AC descriptions or steps.
   forbidden_qualifiers:
-    - properly
-    - correctly
-    - appropriate
-    - appropriately
-    - user-friendly
-    - fast
-    - quickly
-    - easily
-    - seamless
-    - intuitive
-
-  # Action verbs too abstract to automate: they hide the interaction
-  # mechanism.
+  - properly
+  - correctly
+  - appropriate
+  - appropriately
+  - user-friendly
+  - fast
+  - quickly
+  - easily
+  - seamless
+  - intuitive
   forbidden_actions:
-    - name: "handle"
-      reason: "Hides what the system observably does with the input."
-      replacement: "Name the observable action: displays, returns, lists, rejects."
-    - name: "process"
-      reason: "Does not specify the interaction mechanism or the visible outcome."
-      replacement: "Name the observable action: displays, returns, lists, rejects."
-    - name: "parse"
-      reason: "Describes internal mechanics, not user-observable behavior."
-      replacement: "Describe the visible result of reading the input."
-
-# The product's words: what each word a concept declares is, and why it
-# matters. `D: declared-terms` holds every term the concepts declare to
-# exactly one entry here.
+  - name: handle
+    reason: Hides what the system observably does with the input.
+    replacement: 'Name the observable action: displays, returns, lists, rejects.'
+  - name: process
+    reason: Does not specify the interaction mechanism or the visible outcome.
+    replacement: 'Name the observable action: displays, returns, lists, rejects.'
+  - name: parse
+    reason: Describes internal mechanics, not user-observable behavior.
+    replacement: Describe the visible result of reading the input.
 glossary:
-  - term: Public interface
-    means: >-
-      What a service offers across its process boundary, declared under that service's
-      public_interface in the architecture. The supported kind is cli, naming an
-      OpenCLI-like YAML or JSON document, http, naming an OpenAPI 3 document, or ui,
-      listing elements by role and accessible name within a page or region.
-      CLI documents name commands, arguments, options and exit codes; extensions name
-      files read or written with formats, log records and outgoing process calls.
-      Documents are relative to the Host project root and are part of the Specification.
-      HTTP local references load under the same root; network references and references
-      outside the Host project are refused.
-      Commands reading the architecture load these documents before any test run, Item
-      or AI turn; a missing or invalid one refuses startup with its filename and error.
-      The declaration is optional for loading older architectures, but scen check's
-      public-interface built-in check fails every Scenario whose service lacks a valid
-      declaration, naming the service without an AI turn. A library kind is excluded;
-      another kind is named as not supported yet. Its fix first asks the System Architect
-      what the service offers and writes the architecture document, and a document it
-      names where the answers say it lacks what the service offers, never the Scenario.
+- term: Model
+  means: The YAML data filling a checklist template pair, declared on its service with templates and a scheme. Fields and types are checked before rendering. Scenarios name the Model and pin construction rules.
+- term: Public interface
+  means: What a service offers across its process boundary, declared in the architecture as CLI commands, HTTP operations
+    or UI elements. Named interface documents belong to the Specification.
+- term: Concept
+  means: One kind of setup, call or observation through one Public interface item, per block. Its closed means states
+    every admitted variation using declared terms and plain English. The step wording fixes its use; names are unique
+    within a block.
+- term: Concept binding
+  means: An architecture entry connecting a Concept and service to Public interface references and instructions
+    for its step definition. A UI binding may state intent instead.
+- term: engine
+  means: The true-bdd program that walks the Host project’s Specification through checklists and drives AI CLIs
+    to build its tests and code.
+- term: build identity
+  means: The engine’s build version and source commit, reported by version and logged once when logging starts.
+- term: command
+  means: One true-bdd subcommand with its arguments, as a role types it after true-bdd. Its exit code, output and
+    file changes are observable behaviour.
+- term: project tree
+  means: 'The Host project’s files at the start of a Scenario: Specification, configuration, checklists, templates,
+    code and tests. A name identifies the starting tree.'
+- term: exit code
+  means: The status a finished command reports to its caller. Zero means it completed; refusals and incomplete runs
+    are nonzero. Some completed document walks report failed checks without changing their file.
+- term: stdout
+  means: The command’s standard output, carrying its answer lines and text log records.
+- term: stderr
+  means: The command’s standard error, carrying the command-line error and any usage text. Failures before logging
+    starts also put their log record here.
+- term: log record
+  means: One report about the engine’s run, with a level, message and named fields. Its message and field names
+    are output contracts.
+- term: pattern
+  means: A regular expression stating what text must or must not appear. It matches anywhere unless anchored.
+- term: file change
+  means: A file created, modified or deleted during a command, compared with the prepared project tree before the
+    command started.
+- term: checklist
+  means: The ordered Prompts a command reads from the project tree and asks about the Items it walks. Each command
+    selects its own checklist.
+- term: Prompt
+  means: 'One checklist question, answered by a model for Q: or engine code for D:, with rationale, reference documents
+    and optional fix guidance.'
+- term: AI turn
+  means: One request the engine sends through an AI CLI and waits on. Turns are counted by validation, fix or apply
+    role.
+- term: AI CLI
+  means: 'The agent command-line program an AI turn uses: claude or codex. Configuration binds model tiers to a
+    CLI and model.'
+- term: fix loop
+  means: Under --fix, a failed Prompt leads to clarification if needed, a proposed fix, and an apply, refine or
+    exit menu. Every apply requires an answer from stdin. End of input stops an unanswered question or menu.
+- term: test dependencies
+  means: Packages and tools the Host project’s tests need before starting, installed into the project tree by fixture
+    preparation.
+- term: glob
+  means: A path pattern where * matches characters within one directory level, ? matches one character, and brackets
+    match a character set.
+- term: Story
+  means: 'One user story: who wants what and why, with Acceptance Criteria, written in its own file from discussion
+    of a Feature.'
+- term: Feature
+  means: A named group of Stories delivering one capability, carried as a Story label.
+- term: Acceptance Criterion
+  means: One testable Story condition with an author-written id, description and Given, When and Then steps. Applying
+    the Story turns it into a Registry Scenario.
+- term: step
+  means: One line of an Acceptance Criterion or Scenario. Given states initial state, When an action or event, and
+    Then an observable outcome. Its text instantiates a Concept or uses a model-run prefix.
+- term: Scenario
+  means: One Registry entry describing behaviour with Given, When and Then steps. It becomes one executable test
+    whose verdict decides whether the behaviour holds.
+- term: Registry
+  means: The Host project’s single YAML file holding all Scenarios.
+- term: lineage
+  means: A Scenario’s record of its originating Story file and Acceptance Criterion, identified by <story-id>-<ac-id>.
+    It records who wanted the behaviour and why.
+- term: Scenario key
+  means: The name of a Scenario in the Registry, equal to its lineage id once a Story claims it. Its generated test
+    is named after it.
+- term: step definition
+  means: Test code carrying out a step across the service’s Public interface. Exactly one definition’s pattern must
+    match the whole step. Its concept record identifies the declared meaning its body implements.
+- term: fixture
+  means: A suite’s named directory holding the files, tool programs and preparation a Scenario starts from. Inputs
+    exclude the recordings under cassettes/.
+- term: test runner
+  means: The program the architecture declares to execute the Host project’s tests. The engine runs it for discovery,
+    reruns and build-steps verification.
+- term: shell command
+  means: A program and arguments a Scenario runs in the project tree after the engine command, with its own exit
+    status.
+- term: claude
+  means: The Claude Code CLI selected by a model tier. A build-code writer receives restricted tools and a generated
+    write guard policy.
+- term: codex
+  means: The Codex CLI selected by a model tier. Each apply turn receives a generated home and permission profile,
+    with private authentication removed when it ends.
+- term: write guard
+  means: The engine’s hook that allows or denies each Claude writer tool call under its write policy, giving a reason
+    for denial.
+- term: write policy
+  means: The generated declaration of a guarded writer’s readable and writable paths, protected configuration and
+    permitted replay command.
+- term: tool call
+  means: A Claude tool request with its name and inputs. File tools name a target; Bash supplies a command, working
+    directory and foreground or background mode.
+- term: hook payload
+  means: The JSON tool call sent to the write guard on stdin, carrying tool_name, cwd and tool_input.
+- term: symbolic link
+  means: A project-tree file pointing at another path. Access through it reaches that target, which may be outside
+    the containing directory.
+- term: Library
+  means: Code supplied apart from a service’s source, declared with an exact module and version in its architecture
+    or testing libraries. Writers may read its downloaded build graph.
+- term: hard link
+  means: Another name for the same file. Writes through either affect both; replacing one name by rename leaves
+    the other with the old bytes.
+- term: hold
+  means: A short advisory lock on a file’s parent directory, shared for reading and exclusive for mutation. Conflicting
+    access waits up to ten seconds.
+- term: staging file
+  means: The temporary sibling holding a whole-file replacement before atomic rename. A stale staging file is removed
+    without following symbolic links.
 
-  - term: Concept
-    means: >-
-      One way of putting state in place, calling, or observing and comparing
-      through one Public interface item and kind of use, per Given, When or
-      Then block. The closed means names every admitted variation in prose
-      using declared terms and plain English. Names are unique within a block.
-      The step definition's use, fixed by the step wording, decides the concept,
-      never an argument's target. A Given concept states a state.
-
-  - term: Concept binding
-    means: >-
-      An architecture.concepts entry with concept, block and service, and
-      references into that service's Public interface plus does, describing
-      setup, calling, or observation and comparison by block. A UI service
-      may state intent instead of does and references. Bindings are unique per
-      concept name, block and service, and every reference is declared. Only
-      concepts this Scenario links to require a binding for its service. The concept-bindings built-in check names the concept for
-      undeclared concepts, services, references, duplicates or incomplete
-      bindings; its fix writes the architecture and any needed Public interface
-      declaration after apply, never a Scenario. After the link, a Q: Prompt judges
-      each linked binding unambiguous enough to write a step definition from.
-
-  - term: engine
-    means: >-
-      TrueBDD's own program, `true-bdd`. It walks a project's documents
-      through checklists and sends AI turns to the models; it is neither
-      the project's own code nor the AI CLIs it drives, so a Scenario can
-      say what TrueBDD itself did. The engine owns its process, file, terminal
-      and logging code inside its service folder and imports no other code
-      from this repository. It uses only the third-party libraries and exact
-      versions the architecture names. Tests and repository tooling keep
-      independent implementations of their IO channels. Its file channel takes a
-      short advisory hold on the parent directory, shared for reading and
-      exclusive for writing, released before returning. Conflicting access
-      waits until release; shared readers can coexist. Whole-file writes use a staging file and atomic
-      rename so readers receive complete bytes; existing file permissions
-      are retained. Logs are narration, terminal answers stay plain, and
-      subprocess captures retain the exact stdout and stderr bytes.
-
-  - term: build identity
-    means: >-
-      The engine's build version and source commit. Each independently uses a nonempty
-      build stamp first, otherwise Go build metadata (the main module version and
-      VCS revision), otherwise (devel) for version and unknown for commit.
-      A stamp is a string supplied at link time with -ldflags -X.
-      A VCS build may carry a pseudo-version; an archive export carries no VCS metadata.
-      On installing its log, including for init, the engine emits one
-      INFO record with message "Engine started" and version and commit fields before
-      other records. The version command prints exactly one newline-terminated answer line and creates no file or directory. Commands refused before logging, version, help and the hidden guard do not install a log.
-
-  - term: command
-    means: >-
-      One `true-bdd` subcommand with its arguments, as a person types it
-      after `true-bdd`, such as `scen check --fix`. It is what a role runs,
-      and the unit whose exit code, stdout and file changes a Scenario
-      observes. Commands that run AI turns accept model overrides.
-      `init` runs without configuration and creates, in the current folder,
-      true-bdd/true-bdd.yaml without scripts, every checklist under
-      true-bdd/checklists/, every prompt template under templates/, and the product,
-      architecture and Registry schemas under true-bdd/.
-      It reports each created or existing file through a log record and never overwrites one,
-      even an empty or invalid one. It creates no Specification document
-      and detects no test framework. `version` also needs none
-      of these files. It prints `true-bdd version <version> commit <commit>` using the build identity. Other commands use only the project files, with no
-      embedded runtime fallback. Before their first test run, Item or AI
-      turn, checklist commands load their configuration and checklist and parse both
-      validation prompt templates when they run AI, plus both fix-generator and both
-      fix-applier templates under --fix. A missing file refuses startup,
-      naming the file and true-bdd init; an invalid file names the file
-      and parse error and asks to fix it, without init advice.
-      scen check validates different Scenarios concurrently up to engine.scen_check_concurrency.
-      Init writes 1, which an older configuration without the setting also gets.
-      Each Scenario answers D Prompts before sequential Q Prompts; a failed D skips its Q Prompts.
-      The binding judgement starts once every Scenario has answered the Prompts before it.
-      At every concurrency, fix menus follow validation one at a time in ascending Scenario id
-      order. An applied fix discards all remaining verdicts and rejudges the walk, within max_apply_attempts.
-      The pipeline is us refine, us apply, build tests, build steps, build code.
-      build tests renders test files deterministically from the Registry, refuses
-      stale files without --fix and writes them with --fix. It preserves Registry,
-      path, renderer and step-shape refusals before rendering and renders free-text
-      steps, matched against nothing. It runs no AI turn, fix menu or test runner.
-      build steps, with or without --fix, groups distinct texts
-      no existing definition binds, per suite and block, excluding judge: and llm:.
-      Each answer gives the best concept and score and runner-up and score.
-      With one concept, runner_up is explicit null and runner_up_score is zero.
-      Closed means admits only stated variations; the engine applies the same
-      threshold and ambiguity rule as the link pass (9 by default).
-      A step no concept reaches, or two reach at the threshold, stops before
-      any skeleton, naming every failing step and the concepts in an ambiguity.
-      A missing, repeated or unknown index, equal best and runner-up concepts,
-      a runner-up scored above the best, or an output-capped answer crashes.
-      The build-steps checklist config.grouping_batch_texts defaults to 800;
-      past it use the fewest batches with sizes differing by at most one.
-      Remeasure this default when claude-opus-5 or the answer format changes.
-      Every grouped concept and suite is one Item. All Items must have a binding
-      for the suite service, judged as scen check judges it: one turn per
-      binding (concept, block and service) over the steps of every Item that
-      reaches it; a missing or ambiguous binding stops before any skeleton,
-      naming the concept.
-      A host declaring no concepts has no Item: its unbound steps are Step
-      coverage's findings. Without --fix, build steps then lists every concept
-      Item still to write, checks Step coverage in-process and exits non-zero
-      for Items or failed checks. With --fix, the AI proposes each Item's patterns as data,
-      given the concept, its binding, its terms, the Public interface, the
-      patterns of its existing definitions and every step grouped into it.
-      Before any skeleton the engine checks each proposal against every step of
-      the suite in every block: each pattern compiles and names each of its
-      captures, each grouped step binds exactly one pattern,
-      no pattern binds a step another definition binds or another Item groups,
-      and every pattern binds at least one step. A refused proposal goes back
-      with the engine's findings, within config.max_apply_attempts proposals;
-      past them the run stops writing nothing. Each accepted pattern gets a
-      skeleton that records its concept, identified by concept, suite and
-      pattern, with a body failing "step not written yet"; a later walk resumes
-      the pending skeletons it finds. The suite compiles before the first body.
-      The Fix loop then writes each Item's bodies, the body turns and the
-      critique reading the concept, its binding, its terms' glossary entries
-      and Word mappings, the Public interface declaration and document, each
-      pattern's captures and bound steps, every Scenario using the concept's
-      steps, and the fixture inputs of those Scenarios. Only the bodies and
-      shared state may change. After each apply compilation, one binding per
-      step, the concept records and written bodies are required; failures
-      return to that Item within the configured attempts. Once those pass, a
-      separate AI critique turn, on the build-steps checklist's
-      engine.critique_model falling back to engine.default_prompt_model and
-      stating no time, turn, token or cost budget, judges each
-      pattern and its captures as well as each body: a pattern capturing the
-      wrong part of a step, leaving a meaningful alternative uncaptured or
-      binding steps its body cannot serve is a finding against the pattern; a
-      body not doing what its binding says, or requiring anything beyond its
-      binding and those fixture inputs, a body asserting something else than
-      a step means, or one computing what it asserts, is a finding against the
-      body. A finding against a pattern sends the Item back to the proposal
-      with the findings: the engine checks the new patterns as before, removes
-      the skeletons of the patterns it dropped, keeps unchanged ones with their
-      bodies and writes the new ones, whose bodies go back to the writer. A
-      finding against a body sends that body back.
-      Once all Items pass, whole-suite Step coverage and one generated-test listing
-      must pass. After whole-suite coverage and generated-test listing, it runs the suite once in a Host project copy without any service path. Every Scenario must fail at an executed step definition; compilation, bring-up, skipped and missing results fail the check and name the Scenario. Green Scenarios return all Items written in this run that their steps use to the Fix loop together, with the finding and existing attempt counts. If none of those Items can repair a green Scenario, or attempts are exhausted, the command fails distinctly. The original Host project is preserved.
-      The writer may change only the protected test paths (writable paths),
-      never service code or the Specification; a write outside them is refused,
-      whichever AI CLI writes. An interface_cannot_serve writer
-      verdict stops immediately, naming the concept and missing setup or observation;
-      the System Architect extends the declaration. An unfinished walk exits non-zero.
-      build steps --fix reads the
-      product's concepts and glossary, the Word mapping and the bindings before
-      its grouping turns, so a malformed term list stops it before any turn.
-      build code hands both repair turns, for each failing
-      Scenario it matches, the concepts its steps link to, with no link turn:
-      a step's concept is the declared concept of its block that the one step
-      definition it binds records. A judge: or llm: step, a step binding none
-      or two, or an unrecorded definition links nothing. Each linked concept
-      appears once across the failing set with its means, its terms, and its
-      binding for the Scenario's service, followed by those terms' glossary
-      entries and Word mappings.
-      Commands print their existing upper-case command name followed
-      by ` COMPLETE` on stdout only when they succeed, after finalization and
-      any post-run validation. A command returning an error prints no COMPLETE
-      banner. Success means exit 0, including the reported failing-check
-      verdicts of `us refine` and `us apply` described under exit code.
-
-  - term: model override
-    means: >-
-      A repeatable `--model <tier>=<cli>:<model>` flag on `us refine`,
-      `us apply`, `scen check`, `build steps` and `build code`, the commands
-      that dispatch AI turns. It replaces
-      only that tier's configured binding for one run. The tier must already
-      be declared under engine.models; references use the config's first-colon
-      split and validation, with claude and codex as the known CLIs.
-      An undeclared tier, malformed reference, unknown CLI or duplicate tier
-      is a startup refusal with exit 1 before any turn. Each applied override
-      logs once at INFO with msg="Model tier overridden" and tier, from and to.
-      Apart from logs it writes no file and adds nothing to spawned processes'
-      environments, so tests the writer runs still use their own configuration.
-
-  - term: project tree
-    means: >-
-      The files of the project a command works on (its specification
-      documents, the engine's configuration, checklists and prompt templates, its code and
-      tests) as a Scenario starts from them. Named, so a Scenario says
-      exactly which starting point its behaviour depends on.
-
-  - term: exit code
-    means: >-
-      The number a finished command reports: anything but 0 when it refused
-      to start or could not finish, 0 when it ran to its end. A check still
-      failing at the end makes `scen check`, `build steps` and `build code`
-      report non-zero too, since they gate a change; `us refine` and `us
-      apply` report that check on stdout instead, leave the file they would
-      rewrite as it was, and report 0. It is what a script or a CI gate
-      reads to decide whether to go on.
-
-  - term: stdout
-    means: >-
-      Everything a command prints on its standard output: its answer lines
-      and its log records. It is what a person watching the terminal, or a
-      script reading it, sees.
-
-  - term: stderr
-    means: >-
-      Everything a command prints on its standard error: the error that
-      stopped it, followed by the command's usage when it was given an
-      argument it does not take. Startup refusals also name their cause on
-      stdout; a configuration read failure precedes installation of the
-      engine's JSON log.
-
-  - term: log record
-    means: >-
-      One line the engine prints about its own run: a level, a message and
-      named fields, such as `level=ERROR msg="Refusing to start"
-      command="scen check"`. Its message and field names are product
-      output that people and tools rely on.
-
-  - term: pattern
-    means: >-
-      A regular expression a step uses to say what text must or must not
-      appear; it matches anywhere in the text unless it anchors itself.
-
-  - term: file change
-    means: >-
-      A file of the project tree that a run created, modified or deleted,
-      compared with the tree as the run found it. What a command leaves
-      behind is its lasting effect.
-
-  - term: checklist
-    means: >-
-      The ordered Prompts a command asks about each Story or Scenario it
-      walks, one checklist per command, read from the project tree. It
-      decides which questions a run asks.
-      The shipped us-refine checklist gives every Prompt an F: so --fix can
-      propose added or rewritten Acceptance Criteria, or a wider or new concept;
-      each apply requires the Product Owner's answer at the menu. A custom
-      checklist with any Prompt lacking F: still refuses --fix at startup.
-      A Story needs 3 to 7 criteria. Every failure mode its behaviour meets
-      needs its own criterion; a Story with no failure mode of its own passes
-      the error-scenario Prompt with a context line saying why, for example
-      that its input errors belong to another Story. The rule adds no Story
-      field, and fixes propose error criteria only for real failure modes.
-      With concepts, the link Prompt holds each step to one closed means, and
-      Prompt 12 sketches against means and the service interface kind without
-      requiring a binding. Concept fixes write the product document, while
-      a step rewrite changes only the Story.
-
-  - term: Prompt
-    means: >-
-      One question of a checklist, answered by a model (`Q:`) or by the
-      engine's own code (`D:`), with its rationale, the documents it reads
-      and an optional fix. A walk's verdicts and its AI turns are counted
-      per Prompt.
-
-  - term: AI turn
-    means: >-
-      One request the engine sends to an AI model and waits on. It is the
-      unit of model cost and time: a run that needs none costs nothing.
-
-  - term: AI CLI
-    means: >-
-      The agent command-line program an AI turn runs through: `claude` or `codex`. The project's configuration binds named model tiers
-      to a CLI and model, and a Prompt selects its tier. A run-only model
-      override can replace a declared binding. Each CLI enforces a different answer
-      shape and write boundary, so which one ran a turn decides what that
-      turn could do and what it cost.
-
-  - term: fix loop
-    means: >-
-      Every fix is applied only when a person answers apply at its fix menu.
-      The engine offers no way to approve fixes in advance. Answers are read
-      from stdin with no terminal check, so tests and the drill can supply them
-      through a pipe. A clarifying question at end of stdin prints the question
-      and suggested answers and stops with a distinct error saying a person
-      must answer; no answer is guessed. End of stdin at the fix menu stops
-      with an error saying a person must choose whether to apply the fix,
-      rather than reporting tests still failing. These stops exit non-zero
-      and print no command COMPLETE banner. A final non-empty answer without
-      a newline is accepted, and a blank line retains its interactive meaning.
-      What a command run with `--fix` does for each check that fails: it
-      may first ask clarifying questions, each with numbered suggested
-      answers, then shows the fix it proposes and asks whether to apply it,
-      refine it with the person's feedback, or exit. It is how a person
-      settles a failure in their own words without editing a document by
-      hand. For build code, one proposed repair plan covers the whole failing
-      set. The person chooses apply, refine or exit as before; the writer
-      implements the plan, tests its parts and the set, and reports what
-      changed and which members it saw pass. The engine answers the verdict
-      itself, with no validation AI turn. After every completed apply it
-      reruns the remaining set once, passing tests leave, and fresh discovery
-      on the next walk finds regressions. The existing per-Item allowance
-      counts applies on the set, including an applied false reply. A successful
-      provider response without the result confirmation also counts as a
-      completed apply for build code: files stay as written, the engine warns
-      once with the result path and reruns the set through the not-applied
-      path. A started claude writer that exits non-zero, returns an error result or answers empty also follows this rerun and once-only warning. Its available cost and tokens are logged on failure too.
-      A started codex writer that exits non-zero (including a usage limit),
-      returns empty or whitespace-only output or leaves no answer file also
-      keeps its edits and follows the same warning, allowance and rerun.
-      A codex start failure or refusal before spawning stays fatal; codex
-      has no response watch.
-      Every codex apply turn, including document and test-definition edits, uses a generated home and permission profile:
-      reads stay inside the Host project plus explicit runtime and toolchain exceptions, writes stay in that turn's own
-      file, directory or configured-glob roots and scratch, and escaping roots are refused. Plan and validation turns
-      remain read-only. Configured globs allow creating matching files even when no matches exist before the turn.
-      Literal files and terminal recursive subtrees keep exact grants; other globs temporarily grant their narrowest
-      literal directory, then enforce the original patterns after every turn. New non-matching files are removed;
-      changes, deletions, renames or permission changes to pre-existing non-matching files fail the turn with one
-      warning naming the file, preserving changed contents for diagnosis. Overlapping grants authorize their union.
-      Non-matching files in that directory can be changed during the turn; this is a post-turn boundary.
-      Malformed patterns and grants of the host root, protected generated homes or escaping paths are refused.
-      The build-code codex writer receives whole-suite and selected replay
-      forms, polling its own process for completion. It reads the host
-      project and runtime/toolchain exceptions only, writes the failing set's declared service
-      paths, their exact writable entries and host tmp only, and cannot read its generated credential home.
-      Its commands have no network. User config, MCP servers, web search,
-      history and AGENTS.md are not loaded for this writer. Its JSON events
-      are saved for audit; its final message still supplies the confirmation.
-      These outcomes consume the same allowance; the terminal apply
-      is rerun but still ends at the non-converging bound even if it passes.
-      An extracted malformed block or one without applied keeps its existing
-      handling. Other commands and other AI roles retain their existing failure handling, including missing confirmations.
-
-  - term: failing set
-    means: >-
-      All tests failing in one build code discovery, with their latest
-      failure evidence and matched Specification context: the concepts their
-      Scenarios' steps link to, with words and bindings. It is one Item;
-      discovery with no failures yields no Item. After an apply, members
-      leave only on their own passing result. A member with no result stays
-      failing and is reported as not having run. A Go build member's own
-      passing result is a package pass or a no-test-files skip with no failure.
-      A Jest file that fails to load is one file::<load> member carrying
-      Jest's message. It passes only when its file loads and reports no failure;
-      a file still failing to load or missing from output stays failing.
-      A test command that exits non-zero with no failing member, synthetic
-      members included, stops the run with the command, exit code and output
-      tail, before any AI turn or BUILD CODE COMPLETE. Playwright's startup
-      member is retained. Build code reports success only when the test command succeeded.
-
-  - term: test dependencies
-    means: >-
-      The packages and tools a project's own tests need before they can
-      start, such as the npm packages of a Jest suite, or the browser and
-      the npm packages of browser tests.
-      They are installed into the project tree from outside it; no command
-      writes them, so a Scenario states them as a starting condition.
-
-  - term: glob
-    means: >-
-      A file path in which `*` stands for any run of characters within one
-      directory level, so a Scenario can count files whose exact names a
-      command chooses.
-
-  - term: Story
-    means: >-
-      One user story in its own file: who wants what and why, plus the
-      Acceptance Criteria that define it. A person writes it directly, out
-      of a discussion of a Feature; it is where a behaviour's reason is
-      recorded.
-
-  - term: Feature
-    means: >-
-      A named group of Stories that together deliver one product
-      capability. A label a Story carries, not a document of its own, so
-      related Stories can be found together.
-
-  - term: Acceptance Criterion
-    means: >-
-      One testable condition of a Story: an id the author writes as
-      `<NNN>-<slug>`, a description, and its own Given, When and Then
-      steps. When the Story is applied it becomes one Scenario of the
-      Registry, so it is the same behaviour at an earlier stage.
-
-  - term: step
-    means: >-
-      One line of a Scenario or an Acceptance Criterion: a Given states
-      where the behaviour starts, a When is what the role does, a Then is
-      what must be observed afterwards. Its text is an instance of one
-      concept of its block, or is a `judge:` clause a model rules on.
-
-  - term: Scenario
-    means: >-
-      One behaviour the product is held to, written as an entry of the
-      Registry with its Given, When and Then steps. Each becomes one
-      executable test, and the test's verdict, not anyone's opinion, says
-      whether the product behaves.
-
-  - term: Registry
-    means: >-
-      The one file of a project holding every Scenario, so the whole
-      behaviour the product is held to can be read, checked and turned
-      into tests in one place.
-
-  - term: lineage
-    means: >-
-      The record on a Scenario of the Story and the Acceptance Criterion it
-      came from, the criterion named by its lineage id
-      `<story-id>-<ac-id>`. It is how a behaviour says which role wanted it
-      and why.
-
-  - term: Scenario key
-    means: >-
-      The name a Scenario has in the Registry: its lineage id
-      `<story-id>-<ac-id>` once a Story claims it. The Scenario's test is
-      named after it, so it is what a reader sees when the test fails.
-
-  - term: step definition
-    means: >-
-      The test code that carries out one shape of step against the running
-      product: it sets up what a Given states or observes what a Then
-      states. A step runs through the one definition whose pattern matches
-      its whole text. The engine writes one skeleton per checked proposed
-      pattern, recording its concept, and the AI writes its body through build
-      steps --fix, using the declared Public interface across a process boundary. The body may extend
-      shared state but preserves every registration and signature. A pending body fails
-      with "step not written yet", its concept and its pattern. scen check's
-      step-definitions built-in check holds every step a Scenario binds, judge: and llm: steps
-      aside, to one definition, which records a concept the product document
-      declares under that step's block; a step two definitions bind, or a
-      definition recording no concept, another block's or an undeclared one,
-      fails the Scenario. A step no definition binds yet is build steps' gap.
-
-  - term: fixture
-    means: >-
-      A directory under a suite's fixtures/, beside its steps/, holding what a
-      Scenario that names it, by a quoted value of one of its steps, starts
-      from: files, programs standing in for the tools the service is run with,
-      and their preparation. Its fixture inputs are its files other than the
-      recordings under cassettes/. build steps --fix embeds the fixture inputs
-      of the Scenarios a concept's steps are used in, whole, in its body turns
-      and its critique, since a step definition may meet a contract only a
-      fixture input states, such as an environment variable its program reads.
-
-  - term: Item
-    means: >-
-      What one command walks. build steps groups one concept and suite as an
-      Item and rejudges its service binding before any skeleton; pending engine
-      skeletons resume as Items.
-
-  - term: Step coverage
-    means: >-
-      The in-process answer to whether every step of every Registry Scenario
-      binds to exactly one definition in its suite. Nonconstant or invalid
-      patterns refuse startup. Ambiguous concrete bindings refuse startup before
-      grouping. An absent steps directory has zero definitions; missing bindings
-      fail the command and name the Scenario and step. build steps performs this check without
-      running a test or spending an AI turn. Its gaps feed a separate model
-      grouping pass; judge: and llm: steps get no Item, and a host declaring no
-      concepts has none.
-
-  - term: red without the target
-    means: >-
-      One run of every Scenario after build steps --fix writes its Items, in a Host project copy without every service path. Only a failure at an executed step definition counts as red. Compilation, harness bring-up, skipped and missing results fail the check, naming the Scenario. A green Scenario returns all Items written in this run that its steps use to the same bounded Fix loop together, with the finding. A green Scenario with no written Item, or exhausted attempts, ends distinctly. The harness defers service builds until a step needs them, preserving the prebuilt oracle flag.
-
-  - term: test runner
-    means: >-
-      The program a project runs its own tests with, such as `go test` or
-      `npx playwright test`, as the architecture document declares it.
-      build steps --fix invokes it without executing tests to compile the
-      definitions and list every generated Scenario test; it then runs the suite in a copy without service paths and requires every Scenario to fail at an executed definition.
-      `build code` starts it to find the failing set and after every completed
-      apply to rerun all remaining members in one selection. Go build and
-      Playwright startup members make the rerun unfiltered. Jest load members
-      select the remaining members' files by path rather than test name. A member with
-      no passing result of its own stays failing; the next outer walk
-      discovers the whole suite afresh.
-
-  - term: shell command
-    means: >-
-      A program with its arguments, as a person would type it in a
-      terminal, that a Scenario runs itself in a directory of the project
-      tree once the command has ended, apart from the engine: typically the
-      project's own tests, to confirm the outcome the command was driving
-      at. It reports its own exit status, 0 for success.
-
-  - term: claude
-    means: >-
-      The Claude Code CLI selected by a model tier. Only build code's apply turn
-      has a generated, restricted writer configuration with the engine's hook.
-      Its file tools read the host root, the installed Go toolchain, the declared Library graph and its own spill files. Writes stay in scratch and declared service roots, with generated guard configuration protected from modification. The hook grants
-      only the canonical foreground replay command; background commands are denied.
-      Searches outside the host start only inside a granted read root, and Glob checks its pattern's fixed root and denies parent traversal.
-      Both Bash timeouts are 600000 milliseconds. No Claude turn gets a router deadline;
-      every turn uses the caller's context, and cancellation stops its process group and descendants.
-      Other Claude turns retain safe mode. A started writer's non-zero exit, error result
-      (including rate or usage limits) or empty answer warns once, preserves files
-      and reruns the set, consuming the same attempt. Start failures stay fatal.
-
-  - term: codex
-    means: >-
-      The Codex CLI selected by a model tier, by default the AI CLI of every
-      apply turn (the coder tier): the writer that changes a command's files,
-      build code's service code among them. Each of its apply turns runs under
-      a home and a permission profile the engine generates for that turn,
-      holding a private copy of its authentication only while the turn runs.
-
-  - term: write guard
-    means: The engine's check that the build-code Claude writer runs before each tool call. It answers allow or deny with a
-      reason, holding calls to the turn's write policy. File tools reach the host, declared toolchain roots and this session's
-      spill directory; writes reach declared service roots and scratch. Unknown tools and malformed policies are denied. Bash
-      accepts only the canonical whole or selected replay in the resolved suite directory, in the foreground. No other Claude
-      turn receives a replay grant. Codex build-code writers use their own permission profile.
-
-  - term: write policy
-    means: 'What one guarded Claude writer may read and change: the project read root, write roots, extra read roots, excluded
-      roots and protected configuration. Its replay policy carries the canonical command without machine output, framework selector
-      and absolute suite directory. Arguments use one space; only A-Za-z0-9_./:=,@%+- remain unquoted, others are single-quoted.
-      A single quote, newline or NUL withholds the grant with one warning. The guard accepts the command alone or followed by
-      one selector and a nonempty single-quoted selection with no single quote, newline or NUL. Symlinks and path identity determine
-      roots. Tests execute the writer''s code with machine permissions; this restricts shell use, not deliberately written code.
-      The generated policy file is protected from writes.'
-
-  - term: tool call
-    means: 'One tool Claude wants to run during a writer turn: tool_name, such as Read, Write, Edit, Glob, Grep or Bash, and
-      tool_input. File tools name file_path or path; relative targets resolve against cwd and an absent target uses cwd. Bash
-      names command; cwd supplies its working directory and run_in_background is denied.'
-
-  - term: hook payload
-    means: 'The complete JSON tool call Claude writes to the guard''s standard input: tool_name, cwd and tool_input, including
-      file_path, path, command and run_in_background where applicable. A malformed payload or non-absolute policy read root
-      is denied.'
-
-  - term: symbolic link
-    means: >-
-      A file of the project tree that points at another path: reading or
-      writing through it reaches the path it points at, which may lie
-      outside the directory holding the link.
-
-  - term: Library
-    means: >-
-      Code supplied apart from a service's own source, declared by exact module and version in the service's optional libraries list or testing.libraries. Before build-code writers run, the engine uses its network to download every named Go module and its complete build graph. A failed download stops the run before any writer turn, naming the library and the error. Writers may read only those module sources and exact version metadata in the module cache, with no organization-specific grant or deny. A service importing a library named only for its tests is refused before discovery and on rerun. Protected tests and step definitions remain read-only as defined under writable paths. Only the default codex writer enforces these rules for every subprocess; Claude's file tools obey them, but its replay and executed code remain unconfined and have network, a known limit retained for model trials. For non-Go hosts these lists are omitted or empty; the existing Jest and Playwright paths use host-local node_modules without a new package-manager download or import check.
-
-  - term: writable paths
-    means: >-
-      A service's optional writable list names exact project-relative files or folders, without patterns, in addition to its path. A writer changes those and host tmp only. Existing folders grant their subtree; an absent entry remains exact unless a trailing slash declares a folder. Build code refuses outside paths or grants overlapping protected tests and step definitions at start, before any runner or AI turn. Protected tests are tests/, Registry suite directories, the in-host directory holding testing.config, and in-host Go package directories named by testing.commands (./dir or ./dir/..., relative to the command working directory). The broad ./... names no separate test directory. Command package directories within a service's path remain service code; _test.go files there stay writable by build code. A filename suffix alone does not protect a file. Reserved tests/, Registry and configuration directories take precedence. Unknown-service failures use all declared services. Protected tests and step definitions are read and run only. Codex enforces this fully; Claude's replay command remains unconfined for model trials.
-
-  - term: impossible repair
-    means: >-
-      The plan or writer concludes no solution exists within the declared files, after seeking one there. A preferred undeclared change alone is insufficient. Both report impossible as a list of path and reason objects. The first nonempty list keeps edits, reruns the remaining failing set once, then fails with a distinct error naming files, reasons, remaining failures and the remedy: change the files by hand or add them to the service's writable. No further plan, writer, attempt or COMPLETE banner follows. An empty list preserves ordinary retries, including applied false.
-
-  - term: hard link
-    means: >-
-      A second name of a file in the project tree: both names reach the same
-      file, so a write through either changes both, but a file renamed over
-      one name leaves the other name with the old content.
-
-  - term: hold
-    means: >-
-      A short advisory lock the engine takes on the directory holding a file
-      while it reads or writes that file: shared for a read, exclusive for a
-      write, released before the read or write returns. Another process's
-      conflicting hold on that directory makes the engine wait, at most ten
-      seconds before it stops with an error; a compatible one, shared beside
-      a read, does not.
-
-  - term: staging file
-    means: >-
-      The file beside a file the engine replaces whole, named
-      .true-bdd.tmp.<name>, that the engine writes the new content to and then
-      renames over the file, so a reader sees the old content or the new one
-      in full, never a mix. One left over from an earlier write is stale; the
-      engine removes it first, without following it when it is a symbolic link.
-
-# The product's concepts by block (ADR-0034, ADR-0036): one Public interface
-# item and kind of use each, its closed means in declared terms and plain
-# English. scen check links every step a model does not run to one of them.
 concepts:
   given:
     - concept: project tree
@@ -856,9 +256,10 @@ concepts:
         released within its wait, one kept beyond its wait limit, or one that
         permits the engine's access; the role plants a stale staging file as a
         symbolic link and then runs the command; the role cancels the run once a
-        process an AI CLI started is running; or the role runs scen check and
-        then build steps with fix, a Concept binding of the architecture
-        document changed in between.
+        process an AI CLI started is running; or the role runs build steps
+        after scen check and a binding change: scen check, then a change to a
+        Concept binding of the architecture document, then build steps with
+        fix.
       terms: [command, engine, project tree, hold, staging file, symbolic link, AI CLI, Concept binding]
     - concept: the write guard is asked
       means: >-
@@ -891,8 +292,11 @@ concepts:
         stated file holds a stated number of lines; the one file matching a glob
         holds a stated number of matches for a pattern; or a rewritten file
         keeps its private permissions and is a new file, its old hard link
-        keeping the previous content.
-      terms: [project tree, glob, pattern, file change, engine, hard link]
+        keeping the previous content. A Model's saved checklist prompt preserves the named construction rule:
+        criterion selection and lineage, step block and source order, and/but modifiers, Story embedding and Feature,
+        Scenario key and fields, ordered lineage without merge_date, or question and fix verbatim from its checklist.
+        A shipped Model scheme equals its declared file.
+      terms: [project tree, glob, pattern, file change, engine, hard link, Model, checklist, Prompt, Story, Feature, Acceptance Criterion, step, Scenario, Registry, lineage, Scenario key]
     - concept: Story content
       means: >-
         The Story in a stated file of the project tree, read as a Story after
@@ -914,8 +318,9 @@ concepts:
       means: >-
         What the engine did during the run, stated as the engine's own activity
         and never as a file read by path: the test runners it spawned, by
-        program, by number, or those whose arguments match a pattern; the AI
-        turns it dispatched, by number, all of them or those of one kind
+        program, by number, those whose arguments match a pattern, or a stated
+        number of those whose arguments match a pattern; the AI turns it
+        dispatched, by number, all of them or those of one kind
         (validation, fix or apply) sent to a stated AI CLI; that it logged its
         build identity once at start; or that it validated different Scenarios
         at overlapping times, each Scenario's Prompts the engine answers itself

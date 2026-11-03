@@ -18,9 +18,8 @@ architecture:
     service: greeter
     references:
     - command: greet
-    does: Run greet once with the person argument set to the named person and the
-      loud flag omitted, so the configured greeting is printed verbatim and one greeted
-      log record is emitted.
+    does: Run greet once with the person argument from the step and the loud flag omitted,
+      so its default false applies and the configured greeting is printed and logged unchanged.
   - concept: greeting
     block: then
     service: greeter

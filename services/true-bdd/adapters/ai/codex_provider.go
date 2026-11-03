@@ -36,7 +36,7 @@ func (p *CodexProvider) Name() string {
 // Execute runs one turn and returns the final message codex wrote to
 // its output file.
 func (p *CodexProvider) Execute(ctx context.Context, req Request) (string, error) {
-	if !req.CodexApply && !req.CodexWriter {
+	if !req.needsCodexProfile() {
 		return p.execute(ctx, req, "")
 	}
 
@@ -71,7 +71,7 @@ func (p *CodexProvider) execute(ctx context.Context, req Request, home string) (
 
 	var guard *codexGlobGuard
 
-	if req.CodexApply || req.CodexWriter {
+	if req.needsCodexProfile() {
 		var err error
 
 		env, err = prepareCodexWriter(ctx, req, home)
@@ -97,7 +97,7 @@ func (p *CodexProvider) execute(ctx context.Context, req Request, home string) (
 		Prompt:     composePrompt(req),
 		Env:        env,
 		SchemaPath: schemaPath,
-		Writer:     req.CodexApply || req.CodexWriter,
+		Writer:     req.needsCodexProfile(),
 	}
 
 	err = clearCodexAnswer(req, answerPath)
@@ -167,7 +167,7 @@ func codexAnswer(req Request, answerPath string, result codex.Result, runErr err
 	}
 
 	if strings.TrimSpace(string(answer)) == "" {
-		if req.CodexApply || req.CodexWriter {
+		if req.needsCodexProfile() {
 			return "", &pkgerrors.CodexTurnError{Outcome: pkgerrors.CodexTurnEmptyOutput,
 				Cause: pkgerrors.ErrProviderProducedNoOutput("codex")}
 		}

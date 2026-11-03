@@ -74,6 +74,8 @@ type GenerateParams struct {
 // FixPromptGenerator generates complete, actionable fix prompts for failed checklist validations.
 type FixPromptGenerator struct {
 	impossibleReport bool
+	readRoots        []string
+	libraryReadRoots []string
 	writeRoots       []string
 	aiClient         ports.AIPort
 	config           *config.ViperConfig
@@ -112,6 +114,11 @@ func NewFixPromptGeneratorWithPaths(
 		systemLoader: template.NewTemplateLoader[FixPromptData](systemPath),
 		userLoader:   template.NewTemplateLoader[FixPromptData](userPath),
 	}
+}
+
+// UseEvidenceReadRoots confines body proposals to Specification, suite and declared libraries.
+func (g *FixPromptGenerator) UseEvidenceReadRoots(roots, libraries []string) {
+	g.readRoots, g.libraryReadRoots = roots, libraries
 }
 
 // UseImpossibleReport enables the build-code impossibility verdict.
@@ -237,6 +244,8 @@ func (g *FixPromptGenerator) executeAIGeneration(
 	g.savePromptFile(params.TmpDir, params.SubjectID, promptIndex, suffix+"-user", userPrompt)
 
 	mode := g.modeFactory.GetThinkMode()
+	mode.ReadRoots = g.readRoots
+	mode.LibraryReadRoots = g.libraryReadRoots
 
 	schema := ""
 	if promptData.Structured {

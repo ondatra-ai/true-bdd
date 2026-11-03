@@ -115,7 +115,8 @@ func TestUsApply002DuplicatesCollapse(t *testing.T) {
 	s.Given(`the "us-apply-duplicate-collapse" project tree`)
 	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us apply 95.1 --fix"`)
-	s.Then(`the command exits with code 0`)
+	s.Then(`the us_apply_checklist prompt keeps the and modifier of the criterion's steps`)
+	s.And(`the command exits with code 0`)
 	s.And(`stdout matches msg=AC index=1 total=1`)
 	s.And(`stdout matches msg="RE-WALK \(fixes applied, verifying\)" attempt=2`)
 	s.And(`stdout matches ALL CHECKS PASSED!`)
@@ -139,7 +140,10 @@ func TestUsApply003ReorderKeepsKeys(t *testing.T) {
 	s.Given(`the "us-apply-reordered-criteria" project tree`)
 	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us apply mcp-endpoint --fix"`)
-	s.Then(`the command exits with code 0`)
+	s.Then(`the us_apply_checklist prompt selects the criterion by id and sets lineage to StoryID-ACID`)
+	s.And(`the us_apply_checklist prompt holds the checklist's question and fix verbatim`)
+	s.And(`the us_apply_checklist prompt keeps the other criterion's id, lineage and description`)
+	s.And(`the command exits with code 0`)
 	s.And(`stdout matches msg=AC index=1 total=2 description="The MCP server must respond with HTTP 405`)
 	s.And(`stdout matches ALL CHECKS PASSED!`)
 	s.And(`stdout matches APPLY COMPLETE`)
@@ -202,6 +206,18 @@ func TestUsApply006UndeclaredServiceRefused(t *testing.T) {
 	s.And(`the file "docs/scenarios.yaml" is unchanged`)
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched 2 AI turns`)
+	s.Done()
+}
+
+// us-apply-007-prompt-step-order: The apply checklist prompt must group steps as Given, When, Then, preserving every block's order and every and or but modifier from the selected Acceptance Criterion
+func TestUsApply007PromptStepOrder(t *testing.T) {
+	s := scenarios.New(t, "us-apply-007-prompt-step-order")
+	s.Given(`the "us-apply-prompt-order" project tree`)
+	s.When(`the Product Owner runs "us apply mcp-endpoint"`)
+	s.Then(`the us_apply_checklist prompt groups Given, When, Then in source order with and/but modifiers`)
+	s.And(`the command exits with code 0`)
+	s.And(`the engine dispatched 2 AI turns`)
+	s.And(`no file outside "tmp" changed`)
 	s.Done()
 }
 

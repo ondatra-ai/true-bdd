@@ -20,6 +20,10 @@ _Avoid_: external API, contract, surface
 The shape of the data a service keeps between its runs, such as a database's schema, and any code that defines that shape. It is not public, but data written by one build must be read by the next, so the architecture document declares it and every rebuild keeps it. A step definition may set up or check stored data through it; how, when code defines the model, is not decided yet.
 _Avoid_: storage format, schema (alone)
 
+**Model**:
+The YAML data a service fills a checklist template pair with, declared in its architecture `models` by templates and a scheme. The scheme states fields and types, checked in process before rendering; Scenarios state construction rules. AI model tiers remain `engine.models`.
+_Avoid_: prompt data (for a declared Model)
+
 **Internal code**:
 Everything in a service that is neither its Public interface nor its Persistent data model. A build chooses it freely, a rebuild need not keep it, and no step definition reaches it.
 _Avoid_: private API, implementation details
@@ -89,8 +93,16 @@ The engine's own answer to which Scenarios have a step no definition binds: the 
 _Avoid_: coverage report, coverage output, step report, gap list
 
 **Red without the target**:
-The check of `build steps --fix` that runs a suite once in a copy of the Host project without any service's path, where every Scenario must fail at a step whose definition ran. A Scenario that passes there has a step definition doing the product's work.
+The state of every test while the code is not built: red, because there is no code. `build code` checks it first when no code is built, running the suite once, where every Scenario must fail at a step whose definition ran; a Scenario that passes stops it with a distinct error, since correctly written steps cannot pass without the code (ADR-0040).
 _Avoid_: expected failure, any failure counts
+
+**Steps package**:
+A suite's step definitions and the helpers they need, the one generated part of a suite that is checked. `build steps` writes it before any test exists; the tests `build tests` renders import it.
+_Avoid_: step folder, step library, test steps
+
+**Step definition**:
+The Go function that carries out a Scenario's step, registered against a pattern that binds step texts: the step is the Scenario's line of text, the step definition the code that runs it. The Steps package holds them.
+_Avoid_: step (for the function), step implementation, glue
 
 **Catalogue**:
 Retired: the product document's former `catalogue` key of step templates, each a step's shape, block, meaning and terms. Concepts replaced it (ADR-0034), and the engine refuses at startup a product document that still declares one, naming `concepts:` in its place. Older ADRs still name it.
@@ -105,7 +117,7 @@ An `architecture.concepts` entry naming a Concept by name and block and its serv
 _Avoid_: concept mapping, step binding
 
 **Word mapping**:
-The architecture document's list of terms, each saying what the term is in the implementation and how a step definition sets it up or observes it, without naming code. Every term a Concept declares is mapped exactly once.
+The architecture document's list of terms, each saying what the term is in the implementation, with optional instructions for setup or observation when the Concept binding does not already fix them, without naming code. Every term a Concept declares is mapped exactly once.
 _Avoid_: architecture glossary, dictionary
 
 **Phrase mapping**:
@@ -145,8 +157,16 @@ A repeatable `--model <tier>=<cli>:<model>` command-line flag that replaces one 
 _Avoid_: model environment variable, model config overlay
 
 **Library**:
-Code supplied apart from a service's own source that the service or its tests build with, named in the architecture document with its exact version; what a named library itself needs to build comes with it. The service entry and `testing` declare `libraries` as lists of `{module, version}`. Before a writer turn, the run downloads every named Go module and its build graph; a download failure stops the run, naming the library and error. Writers read only that graph and its exact version metadata from the module cache. A rebuild may use nothing else, and a service may not use a library named only for its tests. For non-Go hosts the lists remain empty; existing Jest and Playwright paths are unchanged. Only codex enforces the access and network boundary for subprocesses; Claude's file tools obey it, but its replay remains unconfined with network for model trials.
+Code supplied apart from a service's own source that the service or its tests build with, named in the architecture document with its exact version; what a named library itself needs to build comes with it. The service entry and `testing` declare `libraries` as lists of `{module, version}`. Before a writer turn, the run downloads every named Go module and its build graph; a download failure stops the run, naming the library and error. Writers read only that graph and its exact version metadata from the module cache. A rebuild may use nothing else, and a service may not use a library named only for its tests. A suite's folder holds only its fixtures and what the pipeline generates from the Specification; anything else its tests use is a library. For non-Go hosts the lists remain empty; existing Jest and Playwright paths are unchanged. Only codex enforces the access and network boundary for subprocesses; Claude's file tools obey it, but its replay remains unconfined with network for model trials.
 _Avoid_: dependency (a service's dependencies are the processes and CLIs it talks to while it runs), package, framework
+
+**Suite wiring**:
+Retired (ADR-0040, Q21): the former name of the tests' main file, `main_test.go`, which builds the suite, registers the step definitions, creates each Scenario's state and hands each test its run. `build tests` writes it with the tests; until that is built, `build steps --fix` writes a separate `scenarios` package and a `TestMain` file instead.
+_Avoid_: glue, shim, bootstrap, wiring
+
+**Scenario run**:
+The harness's state for one Scenario, carried by `testkit.ScenarioRun`: its test, Scenario, prepared fixture, proxy setup, result, run recorder and grading, with access to the suite's modes, recordings, judge and built service. A suite declaring `architecture.testing.testkit` embeds `*testkit.ScenarioRun` in `State` as its one harness field (ensured even when no new skeleton is written) and adds only the definitions' own data.
+_Avoid_: world (for the harness's type), harness state, test context
 
 ## Repository vocabulary
 

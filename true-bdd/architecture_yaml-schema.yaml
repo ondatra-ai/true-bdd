@@ -9,7 +9,7 @@
 #
 #   yamale -s true-bdd/architecture_yaml-schema.yaml docs/architecture/architecture.yaml
 #
-# The engine decodes only `testing:`, `services[].{name,path,language,writable,libraries,public_interface}`
+# The engine decodes only `testing:`, `services[].{name,path,language,writable,libraries,public_interface,models}`
 # and, for closure checks, `terms:` and `concepts:`; everything else here is
 # spec a host writes for its own readers and for the checklists' prompts.
 # Which is exactly why it needs a schema: nothing else would notice a typo
@@ -32,6 +32,8 @@ architecture:
   services: list(include('service'), min=1)
   terms: list(include('term_mapping'), required=False)
   concepts: list(include('concept_binding'), required=False)
+  model_rendering: str(required=False)
+  concept_protocols: str(required=False)
   prompt_data: map(include('prompt_data'), required=False)
 
 ---
@@ -40,13 +42,14 @@ architecture:
 term_mapping:
   term: str()
   technical: str()
-  observed_by: str()
+  observed_by: str(required=False)
 
 ---
 # How this repository's tests run. `framework` routes to a runner and
 # decides what `build tests` renders; `commands` is how each mode is
 # invoked. Declaring neither describes a project nothing can build.
 testing:
+  testkit: include('testkit', required=False)
   libraries: list(include('library'), required=False)
   framework: enum('go-test', 'jest', 'playwright')
   # Framework config file. Its containing directory is the working
@@ -56,12 +59,17 @@ testing:
   commands: include('commands')
 
 ---
+testkit:
+  ai_clis: list(str(), required=False)
+
+---
 library:
   module: str()
   version: str(matches='^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+incompatible)?$')
 
 ---
 service:
+  models: map(include('model'), required=False)
   libraries: list(include('library'), required=False)
   name: str()
   path: str()
@@ -198,3 +206,13 @@ concept_binding:
   does: str(required=False)
   references: list(include('interface_reference'), min=1, required=False)
   intent: str(required=False)
+
+---
+model:
+  templates: include('model_templates')
+  scheme: str()
+
+---
+model_templates:
+  system: str()
+  user: str()

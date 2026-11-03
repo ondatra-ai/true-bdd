@@ -1,0 +1,13 @@
+"the us_refine_checklist prompt embeds the Story without a wrapper and keeps its Feature":
+  glob: "tmp/*/01-doc-summary-checklist-*-user.txt"
+  pattern: "## User Story\\n```yaml\\nid: doc-summary\\nfeature: document-summaries\\ntitle: Document Summary On Demand\\n"
+  operator: "matches"
+"the us_refine_checklist prompt has no story wrapper":
+  glob: "tmp/*/01-doc-summary-checklist-*-user.txt"
+  pattern: "(?m)^story:"
+  operator: "does not match"
+"the us_refine_checklist prompt holds the checklist's question and fix verbatim":
+  glob: "tmp/*/01-doc-summary-checklist-*-user.txt"
+  operator: "matches"
+  pattern: "## Validation Question\\n\\n{{Q}} SO THAT WE ENSURE {{rationale}}\\n\\n## If Validation Fails\\n(?s:.*?)\\n\\n{{F}}\\n\\n## Answer Format"
+  checklist: "us-refine"

@@ -1,6 +1,7 @@
 package steps
 
 import (
+	"errors"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -9,20 +10,28 @@ import (
 
 //truebdd:concept when "doubling"
 func concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b(state *State, args []string) error {
-	const hostRoot = "../.."
 	if state.Program == "" {
-		return fmt.Errorf("the calculator is not installed")
+		return errors.New("double a number: the calculator is not installed")
 	}
-	command := exec.Command(state.Program, "double", args[0])
-	command.Dir = hostRoot
-	output, err := command.Output()
+	number := args[0]
+	if _, err := strconv.Atoi(number); err != nil {
+		return fmt.Errorf("double a number: the step's whole number %q: %w", number, err)
+	}
+	command := exec.Command(state.Program, "double", number)
+	command.Dir = "../.."
+	stdout, err := command.Output()
 	if err != nil {
-		return fmt.Errorf("double %s: %w: %s", args[0], err, output)
+		var exit *exec.ExitError
+		if errors.As(err, &exit) {
+			return fmt.Errorf("double %s: %w: %s", number, err, exit.Stderr)
+		}
+		return fmt.Errorf("double %s: %w", number, err)
 	}
-	value, err := strconv.Atoi(strings.TrimSpace(string(output)))
+	printed := strings.TrimSpace(string(stdout))
+	doubled, err := strconv.Atoi(printed)
 	if err != nil {
-		return fmt.Errorf("double %s: unexpected stdout %q: %w", args[0], string(output), err)
+		return fmt.Errorf("double %s: read the printed integer %q: %w", number, printed, err)
 	}
-	state.Value = value
+	state.Value = doubled
 	return nil
 }

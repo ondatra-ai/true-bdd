@@ -48,11 +48,13 @@ type PlannedScenario struct {
 
 // PlannedFile is one generated file and everything it needs to render.
 type PlannedFile struct {
+	// Service selects the architecture service whose Scenarios the Suite wiring runs.
+	Service string
 	// Path is repo-relative, as the scenarios' `path:` states it.
 	Path string
 	// Package is the file's package clause, derived from the suite name.
 	Package string
-	// ScenariosPkg is the import path of the suite's scenarios shim.
+	// ScenariosPkg is the import path of the Suite wiring.
 	ScenariosPkg string
 	// RegistryPath is quoted into the header so a reader of a generated
 	// file knows which document to edit.
@@ -63,7 +65,8 @@ type PlannedFile struct {
 
 // Plan is every file one registry renders into, in path order.
 type Plan struct {
-	Files []PlannedFile
+	Testkit *architecture.Testkit
+	Files   []PlannedFile
 }
 
 // BuildPlan groups scenarios by `path:`, resolves each one's owning suite,
@@ -107,7 +110,7 @@ func BuildPlan(
 
 	sort.Strings(order)
 
-	plan := &Plan{Files: make([]PlannedFile, 0, len(order))}
+	plan := &Plan{Testkit: arch.Testing.Testkit, Files: make([]PlannedFile, 0, len(order))}
 
 	for _, filePath := range order {
 		file, fileErr := planFile(filePath, grouped[filePath], arch, repoRoot, registryPath)
@@ -193,6 +196,7 @@ func planFile(
 	}
 
 	return PlannedFile{
+		Service:      scenarios[0].Service,
 		Path:         filePath,
 		Package:      pkg,
 		ScenariosPkg: scenariosPkg,

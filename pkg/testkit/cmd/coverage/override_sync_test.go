@@ -169,7 +169,13 @@ const (
 	// what a fix asks or changes and its `config:` may bound the loop, while
 	// each question or check stays a shipped one.
 	overrideFixLoop
+	// overridePromptText pins literal multiline F rendering while retaining a shipped Q.
+	overridePromptText
 )
+
+func (purpose overridePurpose) keepsQuestionOnly() bool {
+	return purpose == overrideFixLoop || purpose == overridePromptText
+}
 
 // allowedOverrideFixtures is the explicit allowlist for checked-in
 // checklist overrides. A fixture belongs here only when the override IS
@@ -177,7 +183,11 @@ const (
 func allowedOverrideFixtures() map[string]overridePurpose {
 	allowed := map[string]overridePurpose{
 		"init-existing":                           overridePreserved,
+		"model-declarations-missing-scheme":       overrideChecks,
+		"model-declarations-valid":                overrideChecks,
+		"model-declarations-unreferenced":         overrideChecks,
 		"scen-check-concurrent":                   overrideChecks,
+		"scen-check-prompt-lineage":               overridePromptText,
 		"scen-check-reverse":                      overrideChecks,
 		"start-invalid-checklist":                 overrideRefused,
 		"build-steps-critique-correct":            overrideTiers,
@@ -346,7 +356,7 @@ func assertOverrideCopiesShipped(
 			continue
 		}
 
-		if purpose == overrideFixLoop {
+		if purpose.keepsQuestionOnly() {
 			assertQuestionShipped(t, uni, override, prompt)
 
 			continue

@@ -11,12 +11,10 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/disk"
 )
 
-// scenariosPkgDir is the directory, inside a suite, holding the shim
-// that binds bddgo's generics to that suite's state. Hand-written once
-// per suite; a generated file imports it and calls nothing else.
+// scenariosPkgDir holds the Suite wiring that binds bddgo to the suite's state.
 const scenariosPkgDir = "scenarios"
 
-// scenariosImportPath computes the import path of a suite's scenarios shim
+// scenariosImportPath computes the import path of the Suite wiring
 // by walking up to the nearest go.mod — not assumed, since a sentinel module
 // (every fixture tree) gives a suite inside it an unrelated module path.
 func scenariosImportPath(repoRoot, suitePath string) (string, error) {

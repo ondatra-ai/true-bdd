@@ -54,7 +54,12 @@ Service: calc
 Concept: toolchain (given)
 Meaning: The calculator runs on a named toolchain of the suite's fixtures before the Owner acts.
 
-## Complete concept context
+Read the listed Scenario keys from the Registry path and inspect their fixture
+input directories under fixture_root as needed (exclude cassettes/). Read the definitions, State,
+helpers and architecture-declared test libraries. These paths carry the complete
+evidence; no digest or summary replaces it. Never read service implementation.
+
+## Concept context and evidence paths
 concept:
     concept: toolchain
     block: given
@@ -106,52 +111,22 @@ definitions:
         - text: the calculator runs on the "offline" toolchain
           captures:
             - offline
+registry: ./docs/scenarios.yaml
 scenarios:
-    - id: calc-001-halve
-      description: Halving an even number on the offline toolchain
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        Given:
-          - the calculator runs on the "offline" toolchain
-        When:
-          - the Owner halves 6
-        Then:
-          - the result is 3
+    - calc-001-halve
+fixture_root: tests/calc/fixtures
 fixture_inputs:
-    - fixture: tests/calc/fixtures/offline
-      scenarios:
-        - calc-001-halve
-      files:
-        - path: tests/calc/fixtures/offline/bin/go
-          content: |
-            #!/bin/sh
-            # The calculator's offline Go toolchain: a stand-in for go that runs the
-            # real toolchain, named by CALC_REAL_GO, with module downloads turned off.
-            if [ -z "${CALC_REAL_GO:-}" ]; then
-              echo "CALC_REAL_GO must name the real go" >&2
-              exit 97
-            fi
-            GOPROXY=off exec "$CALC_REAL_GO" "$@"
+    - fixture: offline
 
-
-# Fix Prompt for Item given-toolchain: given concept "toolchain"
 
 ## Target
 tests/calc/steps
 
 ## Required Changes
 
-Only the body (and the import block) of the one generated definition file changes.
-Keep the `//truebdd:concept given "toolchain"` record, the function name and the
-signature exactly as the engine wrote them. Do not touch `register.go`,
-`halving.go`, `definitions.go`, the generated test or the fixture.
+Edit only `tests/calc/steps/concept47f741283eda70d7a0d1d2aaa90ad59f9b70d6cc753b4652aced0fd106d24dd9.go`: replace the placeholder body and widen the import block. Keep the `//truebdd:concept given "toolchain"` record, the function name and the signature exactly as they are. No other file changes: `State` already carries `Go` and `Env`, which the `when` step `halving` reads, so no shared-state change is needed.
 
-`State` already carries everything this Given needs (`Go`, `Env`), which the
-`when` concept's halving step reads, so **no change to `tests/calc/steps/state.go`
-is required**.
-
-### 1. Replace the whole contents of `tests/calc/steps/concept47f741283eda70d7a0d1d2aaa90ad59f9b70d6cc753b4652aced0fd106d24dd9.go`
+Write the file as:
 
 ```go
 package steps
@@ -161,68 +136,46 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 )
 
 //truebdd:concept given "toolchain"
 func concept47f741283eda70d7a0d1d2aaa90ad59f9b70d6cc753b4652aced0fd106d24dd9(state *State, args []string) error {
 	name := args[0]
-	if name == "" {
-		return fmt.Errorf("toolchain name is empty")
-	}
-	// The suite's fixtures live beside the scenario package; the test's working
-	// directory is tests/calc, while the halve command is run from the host
-	// root, so the stand-in has to be named absolutely.
-	standIn, err := filepath.Abs(filepath.Join("fixtures", name, "bin", "go"))
+	// The halving step runs the calculator's halve command from the host root,
+	// two levels up from this suite's working directory (tests/calc).
+	root, err := filepath.Abs(filepath.Join("..", ".."))
 	if err != nil {
-		return fmt.Errorf("%q toolchain: %w", name, err)
+		return fmt.Errorf("toolchain %q: host root: %w", name, err)
 	}
-	info, err := os.Stat(standIn)
+	stand := filepath.Join(root, "tests", "calc", "fixtures", name, "bin", "go")
+	info, err := os.Stat(stand)
 	if err != nil {
-		return fmt.Errorf("%q toolchain: %w", name, err)
+		return fmt.Errorf("toolchain %q: %w", name, err)
 	}
-	if info.IsDir() {
-		return fmt.Errorf("%q toolchain: %s is a directory", name, standIn)
+	if info.IsDir() || info.Mode().Perm()&0o111 == 0 {
+		return fmt.Errorf("toolchain %q: %s is not an executable Go stand-in", name, stand)
 	}
-	if info.Mode().Perm()&0o111 == 0 {
-		// A materialised fixture may arrive without its executable bit; the
-		// stand-in is a script meant to be run in place of go.
-		if err := os.Chmod(standIn, info.Mode().Perm()|0o755); err != nil {
-			return fmt.Errorf("%q toolchain: %w", name, err)
-		}
-	}
-	// The stand-in delegates to the installed go, which it expects to be named
-	// by CALC_REAL_GO.
-	realGo, err := exec.LookPath("go")
+	installed, err := exec.LookPath("go")
 	if err != nil {
-		return fmt.Errorf("%q toolchain: %w", name, err)
+		return fmt.Errorf("toolchain %q: installed go: %w", name, err)
 	}
-	if realGo, err = filepath.Abs(realGo); err != nil {
-		return fmt.Errorf("%q toolchain: %w", name, err)
-	}
-	env := []string{}
-	for _, entry := range os.Environ() {
-		if strings.HasPrefix(entry, "CALC_REAL_GO=") {
-			continue
-		}
-		env = append(env, entry)
-	}
-	state.Env = append(env, "CALC_REAL_GO="+realGo)
-	state.Go = standIn
+	state.Go = stand
+	state.Env = append(os.Environ(), "CALC_REAL_GO="+installed)
 	return nil
 }
 ```
 
-### Notes for the applier
-- Replace the file's `import "fmt"` line with the grouped import block shown above; no other file's imports change.
-- Add no package-level constants, variables, types or helper functions: everything new lives inside this body.
-- Leave `tests/calc/steps/state.go` as it is — `Go` and `Env` are the shared fields this Given writes and the existing `when` step reads.
+## Why this body
 
-### Why this is the whole change
-- The binding says this Given makes the *next* halving run `tests/calc/fixtures/<name>/bin/go` in place of `go`. It therefore only records the stand-in and the environment that stand-in needs; it never runs `halve` and never halves anything itself.
-- The declared CLI (`halve VALUE`) is still invoked solely by the existing `when` step, which reads `state.Go` and `state.Env`, so the Given reaches the product only through the declared public interface and performs no product behaviour.
-- `state.Env` is seeded from the inherited environment because the halving step assigns `cmd.Env` wholesale; without it the stand-in would lose `PATH`/`HOME` and the real toolchain it execs could not run.
-- The fixture's script exits 97 when `CALC_REAL_GO` is unset, so naming the installed `go` absolutely is part of this Given's setup rather than an observation.
+- Binding: "Makes the next halving run the named fixture's Go stand-in, `tests/calc/fixtures/<name>/bin/go`, in place of go." The body only records that stand-in in `state.Go`; the existing `when` step (`halving`) is what invokes the declared `halve` command with it, so no halving and no arithmetic happens here.
+- The absolute path is built from the host root the way `halving` addresses it (`cmd.Dir = "../.."`, matching `scenarios.New`'s `../../docs/scenarios.yaml`), so the path handed to `exec.Command` resolves the same file regardless of the child's working directory.
+- `os.Stat` plus the executable-bit check fail the Given loudly when the named toolchain is not a fixture of this suite, instead of deferring a confusing failure to the `when` step.
+- `state.Env` must be populated because `halving` assigns `cmd.Env = state.Env` verbatim: a nil value would hand the stand-in an empty environment. The parent environment is passed through, plus `CALC_REAL_GO`, which `tests/calc/fixtures/offline/bin/go` requires to name the real go (it exits 97 otherwise). The installed go is located with `exec.LookPath("go")`, matching the glossary's "a named fixture's stand-in or the installed one".
+
+## Constraints respected
+
+- No package-level constants, variables, helpers or types added; every literal lives inside the function body, and only this file's import block changes outside it.
+- `tests/calc/steps/register.go`, `halving.go`, `definitions.go`, `state.go`, the generated `tests/calc/calc_test.go`, `docs/scenarios.yaml` and service code are left untouched.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists and shared state. Preserve the engine's patterns, registrations,

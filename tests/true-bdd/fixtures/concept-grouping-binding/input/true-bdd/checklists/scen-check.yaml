@@ -64,6 +64,10 @@ sections:
   validation_prompts:
   - Q: 'Judge every supplied linked concept''s binding for this Scenario''s service.
 
+      Read the complete product document at product_path with your read tools;
+
+      its roles, glossary and concepts are evidence for this judgement.
+
       Given its closed means, the binding''s does, its references and the
 
       complete declared Public interface, is it unambiguous enough for an

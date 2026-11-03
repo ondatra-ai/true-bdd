@@ -28,6 +28,9 @@ story:
             - when:
                 - the Quality Engineer runs "scen check"
             - then:
+                - and: "the scen_check_checklist prompt keeps the Scenario's Registry key and fields"
+                - and: "the scen_check_checklist prompt keeps the Scenario's and modifier and lineage"
+                - and: "the scen_check_checklist prompt does not mention merge_date"
                 - the command exits with code 0
                 - stdout matches SCEN CHECK
                 - and: stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=pass
@@ -115,3 +118,20 @@ story:
                 - and: 'stdout matches scenario id given more than once: E2E-001'
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns
+        - id: 007-prompt-lineage-order
+          description: The Scenario checklist prompt must identify the Registry key, keep
+            and or but modifiers, reproduce lineage in source order without merge_date, and
+            preserve the multiline Q and F text
+          steps:
+          - given:
+            - the "scen-check-prompt-lineage" project tree
+          - when:
+            - the Quality Engineer runs "scen check E2E-001"
+          - then:
+            - and: "the scen_check_checklist prompt uses the Scenario's Registry key"
+            - and: "the scen_check_checklist prompt keeps Scenario modifiers and lineage in source order"
+            - and: "the scen_check_checklist prompt does not mention merge_date"
+            - and: "the scen_check_checklist prompt holds the checklist's question and fix verbatim"
+            - the command exits with code 0
+            - the engine dispatched 1 AI turns
+            - no file outside "tmp" changed

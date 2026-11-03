@@ -45,10 +45,16 @@ type SuiteCommands struct {
 	Live   string `yaml:"live"`
 }
 
+// Testkit declares harness use; an empty AI CLI list proxies no service CLIs.
+type Testkit struct {
+	AICLIs []string `yaml:"ai_clis,omitempty"`
+}
+
 // Testing is `architecture.testing:` — how this repository runs its
 // tests, stated once. There is no per-suite entry: which service a test
 // belongs to and which file it lives in are the scenario's.
 type Testing struct {
+	Testkit   *Testkit  `yaml:"testkit,omitempty"`
 	Libraries []Library `yaml:"libraries,omitempty"`
 	Framework string    `yaml:"framework"`
 	// ConfigFile is the framework's config file. Its directory is where
@@ -63,6 +69,7 @@ func (t Testing) Label() string { return t.Framework }
 
 // Service declares a production folder and any additional exact writable paths.
 type Service struct {
+	Models          map[string]Model `yaml:"models,omitempty"`
 	PublicInterface *PublicInterface `yaml:"public_interface,omitempty"`
 	Libraries       []Library        `yaml:"libraries,omitempty"`
 	Name            string           `yaml:"name"`
@@ -94,6 +101,7 @@ func (a *Architecture) ServicePath(name string) (string, bool) {
 // rawTesting mirrors the `architecture.testing:` block — the single
 // place a repository states how its tests run.
 type rawTesting struct {
+	Testkit    *Testkit      `yaml:"testkit"`
 	Libraries  []Library     `yaml:"libraries"`
 	Framework  string        `yaml:"framework"`
 	ConfigFile string        `yaml:"config"`
@@ -147,6 +155,7 @@ func Load(path string) (*Architecture, error) {
 	arch := &Architecture{
 		Concepts: raw.Architecture.Concepts,
 		Testing: Testing{
+			Testkit:    raw.Architecture.Testing.Testkit,
 			Framework:  raw.Architecture.Testing.Framework,
 			Libraries:  raw.Architecture.Testing.Libraries,
 			ConfigFile: raw.Architecture.Testing.ConfigFile,

@@ -54,7 +54,12 @@ Service: calc
 Concept: halving (when)
 Meaning: The Owner halves a whole number, positive, zero or negative, with the calculator, which rounds an odd number's half toward zero.
 
-## Complete concept context
+Read the listed Scenario keys from the Registry path and inspect their fixture
+input directories under fixture_root as needed (exclude cassettes/). Read the definitions, State,
+helpers and architecture-declared test libraries. These paths carry the complete
+evidence; no digest or summary replaces it. Never read service implementation.
+
+## Concept context and evidence paths
 concept:
     concept: halving
     block: when
@@ -99,63 +104,70 @@ interface_document: |
           '1':
             description: Invalid arguments
 definitions:
-    - function: concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87
-      file: tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go
-      pattern: ^the Owner halves (-?\d+)$
+    - function: concept35d126686184c1bd66953f2b3f3fded8c2c2ce6c57484e58662c9bc13d782b54
+      file: tests/calc/steps/concept35d126686184c1bd66953f2b3f3fded8c2c2ce6c57484e58662c9bc13d782b54.go
+      pattern: ^the (\w+) halves (-?\d+)$
       captures:
-        - name: value
-          means: The step's whole number to be halved, positive, zero or negative, as written (a leading minus sign is part of the capture), passed as the halve command's VALUE argument.
-      serves: 'Serves the whole does: it is the step''s whole number that the declared halve command is run with as a process, whose integer stdout is kept as the result.'
+        - name: role
+          means: The actor performing the halving, the Owner in the supplied steps, captured because the step names a role and a later step may name another.
+        - name: number
+          means: The whole number to halve, with its optional leading minus sign so negatives such as -7 are captured as a signed integer, and zero as 0.
+      serves: 'Serves "Run the declared halve command as a process with the step''s whole number": the number capture is the value passed as the halve command''s required integer argument, whose integer stdout is kept as the result; the role capture is the actor the step states performs it.'
       steps:
         - text: the Owner halves 6
           captures:
+            - Owner
             - "6"
         - text: the Owner halves -7
           captures:
+            - Owner
             - "-7"
+registry: ./docs/scenarios.yaml
 scenarios:
-    - id: calc-001-halve
-      description: Halving an even number
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        When:
-          - the Owner halves 6
-        Then:
-          - the result is 3
-    - id: calc-002-halve
-      description: Halving a negative odd number rounds toward zero
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        When:
-          - the Owner halves -7
-        Then:
-          - the result is -3
+    - calc-001-halve
+    - calc-002-halve
 
 
-# Fix Prompt for Item when-halving: when concept "halving"
+## Fix Prompt for Item when-halving: when concept "halving"
 
 ## Target
-`tests/calc/steps`
+`tests/calc/steps` (suite for service `calc`)
 
 ## Scope
-Change only the body of the engine-generated function in
-`tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go`,
-plus that file's import block. Keep the `//truebdd:concept when "halving"` record, the
-function name and the signature exactly as they are. Do not touch `register.go`,
-`definitions.go`, `state.go`, the generated test, the scenarios package, the
-Specification or any service code.
+Change only the body (and that file's imports) of the single listed definition:
+`tests/calc/steps/concept35d126686184c1bd66953f2b3f3fded8c2c2ce6c57484e58662c9bc13d782b54.go`.
 
-## Shared state
-None needed. `State.Result int` in `tests/calc/steps/state.go` already carries the
-result this When produces and the existing `result` Then observes. Add no new State
-fields, no package-level constants, variables, helpers or types.
+Do NOT touch:
+- `tests/calc/steps/register.go` (registration and pattern stay exactly as-is)
+- the `//truebdd:concept when "halving"` record or the function name/signature
+- `tests/calc/steps/definitions.go` (the `result` Then step)
+- `tests/calc/steps/state.go` — **no shared state change is needed**: `State{Result int}` already
+  carries the kept stdout and is what the Then step `^the result is (-?\d+)$` compares.
+- generated tests, the Specification, service code.
+
+## Rationale (so the applier does not "improve" it)
+- Binding: *"Run the declared halve command as a process with the step's whole number and keep its
+  integer stdout as the result."* So the When step shells out and stores stdout; it must never
+  compute the half itself.
+- Declared Public interface (`docs/architecture/calc-cli.yaml`, command `halve`): *"Run
+  `go run ./services/calc halve VALUE` from the host root; stdout is VALUE halved and rounded
+  toward zero, as an integer, and a newline."* The argv is therefore exactly
+  `go run ./services/calc halve <value>` and the process's working directory is the host root.
+- `go test` runs with the package directory as the working directory, i.e. `tests/calc`
+  (confirmed by `tests/calc/scenarios/scenarios.go` loading `../../docs/scenarios.yaml`), so the
+  host root is `../..` from the step's point of view.
+- Captures arrive in `args` in declaration order: `args[0]` is `role`, `args[1]` is `number`.
+  The role is only the actor the sentence names; it is quoted into failure messages so the
+  capture is not silently dropped, and no behaviour branches on it.
+- The `strconv.Atoi` on `args[1]` is argument validation of the step's own capture before it is
+  passed to the command (the interface declares the parameter as `type: integer`), not a
+  computation of the product's answer. The `strconv.Atoi` on stdout is the "keep its integer
+  stdout" half of the binding.
 
 ## Required change
 Replace the whole contents of
-`tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go`
-with exactly this:
+`tests/calc/steps/concept35d126686184c1bd66953f2b3f3fded8c2c2ce6c57484e58662c9bc13d782b54.go`
+with exactly this (the import block grows; everything else about the declaration is unchanged):
 
 ```go
 package steps
@@ -169,55 +181,56 @@ import (
 )
 
 //truebdd:concept when "halving"
-func concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {
+func concept35d126686184c1bd66953f2b3f3fded8c2c2ce6c57484e58662c9bc13d782b54(state *State, args []string) error {
+	// The calc CLI document declares halve as: run
+	// `go run ./services/calc halve VALUE` from the host root. `go test`
+	// runs in the suite's package directory, tests/calc, so the host root
+	// is two levels up — the same relative root scenarios.go uses for the
+	// registry.
 	const hostRoot = "../.."
-	const pkg = "./services/calc"
-	const command = "halve"
 
-	value := args[0]
-	if _, err := strconv.Atoi(value); err != nil {
-		return fmt.Errorf("halve value %q is not a whole number: %w", value, err)
+	role, number := args[0], args[1]
+
+	// The command's declared parameter is an integer, so a capture that is
+	// not one is this step's own fault and is reported as such rather than
+	// handed to the process.
+	if _, err := strconv.Atoi(number); err != nil {
+		return fmt.Errorf("the %s halves %q: step's number is not a whole number: %w", role, number, err)
 	}
 
-	cmd := exec.Command("go", "run", pkg, command, value)
-	cmd.Dir = hostRoot
+	command := exec.Command("go", "run", "./services/calc", "halve", number)
+	command.Dir = hostRoot
+
 	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("go run %s %s %s failed: %w: %s", pkg, command, value, err, strings.TrimSpace(stderr.String()))
+	command.Stdout = &stdout
+	command.Stderr = &stderr
+
+	if err := command.Run(); err != nil {
+		return fmt.Errorf("the %s halves %s: go run ./services/calc halve %s in %s: %w: %s",
+			role, number, number, hostRoot, err, strings.TrimSpace(stderr.String()))
 	}
 
-	out := strings.TrimSpace(stdout.String())
-	halved, err := strconv.Atoi(out)
+	// "Keep its integer stdout as the result": the halved value is whatever
+	// the process printed, never anything this step works out.
+	halved, err := strconv.Atoi(strings.TrimSpace(stdout.String()))
 	if err != nil {
-		return fmt.Errorf("go run %s %s %s printed %q, want an integer: %w", pkg, command, value, out, err)
+		return fmt.Errorf("the %s halves %s: halve stdout %q is not an integer: %w",
+			role, number, stdout.String(), err)
 	}
 
 	state.Result = halved
+
 	return nil
 }
 ```
 
-## Why this body
-- The binding says: run the declared `halve` command as a process with the step's
-  whole number and keep its integer stdout as the result. The body does exactly that
-  and nothing else — it never computes a half itself, so `the result is 3` and
-  `the result is -3` are decided by the calculator's stdout alone.
-- `docs/architecture/calc-cli.yaml` declares the invocation as
-  `go run ./services/calc halve VALUE` from the host root, with the halved integer
-  and a newline on stdout and exit 1 for invalid arguments. `cmd.Dir = "../.."` is
-  the host root relative to the suite's working directory `tests/calc`, which is the
-  same base the suite already uses for `../../docs/scenarios.yaml` in
-  `tests/calc/scenarios/scenarios.go`.
-- The capture is passed through verbatim as the `VALUE` argument, so a leading minus
-  sign (`the Owner halves -7`) reaches the command as written; the `strconv.Atoi`
-  pre-check only confirms the step's own number is whole and never derives the answer.
-- A non-zero exit (the declared `'1'` response) and non-integer stdout both fail the
-  step with the command line and stderr, rather than silently leaving `State.Result`
-  at its zero value where the Then could pass by accident.
-- All three constants are local to the body; the only change outside it is this file's
-  import block.
+## Constraints the applier must keep
+- No package-level constants, variables, types or helper functions are added; `hostRoot` is a
+  local const inside the body.
+- `state.Result` is the only shared state written, and it already exists.
+- The step performs no arithmetic on `number` and contains no expected value: the expectation
+  lives in the Then step's text (`the result is 3`, `the result is -3`) and is compared by the
+  existing `result` definition.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists and shared state. Preserve the engine's patterns, registrations,

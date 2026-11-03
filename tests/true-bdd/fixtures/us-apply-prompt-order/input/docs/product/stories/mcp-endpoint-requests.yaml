@@ -1,0 +1,25 @@
+---
+story:
+  id: mcp-endpoint
+  feature: mcp-server
+  title: Read a refusal without changing the greeting
+  as_a: Claude User
+  i_want: to receive a refusal for GET requests
+  so_that: the configured greeting stays intact
+  status: PLANNED
+  acceptance_criteria:
+  - id: 007-ordered
+    description: The MCP server must return HTTP 405 for a GET request without changing
+      its greeting.
+    steps:
+    - then:
+      - the server returns HTTP 405
+      - and: the greeting is still "Hello"
+      - but: no response body is printed
+    - when:
+      - the Claude User opens a connection
+      - and: the Claude User sends an HTTP GET request to /mcp
+    - given:
+      - the MCP server is running on its configured port
+      - and: the greeting is "Hello"
+      - but: no request has been sent

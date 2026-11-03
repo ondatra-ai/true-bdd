@@ -12,6 +12,8 @@ const bashToolName = "Bash"
 // domain because a port names it: the interface an adapter satisfies cannot
 // be declared in terms of that adapter's own package.
 type ExecutionMode struct {
+	// ReadRoots, when nonempty, replaces whole-host reads with these exact evidence roots.
+	ReadRoots        []string
 	LibraryReadRoots []string
 	AllowedTools     []string
 	DisallowedTools  []string

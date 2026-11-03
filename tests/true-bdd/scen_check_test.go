@@ -467,7 +467,10 @@ func TestScenCheck001ClaimedScenarioPasses(t *testing.T) {
 	s := scenarios.New(t, "scen-check-001-claimed-scenario-passes")
 	s.Given(`the "scen-check-happy-path" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
-	s.Then(`the command exits with code 0`)
+	s.Then(`the scen_check_checklist prompt keeps the Scenario's Registry key and fields`)
+	s.And(`the scen_check_checklist prompt keeps the Scenario's and modifier and lineage`)
+	s.And(`the scen_check_checklist prompt does not mention merge_date`)
+	s.And(`the command exits with code 0`)
 	s.And(`stdout matches SCEN CHECK`)
 	s.And(`stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=pass`)
 	s.And(`stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=2 answer=pass`)
@@ -554,6 +557,21 @@ func TestScenCheck006DuplicateIdRefused(t *testing.T) {
 	s.And(`stdout matches scenario id given more than once: E2E-001`)
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// scen-check-007-prompt-lineage-order: The Scenario checklist prompt must identify the Registry key, keep and or but modifiers, reproduce lineage in source order without merge_date, and preserve the multiline Q and F text
+func TestScenCheck007PromptLineageOrder(t *testing.T) {
+	s := scenarios.New(t, "scen-check-007-prompt-lineage-order")
+	s.Given(`the "scen-check-prompt-lineage" project tree`)
+	s.When(`the Quality Engineer runs "scen check E2E-001"`)
+	s.Then(`the scen_check_checklist prompt uses the Scenario's Registry key`)
+	s.And(`the scen_check_checklist prompt keeps Scenario modifiers and lineage in source order`)
+	s.And(`the scen_check_checklist prompt does not mention merge_date`)
+	s.And(`the scen_check_checklist prompt holds the checklist's question and fix verbatim`)
+	s.And(`the command exits with code 0`)
+	s.And(`the engine dispatched 1 AI turns`)
+	s.And(`no file outside "tmp" changed`)
 	s.Done()
 }
 

@@ -56,6 +56,7 @@ story:
             - when:
                 - the Product Owner runs "us apply 95.1 --fix"
             - then:
+                - and: "the us_apply_checklist prompt keeps the and modifier of the criterion's steps"
                 - the command exits with code 0
                 - 'stdout matches msg=AC index=1 total=1'
                 - 'stdout matches msg="RE-WALK \(fixes applied, verifying\)" attempt=2'
@@ -80,6 +81,9 @@ story:
             - when:
                 - the Product Owner runs "us apply mcp-endpoint --fix"
             - then:
+                - and: "the us_apply_checklist prompt selects the criterion by id and sets lineage to StoryID-ACID"
+                - and: "the us_apply_checklist prompt holds the checklist's question and fix verbatim"
+                - and: "the us_apply_checklist prompt keeps the other criterion's id, lineage and description"
                 - the command exits with code 0
                 - 'stdout matches msg=AC index=1 total=2 description="The MCP server must respond with HTTP 405'
                 - stdout matches ALL CHECKS PASSED!
@@ -143,3 +147,17 @@ story:
                 - and: the file "docs/scenarios.yaml" is unchanged
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched 2 AI turns
+        - id: 007-prompt-step-order
+          description: The apply checklist prompt must group steps as Given, When, Then, preserving
+            every block's order and every and or but modifier from the selected Acceptance
+            Criterion
+          steps:
+          - given:
+            - the "us-apply-prompt-order" project tree
+          - when:
+            - the Product Owner runs "us apply mcp-endpoint"
+          - then:
+            - and: "the us_apply_checklist prompt groups Given, When, Then in source order with and/but modifiers"
+            - the command exits with code 0
+            - the engine dispatched 2 AI turns
+            - no file outside "tmp" changed

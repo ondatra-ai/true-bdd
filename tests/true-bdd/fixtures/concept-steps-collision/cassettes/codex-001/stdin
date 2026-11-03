@@ -54,7 +54,12 @@ Service: calc
 Concept: halving (when)
 Meaning: The Owner halves a whole number, positive, zero or negative, with the calculator, which rounds an odd number's half toward zero.
 
-## Complete concept context
+Read the listed Scenario keys from the Registry path and inspect their fixture
+input directories under fixture_root as needed (exclude cassettes/). Read the definitions, State,
+helpers and architecture-declared test libraries. These paths carry the complete
+evidence; no digest or summary replaces it. Never read service implementation.
+
+## Concept context and evidence paths
 concept:
     concept: halving
     block: when
@@ -104,66 +109,88 @@ definitions:
       pattern: ^the Owner halves (-\d+)$
       captures:
         - name: number
-          means: The negative whole number the Owner halves, captured with its leading minus sign so the body has the signed value verbatim; passed to the declared halve command as its value argument.
-      serves: 'Serves the whole of the does: the captured signed number is the step''s whole number that the body passes to the declared halve command run as a process, keeping that process''s integer stdout as the result. The pattern is restricted to the minus-signed form because the unsigned form is already bound by the existing definition ^the Owner halves (\d+)$.'
+          means: The negative whole number the Owner halves, captured with its leading minus sign, so the body passes it verbatim as the halve command's value argument.
+      serves: Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result — the capture supplies that whole number, while the literal words "the Owner halves" state the halving concept; the required minus sign leaves the non-negative wording to the existing definition ^the Owner halves (\d+)$.
       steps:
         - text: the Owner halves -7
           captures:
             - "-7"
+registry: ./docs/scenarios.yaml
 scenarios:
-    - id: calc-002-halve
-      description: Halving a negative odd number rounds toward zero
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        When:
-          - the Owner halves -7
-        Then:
-          - the result is -3
+    - calc-002-halve
 
 
-=== FILE_START: tmp/{{RUN_DIR}}/01-when-halving-fix-prompts.md ===
-# Fix Prompt for Item when-halving: when concept "halving"
+Fix Prompt for Item when-halving: when concept "halving"
 
 ## Target
-tests/calc/steps
+Suite: `tests/calc/steps`
+File to change: `tests/calc/steps/concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb.go`
 
-## Summary
-The suite already owns a helper that does exactly what the `halving` binding declares: `halveNumber` in `tests/calc/steps/definitions.go` runs the declared `halve` command as a process (`go run ./services/calc halve VALUE` with `cmd.Dir = "../.."`, i.e. the host root, as the Public interface document states) and keeps its trimmed integer stdout in `state.Result`. The new definition covers only the minus-signed wording of the same concept, and its single capture `number` arrives in `args[0]` with its leading minus sign verbatim — exactly the shape `halveNumber` passes through as the command's `value` argument.
+## Scope
+Replace ONLY the body of the existing function `concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb` and widen that one file's import block. Change nothing else.
 
-So the body is a delegation to that existing helper. Nothing is computed in the step: the halved value comes only from the command's stdout.
+Do NOT touch:
+- `tests/calc/steps/register.go` (registrations and patterns stay exactly as they are, including `suite.Step("^the Owner halves (-\\d+)$", concept9d6e...)`)
+- `tests/calc/steps/definitions.go` (`halveNumber`, `result` stay untouched)
+- `tests/calc/steps/state.go` — NO new fields are needed; `State{ Result int }` already carries the result and the existing `result` Then step compares against it
+- `tests/calc/calc_test.go`, `docs/scenarios.yaml`, `docs/architecture/calc-cli.yaml`, or any service code
+- The `//truebdd:concept when "halving"` marker comment and the function name/signature `func concept9d6e...(state *State, args []string) error`
 
-No shared state change is required — `State.Result int` in `tests/calc/steps/state.go` already carries the result that the existing `^the result is (-?\d+)$` Then step observes, and that Then pattern already accepts negative expected values.
+## Rationale (for the applier, do not paste into code)
+- Concept binding: "Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result."
+- Declared CLI (`docs/architecture/calc-cli.yaml`): `go run ./services/calc halve VALUE` from the host root; stdout is the halved integer and a newline; exit 0 on success, 1 on invalid arguments.
+- `args[0]` is the single capture from `^the Owner halves (-\d+)$` and already includes the leading minus sign, so it is passed verbatim as the `value` argument. `go run` forwards every argument after the package path to the program, so the leading `-` is not consumed as a build flag.
+- `cmd.Dir = "../.."` reaches the host root from the `tests/calc` scenario package directory — identical to the existing sibling definition `halveNumber`, so both wordings invoke the command the same way.
+- The body only runs the command and records its stdout; it never computes the half itself. The expected value is asserted by the already-written `result` Then step (`the result is -3`).
 
 ## Required Changes
-
-### 1. Replace the body in `tests/calc/steps/concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb.go`
-
-Replace the `return fmt.Errorf("step not written yet: ...")` line with a delegation to `halveNumber`, and drop the now-unused `fmt` import from this file (the only import change needed; `halveNumber` lives in the same `steps` package, so no new import is required).
-
-Write the file so its full contents are exactly:
+Overwrite the whole file `tests/calc/steps/concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb.go` with exactly this content:
 
 ```go
 package steps
 
+import (
+	"errors"
+	"fmt"
+	"os/exec"
+	"strconv"
+	"strings"
+)
+
 //truebdd:concept when "halving"
 func concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb(state *State, args []string) error {
-	return halveNumber(state, args)
+	number := args[0]
+
+	cmd := exec.Command("go", "run", "./services/calc", "halve", number)
+	cmd.Dir = "../.."
+
+	out, err := cmd.Output()
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && len(exitErr.Stderr) > 0 {
+			return fmt.Errorf("halve %s: %w: %s", number, err, strings.TrimSpace(string(exitErr.Stderr)))
+		}
+		return fmt.Errorf("halve %s: %w", number, err)
+	}
+
+	stdout := strings.TrimSpace(string(out))
+	halved, err := strconv.Atoi(stdout)
+	if err != nil {
+		return fmt.Errorf("halve %s: stdout %q is not an integer: %w", number, stdout, err)
+	}
+
+	state.Result = halved
+	return nil
 }
 ```
 
-### 2. Change nothing else
-
-- Keep the `//truebdd:concept when "halving"` record, the function name and the `func(*State, []string) error` signature exactly as the engine wrote them.
-- Do not touch `tests/calc/steps/register.go` — the registration `suite.Step("^the Owner halves (-\\d+)$", concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb)` and the pattern are the engine's.
-- Do not modify `tests/calc/steps/definitions.go` (`halveNumber`, `result`), `tests/calc/steps/state.go`, `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, the Specification or any service code.
-- Add no package-level constants, variables, helpers or types.
-
-## Why this serves the binding
-- **does:** "Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result." — `halveNumber` runs the process and stores `strconv.Atoi(strings.TrimSpace(stdout))` into `state.Result`; passing `args` through hands it the step's signed whole number unchanged.
-- **Word mapping:** `number` is the integer argument and stdout of the calculator `halve` command; the body supplies the argument and keeps the stdout, and the separate Then step does the comparison.
-- The When step performs no arithmetic of its own, so the rounding-toward-zero behaviour described in the concept stays entirely the product's to demonstrate.
-=== FILE_END ===
+## Verification checklist
+- Package stays `steps`; function name, signature and `//truebdd:concept when "halving"` marker are byte-identical to before.
+- The only edits are the import block and the function body of that one file.
+- `register.go` still registers both `^the Owner halves (\d+)$` → `halveNumber` and `^the Owner halves (-\d+)$` → `concept9d6e...`.
+- No package-level constants, variables, helper functions or types were added.
+- `state.Result` is written by the When step and read by the pre-existing `result` Then step; no new State field was introduced.
+- No halving arithmetic appears anywhere in the body — the integer comes solely from the command's stdout.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists and shared state. Preserve the engine's patterns, registrations,

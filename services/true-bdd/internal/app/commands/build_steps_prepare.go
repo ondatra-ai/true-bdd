@@ -44,6 +44,7 @@ func (e *buildStepsExecution) configure(ctx context.Context, arch *architecture.
 	}
 
 	e.deps.FixApplier.UseLibraryReadRoots(libraries)
+	e.deps.FixGenerator.UseEvidenceReadRoots(e.readRoots, libraries)
 	e.command = testrunner.Config{Framework: arch.Testing.Framework,
 		ConfigFile: arch.Testing.ConfigFile, Command: arch.Testing.Commands.Replay}
 
@@ -77,6 +78,7 @@ func (e *buildStepsExecution) configureRoots(arch *architecture.Architecture,
 	}
 
 	e.deps.FixApplier.UseDeclaredWriteRoots(paths, patterns)
+	e.configureEvidenceRoots(host, paths, documents)
 
 	return nil
 }
@@ -98,4 +100,22 @@ func (e *buildStepsExecution) initializeItems(items []*BuildStepsItem) error {
 	}
 
 	return nil
+}
+
+func (e *buildStepsExecution) configureEvidenceRoots(host string, paths, documents []string) {
+	e.readRoots = append([]string{}, paths...)
+
+	for _, path := range documents {
+		if path != "" {
+			e.readRoots = append(e.readRoots, path)
+		}
+	}
+
+	for index, path := range e.readRoots {
+		if !filepath.IsAbs(path) {
+			e.readRoots[index] = filepath.Join(host, path)
+		}
+	}
+
+	e.deps.FixApplier.UseEvidenceReadRoots(e.readRoots)
 }

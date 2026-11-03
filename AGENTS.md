@@ -1,6 +1,6 @@
 # TrueBDD
 
-TrueBDD (binary `true-bdd`) is a Go CLI that drives Claude-mediated checklists over a host project's specification documents. This repository is the engine, not a host project: its own `true-bdd/` and `docs/` are the seed the BDD fixtures run against. `README.md` carries the vision and the configuration reference; `GLOSSARY.md` the domain words.
+TrueBDD (binary `true-bdd`) is a Go CLI that generates a host project's steps, then its tests, then its code from its specification documents, through Claude-mediated checklists; it tests nothing. Before you plan or change that pipeline or the test runtime, read `.claude/rules/generation.md`. This repository is the engine, not a host project: its own `true-bdd/` and `docs/` are the seed the BDD fixtures run against. `README.md` carries the vision and the configuration reference; `GLOSSARY.md` the domain words.
 
 ## Layout
 
@@ -17,7 +17,7 @@ Beside them: `docs/` holds the specification documents (`docs/scenarios.yaml` is
 
 Before you create or edit a file, read every `.claude/rules/*.md` whose `paths:` front matter matches its path, and follow it: each is the contract its area's gates enforce.
 
-In engine code, an AI turn that must happen gets everything it needs: multi-stage generation, critique passes, full embedded context, whole prompts. This governs the engine's runtime model spend, not how much code you write.
+In engine code, every necessary AI turn receives complete evidence within the configured prompt byte limit. Embed the semantic core; read-enabled body turns get the Registry, Scenario keys and fixture directories by path, and binding judgements get the complete product document by path. Tool-less critiques embed evidence filtered by use. Do not use digests, compact payloads, truncate required evidence, skip critique or reduce reasoning effort to fit. Refuse an oversized prompt distinctly. This governs runtime turns, not how much code you write.
 
 ## Checks
 
@@ -46,15 +46,16 @@ Each triage role's label is the role's own name. Read `docs/agents/triage-labels
 
 ### Domain docs
 
-Single-context: `GLOSSARY.md` at the repo root, ADRs in `docs/adr/`. Read `docs/agents/domain.md` before you explore the codebase. An ADR ends by naming the grilling Q&A log entries that decided it: the `docs/qna/<file>.yaml` path and each `Q<n>`. A grilling's log quotes every message of the Owner verbatim, including one sent while you work: in the `answer` of the entry it bears on, or in an entry of its own.
+Single-context: `GLOSSARY.md` at the repo root, ADRs in `docs/adr/`. Read `docs/agents/domain.md` before you explore the codebase. Name a thing the glossary defines by its English term as written there, in a reply in any language: "Scenario", "Suite wiring", in a Russian sentence too. An ADR ends by naming the grilling Q&A log entries that decided it: the `docs/qna/<file>.yaml` path and each `Q<n>`. A grilling's log quotes every message of the Owner verbatim, including one sent while you work: in the `answer` of the entry it bears on, or in an entry of its own.
 
 ## Codex
 
 Codex writes the code and reads Claude's drafts as a second model through [common-codex](.claude/skills/common-codex/SKILL.md). This overrides a skill's instruction to spawn a Claude implementer, reviewer or exploration sub-agent; leave vendored skills unchanged. The session itself writes the brief, starts `go run ./scripts/cmd/codex` as a background task, waits and reads the summary. No Claude sub-agent stands over a Codex run.
 
+- **One writer at a time.** Code and fix runs run alone, and tickets go one after another: each through its code run, its review and its merge before the next ticket's code run starts. This overrides any skill's parallel implementers, `mpc_implement-spec`'s among them. Readers (research, plan-read, review) may run up to three at once; a ticket's review runs start after its code run.
 - **Codex writes the code.** Every ticket or described code change is a code run in a new worktree on its own branch. Accepted findings, failing checks and merge conflicts on that branch are fix runs in the same worktree. An edit smaller than a handover (two or three calls on files Claude already holds) stays with Claude. There is no complexity exception: Claude takes the code task itself when Codex is unavailable or after two failed attempts. A run makes plain local commits on its branch and never pushes.
 - **`mpc_implement-spec`'s implementers are code runs.** Claude merges completed branches into the integration branch when authorized. On conflict, abort and start a fix run on the ticket branch to merge the integration branch in, resolve and re-check; then merge again.
-- **Readings run read-only.** `mpc_code-review`'s two reviewers are standards and spec review runs; Claude aggregates. A spec draft gets a plan-read before publication, a diagnosis before its fix, and a delegated decision a second reading before Claude carries it out. Code or public-source research is a research run with a precise question and criterion of done.
+- **Readings run read-only.** `mpc_code-review`'s reviewers are three review runs: standards, spec, and architecture (whether each part of the change fits `docs/adr/generation-architecture.md`); Claude aggregates. A spec draft gets a plan-read before publication, a ticket draft two separate ones (its logic, then its architecture fit alone), a diagnosis before its fix, and a delegated decision a second reading before Claude carries it out. Code or public-source research is a research run with a precise question and criterion of done.
 - **Claude keeps** the conversation with the Owner, decisions, specs, tickets, briefs, reading reports and diffs, the Owner's texts, and research through the Owner's connectors, which Codex lacks. Findings are weighed as valid, invalid or needing a test, never obeyed as orders.
 - **When Codex is out.** The command checks sign-in and reports weekly usage before each attempt, warning past 90% without stopping. Tell the Owner before a batch past 90%. Signed out, unavailable sign-in, expired credentials, a usage limit or the workspace spend cap ends a writer or reader `unavailable`; Claude does that writing or reading itself and says so. An `unavailable` run is not resumable, including after partial edits. Other failures get one resume by the recorded session id, or a fresh session with the saved brief when none exists. After the second failure Claude takes the work, naming both logs.
 

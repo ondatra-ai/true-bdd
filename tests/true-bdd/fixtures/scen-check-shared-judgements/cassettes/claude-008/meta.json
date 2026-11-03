@@ -25,12 +25,12 @@
     "{\n  \"product\": \"roles:\\n  - name: Product Owner\\n    description: Owns meanings.\\nconcepts:\\n  given:\\n    - concept: number ready\\n      means: A number is entered before the action.\\n      terms: []\\n  when:\\n    - concept: halve\\n      means: Halve the entered number once.\\n      terms: []\\n  then:\\n    - concept: number result\\n      means: Compare the displayed number with an expected value.\\n      terms: []\\nglossary: []\\ndescription: A calculator accepts a number and halves it.\\n\",\n  \"concepts\": {\n    \"when:halve\": {\n      \"Name\": \"halve\",\n      \"Means\": \"Halve the entered number once.\",\n      \"Terms\": [],\n      \"Block\": \"when\"\n    }\n  }\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 9611,
+  "duration_ms": 6893,
   "request_hash": "sha256:94ff00b0f85920bf4e856b4cda0587a2b9166992dd6b56afddd95051ea53cfc5",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-11-01T00:05:35Z"
+  "recorded_at": "2026-11-02T16:11:29Z"
 }

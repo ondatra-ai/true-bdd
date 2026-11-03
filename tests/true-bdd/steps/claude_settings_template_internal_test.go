@@ -2,6 +2,7 @@ package steps
 
 import (
 	"encoding/json"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 	"os"
 	"path/filepath"
 	"strings"
@@ -46,7 +47,7 @@ func TestArchitectureClaudeTemplateMatchesScenario(t *testing.T) {
 			}
 
 			state := runAt(root)
-			state.Harness = &Harness{BinPath: invoked}
+			state.Harness = &testkit.Harness{BinPath: invoked}
 
 			for _, executable := range []string{invoked, resolved} {
 				settings := strings.ReplaceAll(template, "{guard_command}", jsonGuardCommand(t, executable))

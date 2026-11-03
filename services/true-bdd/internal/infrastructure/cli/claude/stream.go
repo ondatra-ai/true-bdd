@@ -47,9 +47,10 @@ func RunStreamContext(ctx context.Context, prompt string, opts Options, on func(
 	sink := &streamSink{on: on}
 	stderr := &bytes.Buffer{}
 
-	result, err := shell.Run(ctx, append([]string{Bin}, opts.Args(prompt)...), shell.Options{
-		Dir: opts.Dir, Env: opts.Env(), Output: shell.Streams(sink, stderr), Timeout: opts.Timeout, Group: true,
-	})
+	args, options := opts.command(prompt)
+	options.Output = shell.Streams(sink, stderr)
+	options.Group = true
+	result, err := shell.Run(ctx, append([]string{Bin}, args...), options)
 	answer, parseErr := streamAnswer(sink, opts)
 
 	if err != nil {

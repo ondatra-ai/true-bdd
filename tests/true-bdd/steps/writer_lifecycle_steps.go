@@ -7,7 +7,6 @@ import (
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
 )
 
 func registerWriterLifecycleSteps(suite *bddgo.Suite[State]) {
@@ -26,12 +25,7 @@ func useFixtureWriter(state *State, _ []string) error {
 		return state.fail("resolve writer fixture: %w", err)
 	}
 
-	if state.Harness.Modes.Services == runner.ProxyModeLive {
-		run := runner.RunDir(state.Harness.SessionRoot, state.Fixture.Name)
-		state.Proxy.StateDir = filepath.Join(run, "tmp", "aiproxy-state")
-		state.Proxy.Env = runner.AIProxyEnv("observe", state.Harness.Shims.Services,
-			fixture, state.Proxy.StateDir, state.Harness.Shims.All())
-	}
+	state.ObserveServices(fixture)
 
 	for index, entry := range state.Proxy.Env {
 		if strings.HasPrefix(entry, "PATH=") {

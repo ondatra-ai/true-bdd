@@ -1,12 +1,12 @@
 package steps
 
+// State is what one scenario's calc steps share.
 type State struct {
-	// Program is the filesystem path of the calculator program built by the
-	// installation Given, kept for the When that runs it.
-	Program string
-
-	// HostRoot is the host's root directory (the one holding go.mod and
-	// services/calc), the directory the declared interface says the command is
-	// run from.
+	// HostRoot is the host project's root — the directory holding the
+	// go.mod of the module under test — located by the installation Given.
+	// It is the directory the calculator program is run from.
 	HostRoot string
+	// Program is the path of the calculator program the installation Given
+	// built under the host's tmp directory.
+	Program string
 }
