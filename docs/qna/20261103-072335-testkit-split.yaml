@@ -1892,3 +1892,114 @@ log:
       архитектурой.»
     answer: |
       Claude, no question asked: the two readings are split as settled above.
+
+  - decision_trace:
+      research:
+        - |
+          The architecture-only reading (plan-read-294-296-architecture-only)
+          found one broken invariant: #294 keeps the hand-written guards in
+          tests/true-bdd/coverage_test.go ("Hand-written, not generated",
+          :27), against invariants 1 to 3. ADR-0038 gave the four folder
+          checks to build tests, but the engine has none of them and no
+          ticket builds them. #295 fits but does not name build steps as the
+          writer of its Steps-package changes; #296 fits.
+        - |
+          Checks 1 (one generated test per Scenario, in its file) and 2 (every
+          fixture named by a Scenario) hold for any Host project; checks 3
+          (fixture copies of the shipped prompt templates declared as
+          extension or replacement) and 4 (no fixture document comment names
+          a Scenario beside an outcome) concern only fixtures that exercise
+          TrueBDD's own engine.
+      recommendation: |
+        A: split; checks 1 and 2 into build tests for every host, checks 3
+        and 4 into a repository gate in scripts/; coverage_test.go deleted;
+        ADR-0038 amended.
+      settled: |
+        coverage_test.go is deleted; checks 1 and 2 move into build tests,
+        for every host. Where checks 3 and 4 go is asked next (Q27).
+    question: |
+      Q26 - Куда уходят проверки из coverage_test.go? Asked first as where
+      the four folder checks live (in #294, in a ticket after #294, or kept
+      hand-written), then, after the Owner's questions, as: A. Разделить:
+      общие 1 и 2 в build tests, 3 и 4 — gate в scripts/. B. Все четыре в
+      build tests, как решил ADR-0038. C. Все четыре в gate в scripts/.
+    answer: |
+      The Owner, in four messages:
+
+      «Подожди, давай разберемся, что значит build tests получает 4
+      проверки, а кто ему их дает?»
+
+      «Так все-таки ты можешь правильно оформить вопрос вот так, как ты
+      описал?»
+
+      «Слушай, если я правильно понимаю, то этот coverage-test Go должен быть
+      просто удален. А что там с ним происходит, ну, да, куда-то надо это
+      перенести. Но если их перенести в билд-тест, не будет ли это
+      hardness-specific? Ну, в смысле, не будет ли это хост-специфик?»
+
+      «Так, хорошо, но 1.2 точно надо перенести в build-тест. Это понятно. А
+      ты можешь точнее расшифровать, что делают 3.4?»
+
+  - decision_trace:
+      research:
+        - |
+          Fixtures are not generated: ADR-0038 leaves them out of the
+          generated suite folder, and they change with every new Scenario and
+          re-record. Check 3 fails when a shipped prompt template changes and a
+          fixture's extension copy still begins with the old text (editing the
+          first line of templates/build-steps.fix-generator.system.prompt.tpl
+          fails build-steps-green, -critique-correct and -many); prompts change
+          often (#286, #289). Check 4 fails only when a fixture's author writes
+          a comment naming a Scenario beside an outcome, the hint #259 caught.
+      recommendation: |
+        A: a gate of this repository in scripts/, with the same logic.
+      settled: |
+        Checks 3 and 4 become a gate of this repository in scripts/cmd/gates,
+        with the same logic, run with the other gates. With Q26 this amends
+        ADR-0038: build tests holds only the folder checks every Host project
+        needs.
+    question: |
+      Q27 - Что делать с проверками 3 и 4? A. Gate этого репозитория в
+      scripts/ (например go run ./scripts/cmd/gates fixtures) с той же
+      логикой. B. Убрать.
+    answer: |
+      The Owner, in two messages:
+
+      «А насколько проверки 3 и 4 в принципе необходимы при условии, что у
+      нас нет кода? То есть я что-то вот плохо понимаю, как такая ситуация,
+      вот как воспроизвести ситуацию, когда они упадут? То есть два,
+      предположим, что никто никогда не меняет то, что те фикстуры, которые
+      были сгенерированы, да, то есть их никто никогда не меняет. Как может
+      получиться, что там что-то будет не так?»
+
+      «Окей, хорошо. Перенеси их пока что в CMD Gates. Ну, CMD Gates.»
+
+  - decision_trace:
+      research:
+        - |
+          The writer-spawn check writes tmp/aiproxy-state/writer-spawn.txt
+          ("fixture authentication and edit roots verified",
+          pkg/testkit/aiproxy/writer_spawn.go:59-67), which the Then reads
+          (tests/true-bdd/steps/writer_lifecycle_steps.go:50-56); the code
+          calls it the writer spawn receipt. Its paths (services/calc,
+          tmp/codex-homes, tmp/codex-shell-home and others) are hardcoded in
+          the proxy (:138-148).
+      recommendation: |
+        A: a Given names the paths through the SDK before the When; they live
+        in the step definition, in the Steps package.
+      settled: |
+        The paths cliproxy observes when a writer is spawned are named by a
+        Given through the SDK before the When; they live in that step's
+        definition in the Steps package, and cliproxy holds none of its own.
+    question: |
+      Q25 - Кто называет proxy пути, которые надо записать в момент запуска
+      writer'а? A. Given шага, через SDK, до When (пути в определении шага, в
+      Steps package). B. Архитектура, на зависимости codex. C. Файл в корне
+      фикстуры.
+    answer: |
+      The Owner, in two messages:
+
+      «Что такое квитанция? Откуда ты берешь эти слова?»
+
+      «Хорошо, смотри, вообще-то это, конечно, должно быть что-то типа given,
+      пути лежат в определении шагов steps, пусть там пока будет.»
