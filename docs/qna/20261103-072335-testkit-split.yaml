@@ -1713,3 +1713,84 @@ log:
       Переписать описание #293 под T3.
     answer: |
       Ну да, закрою его как Not Planet и замененный, да-да-да.
+
+  - decision_trace:
+      research:
+        - |
+          Codex plan-read plan-read-293-tickets
+          (tmp/codex/plan-read-293-tickets/final.md) over #294, #295 and #296,
+          each claim checked against the code: build steps refuses without
+          generated tests today
+          (services/true-bdd/internal/app/commands/build_steps_generated.go:18-25)
+          and compiles through the suite's listing
+          (internal/infrastructure/testrunner/go_definition.go:12-13, 48-55);
+          the hand-written guards call the scenarios package
+          (tests/true-bdd/coverage_test.go:19, :25); the critique collects
+          only the steps directory
+          (internal/app/commands/build_steps_critique.go:15); a bare go doc of
+          a package lists ScenarioRun without its methods' comments; the
+          writer-spawn checks need modes, symlink status and directory
+          listings at spawn (pkg/testkit/aiproxy/writer_spawn.go:106-148).
+      recommendation: |
+        Add each to its ticket; take go doc -all of the two packages the
+        steps may use.
+      settled: |
+        #294 drops build steps' generated-test prerequisite, compiles the
+        Steps package itself and moves the guards' calls; #295's spawn
+        receipt carries what the writer-spawn checks need at spawn; #296's
+        critique embeds the helpers with the fixture contracts they name.
+        Forced by Q13 and CLAUDE.md's complete-evidence rule: the turns get
+        go doc -all of the pkg/testkit root and pkg/proxy/cli, the complete
+        exported API with its comments. How build code tells that no code
+        is built is left to the Owner (Q24).
+    question: |
+      What does the plan-read of the three tickets change?
+    answer: |
+      Claude, no question asked: five findings went into the tickets; the
+      sixth, the predicate for "no code is built", is a decision for the
+      Owner.
+
+  - decision_trace:
+      research:
+        - |
+          A service declares path, language and writable paths
+          (services/true-bdd/internal/infrastructure/architecture/loader.go:71-78);
+          language is a free string in the schema
+          (true-bdd/architecture_yaml-schema.yaml:79) and nothing in the
+          engine maps it to file kinds today.
+      recommendation: |
+        A: no code is built for a service when its path and writable paths
+        hold no source file of its language; manifests do not count; decided
+        per Scenario by its service.
+      settled: |
+        Delegated to Claude; see the next entry.
+    question: |
+      Q24 - Когда считается, что «кода нет», и красная проверка обязательна?
+      A. В пути сервиса (services[].path и его writable) нет ни одного
+      исходного файла его языка; манифесты вроде go.mod и package.json не
+      считаются; решается для каждого Scenario по его service:. B. Путь
+      сервиса пуст или отсутствует, считается любой файл. C. Сервис не
+      собирается.
+    answer: |
+      Слушай, давай ты как-нибудь пока что сам решишь, каким там способом. То
+      есть, да, это надо решить однозначно сейчас, но как именно... Бог его
+      знает.
+
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        A, with a fixed table of source extensions per language.
+      settled: |
+        A service has no code built when no regular file under its
+        services[].path or its writable paths has a source extension of its
+        declared language: go .go; typescript .ts, .tsx; javascript .js,
+        .jsx, .mjs, .cjs. Manifests and lockfiles never count. A language
+        outside the table counts any regular file as code, so the check is
+        skipped rather than misapplied. The check applies per Scenario, by
+        its service: a Scenario whose service has no code must be red.
+    question: |
+      How build code tells that no code is built.
+    answer: |
+      Claude, delegated in Q24: A, per Scenario by its service, with the
+      extension table above and any file counting for a language outside it.
