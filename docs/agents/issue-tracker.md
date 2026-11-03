@@ -27,7 +27,7 @@ Each divergence found is closed in the same change, in the code or in the Specif
 
 ## Architecture fit
 
-Every ticket fits the generation architecture: `docs/adr/generation-architecture.md`, with its rules in `.claude/rules/generation.md` and its decisions in ADR-0040 and ADR-0041. The ticket names where each change sits in that picture (the command that writes it, the runtime package or Specification document that holds it), and every change keeps the rule's six invariants. A ticket that changes the architecture itself says so and names the ADR it amends.
+Every ticket fits the generation architecture: `docs/adr/generation-architecture.md`, with its rules in `.claude/rules/generation.md` and its decisions in ADR-0040 and ADR-0041. The ticket names where each change sits in that picture (the command that writes it, the runtime package or Specification document that holds it), and every change keeps the rule's six invariants. A ticket that changes the architecture itself says so and names the ADR it amends. Before publication a Codex architecture read checks this alone, apart from the ticket's plan-read for its logic (`.claude/skills/common-codex/`).
 
 ## Pull requests as a triage surface
 

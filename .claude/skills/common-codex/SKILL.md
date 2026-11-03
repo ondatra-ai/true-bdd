@@ -11,7 +11,7 @@ Codex takes the code work and readings Claude would otherwise spend its subscrip
 
 - **code**: a ticket or described change, through green checks and a local commit, in a new worktree on its own branch. `mpc_implement-spec`'s implementers are code runs.
 - **fix**: accepted review findings, failing checks or a merge conflict on a code run's branch, in that run's worktree.
-- **plan-read**: a spec or ticket draft before publication, a diagnosis before its fix, or a delegated decision whose mistake would be costly.
+- **plan-read**: a spec draft before publication, a diagnosis before its fix, or a delegated decision whose mistake would be costly. A ticket draft gets two plan-reads before publication, started together as separate runs: one for its logic, one for its architecture fit alone.
 - **review**: a diff along one axis. `mpc_code-review`'s standards and spec reviewers are two review runs, started together.
 - **research**: one precise question about the code or public sources; use `--search` when it needs the web.
 
@@ -21,7 +21,7 @@ Claude keeps the conversation with the Owner, decisions, specs and tickets, brie
 
 ## Brief and start
 
-Copy the relevant template to `tmp/codex-briefs/<run>.md`: [code](briefs/code.md), [fix](briefs/fix.md), [plan-read](briefs/plan-read.md), [review](briefs/review.md), or [research](briefs/research.md). Fill every `{{…}}` placeholder. Name documents by path, issue number or command instead of pasting them; give a criterion of done and the report's shape.
+Copy the relevant template to `tmp/codex-briefs/<run>.md`: [code](briefs/code.md), [fix](briefs/fix.md), [plan-read](briefs/plan-read.md), [architecture read](briefs/architecture-read.md) (a ticket's second plan-read), [review](briefs/review.md), or [research](briefs/research.md). Fill every `{{…}}` placeholder. Name documents by path, issue number or command instead of pasting them; give a criterion of done and the report's shape.
 
 From the repository root, start the command as a background Bash task with `run_in_background: true` and `timeout: 7200000`, so the session's task list wakes you at its end:
 

@@ -1845,3 +1845,50 @@ log:
       архитектуре.»
     answer: |
       Claude, no question asked: done as settled above.
+
+  - decision_trace:
+      research:
+        - |
+          The re-read of #294 to #296 (plan-read-294-296-architecture) kept
+          the plan-read template's general question beside the architecture
+          check, so it reported logic findings: of five, two bear on the
+          architecture (#295's hand-written helper before helpers are
+          generated, invariants 1 to 3; #295's spawn receipt selectors in the
+          utility, invariant 5) and three do not (the red check being Go-only,
+          the architecture schema, the prompt_data prose).
+      recommendation: |
+        Rerun the reading on architecture fit alone, and make the ticket's
+        two readings separate.
+      settled: |
+        A ticket draft gets two separate Codex readings before publication,
+        started together: a plan-read for its logic (briefs/plan-read.md, with
+        no architecture paragraph) and an architecture read for its fit to the
+        generation architecture alone (briefs/architecture-read.md). AGENTS.md,
+        common-codex's SKILL.md and docs/agents/issue-tracker.md say so. The
+        architecture-only rerun of #294 to #296 is that second reading; the
+        first run's findings stand as the logic reading's, applied only on
+        the Owner's word.
+    question: |
+      The Owner's messages on the re-read of #294 to #296.
+      «Да, слушай, а вычитай, только пока что не применяй. Если будут найдены
+      какие-то изменения. А сами правки, ну, в смысле, вот эти все изменения
+      в скиллах и так далее, да, закоммить, пожалуйста, эту интеграционную
+      бранчу.»
+
+      «Стой, подожди, тут что-то пошло не в ту сторону. Он должен был
+      проверить исключительно на архитектуру. Почему он проверил? То есть где
+      разногласие с архитектурой? Он просто нашел логические несостыковки,
+      что может быть окей, но с архитектурой-то что? Ты ему его промпт
+      отправил. То есть я не знаю, зачем ты его просил смотреть это. Я же
+      просил тебя сделать на соответствие архитектуре. Соответствует ли тикет
+      этой архитектуре? А ты что сделал?»
+
+      «Нет, подожди. Задача была запустить это отдельным агентом
+      исключительно на предмет архитектуры, и все. Там, то есть, когда
+      создается тикет, чтобы было два шага, типа там, первый просто проверить
+      на, там, на логику и найти вот эти вещи, да, это то, что ты делаешь. А
+      второй это на архитектуру. Понимаешь? То есть отдельным агентом,
+      отдельным кодексом, чтобы он отдельно именно нашел несоответствие с
+      архитектурой.»
+    answer: |
+      Claude, no question asked: the two readings are split as settled above.
