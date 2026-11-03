@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -125,8 +126,7 @@ func runReal(realPath string, argv []string) (*realRun, error) {
 
 	stdinPipe, stdoutPipe, stderrPipe := proc.Stdin, proc.Stdout, proc.Stderr
 
-	// Relays SIGTERM/SIGINT, keeping the child on claude's
-	// stdin-close→SIGTERM→5s→SIGKILL schedule while the shim finalizes;
+	// Relays SIGTERM/SIGINT so an interrupted run stops the real CLI too;
 	// SIGKILL needs no relay — the engine kills by process group.
 	defer proc.ForwardSignals(syscall.SIGTERM, syscall.SIGINT)()
 
@@ -178,21 +178,22 @@ func pump(group *sync.WaitGroup, dst io.Writer, src io.Reader) {
 	_, _ = io.Copy(dst, src)
 }
 
-// waitExitCode reaps the child. A signal-killed child reports exit code 0:
-// the engine's shutdown signals fire only after it has consumed the output
-// it needed, so the recorded turn was a success from the engine's view.
+// errKilledWhileRecording stops a recording whose real CLI a signal ended:
+// the engine waits for every CLI to exit by itself, so nothing is recorded.
+var errKilledWhileRecording = errors.New("the real CLI was killed by a signal while recording; nothing was recorded")
+
+// waitExitCode reaps the child and returns its own exit code.
 func waitExitCode(proc *cli.Process) (int, error) {
 	result, waitErr := proc.Wait()
 	if waitErr != nil {
 		return 0, fmt.Errorf("wait: %w", waitErr)
 	}
 
-	code := result.Code
-	if code < 0 {
-		code = 0
+	if result.Signaled() {
+		return 0, fmt.Errorf("%w: %s", errKilledWhileRecording, result.Signal)
 	}
 
-	return code, nil
+	return result.Code, nil
 }
 
 // Validation artifacts belong to the engine except codex's own answer file.

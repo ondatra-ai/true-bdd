@@ -1,6 +1,6 @@
 # TrueBDD
 
-TrueBDD (binary `true-bdd`) is a Go CLI that drives Claude-mediated checklists over a host project's specification documents. This repository is the engine, not a host project: its own `true-bdd/` and `docs/` are the seed the BDD fixtures run against. `README.md` carries the vision and the configuration reference; `GLOSSARY.md` the domain words.
+TrueBDD (binary `true-bdd`) is a Go CLI that generates a host project's steps, then its tests, then its code from its specification documents, through Claude-mediated checklists; it tests nothing. Before you plan or change that pipeline or the test runtime, read `.claude/rules/generation.md`. This repository is the engine, not a host project: its own `true-bdd/` and `docs/` are the seed the BDD fixtures run against. `README.md` carries the vision and the configuration reference; `GLOSSARY.md` the domain words.
 
 ## Layout
 
