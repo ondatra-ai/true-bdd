@@ -2003,3 +2003,47 @@ log:
 
       «Хорошо, смотри, вообще-то это, конечно, должно быть что-то типа given,
       пути лежат в определении шагов steps, пусть там пока будет.»
+
+  - decision_trace:
+      research:
+        - |
+          AGENTS.md and common-codex allowed parallel work: mpc_implement-spec's
+          implementers on the frontier, up to four writers at once, and
+          mpc_code-review's two reviewers started together. A review had no
+          architecture axis.
+      recommendation: |
+        One writer at a time with tickets in order; readers up to three at
+        once; a third review run for architecture fit with its own brief.
+      settled: |
+        One writer at a time: code and fix runs run alone, and each ticket
+        goes through its code run, its review and its merge before the next
+        ticket's code run starts, overriding any skill's parallel
+        implementers. Readers (research, plan-read, review) may run up to
+        three at once; a ticket's review runs start after its code run. A code
+        review is three review runs: standards, spec, and architecture, whose
+        brief (common-codex briefs/architecture-review.md) checks every file
+        of the ticket's diff against docs/adr/generation-architecture.md and
+        the rule's invariants, and nothing else.
+    question: |
+      The Owner's requests on how work runs.
+      «/mpc_writing-for-agents Я хочу сделать еще одну вещь. Я хочу, чтобы все
+      задачи выполнялись исключительно последовательно. И чтобы мы не
+      запускали несколько кодексов, несколько агентов параллельно. То есть
+      мне хотелось бы, чтобы каждая следующая задача шла как бы один за
+      другим. То есть задача, да, код-ревью. И еще момент. Я хотел бы, чтобы
+      при коде ревью кодекс делал еще проверял и пытался найти, есть ли
+      соответствует ли код, который был сгенерирован, код ревью, соответствует
+      ли код именно архитектуре. То есть там и так уже есть две вещи, да, там
+      уже есть в принципе правило, но я хотел бы вот именно с таким промптом,
+      типа посмотри на Посмотри на файл с архитектурой и проверь,
+      соответствуют ли изменения, как бы, вот, связанные с этой задачей. Я
+      просто не знаю, как ты оформишь, да, типа, где взять эти изменения, это
+      надо будет там ему уточнить, наверное, да. Но именно вот эти конкретные
+      изменения, ложатся ли они в архитектуру, которую мы определили?»
+
+      «Есть важная уточнение к предыдущей задаче. Когда я говорю
+      последовательно, то именно вот кодинг, то есть задачи выполняются
+      исключительно последовательно. Наверное, 2-3 ресерча одновременно
+      запускать вполне себе»
+    answer: |
+      Claude, no question asked: written as settled above.
