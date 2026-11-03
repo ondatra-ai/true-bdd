@@ -1547,3 +1547,169 @@ log:
     answer: |
       да, коммить и заводи тикеты T1, T2, T3 только давай все делать
       последовательно
+
+  - decision_trace:
+      research:
+        - |
+          Shown on this repository's code: a Scenario's steps are lines of text
+          in docs/scenarios.yaml; a step definition is the Go function that
+          runs one, registered against a pattern in Register
+          (tests/true-bdd/steps/cli_steps.go:86, :107); a generated test states
+          its Scenario's steps literally (tests/true-bdd/build_code_claude_test.go);
+          the Suite wiring is tests/true-bdd/scenarios/scenarios.go and
+          main_test.go, which build the suite, hook in steps.Register and hand
+          each test its run. A Scenario green without the code has a step
+          definition doing the product's work, such as a Then that computes
+          the half itself, and that definition must be rewritten.
+          GLOSSARY.md has no entry for a single step definition.
+      recommendation: |
+        Name the four things apart: step, step definition, test, Suite
+        wiring; add Step definition to the glossary.
+      settled: |
+        Nothing decided: the terms were laid out on the code before Q20 and
+        Q21.
+    question: |
+      The Owner's question on Q20's terms.
+      «Подожди, я сейчас вообще не понимаю. Шаги зеленого сценария
+      возвращаются в build steps. Что это такое? Подожди, давай разберемся
+      еще, что, а что такое suit wiring? То есть, что мы подразумеваем под
+      steps, что мы подразумеваем под wiring? То есть, давай, приведи мне
+      пример степа, приведи мне пример wiring. Тут что-то опять же не то, то
+      есть у нас разрыв в терминологии.»
+    answer: |
+      Claude, no question asked: the four things shown on the code above.
+
+  - decision_trace:
+      research:
+        - |
+          The scenarios package tests/true-bdd/scenarios/ is imported only by
+          the 37 generated test files in tests/true-bdd/ (package
+          truebdd_test) and by the engine's renderer
+          (services/true-bdd/internal/app/generators/scenariogen); _test.go
+          files of one package share their identifiers, so TestMain, the suite
+          and New can live in the tests' own main_test.go.
+      recommendation: |
+        A: retire both the term and the package; tests/<suite>/main_test.go
+        holds TestMain, the suite and New, the generated tests call New(t,
+        id), and the glossary drops Suite wiring.
+      settled: |
+        The Suite wiring is no layer of its own: it is the tests' main file.
+        build tests writes tests/<suite>/main_test.go with TestMain, the suite
+        and New, the generated tests call New(t, id), and the scenarios
+        package goes. The term Suite wiring is retired; ADR-0040, ADR-0041,
+        the generation rule and the glossary say the tests' main file.
+    question: |
+      Q21 - Как быть с «Suite wiring»? A. Убрать и термин, и пакет:
+      tests/<suite>/main_test.go содержит TestMain, suite и New, а
+      сгенерированные тесты вызывают просто New(t, id). B. Код оставить,
+      убрать только термин. C. Переименовать в runner
+      (tests/<suite>/runner/runner.go, термин «Test runner»).
+    answer: |
+      The Owner, in three messages:
+
+      «Правильно ли я понимаю, что... Подожди. Это у нас сценариус Go, BDD
+      сценариус, да? То есть это у нас тест. Это фактически это часть... То
+      есть смотри, то, что ты называешь тест suite wiring, как будто это
+      тест-раннер. По сути-то. Ну, то есть это тест... Это можно было бы
+      назвать run.go или runner.go, правильно? Или main.go. Вот. И я просто
+      про что? Я про то, что... Я против такого названия suite wiring. То есть
+      это и есть тесты. Для меня suite wiring это тесты. Ну все, ну то есть
+      это часть тестов. Вот просто тест, да. То есть, ну это как будто это
+      тест-раннер. Нет?»
+
+      «Да, я бы пошел с A, потому что вот эта прослойка в suit wiring как
+      будто не имеет смысла.»
+
+      «продолжи работу. .»
+
+  - decision_trace:
+      research:
+        - |
+          Today build steps returns the Items of a Scenario green without the
+          target to its Fix loop with the finding
+          (services/true-bdd/internal/app/commands/build_steps_red.go:52-55,
+          returnGreenItems). ADR-0031 lets build code start from existing code
+          and repair only the failing tests.
+      recommendation: |
+        A: build code stops with a distinct error naming the green Scenarios
+        and the step definitions they ran, and build steps --fix --redo
+        <Scenario> reopens those definitions for the writer.
+      settled: |
+        No fix path. When build code starts and the code is not built, every
+        test must be red; a green test stops build code with a distinct error
+        naming the Scenario, since correctly written steps cannot pass
+        without the code. When code already exists, green tests are expected
+        and build code goes on to the failing ones. Nothing is sent back to
+        build steps. This overrides ADR-0040's "they go back to build steps".
+    question: |
+      Q20 - Как build code сообщает build steps, какое определение шага
+      переписать? A. build code останавливается, а build steps получает флаг
+      --redo <Scenario> и заново открывает эти определения. B. build code сам
+      переписывает определения, перерисовывает тесты и проверяет снова. C.
+      build code останавливается, и всё; что делать с определением, человек
+      решает сам.
+    answer: |
+      Тут смотри, какая штука. Build steps, да, после того, как он... То есть
+      смотри, build steps. Короче, если мы все сделали правильно, то такого
+      просто не может быть. Поэтому если там... нету кода и есть какой-то
+      зеленый тест, то, ну, это просто, просто надо падать и говорить, что вот
+      нет кода, есть зеленый тест. Но если код уже есть, то, ну, код уже
+      есть. Так тоже может быть. И, то есть, получается, что это build code
+      останавливается. А как build step получает флаг, я не знаю, потому что
+      что ты имеешь в виду под build steps получает флаг? Получает флаг. О,
+      господи, получает параметр минус-минус ряду, и с этим флагом build step
+      заново открывает эти предыдущие. В общем, нет, смотри, этого так делать
+      не надо. Я бы сейчас на это вообще забил, потому что это не очень
+      реалистичный сценарий, когда мы понимаем, как пишутся степы. То есть
+      степ не может генерить код, правильно? Степ генерит только... тесты. То
+      есть, как step будет генерить код, если он given when then? Ну, типа, он
+      либо given, либо when, либо then. То есть, это мы где-то внутри
+      сгенерили код. Я бы сказал, что здесь, наверное, C. Никаких фиксов тут
+      нету. Ничего мы с build steps не делаем. Тем более, что там еще между
+      build steps и build test, build code есть build tests. Ты опять, по-моему,
+      про него забыл. Вот, поэтому давай C. Просто останавливаемся. И то
+      останавливаемся в том случае, если существующего кода нет.
+
+  - decision_trace:
+      research:
+        - |
+          The generated tests and main_test.go import the Steps package
+          (steps.Register, steps.State) and do not compile without it; build
+          tests compiles and runs nothing, and already refuses problems in its
+          own folder (ADR-0038: stale tests, a missing fixture, a fixture no
+          Scenario names).
+      recommendation: |
+        A: refuse at startup, naming the missing package and build steps
+        --fix; B (render anyway) moves the error to build code's compiler.
+      settled: |
+        build tests refuses at startup when the suite's Steps package is
+        missing, naming it and build steps --fix.
+    question: |
+      Q22 - Что делает build tests, если Steps package ещё нет? A.
+      Отказывается при старте, называя пакет и команду «сначала build steps
+      --fix». B. Всё равно рендерит; ошибка всплывёт в build code как ошибка
+      компиляции.
+    answer: |
+      Да, эй, конечно, просто отказывается при старте, и все.
+
+  - decision_trace:
+      research:
+        - |
+          #293 is open with one comment (the code run done, its whole-file
+          critique evidence blocking the merge); its branch
+          impl/293-testkit-read (c1374ad8) and worktree remain, holding the
+          relative-Glob fix and the evidence-root deduplication T3 keeps.
+      recommendation: |
+        A: close #293 as not planned, superseded by T3, naming ADR-0041 and
+        the Q&A log; T3 is a new ticket with a clean body; the branch and
+        worktree go once T3 has taken what it keeps.
+      settled: |
+        #293 is closed as not planned, superseded by T3, once T3 exists; the
+        branch and worktree are removed after T3 takes the Glob fix and the
+        deduplication.
+    question: |
+      Q23 - Что делать с #293? A. Закрыть как not planned с комментарием
+      «заменён тикетом T3»; T3 — новый тикет с чистым описанием. B.
+      Переписать описание #293 под T3.
+    answer: |
+      Ну да, закрою его как Not Planet и замененный, да-да-да.

@@ -93,12 +93,16 @@ The engine's own answer to which Scenarios have a step no definition binds: the 
 _Avoid_: coverage report, coverage output, step report, gap list
 
 **Red without the target**:
-The state of every test while the code is not built: red, because there is no code. `build code` checks it first, running the suite once in a copy of the Host project without any service's path, where every Scenario must fail at a step whose definition ran; a Scenario that passes there has steps doing the product's work, and they go back to `build steps` (ADR-0040).
+The state of every test while the code is not built: red, because there is no code. `build code` checks it first when no code is built, running the suite once, where every Scenario must fail at a step whose definition ran; a Scenario that passes stops it with a distinct error, since correctly written steps cannot pass without the code (ADR-0040).
 _Avoid_: expected failure, any failure counts
 
 **Steps package**:
 A suite's step definitions and the helpers they need, the one generated part of a suite that is checked. `build steps` writes it before any test exists; the tests `build tests` renders import it.
 _Avoid_: step folder, step library, test steps
+
+**Step definition**:
+The Go function that carries out a Scenario's step, registered against a pattern that binds step texts: the step is the Scenario's line of text, the step definition the code that runs it. The Steps package holds them.
+_Avoid_: step (for the function), step implementation, glue
 
 **Catalogue**:
 Retired: the product document's former `catalogue` key of step templates, each a step's shape, block, meaning and terms. Concepts replaced it (ADR-0034), and the engine refuses at startup a product document that still declares one, naming `concepts:` in its place. Older ADRs still name it.
@@ -157,8 +161,8 @@ Code supplied apart from a service's own source that the service or its tests bu
 _Avoid_: dependency (a service's dependencies are the processes and CLIs it talks to while it runs), package, framework
 
 **Suite wiring**:
-The generated code in a suite's folder that hooks its tests to their step definitions and to the test library: it builds the suite, registers the definitions, creates each Scenario's state and hands each test its Scenario's run. `build tests` renders it with the tests, deterministically, over the Steps package (ADR-0040); until that is built, the engine writes it before compilation in `build steps --fix`, with no model turn, even with no pending Item. `architecture.testing.testkit` (a mapping, optionally `ai_clis: [claude, codex]` naming service AI CLIs to record and replay) selects wiring calling `testkit.NewSuite` and a `TestMain` file calling `scenarios.Main`. An empty mapping selects the harness with no service AI CLIs. Both files carry the build-steps generated marker and are refreshed when their render changes; unmarked files are preserved. Without the declaration, the plain bddgo wiring and `State` remain unchanged.
-_Avoid_: glue, shim, bootstrap, harness (the harness is the test library's mechanisms the wiring calls)
+Retired (ADR-0040, Q21): the former name of the tests' main file, `main_test.go`, which builds the suite, registers the step definitions, creates each Scenario's state and hands each test its run. `build tests` writes it with the tests; until that is built, `build steps --fix` writes a separate `scenarios` package and a `TestMain` file instead.
+_Avoid_: glue, shim, bootstrap, wiring
 
 **Scenario run**:
 The harness's state for one Scenario, carried by `testkit.ScenarioRun`: its test, Scenario, prepared fixture, proxy setup, result, run recorder and grading, with access to the suite's modes, recordings, judge and built service. A suite declaring `architecture.testing.testkit` embeds `*testkit.ScenarioRun` in `State` as its one harness field (ensured even when no new skeleton is written) and adds only the definitions' own data.

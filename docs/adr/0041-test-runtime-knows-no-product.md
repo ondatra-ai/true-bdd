@@ -5,9 +5,9 @@ Issue #293 found the critique of a step body needing `pkg/testkit`'s source: the
 We decided:
 
 - **`pkg/testkit` holds only what is the same for every Host project** (Q1): generic mechanisms and TrueBDD's knowledge as the framework every host uses (its `true-bdd/` configuration, the Registry, the fixture layout, `llm:` and `judge:`). What holds only because the system under test is TrueBDD's engine leaves it; in a file mixing both, the mechanism stays and the values leave.
-- **A CLI stand-in is an SDK and a utility** (Q2 to Q7): `pkg/proxy/cli` is the SDK the Suite wiring calls, `utilities/cliproxy/` the binary, in its own module `github.com/ondatra-ai/true-bdd/utilities`, a fifth Go root. The SDK builds the binary from the commit the host's `pkg` came from, through a temporary `go.work` when `pkg` is a local copy, and puts it first on `PATH` under each CLI's name; the host declares nothing for it. One SDK per protocol, and only the CLI protocol for now; HTTP and the others wait for an application that needs them.
+- **A CLI stand-in is an SDK and a utility** (Q2 to Q7): `pkg/proxy/cli` is the SDK the tests' main file calls, `utilities/cliproxy/` the binary, in its own module `github.com/ondatra-ai/true-bdd/utilities`, a fifth Go root. The SDK builds the binary from the commit the host's `pkg` came from, through a temporary `go.work` when `pkg` is a local copy, and puts it first on `PATH` under each CLI's name; the host declares nothing for it. One SDK per protocol, and only the CLI protocol for now; HTTP and the others wait for an application that needs them.
 - **The architecture says which CLIs get a stand-in** (Q16): every dependency with `protocol: cli` and `scope: third_party`. `testing.testkit.ai_clis` is retired.
-- **A product's facts flow from its Specification into the runtime** (Q14): a dependency declares the parts of its requests that change between runs, the paths a recording leaves out and the marker of a read-only request; the Suite wiring passes them to the SDK, and cliproxy applies them. The values testkit needs for one host, its repository layer and the fixture step's pattern, are declared under `testing.testkit` and copied into the Suite wiring (Q10).
+- **A product's facts flow from its Specification into the runtime** (Q14): a dependency declares the parts of its requests that change between runs, the paths a recording leaves out and the marker of a read-only request; the tests' main file passes them to the SDK, and cliproxy applies them. The values testkit needs for one host, its repository layer and the fixture step's pattern, are declared under `testing.testkit` and copied into the tests' main file (Q10).
 - **Helpers are the steps' own code** (Q11, Q12): the writer puts what its steps share in `tests/<suite>/helpers/`, declared nowhere. testkit offers general hooks, such as one run on the assembled tree before the snapshot, through which the narrowed-checklist Given narrows its checklist.
 - **Step bodies use only the `pkg/testkit` root and the SDK** (Q13): `runner` and `reporter` move under `pkg/testkit/internal/`, `Proxy` and `Harness` become unexported, and testkit gains small methods for what the steps do today (the next run's environment and `PATH`, the mode, its own result type); the SDK exposes what a stand-in observed.
 - **The AI learns that API from `go doc`** (Q9): the engine runs `go doc` on the version the host's module graph resolves and gives it to the body turns and the critique. A function's meaning is its doc comment, written as a meaning. There is no catalogue file, and no prompt embeds whole source files.
@@ -18,7 +18,7 @@ We decided:
 ```mermaid
 flowchart LR
   ARCH["Architecture<br/>dependencies: protocol, scope,<br/>what their requests carry<br/>testing.testkit: repo_layer, fixture_step"]
-  WIRING["Suite wiring<br/>build tests"]
+  WIRING["Tests' main file<br/>build tests"]
   STEPS["Steps package<br/>steps/, helpers/"]
   TK["pkg/testkit<br/>root API"]
   TKI["pkg/testkit/internal<br/>runner, reporter"]
