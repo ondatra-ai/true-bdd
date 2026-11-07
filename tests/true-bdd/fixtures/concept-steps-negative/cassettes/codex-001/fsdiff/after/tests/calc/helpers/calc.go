@@ -1,69 +1,75 @@
-// Package helpers holds code the calc suite's step definitions share:
-// running the calculator CLI the way the concept bindings describe and
-// reading back what it printed. Nothing here computes a calculator
-// answer; the product's process is the only source of a result.
 package helpers
 
 import (
 	"bytes"
-	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 )
 
-// commandTimeout bounds one calculator run so a hung process fails the
-// step instead of the whole suite.
-const commandTimeout = 2 * time.Minute
-
-// HostRoot is the repository root as seen from a suite test's working
-// directory (tests/calc), matching the relative paths the generated
-// scenarios harness already uses.
-func HostRoot() string { return filepath.Join("..", "..") }
-
-// Halve runs `go run ./services/calc halve VALUE` from the host root with
-// value as the single value argument, passed verbatim so a leading minus
-// sign reaches the command unchanged, and returns the integer the command
-// printed on stdout.
+// Halve runs the calculator's halve command as the Public interface
+// (docs/architecture/calc-cli.yaml) declares it:
+//
+//	go run ./services/calc halve VALUE
+//
+// from the host root, with value passed verbatim as the single value
+// argument, leading minus sign included (no "--" separator). It returns the
+// command's integer stdout. The halving itself is the product's work; this
+// helper only invokes it and parses what it printed.
 func Halve(value string) (int, error) {
-	stdout, err := RunCalc("halve", value)
+	root, err := HostRoot()
 	if err != nil {
 		return 0, err
 	}
-	return parseInt("halve", value, stdout)
-}
 
-// RunCalc runs the calculator CLI with args from the host root and returns
-// its stdout. A non-zero exit is reported with the command's stderr.
-func RunCalc(args ...string) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), commandTimeout)
-	defer cancel()
-
-	argv := append([]string{"run", "./services/calc"}, args...)
-	cmd := exec.CommandContext(ctx, "go", argv...)
-	cmd.Dir = HostRoot()
+	cmd := exec.Command("go", "run", "./services/calc", "halve", value)
+	cmd.Dir = root
+	// Inherit the ambient environment so the Go build and module caches
+	// configured for this run are reused.
+	cmd.Env = os.Environ()
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("go run ./services/calc %s (in %s): %w: %s",
-			strings.Join(args, " "), cmd.Dir, err, strings.TrimSpace(stderr.String()))
+		return 0, fmt.Errorf(
+			"go run ./services/calc halve %s (in %s): %w: %s",
+			value, root, err, strings.TrimSpace(stderr.String()),
+		)
 	}
-	return stdout.String(), nil
-}
 
-// parseInt reads the command's integer stdout, trimming the trailing
-// newline the CLI document describes.
-func parseInt(command, value, stdout string) (int, error) {
-	n, err := strconv.Atoi(strings.TrimSpace(stdout))
+	out := strings.TrimSpace(stdout.String())
+	n, err := strconv.Atoi(out)
 	if err != nil {
-		return 0, fmt.Errorf("calc %s %s: stdout %q is not an integer: %w",
-			command, value, stdout, err)
+		return 0, fmt.Errorf(
+			"go run ./services/calc halve %s: stdout %q is not an integer: %w",
+			value, out, err,
+		)
 	}
 	return n, nil
+}
+
+// HostRoot returns the host root the CLI commands are documented to run from:
+// the nearest ancestor of the test's working directory that holds
+// ./services/calc.
+func HostRoot() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("locate host root: %w", err)
+	}
+	start := dir
+	for {
+		if info, err := os.Stat(filepath.Join(dir, "services", "calc")); err == nil && info.IsDir() {
+			return dir, nil
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", fmt.Errorf("host root with ./services/calc not found above %s", start)
+		}
+		dir = parent
+	}
 }

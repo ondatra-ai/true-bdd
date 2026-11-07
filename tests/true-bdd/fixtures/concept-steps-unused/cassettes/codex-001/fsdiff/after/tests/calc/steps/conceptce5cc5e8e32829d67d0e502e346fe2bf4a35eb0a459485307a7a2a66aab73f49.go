@@ -11,12 +11,15 @@ import (
 func conceptce5cc5e8e32829d67d0e502e346fe2bf4a35eb0a459485307a7a2a66aab73f49(state *State, args []string) error {
 	operand, err := strconv.Atoi(args[0])
 	if err != nil {
-		return fmt.Errorf("whole number to halve %q: %w", args[0], err)
+		return fmt.Errorf("operand %q is not a whole number: %w", args[0], err)
 	}
-	halved, err := helpers.RunInt("halve", strconv.Itoa(operand))
+
+	result, err := helpers.Halve(operand)
 	if err != nil {
 		return err
 	}
-	state.Result = halved
+
+	state.Result = result
+
 	return nil
 }

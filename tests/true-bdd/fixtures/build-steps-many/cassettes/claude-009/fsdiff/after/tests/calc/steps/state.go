@@ -1,8 +1,8 @@
 package steps
 
-// State is the calc suite's shared state.
+// State is what the calc suite's steps share within one scenario.
 type State struct {
-	// CalcPath is the path of the calculator program built by the
-	// installation Given, kept for the When that runs it.
-	CalcPath string
+	// CalculatorPath is the calculator program that the installation Given
+	// built under the host's tmp directory, kept so the When can run it.
+	CalculatorPath string
 }

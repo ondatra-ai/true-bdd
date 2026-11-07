@@ -1,18 +1,19 @@
 package steps
 
-// State is the calc suite's shared state.
+// State is what the calc suite's steps share within one scenario.
 type State struct {
-	// CalcPath is the path of the calculator program built by the
-	// installation Given, kept for the When that runs it.
-	CalcPath string
+	// CalculatorPath is the calculator program that the installation Given
+	// built under the host's tmp directory, kept so the When can run it.
+	CalculatorPath string
 
-	// Doubled is the integer the kept calculator program's double command
-	// printed on stdout, kept by the doubling When so a Then can observe
-	// and compare it. The suite never computes this value itself.
+	// Doubled is the integer the calculator's double command printed on
+	// stdout when the doubling When ran it: the program's own answer, kept
+	// unchanged for the Then that observes the result to compare against the
+	// expected value.
 	Doubled int
 
-	// DoubledSet reports whether the doubling When ran the double command
-	// and recorded its stdout in Doubled, so an observing Then can tell a
-	// recorded zero from a When that never ran.
-	DoubledSet bool
+	// DoubledStdout is that same stdout as the program printed it, kept so a
+	// Then that disagrees can report the program's own text, and so a Then
+	// can tell "the program printed 0" from "the When never ran".
+	DoubledStdout string
 }

@@ -1,4 +1,5 @@
-// Package helpers holds the code the calc suite's step definitions share.
+// Package helpers holds the setup and lookups the calc suite's step
+// definitions share.
 package helpers
 
 import (
@@ -6,100 +7,79 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 )
 
-// RealGoEnv is the variable a fixture's Go stand-in requires: it names the
-// real Go executable the stand-in runs.
-const RealGoEnv = "CALC_REAL_GO"
+// fixturesDir is the suite's fixture root, relative to the directory a calc
+// suite test runs in (tests/calc).
+const fixturesDir = "fixtures"
 
-// fixtureRoots are the places the suite's fixture directory can sit relative
-// to a test binary's working directory: the suite directory itself first,
-// then the host root, then a sibling package's directory.
-var fixtureRoots = []string{
-	"fixtures",
-	filepath.Join("tests", "calc", "fixtures"),
-	filepath.Join("..", "fixtures"),
+// realGoVar is the variable a fixture's stand-in reads to find the real Go
+// executable it delegates to.
+const realGoVar = "CALC_REAL_GO"
+
+// SelectToolchain selects the named fixture's Go stand-in,
+// tests/calc/fixtures/<name>/bin/go, to be run in place of go.
+//
+// It returns the absolute stand-in to run and the environment it needs: the
+// caller's own environment with CALC_REAL_GO naming the real Go executable,
+// which the stand-in requires. The path is absolute because the calculator is
+// run from the host root rather than from the suite's directory.
+//
+// SelectToolchain only chooses the toolchain; it runs nothing.
+func SelectToolchain(name string) (string, []string, error) {
+	standIn, err := standInPath(name)
+	if err != nil {
+		return "", nil, err
+	}
+	realGo, err := realGoPath()
+	if err != nil {
+		return "", nil, fmt.Errorf("the %q toolchain needs the real go: %w", name, err)
+	}
+	return standIn, append(os.Environ(), realGoVar+"="+realGo), nil
 }
 
-// ToolchainGo returns the absolute path of the named fixture's Go stand-in,
-// tests/calc/fixtures/<name>/bin/go. The path is absolute because a caller
-// runs it with a working directory of its own.
-func ToolchainGo(name string) (string, error) {
-	if strings.TrimSpace(name) == "" {
-		return "", fmt.Errorf("toolchain name is empty")
+// standInPath is the absolute path of the named fixture's Go stand-in, checked
+// to be a file that can be run.
+func standInPath(name string) (string, error) {
+	path, err := filepath.Abs(filepath.Join(fixturesDir, name, "bin", "go"))
+	if err != nil {
+		return "", fmt.Errorf("locate the %q toolchain: %w", name, err)
 	}
-	if name != filepath.Base(filepath.Clean(name)) {
-		return "", fmt.Errorf("toolchain %q is not a fixture directory name", name)
+	info, err := os.Stat(path)
+	if err != nil {
+		return "", fmt.Errorf("the %q toolchain's go stand-in: %w", name, err)
 	}
-	tried := make([]string, 0, len(fixtureRoots))
-	for _, root := range fixtureRoots {
-		abs, err := filepath.Abs(filepath.Join(root, name, "bin", "go"))
-		if err != nil {
-			return "", err
-		}
-		info, err := os.Stat(abs)
-		if err != nil || info.IsDir() {
-			tried = append(tried, abs)
-			continue
-		}
-		if err := ensureExecutable(abs, info); err != nil {
-			return "", err
-		}
-		return abs, nil
+	if !info.Mode().IsRegular() {
+		return "", fmt.Errorf("the %q toolchain's go stand-in %s is not a file", name, path)
 	}
-	return "", fmt.Errorf("toolchain %q has no Go stand-in at bin/go; looked for %s", name, strings.Join(tried, ", "))
+	if info.Mode().Perm()&0o111 == 0 {
+		if err := os.Chmod(path, info.Mode().Perm()|0o111); err != nil {
+			return "", fmt.Errorf("make the %q toolchain's go stand-in %s runnable: %w", name, path, err)
+		}
+	}
+	return path, nil
 }
 
-// ensureExecutable gives a checked-out stand-in its executable bit back, so a
-// checkout that dropped file modes still selects the toolchain.
-func ensureExecutable(path string, info os.FileInfo) error {
-	mode := info.Mode().Perm()
-	if mode&0o111 != 0 {
-		return nil
+// realGoPath is the absolute path of the installed Go executable, the one a
+// fixture's stand-in delegates to.
+func realGoPath() (string, error) {
+	found, err := exec.LookPath("go")
+	if err != nil {
+		if root := os.Getenv("GOROOT"); root != "" {
+			if candidate := filepath.Join(root, "bin", "go"); fileExists(candidate) {
+				return candidate, nil
+			}
+		}
+		return "", fmt.Errorf("find go on PATH: %w", err)
 	}
-	if err := os.Chmod(path, mode|0o111); err != nil {
-		return fmt.Errorf("make Go stand-in %s executable: %w", path, err)
+	abs, err := filepath.Abs(found)
+	if err != nil {
+		return "", fmt.Errorf("resolve go at %s: %w", found, err)
 	}
-	return nil
+	return abs, nil
 }
 
-// RealGo returns the path of the installed Go executable, the one a fixture's
-// stand-in runs through CALC_REAL_GO. A CALC_REAL_GO already set in the host
-// environment wins, so a host that keeps go off PATH can still name it.
-func RealGo() (string, error) {
-	if named := os.Getenv(RealGoEnv); named != "" {
-		if info, err := os.Stat(named); err == nil && !info.IsDir() {
-			return named, nil
-		}
-	}
-	if found, err := exec.LookPath("go"); err == nil {
-		if abs, err := filepath.Abs(found); err == nil {
-			return abs, nil
-		}
-		return found, nil
-	}
-	if root := os.Getenv("GOROOT"); root != "" {
-		candidate := filepath.Join(root, "bin", "go")
-		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
-			return candidate, nil
-		}
-	}
-	return "", fmt.Errorf("no installed go found on PATH or under GOROOT to name in %s", RealGoEnv)
-}
-
-// ToolchainEnv is the host environment with CALC_REAL_GO naming realGo: the
-// environment a fixture's Go stand-in requires. Every other variable is
-// carried through unchanged, so the inherited build cache and temporary
-// directory keep their settings.
-func ToolchainEnv(realGo string) []string {
-	host := os.Environ()
-	env := make([]string, 0, len(host)+1)
-	for _, entry := range host {
-		if strings.HasPrefix(entry, RealGoEnv+"=") {
-			continue
-		}
-		env = append(env, entry)
-	}
-	return append(env, RealGoEnv+"="+realGo)
+func fileExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.Mode().IsRegular()
 }

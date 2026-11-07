@@ -1,5 +1,5 @@
-=== FILE_START: tmp/{{RUN_DIR}}/apply-then-output-iter2-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply-when-operation-iter2-result.yaml ===
 applied: true
-target: "tests/calc/steps/concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e.go"
-summary: "Applied the exact output step and helper; formatting checked; sandbox tool failures worked around."
-=== FILE_END: tmp/{{RUN_DIR}}/apply-then-output-iter2-result.yaml ===
+target: "tests/calc/steps/conceptcc0034864638b337019c005041b6023fc84395f3cfcb85aa7757c1b208c55d6e.go"
+summary: "Applied operation body and helper; formatting verified; sandbox tool failures recovered via fallback."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-when-operation-iter2-result.yaml ===

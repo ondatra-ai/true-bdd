@@ -130,28 +130,68 @@ scenarios:
 tests/calc/steps
 
 ## Finding being fixed
-`concept_binding`: the body's helper `State.Halve` gates the command behind an
-environment variable (`CALC_LICENCE`), returning
-`"the calculator's licence is not installed: set CALC_LICENCE"` before the
-process runs. No licence, environment variable or other preparation appears in
-the binding, the glossary, the Word mappings or the `halve` entry of
-`docs/architecture/calc-cli.yaml`, which declares only
-`go run ./services/calc halve VALUE` from the host root with an integer
-argument and an integer on stdout. Remove that invented precondition so the
-when always runs the declared command and keeps its integer stdout as the
-result.
+`concept_binding`: `State.Halve` gated the command behind a `CALC_LICENCE` environment variable and failed with "the calculator's licence is not installed: set CALC_LICENCE". The binding for `when "halving"` says only: *"Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result."* The declared Public interface (`docs/architecture/calc-cli.yaml`) declares exactly one parameter (`value`, integer argument) and exit codes `0`/`1` — no licence environment variable, and no setup concept supplies one. Remove the undeclared precondition so the step requires nothing beyond the declared contract.
 
 ## Required Changes
 
-### 1. New file: `tests/calc/helpers/calc.go`
-Create the suite's helpers package (the directory does not exist yet) holding
-the shared invocation of the declared `halve` command. It runs the command as a
-process from the host root and returns only what the command printed — it never
-halves the number itself. The module is `fixture/conceptbodiesextra`, so the
-import path is `fixture/conceptbodiesextra/tests/calc/helpers`. Write the file
-with exactly this content:
+### 1. Replace `tests/calc/steps/state.go` in full
+
+The licence check and the `errors`/`os` imports go away; the process invocation moves to the suite's `helpers/` package, and the shared `State` keeps only the integer result observed from stdout.
 
 ```go
+package steps
+
+import (
+	"fixture/conceptbodiesextra/tests/calc/helpers"
+)
+
+// State is the suite's shared state: the integer the calculator last
+// printed on stdout.
+type State struct{ Result int }
+
+type Registrar interface {
+	Step(string, func(*State, []string) error)
+}
+
+// Halve runs the declared calculator halve command as a process with the
+// step's whole number and keeps its integer stdout as the result. It adds
+// no precondition of its own: the declared CLI takes only the value
+// argument.
+func (s *State) Halve(value string) error {
+	result, err := helpers.RunHalve(value)
+	if err != nil {
+		return err
+	}
+	s.Result = result
+	return nil
+}
+```
+
+Notes for the applier:
+- Keep the module prefix exactly as the suite already uses it: `tests/calc/scenarios/scenarios.go` imports `fixture/conceptbodiesextra/tests/calc/steps`, so the helpers package path is `fixture/conceptbodiesextra/tests/calc/helpers`.
+- Do not touch `Registrar`; `tests/calc/steps/register.go` and the `//truebdd:concept` records stay exactly as they are.
+
+### 2. Leave the definition body as the one-line call
+
+`tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go` keeps this exact content (signature, concept record and body unchanged — the body is already nothing but "call the operation with the step's capture"):
+
+```go
+package steps
+
+//truebdd:concept when "halving"
+func concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {
+	return state.Halve(args[0])
+}
+```
+
+`args[0]` is the step's whole number (`6`, `-7`) and is passed through verbatim as the command's `value` argument; the body never computes a half.
+
+### 3. Create `tests/calc/helpers/calc.go` (new file)
+
+```go
+// Package helpers runs the calculator's declared command-line interface
+// for the calc suite's steps. It only starts the process and reads what
+// the process printed; it never computes a calculator answer itself.
 package helpers
 
 import (
@@ -162,91 +202,62 @@ import (
 	"strings"
 )
 
-// hostRoot is the repository root as seen from the suite's test directory
-// (tests/calc), which is where the calculator CLI's commands are declared to
-// run from.
+// hostRoot is the directory the declared CLI is run from, relative to the
+// suite's test working directory (tests/calc). The interface document
+// states the command as `go run ./services/calc halve VALUE` from the
+// host root.
 const hostRoot = "../.."
 
-// Halve runs the calculator's declared halve command as a process with the
-// whole number and returns the integer it writes on stdout.
-//
-// The command is the only thing that halves anything: this helper passes the
-// number through untouched and reports back whatever integer the process
-// printed. It requires no preparation beyond the declared command itself.
-func Halve(value string) (int, error) {
-	cmd := exec.Command("go", "run", "./services/calc", "halve", value)
+// RunHalve runs the declared halve command as a process with value as its
+// single argument and returns the integer the command printed on stdout.
+// Nothing beyond the declared value argument is required or supplied.
+func RunHalve(value string) (int, error) {
+	stdout, err := runCalc("halve", value)
+	if err != nil {
+		return 0, err
+	}
+	return parseInteger(stdout)
+}
+
+// runCalc starts the calculator command with the given arguments and
+// returns its stdout.
+func runCalc(args ...string) (string, error) {
+	command := append([]string{"run", "./services/calc"}, args...)
+	cmd := exec.Command("go", command...)
 	cmd.Dir = hostRoot
-	out, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
 		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) && len(exitErr.Stderr) > 0 {
-			return 0, fmt.Errorf("halve %s: %w: %s", value, err, strings.TrimSpace(string(exitErr.Stderr)))
+		if errors.As(err, &exitErr) {
+			return "", fmt.Errorf("go %s: %w: %s", strings.Join(command, " "), err, strings.TrimSpace(string(exitErr.Stderr)))
 		}
-		return 0, fmt.Errorf("halve %s: %w", value, err)
+		return "", fmt.Errorf("go %s: %w", strings.Join(command, " "), err)
 	}
-	printed := strings.TrimSpace(string(out))
-	result, err := strconv.Atoi(printed)
+	return string(stdout), nil
+}
+
+// parseInteger reads the command's stdout as a single integer.
+func parseInteger(stdout string) (int, error) {
+	text := strings.TrimSpace(stdout)
+	number, err := strconv.Atoi(text)
 	if err != nil {
-		return 0, fmt.Errorf("halve %s: stdout %q is not an integer", value, printed)
+		return 0, fmt.Errorf("the calculator printed %q, which is not an integer", text)
 	}
-	return result, nil
+	return number, nil
 }
 ```
 
-Note: do not set `cmd.Stderr` when using `cmd.Output()` — `Output` fails with
-`exec: Stderr already set`. The `*exec.ExitError` carries the captured stderr,
-as written above.
+## What must not change
+- `tests/calc/steps/register.go` (patterns and registrations).
+- The definition's function name, signature `func(state *State, args []string) error` and `//truebdd:concept when "halving"` record.
+- `tests/calc/steps/definitions.go` (the `then "result"` definition) — it still reads `state.Result`, which `State` still carries.
+- Generated `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, the Specification and any service code.
 
-### 2. Replace `tests/calc/steps/state.go`
-Drop the `State.Halve` method together with the licence check and the imports it
-needed. The shared state keeps only the result the then observes, and the
-`Registrar` interface is left exactly as it is. The whole file becomes:
+## Why this satisfies the binding
+After the change the step does exactly what the binding and the `opencli` document declare: it starts `go run ./services/calc halve <value>` from the host root with the step's captured whole number, surfaces a non-zero exit as a step error, and stores the command's integer stdout in shared state for the `then "result"` step to compare. No environment variable, licence or other undeclared precondition is read, and no halving is performed in test code.
 
-```go
-package steps
-
-// State is the suite's shared state: Result is the integer the calculator's
-// command printed for the most recent operation.
-type State struct{ Result int }
-
-type Registrar interface {
-	Step(string, func(*State, []string) error)
-}
-```
-
-### 3. Replace the body in `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go`
-Keep the `//truebdd:concept when "halving"` record, the function name and the
-signature untouched; change only the body and add the helpers import. The whole
-file becomes:
-
-```go
-package steps
-
-import (
-	"fixture/conceptbodiesextra/tests/calc/helpers"
-)
-
-//truebdd:concept when "halving"
-func concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {
-	result, err := helpers.Halve(args[0])
-	if err != nil {
-		return err
-	}
-	state.Result = result
-	return nil
-}
-```
-
-`args[0]` is the step's whole number as written (`6`, `-7`) and is passed to the
-command verbatim; the step does no parsing, no sign handling and no arithmetic
-of its own.
-
-## Must not change
-- `tests/calc/steps/register.go` (registration and pattern `^the Owner halves (-?\d+)$`).
-- `tests/calc/steps/definitions.go` (the `result` then definition).
-- `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, the registry,
-  the architecture documents or any service code.
-- The function name, signature or `//truebdd:concept` record of the definition.
+## Note on verification
+Shell commands are denied to me in this mode, so I could not compile the package; the change is confined to the two files above plus the untouched definition, and the engine owns compilation and the whole-suite checks.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists, shared state and code they share in tests/<suite>/helpers/. Preserve the engine's patterns, registrations,

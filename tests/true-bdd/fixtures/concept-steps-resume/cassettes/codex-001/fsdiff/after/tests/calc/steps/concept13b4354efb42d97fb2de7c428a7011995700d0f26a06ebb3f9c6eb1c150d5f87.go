@@ -9,16 +9,14 @@ import (
 
 //truebdd:concept when "halving"
 func concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {
-	number, err := helpers.WholeNumber(args[0])
+	number, err := strconv.Atoi(args[0])
 	if err != nil {
-		return fmt.Errorf("the Owner halves %s: %w", args[0], err)
+		return fmt.Errorf("the Owner halves a whole number, got %q: %w", args[0], err)
 	}
-
-	result, err := helpers.RunCalcInt(helpers.HalveCommand, strconv.Itoa(number))
+	result, err := helpers.RunCalcInt("halve", strconv.Itoa(number))
 	if err != nil {
 		return err
 	}
-
 	state.Result = result
 	return nil
 }
