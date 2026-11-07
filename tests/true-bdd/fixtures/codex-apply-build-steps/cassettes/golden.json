@@ -3,11 +3,18 @@
   "fixture": "codex-apply-build-steps",
   "files": [
     {
+      "path": "tests/calc/helpers/calc.go",
+      "kind": "created",
+      "size": 1463,
+      "sha256": "12a1a97f4b95639dd194317b61e60e4692d4ebbd4dee63937bf2cdbbf9f8516c",
+      "text": "package helpers\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n// HostRoot is the host root, written relative to the directory the calc suite's\n// tests run in (tests/calc). It is the same directory the kept calculator\n// program was built from, and the directory the program is run from.\nconst HostRoot = \"../..\"\n\n// Double runs the kept calculator program's double command as a process from the\n// host root, with value as its single `value` argument exactly as the step wrote\n// it, and returns the integer the process printed on stdout.\n//\n// Double never doubles anything itself: the number it returns is only ever the\n// number the calculator program printed. program is the path to the program kept\n// by the installation step.\nfunc Double(program string, value string) (int, error) {\n\tif program == \"\" {\n\t\treturn 0, fmt.Errorf(\"double %s: no calculator program was kept by the installation step\", value)\n\t}\n\tcommand := exec.Command(program, \"double\", value)\n\tcommand.Dir = HostRoot\n\tvar stdout, stderr bytes.Buffer\n\tcommand.Stdout = \u0026stdout\n\tcommand.Stderr = \u0026stderr\n\tif err := command.Run(); err != nil {\n\t\treturn 0, fmt.Errorf(\"run %s double %s: %w: %s\", program, value, err, strings.TrimSpace(stderr.String()))\n\t}\n\tprinted := strings.TrimSpace(stdout.String())\n\tdoubled, err := strconv.Atoi(printed)\n\tif err != nil {\n\t\treturn 0, fmt.Errorf(\"read the double command's stdout %q as an integer: %w\", printed, err)\n\t}\n\treturn doubled, nil\n}\n"
+    },
+    {
       "path": "tests/calc/steps/concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b.go",
       "kind": "created",
-      "size": 963,
-      "sha256": "d88262eaa27d1fd1f9fa584c69baedd5920c7cf9d149cc3b354d196af972c446",
-      "text": "package steps\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"doubling\"\nfunc concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b(state *State, args []string) error {\n\tif state.Program == \"\" {\n\t\treturn errors.New(\"the calculator is not installed\")\n\t}\n\tvalue := args[0]\n\tif _, err := strconv.Atoi(value); err != nil {\n\t\treturn fmt.Errorf(\"the whole number %q to double: %w\", value, err)\n\t}\n\tcommand := exec.Command(state.Program, \"double\", value)\n\tcommand.Dir = \"../..\"\n\tstdout, err := command.Output()\n\tif err != nil {\n\t\tvar exit *exec.ExitError\n\t\tif errors.As(err, \u0026exit) {\n\t\t\treturn fmt.Errorf(\"double %s: %w: %s\", value, err, exit.Stderr)\n\t\t}\n\t\treturn fmt.Errorf(\"double %s: %w\", value, err)\n\t}\n\tdoubled, err := strconv.Atoi(strings.TrimSpace(string(stdout)))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"double %s printed %q, want an integer: %w\", value, stdout, err)\n\t}\n\tstate.Value = doubled\n\treturn nil\n}\n"
+      "size": 335,
+      "sha256": "eda23a70aa9e8e25639bcc5a1da90af69a5ad5710cc62e12ca86e607c66f9528",
+      "text": "package steps\n\nimport \"fixture/stepsrun/tests/calc/helpers\"\n\n//truebdd:concept when \"doubling\"\nfunc concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b(state *State, args []string) error {\n\tdoubled, err := helpers.Double(state.Program, args[0])\n\tif err != nil {\n\t\treturn err\n\t}\n\tstate.Value = doubled\n\treturn nil\n}\n"
     },
     {
       "path": "tests/calc/steps/register.go",

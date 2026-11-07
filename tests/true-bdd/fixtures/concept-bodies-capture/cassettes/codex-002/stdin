@@ -113,8 +113,8 @@ definitions:
       pattern: ^the Owner halves (-?\d+)$
       captures:
         - name: number
-          means: The whole number the Owner halves, with its optional leading minus sign and all of its digits, so the body halves the step's number itself (6, 64, -7).
-      serves: 'Run the declared halve command as a process with the step''s whole number and keep its integer stdout as the result: the capture supplies that whole number as the command''s value argument.'
+          means: The step's whole number, positive, zero or negative, in full including its sign, passed as the halve command's value argument.
+      serves: Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result.
       steps:
         - text: the Owner halves 6
           captures:
@@ -137,115 +137,96 @@ scenarios:
 ## Target
 tests/calc/steps
 
-## Finding being fixed
+## What the finding asks for
 
-`build-steps/step-verification` reported `pattern_captures` on
-`tests/calc/steps/concept8c83e3012dd37395db8aad8a8fafef5f14ca67ae936908b0e63bff4b60526148.go`:
-the registered pattern `^the Owner halves (-?\d)\d*$` captures only the first digit and leaves
-`\d*` uncaptured, so for `the Owner halves 64` the body received `6` and stored 3 instead of 32.
+The step-verification finding is `pattern_captures` on the old registration
+`^the Owner halves (-?\d)\d*$`: the group stops after the first digit, so
+`the Owner halves 64` passed `6` to the calculator. The concept's capture is
+`number` — "The step's whole number, positive, zero or negative, in full
+including its sign". The pattern is therefore proposed again as
+`^the Owner halves (-?\d+)$` (one group spanning the whole signed integer,
+matching the companion `^the result is (-?\d+)$` registration), and the body is
+written for that single capture.
 
-This is a pattern repair. The pattern is proposed again as `^the Owner halves (-?\d+)$` — the
-whole number, its optional leading minus sign and all of its digits — and the body below is
-written for that single `number` capture. The prepared context names the resulting definition:
-
-- function: `concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87`
-- file: `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go`
-- pattern: `^the Owner halves (-?\d+)$`
-- captures (in `args` order): `args[0]` = `number`
-
-The engine owns the pattern registration in `tests/calc/steps/register.go`, the skeleton file, the
-function signature and the `//truebdd:concept when "halving"` record, including retiring the old
-`concept8c83e30…` definition and its registration. Do not hand-edit `register.go`, `calc_test.go`
-or the Specification.
+The engine owns the registration and the skeleton: it registers
+`^the Owner halves (-?\d+)$` for the new definition
+`concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87` in
+`tests/calc/steps/register.go` and drops the superseded
+`concept8c83e3012dd37395db8aad8a8fafef5f14ca67ae936908b0e63bff4b60526148`
+registration and file. Do not hand-edit `register.go`, the
+`//truebdd:concept` record or the function signature.
 
 ## Required Changes
 
-### 1. Body of the new definition
+### 1. Body of the re-proposed definition
 
-Write the body of
-`tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go`
-so the file reads exactly as follows. Keep the engine-written package clause, the
-`//truebdd:concept` record and the signature as the engine emits them; only the import block and
-the statements between the braces are the writer's.
+File: `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go`
+
+This is the planned engine skeleton with signature
+`func concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error`.
+If the file already exists, replace only its body (keep the package clause, the
+`//truebdd:concept when "halving"` record and the signature exactly as the
+engine wrote them) and make sure the helpers import is present. If it does not
+exist yet, the engine writes it before this body is applied; the complete file
+is then:
 
 ```go
 package steps
 
-import (
-	"fmt"
-	"strconv"
-
-	"fixture/conceptbodiescapture/tests/calc/helpers"
-)
+import "fixture/conceptbodiescapture/tests/calc/helpers"
 
 //truebdd:concept when "halving"
 func concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("the Owner halves: step needs the number capture, got %d captures", len(args))
-	}
-	// args[0] is the step's whole number, minus sign and every digit included.
-	number, err := strconv.Atoi(args[0])
-	if err != nil {
-		return fmt.Errorf("the Owner halves: %q is not a whole number: %w", args[0], err)
-	}
-	// The declared `halve` command runs as a process and alone decides the
-	// integer; the step only carries the number in and the printed result out.
-	halved, err := helpers.Halve(number)
+	// The Owner halves the step's whole number with the calculator.
+	//
+	// args[0] is the step's number in full, sign included ("6", "64",
+	// "-7"): it is handed to the declared `halve` command unchanged as
+	// that command's one value argument. The integer the command printed
+	// on stdout is kept as the result for the observing step to compare;
+	// this step computes no half of its own.
+	result, err := helpers.RunHalve(args[0])
 	if err != nil {
 		return err
 	}
-	state.Result = halved
+	state.Result = result
 	return nil
 }
 ```
 
-Why this body serves the binding ("Run the declared halve command as a process with the step's
-whole number and keep its integer stdout as the result"):
+### 2. Shared state
 
-- The whole capture `args[0]` is converted to the integer the command's required `value` argument
-  takes, per `docs/architecture/calc-cli.yaml`. Nothing is re-derived from the step text, and no
-  digit is dropped: `6` -> 6, `64` -> 64, `-7` -> -7.
-- `helpers.Halve` is the suite's existing wrapper that runs `go run ./services/calc halve VALUE`
-  from the host root and returns the integer it prints on stdout. The body never computes a half
-  itself; the calculator's stdout is the only source of `state.Result`.
-- A non-zero exit (CLI response `'1'`, invalid arguments) surfaces as the helper's error, so the
-  When step fails with what the process reported rather than masking it.
-- `state.Result` is the field the existing `then` definition `result` compares against, so the
-  observation stays with the Then block.
+No change. `tests/calc/steps/state.go` already carries `Result int`, which the
+`then` concept `result` reads.
 
-### 2. Shared state — no change
+### 3. helpers/
 
-`tests/calc/steps/state.go` already carries what this body needs:
+No change. `tests/calc/helpers/calccli.go` already runs the declared command as
+a process from the documented host root
+(`go run ./services/calc halve VALUE`, `cmd.Dir = HostRoot`), passes the value
+string through untouched, and returns the integer parsed from stdout without
+arithmetic of its own, so a wrong answer from the calculator reaches the
+observing step unchanged. `RunHalve` takes the value as a string, so the full
+signed capture (including a leading `-`) is forwarded verbatim; no conversion
+or normalisation belongs in the body.
 
-```go
-type State struct{ Result int }
-```
+### 4. Superseded definition
 
-The halved value is an integer on stdout, so `Result int` is the right carrier. Leave the file as
-it is.
+Do not write a body for
+`tests/calc/steps/concept8c83e3012dd37395db8aad8a8fafef5f14ca67ae936908b0e63bff4b60526148.go`;
+it is replaced by the definition above. Leave its removal and the registration
+swap to the engine.
 
-### 3. helpers/ — no change
+## Why this satisfies the binding
 
-`tests/calc/helpers/calc.go` already provides `Halve(value int) (int, error)`, `runCalc` and
-`HostRoot`, which run the declared command as a process from the host root, inherit the
-environment (preserving the Go build cache and temporary directory), bound the run with a timeout,
-and parse only the printed integer. No arithmetic is performed there. Do not add or modify helper
-code for this fix.
-
-### 4. Retire the superseded definition
-
-Delete `tests/calc/steps/concept8c83e3012dd37395db8aad8a8fafef5f14ca67ae936908b0e63bff4b60526148.go`
-and let the engine rewrite `tests/calc/steps/register.go` so the `halving` When step registers
-`^the Owner halves (-?\d+)$` against
-`concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87`. The existing
-`^the result is (-?\d+)$` registration for `result` stays untouched.
-
-## Scope
-
-Changed: the one new definition body (and removal of the definition the finding named).
-Unchanged: `state.go`, `tests/calc/helpers/calc.go`, `definitions.go` (`result`), the generated
-`tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, the Specification and all service
-code.
+- Binding `does`: "Run the declared halve command as a process with the step's
+  whole number and keep its integer stdout as the result" — the body calls
+  `helpers.RunHalve` (process, declared command) with the whole captured number
+  and stores the returned stdout integer in `state.Result`.
+- Public interface `docs/architecture/calc-cli.yaml`, command `halve`: one
+  required integer `value` argument, stdout is the halved integer. A non-zero
+  exit or non-integer stdout surfaces as the error `RunHalve` returns.
+- The step performs no halving and no comparison; comparison stays in the
+  `then` concept `result`.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists, shared state and code they share in tests/<suite>/helpers/. Preserve the engine's patterns, registrations,

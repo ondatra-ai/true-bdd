@@ -96,7 +96,7 @@ func engineAnswerSchemas(t *testing.T) map[string]string {
 	return map[string]string{
 		"checklist": checklistResultSchema, "fix-proposal": fixResultSchema,
 		"build-code-plan":  (&FixPromptGenerator{impossibleReport: true}).resultSchema(),
-		"concept-proposal": proposalSchema, "step-critique": stepCritiqueSchema,
+		"concept-proposal": patternRepairSchema(), "step-critique": stepCritiqueSchema,
 		"concept-link": link, "concept-link-empty": emptyLink,
 		"concept-group": group, "concept-group-single": groupSingle,
 		"concept-bindings": bindings, "concept-words": words,

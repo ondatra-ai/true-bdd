@@ -285,6 +285,6 @@ func TestConceptLink021ExtraKeyRefused(t *testing.T) {
 	s.And(`stdout matches msg="Concept judgement answered" subjectID=host promptIndex=1 judgement=link answer=pass`)
 	s.And(`every file matching "docs/product/product.yaml" does not match variations`)
 	s.And(`the file "docs/product/stories/host-story.yaml" is unchanged`)
-	s.And(`judge: the product document's result concept states in its means that the calculator prints the whole number the halving produced as well as the one the doubling produced, and every concept holds only concept, means and terms`)
+	s.And(`judge: the product document's result concept states in its means that the printed whole number may be the one the halving produced or the one the doubling produced, and every concept holds only concept, means and terms`)
 	s.Done()
 }

@@ -103,9 +103,9 @@ definitions:
       file: tests/calc/steps/concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b.go
       pattern: ^the Owner doubles (-?\d+)$
       captures:
-        - name: value
-          means: The whole number the Owner doubles, passed as the VALUE argument of the calculator's double command.
-      serves: 'Serves "Run the kept calculator program''s double command as a process from the host root with the step''s whole number and keep its integer stdout": the capture supplies the step''s whole number for the double command''s argument, while the literal words "the Owner doubles" state the doubling concept.'
+        - name: number
+          means: The whole number operand the Owner doubles, as written in the step (optionally negative), passed as the value argument of the calculator's double command.
+      serves: Run the kept calculator program's double command as a process from the host root with the step's whole number and keep its integer stdout — the capture supplies "the step's whole number".
       steps:
         - text: the Owner doubles 3
           captures:
@@ -115,95 +115,129 @@ scenarios:
     - calc-001-double
 
 
+=== FILE_START: tmp/{{RUN_DIR}}/02-when-doubling-fix-prompts.md ===
 # Fix Prompt for Item when-doubling: when concept "doubling"
 
 ## Target
 tests/calc/steps
 
 ## Scope
-Write only the body (and its imports) of the one listed definition. Do **not** touch
-`tests/calc/steps/register.go` (the registration line and the `given`/`then` bodies stay as they are),
-`tests/calc/steps/state.go` (the existing `State` already carries everything this body needs),
-`tests/calc/scenarios/`, `tests/calc/calc_test.go`, `docs/`, or `services/`.
-No `tests/calc/helpers/` package is needed: nothing is shared between two bodies here, so the
-single body stays self-contained and the suite keeps exactly one steps package.
+Write only the body of the one `when "doubling"` definition, plus a new shared
+helper package under `tests/calc/helpers/`. Do not touch `register.go`'s
+registrations, the function name/signature, the `//truebdd:concept` record,
+`tests/calc/calc_test.go`, `docs/`, or `services/`. `State` already carries the
+two fields this body needs (`Program`, set by the `given "installation"` step,
+and `Value`, read by the `then "result"` step), so `tests/calc/steps/state.go`
+stays exactly as it is.
 
-## Evidence this body is written from
-- Binding: "Run the kept calculator program's double command as a process from the host root with the
-  step's whole number and keep its integer stdout."
-- `docs/architecture/calc-cli.yaml`: `calc double VALUE` takes one required integer argument, exit `0`
-  prints the doubled integer plus a newline on stdout, exit `1` means invalid arguments.
-- `tests/calc/steps/state.go`: `State{Program string; Value int}`.
-- `tests/calc/steps/register.go`: the given `installed` builds `./services/calc` with `command.Dir = "../.."`
-  and keeps the **absolute** binary path in `state.Program`; the then `result` compares `state.Value`
-  against the expected integer. So the when must run `state.Program` from the host root `"../.."`
-  (tests execute in `tests/calc`) and leave the program's integer stdout in `state.Value`.
-- The body must never compute `2*value`; it only passes the capture to the command and parses stdout.
+## Change 1 — new shared helper (create file)
 
-## Required Change — replace the whole file
-
-Replace the entire contents of
-`tests/calc/steps/concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b.go`
-with exactly this (the `//truebdd:concept when "doubling"` record, the function name and the
-signature `func(state *State, args []string) error` are preserved verbatim):
+Create `tests/calc/helpers/calc.go` with exactly this content:
 
 ```go
-package steps
+package helpers
 
 import (
-	"errors"
+	"bytes"
 	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
 )
 
+// HostRoot is the host root, written relative to the directory the calc suite's
+// tests run in (tests/calc). It is the same directory the kept calculator
+// program was built from, and the directory the program is run from.
+const HostRoot = "../.."
+
+// Double runs the kept calculator program's double command as a process from the
+// host root, with value as its single `value` argument exactly as the step wrote
+// it, and returns the integer the process printed on stdout.
+//
+// Double never doubles anything itself: the number it returns is only ever the
+// number the calculator program printed. program is the path to the program kept
+// by the installation step.
+func Double(program string, value string) (int, error) {
+	if program == "" {
+		return 0, fmt.Errorf("double %s: no calculator program was kept by the installation step", value)
+	}
+	command := exec.Command(program, "double", value)
+	command.Dir = HostRoot
+	var stdout, stderr bytes.Buffer
+	command.Stdout = &stdout
+	command.Stderr = &stderr
+	if err := command.Run(); err != nil {
+		return 0, fmt.Errorf("run %s double %s: %w: %s", program, value, err, strings.TrimSpace(stderr.String()))
+	}
+	printed := strings.TrimSpace(stdout.String())
+	doubled, err := strconv.Atoi(printed)
+	if err != nil {
+		return 0, fmt.Errorf("read the double command's stdout %q as an integer: %w", printed, err)
+	}
+	return doubled, nil
+}
+```
+
+Notes for the applier (do not paste these notes into the file):
+- The suite's tests execute with `tests/calc` as the working directory — the
+  existing installation step builds with `command.Dir = "../.."` and keeps an
+  absolute program path — so `HostRoot = "../.."` is the host root for this run.
+- `exec.Cmd.Output` cannot be used here because `Stderr` is set; `Run` with two
+  buffers keeps stdout clean for the integer and keeps stderr for the message.
+
+## Change 2 — the when body (replace the whole file)
+
+Replace the entire contents of
+`tests/calc/steps/concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b.go`
+with exactly this (the package clause, the `//truebdd:concept when "doubling"`
+record, the function name and the signature are unchanged; only the import and
+the body change):
+
+```go
+package steps
+
+import "fixture/stepsrun/tests/calc/helpers"
+
 //truebdd:concept when "doubling"
 func concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b(state *State, args []string) error {
-	if state.Program == "" {
-		return errors.New("the calculator is not installed")
-	}
-	value := args[0]
-	if _, err := strconv.Atoi(value); err != nil {
-		return fmt.Errorf("the whole number %q to double: %w", value, err)
-	}
-	command := exec.Command(state.Program, "double", value)
-	command.Dir = "../.."
-	stdout, err := command.Output()
+	doubled, err := helpers.Double(state.Program, args[0])
 	if err != nil {
-		var exit *exec.ExitError
-		if errors.As(err, &exit) {
-			return fmt.Errorf("double %s: %w: %s", value, err, exit.Stderr)
-		}
-		return fmt.Errorf("double %s: %w", value, err)
-	}
-	doubled, err := strconv.Atoi(strings.TrimSpace(string(stdout)))
-	if err != nil {
-		return fmt.Errorf("double %s printed %q, want an integer: %w", value, stdout, err)
+		return err
 	}
 	state.Value = doubled
 	return nil
 }
 ```
 
-## Why each line follows the binding
-- `state.Program` is the kept calculator program from the given; an empty value is reported as a
-  missing setup rather than silently running something else.
-- `strconv.Atoi(value)` only checks that the capture is the whole number the pattern promised; the
-  original capture string, not a re-rendered number, is passed to the command.
-- `exec.Command(state.Program, "double", value)` with `command.Dir = "../.."` runs the declared
-  `calc double VALUE` command as a process from the host root, the same host root the given builds from.
-- `command.Output()` keeps stdout separate from stderr, so a non-zero exit (the interface's
-  `'1': Invalid arguments`) is reported with the program's stderr instead of being parsed as a number.
-- `strconv.Atoi(strings.TrimSpace(...))` reads the integer stdout and its trailing newline exactly as
-  the interface documents them.
-- `state.Value = doubled` keeps the program's own answer for the then step. The body performs no
-  arithmetic of its own, so the product's doubling is observed, never reproduced.
+The import path follows the module path already used by
+`tests/calc/scenarios/scenarios.go` (`fixture/stepsrun/tests/calc/steps`), so the
+new helper package is `fixture/stepsrun/tests/calc/helpers`. The previous `"fmt"`
+import and the `step not written yet` placeholder are gone.
 
-## Note
-The sandbox for this proposal denied shell access, so the change was not compiled here; it uses only
-`errors`, `fmt`, `os/exec`, `strconv` and `strings` against the existing `State` fields, and the
-engine owns the whole-suite compile.
+## Why this matches the binding and the declared interface
+- Binding: "Run the kept calculator program's double command as a process from
+  the host root with the step's whole number and keep its integer stdout."
+  `state.Program` is the kept program; `helpers.Double` runs it as a process with
+  `command.Dir = HostRoot`; `args[0]` is the step's whole number as written
+  (the pattern `^the Owner doubles (-?\d+)$` hands the single `number` capture);
+  the parsed stdout integer is kept in `state.Value`.
+- Public interface `docs/architecture/calc-cli.yaml`: `calc double VALUE` takes
+  one required integer `value` argument, exits `0` with the doubled integer and a
+  newline on stdout, and exits `1` on invalid arguments. The helper passes one
+  argument, trims the newline, converts stdout to `int`, and turns a non-zero
+  exit into a step error carrying stderr.
+- The When only invokes the operation and records what the process printed. It
+  performs no arithmetic — nothing in the step or the helper computes
+  `args[0] * 2`. The comparison against the expected value stays in the existing
+  `then "result"` step, which reads `state.Value`.
+- The capture arrives as a string and is forwarded as the argument string, so the
+  process receives the operand exactly as the step wrote it, negative sign
+  included.
+
+## Verification the engine owns
+Compilation and the whole-suite checks belong to the engine; do not run a
+scenario, do not add a test, and do not create a separate Go build cache.
+=== FILE_END ===
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists, shared state and code they share in tests/<suite>/helpers/. Preserve the engine's patterns, registrations,

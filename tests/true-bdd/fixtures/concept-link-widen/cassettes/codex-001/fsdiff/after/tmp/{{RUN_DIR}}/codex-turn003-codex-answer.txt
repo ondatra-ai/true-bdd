@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
 applied: true
 target: "product"
-summary: "Widened only the halve when concept means to admit once or twice, describing half and quarter results and excluding three or more applications. Verified all other bytes unchanged. Sandbox restrictions caused search and temporary/cache-file errors; the edit and verification succeeded."
+summary: "Widened only halve's means to the exact approved prose covering one or two applications and excluding three or more. All other content preserved; exact-field verification passed. Sandbox restrictions caused directory-discovery and Python cache warnings."
 === FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===

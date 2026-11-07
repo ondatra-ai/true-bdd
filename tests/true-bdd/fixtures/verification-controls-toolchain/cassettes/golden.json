@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "fixture": "verification-controls-toolchain",
+  "files": [
+    {
+      "path": "tests/calc/steps/concept47f741283eda70d7a0d1d2aaa90ad59f9b70d6cc753b4652aced0fd106d24dd9.go",
+      "kind": "created",
+      "size": 433,
+      "sha256": "36e2a4f64b93da501225e13fefec43b3ef385cbd205174d459298c45ecbfbf38",
+      "text": "package steps\n\nimport \"fixture/conceptbodiescontract/tests/calc/helpers\"\n\n//truebdd:concept given \"toolchain\"\nfunc concept47f741283eda70d7a0d1d2aaa90ad59f9b70d6cc753b4652aced0fd106d24dd9(state *State, args []string) error {\n\ttoolchain, err := helpers.FixtureToolchain(args[0])\n\tif err != nil {\n\t\treturn err\n\t}\n\tenv, err := helpers.ToolchainEnv()\n\tif err != nil {\n\t\treturn err\n\t}\n\tstate.Go = toolchain\n\tstate.Env = env\n\treturn nil\n}\n\n"
+    },
+    {
+      "path": "tests/calc/steps/register.go",
+      "kind": "modified",
+      "size": 291,
+      "sha256": "f2673ff9c7b34f595456bb871686a15a7a46d6c865cfcfe6bc8fb68ede25ff9b",
+      "text": "package steps\n\nfunc Register(suite Registrar) {\n\tsuite.Step(\"^the Owner halves (-?\\\\d+)$\", halving)\n\tsuite.Step(\"^the result is (-?\\\\d+)$\", result)\n\n\tsuite.Step(\"^the calculator runs on the \\\"([^\\\"]+)\\\" toolchain$\", concept47f741283eda70d7a0d1d2aaa90ad59f9b70d6cc753b4652aced0fd106d24dd9)\n}\n"
+    }
+  ]
+}

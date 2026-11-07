@@ -11,103 +11,25 @@ Fix only what the failed check found; a problem it did not find is neither yours
 
 The Product Owner chose apply at the menu for Story host.
 Approved fix:
-PROPOSED REPAIR — Item `host`, AC-1 then step "the calculator prints 3"
+In `./docs/product/product.yaml`, widen the existing `then` concept `result` so its means states every variation it admits — the number printed after doubling and the number printed after halving — in closed prose. Do not add a `variations:` key or any other key: a concept holds only `concept`, `means` and `terms`.
 
-Owner of this change: the System Architect (concept binding / concept `means` wording in the product document).
-Nothing has been changed. Apply only on an explicit menu decision.
-
-## Why this repair
-
-The failed judgement is the then step `the calculator prints 3`, which reached only 7 against
-concept `then / result` (threshold 9). The reason given is not a missing item and not a new kind
-of use: `result` is already the right Public interface item (what the calculator prints) and
-already the right kind of use (printing the computed whole number). It scores short only because
-its `means` is worded closed to one variation — "the whole number the **doubling** produced" — so
-printing the **halving**'s output is an unstated variation of the same item and use.
-
-Therefore the repair widens the existing concept `result` rather than adding a concept, and does
-not rewrite the Story. The widening is done by rewriting `means` into closed prose that states
-every variation the concept admits — the product has exactly two computing operations, `doubling`
-and `halving`, so both are named and the prose admits nothing further.
-
-This also repairs the earlier rejected attempt, which declared the variations under a separate
-`variations:` key and left the document unreadable. A concept holds only `concept`, `means` and
-`terms`; the variations belong inside `means`. No new key is introduced here.
-
-## The exact change
-
-One file: `./docs/product/product.yaml`
-One concept: `then / result`
-One field: `means`
-No other concept, no other field, no role, no glossary entry and no description line is touched.
-The Story `host` is not touched — its steps stay exactly as written.
-
-### Before (lines 16-19 of ./docs/product/product.yaml)
+Replace these three lines (lines 17-19, under `concepts:` → `then:`):
 
 ```yaml
-  then:
     - concept: result
       means: The calculator prints the whole number the doubling produced.
       terms: []
 ```
 
-### After
+with:
 
 ```yaml
-  then:
     - concept: result
-      means: The calculator prints the whole number it computed from the whole number the Owner gave it, which is either the whole number the doubling produced or the whole number the halving produced.
+      means: The calculator prints the whole number it computed from the number the Owner gave it, whether that number is the double the doubling produced or the half the halving produced.
       terms: []
 ```
 
-### Unified diff
-
-```diff
---- a/docs/product/product.yaml
-+++ b/docs/product/product.yaml
-@@
-   then:
-     - concept: result
--      means: The calculator prints the whole number the doubling produced.
-+      means: The calculator prints the whole number it computed from the whole number the Owner gave it, which is either the whole number the doubling produced or the whole number the halving produced.
-       terms: []
-```
-
-## Resulting document after apply (whole file, for review)
-
-```yaml
-roles:
-  - name: Owner
-    description: Uses the calculator.
-concepts:
-  given:
-    - concept: installation
-      means: The calculator program is built from its source and ready for the Owner to run.
-      terms: []
-  when:
-    - concept: doubling
-      means: The Owner doubles a whole number with the calculator.
-      terms: []
-    - concept: halving
-      means: The Owner halves a whole number with the calculator, taking the whole-number part of dividing it by two.
-      terms: []
-  then:
-    - concept: result
-      means: The calculator prints the whole number it computed from the whole number the Owner gave it, which is either the whole number the doubling produced or the whole number the halving produced.
-      terms: []
-glossary: []
-description:
-  summary: The calculator doubles or halves a whole number the Owner gives it and prints the whole number it computes.
-```
-
-## What this is expected to settle
-
-- AC-1 then step `the calculator prints 3` becomes a plain instance of the widened `result`: it is
-  the printed whole number the halving produced, now a stated variation instead of an unstated one.
-- AC-1 given step `the calculator is installed` keeps its link to `installation` (10, unchanged).
-- AC-1 when step `the Owner halves 6` keeps its link to `halving` (10, unchanged).
-- `installation`, `doubling` and `halving` are unchanged. `result` keeps its only permitted keys,
-  `concept`, `means` and `terms`, so the document stays readable.
+Change nothing else: leave `roles`, the `given` concept `installation`, the `when` concepts `doubling` and `halving`, `glossary` and `description` exactly as they are, and leave the Story `host` and all of its acceptance criteria and steps unchanged.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

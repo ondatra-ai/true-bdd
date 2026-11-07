@@ -87,6 +87,7 @@ func (s *ScenarioRun) Judge(clauses []bddgo.Step) error {
 
 	s.judgeVerdict = runner.Evaluate(ctx, runner.JudgeRequest{
 		Cmd:     s.Fixture.Cmd,
+ Dir: s.Result.TmpDir,
 		Clauses: texts,
 		Service: s.harness.Service,
 		Diff:    resultToRunner(s.Result).Diff,

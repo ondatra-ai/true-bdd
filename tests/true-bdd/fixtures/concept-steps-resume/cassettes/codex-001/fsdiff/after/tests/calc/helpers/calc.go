@@ -1,7 +1,3 @@
-// Package helpers reaches the calculator service through its declared
-// public interface: the OpenCLI document docs/architecture/calc-cli.yaml.
-// Nothing here computes a calculator answer; the process on the other
-// side of exec is the only thing that does arithmetic.
 package helpers
 
 import (
@@ -13,74 +9,66 @@ import (
 	"strings"
 )
 
-// HalveCommand is the command name the halving concept's binding
-// references in the declared CLI.
-const HalveCommand = "halve"
+// ServicePackage is the Go package of the calculator CLI, named relative to
+// the host root exactly as docs/architecture/calc-cli.yaml names it.
+const ServicePackage = "./services/calc"
 
-// calcPackage is the Go package path the declared interface says the
-// calculator CLI is run from: `go run ./services/calc <command> ...`.
-const calcPackage = "./services/calc"
-
-// hostRootFallback is the host root relative to a suite's working
-// directory (tests/<suite>), the same relative base the suite's harness
-// already uses for its registry path.
-const hostRootFallback = "../.."
-
-// HostRoot returns the directory the calculator CLI is run from: the
-// nearest ancestor of the working directory holding a go.mod, which is
-// the host root the declared interface names.
-func HostRoot() string {
+// HostRoot walks up from the test's working directory to the directory that
+// holds the calculator service package, so the declared command runs "from
+// the host root" whatever directory the suite is invoked from.
+func HostRoot() (string, error) {
 	dir, err := os.Getwd()
 	if err != nil {
-		return hostRootFallback
+		return "", err
 	}
+	rel := filepath.FromSlash(strings.TrimPrefix(ServicePackage, "./"))
 	for {
-		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
-			return dir
+		if _, err := os.Stat(filepath.Join(dir, rel)); err == nil {
+			return dir, nil
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
-			return hostRootFallback
+			return "", fmt.Errorf("host root holding %s not found above the working directory", ServicePackage)
 		}
 		dir = parent
 	}
 }
 
-// RunCalcInt runs the named calculator command as a process from the
-// host root with the given arguments and returns its stdout read as an
-// integer. A non-zero exit, or stdout that is not an integer, is
-// reported as an error naming the command line that produced it.
-func RunCalcInt(command string, args ...string) (int, error) {
-	argv := append([]string{"run", calcPackage, command}, args...)
-	line := "go " + strings.Join(argv, " ")
-
+// RunCalc runs the named calculator command as a process from the host root
+// and returns its stdout with surrounding whitespace removed. A non-zero exit
+// is reported with the command's stderr, which is how the CLI announces
+// invalid arguments.
+func RunCalc(command string, args ...string) (string, error) {
+	root, err := HostRoot()
+	if err != nil {
+		return "", err
+	}
+	argv := append([]string{"run", ServicePackage, command}, args...)
 	cmd := exec.Command("go", argv...)
-	cmd.Dir = HostRoot()
+	cmd.Dir = root
 	var stdout, stderr strings.Builder
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-
 	if err := cmd.Run(); err != nil {
-		if detail := strings.TrimSpace(stderr.String()); detail != "" {
-			return 0, fmt.Errorf("%s: %w: %s", line, err, detail)
+		detail := strings.TrimSpace(stderr.String())
+		if detail == "" {
+			return "", fmt.Errorf("go %s: %w", strings.Join(argv, " "), err)
 		}
-		return 0, fmt.Errorf("%s: %w", line, err)
+		return "", fmt.Errorf("go %s: %w: %s", strings.Join(argv, " "), err, detail)
 	}
-
-	out := strings.TrimSpace(stdout.String())
-	value, err := strconv.Atoi(out)
-	if err != nil {
-		return 0, fmt.Errorf("%s: stdout %q is not an integer", line, out)
-	}
-	return value, nil
+	return strings.TrimSpace(stdout.String()), nil
 }
 
-// WholeNumber reads a step capture as the whole number the glossary
-// defines: positive, zero or negative.
-func WholeNumber(capture string) (int, error) {
-	number, err := strconv.Atoi(capture)
+// RunCalcInt runs the named calculator command and reads its stdout as the
+// integer the CLI documents it prints.
+func RunCalcInt(command string, args ...string) (int, error) {
+	out, err := RunCalc(command, args...)
 	if err != nil {
-		return 0, fmt.Errorf("%q is not a whole number", capture)
+		return 0, err
 	}
-	return number, nil
+	value, err := strconv.Atoi(out)
+	if err != nil {
+		return 0, fmt.Errorf("stdout of calculator %s is not an integer: %q", command, out)
+	}
+	return value, nil
 }

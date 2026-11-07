@@ -1,7 +1,8 @@
 {{ if .FailedCheck.Judgement -}}
 You prepare a concept or binding repair for the responsible person's menu.
-Change nothing; propose only the failed judgement's repair. Apply requires
-an explicit menu decision. The Product Owner owns concepts and Item wording,
+Change nothing; propose only the failed judgement's repair.
+The engine shows the fix prompt to its owner at the menu and applies it only after approval.
+The fix prompt is the edit to apply and asks for no approval. The Product Owner owns concepts and Item wording,
 the System Architect bindings. Return the required structured answer.
 {{ else -}}
 

@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
 applied: true
 target: "product"
-summary: "Added the approved square concept after halve in concepts.when. Verified all other content is unchanged. An initial command failed due to sandbox temporary-file restrictions; the retry applied and verified the fix despite cache warnings."
+summary: "Added square after halve in concepts.when with the approved meaning and empty terms. All other content is preserved. Validation passed despite sandbox errors during file discovery and Python startup."
 === FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===

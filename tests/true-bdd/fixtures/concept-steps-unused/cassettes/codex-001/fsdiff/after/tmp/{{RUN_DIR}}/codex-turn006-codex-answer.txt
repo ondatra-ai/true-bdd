@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-when-halving-iter1-result.yaml ===
 applied: true
 target: "tests/calc/steps/conceptce5cc5e8e32829d67d0e502e346fe2bf4a35eb0a459485307a7a2a66aab73f49.go"
-summary: "Applied exact step and CLI helper via shell after patch-tool sandbox failure; State unchanged; no scenarios run."
+summary: "Applied exact body and CLI helper via shell after patch-tool failure; no compilation or scenarios run."
 === FILE_END: tmp/{{RUN_DIR}}/apply-when-halving-iter1-result.yaml ===

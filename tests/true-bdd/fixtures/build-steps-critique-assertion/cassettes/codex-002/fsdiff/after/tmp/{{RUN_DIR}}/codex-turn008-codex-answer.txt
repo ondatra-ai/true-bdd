@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-then-result-iter2-result.yaml ===
 applied: true
 target: "tests/calc/steps/concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e.go"
-summary: "Changed == to != so matching results pass; direct Go compilation passed. Tool sandbox failures were bypassed; package test could not find go.mod."
+summary: "Changed == to != so equal results pass; explicit-file compilation passed. Package testing lacked go.mod; patch/Python tools failed, so shell editing was used."
 === FILE_END: tmp/{{RUN_DIR}}/apply-then-result-iter2-result.yaml ===

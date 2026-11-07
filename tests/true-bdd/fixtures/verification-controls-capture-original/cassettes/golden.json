@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "fixture": "verification-controls-capture-original",
+  "files": [
+    {
+      "path": "tests/calc/steps/concept8c83e3012dd37395db8aad8a8fafef5f14ca67ae936908b0e63bff4b60526148.go",
+      "kind": "created",
+      "size": 660,
+      "sha256": "75333c5c1cd0be22a6f44985a67b46c628ddc3a96c4041b72267dc2b0472c1a9",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"strconv\"\n\n\t\"fixture/conceptbodiescapture/tests/calc/helpers\"\n)\n\n//truebdd:concept when \"halving\"\nfunc concept8c83e3012dd37395db8aad8a8fafef5f14ca67ae936908b0e63bff4b60526148(state *State, args []string) error {\n\tif len(args) != 1 {\n\t\treturn fmt.Errorf(\"halving: expected the step's whole number as the only capture, got %d: %q\", len(args), args)\n\t}\n\tnumber := args[0]\n\tif _, err := strconv.Atoi(number); err != nil {\n\t\treturn fmt.Errorf(\"halving: captured %q is not a whole number: %w\", number, err)\n\t}\n\n\tresult, err := helpers.RunCalcInt(\"halve\", number)\n\tif err != nil {\n\t\treturn err\n\t}\n\tstate.Result = result\n\treturn nil\n}\n\n"
+    },
+    {
+      "path": "tests/calc/steps/register.go",
+      "kind": "modified",
+      "size": 218,
+      "sha256": "398f8e3d1df95555058a2b46be310f9e7e1e0f9385b03b22af45647323f4ff1b",
+      "text": "package steps\n\nfunc Register(suite Registrar) {\n\tsuite.Step(\"^the result is (-?\\\\d+)$\", result)\n\n\tsuite.Step(\"^the Owner halves (-?\\\\d)\\\\d*$\", concept8c83e3012dd37395db8aad8a8fafef5f14ca67ae936908b0e63bff4b60526148)\n}\n"
+    }
+  ]
+}

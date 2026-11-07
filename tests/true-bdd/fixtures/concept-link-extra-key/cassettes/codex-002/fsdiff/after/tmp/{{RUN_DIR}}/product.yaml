@@ -15,7 +15,7 @@ concepts:
       terms: []
   then:
     - concept: result
-      means: The calculator prints the whole number it computed from the whole number the Owner gave it, which is either the whole number the doubling produced or the whole number the halving produced.
+      means: The calculator prints the whole number it computed from the number the Owner gave it, whether that number is the double the doubling produced or the half the halving produced.
       terms: []
 glossary: []
 description:

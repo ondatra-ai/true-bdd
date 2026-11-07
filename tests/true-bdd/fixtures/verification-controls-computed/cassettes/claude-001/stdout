@@ -1,0 +1,1 @@
+{"type": "result", "subtype": "success", "is_error": false, "structured_output": {"assignments": [{"index": 1, "concept": "result", "score": 10, "runner_up": null, "runner_up_score": 0}, {"index": 2, "concept": "result", "score": 10, "runner_up": null, "runner_up_score": 0}]}, "result": "", "total_cost_usd": 0, "usage": {"input_tokens": 0, "output_tokens": 0}}

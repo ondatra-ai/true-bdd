@@ -10,125 +10,50 @@ Fix only what the failed check found; a problem it did not find is neither yours
 ### TASK
 
 The Product Owner chose apply at the menu. Apply this approved word repair:
-=== FILE_START: tmp/{{RUN_DIR}}/02-host-fix-prompts.md ===
-# Proposed repair — Item `host`, finding `when:halve: undeclared domain word idempotency key`
+Edit only `./docs/product/product.yaml`. Declare the domain expression `idempotency key` in the product glossary and list it in the `when` concept `halve`'s terms. Do not touch the Story, any Scenario, or the architecture document. Make exactly these two changes, keeping the file's existing JSON-style formatting and leaving every other concept, means, and field untouched.
 
-Owner: Product Owner (glossary + concept terms only). Do not apply until the menu decision is `apply`.
-
-## Why this repair
-
-The product's `language_policy` says: "The request label is presented to users as an idempotency key. Keep this exact domain name in the product meanings and declare it when needed." Rewording the `when: halve` means to drop the domain name would violate that policy, so the repair is to **declare the term** and list it on the affected concept.
-
-No Story, Scenario or architecture change is part of this fix. The `Word` mapping for the newly declared term is the System Architect's later work via `scen check` D: term-mappings; refinement does not wait for it.
-
-## Change 1 — add the glossary entry
-
-In `docs/product/product.yaml`, replace the empty glossary:
+1. In `concepts.when`, the concept `halve` currently reads:
 
 ```yaml
-"glossary": []
-```
-
-with:
-
-```yaml
-"glossary": [
-  {
-    "term": "idempotency key",
-    "means": "An idempotency key is the request label a caller sends together with a request. Requests that repeat the same key change the number only once."
-  }
-]
-```
-
-(`means` is one paragraph, 2 sentences, 14 and 14 words — within the three-sentence / 25-word-per-sentence limit. The schema field is `means`, never `meaning`.)
-
-## Change 2 — declare the term on the affected concept
-
-In the same file, under `concepts.when`, the `halve` concept:
-
-```yaml
-"when": [
-  {
-    "concept": "halve",
-    "means": "Halve the entered number once with the supplied idempotency key.",
-    "terms": []
-  }
-]
-```
-
-becomes:
-
-```yaml
-"when": [
-  {
-    "concept": "halve",
-    "means": "Halve the entered number once with the supplied idempotency key.",
-    "terms": [
-      "idempotency key"
-    ]
-  }
-]
-```
-
-The `means` text is unchanged — meaning is preserved exactly; only the declaration is added.
-
-## Resulting file (for review)
-
-```yaml
-{
-  "roles": [
-    {
-      "name": "Product Owner",
-      "description": "Owns meanings."
-    }
-  ],
-  "concepts": {
-    "given": [
-      {
-        "concept": "number ready",
-        "means": "A number is entered before the action.",
-        "terms": []
-      }
-    ],
-    "when": [
       {
         "concept": "halve",
         "means": "Halve the entered number once with the supplied idempotency key.",
-        "terms": [
-          "idempotency key"
-        ]
-      }
-    ],
-    "then": [
-      {
-        "concept": "number result",
-        "means": "Compare the displayed number with an expected value.",
-        "terms": []
-      },
-      {
-        "concept": "unused",
-        "means": "The settlement ledger has a reconciled nostro balance.",
         "terms": []
       }
-    ]
-  },
+```
+
+Replace it with:
+
+```yaml
+      {
+        "concept": "halve",
+        "means": "Halve the entered number once with the supplied idempotency key.",
+        "terms": ["idempotency key"]
+      }
+```
+
+The `means` text is unchanged — the language policy requires keeping the exact domain name `idempotency key` in the product meanings.
+
+2. The top-level `glossary` is currently empty:
+
+```yaml
+  "glossary": [],
+```
+
+Replace it with:
+
+```yaml
   "glossary": [
     {
       "term": "idempotency key",
-      "means": "An idempotency key is the request label a caller sends together with a request. Requests that repeat the same key change the number only once."
+      "means": "An idempotency key is the request label a user supplies with a request. Repeating a request with the same key changes the number only once."
     }
   ],
-  "description": "A calculator accepts a number and a request label. Repeating a request with the same label changes the number only once.",
-  "language_policy": "The request label is presented to users as an idempotency key. Keep this exact domain name in the product meanings and declare it when needed."
-}
 ```
 
-## Untouched
+Use `term` and `means` fields only; do not introduce a `meaning` field.
 
-- `given: number ready`, `then: number result`, `then: unused` — unchanged (both passing findings stay plain English).
-- No new concept variation is added: the `when` item/use is already covered by the existing `halve` concept.
-- Story `host`, its acceptance criteria and steps, any Scenario, and the architecture document — unchanged.
-=== FILE_END: tmp/{{RUN_DIR}}/02-host-fix-prompts.md ===
+Leave `given` concept `number ready`, `then` concepts `number result` and `unused`, `roles`, `description`, and `language_policy` exactly as they are. The Word mapping for the newly declared `idempotency key` is the System Architect's later work through scen check's D: term-mappings; refinement does not wait for it.
 Edit ONLY the product working copy below, adding the glossary entry AND the
 concept's terms (a string list), or rewording its means. Glossary entries
 have term and means fields. Preserve unrelated product content.

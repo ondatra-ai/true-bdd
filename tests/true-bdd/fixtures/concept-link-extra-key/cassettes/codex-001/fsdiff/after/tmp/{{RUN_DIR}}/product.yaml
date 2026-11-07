@@ -16,9 +16,9 @@ concepts:
   then:
     - concept: result
       means: The calculator prints the whole number the doubling produced.
+      terms: []
       variations:
         - The calculator prints the whole number the halving produced.
-      terms: []
 glossary: []
 description:
   summary: The calculator doubles or halves a whole number the Owner gives it and prints the whole number it computes.

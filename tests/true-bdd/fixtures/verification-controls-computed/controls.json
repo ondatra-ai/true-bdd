@@ -1,0 +1,48 @@
+[
+  {
+    "id": "computed-assertion-control",
+    "block": "then",
+    "concept": "result",
+    "definition": {
+      "function": "concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e",
+      "file": "tests/calc/steps/concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e.go",
+      "pattern": "^the result is (-?\\d+)$",
+      "captures": [
+        {
+          "name": "expected",
+          "means": "The expected whole number the doubling produced, as written in the step (optionally signed); the body compares it with the kept double command's stdout."
+        }
+      ],
+      "serves": "Serves the whole clause \"Compare the kept double command stdout with the step's expected whole number\": the words \"the result is\" mark the concept (the printed result of the double command), and the single capture supplies the expected whole number that the comparison needs.",
+      "steps": [
+        {
+          "text": "the result is 6",
+          "captures": [
+            "6"
+          ]
+        },
+        {
+          "text": "the result is 8",
+          "captures": [
+            "8"
+          ]
+        }
+      ]
+    },
+    "pattern": {
+      "pattern": "^the result is (-?\\d+)$",
+      "captures": [
+        {
+          "name": "expected",
+          "means": "The expected whole number the doubling produced, as written in the step (optionally signed); the body compares it with the kept double command's stdout."
+        }
+      ],
+      "serves": "Serves the whole clause \"Compare the kept double command stdout with the step's expected whole number\": the words \"the result is\" mark the concept (the printed result of the double command), and the single capture supplies the expected whole number that the comparison needs."
+    },
+    "source": "package steps\n\nimport (\n\t\"fmt\"\n\t\"strconv\"\n)\n\n//truebdd:concept then \"result\"\nfunc concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e(state *State, args []string) error {\n\texpected, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn fmt.Errorf(\"parse expected result: %w\", err)\n\t}\n\tactual := state.Input * 2\n\tif actual != expected {\n\t\treturn fmt.Errorf(\"expected result %d, got %d\", expected, state.Value)\n\t}\n\treturn nil\n}\n\n",
+    "historical_verdict": "fail",
+    "expected_verdict": "fail",
+    "category": "computes_assertion",
+    "reason": "The synthetic Then computes state.Input * 2 instead of observing the saved process output."
+  }
+]

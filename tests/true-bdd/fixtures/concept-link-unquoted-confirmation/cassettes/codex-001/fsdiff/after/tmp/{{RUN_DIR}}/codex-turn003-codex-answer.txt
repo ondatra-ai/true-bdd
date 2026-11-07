@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
 applied: true
 target: "product"
-summary: Added square (terms: []) after halve with the approved meaning; verified all existing content was preserved. Initial editing tools failed under sandbox restrictions; fallback editing and verification succeeded.
+summary: Added square (terms: []) after unchanged halve; verified all other content unchanged. Sandbox prevented tool cache creation; edit and verification succeeded.
 === FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===

@@ -1,0 +1,47 @@
+[
+  {
+    "id": "concept-bodies-capture-claude-004",
+    "block": "when",
+    "concept": "halving",
+    "definition": {
+      "function": "concept8c83e3012dd37395db8aad8a8fafef5f14ca67ae936908b0e63bff4b60526148",
+      "file": "tests/calc/steps/concept8c83e3012dd37395db8aad8a8fafef5f14ca67ae936908b0e63bff4b60526148.go",
+      "pattern": "^the Owner halves (-?\\d)\\d*$",
+      "steps": [
+        {
+          "text": "the Owner halves 6",
+          "captures": [
+            "6"
+          ]
+        },
+        {
+          "text": "the Owner halves 64",
+          "captures": [
+            "6"
+          ]
+        },
+        {
+          "text": "the Owner halves -7",
+          "captures": [
+            "-7"
+          ]
+        }
+      ]
+    },
+    "pattern": {
+      "pattern": "^the Owner halves (-?\\d)\\d*$",
+      "captures": [
+        {
+          "name": "argument1",
+          "means": "The value captured from the step text."
+        }
+      ],
+      "serves": "Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result."
+    },
+    "source": "package steps\n\nimport (\n\t\"fmt\"\n\t\"strconv\"\n\n\t\"fixture/conceptbodiescapture/tests/calc/helpers\"\n)\n\n//truebdd:concept when \"halving\"\nfunc concept8c83e3012dd37395db8aad8a8fafef5f14ca67ae936908b0e63bff4b60526148(state *State, args []string) error {\n\tif len(args) != 1 {\n\t\treturn fmt.Errorf(\"halving: expected the step's whole number as the only capture, got %d: %q\", len(args), args)\n\t}\n\tnumber := args[0]\n\tif _, err := strconv.Atoi(number); err != nil {\n\t\treturn fmt.Errorf(\"halving: captured %q is not a whole number: %w\", number, err)\n\t}\n\n\tresult, err := helpers.RunCalcInt(\"halve\", number)\n\tif err != nil {\n\t\treturn err\n\t}\n\tstate.Result = result\n\treturn nil\n}\n\n",
+    "historical_verdict": "fail",
+    "expected_verdict": "fail",
+    "category": "pattern_captures",
+    "reason": "The first-digit pattern binds halves 64 but supplies 6 to the definition."
+  }
+]

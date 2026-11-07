@@ -25,12 +25,12 @@
     "{\n  \"item\": \"host\",\n  \"description\": \"Halve a number\",\n  \"product\": \"roles:\\n  - name: Owner\\n    description: Uses the calculator.\\nconcepts:\\n  given:\\n    - concept: installation\\n      means: The calculator program is built from its source and ready for the Owner to run.\\n      terms: []\\n  when:\\n    - concept: doubling\\n      means: The Owner doubles a whole number with the calculator.\\n      terms: []\\n    - concept: halving\\n      means: The Owner halves a whole number with the calculator, taking the whole-number part of dividing it by two.\\n      terms: []\\n  then:\\n    - concept: result\\n      means: The calculator prints the whole number the doubling produced.\\n      terms: []\\nglossary: []\\ndescription:\\n  summary: The calculator doubles or halves a whole number the Owner gives it and prints the whole number it computes.\\n\",\n  \"steps\": [\n    {\n      \"key\": \"1\",\n      \"criterion\": \"AC-1\",\n      \"block\": \"given\",\n      \"text\": \"the calculator is installed\"\n    },\n    {\n      \"key\": \"2\",\n      \"criterion\": \"AC-1\",\n      \"block\": \"when\",\n      \"text\": \"the Owner halves 6\"\n    },\n    {\n      \"key\": \"3\",\n      \"criterion\": \"AC-1\",\n      \"block\": \"then\",\n      \"text\": \"the calculator prints 3\"\n    }\n  ]\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 10667,
+  "duration_ms": 8949,
   "request_hash": "sha256:47c8c7ba95c2814484a66b697e0638894af00d535c31608a7ba5b6dea2d15154",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-11-06T00:33:56Z"
+  "recorded_at": "2026-11-07T19:14:19Z"
 }

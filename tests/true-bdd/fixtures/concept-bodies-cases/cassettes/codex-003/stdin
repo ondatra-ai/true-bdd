@@ -1,0 +1,296 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You apply the approved bodies of one concept's step definitions in one suite.
+Preserve the engine's registrations, patterns, signatures and //truebdd:concept
+records. Modify those bodies, the suite's shared state and helpers/. Use the declared
+Public interface and the concept's binding; never implement the product's
+operation inside a step definition.
+
+**Output Requirements:**
+- After your Write/Edit calls succeed, output a YAML confirmation
+  inside FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other content in the target file — only write the
+  selected body and extend shared State as needed.
+
+**Output Format:**
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply-then-output-iter3-result.yaml ===
+applied: true
+target: "<repo-relative path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-then-output-iter3-result.yaml ===
+```
+
+If the declared Public interface cannot set up or observe the concept, stop without
+inventing an operation. Return the same confirmation markers with:
+```yaml
+applied: false
+interface_cannot_serve:
+  concept: "then concept \"output\""
+  lacks: "<what the interface offers no way to set up or observe>"
+```
+
+Author solely from the supplied Specification and the suite's state and helpers.
+Do not read service implementation code. Do not execute Scenarios, replay the
+suite against the target, or require a Scenario to pass: the target may be absent
+or not built yet. The engine owns compilation and the whole-suite checks. If you
+compile the steps package while writing, preserve the inherited Go cache and
+temporary-directory environment; never create a separate build cache.
+
+Put code the steps share in tests/<suite>/helpers/, beside the steps/ directory
+named by Suite. Write the helper functions, constants and types the bodies need
+there; helpers are generated with the bodies and need no separate declaration.
+Only selected bodies, their imports and shared State may change inside steps/.
+Helpers must obey the same binding and meaning as their callers, and never
+compute the product's answer. The critique judges their complete source too.
+
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
+
+### TASK
+
+# Apply step definition bodies
+
+Suite: tests/calc/steps
+Service: calc
+Concept: output (then)
+Meaning: What the calculator printed for the operation has, or has no, match for a pattern.
+
+Read the listed Scenario keys from the Registry path and inspect their fixture
+input directories under fixture_root as needed (exclude cassettes/). Read the definitions, State,
+helpers and architecture-declared test libraries. These paths carry the complete
+evidence; no digest or summary replaces it. Never read service implementation.
+
+## Concept context and evidence paths
+concept:
+    concept: output
+    block: then
+    means: What the calculator printed for the operation has, or has no, match for a pattern.
+    terms:
+        - pattern
+binding:
+    concept: output
+    block: then
+    service: calc
+    references:
+        - command: halve
+        - command: double
+    does: Match the step's pattern, a regular expression taken as the rest of the step, against the kept stdout without its trailing newline, and require a match or, when the step says does not match, no match.
+glossary:
+    - term: pattern
+      means: A regular expression a printed text is matched against.
+word_mapping:
+    - term: pattern
+      technical: A Go regular expression matched against the command's stdout.
+      observed_by: The step matches it against the kept stdout.
+public_interface:
+    kind: cli
+    document: docs/architecture/calc-cli.yaml
+interface_document: |
+    opencli: 0.1
+    info:
+      title: Calculator CLI
+      version: '1.0'
+    commands:
+      halve:
+        description: Run go run ./services/calc halve [--exact] VALUE from the host root;
+          stdout is VALUE halved and a newline. Without --exact the half is rounded
+          toward zero and printed as an integer; with --exact an odd VALUE's half is
+          printed with one decimal digit.
+        parameters:
+        - name: exact
+          in: flag
+          schema:
+            type: boolean
+        - name: value
+          in: argument
+          required: true
+          schema:
+            type: integer
+        responses:
+          '0':
+            description: The half on stdout
+          '1':
+            description: Invalid arguments
+      double:
+        description: Run go run ./services/calc double VALUE from the host root; stdout
+          is VALUE doubled, as an integer, and a newline.
+        parameters:
+        - name: value
+          in: argument
+          required: true
+          schema:
+            type: integer
+        responses:
+          '0':
+            description: Doubled integer on stdout
+          '1':
+            description: Invalid arguments
+definitions:
+    - function: concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e
+      file: tests/calc/steps/concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e.go
+      pattern: ^the calculator's output (matches|does not match) (.+)$
+      captures:
+        - name: match
+          means: 'Which outcome the step requires, literally "matches" or "does not match": the body requires a match of the pattern against the kept stdout when it is "matches", and requires no match when it is "does not match".'
+        - name: pattern
+          means: The rest of the step, taken whole as the regular expression to match against the kept stdout stripped of its trailing newline (for example "^3$", "^12$", "\\.", "^3\\.5$").
+      serves: 'Serves the whole does: "Match the step''s pattern, a regular expression taken as the rest of the step, against the kept stdout without its trailing newline" is served by the trailing free-text capture `pattern`, and "require a match or, when the step says does not match, no match" is served by the `match` alternative capture. The literal words "the calculator''s output" and "match" keep the pattern to this concept, while the free-text tail leaves any new regular expression of the same shape bound without a new pattern.'
+      steps:
+        - text: the calculator's output matches ^3$
+          captures:
+            - matches
+            - ^3$
+        - text: the calculator's output matches ^12$
+          captures:
+            - matches
+            - ^12$
+        - text: the calculator's output does not match \.
+          captures:
+            - does not match
+            - \.
+        - text: the calculator's output matches ^3\.5$
+          captures:
+            - matches
+            - ^3\.5$
+registry: ./docs/scenarios.yaml
+scenarios:
+    - calc-001-halve
+    - calc-002-double
+    - calc-003-halve-odd
+    - calc-004-exact
+
+
+# Fix Prompt for Item then-output: then concept "output"
+
+## Target
+tests/calc/steps
+
+## Evidence used
+- Binding (then/output): "Match the step's pattern, a regular expression taken as the rest of the step, against the kept stdout without its trailing newline, and require a match or, when the step says does not match, no match."
+- Declared CLI (`docs/architecture/calc-cli.yaml`): `halve` and `double` each print the result **and a newline** on stdout — so the kept stdout carries exactly one trailing newline to strip.
+- Existing suite state `tests/calc/steps/state.go`: `type State struct{ Output string }` — the `when` concept (`conceptcc00348...`) already stores the command's verbatim stdout in `state.Output`. **No State change is needed.**
+- Captures handed to the body, in order: `args[0]` = `match` (literally `"matches"` or `"does not match"`), `args[1]` = `pattern` (the regular expression, taken whole).
+
+This Then only observes and compares: it never re-runs the CLI and never computes a half or a double.
+
+## Required Changes
+
+### 1. New shared helper file: `tests/calc/helpers/output.go`
+
+Create this file (new file in the existing `helpers` package beside `calc.go`; do not modify `calc.go`):
+
+```go
+package helpers
+
+import (
+	"fmt"
+	"regexp"
+	"strings"
+)
+
+// MatchesOutcome and DoesNotMatchOutcome are the two outcomes the output
+// step states literally: whether the step requires its pattern to match
+// what the calculator printed, or requires no match.
+const (
+	MatchesOutcome      = "matches"
+	DoesNotMatchOutcome = "does not match"
+)
+
+// PrintedOutput is the text the declared CLI printed: the kept stdout
+// stripped of the trailing newline the declaration says each of halve and
+// double ends its result with. It only trims the line ending; it never
+// reads, parses or rewrites what the calculator computed.
+func PrintedOutput(stdout string) string {
+	return strings.TrimSuffix(strings.TrimSuffix(stdout, "\n"), "\r")
+}
+
+// MatchOutput matches the step's pattern, as a Go regular expression,
+// against the kept stdout without its trailing newline, and reports whether
+// the outcome the step states holds: a match when the step says "matches",
+// no match when it says "does not match". The calculator alone produced the
+// output; this helper only observes it and compares it against the step's
+// pattern.
+func MatchOutput(stdout, outcome, pattern string) error {
+	if stdout == "" {
+		return fmt.Errorf("the calculator kept no output to match %q against: the operation step must run first", pattern)
+	}
+	printed := PrintedOutput(stdout)
+	expression, err := regexp.Compile(pattern)
+	if err != nil {
+		return fmt.Errorf("the step's pattern %q is not a valid Go regular expression: %w", pattern, err)
+	}
+	matched := expression.MatchString(printed)
+	switch outcome {
+	case MatchesOutcome:
+		if !matched {
+			return fmt.Errorf("the calculator's output %q does not match %q", printed, pattern)
+		}
+		return nil
+	case DoesNotMatchOutcome:
+		if matched {
+			return fmt.Errorf("the calculator's output %q matches %q", printed, pattern)
+		}
+		return nil
+	default:
+		return fmt.Errorf("the output step states no such outcome %q: it is either %q or %q", outcome, MatchesOutcome, DoesNotMatchOutcome)
+	}
+}
+```
+
+### 2. Body of `tests/calc/steps/concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e.go`
+
+Replace the whole file with the following. The `//truebdd:concept then "output"` record, the function name and the signature are unchanged; only the import block and the body change (the `fmt` import is dropped because the body no longer formats the not-written error).
+
+```go
+package steps
+
+import (
+	"fixture/conceptbodiescases/tests/calc/helpers"
+)
+
+//truebdd:concept then "output"
+func concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e(state *State, args []string) error {
+	outcome, pattern := args[0], args[1]
+
+	// Observe only: the operation step already kept the declared command's
+	// stdout. Match the step's pattern against that kept output without its
+	// trailing newline and require the outcome the step states — a match for
+	// "matches", no match for "does not match". The calculator alone worked
+	// out what it printed; nothing here halves, doubles or otherwise
+	// reproduces the result being checked.
+	return helpers.MatchOutput(state.Output, outcome, pattern)
+}
+```
+
+### 3. Leave unchanged
+- `tests/calc/steps/register.go` (both registrations and patterns).
+- `tests/calc/steps/state.go` — `State.Output` already carries the kept stdout.
+- `tests/calc/steps/conceptcc0034864638b337019c005041b6023fc84395f3cfcb85aa7757c1b208c55d6e.go` (the `when` concept body).
+- `tests/calc/helpers/calc.go`, `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, and everything under `docs/` and `services/`.
+
+## Note on verification
+The shell was denied in this session (only the canonical test command form is permitted, and none was granted), so I could not run `go build` on the steps package while writing. The code above uses only `fmt`, `regexp` and `strings` from the standard library plus the suite's existing `fixture/conceptbodiescases/tests/calc/helpers` import path (copied from the sibling `when` definition); the engine owns compilation and the whole-suite checks.
+
+Read existing state and helpers first. Write only the bodies of the definitions the
+context lists, shared state and code they share in tests/<suite>/helpers/. Preserve the engine's patterns, registrations,
+signatures and //truebdd:concept records. Reach the service through its declared
+Public interface. Preserve generated tests, the
+Specification and service code. Report the changes in the confirmation below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-then-output-iter3-result.yaml ===
+applied: true
+target: "<repo-relative path of the file you wrote/edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-then-output-iter3-result.yaml ===
+
+If the declared Public interface cannot set up or observe the concept, stop without
+inventing an operation. Return the same confirmation markers with:
+```yaml
+applied: false
+interface_cannot_serve:
+  concept: "then concept \"output\""
+  lacks: "<what the interface offers no way to set up or observe>"
+```

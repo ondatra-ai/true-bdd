@@ -29,9 +29,20 @@ Propose from these answers; ask only for meaning or operations they and the Spec
 Return the exact proposed changes in fix_prompt for review at the menu.
 Do not apply them. Preserve unaffected steps and concepts. A new variation
 widens an existing concept of that item and use; add one only for a new item or use.
-Return JSON with fix_prompt and questions. Exactly one carries content:
-a complete proposal with questions: [], or questions with fix_prompt: "".
-Never return both a proposal and questions. If no schema is supplied, put the proposed fix between these markers:
+**ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END
+and QUESTIONS_START/QUESTIONS_END instructions above.** Your final message
+must be a single JSON object with all three keys present:
+
+- `fix_prompt`: the fix instructions, or `""` otherwise.
+- `questions`: an array of `{id, question, context, options}` objects, or
+  `[]` otherwise.
+- `cannot_fix`: null unless this F cannot fix what its Q found; otherwise
+  `{reason, correction}`, stating why and what a person must correct. When set,
+  `fix_prompt` is `""` and `questions` is `[]`.
+
+Exactly one of the three carries content. Do not emit any markers, and do not
+wrap the object in markdown fences. Reasoning before the object is ignored.
+If no schema is supplied, put the proposed fix between these markers:
 === FILE_START: {{.ResultPath}} ===
 <exact proposed changes>
 === FILE_END: {{.ResultPath}} ===

@@ -72,6 +72,8 @@ func TestCodexBodyProfileGrantsEvidenceWithoutHostSource(t *testing.T) {
 	bin := filepath.Join(root, "bin")
 	putCodexFile(t, filepath.Join(bin, "codex"), `#!/bin/sh
 cp "$CODEX_HOME/config.toml" profile.txt
+printf '%s\000' "$@" > argv.bin
+cat > stdin.txt
 while [ "$1" != '-o' ]; do shift; done
 printf done > "$2"
 `)
@@ -79,15 +81,16 @@ printf done > "$2"
 
 	suite := filepath.Join(root, "tests/calc")
 	spec := filepath.Join(root, "docs/product.yaml")
+	module := filepath.Join(root, "go.mod")
+	putCodexFile(t, module, "module example.com/host\n")
 
-	_, err = ai.NewCodexProvider().Execute(t.Context(), ai.Request{
+	req := ai.Request{
 		WorkDir: root, TmpDir: filepath.Join(root, "tmp/run"), Label: "body", CodexApply: true,
 		Mode: ai.ExecutionMode{ReadRoots: []string{suite, spec}, AllowedTools: []string{
 			"Write(./tests/calc/**)", "Write(./tmp/**)"}},
-	})
-	if err != nil {
-		t.Fatal(err)
 	}
+
+	requireCodexModuleReadRequest(t, req, module)
 
 	profile := readCodexFile(t, filepath.Join(root, "profile.txt"))
 
@@ -106,7 +109,8 @@ printf done > "$2"
 		t.Fatalf("confined tools need their working directory: %v", decoded.Shell.Set["PWD"])
 	}
 
-	for _, grant := range []string{strconv.Quote(suite) + ` = "write"`, strconv.Quote(spec) + ` = "read"`} {
+	for _, grant := range []string{strconv.Quote(suite) + ` = "write"`, strconv.Quote(spec) + ` = "read"`,
+		strconv.Quote(module) + ` = "read"`} {
 		if !strings.Contains(profile, grant) {
 			t.Errorf("missing evidence grant: %s", grant)
 		}
@@ -114,5 +118,28 @@ printf done > "$2"
 
 	if strings.Contains(profile, strconv.Quote(root)+` = "read"`) {
 		t.Fatal("body profile grants the whole host")
+	}
+}
+
+func requireCodexModuleReadRequest(t *testing.T, req ai.Request, module string) {
+	t.Helper()
+
+	var before string
+
+	for _, roots := range [][]string{req.Mode.ReadRoots, append(req.Mode.ReadRoots, module)} {
+		req.Mode.ReadRoots = roots
+
+		_, err := ai.NewCodexProvider().Execute(t.Context(), req)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		request := readCodexFile(t, filepath.Join(req.WorkDir, "argv.bin")) + "\x00" +
+			readCodexFile(t, filepath.Join(req.WorkDir, "stdin.txt"))
+		if before != "" && request != before {
+			t.Fatal("adding the module read grant changed argv or stdin")
+		}
+
+		before = request
 	}
 }

@@ -11,11 +11,11 @@ Fix only what the failed check found; a problem it did not find is neither yours
 
 The responsible person chose apply at the menu for Scenario host-001.
 Approved fix:
-Add the missing Concept binding for the when-block concept "request greeting" of service `greeter` (owner: System Architect). This is the only change; leave every other concept, term, service and the public interface document untouched.
+Owner: System Architect — file `docs/architecture/architecture.yaml`.
 
-File: `docs/architecture/architecture.yaml`
+The Scenario `host-001` (service `greeter`) uses the when-concept `request greeting`, declared in `docs/product/product.yaml` as "Call greet once for the named person with the optional loud flag omitted.", but `architecture.yaml` has no binding for it. The declared Public interface (`docs/greeter-cli.yaml`, kind `cli`) already provides the `greet` command with the required `person` argument and the optional `loud` flag defaulting to false, so no extension of the Public interface is needed.
 
-Insert one new entry into the `architecture.concepts` list, placed between the existing `greeting` / `block: given` entry and the existing `greeting` / `block: then` entry so the list stays ordered given → when → then:
+Add exactly one concept binding to the `concepts:` list in `docs/architecture/architecture.yaml`, inserted between the existing `given`/`greeting` binding and the existing `then`/`greeting` binding (i.e. immediately after the line `    does: Write the expected greeting to the configuration file before running greet.` and immediately before the line `  - concept: greeting` that carries `block: then`), using the same indentation as the neighbouring entries:
 
 ```yaml
   - concept: request greeting
@@ -23,34 +23,10 @@ Insert one new entry into the `architecture.concepts` list, placed between the e
     service: greeter
     references:
     - command: greet
-    does: Run the greet command once in the working directory holding greeter.yaml, passing the person argument and omitting the loud flag, so the configured greeting is printed verbatim and one greeted log record is emitted.
+    does: Run the greet command once in the working directory holding greeter.yaml, passing person as the required argument and omitting the loud flag so it stays false.
 ```
 
-After the edit, `architecture.concepts` reads in full:
-
-```yaml
-  concepts:
-  - concept: greeting
-    block: given
-    service: greeter
-    references:
-    - file: greeting-config
-    does: Write the expected greeting to the configuration file before running greet.
-  - concept: request greeting
-    block: when
-    service: greeter
-    references:
-    - command: greet
-    does: Run the greet command once in the working directory holding greeter.yaml, passing the person argument and omitting the loud flag, so the configured greeting is printed verbatim and one greeted log record is emitted.
-  - concept: greeting
-    block: then
-    service: greeter
-    references:
-    - log_record: greeted
-    does: Observe the greeted log record and compare its greeting to the expected text.
-```
-
-No other file changes. Rationale for the reviewer: the declared Public interface for `greeter` is `kind: cli`, `document: docs/greeter-cli.yaml`, which already declares the `greet` command with the required `person` argument and the optional `loud` flag defaulting to false, plus the `greeted` log record. The binding therefore needs no extension of the Public interface, and the product concept "request greeting" ("Call greet once for the named person with the optional loud flag omitted") needs no widening or correction.
+Change nothing else: keep both existing `greeting` bindings, the `services:` and `terms:` sections, and every Scenario step and product concept exactly as they are. Do not add a new concept variation — this is a binding for the existing product concept `request greeting`, whose meaning already covers this item and use.
 Working copies (edit only the approved target):
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

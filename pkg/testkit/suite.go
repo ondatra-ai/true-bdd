@@ -346,7 +346,7 @@ func (h *Suite[S]) installShimNames(base, caller string, utility *proxycli.Utili
 
 	dependencies := h.dependencies
 	if caller == runner.CallerTests {
-		dependencies = []proxycli.Dependency{{Name: "claude"}}
+		dependencies = h.options.recordingDependencies([]proxycli.Dependency{{Name: "claude"}})
 	}
 
 	err = utility.Substitute(dir, dependencies)

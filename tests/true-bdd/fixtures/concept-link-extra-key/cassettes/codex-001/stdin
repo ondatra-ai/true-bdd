@@ -11,55 +11,29 @@ Fix only what the failed check found; a problem it did not find is neither yours
 
 The Product Owner chose apply at the menu for Story host.
 Approved fix:
-PROPOSAL (do not apply until the menu decides) — Item: host, failed judgement: AC-1 then step "the calculator prints 3"
+In `docs/product/product.yaml`, widen the then-kind concept `result` so it admits the halving outcome, recording the widening as a `variations:` list and leaving its `means` exactly as it reads.
 
-WHY THIS REPAIR
-The step's Public interface item (the calculator prints a whole number) and its kind of use (then) both already exist in the `result` concept. Only the operation that produced the printed number differs: `result` is closed on "the whole number the doubling produced", while here 3 is what halving produced. That is a new variation of an existing concept of the same item and use, so `result` is widened. No new concept is added, and no step is rewritten: the given step is a plain instance of `installation` and the when step is a plain instance of `halving`, both already scoring 10.
+Replace this block (lines 16-19):
 
-OWNER OF THIS CHANGE
-System Architect (concept binding / concept widening in the product document). No Product Owner action is required: the Story and its Item wording stay exactly as they are.
-
-CHANGE 1 of 1 — widen the `result` concept
-File: ./docs/product/product.yaml
-Widening recorded as a `variations:` list on the widened concept, with `means` kept exactly as it reads (this host's convention).
-
-Before (lines 16-19):
-
+```yaml
   then:
     - concept: result
       means: The calculator prints the whole number the doubling produced.
       terms: []
+```
 
-After:
+with:
 
+```yaml
   then:
     - concept: result
       means: The calculator prints the whole number the doubling produced.
+      terms: []
       variations:
         - The calculator prints the whole number the halving produced.
-      terms: []
+```
 
-Unified diff form:
-
---- a/docs/product/product.yaml
-+++ b/docs/product/product.yaml
-@@
-   then:
-     - concept: result
-       means: The calculator prints the whole number the doubling produced.
-+      variations:
-+        - The calculator prints the whole number the halving produced.
-       terms: []
-
-NOT CHANGED (preserved exactly)
-- Story `host`: all fields, AC-1, and all three steps, including the then step "the calculator prints 3". No rewrite is proposed.
-- Concept `installation` (given) — unchanged.
-- Concepts `doubling` and `halving` (when) — unchanged.
-- The `means` of `result` — unchanged, word for word.
-- `roles`, `glossary`, `description` — unchanged. The summary already reads "doubles or halves a whole number the Owner gives it and prints the whole number it computes", so it needs no edit.
-
-EXPECTED EFFECT
-With the variation in place, the then step "the calculator prints 3" is a plain instance of the widened `result` concept and clears the threshold of 9; the other two steps keep their existing links. Item `host` then passes.
+Change nothing else: leave the `given` concept `installation`, the `when` concepts `doubling` and `halving`, and the `roles`, `glossary` and `description` sections untouched, and leave the Story `host` and all of its steps exactly as they are.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

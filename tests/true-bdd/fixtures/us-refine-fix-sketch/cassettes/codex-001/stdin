@@ -11,67 +11,40 @@ Fix only what the failed check found; a problem it did not find is neither yours
 
 The Product Owner chose apply at the menu for Story halve-negative.
 Approved fix:
-Product Owner repair for Story `halve-negative` (file: `docs/product/product.yaml` owns the concepts; the Story document owns the Item). Only acceptance criterion `001-even` blocks the Story. Apply at the menu only; no architecture binding is required.
+Product Owner repair — Story wording only. Edit `docs/product/stories/halve-negative-cases.yaml`. Change acceptance criterion `001-even` and nothing else: do not touch `002-odd` or `003-near-zero`, the story header fields (`id`, `feature`, `title`, `as_a`, `i_want`, `so_that`, `status`), `docs/product/product.yaml`, or `docs/architecture/architecture.yaml`.
 
-## Why
+In AC `001-even`, replace the `description` and the single `then` step. Keep the `id`, the `given` step and the `when` step exactly as they are.
 
-The `then` step of `001-even` reads `the result is satisfying`. The `then` concept `result` means: "The halve command succeeds and prints exactly a stated integer, the half rounded toward zero." "satisfying" names no integer, so no objective stdout assertion can be written without inventing the value. "satisfying" is also an evaluative qualifier of the same family as the forbidden `properly` / `correctly` / `appropriate`.
+Replace these lines (lines 10-18):
 
-The expected value is already fixed by the product document description: "Negative inputs -6, -7 and -1 produce -3, -3 and 0 respectively." Stating `-3` therefore records existing intent and adds no scope.
+  - id: 001-even
+    description: The calculator must return a satisfying result when the Calculator User halves -6.
+    steps:
+    - given:
+      - the number is "-6"
+    - when:
+      - the Calculator User halves the number
+    - then:
+      - the result is satisfying
 
-## Exact change
+with:
 
-In the `acceptance_criteria` list of Story `halve-negative`, replace this block:
+  - id: 001-even
+    description: The calculator must return -3 when the Calculator User halves -6.
+    steps:
+    - given:
+      - the number is "-6"
+    - when:
+      - the Calculator User halves the number
+    - then:
+      - the result is "-3"
 
-```yaml
-    - id: 001-even
-      description: The calculator must return a satisfying result when the Calculator User halves -6.
-      steps:
-        - given:
-            - the number is "-6"
-        - when:
-            - the Calculator User halves the number
-        - then:
-            - the result is satisfying
-```
+Why this is the repair:
+- The `then` concept `result` means "The halve command succeeds and prints exactly a stated integer, the half rounded toward zero". "the result is satisfying" states no integer, so no runnable CLI assertion can be drafted without inventing the expected value; the phrasing `the result is "-3"` is the same already-convertible form used by `002-odd` and `003-near-zero`, so it needs no new concept and no new variation.
+- "satisfying" is a subjective qualifier of the same family as the vocabulary's `forbidden_qualifiers` (properly, correctly, appropriate, fast) and does not belong in a `then` step.
+- The product summary in `docs/product/product.yaml` already fixes -6 -> -3 ("Negative inputs -6, -7 and -1 produce -3, -3 and 0 respectively"), so stating -3 in the AC adds no new behaviour; it only makes the behaviour already specified assertable.
 
-with this block:
-
-```yaml
-    - id: 001-even
-      description: The calculator must return -3 when the Calculator User halves -6.
-      steps:
-        - given:
-            - the number is "-6"
-        - when:
-            - the Calculator User halves the number
-        - then:
-            - the result is "-3"
-```
-
-Two edits only:
-1. `description`: "a satisfying result" becomes "-3", matching the phrasing already used by `002-odd` and `003-near-zero`.
-2. The single `then` step: `the result is satisfying` becomes `the result is "-3"`.
-
-## What stays unchanged
-
-- The `id` `001-even`, and both the `given` and `when` steps, verbatim.
-- Acceptance criteria `002-odd` and `003-near-zero` in full — both already convert.
-- Every other Story field: `feature: calculator`, `title`, `as_a`, `i_want`, `so_that`, `status: PLANNED`.
-- All concepts in `docs/product/product.yaml`. No new concept and no new variation: `the result is "-3"` is the same item and use as the existing `then` concept `result`, in the identical form already used by `002-odd` and `003-near-zero`, so the existing concept covers it as written.
-- `docs/architecture/architecture.yaml`. The service `calculator` already declares `public_interface.kind: cli`, which is the only interface kind the sketches use. No binding, helper, or architecture edit is needed.
-
-## Effect
-
-With that one edit, `001-even` becomes a runnable CLI sketch:
-
-GIVEN number -6 / WHEN run `calculator halve -6` once / THEN exit code 0 AND stdout == "-3" exactly (half rounded toward zero)
-
-Convertibility goes from 2/3 = 66.7% to 3/3 = 100%, above the 80% threshold.
-
-## Confirmation requested at the menu
-
-Confirm `-3` as the stated expected stdout for input -6, as recorded in the product description. If a different rounding result is intended, state that exact integer instead — the only requirement is that the `then` step names one exact integer rather than an evaluative qualifier.
+Effect: against the `calculator` service's `cli` public interface, AC `001-even` becomes "run `calculator halve -6` once; assert exit code 0 and stdout is exactly \"-3\"", taking the Story from 2/3 (66.7%) to 3/3 (100%) convertible, above the 80% threshold. No architecture bindings, helpers or System Architect changes are required.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

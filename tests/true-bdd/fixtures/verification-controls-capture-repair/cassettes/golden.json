@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "fixture": "verification-controls-capture-repair",
+  "files": [
+    {
+      "path": "tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go",
+      "kind": "created",
+      "size": 869,
+      "sha256": "4d72f3ad333dbd9f44adb9c936f54fa249b0fa1c02aec78f3fd0bf01c9594386",
+      "text": "package steps\n\nimport (\n\t\"fixture/conceptbodiescapture/tests/calc/helpers\"\n)\n\n//truebdd:concept when \"halving\"\nfunc concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {\n\t// args[0] is the whole number the Owner halves, captured in full by\n\t// `(-?\\d+)`: an optional minus sign and every one of its digits, so \"6\"\n\t// arrives as \"6\", \"64\" as \"64\" and \"-7\" as \"-7\", never truncated to a\n\t// first digit.\n\tnumber := args[0]\n\n\t// Pass that number, unchanged, as the `value` argument of the calculator's\n\t// declared halve command, run as a process, and keep the integer it printed\n\t// on stdout as the result. The halving is the calculator's own work; this\n\t// step only carries its answer to the Then step.\n\tresult, err := helpers.Halve(number)\n\tif err != nil {\n\t\treturn err\n\t}\n\tstate.Result = result\n\treturn nil\n}\n\n"
+    },
+    {
+      "path": "tests/calc/steps/register.go",
+      "kind": "modified",
+      "size": 215,
+      "sha256": "eb877a9b021b276ce8ea2a384915a360f9103f120a9ec2c9ab7dd5110f047024",
+      "text": "package steps\n\nfunc Register(suite Registrar) {\n\tsuite.Step(\"^the result is (-?\\\\d+)$\", result)\n\n\tsuite.Step(\"^the Owner halves (-?\\\\d+)$\", concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87)\n}\n"
+    }
+  ]
+}

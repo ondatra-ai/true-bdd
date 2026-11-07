@@ -25,12 +25,12 @@
     "{\n  \"item\": \"host-001\",\n  \"description\": \"The greeter must log the requested greeting\",\n  \"product\": \"roles:\\n- name: System Architect\\n  description: Owns the service and its concept bindings.\\nconcepts:\\n  given:\\n  - concept: greeting\\n    means: The greeting configuration file contains the greeting before a request.\\n    terms:\\n    - greeting\\n  when:\\n  - concept: request greeting\\n    means: Call greet once for the named person with the optional loud flag omitted.\\n    terms:\\n    - greeting\\n  then:\\n  - concept: greeting\\n    means: Compare the greeted log record with the expected greeting.\\n    terms:\\n    - greeting\\nglossary:\\n- term: greeting\\n  means: The text spoken to the person.\\n\",\n  \"steps\": [\n    {\n      \"key\": \"1\",\n      \"block\": \"given\",\n      \"text\": \"the greeting \\\"Hello Alice\\\" is configured in greeter.yaml\"\n    },\n    {\n      \"key\": \"2\",\n      \"block\": \"when\",\n      \"text\": \"the greeting is requested for person \\\"Alice\\\" with loud omitted\"\n    },\n    {\n      \"key\": \"3\",\n      \"block\": \"then\",\n      \"text\": \"the greeted log record has greeting \\\"Hello Alice\\\"\"\n    }\n  ]\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 8049,
+  "duration_ms": 11087,
   "request_hash": "sha256:e7d0e496455df3ae36c83d190e39f484194acce9c1994b3f53ee724a205c4b35",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-11-07T13:26:43Z"
+  "recorded_at": "2026-11-07T17:33:45Z"
 }

@@ -52,21 +52,29 @@ Then:
 
 ## Fix Prompt to Apply
 
-In `./docs/architecture/architecture.yaml`, add the missing Word mapping for the term "idempotency key" used by the when concept 'halve'. Apply this single edit (do not touch the Scenario, the generated test or any step definition):
+In `./docs/architecture/architecture.yaml`, add the missing `architecture.terms` mapping for the term `idempotency key` used by the `when` concept `halve`. Make exactly this one edit and change nothing else; do not touch the Scenario, the generated test, any step definition, or the product document.
 
 old_string:
+```
     "terms": []
+  }
+}
+```
 
 new_string:
+```
     "terms": [
       {
         "term": "idempotency key",
-        "technical": "The request label string the calc UI sends with a halving request, carried by the 'Idempotency key' textbox on the Calc page; the calc service applies a halving for a label it has not seen before and ignores a repeat of the same label.",
-        "observed_by": "The when step definition for 'halve' types a fresh label into the Idempotency key textbox before pressing Halve, so the key is whatever text that field holds at the moment Halve is pressed; for a repeated request it types the same label again and presses Halve, and the then step observes the Number textbox to confirm the number changed only once."
+        "technical": "The \"Idempotency key\" textbox on the Calc page of the calc service, which carries the request label submitted with a press of the Halve button.",
+        "observed_by": "The When step definition for 'halve' types a freshly generated label into the Calc page's Idempotency key textbox before pressing Halve; for a repeated request it types that same label again instead of a fresh one, so the repeat is recognised and the Number field stays unchanged."
       }
     ]
+  }
+}
+```
 
-This is the only change: `architecture.terms` goes from the empty list to a one-entry list. Leave `architecture.services` and `architecture.concepts` exactly as they are.
+This keeps the product's verbatim domain name `idempotency key` from the product glossary and `concepts.when['halve'].terms`, states the term's implementation as the already-declared `Calc` / `textbox` / `Idempotency key` element of the calc service's Public interface as plain prose (not a reference object), and describes setup and observation consistently with the existing `halve` binding's `does`. No new Public interface declaration is needed.
 
 ---
 

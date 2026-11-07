@@ -1,4 +1,4 @@
-// Package helpers holds code the calc suite's step definitions share.
+// Package helpers holds the code the calc suite's step definitions share.
 package helpers
 
 import (
@@ -9,71 +9,93 @@ import (
 	"strings"
 )
 
-// HostRoot is the path from the suite directory, tests/calc, where the step
-// definitions run, to the host root a calculator command is run from.
-const HostRoot = "../.."
-
-// FixtureRoot names the suite's fixture directory from the host root, as the
-// Specification states it: tests/calc/fixtures.
-const FixtureRoot = "tests/calc/fixtures"
+// FixturesDir is the suite's fixture root, relative to the working directory
+// the suite's tests run in (tests/calc).
+const FixturesDir = "fixtures"
 
 // RealGoEnv is the variable a fixture's Go stand-in reads to find the real Go
-// executable it runs in turn.
+// executable it delegates to.
 const RealGoEnv = "CALC_REAL_GO"
 
 // ToolchainStandIn returns the absolute path of the named fixture's Go
-// stand-in, tests/calc/fixtures/<name>/bin/go, after checking that something
-// runnable is there. The suite directory is tried as well as the host root so
-// the lookup holds wherever the suite is run from.
+// stand-in, tests/calc/fixtures/<name>/bin/go, after checking that it is a
+// file that can be executed in place of go.
 func ToolchainStandIn(name string) (string, error) {
-	if strings.TrimSpace(name) == "" {
-		return "", fmt.Errorf("toolchain: no fixture name given")
+	if name == "" {
+		return "", fmt.Errorf("toolchain name is empty")
 	}
-	candidates := []string{
-		filepath.Join(HostRoot, FixtureRoot, name, "bin", "go"),
-		filepath.Join("fixtures", name, "bin", "go"),
+	if filepath.Base(name) != name || name == "." || name == ".." {
+		return "", fmt.Errorf("toolchain %q is not a single fixture directory name", name)
 	}
-	for _, candidate := range candidates {
-		info, err := os.Stat(candidate)
-		if err != nil {
+	path, err := filepath.Abs(filepath.Join(FixturesDir, name, "bin", "go"))
+	if err != nil {
+		return "", fmt.Errorf("locate the %q toolchain stand-in: %w", name, err)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return "", fmt.Errorf("the %q toolchain stand-in: %w", name, err)
+	}
+	if info.IsDir() {
+		return "", fmt.Errorf("the %q toolchain stand-in %s is a directory", name, path)
+	}
+	if info.Mode().Perm()&0o111 == 0 {
+		if err := os.Chmod(path, info.Mode().Perm()|0o111); err != nil {
+			return "", fmt.Errorf("the %q toolchain stand-in %s is not executable: %w", name, path, err)
+		}
+	}
+	return path, nil
+}
+
+// RealGo returns the absolute path of the real Go executable a fixture's
+// stand-in delegates to: an explicit RealGoEnv setting first, then the go on
+// PATH that is running the suite, then GOROOT/bin/go.
+func RealGo() (string, error) {
+	if path, ok := executableFile(os.Getenv(RealGoEnv)); ok {
+		return path, nil
+	}
+	if found, err := exec.LookPath("go"); err == nil {
+		if path, ok := executableFile(found); ok {
+			return path, nil
+		}
+	}
+	if goroot := os.Getenv("GOROOT"); goroot != "" {
+		if path, ok := executableFile(filepath.Join(goroot, "bin", "go")); ok {
+			return path, nil
+		}
+	}
+	return "", fmt.Errorf("no real go executable found: put go on PATH or set %s to it", RealGoEnv)
+}
+
+// EnvWithRealGo returns the suite process's environment with RealGoEnv set to
+// realGo, replacing any inherited setting and keeping every other variable so
+// the stand-in runs go with the same caches, temporary directory and home as
+// the installed toolchain would.
+func EnvWithRealGo(realGo string) []string {
+	assignment := RealGoEnv + "=" + realGo
+	inherited := os.Environ()
+	env := make([]string, 0, len(inherited)+1)
+	for _, entry := range inherited {
+		if strings.HasPrefix(entry, RealGoEnv+"=") {
 			continue
 		}
-		if info.IsDir() || info.Mode().Perm()&0o111 == 0 {
-			return "", fmt.Errorf("toolchain %q: %s is not an executable Go stand-in", name, candidate)
-		}
-		absolute, err := filepath.Abs(candidate)
-		if err != nil {
-			return "", fmt.Errorf("toolchain %q: %w", name, err)
-		}
-		return absolute, nil
+		env = append(env, entry)
 	}
-	return "", fmt.Errorf("toolchain %q: no Go stand-in at %s", name, strings.Join(candidates, " or "))
+	return append(env, assignment)
 }
 
-// RealGo returns the installed Go executable, the one a fixture's stand-in runs
-// in turn. A CALC_REAL_GO already in the environment wins, so the real Go can
-// be pinned from outside the suite.
-func RealGo() (string, error) {
-	if pinned := strings.TrimSpace(os.Getenv(RealGoEnv)); pinned != "" {
-		return pinned, nil
+// executableFile reports whether path names a file that can be executed, and
+// returns it as an absolute path.
+func executableFile(path string) (string, bool) {
+	if path == "" {
+		return "", false
 	}
-	if root := strings.TrimSpace(os.Getenv("GOROOT")); root != "" {
-		candidate := filepath.Join(root, "bin", "go")
-		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
-			return candidate, nil
-		}
-	}
-	found, err := exec.LookPath("go")
+	abs, err := filepath.Abs(path)
 	if err != nil {
-		return "", fmt.Errorf("find the installed go: %w", err)
+		return "", false
 	}
-	return found, nil
-}
-
-// ToolchainEnv returns the environment a calculator command runs with once a
-// fixture's Go stand-in is selected: the suite's own environment, so the
-// inherited Go build and module caches stay in place, with CALC_REAL_GO naming
-// the real Go the stand-in runs.
-func ToolchainEnv(realGo string) []string {
-	return append(os.Environ(), RealGoEnv+"="+realGo)
+	info, err := os.Stat(abs)
+	if err != nil || info.IsDir() || info.Mode().Perm()&0o111 == 0 {
+		return "", false
+	}
+	return abs, true
 }

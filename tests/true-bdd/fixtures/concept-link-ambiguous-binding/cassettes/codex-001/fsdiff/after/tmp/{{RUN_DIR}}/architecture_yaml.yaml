@@ -42,7 +42,16 @@
         "concept": "halve",
         "block": "when",
         "service": "calc",
-        "intent": "Halve the number already present in the Calc page textbox named \"Number\" by pressing the Calc page button named \"Halve\" exactly once. Do not type, clear or re-enter the number, do not compute or write any value yourself, and do not press \"Halve\" a second time or interact with any other element; after the single press, leave the page as it is so the Then step can read the Number textbox."
+        "references": [
+          {
+            "element": {
+              "page": "Calc",
+              "role": "button",
+              "name": "Halve"
+            }
+          }
+        ],
+        "does": "Click the Calc page button named \"Halve\" exactly once, so the entered number is halved a single time; do not compute the half locally, do not write the Number textbox, and perform no other action or assertion."
       },
       {
         "concept": "number result",

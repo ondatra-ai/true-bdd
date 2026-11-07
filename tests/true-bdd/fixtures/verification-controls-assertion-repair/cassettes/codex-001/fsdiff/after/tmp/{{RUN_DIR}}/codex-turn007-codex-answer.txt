@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-given-installation-iter1-result.yaml ===
+applied: true
+target: "tests/calc/steps/conceptbef0930c9a09dec2b565c664833e27eb5e85810f2e50d51372923cf970aa997c.go"
+summary: "Planted the preserved definition."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-given-installation-iter1-result.yaml ===

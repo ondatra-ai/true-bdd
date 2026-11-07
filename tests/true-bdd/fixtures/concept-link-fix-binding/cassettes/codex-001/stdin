@@ -11,11 +11,13 @@ Fix only what the failed check found; a problem it did not find is neither yours
 
 The responsible person chose apply at the menu for Scenario host-001.
 Approved fix:
-Owner: System Architect (concept binding).
+Owner: System Architect (concept bindings).
 
-Edit `docs/architecture/architecture.yaml` only. Add one concept binding for the `when` concept `halve` of service `calc`. Make no other change: leave `services`, `public_interface`, `terms`, the existing `number ready` and `number result` bindings, and `docs/product/product.yaml` exactly as they are. The declared Public interface already exposes the `Halve` button on page `Calc`, so it does not need to be extended.
+File: `docs/architecture/architecture.yaml`
 
-In the `architecture.concepts` array, insert the following object between the existing `number ready` binding and the existing `number result` binding (keeping given/when/then order), adding the required comma after the `number ready` object:
+Add one binding for the `when` concept `halve` of service `calc`. The product document already defines its meaning ("Halve the entered number once."), and the declared Public interface already exposes the element it needs (page `Calc`, role `button`, name `Halve`), so no change to `public_interface` and no change to `docs/product/product.yaml` is required.
+
+In `architecture.concepts`, insert the following object between the existing `number ready` (given) binding and the existing `number result` (then) binding, so the bindings stay in given / when / then order:
 
 ```json
       {
@@ -31,63 +33,13 @@ In the `architecture.concepts` array, insert the following object between the ex
             }
           }
         ],
-        "does": "Click the Halve button on the Calc page once to halve the number entered in the Number field."
+        "does": "Click the Halve button to halve the number currently in the Number field."
       },
 ```
 
-After the edit, the `architecture.concepts` array reads exactly:
+After the edit, `architecture.concepts` reads, in order: `number ready` (given), `halve` (when), `number result` (then).
 
-```json
-    "concepts": [
-      {
-        "concept": "number ready",
-        "block": "given",
-        "service": "calc",
-        "references": [
-          {
-            "element": {
-              "page": "Calc",
-              "role": "textbox",
-              "name": "Number"
-            }
-          }
-        ],
-        "does": "Enter the given number into the Number field."
-      },
-      {
-        "concept": "halve",
-        "block": "when",
-        "service": "calc",
-        "references": [
-          {
-            "element": {
-              "page": "Calc",
-              "role": "button",
-              "name": "Halve"
-            }
-          }
-        ],
-        "does": "Click the Halve button on the Calc page once to halve the number entered in the Number field."
-      },
-      {
-        "concept": "number result",
-        "block": "then",
-        "service": "calc",
-        "references": [
-          {
-            "element": {
-              "page": "Calc",
-              "role": "textbox",
-              "name": "Number"
-            }
-          }
-        ],
-        "does": "Compare the displayed Number text with the expected result."
-      }
-    ],
-```
-
-This gives item host-001's `When: halve six` step one binding for service `calc`, resolving the finding that concept "halve" had 0 Concept bindings.
+Preserve every other part of both documents exactly as it is: do not alter the `number ready` or `number result` bindings, the `calc` service entry, `public_interface.elements`, `terms`, or any concept in `docs/product/product.yaml`. Do not add a new concept variation — `halve` is an existing product concept for this item and use, and this edit only supplies its missing binding.
 Working copies (edit only the approved target):
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

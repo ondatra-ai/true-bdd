@@ -24,6 +24,8 @@ var ErrJudgeCLI = errors.New("judge cli reported an error")
 
 // JudgeRequest is the input to a single judge call.
 type JudgeRequest struct {
+ // Dir confines the CLI and its recording snapshots to this Scenario run.
+ Dir string
 	Service string
 	Cmd     string
 	// Clauses are the scenario's `judge:` clauses, in registry order.
@@ -152,7 +154,7 @@ func (j *ClaudeJudge) Verdict(ctx context.Context, req JudgeRequest) (JudgeOutco
 		InputHash:    fmt.Sprintf("sha256:%x", sha256.Sum256([]byte(user))),
 	}
 
-	payload, err := j.ask(ctx, user)
+	payload, err := j.ask(ctx, user, req.Dir)
 	if err != nil {
 		return outcome, err
 	}
@@ -173,9 +175,10 @@ func (j *ClaudeJudge) Verdict(ctx context.Context, req JudgeRequest) (JudgeOutco
 // ask runs the verdict turn and returns the raw verdict JSON. One headless
 // `claude -p` through pkg/cli, not the streaming transport: a verdict is a
 // prompt in and one answer out, and this package now imports no root.
-func (j *ClaudeJudge) ask(ctx context.Context, user string) (string, error) {
+func (j *ClaudeJudge) ask(ctx context.Context, user, directory string) (string, error) {
 	answer, err := claude.RunJSON(user, claude.Options{
 		Schema:          judgeSchema,
+ Dir: directory,
 		Model:           j.model,
 		SystemPrompt:    judgeSystemPrompt,
 		DisallowedTools: judgeDisallowedTools(),

@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
 applied: true
 target: "product"
-summary: "Reworded only halve's means using request label and plain English for repeated requests. Verified all other bytes unchanged. Sandbox blocked search access and Python cache creation; the edit and verification succeeded."
+summary: "Reworded halve.means to use request label and explain repeated requests. Verified all other content and formatting unchanged, including empty terms and glossary. Sandbox restrictions affected file search and cache creation; the edit and verification succeeded."
 === FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===

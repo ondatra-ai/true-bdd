@@ -5,9 +5,9 @@
     {
       "path": "tests/calc/steps/conceptd811179f54fc202f6e4c73986e6f62affb7dc33a44ca0b952e967cf7a999da3d.go",
       "kind": "created",
-      "size": 874,
-      "sha256": "c37dc251af17536fb3b7974c67c1b04f73104302ee9305c41c4d7da8ce6fb2dd",
-      "text": "package steps\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"running\"\nfunc conceptd811179f54fc202f6e4c73986e6f62affb7dc33a44ca0b952e967cf7a999da3d(state *State, args []string) error {\n\tif state.Program == \"\" {\n\t\treturn errors.New(\"the calculator program is not installed yet\")\n\t}\n\tcommand := exec.Command(state.Program, args[0], args[1])\n\tcommand.Dir = \"../..\"\n\tstdout, err := command.Output()\n\tif err != nil {\n\t\tvar exit *exec.ExitError\n\t\tif errors.As(err, \u0026exit) {\n\t\t\treturn fmt.Errorf(\"run %q on %s: %w: %s\", args[0], args[1], err, exit.Stderr)\n\t\t}\n\t\treturn fmt.Errorf(\"run %q on %s: %w\", args[0], args[1], err)\n\t}\n\tvalue, err := strconv.Atoi(strings.TrimSpace(string(stdout)))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"read the integer stdout of %q on %s: %w: %q\", args[0], args[1], err, stdout)\n\t}\n\tstate.Value = value\n\treturn nil\n}\n"
+      "size": 865,
+      "sha256": "cf1b5ce72eeb79c76843efd7a13b9a3cdbf7b8cb3432a1108d2e9362149205c8",
+      "text": "package steps\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"running\"\nfunc conceptd811179f54fc202f6e4c73986e6f62affb7dc33a44ca0b952e967cf7a999da3d(state *State, args []string) error {\n\tif state.Program == \"\" {\n\t\treturn errors.New(\"the calculator is not installed yet\")\n\t}\n\tcommand := exec.Command(state.Program, args[0], args[1])\n\tcommand.Dir = \"../..\"\n\toutput, err := command.Output()\n\tif err != nil {\n\t\tvar exit *exec.ExitError\n\t\tif errors.As(err, \u0026exit) {\n\t\t\treturn fmt.Errorf(\"run %q on %s: %w: %s\", args[0], args[1], err, exit.Stderr)\n\t\t}\n\t\treturn fmt.Errorf(\"run %q on %s: %w\", args[0], args[1], err)\n\t}\n\tvalue, err := strconv.Atoi(strings.TrimSpace(string(output)))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"read the stdout %q of %q on %s: %w\", string(output), args[0], args[1], err)\n\t}\n\tstate.Value = value\n\treturn nil\n}\n"
     },
     {
       "path": "tests/calc/steps/register.go",

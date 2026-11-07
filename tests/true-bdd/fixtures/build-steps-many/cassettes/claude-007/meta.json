@@ -20,17 +20,17 @@
     "stream-json",
     "--verbose",
     "--json-schema",
-    "{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"patterns\"],\"properties\":{\n\"patterns\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"additionalProperties\":false,\n\"required\":[\"pattern\",\"captures\",\"serves\"],\"properties\":{\n\"pattern\":{\"type\":\"string\"},\n\"captures\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"name\",\"means\"],\n\"properties\":{\"name\":{\"type\":\"string\"},\"means\":{\"type\":\"string\"}}}},\n\"serves\":{\"type\":\"string\"}}}}}}",
+    "{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"patterns\",\"cannot_fix\"],\"properties\":{\"cannot_fix\":{\"type\":[\"object\",\"null\"],\"additionalProperties\":false,\n \"required\":[\"reason\",\"correction\"],\"properties\":{\"reason\":{\"type\":\"string\"},\"correction\":{\"type\":\"string\"}}},\n\"patterns\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"additionalProperties\":false,\n\"required\":[\"pattern\",\"captures\",\"serves\"],\"properties\":{\n\"pattern\":{\"type\":\"string\"},\n\"captures\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"name\",\"means\"],\n\"properties\":{\"name\":{\"type\":\"string\"},\"means\":{\"type\":\"string\"}}}},\n\"serves\":{\"type\":\"string\"}}}}}}",
     "-p",
     "{\n  \"suite\": \"tests/calc/steps\",\n  \"service\": \"calc\",\n  \"block\": \"given\",\n  \"concept\": {\n    \"concept\": \"installation\",\n    \"means\": \"The calculator program is built from its source and ready for the Owner to run.\",\n    \"terms\": []\n  },\n  \"glossary\": [],\n  \"binding\": {\n    \"Concept\": \"installation\",\n    \"Block\": \"given\",\n    \"Service\": \"calc\",\n    \"References\": [\n      {\n        \"Command\": \"double\",\n        \"File\": \"\",\n        \"LogRecord\": \"\",\n        \"OutgoingCall\": \"\",\n        \"OperationID\": \"\",\n        \"Element\": null\n      }\n    ],\n    \"Does\": \"Build the declared calculator command as a program under the host's tmp directory and keep its path for the When.\",\n    \"Intent\": \"\"\n  },\n  \"public_interface\": {\n    \"declaration\": {\n      \"Kind\": \"cli\",\n      \"Document\": \"docs/architecture/calc-cli.yaml\",\n      \"Elements\": null\n    },\n    \"docs/architecture/calc-cli.yaml\": \"opencli: 0.1\\ninfo: {title: Calculator CLI, version: '1.0'}\\ncommands:\\n  double:\\n    description: The calculator program, built with go build from ./services/calc at the host root and run from the host root; calc double VALUE prints the doubled integer and a newline.\\n    parameters:\\n      - {name: value, in: argument, required: true, schema: {type: integer}}\\n    responses:\\n      '0': {description: Doubled integer on stdout}\\n      '1': {description: Invalid arguments}\\n\"\n  },\n  \"existing_definitions\": [],\n  \"refused\": {\n    \"patterns\": [],\n    \"findings\": [\n      \"no pattern binds given step \\\"the calculator is installed\\\"\"\n    ]\n  },\n  \"steps\": [\n    \"the calculator is installed\"\n  ]\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 7760,
-  "request_hash": "sha256:5d27a2b3c5e652330cbcafabba022f3637be3fe662bd73b453e76de2b03d9ed1",
+  "duration_ms": 9561,
+  "request_hash": "sha256:a912035c5d69e2b321666f534e812abd71e0da784ff05cb8929681b68e2d09f1",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-11-07T02:45:41Z"
+  "recorded_at": "2026-11-07T19:43:44Z"
 }

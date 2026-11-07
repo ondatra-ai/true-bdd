@@ -11,15 +11,9 @@ Fix only what the failed check found; a problem it did not find is neither yours
 
 The responsible person chose apply at the menu for Scenario host-001.
 Approved fix:
-Repair for Item host-001 (Scenario: "The number must be halved", service `calc`) — failed judgement: the `when: halve` concept binding is ambiguous.
+In `./docs/architecture/architecture.yaml` (JSON), repair the single ambiguous binding for the `when` concept `halve` of service `calc`. Change nothing else: leave the `calc` service entry and its `public_interface` exactly as they are (no new elements are needed — the `Calc` page `button` named `Halve` is already declared), leave the `given:number ready` and `then:number result` bindings byte-for-byte unchanged, leave `terms: []` unchanged, and make no change to `./docs/product/product.yaml` (the concept's `means`, "Halve the entered number once.", already states the meaning and needs no widening).
 
-Owner: System Architect (concept binding). No Product Owner change is required: the product concept `when: halve` already means "Halve the entered number once.", which is closed and sufficient; leave `docs/product/product.yaml` untouched.
-
-No extension of the declared Public interface is needed: the Calc page button named "Halve" and the Calc page textbox named "Number" are both already declared in the `calc` service `ui` Public interface.
-
-Apply exactly one edit, in `docs/architecture/architecture.yaml`, to the single object in `architecture.concepts` whose `concept` is "halve" and whose `block` is "when".
-
-Replace this object:
+Replace this element of `architecture.concepts`:
 
 ```json
       {
@@ -30,24 +24,27 @@ Replace this object:
       },
 ```
 
-with this object:
+with this element, keeping it in the same position (second, between `number ready` and `number result`) and at the same indentation:
 
 ```json
       {
         "concept": "halve",
         "block": "when",
         "service": "calc",
-        "intent": "Halve the number already present in the Calc page textbox named \"Number\" by pressing the Calc page button named \"Halve\" exactly once. Do not type, clear or re-enter the number, do not compute or write any value yourself, and do not press \"Halve\" a second time or interact with any other element; after the single press, leave the page as it is so the Then step can read the Number textbox."
+        "references": [
+          {
+            "element": {
+              "page": "Calc",
+              "role": "button",
+              "name": "Halve"
+            }
+          }
+        ],
+        "does": "Click the Calc page button named \"Halve\" exactly once, so the entered number is halved a single time; do not compute the half locally, do not write the Number textbox, and perform no other action or assertion."
       },
 ```
 
-Everything else stays byte-for-byte as it is. In particular:
-- keep the `given: number ready` binding (references the Calc "Number" textbox, with its existing `does`) unchanged — it was judged sound;
-- keep the `then: number result` binding (references the Calc "Number" textbox, with its existing `does`) unchanged — it was judged sound;
-- keep `architecture.services`, the `calc` `public_interface` elements and `architecture.terms` unchanged;
-- keep the Scenario's Given/When/Then wording ("6 is entered", "halve once", "3 is displayed") unchanged.
-
-Why this repair: the `when: halve` binding carries no `references` and no `does`, so it rests entirely on its `intent`, and "Do whatever is appropriate with the entered number." names no action, no element and no criterion for "appropriate" — it equally admits re-entering or recomputing the number, and never says the action happens exactly once. The replacement intent states explicitly what the previous text left to inference: which declared element is acted on (the "Halve" button), that it is pressed exactly once, that the number is already present rather than typed here, and that nothing else on the declared surface is touched. It stays within the concept's means ("Halve the entered number once.") and within the declared `ui` Public interface, so the step is determined without any hidden implementation detail.
+This turns the placeholder intent into a closed reference-and-does binding: the one action (`Halve` button), the one target (declared verbatim in the `ui` public interface), and the "once" constraint that the concept's means and the step text "halve once" require are all stated, so the step definition can be written from the binding alone without guessing between pressing the button and rewriting the `Number` textbox. Because it is now a reference-and-does binding, the `intent` key must be removed, not kept alongside `does`.
 Working copies (edit only the approved target):
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

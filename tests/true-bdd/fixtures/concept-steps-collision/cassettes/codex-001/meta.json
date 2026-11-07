@@ -19,10 +19,11 @@
     "-"
   ],
   "exit_code": 0,
-  "duration_ms": 47757,
-  "request_hash": "sha256:04bd17fbdbd6e5cd21e25399d0792288f974a54fb3885a5a96620ef8a9aa26ed",
+  "duration_ms": 96940,
+  "request_hash": "sha256:689404cbdaf54fb46b0eb959a6116563b95498c234692611eb2ba1a769c9d23a",
   "fsdiff": {
     "created": [
+      "tests/calc/helpers/halve.go",
       "tmp/{{RUN_DIR}}/codex-turn006-codex-answer.txt"
     ],
     "modified": [
@@ -30,5 +31,5 @@
     ],
     "deleted": []
   },
-  "recorded_at": "2026-11-07T04:12:49Z"
+  "recorded_at": "2026-11-07T20:40:06Z"
 }

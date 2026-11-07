@@ -11,29 +11,13 @@ Fix only what the failed check found; a problem it did not find is neither yours
 
 The Product Owner chose apply at the menu for Story doc-outline.
 Approved fix:
-## Proposed repair for Item `doc-outline` — widen the `then` concept `reply`
+Apply this one change to `./docs/product/product.yaml`. Change nothing else — leave the roles, vocabulary, glossary, the `given` concept `shared document` and the `when` concept `outline request` exactly as they are, and leave the Story `doc-outline` untouched (its steps, including AC-2's "Claude offers to summarise the document instead", stay verbatim).
 
-**Owner of this change:** System Architect (concept binding / concept means).
-**Nothing is applied. Awaiting an explicit menu decision.**
+Reason: AC-2's then step "Claude offers to summarise the document instead" describes the same Public interface item and the same kind of use as the existing then concept `reply` — Claude's reply in the conversation, used in a then step — but the concept's means is closed to two variations only (a listing of a stated number of headings, or exactly a stated message), so the offer falls outside it. This is a new variation of an existing concept of that item and use, so widen `reply` rather than adding a concept.
 
-### Failed judgement
-
-One step only:
-
-- AC-2 `then` step: `Claude offers to summarise the document instead` — no concept of `then` reaches the threshold (scores `{"reply":3}`, threshold 9). The `reply` concept admits only two forms: a listing of a stated number of headings in document order, or exactly a stated message. An offer to summarise is neither.
-
-All other steps of AC-1, AC-2 and AC-3 are linked at or above threshold and stay untouched.
-
-### Why widen, not rewrite and not add
-
-The step's public interface item is Claude's reply in the conversation, and its kind of use is `then` — both already exist as the `then` concept `reply`. The offer to summarise is therefore a new variation of that same item and use, so it widens `reply`. The Story wording is sound and needs no rewrite; no new concept is warranted.
-
-### The exact change — file `docs/product/product.yaml`, one concept only
-
-Replace this concept under `concepts.then`:
+In the `concepts:` block, under `then:`, replace this concept entry:
 
 ```yaml
-  then:
     - concept: reply
       means: >-
         Claude's reply in the conversation either lists exactly a stated
@@ -42,38 +26,18 @@ Replace this concept under `concepts.then`:
       terms: [outline]
 ```
 
-with:
+with this concept entry:
 
 ```yaml
-  then:
     - concept: reply
       means: >-
-        Claude's reply in the conversation is one of three forms: it lists
-        exactly a stated number of headings, in document order; or it is
-        exactly a stated message; or it offers the role to summarise the
-        Google Doc instead.
+        Claude's reply in the conversation is one of these: it lists exactly
+        a stated number of headings, in document order; or it is exactly a
+        stated message; or it offers to summarise the Google Doc instead.
       terms: [Google Doc, outline]
 ```
 
-Changes, in full:
-
-1. `means` is rewritten in closed prose to state every variation the concept admits, naming all three forms and no others. The two existing forms keep their wording and meaning; the third form, the offer to summarise the Google Doc instead, is added.
-2. `terms` gains `Google Doc`, because the rewritten `means` now names that glossary term; `outline` is kept.
-3. The concept holds only `concept`, `means` and `terms` — no other key is added.
-
-### Resulting binding for the failed step
-
-AC-2 `then` step `Claude offers to summarise the document instead` binds to `reply`: Claude's reply in the conversation offers to summarise the Google Doc instead — the concept's third form, stated plainly, so it meets the threshold of 9.
-
-### Not changed
-
-- The Story `doc-outline`: no Item wording changes. Title, `as_a`, `i_want`, `so_that`, `status` and every step of AC-1, AC-2 and AC-3 stay exactly as they are.
-- The `given` concept `shared document` and the `when` concept `outline request`: unchanged.
-- `roles`, `vocabulary`, `glossary` (`Google Doc`, `outline`), `title` and `summary`: unchanged.
-
-### Apply scope, if the menu approves
-
-Edit `docs/product/product.yaml` only, replacing the `means` and `terms` of the `then` concept `reply` as shown. No other file and no other line is touched.
+The widened means states every variation the concept admits in closed prose, and the concept still holds only `concept`, `means` and `terms`. `Google Doc` joins `terms` because the added variation names that glossary term.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

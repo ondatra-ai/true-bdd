@@ -5,9 +5,9 @@
     {
       "path": "docs/product/product.yaml",
       "kind": "modified",
-      "size": 926,
-      "sha256": "52f71a25c941f105ac93f613819ed3af32256ae7557e87d6935df2043e56cc3c",
-      "text": "{\n  \"roles\": [\n    {\n      \"name\": \"Product Owner\",\n      \"description\": \"Owns meanings.\"\n    }\n  ],\n  \"concepts\": {\n    \"given\": [\n      {\n        \"concept\": \"number ready\",\n        \"means\": \"A number is entered before the action.\",\n        \"terms\": []\n      }\n    ],\n    \"when\": [\n      {\n        \"concept\": \"halve\",\n        \"means\": \"Halve the entered number once.\",\n        \"terms\": []\n      },\n      {\n        \"concept\": \"square\",\n        \"means\": \"Square the entered number once, multiplying it by itself.\",\n        \"terms\": []\n      }\n    ],\n    \"then\": [\n      {\n        \"concept\": \"number result\",\n        \"means\": \"Compare the displayed number with an expected value.\",\n        \"terms\": []\n      }\n    ]\n  },\n  \"glossary\": [],\n  \"description\": {\n    \"summary\": \"The calculator offers separate Halve and Square controls. Halve divides the entered number by two; Square multiplies the entered number by itself.\"\n  }\n}\n"
+      "size": 928,
+      "sha256": "b414efa07b3abbacc96da70eb3430ce532bf9bc9b26a7fca50c3a1babc8271b4",
+      "text": "{\n  \"roles\": [\n    {\n      \"name\": \"Product Owner\",\n      \"description\": \"Owns meanings.\"\n    }\n  ],\n  \"concepts\": {\n    \"given\": [\n      {\n        \"concept\": \"number ready\",\n        \"means\": \"A number is entered before the action.\",\n        \"terms\": []\n      }\n    ],\n    \"when\": [\n      {\n        \"concept\": \"halve\",\n        \"means\": \"Halve the entered number once.\",\n        \"terms\": []\n      },\n      {\n        \"concept\": \"square\",\n        \"means\": \"Square the entered number once by multiplying it by itself.\",\n        \"terms\": []\n      }\n    ],\n    \"then\": [\n      {\n        \"concept\": \"number result\",\n        \"means\": \"Compare the displayed number with an expected value.\",\n        \"terms\": []\n      }\n    ]\n  },\n  \"glossary\": [],\n  \"description\": {\n    \"summary\": \"The calculator offers separate Halve and Square controls. Halve divides the entered number by two; Square multiplies the entered number by itself.\"\n  }\n}\n"
     }
   ]
 }

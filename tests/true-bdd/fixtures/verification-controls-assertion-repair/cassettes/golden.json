@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "fixture": "verification-controls-assertion-repair",
+  "files": [
+    {
+      "path": "tests/calc/steps/conceptbef0930c9a09dec2b565c664833e27eb5e85810f2e50d51372923cf970aa997c.go",
+      "kind": "created",
+      "size": 375,
+      "sha256": "74fab6fb0c7de1204e6e714bf69feeac5fe8933dfc73f927894477d05185b008",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\n\t\"fixture/stepsrun/tests/calc/helpers\"\n)\n\n//truebdd:concept given \"installation\"\nfunc conceptbef0930c9a09dec2b565c664833e27eb5e85810f2e50d51372923cf970aa997c(state *State, args []string) error {\n\tprogram, err := helpers.BuildCalculator()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"installation: %w\", err)\n\t}\n\tstate.Program = program\n\treturn nil\n}\n\n"
+    },
+    {
+      "path": "tests/calc/steps/concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e.go",
+      "kind": "created",
+      "size": 426,
+      "sha256": "429b6e657cafe4c14da81117bf2d7e2a081261fecf383bb6fe218c4a66bbd547",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"strconv\"\n)\n\n//truebdd:concept then \"result\"\nfunc concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e(state *State, args []string) error {\n\texpected, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn fmt.Errorf(\"parse expected result: %w\", err)\n\t}\n\tif state.Value != expected {\n\t\treturn fmt.Errorf(\"expected result %d, got %d\", expected, state.Value)\n\t}\n\treturn nil\n}\n\n"
+    },
+    {
+      "path": "tests/calc/steps/register.go",
+      "kind": "modified",
+      "size": 1114,
+      "sha256": "48996386d370c6a4a2c7553984709d0f808765b519c51d9e721a45ed5b667fc8",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the Owner doubles (-?\\d+)$`, doubling)\n\n\tsuite.Step(\"^the calculator (?:is|has been) installed$\", conceptbef0930c9a09dec2b565c664833e27eb5e85810f2e50d51372923cf970aa997c)\n\n\tsuite.Step(\"^the result is (-?\\\\d+)$\", concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e)\n}\n\n//truebdd:concept when \"doubling\"\nfunc doubling(state *State, args []string) error {\n\tif state.Program == \"\" {\n\t\treturn fmt.Errorf(\"the calculator is not installed\")\n\t}\n\tcommand := exec.Command(state.Program, \"double\", args[0])\n\tcommand.Dir = \"../..\"\n\toutput, err := command.CombinedOutput()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"calculator double: %w: %s\", err, output)\n\t}\n\tstate.Value, err = strconv.Atoi(strings.TrimSpace(string(output)))\n\treturn err\n}\n\n//truebdd:concept then \"result\"\nfunc result(state *State, args []string) error {\n\twant, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn err\n\t}\n\tif state.Value != want {\n\t\treturn fmt.Errorf(\"expected %d, got %d\", want, state.Value)\n\t}\n\treturn nil\n}\n"
+    }
+  ]
+}

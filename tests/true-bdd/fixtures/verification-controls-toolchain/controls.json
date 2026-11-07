@@ -1,0 +1,35 @@
+[
+  {
+    "id": "concept-bodies-contract-claude-003",
+    "block": "given",
+    "concept": "toolchain",
+    "definition": {
+      "function": "concept47f741283eda70d7a0d1d2aaa90ad59f9b70d6cc753b4652aced0fd106d24dd9",
+      "file": "tests/calc/steps/concept47f741283eda70d7a0d1d2aaa90ad59f9b70d6cc753b4652aced0fd106d24dd9.go",
+      "pattern": "^the calculator runs on the \"([^\"]+)\" toolchain$",
+      "steps": [
+        {
+          "text": "the calculator runs on the \"offline\" toolchain",
+          "captures": [
+            "offline"
+          ]
+        }
+      ]
+    },
+    "pattern": {
+      "pattern": "^the calculator runs on the \"([^\"]+)\" toolchain$",
+      "captures": [
+        {
+          "name": "argument1",
+          "means": "The value captured from the step text."
+        }
+      ],
+      "serves": "Makes the next halving run the named fixture's Go stand-in, tests/calc/fixtures/<name>/bin/go, in place of go."
+    },
+    "source": "package steps\n\nimport \"fixture/conceptbodiescontract/tests/calc/helpers\"\n\n//truebdd:concept given \"toolchain\"\nfunc concept47f741283eda70d7a0d1d2aaa90ad59f9b70d6cc753b4652aced0fd106d24dd9(state *State, args []string) error {\n\ttoolchain, err := helpers.FixtureToolchain(args[0])\n\tif err != nil {\n\t\treturn err\n\t}\n\tenv, err := helpers.ToolchainEnv()\n\tif err != nil {\n\t\treturn err\n\t}\n\tstate.Go = toolchain\n\tstate.Env = env\n\treturn nil\n}\n\n",
+    "historical_verdict": "pass",
+    "expected_verdict": "pass",
+    "category": "",
+    "reason": "The body supplies CALC_REAL_GO as the toolchain binding now declares; no fixture file is authority."
+  }
+]

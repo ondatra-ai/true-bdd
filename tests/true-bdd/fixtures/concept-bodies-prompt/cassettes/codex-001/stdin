@@ -128,37 +128,55 @@ fixture_inputs:
 ## Target
 tests/calc/steps
 
-## What the binding asks for
+## Summary
 
-The `given` concept "toolchain" must make the *next* halving run the named
-fixture's Go stand-in, `tests/calc/fixtures/<name>/bin/go`, in place of `go`,
-and must supply `CALC_REAL_GO` (the stand-in refuses to run without it).
+The Given must only *select* the toolchain the next halving runs with. The When
+(`tests/calc/steps/halving.go`, unchanged) already reads the two fields it needs:
 
-The suite already has everything needed to express this through the declared
-CLI interface, so **no change to `State` is required**:
+```go
+tool := state.Go            // "" -> "go"
+cmd := exec.Command(tool, "run", "./services/calc", "halve", args[0])
+cmd.Dir = "../.."
+cmd.Env = state.Env
+```
 
-- `State.Go` — the tool the `when` step (`tests/calc/steps/halving.go`) runs
-  instead of `go`.
-- `State.Env` — the environment that step passes to the command
-  (`cmd.Env = state.Env`; a nil `Env` means "inherit", so the Given must hand
-  over a full environment, not just one variable).
-- `halving.go` runs with `cmd.Dir = "../.."` (the host root) while the test
-  binary's working directory is `tests/calc`, so the stand-in must be stored as
-  an **absolute** path for the tool lookup to be unambiguous.
+So the body sets `state.Go` to the named fixture's stand-in,
+`tests/calc/fixtures/<name>/bin/go`, and `state.Env` to the inherited
+environment with `CALC_REAL_GO` naming the real `go` executable — the stand-in
+script exits 97 without it. The body performs no halving and parses no output.
 
-The body only *selects* the toolchain; it never halves anything and never
-inspects the calculator's result.
+Facts the code relies on (do not change them):
+
+- The suite's test working directory is `tests/calc` (the registry is opened as
+  `../../docs/scenarios.yaml`), so the stand-in is `fixtures/<name>/bin/go`
+  from there. The path is made absolute because the When runs the child with
+  `cmd.Dir = "../.."` (the host root).
+- `CALC_REAL_GO` must also be absolute, since the stand-in `exec`s it from the
+  host root.
+- `cmd.Env` is set explicitly, so the environment is built from `os.Environ()`:
+  that preserves the inherited Go build and module caches, `TMPDIR` and `HOME`,
+  and creates no separate build cache. The stand-in adds `GOPROXY=off` itself.
+- Module path is `fixture/conceptbodiesprompt` (see the existing imports in
+  `tests/calc/scenarios/scenarios.go`), so helpers import as
+  `fixture/conceptbodiesprompt/tests/calc/helpers`.
 
 ## Required Changes
 
-### 1. Add the shared helper package (new file)
+### 1. Leave `tests/calc/steps/state.go` exactly as it is
 
-Create `tests/calc/helpers/toolchain.go` with exactly this content. (The module
-path is `fixture/conceptbodiesprompt`, as `tests/calc/scenarios/scenarios.go`
-imports `fixture/conceptbodiesprompt/tests/calc/steps`.)
+`State` already has the fields this concept needs (`Go string`, `Env []string`),
+and the When reads them. **No shared-state change is required.** Do not touch
+`state.go`, `register.go`, `halving.go`, `definitions.go`, the generated
+`tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, the fixture
+script, the Specification or any service code.
+
+### 2. Create the shared helper package
+
+Create a new file `tests/calc/helpers/toolchain.go` (new directory
+`tests/calc/helpers/`, beside `tests/calc/steps/`) with exactly this content:
 
 ```go
-// Package helpers holds code the calc suite's step definitions share.
+// Package helpers holds the code the calc suite's step definitions share.
 package helpers
 
 import (
@@ -169,135 +187,153 @@ import (
 	"strings"
 )
 
-// HostRoot is the path from the suite directory, tests/calc, where the step
-// definitions run, to the host root a calculator command is run from.
-const HostRoot = "../.."
-
-// FixtureRoot names the suite's fixture directory from the host root, as the
-// Specification states it: tests/calc/fixtures.
-const FixtureRoot = "tests/calc/fixtures"
+// FixturesDir is the suite's fixture root, relative to the working directory
+// the suite's tests run in (tests/calc).
+const FixturesDir = "fixtures"
 
 // RealGoEnv is the variable a fixture's Go stand-in reads to find the real Go
-// executable it runs in turn.
+// executable it delegates to.
 const RealGoEnv = "CALC_REAL_GO"
 
 // ToolchainStandIn returns the absolute path of the named fixture's Go
-// stand-in, tests/calc/fixtures/<name>/bin/go, after checking that something
-// runnable is there. The suite directory is tried as well as the host root so
-// the lookup holds wherever the suite is run from.
+// stand-in, tests/calc/fixtures/<name>/bin/go, after checking that it is a
+// file that can be executed in place of go.
 func ToolchainStandIn(name string) (string, error) {
-	if strings.TrimSpace(name) == "" {
-		return "", fmt.Errorf("toolchain: no fixture name given")
+	if name == "" {
+		return "", fmt.Errorf("toolchain name is empty")
 	}
-	candidates := []string{
-		filepath.Join(HostRoot, FixtureRoot, name, "bin", "go"),
-		filepath.Join("fixtures", name, "bin", "go"),
+	if filepath.Base(name) != name || name == "." || name == ".." {
+		return "", fmt.Errorf("toolchain %q is not a single fixture directory name", name)
 	}
-	for _, candidate := range candidates {
-		info, err := os.Stat(candidate)
-		if err != nil {
+	path, err := filepath.Abs(filepath.Join(FixturesDir, name, "bin", "go"))
+	if err != nil {
+		return "", fmt.Errorf("locate the %q toolchain stand-in: %w", name, err)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return "", fmt.Errorf("the %q toolchain stand-in: %w", name, err)
+	}
+	if info.IsDir() {
+		return "", fmt.Errorf("the %q toolchain stand-in %s is a directory", name, path)
+	}
+	if info.Mode().Perm()&0o111 == 0 {
+		if err := os.Chmod(path, info.Mode().Perm()|0o111); err != nil {
+			return "", fmt.Errorf("the %q toolchain stand-in %s is not executable: %w", name, path, err)
+		}
+	}
+	return path, nil
+}
+
+// RealGo returns the absolute path of the real Go executable a fixture's
+// stand-in delegates to: an explicit RealGoEnv setting first, then the go on
+// PATH that is running the suite, then GOROOT/bin/go.
+func RealGo() (string, error) {
+	if path, ok := executableFile(os.Getenv(RealGoEnv)); ok {
+		return path, nil
+	}
+	if found, err := exec.LookPath("go"); err == nil {
+		if path, ok := executableFile(found); ok {
+			return path, nil
+		}
+	}
+	if goroot := os.Getenv("GOROOT"); goroot != "" {
+		if path, ok := executableFile(filepath.Join(goroot, "bin", "go")); ok {
+			return path, nil
+		}
+	}
+	return "", fmt.Errorf("no real go executable found: put go on PATH or set %s to it", RealGoEnv)
+}
+
+// EnvWithRealGo returns the suite process's environment with RealGoEnv set to
+// realGo, replacing any inherited setting and keeping every other variable so
+// the stand-in runs go with the same caches, temporary directory and home as
+// the installed toolchain would.
+func EnvWithRealGo(realGo string) []string {
+	assignment := RealGoEnv + "=" + realGo
+	inherited := os.Environ()
+	env := make([]string, 0, len(inherited)+1)
+	for _, entry := range inherited {
+		if strings.HasPrefix(entry, RealGoEnv+"=") {
 			continue
 		}
-		if info.IsDir() || info.Mode().Perm()&0o111 == 0 {
-			return "", fmt.Errorf("toolchain %q: %s is not an executable Go stand-in", name, candidate)
-		}
-		absolute, err := filepath.Abs(candidate)
-		if err != nil {
-			return "", fmt.Errorf("toolchain %q: %w", name, err)
-		}
-		return absolute, nil
+		env = append(env, entry)
 	}
-	return "", fmt.Errorf("toolchain %q: no Go stand-in at %s", name, strings.Join(candidates, " or "))
+	return append(env, assignment)
 }
 
-// RealGo returns the installed Go executable, the one a fixture's stand-in runs
-// in turn. A CALC_REAL_GO already in the environment wins, so the real Go can
-// be pinned from outside the suite.
-func RealGo() (string, error) {
-	if pinned := strings.TrimSpace(os.Getenv(RealGoEnv)); pinned != "" {
-		return pinned, nil
+// executableFile reports whether path names a file that can be executed, and
+// returns it as an absolute path.
+func executableFile(path string) (string, bool) {
+	if path == "" {
+		return "", false
 	}
-	if root := strings.TrimSpace(os.Getenv("GOROOT")); root != "" {
-		candidate := filepath.Join(root, "bin", "go")
-		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
-			return candidate, nil
-		}
-	}
-	found, err := exec.LookPath("go")
+	abs, err := filepath.Abs(path)
 	if err != nil {
-		return "", fmt.Errorf("find the installed go: %w", err)
+		return "", false
 	}
-	return found, nil
-}
-
-// ToolchainEnv returns the environment a calculator command runs with once a
-// fixture's Go stand-in is selected: the suite's own environment, so the
-// inherited Go build and module caches stay in place, with CALC_REAL_GO naming
-// the real Go the stand-in runs.
-func ToolchainEnv(realGo string) []string {
-	return append(os.Environ(), RealGoEnv+"="+realGo)
+	info, err := os.Stat(abs)
+	if err != nil || info.IsDir() || info.Mode().Perm()&0o111 == 0 {
+		return "", false
+	}
+	return abs, true
 }
 ```
 
-### 2. Write the body (replace the whole file)
+Do not add a build tag to this file: the `steps` package it serves has none.
 
-Replace the contents of
+### 3. Write the definition body
+
+Replace the whole contents of
 `tests/calc/steps/concept47f741283eda70d7a0d1d2aaa90ad59f9b70d6cc753b4652aced0fd106d24dd9.go`
-with exactly this. Keep the function name, the `(state *State, args []string) error`
-signature and the `//truebdd:concept given "toolchain"` record untouched; only
-the imports and the body change.
+with exactly this. The package clause, the `//truebdd:concept given "toolchain"`
+record and the function name and signature are unchanged; only the import and
+the body change:
 
 ```go
 package steps
 
-import (
-	"fmt"
-
-	"fixture/conceptbodiesprompt/tests/calc/helpers"
-)
+import "fixture/conceptbodiesprompt/tests/calc/helpers"
 
 //truebdd:concept given "toolchain"
 func concept47f741283eda70d7a0d1d2aaa90ad59f9b70d6cc753b4652aced0fd106d24dd9(state *State, args []string) error {
-	name := args[0]
-	standIn, err := helpers.ToolchainStandIn(name)
+	standIn, err := helpers.ToolchainStandIn(args[0])
 	if err != nil {
 		return err
 	}
 	realGo, err := helpers.RealGo()
 	if err != nil {
-		return fmt.Errorf("toolchain %q: %w", name, err)
+		return err
 	}
 	state.Go = standIn
-	state.Env = helpers.ToolchainEnv(realGo)
+	state.Env = helpers.EnvWithRealGo(realGo)
 	return nil
 }
 ```
 
-### 3. Leave untouched
+`args[0]` is the pattern's single capture — the toolchain name, `offline` in
+`calc-001-halve`. The body treats that capture as the whole of what the step
+tells it, and the `fmt` import of the skeleton is dropped because the body no
+longer formats a not-written error.
 
-- `tests/calc/steps/state.go` — `Go` and `Env` already carry what this Given
-  arranges; no shared-state change is needed.
-- `tests/calc/steps/register.go`, `halving.go`, `definitions.go`,
-  `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`,
-  `docs/`, the fixtures and all service code.
+## Why this satisfies the binding
 
-## Why this is a Given and not the product's work
+- "Makes the next halving run the named fixture's Go stand-in,
+  `tests/calc/fixtures/<name>/bin/go`, in place of go": `state.Go` is set to
+  that absolute path, and the When uses `state.Go` as the program it runs
+  instead of its `"go"` default.
+- "The stand-in requires `CALC_REAL_GO` to name the real Go executable; the
+  definition supplies it when selecting the stand-in": `state.Env` carries
+  `CALC_REAL_GO=<absolute real go>` alongside the inherited environment, and
+  both fields are set in the same step, so the stand-in never runs without it.
+- The Given only sets up. It starts no process, runs no `halve`, and computes
+  no halved value; the When invokes the declared `halve` command and the Then
+  compares its stdout.
 
-The body performs no arithmetic and runs no calculator command: it only records
-*which* Go tool the later `when` step will invoke and the environment that tool
-needs. The halving itself stays in `halving.go`, which runs
-`<toolchain> run ./services/calc halve VALUE` from the host root, exactly as the
-`halve` command is declared in `docs/architecture/calc-cli.yaml`. The observable
-effect the Word mapping names — "The halving step runs the calculator's halve
-command with it" — comes from `State.Go`, which that step already reads.
+## Verification note
 
-## Note on the environment
-
-`ToolchainEnv` starts from `os.Environ()` on purpose, so `PATH`, `HOME`,
-`GOCACHE`, `GOMODCACHE` and `GOFLAGS` are inherited rather than replaced; the
-stand-in turns module downloads off with `GOPROXY=off`, so it depends on that
-inherited module cache. `CALC_REAL_GO` is appended last, so it wins over any
-inherited value of the same name.
+The sandbox for this proposal denied shell access, so the steps package was not
+compiled here; the engine owns compilation and the whole-suite checks. No
+Scenario was run or required to pass.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists, shared state and code they share in tests/<suite>/helpers/. Preserve the engine's patterns, registrations,

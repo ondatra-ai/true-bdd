@@ -17,7 +17,7 @@ import (
 func suiteImportPath(repoRoot, suitePath string) (string, error) {
 	suiteDir := filepath.Join(repoRoot, filepath.FromSlash(suitePath))
 
-	moduleDir, modulePath, err := findModule(suiteDir)
+	moduleDir, modulePath, err := FindModule(suiteDir)
 	if err != nil {
 		return "", err
 	}
@@ -30,9 +30,9 @@ func suiteImportPath(repoRoot, suitePath string) (string, error) {
 	return path.Join(modulePath, filepath.ToSlash(relative)), nil
 }
 
-// findModule returns the nearest directory at or above dir holding a
+// FindModule returns the nearest directory at or above dir holding a
 // go.mod, and that file's module path.
-func findModule(dir string) (string, string, error) {
+func FindModule(dir string) (string, string, error) {
 	for current := dir; ; current = filepath.Dir(current) {
 		modulePath, found, err := readModulePath(filepath.Join(current, "go.mod"))
 		if err != nil {
