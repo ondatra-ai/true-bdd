@@ -141,6 +141,7 @@ func TestVerificationControls009Output(t *testing.T) {
 func TestVerificationControls010Toolchain(t *testing.T) {
 	s := New(t, "verification-controls-010-toolchain")
 	s.Given(`the "verification-controls-toolchain" project tree`)
+	s.And(`the project's test dependencies are installed`)
 	s.And(`the verification controls in "verification-controls-toolchain" use preserved pattern proposals and bodies`)
 	s.And(`the System Architect's answers are "1/1" line by line`)
 	s.When(`the System Architect runs "build steps --fix"`)
