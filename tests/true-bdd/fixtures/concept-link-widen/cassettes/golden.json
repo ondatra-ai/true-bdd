@@ -5,9 +5,9 @@
     {
       "path": "docs/product/product.yaml",
       "kind": "modified",
-      "size": 959,
-      "sha256": "3253f99cc0657455d42a327189267c9baaac57fd5148ece13be2c2fa5e3ba900",
-      "text": "{\n  \"roles\": [\n    {\n      \"name\": \"Product Owner\",\n      \"description\": \"Owns meanings.\"\n    }\n  ],\n  \"concepts\": {\n    \"given\": [\n      {\n        \"concept\": \"number ready\",\n        \"means\": \"A number is entered before the action.\",\n        \"terms\": []\n      }\n    ],\n    \"when\": [\n      {\n        \"concept\": \"halve\",\n        \"means\": \"Halve the entered number, either once or twice: halving once displays half the entered number, and halving twice displays its quarter. Halving three or more times is not admitted.\",\n        \"terms\": []\n      }\n    ],\n    \"then\": [\n      {\n        \"concept\": \"number result\",\n        \"means\": \"Compare the displayed number with an expected value.\",\n        \"terms\": []\n      }\n    ]\n  },\n  \"glossary\": [],\n  \"description\": {\n    \"summary\": \"The calculator supports exactly one or two Halve presses per request: one displays half the entered number; two displays its quarter. Three or more presses are not supported.\"\n  }\n}\n"
+      "size": 1043,
+      "sha256": "e4e2c4dcc61492be5aef711c8875b32bbecb8d2144dea1a41c63379476a6fee6",
+      "text": "{\n  \"roles\": [\n    {\n      \"name\": \"Product Owner\",\n      \"description\": \"Owns meanings.\"\n    }\n  ],\n  \"concepts\": {\n    \"given\": [\n      {\n        \"concept\": \"number ready\",\n        \"means\": \"A number is entered before the action.\",\n        \"terms\": []\n      }\n    ],\n    \"when\": [\n      {\n        \"concept\": \"halve\",\n        \"means\": \"Halve the entered number, applied either once or twice: applied once it yields half the entered number; applied twice, each application halving the result of the previous one, it yields a quarter of the entered number. Three or more applications are not admitted.\",\n        \"terms\": []\n      }\n    ],\n    \"then\": [\n      {\n        \"concept\": \"number result\",\n        \"means\": \"Compare the displayed number with an expected value.\",\n        \"terms\": []\n      }\n    ]\n  },\n  \"glossary\": [],\n  \"description\": {\n    \"summary\": \"The calculator supports exactly one or two Halve presses per request: one displays half the entered number; two displays its quarter. Three or more presses are not supported.\"\n  }\n}\n"
     }
   ]
 }

@@ -11,43 +11,31 @@ Fix only what the failed check found; a problem it did not find is neither yours
 
 The Product Owner chose apply at the menu for Story host.
 Approved fix:
-PROPOSED REPAIR — Item `host`, AC-1 when step "halve twice"
+In `./docs/product/product.yaml`, widen the existing `when` concept `halve` so its means states, in closed prose, every variation of applying the Halve item that it admits. This is a widening, not a new concept: the step "halve twice" uses the same public interface item (Halve) and the same kind of use (applying Halve to the entered number) that `halve` already covers; only the number of applications is a variation its current prose does not yet state. The product description already closes this meaning: "The calculator supports exactly one or two Halve presses per request: one displays half the entered number; two displays its quarter. Three or more presses are not supported."
 
-Failed judgement: no `when` concept reaches the threshold for "halve twice" (score 7 for "halve", threshold 9). Cause: "halve" is fixed as halving the entered number *once*, so two applications fall partly outside its meaning, although the product description already admits one or two Halve presses.
+Apply exactly this single-field edit to the concept at `concepts.when[0]` (`concept: halve`), leaving its `concept` name and empty `terms` unchanged, and leaving every other concept (`number ready`, `number result`), the `roles`, `glossary` and `description` untouched:
 
-Decision under the repair policy: the Public interface item ("halve") and the kind of use ("when") already exist, and "halve twice" is a variation of that same item and use. Therefore WIDEN the existing `halve` concept by rewriting its means in closed prose to state every variation it admits. Do NOT rewrite the Story step, and do NOT add a new concept.
+Replace
 
-Owner: System Architect (concept binding is unchanged in shape — "halve twice" binds to the widened `halve`); Product Owner confirms the concept means.
+```
+      {
+        "concept": "halve",
+        "means": "Halve the entered number once.",
+        "terms": []
+      }
+```
 
-=== CHANGE 1 of 1 — file: ./docs/product/product.yaml ===
-Scope: the single `means` string of the `when` concept named "halve". No other concept, term, role, glossary entry or description is touched.
+with
 
-BEFORE (lines 16-22):
-  "when": [
-    {
-      "concept": "halve",
-      "means": "Halve the entered number once.",
-      "terms": []
-    }
-  ],
+```
+      {
+        "concept": "halve",
+        "means": "Halve the entered number, applied either once or twice: applied once it yields half the entered number; applied twice, each application halving the result of the previous one, it yields a quarter of the entered number. Three or more applications are not admitted.",
+        "terms": []
+      }
+```
 
-AFTER:
-  "when": [
-    {
-      "concept": "halve",
-      "means": "Halve the entered number, either once or twice: halving once displays half the entered number, and halving twice displays its quarter. Halving three or more times is not admitted.",
-      "terms": []
-    }
-  ],
-
-=== NO OTHER CHANGES ===
-- Story `host` is unchanged: the given step "six is entered", the when step "halve twice" and the then step "one and a half is displayed" all keep their exact wording, and `status: DRAFT` is untouched.
-- Concepts "number ready" (given) and "number result" (then) are unchanged; their links at score 10 remain valid.
-- `roles`, `glossary` and `description` are unchanged.
-
-Expected effect: "halve twice" becomes a plain instance of the widened `halve` concept — an action of the right kind whose two-application variation the means now states — so the when step links above the threshold of 9, and all three AC-1 steps are bound.
-
-This proposal is not applied. Apply requires an explicit menu decision.
+Make no change to the Story `host`: its AC-1 when step "halve twice" stays worded as it is, and its given step "six is entered" and then step "one and a half is displayed" stay linked to `number ready` and `number result` as they are. No binding change is required — the step keeps binding to the same concept `halve`, which after this edit states the twice-applied variation.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

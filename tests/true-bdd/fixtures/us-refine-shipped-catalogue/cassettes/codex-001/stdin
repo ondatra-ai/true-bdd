@@ -11,50 +11,7 @@ Fix only what the failed check found; a problem it did not find is neither yours
 
 The Product Owner chose apply at the menu for Story halve-negative.
 Approved fix:
-PROPOSED REPAIR — Item `halve-negative` (not applied; awaiting an explicit menu decision)
-
-## Diagnosis
-
-Nine findings, three of which fail: the `when` step of every acceptance criterion
-(001-even, 002-odd, 003-near-zero) is the identical sentence
-
-    the Calculator User halves the number
-
-and it reaches no concept, because `docs/product/product.yaml` declares concepts
-for the `given` and `then` uses only — there is no `when` block at all. The six
-`given`/`then` steps all score 10 against `number supplied` and `result` and are
-healthy; nothing about them, nor about the Story wording, is at fault.
-
-Because no `when` concept exists, there is no concept of that item and use to
-widen. Per the repair policy this is a new use, so the repair adds exactly one
-new concept and changes nothing else. No Story or Scenario rewrite is proposed:
-the step wording is already a plain, unqualified statement of the halve action
-and uses no forbidden qualifier.
-
-## Owner
-
-Product Owner — this is a concept addition to the product document. No binding
-change is requested of the System Architect; the existing `given` and `then`
-bindings stand unchanged.
-
-## Change 1 of 1 — `docs/product/product.yaml`, add a `when` concept
-
-Insert a `when:` block between the existing `given:` and `then:` blocks of
-`concepts:`, so the three uses read in Gherkin order. Replace these lines:
-
-```yaml
-concepts:
-  given:
-    - concept: number supplied
-      means: The calculator is supplied a stated, already validated integer.
-      terms: []
-  then:
-    - concept: result
-      means: The halve command succeeds and prints exactly a stated integer, the half rounded toward zero.
-      terms: []
-```
-
-with:
+Edit `./docs/product/product.yaml` only. Add a `when` concept block to the `concepts` mapping, between the existing `given` and `then` blocks, so the `when` step `the Calculator User halves the number` in the halve-negative Story has a concept to bind to. The `concepts` mapping becomes exactly:
 
 ```yaml
 concepts:
@@ -64,7 +21,7 @@ concepts:
       terms: []
   when:
     - concept: halve requested
-      means: The Calculator User runs the halve command on the supplied number.
+      means: The Calculator User asks the calculator to halve the number it was supplied, whatever that number is, and the calculator halves it rounding toward zero.
       terms: []
   then:
     - concept: result
@@ -72,26 +29,7 @@ concepts:
       terms: []
 ```
 
-## What is preserved
-
-- `given: number supplied` — unchanged, means and terms verbatim.
-- `then: result` — unchanged, means and terms verbatim.
-- Every step of all three acceptance criteria — unchanged, including the three
-  `when` steps, which this concept is written to admit as stated.
-- `title`, `description`, `roles`, `vocabulary` and `glossary` — untouched.
-- The new concept holds only `concept`, `means` and `terms`, and its means is
-  closed prose covering the single variation the three identical `when` steps
-  present: the Calculator User running halve on the supplied number.
-
-## Expected effect
-
-Each of the three `when` steps links to `halve requested` at or above the
-threshold of 9, and the Item's actual result moves from fail to pass.
-
-## Apply
-
-Do not apply yet. Apply only on an explicit menu decision by the Product Owner;
-the change is confined to `docs/product/product.yaml`.
+Leave `title`, `description`, `roles`, `vocabulary`, `glossary` and the existing `given` and `then` concepts byte-for-byte unchanged. Make no change to the halve-negative Story: its three `when` steps already read `the Calculator User halves the number` and bind to the new `halve requested` concept as written.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

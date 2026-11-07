@@ -25,12 +25,12 @@
     "{\n  \"suite\": \"tests/calc-given-1\",\n  \"service\": \"calc\",\n  \"product\": \"roles:\\n- name: Owner\\n  description: Uses the calculator.\\nconcepts:\\n  given:\\n  - concept: toolchain\\n    means: The calculator runs on a named toolchain of the suite's fixtures before the Owner acts.\\n    terms:\\n    - toolchain\\n  when:\\n  - concept: halving\\n    means: The Owner halves a whole number, positive, zero or negative, with the calculator.\\n    terms:\\n    - number\\n  then:\\n  - concept: result\\n    means: The calculator prints the whole number the halving produced.\\n    terms:\\n    - number\\nglossary:\\n- term: number\\n  means: A whole number, positive, zero or negative.\\n- term: toolchain\\n  means: The Go tool a halving is run with, a named fixture's stand-in or the installed one.\\n\",\n  \"steps\": [\n    {\n      \"key\": \"1\",\n      \"block\": \"given\",\n      \"text\": \"the calculator runs on the \\\"offline\\\" toolchain\"\n    }\n  ]\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 4239,
+  "duration_ms": 36,
   "request_hash": "sha256:51d4fdf3259cfc9aa80dd617775675a89dcabf48dd1c9166171c5c2a67554f46",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-11-07T17:57:02Z"
+  "recorded_at": "2026-11-07T18:59:10Z"
 }
