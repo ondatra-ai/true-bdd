@@ -46,6 +46,16 @@ def forward():
 # The verification Q is never answered here, even when it mentions proposal text.
 if program == 'claude' and 'Verification evidence for one Concept Item.' in user:
     forward()
+elif program == 'claude' and 'Group the supplied distinct unbound steps of one suite and block.' in whole:
+    payload = json.loads(user)
+    blocks = {step['block'] for step in payload['steps']}
+    matches = [control for control in controls if blocks == {control['block']}]
+    if len(matches) == 1:
+        envelope({'assignments': [{'index': int(step['key']), 'concept': matches[0]['concept'],
+                                   'score': 10, 'runner_up': None, 'runner_up_score': 0}
+                                  for step in payload['steps']]})
+    else:
+        forward()
 elif program == 'claude' and 'Propose the step definition patterns of one concept for one suite,' in whole:
     payload = json.loads(user if user.strip() else args[-1])
     control = selected(payload['concept']['concept'], payload['block'])

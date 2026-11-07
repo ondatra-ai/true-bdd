@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -17,7 +18,10 @@ import (
 	proxycli "github.com/ondatra-ai/true-bdd/pkg/proxy/cli"
 )
 
-const verificationCodex = "codex"
+const (
+	verificationCodex            = "codex"
+	verificationSystemPromptFlag = "--system-prompt"
+)
 
 type fixtureVerificationControl struct {
 	ID         string `json:"id"`
@@ -137,11 +141,15 @@ func TestVerificationControlCLIsPlantBodiesAndForwardVerification(t *testing.T) 
 			t.Run(control.ID, func(t *testing.T) {
 				assertPlantedVerificationControl(t, shims, env, control)
 			})
+			t.Run(control.ID+"/grouping", func(t *testing.T) {
+				assertGroupedVerificationControl(t, shims, env, control)
+			})
 		}
 
 		root := t.TempDir()
 		input := "Verification evidence for one Concept Item.\n" +
-			"Propose the step definition patterns of one concept for one suite,\n\n"
+			"Propose the step definition patterns of one concept for one suite,\n" +
+			"Group the supplied distinct unbound steps of one suite and block.\n"
 		args := []string{"--flag", "two words", ""}
 		result := runVerificationControlCLI(t, shims, root, env, claude.Bin, args, input)
 
@@ -152,12 +160,48 @@ func TestVerificationControlCLIsPlantBodiesAndForwardVerification(t *testing.T) 
 	}
 }
 
+func assertGroupedVerificationControl(t *testing.T, shims string, env []string, control fixtureVerificationControl) {
+	t.Helper()
+
+	protocol := "Group the supplied distinct unbound steps of one suite and block."
+	args := []string{verificationSystemPromptFlag, protocol}
+	input := fmt.Sprintf(`{"steps":[{"key":"4","block":%q,"text":"first"},{"key":"9","block":%q,"text":"second"}]}`,
+		control.Block, control.Block)
+	result := runVerificationControlCLI(t, shims, t.TempDir(), env, claude.Bin, args, input)
+
+	var envelope struct {
+		StructuredOutput any `json:"structured_output"`
+	}
+
+	err := json.Unmarshal([]byte(result.Stdout), &envelope)
+	if err != nil || result.Code != 0 {
+		t.Fatalf("grouping plant: %+v, %v", result, err)
+	}
+
+	var expected any
+
+	err = json.Unmarshal(fmt.Appendf(nil, `{"assignments":[`+
+		`{"index":4,"concept":%q,"score":10,"runner_up":null,"runner_up_score":0},`+
+		`{"index":9,"concept":%q,"score":10,"runner_up":null,"runner_up_score":0}]}`,
+		control.Concept, control.Concept), &expected)
+	if err != nil || !reflect.DeepEqual(envelope.StructuredOutput, expected) {
+		t.Fatalf("grouping must assign every batch key to its planted Concept: %+v, %v", result, err)
+	}
+
+	input = `{"steps":[{"key":"1","block":"uncontrolled","text":"forward me"}]}`
+
+	result = runVerificationControlCLI(t, shims, t.TempDir(), env, claude.Bin, args, input)
+	if result.Code != 7 || result.Stdout != input || result.Stderr != "<--system-prompt>\n<"+protocol+">\n" {
+		t.Fatalf("uncontrolled grouping was intercepted or changed: %+v", result)
+	}
+}
+
 func assertPlantedVerificationControl(t *testing.T, shims string, env []string, control fixtureVerificationControl) {
 	t.Helper()
 	root := t.TempDir()
 	input := fmt.Sprintf(`{"block":%q,"concept":{"concept":%q}}`, control.Block, control.Concept)
 	result := runVerificationControlCLI(t, shims, root, env, claude.Bin,
-		[]string{"--system-prompt", "Propose the step definition patterns of one concept for one suite,"}, input)
+		[]string{verificationSystemPromptFlag, "Propose the step definition patterns of one concept for one suite,"}, input)
 
 	var proposal struct {
 		StructuredOutput struct {

@@ -27,7 +27,7 @@ func TestRuntimePromptInstructionsPreserveUndeclaredHostBytes(t *testing.T) {
 	checkRuntimePromptBytes(t, "fix-applier", validate.FixApplierData{Subject: item},
 		"2301b3442b5ba4703757c95960c28765275cca8ec839244420939b2fa4b0d422")
 	checkRuntimePromptBytes(t, "critique.system", validate.StepCritiqueData{Context: item.Context},
-		"0490fa754add3c63d2ef512cab3ddc48b121d02dc23d9e2ba235ec655da60ca0")
+		"c276012d02df2657eba73efcddfc29d1a70a65d8c129eebb76470de200ab4d69")
 	checkRuntimePromptBytes(t, "critique", validate.StepCritiqueData{Context: item.Context},
 		"c430f53174e8622477ee35baeaa5e6227730071628d459ea03e0f198cc0e8e36")
 }
