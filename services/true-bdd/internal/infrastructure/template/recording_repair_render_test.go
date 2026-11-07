@@ -8,11 +8,11 @@ import (
 )
 
 const (
-	termMappingsCheck = "term-mappings"
+	termMappingsCheck    = "term-mappings"
 	stepDefinitionsCheck = "step-definitions"
 	publicInterfaceCheck = "public-interface"
-	declaredTermsCheck = "declared-terms"
-	wordsJudgement = "words"
+	declaredTermsCheck   = "declared-terms"
+	wordsJudgement       = "words"
 )
 
 func repairPrompt(t *testing.T, command, role, check, judgement string) string {
@@ -24,7 +24,7 @@ func repairPrompt(t *testing.T, command, role, check, judgement string) string {
 	}
 
 	data := map[string]any{
-		"Subject": subject,
+		"Subject":   subject,
 		"SubjectID": "calc-001", "Judgement": judgement, "Check": check,
 		"FailedCheck": map[string]any{"Check": check, "Judgement": judgement},
 		"UserAnswers": map[string]string{"q1": "A reply is the service's response."},
@@ -112,6 +112,38 @@ func TestGlossaryFormAppearsOnlyInGlossaryProposals(t *testing.T) {
 		out := repairPrompt(t, "scen-check", "fix-generator.system.prompt", check, "")
 		if strings.Contains(out, rule) != (check == declaredTermsCheck) {
 			t.Errorf("check %q: glossary form misplaced", check)
+		}
+	}
+}
+
+func TestJudgementFixProposalsHaveThreeOutcomes(t *testing.T) {
+	t.Parallel()
+
+	for _, command := range []string{"scen-check", "us-checklist"} {
+		user := repairPrompt(t, command, "fix-generator.prompt", "", wordsJudgement)
+		system := repairPrompt(t, command, "fix-generator.system.prompt", "", wordsJudgement)
+
+		for _, phrase := range []string{
+			"Owner's settled answers to propose from:",
+			"Propose from these answers; ask only for meaning or operations they and the Specification do not give.",
+			"`cannot_fix`", "{reason, correction}", "Exactly one of the three carries content.",
+		} {
+			if !strings.Contains(user, phrase) {
+				t.Errorf("%s judgement lacks %q", command, phrase)
+			}
+		}
+
+		for _, phrase := range []string{
+			"The engine shows the fix prompt to its owner at the menu and applies it only after approval.",
+			"The fix prompt is the edit to apply and asks for no approval.",
+		} {
+			if !strings.Contains(system, phrase) {
+				t.Errorf("%s judgement lacks %q", command, phrase)
+			}
+		}
+
+		if strings.Contains(user, "Exactly one carries content:") || strings.Contains(user, "User answers:") {
+			t.Errorf("%s judgement retains the obsolete contract", command)
 		}
 	}
 }
