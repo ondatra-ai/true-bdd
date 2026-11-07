@@ -1,6 +1,7 @@
 package validate_test
 
 import (
+	"errors"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -9,6 +10,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/disk"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/template"
+	pkgerrors "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/pkg/errors"
 )
 
 const (
@@ -56,7 +58,6 @@ func TestProposalLeavesPatternJudgementToTheChecklist(t *testing.T) {
 	if err != nil || result.Status != checklist.StatusPass || len(subject.Patterns) != 1 {
 		t.Fatalf("colliding proposal: %+v, %v", result, err)
 	}
-
 
 	for _, want := range []string{`"halve -7"`, `^halve (\\d+)$`, "Press Halve once.", "Halve"} {
 		if !strings.Contains(reply.user, want) {
@@ -108,5 +109,28 @@ func TestMalformedProposalAnswerCrashes(t *testing.T) {
 		if err == nil {
 			t.Errorf("malformed proposal passed: %s", answer)
 		}
+	}
+}
+
+func TestPatternBindingsFixCanRefuseWithoutChangingItsQuestion(t *testing.T) {
+	evaluator, reply, _ := conceptRequestEvaluator(t)
+	bindHalve(t)
+
+	subject := proposalSubject()
+	subject.Findings = []string{"no pattern can serve the closed binding"}
+	reply.response = `{"patterns":[],"cannot_fix":{"reason":"The binding omits signed operands.",` +
+ `"correction":"Decide whether negative operands are supported."}}`
+
+	_, err := evaluator.EvaluateOne(t.Context(), subject, subject.ID, proposalPrompt(), t.TempDir())
+	if !errors.Is(err, pkgerrors.ErrCannotFix) || !strings.Contains(err.Error(), "Decide whether negative operands") {
+		t.Fatalf("pattern-bindings refusal: %v", err)
+	}
+
+	if len(subject.Patterns) != 0 || !strings.Contains(reply.schema, `"cannot_fix"`) {
+		t.Fatalf("refusal produced patterns or lacks schema outcome: %+v %s", subject.Patterns, reply.schema)
+	}
+
+	if strings.Contains(reply.user, "This is the F of step-verification") {
+		t.Fatalf("pattern-bindings received verification-only instructions: %s", reply.user)
 	}
 }

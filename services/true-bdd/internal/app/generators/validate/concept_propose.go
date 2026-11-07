@@ -49,9 +49,9 @@ func (e *ChecklistEvaluator) evaluatePropose(ctx context.Context, subject any, p
 		return result, err
 	}
 
-	schema := proposalSchema
+	schema := patternRepairSchema()
+
 	if len(item.Critique) > 0 {
-		schema = patternRepairSchema()
 		prompt.Prompt.Question += "\nThis is the F of step-verification. Fix only its supplied findings; " +
 			"preserve every other pattern. If this fix is impossible under the Specification, " +
 			"return patterns: [] and cannot_fix: {reason, correction}; otherwise return the patterns and cannot_fix: null."
@@ -62,11 +62,9 @@ func (e *ChecklistEvaluator) evaluatePropose(ctx context.Context, subject any, p
 		return result, err
 	}
 
-	if len(item.Critique) > 0 {
-		outcomeErr := cannotFixFromContent(response, false)
-		if outcomeErr != nil {
-			return result, outcomeErr
-		}
+	outcomeErr := cannotFixFromContent(response, false)
+	if outcomeErr != nil {
+		return result, outcomeErr
 	}
 
 	patterns, err := gradeProposal(response)

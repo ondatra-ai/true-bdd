@@ -57,7 +57,6 @@ func (e *buildStepsExecution) prepareConcepts(ctx context.Context) ([]*BuildStep
 		item.Findings = []string{"step not written yet: " + item.Label()}
 	}
 
-	e.initializeItems()
 
 	return discovery.items, nil
 }

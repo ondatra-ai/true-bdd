@@ -97,10 +97,6 @@ func (e *buildStepsExecution) configureRoots(arch *architecture.Architecture,
 	return nil
 }
 
-func (e *buildStepsExecution) initializeItems() {
-	e.attempts = make(map[*BuildStepsItem]int)
-}
-
 func (e *buildStepsExecution) configureEvidenceRoots(host string, paths, documents []string) {
 	e.readRoots = append([]string{}, paths...)
 

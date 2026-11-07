@@ -29,7 +29,6 @@ type buildStepsExecution struct {
 	compiler         *testrunner.GoTestRunner
 	shape            string
 	active           *BuildStepsItem
-	attempts         map[*BuildStepsItem]int
 	concepts         *conceptRun
 }
 
@@ -77,7 +76,6 @@ func (e *buildStepsExecution) beforeEvaluate(_ context.Context, item *BuildSteps
 }
 
 func (e *buildStepsExecution) postFix(_ context.Context, item *BuildStepsItem, _ string) (*BuildStepsItem, error) {
-	e.attempts[item]++
 	item.Findings = nil
 
 	findings := append(append([]error{
