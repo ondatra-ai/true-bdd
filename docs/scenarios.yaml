@@ -8265,3 +8265,209 @@ scenarios:
       - 'the engine spawned no test runners'
       - 'stdout does not match BUILD TESTS COMPLETE'
       - 'no file outside "tmp" changed'
+
+
+  verification-controls-001-assertion-original:
+    description: The step-verification Q returns the preserved verdicts for build-steps-critique-assertion-claude-005
+    service: true-bdd
+    path: tests/true-bdd/verification_controls_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/step-verification-controls.yaml
+      scenario_id: verification-controls-001-assertion-original
+      merge_date: '2026-11-07'
+    merged_steps:
+      given:
+      - the "verification-controls-assertion-original" project tree
+      - the verification controls in "verification-controls-assertion-original" use preserved pattern proposals and
+        bodies
+      - the System Architect's answers are "1/1/3" line by line
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 1
+      - no file outside "tmp" and "tests" changed
+  verification-controls-002-assertion-repair:
+    description: The step-verification Q returns the preserved verdicts for build-steps-critique-assertion-claude-007,
+      build-steps-critique-correct-claude-006
+    service: true-bdd
+    path: tests/true-bdd/verification_controls_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/step-verification-controls.yaml
+      scenario_id: verification-controls-002-assertion-repair
+      merge_date: '2026-11-07'
+    merged_steps:
+      given:
+      - the "verification-controls-assertion-repair" project tree
+      - the verification controls in "verification-controls-assertion-repair" use preserved pattern proposals and
+        bodies
+      - the System Architect's answers are "1/1/1/1" line by line
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 0
+      - no file outside "tmp" and "tests" changed
+  verification-controls-003-capture-original:
+    description: The step-verification Q returns the preserved verdicts for concept-bodies-capture-claude-004
+    service: true-bdd
+    path: tests/true-bdd/verification_controls_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/step-verification-controls.yaml
+      scenario_id: verification-controls-003-capture-original
+      merge_date: '2026-11-07'
+    merged_steps:
+      given:
+      - the "verification-controls-capture-original" project tree
+      - the verification controls in "verification-controls-capture-original" use preserved pattern proposals and
+        bodies
+      - the System Architect's answers are "1/1/3" line by line
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 1
+      - no file outside "tmp" and "tests" changed
+  verification-controls-004-capture-repair:
+    description: The step-verification Q returns the preserved verdicts for concept-bodies-capture-claude-008
+    service: true-bdd
+    path: tests/true-bdd/verification_controls_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/step-verification-controls.yaml
+      scenario_id: verification-controls-004-capture-repair
+      merge_date: '2026-11-07'
+    merged_steps:
+      given:
+      - the "verification-controls-capture-repair" project tree
+      - the verification controls in "verification-controls-capture-repair" use preserved pattern proposals and bodies
+      - the System Architect's answers are "1/1" line by line
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 0
+      - no file outside "tmp" and "tests" changed
+  verification-controls-005-computed:
+    description: The step-verification Q returns the preserved verdicts for computed-assertion-control
+    service: true-bdd
+    path: tests/true-bdd/verification_controls_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/step-verification-controls.yaml
+      scenario_id: verification-controls-005-computed
+      merge_date: '2026-11-07'
+    merged_steps:
+      given:
+      - the "verification-controls-computed" project tree
+      - the verification controls in "verification-controls-computed" use preserved pattern proposals and bodies
+      - the System Architect's answers are "1/1/3" line by line
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 1
+      - no file outside "tmp" and "tests" changed
+  verification-controls-006-extra-original:
+    description: The step-verification Q returns the preserved verdicts for concept-bodies-extra-claude-003
+    service: true-bdd
+    path: tests/true-bdd/verification_controls_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/step-verification-controls.yaml
+      scenario_id: verification-controls-006-extra-original
+      merge_date: '2026-11-07'
+    merged_steps:
+      given:
+      - the "verification-controls-extra-original" project tree
+      - the verification controls in "verification-controls-extra-original" use preserved pattern proposals and bodies
+      - the System Architect's answers are "1/1/3" line by line
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 1
+      - no file outside "tmp" and "tests" changed
+  verification-controls-007-extra-repair:
+    description: The step-verification Q returns the preserved verdicts for concept-bodies-extra-claude-005
+    service: true-bdd
+    path: tests/true-bdd/verification_controls_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/step-verification-controls.yaml
+      scenario_id: verification-controls-007-extra-repair
+      merge_date: '2026-11-07'
+    merged_steps:
+      given:
+      - the "verification-controls-extra-repair" project tree
+      - the verification controls in "verification-controls-extra-repair" use preserved pattern proposals and bodies
+      - the System Architect's answers are "1/1" line by line
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 0
+      - no file outside "tmp" and "tests" changed
+  verification-controls-008-operation:
+    description: The step-verification Q returns the preserved verdicts for concept-bodies-cases-claude-009
+    service: true-bdd
+    path: tests/true-bdd/verification_controls_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/step-verification-controls.yaml
+      scenario_id: verification-controls-008-operation
+      merge_date: '2026-11-07'
+    merged_steps:
+      given:
+      - the "verification-controls-operation" project tree
+      - the verification controls in "verification-controls-operation" use preserved pattern proposals and bodies
+      - the System Architect's answers are "1/1/3" line by line
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 1
+      - no file outside "tmp" and "tests" changed
+  verification-controls-009-output:
+    description: The step-verification Q returns the preserved verdicts for concept-bodies-cases-claude-011
+    service: true-bdd
+    path: tests/true-bdd/verification_controls_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/step-verification-controls.yaml
+      scenario_id: verification-controls-009-output
+      merge_date: '2026-11-07'
+    merged_steps:
+      given:
+      - the "verification-controls-output" project tree
+      - the verification controls in "verification-controls-output" use preserved pattern proposals and bodies
+      - the System Architect's answers are "1/1" line by line
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 0
+      - no file outside "tmp" and "tests" changed
+  verification-controls-010-toolchain:
+    description: The step-verification Q returns the preserved verdicts for concept-bodies-contract-claude-003
+    service: true-bdd
+    path: tests/true-bdd/verification_controls_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/step-verification-controls.yaml
+      scenario_id: verification-controls-010-toolchain
+      merge_date: '2026-11-07'
+    merged_steps:
+      given:
+      - the "verification-controls-toolchain" project tree
+      - the verification controls in "verification-controls-toolchain" use preserved pattern proposals and bodies
+      - the System Architect's answers are "1/1" line by line
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 0
+      - no file outside "tmp" and "tests" changed

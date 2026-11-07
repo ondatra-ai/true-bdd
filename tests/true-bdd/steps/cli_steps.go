@@ -53,6 +53,7 @@ func Register(suite testkit.StepRegistrar[State]) {
 	registerConcurrentValidationSteps(suite)
 	registerIOSteps(suite)
 	registerChecklistModelSteps(suite)
+ registerVerificationControlSteps(suite)
 }
 
 // registerEngineLogSteps binds the assertions that read the CLI's own

@@ -1573,7 +1573,17 @@ architecture:
       declared halve command without that helper. The first unused-pattern proposal uses F/cli as fallback,
       requiring claude and fixture concept-steps-unused. Only its first pattern proposal adds a pattern
       binding no suite step; all other turns forward unchanged to the genuine CLI outside F/cli and
-      every proxy directory. Concurrent arrival uses F/front first and F/cli
+      every proxy directory. Preserved verification controls use F/cli as fallback for both claude and codex;
+      require the Given's named fixture to equal the selected fixture and to be one of verification-controls-extra-original,
+      verification-controls-extra-repair, verification-controls-capture-original, verification-controls-capture-repair,
+      verification-controls-operation, verification-controls-output, verification-controls-toolchain,
+      verification-controls-assertion-original,
+      verification-controls-assertion-repair or verification-controls-computed. Its controls.json selects the archived
+      patterns by block and concept. Claude supplies those pattern and body proposals; codex writes the preserved body
+      to its engine-created skeleton and returns the apply confirmation. Set CODEX_HOME=F/auth, containing only
+      the fixture's dummy authentication, before the controlled writer runs. Grouping, binding and the step-verification Q
+      forward unchanged outside the fixture and all proxy directories; verification is never answered by the control.
+      Concurrent arrival uses F/front first and F/cli
       as fallback; set TRUE_BDD_CONCURRENT_PROXY to the observing claude's absolute path.
       Existing front launchers coordinate alpha/beta requests, alpha first in record, beta first in replay;
       the Given installs them without implementing ordering.
@@ -1725,6 +1735,12 @@ architecture:
       These assertions precede exit-code assertions. Model scheme is shipped compares bytes at
       true-bdd/models/<model>.schema.yaml in the run root with the same relative file in the suite's
       original project root, outside the assembled run, independently of templates.schemes overrides.
+      For preserved verification controls, read F/controls.json at the selected fixture root. Each entry's id,
+      definition.function, expected_verdict and category are authoritative. Find every saved user prompt at
+      R/tmp/*/*checklist-build-steps-step-verification-user.txt whose definitions name that function, require at least
+      one, and read its sibling -response.txt JSON. Every answer must equal expected_verdict and a failure must contain
+      the expected category. On a missing answer or mismatch, name the control and saved prompt and response paths;
+      never alter its expected verdict or evidence. F and R are the fixture root and assembled run root.
   - concept: Story content
     block: then
     service: true-bdd

@@ -1,0 +1,145 @@
+story:
+  id: verification-controls
+  feature: build-steps
+  title: Preserve and judge the known-answer verification controls
+  as_a: System Architect
+  i_want: the real step-verification Q to judge preserved definitions with known answers
+  so_that: a changed verdict is reported with its saved prompt rather than hidden by a regenerated body
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 001-assertion-original
+    description: The step-verification Q returns the preserved verdicts for build-steps-critique-assertion-claude-005
+    steps:
+    - given:
+      - the "verification-controls-assertion-original" project tree
+      - the verification controls in "verification-controls-assertion-original" use preserved pattern proposals
+        and bodies
+      - the System Architect's answers are "1/1/3" line by line
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 1
+      - no file outside "tmp" and "tests" changed
+  - id: 002-assertion-repair
+    description: The step-verification Q returns the preserved verdicts for build-steps-critique-assertion-claude-007,
+      build-steps-critique-correct-claude-006
+    steps:
+    - given:
+      - the "verification-controls-assertion-repair" project tree
+      - the verification controls in "verification-controls-assertion-repair" use preserved pattern proposals and
+        bodies
+      - the System Architect's answers are "1/1/1/1" line by line
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 0
+      - no file outside "tmp" and "tests" changed
+  - id: 003-capture-original
+    description: The step-verification Q returns the preserved verdicts for concept-bodies-capture-claude-004
+    steps:
+    - given:
+      - the "verification-controls-capture-original" project tree
+      - the verification controls in "verification-controls-capture-original" use preserved pattern proposals and
+        bodies
+      - the System Architect's answers are "1/1/3" line by line
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 1
+      - no file outside "tmp" and "tests" changed
+  - id: 004-capture-repair
+    description: The step-verification Q returns the preserved verdicts for concept-bodies-capture-claude-008
+    steps:
+    - given:
+      - the "verification-controls-capture-repair" project tree
+      - the verification controls in "verification-controls-capture-repair" use preserved pattern proposals and
+        bodies
+      - the System Architect's answers are "1/1" line by line
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 0
+      - no file outside "tmp" and "tests" changed
+  - id: 005-computed
+    description: The step-verification Q returns the preserved verdicts for computed-assertion-control
+    steps:
+    - given:
+      - the "verification-controls-computed" project tree
+      - the verification controls in "verification-controls-computed" use preserved pattern proposals and bodies
+      - the System Architect's answers are "1/1/3" line by line
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 1
+      - no file outside "tmp" and "tests" changed
+  - id: 006-extra-original
+    description: The step-verification Q returns the preserved verdicts for concept-bodies-extra-claude-003
+    steps:
+    - given:
+      - the "verification-controls-extra-original" project tree
+      - the verification controls in "verification-controls-extra-original" use preserved pattern proposals and
+        bodies
+      - the System Architect's answers are "1/1/3" line by line
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 1
+      - no file outside "tmp" and "tests" changed
+  - id: 007-extra-repair
+    description: The step-verification Q returns the preserved verdicts for concept-bodies-extra-claude-005
+    steps:
+    - given:
+      - the "verification-controls-extra-repair" project tree
+      - the verification controls in "verification-controls-extra-repair" use preserved pattern proposals and bodies
+      - the System Architect's answers are "1/1" line by line
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 0
+      - no file outside "tmp" and "tests" changed
+  - id: 008-operation
+    description: The step-verification Q returns the preserved verdicts for concept-bodies-cases-claude-009
+    steps:
+    - given:
+      - the "verification-controls-operation" project tree
+      - the verification controls in "verification-controls-operation" use preserved pattern proposals and bodies
+      - the System Architect's answers are "1/1/3" line by line
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 1
+      - no file outside "tmp" and "tests" changed
+  - id: 009-output
+    description: The step-verification Q returns the preserved verdicts for concept-bodies-cases-claude-011
+    steps:
+    - given:
+      - the "verification-controls-output" project tree
+      - the verification controls in "verification-controls-output" use preserved pattern proposals and bodies
+      - the System Architect's answers are "1/1" line by line
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 0
+      - no file outside "tmp" and "tests" changed
+  - id: 010-toolchain
+    description: The step-verification Q returns the preserved verdicts for concept-bodies-contract-claude-003
+    steps:
+    - given:
+      - the "verification-controls-toolchain" project tree
+      - the verification controls in "verification-controls-toolchain" use preserved pattern proposals and bodies
+      - the System Architect's answers are "1/1" line by line
+    - when:
+      - the System Architect runs "build steps --fix"
+    - then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 0
+      - no file outside "tmp" and "tests" changed

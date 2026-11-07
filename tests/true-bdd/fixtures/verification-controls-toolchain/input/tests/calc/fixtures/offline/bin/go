@@ -1,0 +1,8 @@
+#!/bin/sh
+# The calculator's offline Go toolchain: a stand-in for go that runs the
+# real toolchain, named by CALC_REAL_GO, with module downloads turned off.
+if [ -z "${CALC_REAL_GO:-}" ]; then
+  echo "CALC_REAL_GO must name the real go" >&2
+  exit 97
+fi
+GOPROXY=off exec "$CALC_REAL_GO" "$@"

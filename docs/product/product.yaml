@@ -226,7 +226,8 @@ concepts:
         command's changes, with the fixture's dummy authentication and programs,
         or answering that the Public interface cannot serve a Concept,
         or reusing a shipped helper on its first apply; claude
-        planting an unused pattern in only the first proposal and forwarding other turns; claude
+        planting an unused pattern in only the first proposal and forwarding other turns; claude and codex
+        planting preserved verification patterns and bodies while the verification Q remains a real claude turn; claude
         giving malformed answers where a Checklist item asks it to link steps to
         a Concept or group them by Concept; or claude controlling which of two
         Scenarios' validation AI turns arrives first.
@@ -307,7 +308,7 @@ concepts:
         keeping the previous content. A Model's saved checklist prompt preserves the named construction rule:
         criterion selection and lineage, step block and source order, and/but modifiers, Story embedding and Feature,
         Scenario key and fields, ordered lineage without merge_date, or question and fix verbatim from its checklist.
-        A shipped Model scheme equals its declared file.
+        A shipped Model scheme equals its declared file. Saved step-verification answers agree with the fixture's preserved expectations, each mismatch naming its saved prompt.
       terms: [project tree, glob, pattern, file change, engine, hard link, Model, checklist, Checklist item, Story, Feature, Acceptance Criterion, step, Scenario, Registry, lineage, Scenario key]
     - concept: Story content
       means: >-

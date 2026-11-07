@@ -1,0 +1,21 @@
+roles:
+- name: Owner
+  description: Uses the calculator.
+concepts:
+  given:
+  - concept: installation
+    means: The calculator program is built from its source and ready for the Owner to run.
+    terms: []
+  when:
+  - concept: doubling
+    means: The Owner doubles a whole number with the calculator.
+    terms:
+    - number
+  then:
+  - concept: result
+    means: The calculator prints the whole number the doubling produced.
+    terms:
+    - number
+glossary:
+- term: number
+  means: An integer operand whose double is its sum with itself.
