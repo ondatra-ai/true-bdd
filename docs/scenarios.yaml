@@ -7268,7 +7268,7 @@ scenarios:
       - stdout matches msg="Concept judgement answered" subjectID=host promptIndex=1 judgement=link answer=pass
       - every file matching "docs/product/product.yaml" does not match variations
       - the file "docs/product/stories/host-story.yaml" is unchanged
-      - 'judge: the product document''s result concept states in its means that the calculator prints the whole number the halving produced as well as the one the doubling produced, and every concept holds only concept, means and terms'
+      - 'judge: the product document''s result concept states in its means that the printed whole number may be the one the halving produced or the one the doubling produced, and every concept holds only concept, means and terms'
 
   concept-words-001-declare:
     description: A word repair must declare a glossary term and concept term through the refinement menu
