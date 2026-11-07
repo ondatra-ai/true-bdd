@@ -1,30 +1,43 @@
 package helpers
 
 import (
+	"bytes"
 	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
 )
 
-// HostRoot is the path from a calc suite test's working directory (tests/calc)
-// to the host root, which is where the declared calculator CLI is run from.
+// HostRoot is the host root the calculator CLI is run from, relative to
+// the suite's test working directory (tests/calc).
 const HostRoot = "../.."
 
-// RunHalve runs the declared halve command as a process, passing value through
-// unchanged as the command's value argument, and returns the integer carried on
-// the command's stdout. It never halves value itself: the returned integer is
-// only what the command printed.
-func RunHalve(value string) (int, error) {
+// Halve runs the declared `halve` command as a process, passing value
+// verbatim as its single required argument, and returns the integer the
+// command printed on stdout.
+//
+// The calculator alone decides the halved number: Halve only carries the
+// step's whole number to the command and reads back what the command
+// printed, so nothing here computes or adjusts a half.
+func Halve(value string) (int, error) {
 	cmd := exec.Command("go", "run", "./services/calc", "halve", value)
 	cmd.Dir = HostRoot
-	out, err := cmd.Output()
-	if err != nil {
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		if message := strings.TrimSpace(stderr.String()); message != "" {
+			return 0, fmt.Errorf("halve %s: %w: %s", value, err, message)
+		}
 		return 0, fmt.Errorf("halve %s: %w", value, err)
 	}
-	result, err := strconv.Atoi(strings.TrimSpace(string(out)))
+
+	printed := strings.TrimSpace(stdout.String())
+	result, err := strconv.Atoi(printed)
 	if err != nil {
-		return 0, fmt.Errorf("halve %s: stdout %q is not an integer: %w", value, string(out), err)
+		return 0, fmt.Errorf("halve %s: stdout %q is not an integer: %w", value, printed, err)
 	}
 	return result, nil
 }

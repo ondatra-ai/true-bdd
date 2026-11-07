@@ -11,58 +11,41 @@ Fix only what the failed check found; a problem it did not find is neither yours
 
 The Product Owner chose apply at the menu for Story host.
 Approved fix:
-# Proposed repair — Item `host` (awaiting menu apply)
+Rewrite the failed when step in the Story so it names the operation the Story and the product actually offer. The product offers one operation, Halve, and states it has no Square operation, so no concept is widened and no concept is added; `docs/product/product.yaml` is left unchanged.
 
-**Failed judgement:** AC-1 when step "square six" — no `when` concept reaches the threshold (best: `halve`, score 1 of 9).
+Apply this single edit to `docs/product/stories/host-story.yaml` — in acceptance criterion AC-1, in the `when` block, replace the step text `square six` with `halve six`:
 
-**Diagnosis:** The product states the calculator offers one operation, Halve, and *has no Square operation*. There is therefore no Public interface item "Square" and no existing kind of use for squaring, so neither widening a concept nor adding a new concept is warranted — a `square` concept would assert an operation the product denies. The Story's own title ("Halve a number"), `i_want` ("to halve a number"), `so_that` ("I can read its half") and AC-1 description ("The number must be halved"), together with the then step "three is displayed" (three being half of six), all show the intended action is halving. The word "square" is a wording slip in the step.
-
-**Owner of this change:** Product Owner (Story wording).
-
-**Change 1 of 1 — rewrite the when step in the Story `host`, AC-1.**
-
-Target: Item `host`, acceptance criterion `AC-1`, the single `when` step.
-
-Before:
-
-```yaml
-        - when:
-            - square six
+```
+          {
+            "when": [
+              "halve six"
+            ]
+          },
 ```
 
-After:
+The whole AC-1 steps block after the edit:
 
-```yaml
-        - when:
-            - halve six
+```
+        "steps": [
+          {
+            "given": [
+              "six is entered"
+            ]
+          },
+          {
+            "when": [
+              "halve six"
+            ]
+          },
+          {
+            "then": [
+              "three is displayed"
+            ]
+          }
+        ]
 ```
 
-The rewritten step reads as a plain instance of the existing `when` concept `halve` ("Halve the entered number once."): it is an action on the calculator that halves the entered number exactly once.
-
-**Resulting Story after the change** (all other fields and steps unchanged):
-
-```yaml
-id: host
-title: Halve a number
-as_a: Product Owner
-i_want: to halve a number
-so_that: I can read its half
-status: DRAFT
-acceptance_criteria:
-    - id: AC-1
-      description: The number must be halved
-      steps:
-        - given:
-            - six is entered
-        - when:
-            - halve six
-        - then:
-            - three is displayed
-```
-
-**No change to `docs/product/product.yaml`.** The concepts `number ready`, `halve` and `number result` stay exactly as written; the given step "six is entered" and the then step "three is displayed" stay exactly as written, both already linked above threshold.
-
-**Apply:** requires an explicit menu decision. Nothing has been changed.
+Change nothing else: the given step `six is entered` keeps its link to concept `number ready`, the then step `three is displayed` keeps its link to concept `number result`, and the Story's id, title, as_a, i_want, so_that, status and the AC-1 description `The number must be halved` all stay as they are. After the edit the when step `halve six` is a plain instance of the `when` concept `halve` ("Halve the entered number once."), and the step now agrees with the Story's title `Halve a number`, its i_want `to halve a number`, the AC-1 description `The number must be halved`, and the then step, since three is half of six.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

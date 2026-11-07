@@ -10,46 +10,27 @@ Fix only what the failed check found; a problem it did not find is neither yours
 ### TASK
 
 The Product Owner chose apply at the menu. Apply this approved word repair:
-PROPOSED REPAIR (Product Owner — word repair; NOT APPLIED. Apply only after an explicit `apply` decision at the menu.)
+In `./docs/product/product.yaml`, reword the `when` concept `halve` so its means uses the product's own words instead of the protocol phrase "idempotency key". The product description already speaks of a "request label", and the language policy bars technical protocol vocabulary, so no new glossary term is declared and `terms` stays empty.
 
-Item: host | Failed judgement: `when: halve` — undeclared domain word "idempotency key".
+Change this one mapping under `concepts.when` (keep the file's existing JSON-style YAML formatting and indentation):
 
-DECISION: reword the concept's `means` in product words and plain English. No new glossary term.
-WHY NOT A DECLARED TERM: the product's `language_policy` reads "Product meanings use everyday English. Describe repeated requests and their labels in ordinary words; avoid technical protocol vocabulary in the glossary." Declaring "idempotency key" in the glossary is therefore ruled out by the product document itself. The product `description` already supplies the product word — "request label" — so the meaning can be carried in ordinary English with no term at all. `glossary` stays `[]` and every `terms` list stays `[]`.
+Before:
 
-FILE: docs/product/product.yaml (single file; document is JSON-shaped, keep that shape and 2-space indentation)
-
-EXACTLY ONE EDIT — replace the `means` string of the `when` concept `halve`.
-
-BEFORE (lines 16-22):
-  "when": [
       {
         "concept": "halve",
         "means": "Halve the entered number once with the supplied idempotency key.",
         "terms": []
       }
-    ],
 
-AFTER:
-  "when": [
+After:
+
       {
         "concept": "halve",
-        "means": "Halve the entered number once for the request label given with it. Repeating the same label does not halve the number again.",
+        "means": "Halve the entered number once, using the request label sent with it. Repeating the request with the same label changes the number only once.",
         "terms": []
       }
-    ],
 
-MEANING PRESERVED: "with the supplied idempotency key" becomes "for the request label given with it"; the second sentence states in ordinary words the once-only effect that the protocol term used to carry, matching the product `description` ("Repeating a request with the same label changes the number only once."). Both sentences are plain English, each under 25 words.
-
-OUT OF SCOPE — DO NOT CHANGE:
-- `given: number ready` and `then: number result` — their `means` are already ordinary English and contain no protocol word; the findings naming "idempotency key" against them are spurious (the word does not occur in either `means`). Leave both untouched.
-- `then: unused` — unrelated concept, leave its `means` and `terms` exactly as they are.
-- `glossary`, `description`, `language_policy`, `roles` — unchanged.
-- Story `host` (including the step "halve six once with idempotency key alpha"), any Scenario, and all architecture files — no edit belongs to this repair.
-- No new concept and no new variation: this widens nothing; the item `host` and its `when` use already have the concept `halve`.
-- No `meaning` field anywhere — this document's schema uses `means`.
-
-FOLLOW-UP (not part of this fix): none. Because no term is declared, there is no Word mapping for the System Architect to add via `scen check` D: term-mappings. Refinement does not wait on anything here.
+Change nothing else: leave `concepts.given` (`number ready`), `concepts.then` (`number result`, `unused`), `glossary` (stays empty), `roles`, `description` and `language_policy` exactly as they are. Do not touch the Story `host`, any Scenario, or the architecture document; no Word mapping is added by this fix.
 Edit ONLY the product working copy below, adding the glossary entry AND the
 concept's terms (a string list), or rewording its means. Glossary entries
 have term and means fields. Preserve unrelated product content.

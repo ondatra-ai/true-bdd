@@ -18,7 +18,7 @@ architecture:
     service: greeter
     references:
     - command: greet
-    does: Run the greet command once in the working directory holding greeter.yaml, passing the person argument and omitting the loud flag, so the configured greeting is printed verbatim and one greeted log record is emitted.
+    does: Run the greet command once in the working directory holding greeter.yaml, passing person as the required argument and omitting the loud flag so it stays false.
   - concept: greeting
     block: then
     service: greeter

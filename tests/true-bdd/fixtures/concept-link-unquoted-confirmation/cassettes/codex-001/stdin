@@ -11,39 +11,11 @@ Fix only what the failed check found; a problem it did not find is neither yours
 
 The Product Owner chose apply at the menu for Story host.
 Approved fix:
-# Proposed repair — Item `host` (fail)
+Apply this change to `./docs/product/product.yaml` only. Do not change `host` or any Story/Scenario wording; the three AC-1 steps stay exactly as written.
 
-## Diagnosis
+The `when` step "square six" has no concept: the only `when` concept is `halve`, whose means is closed to halving the entered number once. The product description states the calculator offers **separate** Halve and Square controls, so squaring is a new use, not a variation of halving. Therefore add a new `when` concept rather than widening `halve`.
 
-| AC-1 step | Block | Status |
-|---|---|---|
-| `six is entered` | given | Linked to `number ready` (10 ≥ 9) — **no change** |
-| `square six` | when | **No concept reaches threshold** (best: `halve`, 2) — repair needed |
-| `thirty-six is displayed` | then | Linked to `number result` (10 ≥ 9) — **no change** |
-
-The step `square six` is of the right kind for the `when` block, so the Story wording is sound and needs no rewrite. The gap is in the concepts: `halve` is closed prose stating a single operation — "Halve the entered number once." Squaring is not a variation of halving, and the product description already states the calculator "offers separate Halve and Square controls. Halve divides the entered number by two; Square multiplies the entered number by itself." Square is therefore a distinct Public interface item with a distinct use, not an admitted variation of an existing concept. Per policy, a new item or use takes a **new concept**; widening `halve` to cover squaring would make its means state two unrelated operations and would misdescribe the product's two separate controls.
-
-**Repair chosen:** add one new `when` concept, `square`. No Story or Scenario rewrite. No change to `halve`, `number ready`, `number result`, the glossary, or the description.
-
-## Change 1 of 1 — `docs/product/product.yaml`
-
-Owner to apply: **Product Owner** (concepts).
-
-Add a new entry to `concepts.when`, after the existing `halve` entry.
-
-### Before
-
-```json
-    "when": [
-      {
-        "concept": "halve",
-        "means": "Halve the entered number once.",
-        "terms": []
-      }
-    ],
-```
-
-### After
+In the `concepts.when` array, keep the existing `halve` entry untouched and add one new entry after it, so that `concepts.when` reads:
 
 ```json
     "when": [
@@ -60,23 +32,9 @@ Add a new entry to `concepts.when`, after the existing `halve` entry.
     ],
 ```
 
-### New concept, in full
+Leave `roles`, `concepts.given`, `concepts.then`, `glossary` and `description` unchanged.
 
-- **concept:** `square`
-- **means:** `Square the entered number once, multiplying it by itself.`
-- **terms:** `[]`
-
-The entry holds only `concept`, `means` and `terms`, and the means is closed prose naming the one operation the Square control performs.
-
-## Effect after apply
-
-- AC-1 `when` step `square six` links to `square`; the value six is only the argument and does not change the concept, matching how `six` and `thirty-six` are treated in the `given` and `then` steps.
-- All three AC-1 steps then link, and Item `host` passes.
-- `halve` remains closed to halving and keeps its existing links; `number ready` and `number result` are unchanged.
-
-## Not applied
-
-Nothing has been changed. This proposal waits on an explicit menu decision to apply.
+After this change the `when` step "square six" is a plain instance of the new `square` concept: squaring the entered number once by multiplying it by itself. The `given` step "six is entered" keeps its link to `number ready` and the `then` step "thirty-six is displayed" keeps its link to `number result`.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

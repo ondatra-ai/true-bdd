@@ -25,12 +25,12 @@
     "{\n  \"product\": \"{\\n  \\\"roles\\\": [\\n    {\\n      \\\"name\\\": \\\"Product Owner\\\",\\n      \\\"description\\\": \\\"Owns meanings.\\\"\\n    }\\n  ],\\n  \\\"concepts\\\": {\\n    \\\"given\\\": [\\n      {\\n        \\\"concept\\\": \\\"number ready\\\",\\n        \\\"means\\\": \\\"A number, written using digits, is entered before the action.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ],\\n    \\\"when\\\": [\\n      {\\n        \\\"concept\\\": \\\"halve\\\",\\n        \\\"means\\\": \\\"Halve the entered number once.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ],\\n    \\\"then\\\": [\\n      {\\n        \\\"concept\\\": \\\"number result\\\",\\n        \\\"means\\\": \\\"Compare the displayed number with an expected value written using digits.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ]\\n  },\\n  \\\"glossary\\\": []\\n}\\n\",\n  \"concepts\": {\n    \"given:number ready\": {\n      \"Name\": \"number ready\",\n      \"Means\": \"A number, written using digits, is entered before the action.\",\n      \"Terms\": [],\n      \"Block\": \"given\"\n    }\n  }\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 7512,
+  "duration_ms": 8293,
   "request_hash": "sha256:d4ba27b2db3ae75e2ca4b2307ae343f72ef091c37ec9a164fdee718e812608cf",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-11-07T13:07:42Z"
+  "recorded_at": "2026-11-07T17:01:06Z"
 }

@@ -5,15 +5,16 @@
     {
       "path": "tests/calc/steps/concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e.go",
       "kind": "created",
-      "size": 437,
-      "sha256": "eda3694a5b2d8b3870f46559b7ee058f37ef50a4c03622369d66e429b42ab24d",
-      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"strconv\"\n)\n\n//truebdd:concept then \"result\"\nfunc concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e(state *State, args []string) error {\n\texpected, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn fmt.Errorf(\"parse expected result %q: %w\", args[0], err)\n\t}\n\tif state.Value != expected {\n\t\treturn fmt.Errorf(\"expected result %d, got %d\", expected, state.Value)\n\t}\n\treturn nil\n}\n"
+      "size": 425,
+      "sha256": "41b062d8cbcda448a93ef3783e4935342e5b33138b248f6b0e4d2826e7a55a95",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"strconv\"\n)\n\n//truebdd:concept then \"result\"\nfunc concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e(state *State, args []string) error {\n\texpected, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn fmt.Errorf(\"parse expected result: %w\", err)\n\t}\n\tif state.Value != expected {\n\t\treturn fmt.Errorf(\"expected result %d, got %d\", expected, state.Value)\n\t}\n\treturn nil\n}\n"
     },
     {
       "path": "tests/calc/steps/injected",
       "kind": "created",
-      "size": 0,
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      "size": 36,
+      "sha256": "f4c8b3fb91ebef011effde8d6d12327c34bded044840c180377f171fa9a1c1df",
+      "text": "inverted result assertion installed\n"
     },
     {
       "path": "tests/calc/steps/register.go",

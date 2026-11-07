@@ -1,0 +1,1 @@
+{"type": "result", "subtype": "success", "is_error": false, "structured_output": {"fix_prompt": "Write the preserved definition concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e.", "questions": [], "cannot_fix": null}, "result": "", "total_cost_usd": 0, "usage": {"input_tokens": 0, "output_tokens": 0}}

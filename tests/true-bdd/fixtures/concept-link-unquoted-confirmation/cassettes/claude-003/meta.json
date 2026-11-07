@@ -25,12 +25,12 @@
     "{\n  \"item\": \"host\",\n  \"description\": \"Square a number\",\n  \"product\": \"{\\n  \\\"roles\\\": [\\n    {\\n      \\\"name\\\": \\\"Product Owner\\\",\\n      \\\"description\\\": \\\"Owns meanings.\\\"\\n    }\\n  ],\\n  \\\"concepts\\\": {\\n    \\\"given\\\": [\\n      {\\n        \\\"concept\\\": \\\"number ready\\\",\\n        \\\"means\\\": \\\"A number is entered before the action.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ],\\n    \\\"when\\\": [\\n      {\\n        \\\"concept\\\": \\\"halve\\\",\\n        \\\"means\\\": \\\"Halve the entered number once.\\\",\\n        \\\"terms\\\": []\\n      },\\n      {\\n        \\\"concept\\\": \\\"square\\\",\\n        \\\"means\\\": \\\"Square the entered number once, multiplying it by itself.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ],\\n    \\\"then\\\": [\\n      {\\n        \\\"concept\\\": \\\"number result\\\",\\n        \\\"means\\\": \\\"Compare the displayed number with an expected value.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ]\\n  },\\n  \\\"glossary\\\": [],\\n  \\\"description\\\": {\\n    \\\"summary\\\": \\\"The calculator offers separate Halve and Square controls. Halve divides the entered number by two; Square multiplies the entered number by itself.\\\"\\n  }\\n}\\n\",\n  \"steps\": [\n    {\n      \"key\": \"1\",\n      \"criterion\": \"AC-1\",\n      \"block\": \"given\",\n      \"text\": \"six is entered\"\n    },\n    {\n      \"key\": \"2\",\n      \"criterion\": \"AC-1\",\n      \"block\": \"when\",\n      \"text\": \"square six\"\n    },\n    {\n      \"key\": \"3\",\n      \"criterion\": \"AC-1\",\n      \"block\": \"then\",\n      \"text\": \"thirty-six is displayed\"\n    }\n  ]\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 8527,
+  "duration_ms": 12162,
   "request_hash": "sha256:ac7335f1383c450b194e6d51f7a99d45c978a1772661dc39c1e4eab1f19828fa",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-11-06T00:32:16Z"
+  "recorded_at": "2026-11-07T17:05:06Z"
 }

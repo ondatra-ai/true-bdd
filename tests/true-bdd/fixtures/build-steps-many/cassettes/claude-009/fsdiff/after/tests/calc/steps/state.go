@@ -1,10 +1,8 @@
 package steps
 
-import "fixture/stepsrun/tests/calc/helpers"
-
-// State is what the calc suite's steps share within one scenario.
+// State is the calc suite's shared state.
 type State struct {
-	// Calculator is the calculator program the installation Given built,
-	// kept so the When can run it.
-	Calculator *helpers.Calculator
+	// CalcPath is the path of the calculator program built by the
+	// installation Given, kept for the When that runs it.
+	CalcPath string
 }

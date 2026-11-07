@@ -5,16 +5,16 @@
     {
       "path": "tests/calc/helpers/halve.go",
       "kind": "created",
-      "size": 951,
-      "sha256": "f28464d0d27ab38197a9665ca83c10024ec7b9573574597f46e8eb09b93b80ea",
-      "text": "package helpers\n\nimport (\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n// HostRoot is the path from a calc suite test's working directory (tests/calc)\n// to the host root, which is where the declared calculator CLI is run from.\nconst HostRoot = \"../..\"\n\n// RunHalve runs the declared halve command as a process, passing value through\n// unchanged as the command's value argument, and returns the integer carried on\n// the command's stdout. It never halves value itself: the returned integer is\n// only what the command printed.\nfunc RunHalve(value string) (int, error) {\n\tcmd := exec.Command(\"go\", \"run\", \"./services/calc\", \"halve\", value)\n\tcmd.Dir = HostRoot\n\tout, err := cmd.Output()\n\tif err != nil {\n\t\treturn 0, fmt.Errorf(\"halve %s: %w\", value, err)\n\t}\n\tresult, err := strconv.Atoi(strings.TrimSpace(string(out)))\n\tif err != nil {\n\t\treturn 0, fmt.Errorf(\"halve %s: stdout %q is not an integer: %w\", value, string(out), err)\n\t}\n\treturn result, nil\n}\n"
+      "size": 1257,
+      "sha256": "18c4a2747882eddabe343df6fc1f0095202be62cae286cdf1e6b5583f43f5399",
+      "text": "package helpers\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n// HostRoot is the host root the calculator CLI is run from, relative to\n// the suite's test working directory (tests/calc).\nconst HostRoot = \"../..\"\n\n// Halve runs the declared `halve` command as a process, passing value\n// verbatim as its single required argument, and returns the integer the\n// command printed on stdout.\n//\n// The calculator alone decides the halved number: Halve only carries the\n// step's whole number to the command and reads back what the command\n// printed, so nothing here computes or adjusts a half.\nfunc Halve(value string) (int, error) {\n\tcmd := exec.Command(\"go\", \"run\", \"./services/calc\", \"halve\", value)\n\tcmd.Dir = HostRoot\n\n\tvar stdout, stderr bytes.Buffer\n\tcmd.Stdout = \u0026stdout\n\tcmd.Stderr = \u0026stderr\n\n\tif err := cmd.Run(); err != nil {\n\t\tif message := strings.TrimSpace(stderr.String()); message != \"\" {\n\t\t\treturn 0, fmt.Errorf(\"halve %s: %w: %s\", value, err, message)\n\t\t}\n\t\treturn 0, fmt.Errorf(\"halve %s: %w\", value, err)\n\t}\n\n\tprinted := strings.TrimSpace(stdout.String())\n\tresult, err := strconv.Atoi(printed)\n\tif err != nil {\n\t\treturn 0, fmt.Errorf(\"halve %s: stdout %q is not an integer: %w\", value, printed, err)\n\t}\n\treturn result, nil\n}\n"
     },
     {
       "path": "tests/calc/steps/concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb.go",
       "kind": "created",
-      "size": 324,
-      "sha256": "071b8651c38c30bc0bf522354e705883f1bb254d0863bfabd189d8bf1745bc12",
-      "text": "package steps\n\nimport \"fixture/conceptsteps/tests/calc/helpers\"\n\n//truebdd:concept when \"halving\"\nfunc concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb(state *State, args []string) error {\n\tresult, err := helpers.RunHalve(args[0])\n\tif err != nil {\n\t\treturn err\n\t}\n\tstate.Result = result\n\treturn nil\n}\n"
+      "size": 321,
+      "sha256": "54dff644f6aa31b0d3b65fc94b87fbdb0b845a899f21404dc5bcf2e4798a1da6",
+      "text": "package steps\n\nimport \"fixture/conceptsteps/tests/calc/helpers\"\n\n//truebdd:concept when \"halving\"\nfunc concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb(state *State, args []string) error {\n\tresult, err := helpers.Halve(args[0])\n\tif err != nil {\n\t\treturn err\n\t}\n\tstate.Result = result\n\treturn nil\n}\n"
     },
     {
       "path": "tests/calc/steps/register.go",

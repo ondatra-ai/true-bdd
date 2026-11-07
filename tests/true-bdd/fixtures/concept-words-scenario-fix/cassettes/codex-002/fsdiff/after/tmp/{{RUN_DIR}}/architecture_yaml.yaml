@@ -84,8 +84,8 @@
     "terms": [
       {
         "term": "idempotency key",
-        "technical": "The request label string the calc UI sends with a halving request, carried by the 'Idempotency key' textbox on the Calc page; the calc service applies a halving for a label it has not seen before and ignores a repeat of the same label.",
-        "observed_by": "The when step definition for 'halve' types a fresh label into the Idempotency key textbox before pressing Halve, so the key is whatever text that field holds at the moment Halve is pressed; for a repeated request it types the same label again and presses Halve, and the then step observes the Number textbox to confirm the number changed only once."
+        "technical": "The \"Idempotency key\" textbox on the Calc page of the calc service, which carries the request label submitted with a press of the Halve button.",
+        "observed_by": "The When step definition for 'halve' types a freshly generated label into the Calc page's Idempotency key textbox before pressing Halve; for a repeated request it types that same label again instead of a fresh one, so the repeat is recognised and the Number field stays unchanged."
       }
     ]
   }

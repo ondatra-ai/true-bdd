@@ -134,10 +134,10 @@ definitions:
       pattern: ^the calculator's output (matches|does not match) (.+)$
       captures:
         - name: comparison
-          means: The literal alternative "matches" or "does not match", which tells the body whether to require a match of the pattern against the kept stdout or to require no match.
+          means: The literal alternative "matches" or "does not match", which tells the body whether to require a match of the pattern against the kept stdout or to require that there is no match.
         - name: pattern
-          means: The rest of the step, taken verbatim as the regular expression to match against the kept stdout without its trailing newline.
-      serves: 'Serves the whole does clause: "Match the step''s pattern, a regular expression taken as the rest of the step, against the kept stdout without its trailing newline, and require a match or, when the step says does not match, no match." The second capture serves the pattern taken as the rest of the step and the matching against the kept stdout; the first capture serves the required-outcome alternative ("require a match or ... no match"), which changes what the body asserts.'
+          means: The rest of the step, taken verbatim as the regular expression to match against the kept stdout with its trailing newline removed.
+      serves: 'Serves the whole does clause: "Match the step''s pattern, a regular expression taken as the rest of the step, against the kept stdout without its trailing newline, and require a match or, when the step says does not match, no match." The second capture is the pattern taken as the rest of the step; the first capture is the alternative that selects between requiring a match and requiring no match.'
       steps:
         - text: the calculator's output matches ^3$
           captures:
@@ -166,90 +166,80 @@ scenarios:
 # Fix Prompt for Item then-output: then concept "output"
 
 ## Target
-tests/calc/steps (suite `calc`), definition `concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e`
+tests/calc/steps
 
-## Evidence this body rests on
-- Binding (`then` / `output`): "Match the step's pattern, a regular expression taken as the rest of the step, against the kept stdout without its trailing newline, and require a match or, when the step says does not match, no match."
-- Captures, in `args` order: `args[0]` = comparison (`matches` | `does not match`), `args[1]` = pattern (verbatim Go regular expression).
-- Shared state `tests/calc/steps/state.go` already carries `State{ Output string }`, and the `when` definition stores the run's stdout there after `helpers.TrimLine` has dropped the single trailing line terminator the CLI document declares. So `state.Output` **is** the kept stdout without its trailing newline; the Then only observes it and must not trim, re-run or recompute anything.
-- Nothing in this change performs halving or doubling, and the calculator is not invoked here at all: the Then is pure observation of what was kept.
+## Scope
+Write only the body of `concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e`
+(`then "output"`), plus one new shared file under `tests/calc/helpers/`.
 
-## Change 1 — new shared helper file (create)
+Do NOT touch: `tests/calc/steps/register.go`, `tests/calc/steps/state.go`
+(no state change is needed — `State.Output` already carries the kept stdout),
+`tests/calc/steps/concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba.go`
+(the `when "operation"` body), `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`,
+the Specification or any service code. Preserve the `//truebdd:concept then "output"`
+record, the function name and the signature exactly as generated.
 
-Create `tests/calc/helpers/output.go` with exactly this content:
+## Rationale (binding → body)
+The binding says: *"Match the step's pattern, a regular expression taken as the
+rest of the step, against the kept stdout without its trailing newline, and
+require a match or, when the step says does not match, no match."*
+
+The When body (already written) stores the process's stdout verbatim — trailing
+newline included — in `state.Output`. So this Then body: reads `state.Output`,
+drops the single trailing newline the CLI document says each command prints,
+compiles the second capture as a Go regular expression, and requires a match
+when the first capture is `matches` or no match when it is `does not match`.
+The body computes no half and no double; it only observes and compares what the
+calculator printed.
+
+## Change 1 — new shared helper file
+
+Create `tests/calc/helpers/output.go` with exactly this content. (The package
+doc comment stays in `calc_cli.go`; this file carries none.)
 
 ```go
-// This file holds the output observation the calc suite's Then steps share.
-//
-// Nothing here produces or predicts what the calculator prints: the printed
-// text arrives as the suite kept it, and the step's pattern arrives as the step
-// wrote it. The only work done is compiling that pattern and reporting whether
-// it has a match in the kept text.
 package helpers
 
 import (
 	"fmt"
 	"regexp"
+	"strings"
 )
 
-// The words the comparison capture can hold, and what each one requires of the
-// kept output.
 const (
-	// ComparisonMatches requires the step's pattern to have a match in the
-	// kept stdout.
-	ComparisonMatches = "matches"
-
-	// ComparisonDoesNotMatch requires the step's pattern to have no match in
-	// the kept stdout.
+	// ComparisonMatches and ComparisonDoesNotMatch are the two alternatives a
+	// step states to say whether the printed output must have a match for the
+	// step's pattern or must have none.
+	ComparisonMatches      = "matches"
 	ComparisonDoesNotMatch = "does not match"
 )
 
-// CompareOutput matches pattern, a Go regular expression taken verbatim from
-// the step, against output, the stdout the suite kept without its trailing
-// newline, and reports whether the comparison the step named holds.
-//
-// The pattern is unanchored on purpose: it is used exactly as the step wrote
-// it, so a step that wants the whole line to be the value anchors it itself.
-func CompareOutput(output, comparison, pattern string) error {
-	expr, err := regexp.Compile(pattern)
+// PrintedOutput returns the kept stdout as the text a pattern is matched
+// against: the calculator's CLI document says each command prints its result
+// and a newline, so the one trailing newline is dropped and everything else is
+// left verbatim.
+func PrintedOutput(output string) string {
+	return strings.TrimSuffix(output, "\n")
+}
+
+// MatchesPattern reports whether the step's pattern, read as a Go regular
+// expression, has a match in printed. A pattern Go cannot compile is an error
+// against the step rather than a silent non-match.
+func MatchesPattern(printed, pattern string) (bool, error) {
+	expression, err := regexp.Compile(pattern)
 	if err != nil {
-		return fmt.Errorf(
-			"the step's pattern %q is not a Go regular expression: %w",
-			pattern, err,
-		)
+		return false, fmt.Errorf("the step's pattern %s is not a usable regular expression: %w", pattern, err)
 	}
 
-	matched := expr.MatchString(output)
-
-	switch comparison {
-	case ComparisonMatches:
-		if !matched {
-			return fmt.Errorf(
-				"the calculator printed %q, which has no match for %q",
-				output, pattern,
-			)
-		}
-		return nil
-	case ComparisonDoesNotMatch:
-		if matched {
-			return fmt.Errorf(
-				"the calculator printed %q, which has a match for %q",
-				output, pattern,
-			)
-		}
-		return nil
-	default:
-		return fmt.Errorf(
-			"comparison capture %q is neither %q nor %q",
-			comparison, ComparisonMatches, ComparisonDoesNotMatch,
-		)
-	}
+	return expression.MatchString(printed), nil
 }
 ```
 
-## Change 2 — write the definition body (replace file contents)
+## Change 2 — the step definition body
 
-Replace the whole content of `tests/calc/steps/concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e.go` with exactly this. The `//truebdd:concept then "output"` record, the function name and the `(state *State, args []string) error` signature are unchanged; only the import block and the body change. Do not touch `tests/calc/steps/register.go`, the pattern, or any other definition.
+Replace the whole of
+`tests/calc/steps/concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e.go`
+with exactly this content:
 
 ```go
 package steps
@@ -263,34 +253,48 @@ import (
 //truebdd:concept then "output"
 func concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e(state *State, args []string) error {
 	if len(args) != 2 {
-		return fmt.Errorf("want 2 captures (comparison, pattern), got %d: %q", len(args), args)
+		return fmt.Errorf("expected 2 captures (comparison, pattern), got %d: %q", len(args), args)
 	}
 	comparison, pattern := args[0], args[1]
 
-	// state.Output is the stdout the operation step kept, already without the
-	// single trailing line terminator the CLI document declares. The CLI prints
-	// a value on every successful run, so an empty kept output means no run was
-	// observed rather than an empty answer, and the step says so instead of
-	// silently passing a "does not match".
 	if state.Output == "" {
-		return fmt.Errorf(
-			"no calculator output was kept, so it cannot be observed to %s %q: the operation step must run first",
-			comparison, pattern,
-		)
+		return fmt.Errorf("the calculator printed nothing to match %s against: no run of the calculator was kept", pattern)
 	}
 
-	return helpers.CompareOutput(state.Output, comparison, pattern)
+	printed := helpers.PrintedOutput(state.Output)
+
+	matched, err := helpers.MatchesPattern(printed, pattern)
+	if err != nil {
+		return err
+	}
+
+	switch comparison {
+	case helpers.ComparisonMatches:
+		if !matched {
+			return fmt.Errorf("the calculator printed %q, which has no match for %s", printed, pattern)
+		}
+	case helpers.ComparisonDoesNotMatch:
+		if matched {
+			return fmt.Errorf("the calculator printed %q, which has a match for %s, but the step requires none", printed, pattern)
+		}
+	default:
+		return fmt.Errorf("unknown comparison %q: a step says either %q or %q", comparison, helpers.ComparisonMatches, helpers.ComparisonDoesNotMatch)
+	}
+
+	return nil
 }
 ```
 
-## Change 3 — shared state
-
-None. `tests/calc/steps/state.go` already declares the `Output string` field this Then observes; leave the file as it is.
-
 ## Notes for the applier
-- The helpers import path `fixture/conceptbodiescases/tests/calc/helpers` is the one the existing `when` definition uses, so it matches the suite's module path.
-- Pattern, registration in `register.go`, the concept record and the signature must stay byte-identical to what the engine generated.
-- Do not run a Scenario or the suite to check this in; the engine owns compilation and the whole-suite checks. If the steps package is compiled while writing, keep the inherited Go build cache and temporary-directory environment and do not create a separate build cache.
+- The `fmt` import stays; the `helpers` import is added. The module path prefix
+  `fixture/conceptbodiescases/tests/calc/helpers` is the same one the already
+  written `when "operation"` body uses.
+- `args[0]` is the comparison alternative, `args[1]` is the pattern, in the
+  order the definition's captures name them (`comparison`, then `pattern`).
+- The pattern is used verbatim as handed over, with no unquoting or trimming:
+  the capture is the step's value for the body.
+- No change to `State`: `Output` is the only field the two concepts share and
+  it already holds the verbatim stdout.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists, shared state and code they share in tests/<suite>/helpers/. Preserve the engine's patterns, registrations,

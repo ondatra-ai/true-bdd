@@ -22,15 +22,15 @@
     "--json-schema",
     "{\"additionalProperties\":false,\"properties\":{\"concepts\":{\"additionalProperties\":false,\"properties\":{\"given:number ready\":{\"additionalProperties\":false,\"properties\":{\"reason\":{\"type\":\"string\"},\"undeclared_words\":{\"items\":{\"type\":\"string\"},\"type\":\"array\"}},\"required\":[\"reason\",\"undeclared_words\"],\"type\":\"object\"}},\"required\":[\"given:number ready\"],\"type\":\"object\"}},\"required\":[\"concepts\"],\"type\":\"object\"}",
     "-p",
-    "{\n  \"product\": \"{\\n  \\\"roles\\\": [\\n    {\\n      \\\"name\\\": \\\"Product Owner\\\",\\n      \\\"description\\\": \\\"Owns meanings.\\\"\\n    }\\n  ],\\n  \\\"concepts\\\": {\\n    \\\"given\\\": [\\n      {\\n        \\\"concept\\\": \\\"number ready\\\",\\n        \\\"means\\\": \\\"A number is entered before the action.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ],\\n    \\\"when\\\": [\\n      {\\n        \\\"concept\\\": \\\"halve\\\",\\n        \\\"means\\\": \\\"Invoke the Halve control once, by activating its button either with a pointer or with the keyboard, replacing the entered number with its half. Both kinds of activation invoke the same single halving operation on the same control.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ],\\n    \\\"then\\\": [\\n      {\\n        \\\"concept\\\": \\\"number result\\\",\\n        \\\"means\\\": \\\"Compare the displayed number with an expected value.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ]\\n  },\\n  \\\"glossary\\\": [],\\n  \\\"description\\\": {\\n    \\\"summary\\\": \\\"The calculator has a single Halve control. A pointer click and a keyboard activation of this same control must invoke the same halving operation once.\\\"\\n  }\\n}\\n\",\n  \"concepts\": {\n    \"given:number ready\": {\n      \"Name\": \"number ready\",\n      \"Means\": \"A number is entered before the action.\",\n      \"Terms\": [],\n      \"Block\": \"given\"\n    }\n  }\n}"
+    "{\n  \"product\": \"{\\n  \\\"roles\\\": [\\n    {\\n      \\\"name\\\": \\\"Product Owner\\\",\\n      \\\"description\\\": \\\"Owns meanings.\\\"\\n    }\\n  ],\\n  \\\"concepts\\\": {\\n    \\\"given\\\": [\\n      {\\n        \\\"concept\\\": \\\"number ready\\\",\\n        \\\"means\\\": \\\"A number is entered before the action.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ],\\n    \\\"when\\\": [\\n      {\\n        \\\"concept\\\": \\\"halve\\\",\\n        \\\"means\\\": \\\"Invoke the Halve control once, by activating its button with a pointer or by activating that same button with the keyboard, replacing the entered number with its half. Both ways of activating it invoke one and the same single halving operation.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ],\\n    \\\"then\\\": [\\n      {\\n        \\\"concept\\\": \\\"number result\\\",\\n        \\\"means\\\": \\\"Compare the displayed number with an expected value.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ]\\n  },\\n  \\\"glossary\\\": [],\\n  \\\"description\\\": {\\n    \\\"summary\\\": \\\"The calculator has a single Halve control. A pointer click and a keyboard activation of this same control must invoke the same halving operation once.\\\"\\n  }\\n}\\n\",\n  \"concepts\": {\n    \"given:number ready\": {\n      \"Name\": \"number ready\",\n      \"Means\": \"A number is entered before the action.\",\n      \"Terms\": [],\n      \"Block\": \"given\"\n    }\n  }\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 6179,
-  "request_hash": "sha256:c6882547faae4ac7825fc1bb1a8941c4a104d9c3355ac15bf917748925b3875d",
+  "duration_ms": 7569,
+  "request_hash": "sha256:3252c0f61074350366d15fbeb1c000d1ad4941348231e689e2cb215d1e9acdfe",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-11-07T13:02:13Z"
+  "recorded_at": "2026-11-07T16:52:03Z"
 }

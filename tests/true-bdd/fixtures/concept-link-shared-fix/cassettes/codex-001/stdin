@@ -11,31 +11,23 @@ Fix only what the failed check found; a problem it did not find is neither yours
 
 The responsible person chose apply at the menu for Scenario alpha.
 Approved fix:
-Widen the `when` concept "halve" in `./docs/product/product.yaml` so its closed prose states every kind of activation it admits, including keyboard activation. Change nothing else: do not touch the Item "alpha" wording, and leave the "number ready" and "number result" concepts, the roles, the glossary and the description untouched.
+Owner: Product Owner (concept meaning in the product document).
 
-Rationale: the Public interface item (the single Halve control) and the kind of use (invoking that control once to replace the entered number with its half) already exist in the concept; keyboard activation is an unstated variation of that same use, and the product description already fixes its meaning — "The calculator has a single Halve control. A pointer click and a keyboard activation of this same control must invoke the same halving operation once." So widen the existing concept rather than adding a new one.
+Widen the existing `when` concept `halve` so its means states every variation of use it admits, in closed prose. The public interface item (the single Halve control) and the kind of use (invoking it once to replace the entered number with its half) already exist; keyboard activation is a variation of that same use, and the product description already states that a pointer click and a keyboard activation of this same control must invoke the same halving operation once. Therefore widen `halve` rather than adding a new concept, and leave the Item wording of `alpha` unchanged.
 
-Edit `./docs/product/product.yaml`, in `concepts.when`, in the entry whose `concept` is `halve`.
+Apply this single edit to `./docs/product/product.yaml`, in `concepts.when`, to the concept whose `concept` is `halve`.
 
-Replace this line (line 19):
+Replace this line:
 
-      "means": "Invoke the Halve control once by activating its button with a pointer, replacing the entered number with its half.",
+        "means": "Invoke the Halve control once by activating its button with a pointer, replacing the entered number with its half.",
 
-with:
+with this line:
 
-      "means": "Invoke the Halve control once, by activating its button either with a pointer or with the keyboard, replacing the entered number with its half. Both kinds of activation invoke the same single halving operation on the same control.",
+        "means": "Invoke the Halve control once, by activating its button with a pointer or by activating that same button with the keyboard, replacing the entered number with its half. Both ways of activating it invoke one and the same single halving operation.",
 
-Leave the entry's `concept` name as "halve" and its `terms` as [].
+Change nothing else: keep the concept's `concept` and `terms` as they are, and leave the `given` concept `number ready`, the `then` concept `number result`, the roles, glossary and description untouched.
 
-The widened concept entry reads in full:
-
-      {
-        "concept": "halve",
-        "means": "Invoke the Halve control once, by activating its button either with a pointer or with the keyboard, replacing the entered number with its half. Both kinds of activation invoke the same single halving operation on the same control.",
-        "terms": []
-      }
-
-After this change the Item "alpha" when step "activate the Halve button once with the keyboard to halve six" is a plain instance of "halve", and the given and then steps keep their existing links to "number ready" and "number result".
+After this edit, the when step "activate the Halve button once with the keyboard to halve six" is a plain instance of `halve`, and the given and then steps keep their existing links to `number ready` and `number result`.
 Working copies (edit only the approved target):
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

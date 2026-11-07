@@ -112,9 +112,9 @@ definitions:
       file: tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go
       pattern: ^the Owner halves (-?\d+)$
       captures:
-        - name: number
-          means: The whole number to halve, as written in the step, including its leading minus sign for a negative number (6, -7, 0); passed verbatim as the single VALUE argument.
-      serves: 'Serves the does clause "Run go run ./services/calc halve VALUE from the host root, passing the step''s whole number as the single value argument, including its leading minus sign for a negative number": the one capture is the VALUE argument, and the kept integer stdout is the result.'
+        - name: value
+          means: The step's whole number to halve, with its leading minus sign kept for a negative number (6, -7), passed verbatim as the single value argument.
+      serves: 'Serves the whole does clause: run `go run ./services/calc halve VALUE` from the host root with this capture as VALUE, including its leading minus sign, and keep the integer stdout as the result.'
       steps:
         - text: the Owner halves 6
           captures:
@@ -131,31 +131,41 @@ scenarios:
 # Fix Prompt for Item when-halving: when concept "halving"
 
 ## Target
-tests/calc/steps
+tests/calc/steps (shared code in tests/calc/helpers)
 
 ## Context the body must honour
-
-- Binding (`halving` / `when`, service `calc`, references command `halve`): "Run `go run ./services/calc halve VALUE` from the host root, passing the step's whole number as the single value argument, including its leading minus sign for a negative number (for example, -7); no `--` separator is needed. Keep its integer stdout as the result."
-- Declared Public interface `docs/architecture/calc-cli.yaml`: command `halve`, one required argument `value` (integer), exit `0` with the halved integer on stdout, exit `1` on invalid arguments.
-- The one capture `number` is handed to the body as `args[0]`, already written exactly as it appears in the step (`6`, `-7`, `0`). It is passed **verbatim** as the single VALUE argument — the body must not parse, negate, normalise or otherwise interpret it, and must never compute the half itself.
-- Existing suite state `tests/calc/steps/state.go` already carries `Result int`, and the existing Then definition `result` in `tests/calc/steps/definitions.go` compares `state.Result` against the expected integer. So this When only has to store the command's integer stdout into `state.Result`. **Do not change `state.go`.**
-- The scenario tests live in package `calc_test` under `tests/calc`, so the process working directory at run time is `tests/calc`, not the host root. The helper therefore has to locate the host root itself (the module root holding `go.mod`, i.e. two levels above `tests/calc`) and run the command with `Dir` set to it.
-- Inherit the ambient environment for the child process (do **not** set `cmd.Env`) so the inherited Go build cache and temporary-directory settings keep working.
+- Binding: run `go run ./services/calc halve VALUE` from the host root, with the
+  capture passed verbatim as the single `value` argument (leading minus sign kept,
+  e.g. `-7`; no `--` separator), and keep the integer stdout as the result.
+- The declared CLI (`docs/architecture/calc-cli.yaml`) states `halve` takes one
+  required integer argument and prints the halved integer plus a newline on
+  stdout, exit `0`; exit `1` means invalid arguments.
+- `State` already carries `Result int`, and the existing `Then` definition
+  (`result` in `tests/calc/steps/definitions.go`) compares `state.Result` with the
+  expected integer. Keep `State` as is — no new fields are needed.
+- The suite's working directory at run time is `tests/calc` (the generated
+  `calc_test.go` harness resolves `../../docs/scenarios.yaml`), so the host root
+  is `../..` from there.
+- The When body must only run the command and store what it printed; it must never
+  halve the number itself.
 
 ## Required Changes
 
-### 1. New shared helper file: `tests/calc/helpers/calc_cli.go`
+### 1. Create `tests/calc/helpers/calc.go` (new file)
 
-Create the `helpers/` directory beside `steps/` and add this file verbatim. It only drives the declared CLI and reads its stdout; it contains no arithmetic of its own.
+Write exactly this file:
 
 ```go
+// Package helpers holds code the calc suite's step definitions share:
+// running the calculator CLI the way the concept bindings describe and
+// reading back what it printed. Nothing here computes a calculator
+// answer; the product's process is the only source of a result.
 package helpers
 
 import (
 	"bytes"
 	"context"
 	"fmt"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
@@ -163,89 +173,65 @@ import (
 	"time"
 )
 
-// CommandTimeout bounds a single calculator invocation, so a wedged child
-// process fails the step instead of hanging the suite. It is generous because
-// the first `go run` in a tree also compiles the service.
-const CommandTimeout = 2 * time.Minute
+// commandTimeout bounds one calculator run so a hung process fails the
+// step instead of the whole suite.
+const commandTimeout = 2 * time.Minute
 
-// HostRoot returns the directory the calc bindings call the host root: the
-// module root that holds go.mod, from which `go run ./services/calc ...` is
-// meant to be invoked. Scenario tests run with their own package directory as
-// the working directory, so the root is found by walking upwards.
-func HostRoot() (string, error) {
-	start, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("locate host root: %w", err)
-	}
-	dir := start
-	for {
-		if info, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil && !info.IsDir() {
-			return dir, nil
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			return "", fmt.Errorf("locate host root: no go.mod in %s or any parent directory", start)
-		}
-		dir = parent
-	}
-}
+// HostRoot is the repository root as seen from a suite test's working
+// directory (tests/calc), matching the relative paths the generated
+// scenarios harness already uses.
+func HostRoot() string { return filepath.Join("..", "..") }
 
-// Halve runs the calculator's halve command as the halving binding prescribes:
-// `go run ./services/calc halve VALUE` from the host root, with value passed
-// verbatim as the single VALUE argument. A leading minus sign needs no `--`
-// separator because the arguments are handed to the process directly rather
-// than through a shell. The command's integer stdout is returned unchanged;
-// this helper never halves anything itself.
+// Halve runs `go run ./services/calc halve VALUE` from the host root with
+// value as the single value argument, passed verbatim so a leading minus
+// sign reaches the command unchanged, and returns the integer the command
+// printed on stdout.
 func Halve(value string) (int, error) {
 	stdout, err := RunCalc("halve", value)
 	if err != nil {
 		return 0, err
 	}
-	result, err := strconv.Atoi(stdout)
-	if err != nil {
-		return 0, fmt.Errorf("halve %s: stdout %q is not an integer: %w", value, stdout, err)
-	}
-	return result, nil
+	return parseInt("halve", value, stdout)
 }
 
-// RunCalc invokes the calculator CLI from the host root with the given
-// arguments and returns its trimmed stdout. A non-zero exit becomes an error
-// that carries stderr, so an absent or failing target reports itself plainly.
+// RunCalc runs the calculator CLI with args from the host root and returns
+// its stdout. A non-zero exit is reported with the command's stderr.
 func RunCalc(args ...string) (string, error) {
-	root, err := HostRoot()
-	if err != nil {
-		return "", err
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), CommandTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), commandTimeout)
 	defer cancel()
 
 	argv := append([]string{"run", "./services/calc"}, args...)
 	cmd := exec.CommandContext(ctx, "go", argv...)
-	cmd.Dir = root
+	cmd.Dir = HostRoot()
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
-		detail := strings.TrimSpace(stderr.String())
-		if detail == "" {
-			detail = strings.TrimSpace(stdout.String())
-		}
-		if ctx.Err() != nil {
-			return "", fmt.Errorf("go run ./services/calc %s in %s timed out after %s: %s", strings.Join(args, " "), root, CommandTimeout, detail)
-		}
-		return "", fmt.Errorf("go run ./services/calc %s in %s: %w: %s", strings.Join(args, " "), root, err, detail)
+		return "", fmt.Errorf("go run ./services/calc %s (in %s): %w: %s",
+			strings.Join(args, " "), cmd.Dir, err, strings.TrimSpace(stderr.String()))
 	}
+	return stdout.String(), nil
+}
 
-	return strings.TrimSpace(stdout.String()), nil
+// parseInt reads the command's integer stdout, trimming the trailing
+// newline the CLI document describes.
+func parseInt(command, value, stdout string) (int, error) {
+	n, err := strconv.Atoi(strings.TrimSpace(stdout))
+	if err != nil {
+		return 0, fmt.Errorf("calc %s %s: stdout %q is not an integer: %w",
+			command, value, stdout, err)
+	}
+	return n, nil
 }
 ```
 
-### 2. Write the body in `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go`
+### 2. Replace the body in `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go`
 
-Replace the whole file with the following. Keep the `package` clause, the `//truebdd:concept when "halving"` record, the function name and the `(state *State, args []string) error` signature exactly as they are; only the import and the body change. Note that the `fmt` import is dropped because the placeholder error is gone.
+Overwrite the whole file with exactly this, keeping the `//truebdd:concept`
+record, the function name and the signature untouched and only swapping the
+`fmt` import for the helpers import:
 
 ```go
 package steps
@@ -254,10 +240,6 @@ import "fixture/conceptsteps/tests/calc/helpers"
 
 //truebdd:concept when "halving"
 func concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {
-	// args[0] is the step's whole number exactly as written (6, -7, 0). It is
-	// handed to the calculator verbatim as the single VALUE argument; the
-	// halving and the rounding toward zero are the product's work, and the
-	// command's integer stdout is kept as the result for the Then step.
 	result, err := helpers.Halve(args[0])
 	if err != nil {
 		return err
@@ -267,16 +249,27 @@ func concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(sta
 }
 ```
 
+Notes for the applier:
+- `args[0]` is the `value` capture (`6`, `-7`) and is forwarded verbatim as the
+  single argument; `exec.Command` passes it without a shell, so no `--`
+  separator and no quoting are required for the negative case.
+- The import path matches the module path already used by
+  `tests/calc/scenarios/scenarios.go` (`fixture/conceptsteps/...`). If that
+  module path differs in the suite's `go.mod`, use the same prefix as the
+  existing `fixture/conceptsteps/tests/calc/steps` import, with `helpers` as the
+  last element.
+
 ## Do not change
+- `tests/calc/steps/register.go` (registration and pattern stay as generated).
+- `tests/calc/steps/definitions.go` (the `Then` `result` definition belongs to
+  another concept).
+- `tests/calc/steps/state.go` (`State{Result int}` already fits).
+- Generated tests, the Specification (`docs/`), or any service code.
 
-- `tests/calc/steps/register.go` — registration and pattern stay as generated.
-- `tests/calc/steps/state.go` — `Result int` already serves this concept.
-- `tests/calc/steps/definitions.go` — the `result` Then definition belongs to another concept.
-- `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, `docs/**`, `services/**`.
-
-## Why this satisfies the check
-
-The When body no longer returns the `step not written yet` placeholder: it calls the single declared operation (`halve`) through the host-root `go run` invocation the binding names, passing the one capture verbatim, and keeps the command's integer stdout in `state.Result` for the existing Then step to compare. No halving, sign handling or rounding is performed in test code, so the product's answer is never computed on the test side.
+## Verification note
+Shell execution was unavailable in this session (the guard denies non-test
+commands), so these files were not compiled here; the engine owns compilation
+and the whole-suite checks.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists, shared state and code they share in tests/<suite>/helpers/. Preserve the engine's patterns, registrations,

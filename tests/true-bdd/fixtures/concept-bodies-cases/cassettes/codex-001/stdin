@@ -129,17 +129,17 @@ interface_document: |
           '1':
             description: Invalid arguments
 definitions:
-    - function: concept7b86a45f32a2af1379e8139ecafca2e1995ea6f5ea105d09465e201fb17f9fd4
-      file: tests/calc/steps/concept7b86a45f32a2af1379e8139ecafca2e1995ea6f5ea105d09465e201fb17f9fd4.go
-      pattern: '^the Owner(?: (exactly))? (halves|doubles) (-?\d+)$'
+    - function: concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba
+      file: tests/calc/steps/concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba.go
+      pattern: ^the Owner (?:(exactly) )?(halves|doubles) (-?\d+)$
       captures:
-        - name: exact
-          means: The optional word "exactly", captured when the step says it and empty otherwise; it is the alternative that tells the body to pass --exact to halve so an odd number keeps its half instead of rounding toward zero.
+        - name: exactly
+          means: The literal word "exactly" when the step says it, and empty otherwise; non-empty means the halve command is run with --exact so an odd number's half keeps its half instead of being rounded toward zero.
         - name: operation
-          means: Which operation the step names, either "halves" or "doubles"; it selects the declared command the body runs, halve or double.
+          means: The operation the step names, either "halves" or "doubles", selecting which declared command to run, halve or double.
         - name: number
-          means: The step's whole number, with an optional leading minus so positive, zero and negative numbers are all captured; it is the VALUE argument the body passes to the command.
-      serves: 'The single does clause: "Run the declared halve or double command, as the step names the operation, as a process with the step''s whole number, passing --exact to halve when the step says exactly, and keep its stdout as the output." The operation capture serves "as the step names the operation", the number capture serves "with the step''s whole number", and the exact capture serves "passing --exact to halve when the step says exactly". The fixed words "the Owner" and the halves/doubles alternation state the concept; the grammatical shape of the verb is carried by the alternation itself, so nothing else is captured.'
+          means: The step's whole number, positive, zero or negative, passed as the command's VALUE argument.
+      serves: 'The single does clause: run the declared halve or double command, as the step names the operation, as a process with the step''s whole number, passing --exact to halve when the step says exactly, and keep its stdout as the output. The operation capture serves "as the step names the operation", the number capture serves "with the step''s whole number", and the exactly capture serves "passing --exact to halve when the step says exactly"; "the Owner" and the plural verb forms are fixed words of this concept and need no capture.'
       steps:
         - text: the Owner halves 6
           captures:
@@ -172,202 +172,111 @@ scenarios:
 # Fix Prompt for Item when-operation: when concept "operation"
 
 ## Target
-tests/calc/steps
+tests/calc/steps (suite `tests/calc`, service `calc`)
 
-## Scope
-Write only the body of the one listed definition, plus a new shared helper package
-under `tests/calc/helpers/`. Do not touch `tests/calc/steps/register.go`,
-`tests/calc/steps/state.go`, the generated `tests/calc/calc_test.go`,
-`tests/calc/scenarios/scenarios.go`, the Specification or any service code.
-Keep the function name, signature and the `//truebdd:concept when "operation"`
-record exactly as generated. `State` needs no change: the binding's output is the
-existing `State.Output` field.
+## Evidence this is built on
+- Binding (`docs/architecture/architecture.yaml`, concept `operation`/`when`): "Run the declared halve or double command, as the step names the operation, as a process with the step's whole number, passing --exact to halve when the step says exactly, and keep its stdout as the output."
+- Declared Public interface (`docs/architecture/calc-cli.yaml`): `halve` = "Run go run ./services/calc halve [--exact] VALUE from the host root; stdout is VALUE halved and a newline"; `double` = "Run go run ./services/calc double VALUE from the host root; stdout is VALUE doubled, as an integer, and a newline". Exit `0` = the result on stdout, `1` = invalid arguments.
+- Captures handed to the body, in order: `exactly` (the word `exactly` or empty), `operation` (`halves`|`doubles`), `number` (the `-?\d+` text).
+- Existing shared state `tests/calc/steps/state.go` already declares `State{ Output string }`; the sibling `then` concept `output` reads that kept stdout. **`state.go` needs no change** — do not edit it.
+- The suite's test binary runs with its working directory at `tests/calc` (see `tests/calc/scenarios/scenarios.go`, which reaches the registry as `../../docs/scenarios.yaml`), so the documented "host root" is `../..` from a step body.
+- Module path is `fixture/conceptbodiescases` (see the imports in `tests/calc/scenarios/scenarios.go`), so the new helpers package imports as `fixture/conceptbodiescases/tests/calc/helpers`.
 
-Note for the applier: the shell was denied in this mode (no test command granted),
-so these files were not compiled or run here. The engine owns compilation and the
-whole-suite checks. Only the standard library is used, so no `go.mod` change is
-needed (and none is permitted from the steps/helpers paths).
+The body performs no arithmetic: it only chooses the declared command, hands the step's number and the declared `--exact` flag to the process, and keeps stdout verbatim. The trailing newline is left on `State.Output` because the `then` concept `output` is the one declared to drop it.
 
 ## Required Changes
 
-### 1. New file: `tests/calc/helpers/calculator.go`
+### 1. New shared helper file `tests/calc/helpers/calc_cli.go` (create)
 
-Create the directory `tests/calc/helpers/` beside `tests/calc/steps/` and write
-this file verbatim.
+Create the directory `tests/calc/helpers/` beside `tests/calc/steps/` and write this file whole. No build tag (the `steps` package carries none).
 
 ```go
-// Package helpers holds the code the calc suite's step definitions share.
-//
-// The calculator is reached only as the declared CLI of
-// docs/architecture/calc-cli.yaml: `go run ./services/calc halve [--exact] VALUE`
-// and `go run ./services/calc double VALUE`, run as a process from the host root.
-// Nothing here halves or doubles a number; the number travels to the command as
-// the step captured it, and the command's stdout travels back untouched but for
-// the single line terminator the CLI document says it ends with.
+// Package helpers holds the code the calc suite's step definitions share:
+// one place that knows how to run the calculator's declared CLI commands as
+// processes and hand their stdout back to a step. Nothing here computes a
+// half or a double; the process the calculator owns does that.
 package helpers
 
 import (
-	"bytes"
 	"context"
-	"errors"
 	"fmt"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 )
 
-// The words a step's captures use, and the CLI names they select.
 const (
-	// OperationHalves and OperationDoubles are the two alternatives the
-	// operation capture can hold.
-	OperationHalves  = "halves"
-	OperationDoubles = "doubles"
-
-	// CommandHalve and CommandDouble are the commands declared in the
-	// calculator's CLI document.
+	// CommandHalve and CommandDouble are the command names the calculator's
+	// CLI document declares.
 	CommandHalve  = "halve"
 	CommandDouble = "double"
 
-	// ExactlyWord is the optional word the exact capture holds when the step
-	// says it; ExactFlag is the flag halve declares for it.
-	ExactlyWord = "exactly"
-	ExactFlag   = "--exact"
+	// ExactFlag is the flag the CLI document declares on halve, which keeps
+	// an odd VALUE's half instead of rounding it toward zero.
+	ExactFlag = "--exact"
 
-	// ServicePackage is the package the declared commands are run from, as
-	// named by the CLI document, relative to the host root.
-	ServicePackage = "./services/calc"
+	// OperationHalves and OperationDoubles are the operation words a step
+	// names.
+	OperationHalves  = "halves"
+	OperationDoubles = "doubles"
+
+	// servicePackage is the package the CLI document says to run.
+	servicePackage = "./services/calc"
+
+	// runTimeout bounds one run of the calculator so a wedged process fails
+	// the step instead of hanging the suite.
+	runTimeout = 2 * time.Minute
 )
 
-// runTimeout bounds one calculator run so a wedged process reports itself
-// instead of hanging the suite.
-const runTimeout = 2 * time.Minute
+// hostRoot is the directory the CLI document says to run the calculator
+// from, relative to the suite test binary's working directory (tests/calc).
+var hostRoot = filepath.Join("..", "..")
 
-// CommandForOperation turns the operation the step names into the command the
-// CLI document declares for it.
-func CommandForOperation(operation string) (string, error) {
+// OperationCommand maps the operation word a step names to the calculator
+// command this concept's binding declares for it.
+func OperationCommand(operation string) (string, error) {
 	switch operation {
 	case OperationHalves:
 		return CommandHalve, nil
 	case OperationDoubles:
 		return CommandDouble, nil
 	default:
-		return "", fmt.Errorf(
-			"operation %q names no declared command: the calculator CLI declares %q and %q only",
-			operation, OperationHalves, OperationDoubles,
-		)
+		return "", fmt.Errorf("unknown operation %q: the calculator declares only %q and %q", operation, CommandHalve, CommandDouble)
 	}
 }
 
-// CalculatorArgs builds the argument list for one run of the calculator: the
-// command the operation names, --exact when the step said "exactly", and the
-// step's number as the VALUE argument, passed on as captured.
-func CalculatorArgs(operation, exact, number string) ([]string, error) {
-	command, err := CommandForOperation(operation)
-	if err != nil {
-		return nil, err
-	}
-
-	argv := []string{command}
-
-	switch exact {
-	case "":
-		// The step did not say "exactly", so no flag is passed.
-	case ExactlyWord:
-		if command != CommandHalve {
-			return nil, fmt.Errorf(
-				"the calculator CLI declares the %s flag on %q only, so %q cannot be run exactly",
-				ExactFlag, CommandHalve, command,
-			)
-		}
-		argv = append(argv, ExactFlag)
-	default:
-		return nil, fmt.Errorf(
-			"exact capture %q is neither empty nor %q", exact, ExactlyWord,
-		)
-	}
-
-	return append(argv, number), nil
-}
-
-// HostRoot is the directory the declared commands are run from: the nearest
-// ancestor of the suite's working directory holding a go.mod, which is the host
-// root the CLI document names `./services/calc` relative to.
-func HostRoot() (string, error) {
-	dir, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("locating the host root: %w", err)
-	}
-	for {
-		info, statErr := os.Stat(filepath.Join(dir, "go.mod"))
-		if statErr == nil && !info.IsDir() {
-			return dir, nil
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			return "", fmt.Errorf(
-				"no go.mod above the suite's working directory, so the host root to run %s from is unknown",
-				ServicePackage,
-			)
-		}
-		dir = parent
-	}
-}
-
-// TrimLine drops the single trailing line terminator the CLI document says each
-// command's stdout ends with, and nothing else.
-func TrimLine(out string) string {
-	return strings.TrimSuffix(strings.TrimSuffix(out, "\n"), "\r")
-}
-
-// RunCalculator runs the calculator as a process from the host root with the
-// given command arguments and returns its stdout. The inherited environment is
-// left in place, so the Go build and temporary-directory settings of the run
-// carry through.
-func RunCalculator(argv ...string) (string, error) {
-	root, err := HostRoot()
-	if err != nil {
-		return "", err
-	}
-
+// RunCalc runs one declared calculator command as a process from the host
+// root, as the CLI document describes, and returns its stdout verbatim,
+// trailing newline included. A non-zero exit becomes an error carrying the
+// command line and the process's stderr.
+func RunCalc(command string, args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), runTimeout)
 	defer cancel()
 
-	full := append([]string{"run", ServicePackage}, argv...)
-	cmd := exec.CommandContext(ctx, "go", full...)
-	cmd.Dir = root
+	argv := append([]string{"run", servicePackage, command}, args...)
+	cmd := exec.CommandContext(ctx, "go", argv...)
+	cmd.Dir = hostRoot
 
-	var stdout, stderr bytes.Buffer
+	var stdout, stderr strings.Builder
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	runErr := cmd.Run()
-	output := TrimLine(stdout.String())
-	if runErr == nil {
-		return output, nil
+	if err := cmd.Run(); err != nil {
+		detail := strings.TrimSpace(stderr.String())
+		if detail == "" {
+			detail = "no stderr"
+		}
+		return "", fmt.Errorf("go %s (in %s): %w: %s", strings.Join(argv, " "), hostRoot, err, detail)
 	}
 
-	printed := strings.TrimSpace(stderr.String())
-	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-		return output, fmt.Errorf(
-			"go %s in %s did not finish within %s; stderr: %s",
-			strings.Join(full, " "), root, runTimeout, printed,
-		)
-	}
-	return output, fmt.Errorf(
-		"go %s in %s: %w; stderr: %s",
-		strings.Join(full, " "), root, runErr, printed,
-	)
+	return stdout.String(), nil
 }
 ```
 
-### 2. Replace the body in `tests/calc/steps/concept7b86a45f32a2af1379e8139ecafca2e1995ea6f5ea105d09465e201fb17f9fd4.go`
+### 2. Body of `tests/calc/steps/concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba.go`
 
-Overwrite the whole file with this content. The package clause, the
-`//truebdd:concept when "operation"` record, the function name and the signature
-are unchanged; only the import and the body change (the `fmt` import stays, and
-the helpers import is added).
+Replace the file's contents with the following. The `//truebdd:concept` record, the function name and the signature are unchanged; only the import block and the body change.
 
 ```go
 package steps
@@ -379,52 +288,45 @@ import (
 )
 
 //truebdd:concept when "operation"
-func concept7b86a45f32a2af1379e8139ecafca2e1995ea6f5ea105d09465e201fb17f9fd4(state *State, args []string) error {
+func concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba(state *State, args []string) error {
 	if len(args) != 3 {
-		return fmt.Errorf("want 3 captures (exact, operation, number), got %d: %q", len(args), args)
+		return fmt.Errorf("expected 3 captures (exactly, operation, number), got %d: %q", len(args), args)
 	}
-	exact, operation, number := args[0], args[1], args[2]
+	exactly, operation, number := args[0], args[1], args[2]
 
-	argv, err := helpers.CalculatorArgs(operation, exact, number)
+	command, err := helpers.OperationCommand(operation)
 	if err != nil {
 		return err
 	}
 
-	output, err := helpers.RunCalculator(argv...)
+	var flags []string
+	if exactly != "" {
+		if command != helpers.CommandHalve {
+			return fmt.Errorf("the calculator's %s command declares no %s flag, so %q cannot be run exactly", command, helpers.ExactFlag, operation)
+		}
+		flags = append(flags, helpers.ExactFlag)
+	}
+
+	output, err := helpers.RunCalc(command, append(flags, number)...)
 	if err != nil {
 		return err
 	}
 
 	state.Output = output
+
 	return nil
 }
 ```
 
-## Why this body matches the binding
+### 3. Files that must stay untouched
+- `tests/calc/steps/register.go` (registration and pattern).
+- `tests/calc/steps/state.go` (`State.Output` already carries the kept stdout).
+- `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, `docs/**`, `services/**`.
 
-- `does`: "Run the declared halve or double command, as the step names the
-  operation" — `helpers.CommandForOperation` maps the `operation` capture
-  (`halves`/`doubles`) onto the CLI document's `halve`/`double` commands, and
-  nothing else chooses the command.
-- "as a process with the step's whole number" — `RunCalculator` runs
-  `go run ./services/calc <command> [--exact] VALUE` with `cmd.Dir` set to the
-  host root, exactly the invocation form the CLI document declares. The `number`
-  capture is passed through as the VALUE argument as captured, so positive, zero
-  and negative numbers all reach the command unaltered; the body neither parses
-  nor rewrites it.
-- "passing --exact to halve when the step says exactly" — the `exact` capture is
-  the only thing that adds `--exact`, and only on `halve`, since the CLI document
-  declares the flag on `halve` alone. An empty capture adds no flag.
-- "and keep its stdout as the output" — stdout goes to `State.Output`, with only
-  the one trailing line terminator removed that the CLI document says each
-  command's stdout ends with. No halving, doubling, rounding or decimal
-  formatting happens anywhere in the body or the helpers: the printed value is
-  carried, never computed, so a later Then observes the product's own answer.
-- The inherited environment is kept (`cmd.Env` is left nil), preserving the Go
-  build cache and temporary-directory settings of the surrounding run.
-- A failed or wedged run returns an error naming the full command, the directory
-  and the command's stderr, so a missing or unbuilt target reports itself plainly
-  rather than leaving `State.Output` silently empty for the Then.
+## Notes on choices a reviewer may check
+- The command word comes from the `operation` capture through `OperationCommand`, serving "as the step names the operation"; `--exact` is added only for `halve`, serving "passing --exact to halve when the step says exactly"; `number` is forwarded verbatim as the documented `VALUE` argument, so the text the step gave (including a leading `-`) is what the process receives.
+- Nothing trims or reformats stdout, so "keep its stdout as the output" holds and the `then` concept remains the only place that drops the trailing newline.
+- Tooling note: the shell was denied in this run, so these files were not compiled here; the engine's whole-suite build owns that check. The code uses only `fmt` plus the standard library (`context`, `os/exec`, `path/filepath`, `strings`, `time`) and needs no new module requirement.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists, shared state and code they share in tests/<suite>/helpers/. Preserve the engine's patterns, registrations,

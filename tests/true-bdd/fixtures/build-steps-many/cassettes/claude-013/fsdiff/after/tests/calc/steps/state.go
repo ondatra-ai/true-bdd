@@ -1,14 +1,18 @@
 package steps
 
-import "fixture/stepsrun/tests/calc/helpers"
-
-// State is what the calc suite's steps share within one scenario.
+// State is the calc suite's shared state.
 type State struct {
-	// Calculator is the calculator program the installation Given built,
-	// kept so the When can run it.
-	Calculator *helpers.Calculator
-	// Doubled is what the doubling When's run of the calculator printed,
-	// kept so a Then can observe the integer the program reported. It is
-	// nil until that When has run.
-	Doubled *helpers.Doubled
+	// CalcPath is the path of the calculator program built by the
+	// installation Given, kept for the When that runs it.
+	CalcPath string
+
+	// Doubled is the integer the kept calculator program's double command
+	// printed on stdout, kept by the doubling When so a Then can observe
+	// and compare it. The suite never computes this value itself.
+	Doubled int
+
+	// DoubledSet reports whether the doubling When ran the double command
+	// and recorded its stdout in Doubled, so an observing Then can tell a
+	// recorded zero from a When that never ran.
+	DoubledSet bool
 }

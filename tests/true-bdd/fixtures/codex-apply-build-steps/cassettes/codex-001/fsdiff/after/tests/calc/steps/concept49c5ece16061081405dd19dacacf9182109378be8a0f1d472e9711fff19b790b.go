@@ -13,24 +13,20 @@ func concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b(sta
 	if state.Program == "" {
 		return errors.New("the calculator is not installed")
 	}
-	value := args[0]
-	if _, err := strconv.Atoi(value); err != nil {
-		return fmt.Errorf("the whole number %q to double: %w", value, err)
-	}
-	command := exec.Command(state.Program, "double", value)
+	command := exec.Command(state.Program, "double", args[0])
 	command.Dir = "../.."
 	stdout, err := command.Output()
 	if err != nil {
 		var exit *exec.ExitError
 		if errors.As(err, &exit) {
-			return fmt.Errorf("double %s: %w: %s", value, err, exit.Stderr)
+			return fmt.Errorf("run %s double %s: %w: %s", state.Program, args[0], err, exit.Stderr)
 		}
-		return fmt.Errorf("double %s: %w", value, err)
+		return fmt.Errorf("run %s double %s: %w", state.Program, args[0], err)
 	}
-	doubled, err := strconv.Atoi(strings.TrimSpace(string(stdout)))
+	value, err := strconv.Atoi(strings.TrimSpace(string(stdout)))
 	if err != nil {
-		return fmt.Errorf("double %s printed %q, want an integer: %w", value, stdout, err)
+		return fmt.Errorf("read the double stdout %q: %w", stdout, err)
 	}
-	state.Value = doubled
+	state.Value = value
 	return nil
 }

@@ -104,8 +104,8 @@ definitions:
       pattern: ^the Owner doubles (-?\d+)$
       captures:
         - name: value
-          means: The whole number the Owner doubles, passed as the VALUE argument of the calculator's double command.
-      serves: 'Serves "Run the kept calculator program''s double command as a process from the host root with the step''s whole number and keep its integer stdout": the capture supplies the step''s whole number for the double command''s argument, while the literal words "the Owner doubles" state the doubling concept.'
+          means: The whole number the Owner doubles, exactly as the step writes it (optional minus sign and digits), to be passed as the double command's value argument.
+      serves: 'Serves "Run the kept calculator program''s double command as a process from the host root with the step''s whole number and keep its integer stdout": the capture supplies the step''s whole number the command is run with, while the fixed words "the Owner doubles" pin the step to the double command, so the body needs nothing else to run it from the host root and keep its integer stdout.'
       steps:
         - text: the Owner doubles 3
           captures:
@@ -121,31 +121,29 @@ scenarios:
 tests/calc/steps
 
 ## Scope
-Write only the body (and its imports) of the one listed definition. Do **not** touch
-`tests/calc/steps/register.go` (the registration line and the `given`/`then` bodies stay as they are),
-`tests/calc/steps/state.go` (the existing `State` already carries everything this body needs),
-`tests/calc/scenarios/`, `tests/calc/calc_test.go`, `docs/`, or `services/`.
-No `tests/calc/helpers/` package is needed: nothing is shared between two bodies here, so the
-single body stays self-contained and the suite keeps exactly one steps package.
+Write only the body of the single listed definition. Keep the
+`//truebdd:concept when "doubling"` record, the function name and the
+`(state *State, args []string) error` signature exactly as generated. Do not touch
+`tests/calc/steps/register.go`, `tests/calc/steps/state.go`,
+`tests/calc/scenarios/scenarios.go` or `tests/calc/calc_test.go`.
 
-## Evidence this body is written from
-- Binding: "Run the kept calculator program's double command as a process from the host root with the
-  step's whole number and keep its integer stdout."
-- `docs/architecture/calc-cli.yaml`: `calc double VALUE` takes one required integer argument, exit `0`
-  prints the doubled integer plus a newline on stdout, exit `1` means invalid arguments.
-- `tests/calc/steps/state.go`: `State{Program string; Value int}`.
-- `tests/calc/steps/register.go`: the given `installed` builds `./services/calc` with `command.Dir = "../.."`
-  and keeps the **absolute** binary path in `state.Program`; the then `result` compares `state.Value`
-  against the expected integer. So the when must run `state.Program` from the host root `"../.."`
-  (tests execute in `tests/calc`) and leave the program's integer stdout in `state.Value`.
-- The body must never compute `2*value`; it only passes the capture to the command and parses stdout.
+## Shared state
+No change. `State` in `tests/calc/steps/state.go` already carries both fields this
+body needs: `Program` (set by the `given "installation"` step, which builds the
+calculator with `go build -o <abs>/tmp/calc-program/calc ./services/calc` from the
+host root) and `Value int` (read by the `then "result"` step, which compares it
+with the expected integer).
 
-## Required Change — replace the whole file
+## Helpers
+No `tests/calc/helpers/` package is needed. This concept has one definition and it
+shares no code with the two hand-written definitions in `register.go`; keep the
+body self-contained so nothing is introduced that no caller shares.
 
-Replace the entire contents of
+## Required Changes
+
+Replace the whole contents of
 `tests/calc/steps/concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b.go`
-with exactly this (the `//truebdd:concept when "doubling"` record, the function name and the
-signature `func(state *State, args []string) error` are preserved verbatim):
+with exactly this:
 
 ```go
 package steps
@@ -163,47 +161,44 @@ func concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b(sta
 	if state.Program == "" {
 		return errors.New("the calculator is not installed")
 	}
-	value := args[0]
-	if _, err := strconv.Atoi(value); err != nil {
-		return fmt.Errorf("the whole number %q to double: %w", value, err)
-	}
-	command := exec.Command(state.Program, "double", value)
+	command := exec.Command(state.Program, "double", args[0])
 	command.Dir = "../.."
 	stdout, err := command.Output()
 	if err != nil {
 		var exit *exec.ExitError
 		if errors.As(err, &exit) {
-			return fmt.Errorf("double %s: %w: %s", value, err, exit.Stderr)
+			return fmt.Errorf("run %s double %s: %w: %s", state.Program, args[0], err, exit.Stderr)
 		}
-		return fmt.Errorf("double %s: %w", value, err)
+		return fmt.Errorf("run %s double %s: %w", state.Program, args[0], err)
 	}
-	doubled, err := strconv.Atoi(strings.TrimSpace(string(stdout)))
+	value, err := strconv.Atoi(strings.TrimSpace(string(stdout)))
 	if err != nil {
-		return fmt.Errorf("double %s printed %q, want an integer: %w", value, stdout, err)
+		return fmt.Errorf("read the double stdout %q: %w", stdout, err)
 	}
-	state.Value = doubled
+	state.Value = value
 	return nil
 }
 ```
 
-## Why each line follows the binding
-- `state.Program` is the kept calculator program from the given; an empty value is reported as a
-  missing setup rather than silently running something else.
-- `strconv.Atoi(value)` only checks that the capture is the whole number the pattern promised; the
-  original capture string, not a re-rendered number, is passed to the command.
-- `exec.Command(state.Program, "double", value)` with `command.Dir = "../.."` runs the declared
-  `calc double VALUE` command as a process from the host root, the same host root the given builds from.
-- `command.Output()` keeps stdout separate from stderr, so a non-zero exit (the interface's
-  `'1': Invalid arguments`) is reported with the program's stderr instead of being parsed as a number.
-- `strconv.Atoi(strings.TrimSpace(...))` reads the integer stdout and its trailing newline exactly as
-  the interface documents them.
-- `state.Value = doubled` keeps the program's own answer for the then step. The body performs no
-  arithmetic of its own, so the product's doubling is observed, never reproduced.
-
-## Note
-The sandbox for this proposal denied shell access, so the change was not compiled here; it uses only
-`errors`, `fmt`, `os/exec`, `strconv` and `strings` against the existing `State` fields, and the
-engine owns the whole-suite compile.
+## Why this body matches the binding and the declared interface
+- **"Run the kept calculator program's ... command as a process"** — it runs
+  `state.Program`, the program kept by the `given "installation"` step, through
+  `exec.Command`; it never rebuilds or re-resolves the path itself.
+- **"double command"** — the declared `opencli` document gives
+  `calc double VALUE`, so `"double"` is passed as the subcommand and `args[0]` as
+  the single required `value` argument, in that order.
+- **"from the host root"** — `command.Dir = "../.."`, the same host root the
+  `given` step builds from (the suite's working directory is `tests/calc`).
+- **"with the step's whole number"** — the `value` capture is forwarded verbatim,
+  exactly as the step writes it (optional minus sign and digits); the body does not
+  reinterpret, normalise or re-render it.
+- **"keep its integer stdout"** — stdout is trimmed of the documented trailing
+  newline, converted once with `strconv.Atoi`, and stored in `state.Value` for the
+  `then "result"` step to compare. `command.Output()` is used (not
+  `CombinedOutput`) so stderr never contaminates the parsed integer; on a non-zero
+  exit the captured stderr is surfaced in the error instead.
+- The body performs no arithmetic: it never doubles anything, and it stores only
+  what the product printed. The expected value lives in the `then` step alone.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
 context lists, shared state and code they share in tests/<suite>/helpers/. Preserve the engine's patterns, registrations,
