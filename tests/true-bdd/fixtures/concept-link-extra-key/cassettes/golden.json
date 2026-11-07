@@ -5,9 +5,9 @@
     {
       "path": "docs/product/product.yaml",
       "kind": "modified",
-      "size": 882,
-      "sha256": "feacff8196cb0005d6b226f8a46654ef3ddde82a6dada882089f96a9a03e11ac",
-      "text": "roles:\n  - name: Owner\n    description: Uses the calculator.\nconcepts:\n  given:\n    - concept: installation\n      means: The calculator program is built from its source and ready for the Owner to run.\n      terms: []\n  when:\n    - concept: doubling\n      means: The Owner doubles a whole number with the calculator.\n      terms: []\n    - concept: halving\n      means: The Owner halves a whole number with the calculator, taking the whole-number part of dividing it by two.\n      terms: []\n  then:\n    - concept: result\n      means: The calculator prints the whole number it computed from the whole number the Owner gave it, which is either the whole number the doubling produced or the whole number the halving produced.\n      terms: []\nglossary: []\ndescription:\n  summary: The calculator doubles or halves a whole number the Owner gives it and prints the whole number it computes.\n"
+      "size": 869,
+      "sha256": "e93297b5244f926633ae2836c4641cb03a7a4dc173602428a037ccd69fdcbbd8",
+      "text": "roles:\n  - name: Owner\n    description: Uses the calculator.\nconcepts:\n  given:\n    - concept: installation\n      means: The calculator program is built from its source and ready for the Owner to run.\n      terms: []\n  when:\n    - concept: doubling\n      means: The Owner doubles a whole number with the calculator.\n      terms: []\n    - concept: halving\n      means: The Owner halves a whole number with the calculator, taking the whole-number part of dividing it by two.\n      terms: []\n  then:\n    - concept: result\n      means: The calculator prints the whole number it computed from the number the Owner gave it, whether that number is the double the doubling produced or the half the halving produced.\n      terms: []\nglossary: []\ndescription:\n  summary: The calculator doubles or halves a whole number the Owner gives it and prints the whole number it computes.\n"
     }
   ]
 }

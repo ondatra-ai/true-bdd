@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-host-iter2-result.yaml ===
 applied: true
 target: "product"
-summary: "Applied the exact approved result.means wording for doubling and halving. Verified all other bytes unchanged. Sandbox restrictions affected file discovery and temporary/cache files; the edit and verification succeeded."
+summary: "Widened result means exactly as approved to cover doubling and halving. Verified all other bytes unchanged. Sandbox restrictions caused search and cache diagnostics; the edit and verification succeeded."
 === FILE_END: tmp/{{RUN_DIR}}/apply-host-iter2-result.yaml ===
