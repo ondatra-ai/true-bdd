@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/scenariogen"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/architecture"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/registry"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/testrunner"
@@ -84,7 +85,13 @@ func (e *buildStepsExecution) configureRoots(arch *architecture.Architecture,
 	}
 
 	readPaths, _ := stepRootPaths(roots)
-	e.configureEvidenceRoots(host, readPaths, documents)
+
+	modules, err := suiteModuleFiles(host, suites)
+	if err != nil {
+		return err
+	}
+
+	e.configureEvidenceRoots(host, readPaths, append(slices.Clone(documents), modules...))
 
 	roots, err = arch.StepsWritableRoots(host, suites, documents)
 	if err != nil {
@@ -95,6 +102,24 @@ func (e *buildStepsExecution) configureRoots(arch *architecture.Architecture,
 	e.deps.FixApplier.UseDeclaredWriteRoots(paths, patterns)
 
 	return nil
+}
+
+func suiteModuleFiles(host string, suites []string) ([]string, error) {
+	modules := make([]string, 0, len(suites))
+	for _, suite := range suites {
+		directory, _, err := scenariogen.FindModule(filepath.Join(host, suite))
+		if errors.Is(err, scenariogen.ErrNoModuleForSuite) {
+			continue
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		modules = append(modules, filepath.Join(directory, "go.mod"))
+	}
+
+	return modules, nil
 }
 
 func (e *buildStepsExecution) configureEvidenceRoots(host string, paths, documents []string) {

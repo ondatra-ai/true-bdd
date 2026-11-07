@@ -376,6 +376,73 @@ func TestStepEvidenceRootsAreUnique(t *testing.T) {
 	}
 }
 
+func TestBodyTurnsReadOnlyTheirSuitesNearestModule(t *testing.T) {
+	for _, nested := range []bool{false, true} {
+		t.Run(fmt.Sprintf("nested=%t", nested), func(t *testing.T) {
+			turn := &bodyEvidenceTurn{}
+			execution := testkitExecution(t, turn)
+			writeHelperEvidence(t, "nested/go.mod", "module example.com/nested\n\ngo 1.25.0\n")
+
+			suite, module, otherModule := "tests/calc", bodyModuleFile, "nested/go.mod"
+			if nested {
+				suite, module, otherModule = "nested/tests/calc", "nested/go.mod", bodyModuleFile
+			}
+
+			for _, scenario := range execution.concepts.discovery.scenarios {
+				scenario.Path = suite + "/scenario_test.go"
+			}
+
+			err := execution.configure(t.Context(), execution.concepts.arch, execution.concepts.discovery.scenarios)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			item := &BuildStepsItem{Suite: suite + "/steps", Service: repairService,
+				Concept: &BuildStepsConcept{Block: catalogue.BlockWhen, Name: repairConcept}}
+			_, _ = execution.deps.FixGenerator.Generate(t.Context(), validate.GenerateParams{
+				Subject: item, SubjectID: bodySubjectID, TmpDir: execution.deps.TmpDir,
+				FailedCheck: checklist.ValidationResult{PromptIndex: 1},
+			})
+			requireBodyModuleGrant(t, turn, module, otherModule)
+
+			for _, tier := range []string{repairTier, bodyCoderTier} {
+				*turn = bodyEvidenceTurn{}
+				_, _ = execution.deps.FixApplier.Apply(t.Context(), validate.ApplyParams{
+					Subject: item, SubjectID: bodySubjectID, TmpDir: execution.deps.TmpDir, ModelTier: tier,
+				})
+				requireBodyModuleGrant(t, turn, module, otherModule)
+			}
+		})
+	}
+}
+
+func requireBodyModuleGrant(t *testing.T, turn *bodyEvidenceTurn, module, otherModule string) {
+	t.Helper()
+
+	host, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	module = filepath.Join(host, module)
+	if !slices.Contains(turn.mode.ReadRoots, module) {
+		t.Errorf("body turn lacks nearest go.mod: %+v", turn.mode)
+	}
+
+	policy := ai.ClaudeGuardPolicy{Replay: ai.NewReplayPolicy(turn.mode, host), EvidenceRoots: turn.mode.ReadRoots}
+	for _, path := range []string{module, filepath.Join(host, otherModule), filepath.Join(host, "private.txt"),
+		filepath.Join(host, "services/calc/main.go"), filepath.Join(filepath.Dir(module), "go.sum")} {
+		for _, tool := range []string{"Read", "Write", "Edit", "MultiEdit"} {
+			payload := fmt.Sprintf(`{"tool_name":%q,"cwd":%q,"tool_input":{"file_path":%q}}`, tool, host, path)
+
+			allowed, reason := policy.DecidePayload([]byte(payload))
+			if allowed != (tool == "Read" && path == module) {
+				t.Errorf("%s %s: %v (%s)", tool, path, allowed, reason)
+			}
+		}
+	}
+}
+
 func runtimeLibraryGraph(t *testing.T, arch *architecture.Architecture, transitive bool) []string {
 	t.Helper()
 	proxy, cache := t.TempDir(), t.TempDir()
