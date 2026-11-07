@@ -1,6 +1,12 @@
 package story
 
-import "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/catalogue"
+import (
+	"fmt"
+
+	"gopkg.in/yaml.v3"
+
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/catalogue"
+)
 
 type AcceptanceCriterion struct {
 	ID          string         `json:"id"              yaml:"id"`
@@ -29,4 +35,29 @@ func appendSteps(steps []catalogue.Step, block catalogue.Block, statements []Ste
 	}
 
 	return steps
+}
+
+// UnmarshalYAML adds the criterion's id to a malformed step's refusal.
+func (c *AcceptanceCriterion) UnmarshalYAML(node *yaml.Node) error {
+	var identity struct {
+		ID string `yaml:"id"`
+	}
+
+	err := node.Decode(&identity)
+	if err != nil {
+		return fmt.Errorf("acceptance criterion id: %w", err)
+	}
+
+	type plain AcceptanceCriterion
+
+	var criterion plain
+
+	err = node.Decode(&criterion)
+	if err != nil {
+		return fmt.Errorf("acceptance criterion %s: %w", identity.ID, err)
+	}
+
+	*c = AcceptanceCriterion(criterion)
+
+	return nil
 }

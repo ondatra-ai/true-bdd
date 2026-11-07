@@ -1,12 +1,10 @@
 story:
   id: concept-bodies
   feature: build-steps
-  title: Write and critique concept bodies with their fixture inputs
+  title: Write and verify concept definitions from referenced Specification evidence
   as_a: System Architect
-  i_want: each concept body written and critiqued with the fixture inputs of the Scenarios its patterns
-    bind, and each pattern judged too
-  so_that: a definition meets the contracts its fixtures state, requires nothing else, and captures what
-    its steps mean
+  i_want: each definition verified against its Concept and binding with complete referenced evidence
+  so_that: its pattern captures the step meaning and its body relies only on declared contracts
   status: IMPLEMENTED
   acceptance_criteria:
   - id: 001-three-cases
@@ -48,8 +46,7 @@ story:
       - stdout matches BUILD STEPS COMPLETE
       - no file outside "tmp" and "tests" changed
   - id: 003-fixture-contract
-    description: The critique passes a body that meets a contract a bound Scenario's fixture input states
-      and its binding does not
+    description: The step-verification Checklist item passes a body that supplies CALC_REAL_GO as the host's toolchain binding declares
     steps:
     - given:
       - the "concept-bodies-contract" project tree
@@ -57,14 +54,15 @@ story:
     - when: *id001
     - then:
       - the command exits with code 0
-      - stdout matches Step definition critiqued.*findings=\[\]
-      - every file matching "tests/calc/steps/concept*.go" matches CALC_REAL_GO
+      - stdout matches Step definition verified.*findings=\[\]
+      - some file matching "tests/calc/steps/*.go" or "tests/calc/helpers/*.go" matches CALC_REAL_GO
+      - every file matching "tmp/*/*checklist-build-steps-step-verification-user.txt" matches CALC_REAL_GO
+      - 'every file matching "tmp/*/*checklist-build-steps-step-verification-user.txt" does not match fixture_inputs:'
       - stdout matches BUILD STEPS COMPLETE
       - no file outside "tmp" and "tests" changed
       - the shell command "go test -tags bdd -count=1 ./tests/calc/..." run in "." exits with code 0
   - id: 004-extra-requirement
-    description: The critique fails a body that requires more than its binding and its fixture inputs
-      state, and the body goes back to its writer
+    description: The verification Checklist item fails a body requiring an undeclared prerequisite, and its F rewrites that body
     steps:
     - given:
       - the "concept-bodies-extra" project tree
@@ -72,16 +70,15 @@ story:
     - when: *id001
     - then:
       - the command exits with code 0
-      - stdout matches Step definition critiqued.*concept_binding
-      - stdout matches Step definition critiqued.*findings=\[\]
-      - stdout does not match Critique sent the patterns back
-      - every file matching "tests/calc/steps/concept*.go" does not match CALC_LICENCE|\.Halve\(
+      - stdout matches Step definition verified.*concept_binding
+      - stdout matches Step definition verified.*findings=\[\]
+      - stdout does not match Verification sent the patterns back
+      - every file matching "tests/calc/steps/concept*.go" does not match CALC_LICENCE|state\.Halve\(
       - stdout matches BUILD STEPS COMPLETE
       - no file outside "tmp" and "tests" changed
       - the shell command "go test -tags bdd -count=1 ./tests/calc/..." run in "." exits with code 0
   - id: 005-wrong-capture
-    description: The critique fails a pattern that captures the wrong part of a step, and the Item is
-      repaired through a new proposal the engine checks before rewriting its skeleton
+    description: The verification Checklist item finds a wrong capture; its F proposes the pattern and writes the body, then its Q and the restarted pattern-bindings Q judge it
     steps:
     - given:
       - the "concept-bodies-capture" project tree
@@ -89,9 +86,9 @@ story:
     - when: *id001
     - then:
       - the command exits with code 0
-      - stdout matches Step definition critiqued.*pattern_captures
-      - stdout matches Critique sent the patterns back to the proposal
-      - stdout matches Pattern proposal accepted
+      - stdout matches Step definition verified.*pattern_captures
+      - stdout matches Verification sent the patterns back to the proposal
+      - stdout matches Check answered.*check=pattern-bindings.*answer=pass
       - stdout matches Concept skeletons rewritten.*removed=1
       - stdout matches Concept pattern binds.*step="the Owner halves 64" captures=64
       - stdout matches BUILD STEPS COMPLETE

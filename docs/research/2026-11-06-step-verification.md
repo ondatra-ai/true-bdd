@@ -1,0 +1,52 @@
+# Step-definition verification, issue #301
+
+Verification is one prompt Checklist item after `step-coverage`. It receives complete evidence selected by reference and no fixture file. Its one F plans pattern revisions when needed and writes only definitions named by its findings, with new captures after a pattern repair. Pattern plans change no source before the menu's apply choice. The same Q runs after apply and the checklist restarts.
+
+The finished TrueBDD suite has 19 concept Items. The engine test measures every rendered system/user pair; the largest is `then:file content`, **70,083 bytes** against `engine.max_prompt_bytes: 150000`. It pins the complete argument rules, selected source including `assertEveryFileMatches` and `assertAtomicReplacement`, runtime declarations, referenced Public interface entries, forms and complete examples. Source/name matching is conservative and retains whole declaration units. There is no digest, body truncation, fixture-file substitution or reduced reasoning setting.
+
+## Accepted known answers
+
+These decisions precede the controls being held. They are source-grounded expectations for the experiment's inputs, not newly observed model verdicts. The experiment's optimized input snapshot predates #299's latest fixture recordings. Fresh confirmation uses the combined recording after #301 and #303. The archived exact-double helper is retained as engine test data; its source-level witness runs offline. Installation's corrected helper is seeded in its fixture input, without editing an old cassette.
+
+| Control | Expected verdict | Ground truth |
+|---|---|---|
+| `concept-bodies-extra-claude-003` | `fail:concept_binding` | State.Halve requires CALC_LICENCE, absent from the closed binding and Public interface. |
+| `concept-bodies-extra-claude-005` | `pass` | The repair runs the declared halve operation without the undeclared licence gate. |
+| `concept-bodies-capture-claude-004` | `fail:pattern_captures` | The first-digit pattern binds halves 64 but supplies 6 to the definition. |
+| `concept-bodies-capture-claude-008` | `pass` | The repaired pattern supplies the complete number, including 64. |
+| `concept-bodies-cases-claude-009` | `fail:pattern_scope` | The regex admits the Owner exactly doubles 6; OperationFromStep selects double and exact=true, then RunCalc returns ErrExactNotDeclared. Exact doubling is outside the closed Concept and declared double interface. |
+| `concept-bodies-cases-claude-011` | `pass` | The Then observes the kept output; matches and does not match stay distinct. |
+| `concept-bodies-contract-claude-003` | `pass` | The body supplies CALC_REAL_GO as the toolchain binding now declares; no fixture file is authority. |
+| `build-steps-critique-assertion-claude-005` | `fail:concept_meaning` | The Then rejects equality and accepts inequality, contradicting the expected result. |
+| `build-steps-critique-assertion-claude-007` | `pass` | The repaired Then compares stored process output with the expected value and accepts equality. |
+| `build-steps-critique-correct-claude-006` | `pass` | HostRoot ../.. resolves from tests/calc, the Go test process working directory; the helper comment is corrected from tests/calc/steps. |
+| `computed-assertion-control` | `fail:computes_assertion` | The synthetic Then computes state.Input * 2 instead of observing the saved process output. |
+
+`concept-bodies-cases-claude-009` changes from the historical pass label to `fail:pattern_scope`. Its complete regex admits “the Owner exactly doubles 6.” `OperationFromStep` maps those captures to `double`, exact=true and value=6; `RunCalc` returns `ErrExactNotDeclared` before any subprocess. The Concept and interface declare exact halving alone. The body therefore cannot serve the full regex language; this is a pattern discrepancy. The expected verdict was settled from this witness, rather than inferred from a model's disagreement.
+
+`build-steps-critique-correct-claude-006` remains pass. `HostRoot = "../.."` is correct from the Go test process directory `tests/calc`. The old comment incorrectly named the steps package directory `tests/calc/steps`; the fixture helper now states the real cwd.
+
+## Specification divergence check
+
+The check covered the product document, architecture and Public interface, both source Stories, Registry observations, generated tests and glossary terminology. Closed divergences were the hidden post-apply turn, whole-suite and fixture-contract evidence claims, the separate critique tier, old artifact paths and Scenario provenance assertions, repair turn counts, and the fixture-only CALC_REAL_GO prerequisite. The documentation now names the authored Q and its one F, reference selection, complete argument evidence, planned skeleton locations before apply, normal tier precedence and repeated Q. Binding judgements, grouping, CheckPatterns and structural checks after apply retain their existing places.
+
+No new code behavior was found outside those stated contracts. The selector preserves case-insensitive negation alternatives too; an engine test prevents them collapsing into one variable form. A coverage repair after a verification repair receives its own full Item body scope, while verification still protects unreported bodies. The corresponding engine tests exercise both routes and source-edit boundaries.
+
+The coverage baseline remains explicitly `evidence_quality: reconstructed`: the new pass/fail/fix identities are exercised by the offline engine walk over a fixture tree. Fresh BDD coverage evidence awaits recording. No cassette or golden is edited by this change.
+
+The first revised unit-test run exposed an inherited prompt-limit test that used arbitrary oversized prose. After selection omitted that prose, it attempted the installed Claude CLI with the dummy model `runtime-api`, which was rejected. The test now oversizes a referenced declaration and installs a rejecting local stub. Subsequent full-module and replay checks also prepend rejecting Claude/Codex stubs; no successful live model turn or recording was made.
+
+## Offline replay and recording inventory
+
+The complete replay ran all 362 Scenarios: **253 passed, 109 failed**. Every failure is attributable to a stale or absent recording: 105 request mismatches, two changed init goldens and two unrecorded #300 Scenarios. Three request mismatches appear in the fixture's `tmp/true-bdd.log.json` rather than the final assertion output. Of the 109 failing fixtures, 95 are covered by the earlier #299/#302/#300 inventories and 14 newly failing fixtures are covered by this ticket's inventory. No cassette or golden was changed.
+
+The full inventory is `tmp/301/rerecord.txt`; the causal audit is `tmp/301/replay-audit.json`, with raw replay output in `tmp/301/replay.json`. Each fixture row names its Scenario selector, current service turns, historical Claude cost, changed reason and estimate. Every local checklist and template override is individually classified. Four input-only audits pass replay and need no additional recording for #301.
+
+| Scope | Current service turns | Historical Claude USD | Planned service turns | Estimated Claude USD |
+|---|---:|---:|---:|---:|
+| All 26 audited fixtures | 142 (125 Claude, 17 Codex) | 20.90866320 | — | — |
+| 22 recording targets, including two zero-AI init goldens | 138 | 20.57763270 | 150 | 22.33625 ±30% |
+
+Codex cost is unpriced. The estimate replaces 25 old hidden verification turns with 31 Q turns: the initial Q plus the same Q after every verification apply and after checklist restart. It includes a pattern proposal, body proposal and writer for the newly settled exact-double repair, and retains #299's successful-run floor for the partial capture recording. Further model-discovered repairs would add their proposal/apply turns and two verification turns each.
+
+The override audit covers six complete checklists: five migrate the shipped Q and one stays empty to test startup refusal. Three body-generator extensions refresh the shipped prefix; nine deliberate writer or verification replacements/extensions retain their fixture-specific behavior. The grouping-only fixtures stop before body verification. The green-body fixture isolates the existing red/green gate and has no AI recording. No live recording command was run; newly confirmed model verdicts and fresh BDD coverage evidence remain for the combined recording after #303.

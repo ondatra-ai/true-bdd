@@ -6,14 +6,12 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
 )
 
 // runAt builds the minimum State the containment helpers read: a run whose
 // tmpdir is `dir`.
 func runAt(dir string) *State {
-	return &State{ScenarioRun: &testkit.ScenarioRun{Result: &runner.RunResult{TmpDir: dir}}}
+	return &State{ScenarioRun: &testkit.ScenarioRun{Result: &testkit.RunResult{TmpDir: dir}}}
 }
 
 // A path that simply is not there must come back joined, not refused — the

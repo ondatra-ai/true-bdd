@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-when-operation-iter1-result.yaml ===
+applied: true
+target: "tests/calc/steps/concept7b86a45f32a2af1379e8139ecafca2e1995ea6f5ea105d09465e201fb17f9fd4.go"
+summary: "Applied supplied CLI helper and step body; used shell writes after patch-tool failure; scenarios not run."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-when-operation-iter1-result.yaml ===

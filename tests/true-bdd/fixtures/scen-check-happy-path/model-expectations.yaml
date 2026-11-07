@@ -1,9 +1,9 @@
 "the scen_check_checklist prompt keeps the Scenario's Registry key and fields":
-  glob: "tmp/*/06-E2E-001-checklist-*-user.txt"
+  glob: "tmp/*/07-E2E-001-checklist-*-user.txt"
   pattern: "\\*\\*Scenario ID:\\*\\* E2E-001\\n\\*\\*Description:\\*\\* The greeter must print the configured greeting followed by the name it is given, and exit with code 0\\n\\*\\*Service:\\*\\* greeter\\n\\*\\*Generated test file:\\*\\* tests/greeter/greet_test\\.go\\n"
   operator: "matches"
 "the scen_check_checklist prompt keeps the Scenario's and modifier and lineage":
-  glob: "tmp/*/06-E2E-001-checklist-*-user.txt"
+  glob: "tmp/*/07-E2E-001-checklist-*-user.txt"
   pattern: "Then:\\n  - the command exits with code 0\\n  - and stdout matches \\^Hello Ada\\$\\n\\n### Lineage — user_stories\\[\\]\\n  - docs/product/stories/greet-by-name\\.yaml \\(greet-by-name-001-prints-greeting\\)\\n\\n---"
   operator: "matches"
 "the scen_check_checklist prompt does not mention merge_date":

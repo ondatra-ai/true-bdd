@@ -65,6 +65,7 @@ acceptance_criteria:
 - The `description` must NEVER contain Given/When/Then — those belong
   in `steps`.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -93,11 +94,10 @@ The calculator must return 0 when the Calculator User halves -1.
 
 ## Fix Prompt to Apply
 
-=== FILE_START: tmp/{{RUN_DIR}}/01-halve-negative-fix-prompts.md ===
 # Fix Prompt for Story halve-negative: Halve negative integers
 
 ## Instructions
-Apply the following changes to the acceptance criteria for this story. Change ONLY AC 001-even. ACs 002-odd and 003-near-zero are not faulted by the failed check and must be reproduced exactly as they stand — same description, same steps, word for word. Preserve all Story fields (id, feature, title, as_a, i_want, so_that, status) and keep the exact role "Calculator User" in every step.
+Apply the following changes to the acceptance criteria for this story.
 
 ## Original Acceptance Criteria
 1. 001-even: The calculator must persist -3 in its internal SQL result table after dividing -6 by two. [has steps]
@@ -106,73 +106,59 @@ Apply the following changes to the acceptance criteria for this story. Change ON
 
 ## Required Changes
 
+Only AC 001-even is faulted by the failed check. ACs 002-odd and 003-near-zero already describe observable behaviour and are reproduced word for word, with their existing steps unchanged.
+
 ### Change #1: 001-even
 **Before:** The calculator must persist -3 in its internal SQL result table after dividing -6 by two.
-
-**Issue:** The description states implementation, not observable behaviour — "persist -3 in its internal SQL result table". An internal SQL result table is storage detail the Calculator User cannot observe, and it is not an instance of the product document's `then` concept `result` ("The halve command succeeds and prints exactly a stated integer, the half rounded toward zero"). Per architecture.yaml the calculator is a CLI that exits 0 and prints the integer result on stdout, so the only Calculator-User-observable outcome is the printed integer. The AC's existing Given/When/Then steps are already correct instances of `number supplied`, `halving` and `result`, so only the description changes.
-
-**After (description):** The calculator must print -3 when the Calculator User halves -6.
-
-**After (steps):** unchanged from the original — reproduce byte for byte:
+**Issue:** The description states implementation mechanics, not observable behaviour: "persist -3 in its internal SQL result table" names an internal storage mechanism, and "after dividing -6 by two" names the internal algorithm. Neither the product document nor `docs/architecture/architecture.yaml` declares any database; the architecture describes a CLI (`calculator halve <integer>`) that exits 0 and prints the integer result on stdout, and the product's `then` concept `result` means "The halve command succeeds and prints exactly a stated integer, the half rounded toward zero." The Calculator User can observe only the printed result.
+**After (description):** The calculator must return -3 when the Calculator User halves -6.
+**After (steps):** unchanged — the existing Given/When/Then already state observable behaviour and are instances of the product concepts `number supplied`, `halving` and `result`:
 ```yaml
 - given:
-    - the number is "-6"
+    - "the number is \"-6\""
 - when:
-    - the Calculator User halves the number
+    - "the Calculator User halves the number"
 - then:
-    - the result is "-3"
+    - "the result is \"-3\""
 ```
 
-### No other changes
-- No new ACs are added: product.yaml states the Story's whole scope as inputs -6, -7 and -1, all three already covered, and the Story has no failure mode of its own (missing and non-integer inputs belong to calculator-input).
-- No ACs are merged or removed: 001-even, 002-odd and 003-near-zero each exercise a distinct input (-6 even, -7 odd, -1 near zero), so none duplicate another.
-- 002-odd and 003-near-zero keep their descriptions and steps exactly as they are.
+No new ACs are added and no ACs are merged or removed: each existing AC covers a distinct input from the product description (-6 even, -7 odd, -1 near zero), so none duplicate another.
 
 ## Complete Fixed Acceptance Criteria
 
 ```yaml
-- id: 001-even
-  description: The calculator must print -3 when the Calculator User halves -6.
+- ac_id: 001-even
+  description: "The calculator must return -3 when the Calculator User halves -6."
   steps:
     - given:
-        - the number is "-6"
+        - "the number is \"-6\""
     - when:
-        - the Calculator User halves the number
+        - "the Calculator User halves the number"
     - then:
-        - the result is "-3"
+        - "the result is \"-3\""
 
-- id: 002-odd
-  description: The calculator must return -3 when the Calculator User halves -7.
+- ac_id: 002-odd
+  description: "The calculator must return -3 when the Calculator User halves -7."
   steps:
     - given:
-        - the number is "-7"
+        - "the number is \"-7\""
     - when:
-        - the Calculator User halves the number
+        - "the Calculator User halves the number"
     - then:
-        - the result is "-3"
+        - "the result is \"-3\""
 
-- id: 003-near-zero
-  description: The calculator must return 0 when the Calculator User halves -1.
+- ac_id: 003-near-zero
+  description: "The calculator must return 0 when the Calculator User halves -1."
   steps:
     - given:
-        - the number is "-1"
+        - "the number is \"-1\""
     - when:
-        - the Calculator User halves the number
+        - "the Calculator User halves the number"
     - then:
-        - the result is "0"
+        - "the result is \"0\""
 ```
 
-## Concept mapping (for review)
-Every step of 001-even is an instance of one concept of its block, within the variations that concept's closed means states:
-- given — `number supplied`: the calculator is supplied a stated, already validated integer (-6).
-- when — `halving`: the Calculator User runs the calculator's halve command once with the supplied integer.
-- then — `result`: the halve command succeeds and prints exactly -6's half rounded toward zero, -3.
-
-No step needs a variation that no concept states, so no wider concept and no new concept is required.
-
-Present this proposal at the fix menu; apply it only after the Product Owner answers apply.
-
-=== FILE_END: tmp/{{RUN_DIR}}/01-halve-negative-fix-prompts.md ===
+All Story fields (id, title, As a / I want / So that) stay as they are.
 
 ---
 

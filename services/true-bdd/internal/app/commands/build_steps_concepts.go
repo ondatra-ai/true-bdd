@@ -86,6 +86,8 @@ func discoverConceptItems(ctx context.Context, deps BuildStepsDeps, registryFile
 		return nil, err
 	}
 
+	nameConceptItems(discovery.items)
+
 	return discovery, nil
 }
 
@@ -383,9 +385,17 @@ func listConceptItems(deps BuildStepsDeps, discovery *conceptDiscovery) error {
 	}
 
 	// Grouping logged this run's one "Loaded prompts" record already.
-	err = recordStepCoverage(deps.TmpDir, prompts, findings, len(discovery.items), false)
-	if err != nil {
-		return err
+	for _, prompt := range prompts {
+		switch prompt.Prompt.Check {
+		case patternBindingsID:
+			err = recordBarePatternBindings(deps, discovery, prompt)
+		case stepCoverageID:
+			err = recordStepCoverage(deps.TmpDir, prompt, findings, len(discovery.items))
+		}
+
+		if err != nil {
+			return err
+		}
 	}
 
 	if len(discovery.items) > 0 || len(findings) > 0 {

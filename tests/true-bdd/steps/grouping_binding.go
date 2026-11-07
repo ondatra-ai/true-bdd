@@ -13,7 +13,7 @@ func runGroupingChangedBinding(state *State, _ []string) error {
 		return state.fail("%w", err)
 	}
 
-	err = state.Harness.RequireEngine()
+	binary, err := state.ServiceBinary()
 	if err != nil {
 		return state.fail("%w", err)
 	}
@@ -23,5 +23,5 @@ func runGroupingChangedBinding(state *State, _ []string) error {
 		return state.fail("resolve binding-change wrapper: %w", err)
 	}
 
-	return executeEngine(state, "build steps --fix", wrapper, "TRUE_BDD_GROUPING_ENGINE="+state.Harness.BinPath)
+	return executeEngine(state, "build steps --fix", wrapper, "TRUE_BDD_GROUPING_ENGINE="+binary)
 }

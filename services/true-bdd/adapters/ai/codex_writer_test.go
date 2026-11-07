@@ -149,6 +149,9 @@ func TestCodexStartedWriterOutcomesAndStartFailures(t *testing.T) {
 func TestCodexWriterRefusesAnEditRootSymlinkOutsideTheHostBeforeSpawning(t *testing.T) {
 	root := t.TempDir()
 	outside := t.TempDir()
+	tools := t.TempDir()
+	putCodexFile(t, filepath.Join(tools, "codex"), "#!/bin/sh\nexit 97\n")
+	t.Setenv("PATH", tools+string(os.PathListSeparator)+os.Getenv("PATH"))
 	putCodexFile(t, filepath.Join(root, "auth/auth.json"), "{}")
 	t.Setenv("CODEX_HOME", filepath.Join(root, "auth"))
 

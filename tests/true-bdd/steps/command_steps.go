@@ -1,11 +1,9 @@
 package steps
 
 import (
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 	"strings"
 	"time"
-
-	"github.com/ondatra-ai/true-bdd/pkg/cli"
-	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
 )
 
 // hostCommandTimeout caps one scenario-declared command. Generous because
@@ -42,13 +40,8 @@ func assertCommandExitCode(state *State, args []string) error {
 	state.T.Logf("running %q in %q (timeout %s) — this can take several minutes",
 		command, dirRel, hostCommandTimeout)
 
-	// CLAUDECODE is stripped for the reason runner.phase strips it: a
-	// re-run host suite may itself launch an agent CLI.
-	finished, err := spec.Run(argv, cli.Options{
-		Dir:     dir,
-		Env:     cli.Inherit().Strip("CLAUDECODE").Set("GOWORK=off"),
-		Timeout: hostCommandTimeout,
-	})
+	// A host suite may itself launch an agent CLI.
+	finished, err := testkit.RunCommand(argv, dir, hostCommandTimeout)
 	if err != nil {
 		return state.fail("running %q in %q: %w", command, dirRel, err)
 	}

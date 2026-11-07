@@ -27,6 +27,7 @@ Scenario's description or steps are rewritten.
   - `target:` — the working copy you edited (QUOTED)
   - `summary:` — one line on what changed
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -51,78 +52,61 @@ Then:
 
 ## Target
 The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry,
-file `tmp/{{RUN_DIR}}/scenarios_yaml.yaml`).
+`tmp/{{RUN_DIR}}/scenarios_yaml.yaml`).
 
-Edit nothing else: not `metadata:`, not any other scenario, and not
-`E2E-001`'s `service:`, `path:` or `user_stories:`. Do not touch
-`tests/greeter/greet_test.go` (it is re-rendered by
-`true-bdd build tests --fix`) and do not touch any step definition.
+Edit nothing else: not `tests/greeter/greet_test.go`, not any step definition,
+not `product.yaml`, and no other Scenario entry. Leave E2E-001's `description:`,
+`service:`, `path:` and `user_stories:` exactly as they are, and leave the
+`given:` and `when:` steps exactly as they are.
 
 ## Why
-Check `scen-check/scenario_quality` failed with the finding
-"E2E-001: not measurable": no step and no part of the description names a
-specific measurable criterion a step definition could assert on. The user
-chose the criterion: the greeter's standard output, line pattern
-`^Hello, Alice$`.
+The scen-check `scenario_quality` check reported `E2E-001: not measurable`: no
+status code, exact message, timeout, error code, named field or count appears in
+the description or in any step, so a step definition has nothing to assert on
+beyond the prose. The user chose the criterion: an exact line on **standard
+output** matching the pattern `^Hello Alice$` (greeting `Hello`, name `Alice`).
+
+The replacement stays an instance of the `then` concept `standard output` in
+`product.yaml` — "A line the command printed on its standard output has a match
+for a stated pattern, a regular expression" — and it still asserts the same
+behaviour: the greeter greets the person whose name it is given.
 
 ## Required Changes
 
-### Change #1: Give the outcome step a measurable criterion
+### Change #1: give the outcome step an exact-line criterion
 **Document:** scenarios_yaml
-**Field:** `scenarios.E2E-001.merged_steps.then` (the single list item)
+**Field:** `scenarios.E2E-001.merged_steps.then`
 **Current text:**
 ```
-the greeter greets that person
+      then:
+        - the greeter greets that person
 ```
 **New text:**
 ```
-the greeter's standard output has a line matching `^Hello, Alice$`
+      then:
+        - "the greeter printed a line on standard output matching `^Hello Alice$`"
 ```
 
-Replace that one list item in place, so the `then:` block reads:
-```
-      then:
-        - the greeter's standard output has a line matching `^Hello, Alice$`
-```
+Notes for the applier:
+- The `then:` list keeps exactly one entry; replace the single item, do not add a
+  second one.
+- Keep the double quotes shown above so the backticked regular expression
+  survives YAML parsing verbatim; the step text itself is
+  `the greeter printed a line on standard output matching ` followed by the
+  backticked pattern `^Hello Alice$`.
+- Preserve the existing list indentation under `merged_steps`.
 
-## Notes for the applier
-- Change the `then` step only. Leave the `given` step
-  (`the greeting is configured`) and the `when` step
-  (`the Operator runs the greeter with a name`) exactly as they are, and
-  leave `description:` exactly as it is
-  (`The greeter must greet the person whose name it is given`).
-- The behaviour asserted is unchanged: the configured greeting printed
-  followed by the given name. The new wording states it as something a run
-  can settle instead of restating the prose.
-- Concept fit (product document `concepts.then`): the new step is an
-  instance of the concept `standard output`, whose `means` is "A line the
-  command printed on its standard output has a match for a stated pattern,
-  a regular expression." The step names the command's standard output and
-  states the pattern, so it stays inside that closed meaning; it introduces
-  no new concept and uses only the glossary terms `standard output` and
-  `command` (the greeter's command run).
-- Vocabulary: the new step uses none of the `forbidden_qualifiers`
-  (properly, correctly, appropriate, appropriately, user-friendly, fast,
-  quickly, helpful) and none of the `forbidden_actions` (handle, process,
-  parse).
-- Keep the YAML a plain scalar as shown — the backticks and `^`/`$` need no
-  quoting because the value does not begin with an indicator character.
-  Keep the existing two-space list indentation under `then:`.
-- After the edit, `scenarios.E2E-001` must read exactly:
-```
-  E2E-001:
-    description: The greeter must greet the person whose name it is given
-    service: greeter
-    path: tests/greeter/greet_test.go
-    user_stories: []
-    merged_steps:
-      given:
-        - the greeting is configured
-      when:
-        - the Operator runs the greeter with a name
-      then:
-        - the greeter's standard output has a line matching `^Hello, Alice$`
-```
+## After the edit
+Re-render the generated test from the registry with
+`true-bdd build tests --fix`. Do not hand-edit `tests/greeter/greet_test.go`.
+
+## Verification
+- `scenarios.E2E-001.merged_steps.then` holds the one new step and nothing else.
+- `description`, `service`, `path`, `user_stories`, `given` and `when` under
+  E2E-001 are byte-for-byte unchanged.
+- No other scenario entry changed.
+- The scenario now carries a measurable criterion: the exact line pattern
+  `^Hello Alice$` on standard output.
 
 ---
 

@@ -20,17 +20,17 @@
     "stream-json",
     "--verbose",
     "--json-schema",
-    "{\"additionalProperties\":false,\"properties\":{\"steps\":{\"additionalProperties\":false,\"properties\":{\"1\":{\"additionalProperties\":false,\"properties\":{\"other_block_concept\":{\"type\":[\"string\",\"null\"]},\"reason\":{\"minLength\":1,\"type\":\"string\"},\"scores\":{\"additionalProperties\":false,\"properties\":{\"double\":{\"maximum\":10,\"minimum\":0,\"type\":\"integer\"},\"halve\":{\"maximum\":10,\"minimum\":0,\"type\":\"integer\"}},\"required\":[\"double\",\"halve\"],\"type\":\"object\"}},\"required\":[\"other_block_concept\",\"reason\",\"scores\"],\"type\":\"object\"}},\"required\":[\"1\"],\"type\":\"object\"}},\"required\":[\"steps\"],\"type\":\"object\"}",
+    "{\"additionalProperties\":false,\"properties\":{\"steps\":{\"additionalProperties\":false,\"properties\":{\"1\":{\"additionalProperties\":false,\"properties\":{\"other_block_concept\":{\"type\":[\"string\",\"null\"]},\"reason\":{\"type\":\"string\"},\"scores\":{\"additionalProperties\":false,\"properties\":{\"double\":{\"type\":\"integer\"},\"halve\":{\"type\":\"integer\"}},\"required\":[\"double\",\"halve\"],\"type\":\"object\"}},\"required\":[\"other_block_concept\",\"reason\",\"scores\"],\"type\":\"object\"}},\"required\":[\"1\"],\"type\":\"object\"}},\"required\":[\"steps\"],\"type\":\"object\"}",
     "-p",
     "{\n  \"item\": \"host-001\",\n  \"description\": \"A calculator operation\",\n  \"product\": \"{\\n  \\\"roles\\\": [\\n    {\\n      \\\"name\\\": \\\"Owner\\\",\\n      \\\"description\\\": \\\"Uses the calculator.\\\"\\n    }\\n  ],\\n  \\\"concepts\\\": {\\n    \\\"when\\\": [\\n      {\\n        \\\"concept\\\": \\\"halve\\\",\\n        \\\"means\\\": \\\"Press Halve once to halve the entered number.\\\",\\n        \\\"terms\\\": []\\n      },\\n      {\\n        \\\"concept\\\": \\\"double\\\",\\n        \\\"means\\\": \\\"Press Double once to double the entered number.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ]\\n  },\\n  \\\"glossary\\\": []\\n}\\n\",\n  \"steps\": [\n    {\n      \"key\": \"1\",\n      \"block\": \"when\",\n      \"text\": \"Press Halve once.\"\n    }\n  ]\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 7357,
-  "request_hash": "sha256:9438cd6d11b03d31250282e4ba08ac1924f0af40c1cac422243f3420671ab18a",
+  "duration_ms": 7779,
+  "request_hash": "sha256:8e1e2b5a1dd5fc56f9be1c0a52e7ccc2b1f597fad58cd5b4b7d40ce66ec83a2e",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-11-02T15:30:53Z"
+  "recorded_at": "2026-11-05T17:07:25Z"
 }

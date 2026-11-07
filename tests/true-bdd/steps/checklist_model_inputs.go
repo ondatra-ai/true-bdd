@@ -7,8 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 	"gopkg.in/yaml.v3"
 )
 
@@ -32,7 +31,7 @@ func assertChecklistQuestionAndFix(state *State, rule checklistPromptRule) error
 	}
 
 	for _, path := range matches {
-		content, err := disk.Read(path)
+		content, err := testkit.Read(path)
 		if err != nil {
 			return state.fail("read saved Model prompt: %w", err)
 		}
@@ -77,7 +76,7 @@ func modelChecklistLiterals(state *State, stem string) ([]checklistLiteral, erro
 		return nil, err
 	}
 
-	content, err := disk.Read(configuration)
+	content, err := testkit.Read(configuration)
 	if err != nil {
 		return nil, state.fail("read checklist configuration: %w", err)
 	}
@@ -98,7 +97,7 @@ func modelChecklistLiterals(state *State, stem string) ([]checklistLiteral, erro
 		return nil, err
 	}
 
-	content, err = disk.Read(path)
+	content, err = testkit.Read(path)
 	if err != nil {
 		return nil, state.fail("read Model's checklist: %w", err)
 	}
@@ -127,7 +126,7 @@ func checklistLiterals(node *yaml.Node) []checklistLiteral {
 		for index := 0; index < len(node.Content); index += checklistPairSize {
 			switch node.Content[index].Value {
 			case "Q":
-				literal.question = node.Content[index+1].Value
+				literal.question = checklistQuestion(node.Content[index+1])
 			case "F":
 				literal.fix = node.Content[index+1].Value
 			case "rationale":
@@ -189,17 +188,17 @@ func assertModelSchemeShipped(state *State, args []string) error {
 		return err
 	}
 
-	actual, err := disk.Read(path)
+	actual, err := testkit.Read(path)
 	if err != nil {
 		return state.fail("read shipped Model scheme: %w", err)
 	}
 
-	root, err := runner.FindRepoRoot()
+	root, err := testkit.FindRepoRoot()
 	if err != nil {
 		return state.fail("find Model's Specification: %w", err)
 	}
 
-	expected, err := disk.Read(filepath.Join(root, relative))
+	expected, err := testkit.Read(filepath.Join(root, relative))
 	if err != nil {
 		return state.fail("read Model's declared scheme: %w", err)
 	}
@@ -209,4 +208,19 @@ func assertModelSchemeShipped(state *State, args []string) error {
 	}
 
 	return nil
+}
+
+// checklistQuestion reads the prompt option without treating a code Q as model text.
+func checklistQuestion(node *yaml.Node) string {
+	if node.Kind != yaml.MappingNode {
+		return ""
+	}
+
+	for index := 0; index < len(node.Content); index += checklistPairSize {
+		if node.Content[index].Value == "prompt" {
+			return node.Content[index+1].Value
+		}
+	}
+
+	return ""
 }

@@ -1,4 +1,5 @@
 {
+  "normalize_go_durations": true,
   "schema": 1,
   "binary": "codex",
   "argv": [
@@ -19,8 +20,8 @@
     "-"
   ],
   "exit_code": 0,
-  "duration_ms": 65049,
-  "request_hash": "sha256:f7e9d7b9b712ef6230300c51dab13bc302bdd18e7d91ecc8d32ff24c07b2dd4b",
+  "duration_ms": 43700,
+  "request_hash": "sha256:9463e110ee699a3b6c1a3f8dcb6be1db25ad9a3e875a134ebc71aa2c0992ae3e",
   "fsdiff": {
     "created": [
       "tmp/{{RUN_DIR}}/codex-turn002-codex-answer.txt"
@@ -30,5 +31,5 @@
     ],
     "deleted": []
   },
-  "recorded_at": "2026-10-26T21:22:51Z"
+  "recorded_at": "2026-11-07T02:33:32Z"
 }

@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/product.yaml"
-summary: "Added the latency glossary entry exactly as provided, specifying measurement by the client clock."
+summary: "Appended the exact latency glossary entry with one replacement; patch tool failed, so a script applied and verified the edit."
 === FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===

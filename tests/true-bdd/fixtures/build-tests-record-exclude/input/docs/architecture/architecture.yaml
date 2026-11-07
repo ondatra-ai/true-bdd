@@ -1,0 +1,18 @@
+architecture:
+  testing:
+    testkit: {}
+    framework: go-test
+    commands:
+      record: {command: "go test -tags bdd -json ./tests/mcp/...", exclude: ["cache/**", "**/private/**"]}
+      replay: go test -tags bdd -json ./tests/mcp/...
+      live: go test -tags bdd -json ./tests/mcp/...
+  services:
+    - name: mcp-service
+      path: services/mcp-service
+      language: go
+      dependencies:
+        - name: vendor
+          protocol: cli
+          scope: third_party
+          recording:
+            unread: ["vendor-private/**"]

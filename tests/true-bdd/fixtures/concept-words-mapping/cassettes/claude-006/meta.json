@@ -20,17 +20,17 @@
     "stream-json",
     "--verbose",
     "--json-schema",
-    "{\"additionalProperties\":false,\"properties\":{\"concepts\":{\"additionalProperties\":false,\"properties\":{\"when:halve\":{\"additionalProperties\":false,\"properties\":{\"reason\":{\"minLength\":1,\"type\":\"string\"},\"undeclared_words\":{\"items\":{\"minLength\":1,\"type\":\"string\"},\"type\":\"array\",\"uniqueItems\":true}},\"required\":[\"reason\",\"undeclared_words\"],\"type\":\"object\"}},\"required\":[\"when:halve\"],\"type\":\"object\"}},\"required\":[\"concepts\"],\"type\":\"object\"}",
+    "{\"additionalProperties\":false,\"properties\":{\"concepts\":{\"additionalProperties\":false,\"properties\":{\"when:halve\":{\"additionalProperties\":false,\"properties\":{\"reason\":{\"type\":\"string\"},\"undeclared_words\":{\"items\":{\"type\":\"string\"},\"type\":\"array\"}},\"required\":[\"reason\",\"undeclared_words\"],\"type\":\"object\"}},\"required\":[\"when:halve\"],\"type\":\"object\"}},\"required\":[\"concepts\"],\"type\":\"object\"}",
     "-p",
     "{\n  \"product\": \"{\\n  \\\"roles\\\": [\\n    {\\n      \\\"name\\\": \\\"Product Owner\\\",\\n      \\\"description\\\": \\\"Owns meanings.\\\"\\n    }\\n  ],\\n  \\\"concepts\\\": {\\n    \\\"given\\\": [\\n      {\\n        \\\"concept\\\": \\\"number ready\\\",\\n        \\\"means\\\": \\\"A number is entered before the action.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ],\\n    \\\"when\\\": [\\n      {\\n        \\\"concept\\\": \\\"halve\\\",\\n        \\\"means\\\": \\\"Halve the entered number once with the supplied idempotency key.\\\",\\n        \\\"terms\\\": [\\n          \\\"idempotency key\\\"\\n        ]\\n      }\\n    ],\\n    \\\"then\\\": [\\n      {\\n        \\\"concept\\\": \\\"number result\\\",\\n        \\\"means\\\": \\\"Compare the displayed number with an expected value.\\\",\\n        \\\"terms\\\": []\\n      },\\n      {\\n        \\\"concept\\\": \\\"unused\\\",\\n        \\\"means\\\": \\\"The settlement ledger has a reconciled nostro balance.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ]\\n  },\\n  \\\"glossary\\\": [\\n    {\\n      \\\"term\\\": \\\"idempotency key\\\",\\n      \\\"means\\\": \\\"A label identifying a requested halving; repeats with the same label must not halve the number again.\\\"\\n    }\\n  ],\\n  \\\"description\\\": \\\"A calculator accepts a number and a request label. Repeating a request with the same label changes the number only once.\\\",\\n  \\\"language_policy\\\": \\\"The request label is presented to users as an idempotency key. Keep this exact domain name in the product meanings and declare it when needed.\\\"\\n}\\n\",\n  \"concepts\": {\n    \"when:halve\": {\n      \"Name\": \"halve\",\n      \"Means\": \"Halve the entered number once with the supplied idempotency key.\",\n      \"Terms\": [\n        \"idempotency key\"\n      ],\n      \"Block\": \"when\"\n    }\n  }\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 7960,
-  "request_hash": "sha256:1b3c5019afceae046dd0509cb69ddaf130574a67a004152fb9196be173a9c8c8",
+  "duration_ms": 6637,
+  "request_hash": "sha256:4fbaceddc7df35071cd20059f6716c040265913662e4365910d715a11c79263e",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-10-31T23:12:05Z"
+  "recorded_at": "2026-11-07T13:20:18Z"
 }

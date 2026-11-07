@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/scenarios_yaml.yaml"
-summary: 'Replaced only E2E-001’s Then step with the standard-output assertion matching "^Hello Ada$".'
+summary: 'Changed only E2E-001’s Then step to standard output has a line matching "^Hello Ada$"; used shell replacement after the patch tool failed with a sandbox error.'
 === FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===

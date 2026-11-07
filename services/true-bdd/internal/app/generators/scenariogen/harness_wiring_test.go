@@ -1,255 +1,114 @@
 package scenariogen_test
 
 import (
-	"errors"
-	"io/fs"
-	"path/filepath"
-	"strings"
-	"testing"
-
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/scenariogen"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/architecture"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/disk"
-	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/registry"
+	"path/filepath"
+	"strings"
+	"testing"
 )
 
-func TestHarnessWiringAndTestMain(t *testing.T) {
+func TestMainFileOwnsHarnessAndNew(t *testing.T) {
 	t.Parallel()
 	plan, root := wiringPlan(t)
-	plan.Testkit = &architecture.Testkit{AICLIs: []string{"claude", "codex"}}
+	plan.RecordExclude = []string{"cache/**", "**/scratch/**"}
+	plan.Testkit = &architecture.Testkit{RepoLayer: []string{"resources"}, FixtureStep: `fixture "([^"]+)"`}
+	plan.Services = []architecture.Service{{Name: wiringService, Dependencies: []architecture.Dependency{
+		{Name: "vendor", Protocol: "cli", Scope: "third_party", Recording: architecture.Recording{
+			Placeholders: []architecture.Placeholder{{Token: "{{JOB}}", Pattern: `job-\d+`, Directory: "work"}},
+			Unrecorded:   []string{"volatile/**"}, Unread: []string{"private/**"},
+			ReadOnlyWhen: map[string]string{"REQUEST_ROLE": "read"},
+		}},
+		{Name: "owned", Protocol: "cli", Scope: "self_hosted"},
+		{Name: "remote", Protocol: "http", Scope: "third_party"},
+	}}}
 
-	err := scenariogen.WriteWiring(plan, root, "docs/scenarios.yaml", "docs/architecture/architecture.yaml")
+	err := scenariogen.AddMainFiles(plan, root, "docs/scenarios.yaml", "docs/architecture/architecture.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	for name, wants := range map[string][]string{
-		"scenarios/scenarios.go": {
-			"//go:build bdd", generatedWiringMarker,
-			`"host/checks/arithmetic/steps"`, `testkit.NewSuite("calc", []string{"claude", "codex"}`,
-			"steps.Register(suite)", "return &steps.State{ScenarioRun: run}",
-			"func Main(m *testing.M) int", "suite.Main(m)", "suite.New(t, scenarioID)",
-			"suite.CheckCoverage(t)", "suite.CheckFixtureTrees(t)",
-		},
-		"main_test.go": {"//go:build bdd", generatedWiringMarker,
-			"package arithmetic_test", `"host/checks/arithmetic/scenarios"`, "os.Exit(scenarios.Main(m))"},
-		"steps/state.go": {`"github.com/ondatra-ai/true-bdd/pkg/testkit"`, "*testkit.ScenarioRun"},
-	} {
-		source, readErr := disk.Read(filepath.Join(root, "checks/arithmetic", name))
-		if readErr != nil {
-			t.Fatal(readErr)
-		}
-
-		for _, want := range wants {
-			if !strings.Contains(string(source), want) {
-				t.Errorf("%s missing %q:\n%s", name, want, source)
-			}
-		}
-	}
-}
-
-func TestHarnessWiringPreservesDefinitionsStateWithoutNewSkeletons(t *testing.T) {
-	t.Parallel()
-	plan, root := wiringPlan(t)
-	plan.Testkit = &architecture.Testkit{}
-	target := filepath.Join(root, "checks/arithmetic/steps/custom.go")
-
-	original := "package steps\n\nimport tk \"github.com/ondatra-ai/true-bdd/pkg/testkit\"\n\n" +
-		"// State belongs to definitions.\ntype State struct {\n // Keep the operand.\n" +
-		" Operand int `json:\"operand\"`\n Other *tk.Flags\n}\n\n" +
-		"func (s *State) Value() int { return s.Operand }\n"
-
-	err := disk.Write(target, []byte(original), disk.Private)
+	_, err = scenariogen.Write(plan, root)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	for range 2 {
-		err := scenariogen.WriteWiring(plan, root, "docs/scenarios.yaml", "docs/architecture/architecture.yaml")
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	source, err := disk.Read(target)
+	source, err := disk.Read(filepath.Join(root, "checks/arithmetic/main_test.go"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	for _, want := range []string{"*tk.ScenarioRun", "Operand int `json:\"operand\"`", "Other", "*tk.Flags",
-		"// Keep the operand.", "// State belongs to definitions.", "func (s *State) Value() int"} {
+	for _, want := range []string{"package arithmetic_test", `testkit.NewSuite("calc", []proxycli.Dependency{`,
+		`Name: "vendor"`, `Token: "{{JOB}}"`,
+		`Directory: "work"`, `Unrecorded: []string{"volatile/**"}`, `Unread: []string{"private/**"}`,
+		`"REQUEST_ROLE": "read"`, `RecordExclude: []string{"cache/**", "**/scratch/**"}`,
+		`RepoLayer: []string{"resources"}`, `FixtureStep:`,
+		"steps.Register(suite)", "return &steps.State{ScenarioRun: run}", "os.Exit(suite.Main(m))",
+		"suite.New(t, scenarioID)"} {
 		if !strings.Contains(string(source), want) {
-			t.Errorf("State lost %q:\n%s", want, source)
+			t.Errorf("missing %q:\n%s", want, source)
 		}
 	}
 
-	if strings.Count(string(source), "*tk.ScenarioRun") != 1 {
-		t.Fatalf("duplicate harness field:\n%s", source)
+	if strings.Contains(string(source), `Name: "owned"`) || strings.Contains(string(source), `Name: "remote"`) {
+		t.Fatalf("non-vendor CLI substituted:\n%s", source)
 	}
 }
 
-func TestTestMainMarkerRule(t *testing.T) {
-	t.Parallel()
-
-	for _, original := range []string{
-		"package arithmetic_test\nfunc TestMain() {}\n",
-		"// Code generated by true-bdd build steps. DO NOT EDIT.\npackage arithmetic_test\n",
-	} {
-		t.Run(original, func(t *testing.T) {
-			t.Parallel()
-			plan, root := wiringPlan(t)
-			plan.Testkit = &architecture.Testkit{}
-
-			target := filepath.Join(root, "checks/arithmetic/custom_test.go")
-
-			err := disk.Write(target, []byte(original), disk.Private)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			err = scenariogen.WriteWiring(plan, root, "docs/scenarios.yaml", "docs/architecture/architecture.yaml")
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			source, err := disk.Read(target)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			if strings.HasPrefix(original, "// Code generated") {
-				if !strings.Contains(string(source), "os.Exit(scenarios.Main(m))") {
-					t.Fatalf("marked TestMain not refreshed:\n%s", source)
-				}
-			} else if string(source) != original {
-				t.Fatalf("unmarked TestMain changed:\n%s", source)
-			}
-
-			_, err = disk.Read(filepath.Join(root, "checks/arithmetic/main_test.go"))
-			if !errors.Is(err, fs.ErrNotExist) {
-				t.Fatalf("added a second TestMain: %v", err)
-			}
-		})
-	}
-}
-
-func TestTrueBDDSuiteUsesRenderedHarnessWiring(t *testing.T) {
-	root, err := filepath.Abs("../../../../../..")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Chdir(root)
-
-	arch, err := architecture.Load("docs/architecture/architecture.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	scenarios, err := registry.NewRegistryLoader().Load("docs/scenarios.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	plan, err := scenariogen.BuildPlan(scenarios, arch, root, "docs/scenarios.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	rendered := t.TempDir()
-
-	err = scenariogen.WriteWiring(plan, rendered, "docs/scenarios.yaml", "docs/architecture/architecture.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for _, name := range []string{"tests/true-bdd/scenarios/scenarios.go", "tests/true-bdd/main_test.go"} {
-		want, readErr := disk.Read(filepath.Join(rendered, name))
-		if readErr != nil {
-			t.Fatal(readErr)
-		}
-
-		got, readErr := disk.Read(name)
-		if readErr != nil {
-			t.Fatal(readErr)
-		}
-
-		if string(got) != string(want) {
-			t.Errorf("%s differs from architecture's render:\n%s", name, want)
-		}
-	}
-}
-
-func TestPlainWiringKeepsStateAndDoesNotWriteTestMain(t *testing.T) {
+func TestMainFileDriftIsRefused(t *testing.T) {
 	t.Parallel()
 	plan, root := wiringPlan(t)
-	target := filepath.Join(root, "checks/arithmetic/steps/state.go")
-	original := "package steps\n\ntype State struct { Value int }\n"
+
+	err := scenariogen.AddMainFiles(plan, root, "docs/scenarios.yaml", "docs/architecture/architecture.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = scenariogen.Write(plan, root)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	drift, err := scenariogen.Verify(plan, root)
+	if err != nil || len(drift) != 0 {
+		t.Fatalf("verify generated main: %v %v", drift, err)
+	}
+
+	err = disk.Write(filepath.Join(root, "checks/arithmetic/main_test.go"), []byte("stale"), disk.Private)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	drift, err = scenariogen.Verify(plan, root)
+	if err != nil || len(drift) != 1 {
+		t.Fatalf("main drift not detected: %v %v", drift, err)
+	}
+}
+
+func TestMainFilePreservesUnmarkedTestMain(t *testing.T) {
+	t.Parallel()
+	plan, root := wiringPlan(t)
+	target := filepath.Join(root, "checks/arithmetic/custom_test.go")
+	original := "package arithmetic_test\nfunc TestMain() {}\n"
 
 	err := disk.Write(target, []byte(original), disk.Private)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = scenariogen.WriteWiring(plan, root, "docs/scenarios.yaml", "docs/architecture/architecture.yaml")
+	err = scenariogen.AddMainFiles(plan, root, "docs/scenarios.yaml", "docs/architecture/architecture.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = scenariogen.Write(plan, root)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	source, err := disk.Read(target)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if string(source) != original {
-		t.Fatalf("plain State changed:\n%s", source)
-	}
-
-	_, err = disk.Read(filepath.Join(root, "checks/arithmetic/main_test.go"))
-	if !errors.Is(err, fs.ErrNotExist) {
-		t.Fatalf("plain suite gained TestMain: %v", err)
-	}
-}
-
-func TestMarkedTestMainRefreshesBesideUnmarkedHelper(t *testing.T) {
-	t.Parallel()
-	plan, root := wiringPlan(t)
-	plan.Testkit = &architecture.Testkit{}
-	dir := filepath.Join(root, "checks/arithmetic")
-	helper := "package arithmetic_test\nconst helper = true\n"
-
-	err := disk.Write(filepath.Join(dir, "main_test.go"), []byte(helper), disk.Private)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	marked := generatedWiringMarker + "\npackage arithmetic_test\n"
-
-	err = disk.Write(filepath.Join(dir, "custom_test.go"), []byte(marked), disk.Private)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = scenariogen.WriteWiring(plan, root, "docs/scenarios.yaml", "docs/architecture/architecture.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	source, err := disk.Read(filepath.Join(dir, "custom_test.go"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !strings.Contains(string(source), "os.Exit(scenarios.Main(m))") {
-		t.Fatalf("marked TestMain not refreshed: %s", source)
-	}
-
-	source, err = disk.Read(filepath.Join(dir, "main_test.go"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if string(source) != helper {
-		t.Fatalf("unmarked helper changed: %s", source)
+	if err != nil || string(source) != original {
+		t.Fatalf("unmarked main changed: %s %v", source, err)
 	}
 }

@@ -5,9 +5,9 @@
     {
       "path": "tests/calc/steps/concept08bdc8ba20fbc17f8cbea598ca6da5bdbc121817e637f18277eb83c75896fcf3.go",
       "kind": "created",
-      "size": 802,
-      "sha256": "79c4b192439aede334708a8b8212912377ea867072237afd8bd18a18d9db1e72",
-      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"os\"\n\t\"os/exec\"\n\t\"path/filepath\"\n)\n\n//truebdd:concept given \"installation\"\nfunc concept08bdc8ba20fbc17f8cbea598ca6da5bdbc121817e637f18277eb83c75896fcf3(state *State, args []string) error {\n\tif err := os.MkdirAll(\"../../tmp/calc-program\", 0o755); err != nil {\n\t\treturn fmt.Errorf(\"installation: create tmp dir: %w\", err)\n\t}\n\n\tprogram, err := filepath.Abs(\"../../tmp/calc-program/calc\")\n\tif err != nil {\n\t\treturn fmt.Errorf(\"installation: resolve program path: %w\", err)\n\t}\n\n\tcommand := exec.Command(\"go\", \"build\", \"-o\", \"tmp/calc-program/calc\", \"./services/calc\")\n\tcommand.Dir = \"../..\"\n\tif output, err := command.CombinedOutput(); err != nil {\n\t\treturn fmt.Errorf(\"installation: go build ./services/calc: %w: %s\", err, output)\n\t}\n\n\tstate.Program = program\n\treturn nil\n}\n"
+      "size": 380,
+      "sha256": "cbc54abfd798e1d64a3d145b831f9797382f6b4440d04aed0765f84c67f72228",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\n\t\"fixture/stepsrun/tests/calc/helpers\"\n)\n\n//truebdd:concept given \"installation\"\nfunc concept08bdc8ba20fbc17f8cbea598ca6da5bdbc121817e637f18277eb83c75896fcf3(state *State, args []string) error {\n\tprogram, err := helpers.BuildCalculator()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"install calculator: %w\", err)\n\t}\n\tstate.Program = program\n\treturn nil\n}\n"
     },
     {
       "path": "tests/calc/steps/register.go",

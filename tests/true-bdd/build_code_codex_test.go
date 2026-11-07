@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // build-code-codex-001-selection: A confined codex writer runs a granted selection and converges the failing set
 func TestBuildCodeCodex001Selection(t *testing.T) {
-	s := scenarios.New(t, "build-code-codex-001-selection")
+	s := New(t, "build-code-codex-001-selection")
 	s.Given(`the "build-code-codex-selection" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -46,7 +44,7 @@ func TestBuildCodeCodex001Selection(t *testing.T) {
 
 // build-code-codex-002-nonzero: A started codex writer exiting non-zero preserves edits and converges after one warning
 func TestBuildCodeCodex002Nonzero(t *testing.T) {
-	s := scenarios.New(t, "build-code-codex-002-nonzero")
+	s := New(t, "build-code-codex-002-nonzero")
 	s.Given(`the "build-code-codex-nonzero" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -69,7 +67,7 @@ func TestBuildCodeCodex002Nonzero(t *testing.T) {
 
 // build-code-codex-003-missing-root: A confined codex writer creates a service from an absent edit root and converges the failing set
 func TestBuildCodeCodex003MissingRoot(t *testing.T) {
-	s := scenarios.New(t, "build-code-codex-003-missing-root")
+	s := New(t, "build-code-codex-003-missing-root")
 	s.Given(`the "build-code-codex-missing-root" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)

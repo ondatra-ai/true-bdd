@@ -12,9 +12,11 @@ import (
 
 // StepCritiqueData embeds the semantic core, used fixture contracts and steps package.
 type StepCritiqueData struct {
-	Definition string
-	Context    string
-	Sources    string
+	Question      string
+	StepArguments string
+	Definition    string
+	Context       string
+	Sources       string
 }
 
 // StepCritic reads an applied definition separately from the writer.
@@ -36,7 +38,7 @@ func NewStepCritic(ai ports.AIPort, models *provider.Registry, system, user stri
 func (c *StepCritic) Validate(tier string) error {
 	_, err := c.models.ResolveRole(provider.RolePrompt, tier)
 	if err != nil {
-		return fmt.Errorf("critique model: %w", err)
+		return fmt.Errorf("verification model: %w", err)
 	}
 
 	return validateTemplates(c.system, c.user)
@@ -47,17 +49,17 @@ func (c *StepCritic) Critique(ctx context.Context, data StepCritiqueData, tier, 
 ) ([]CritiqueFinding, error) {
 	model, err := c.models.ResolveRole(provider.RolePrompt, tier)
 	if err != nil {
-		return nil, fmt.Errorf("critique model: %w", err)
+		return nil, fmt.Errorf("verification model: %w", err)
 	}
 
 	system, err := c.system.LoadTemplate(data)
 	if err != nil {
-		return nil, fmt.Errorf("critique system template: %w", err)
+		return nil, fmt.Errorf("verification system template: %w", err)
 	}
 
 	user, err := c.user.LoadTemplate(data)
 	if err != nil {
-		return nil, fmt.Errorf("critique user template: %w", err)
+		return nil, fmt.Errorf("verification user template: %w", err)
 	}
 
 	err = saveCritique(artifact, "system", system)
@@ -77,7 +79,7 @@ func (c *StepCritic) Critique(ctx context.Context, data StepCritiqueData, tier, 
 	response, err := c.ai.ExecutePromptWithSystem(ctx, provider.RolePrompt, system, user, model, mode,
 		stepCritiqueSchema)
 	if err != nil {
-		return nil, fmt.Errorf("step critique: %w", err)
+		return nil, fmt.Errorf("step verification: %w", err)
 	}
 
 	err = saveCritique(artifact, "response", response)
@@ -91,7 +93,7 @@ func (c *StepCritic) Critique(ctx context.Context, data StepCritiqueData, tier, 
 func saveCritique(artifact, kind, content string) error {
 	err := disk.Write(artifact+"-"+kind+".txt", []byte(content), disk.Private)
 	if err != nil {
-		return fmt.Errorf("save step critique: %w", err)
+		return fmt.Errorf("save step verification: %w", err)
 	}
 
 	return nil

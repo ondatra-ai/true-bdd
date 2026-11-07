@@ -22,7 +22,7 @@ const reportLimit = 5
 type sweep struct {
 	report  string
 	pattern *regexp.Regexp
-	// allowed, when set, clears a file every one of whose lines carries it.
+	// allowed, when set, must match every occurrence the pattern finds.
 	allowed *regexp.Regexp
 }
 
@@ -50,7 +50,7 @@ var sweeps = []sweep{
 	{
 		report:  "e-mail address in a recording",
 		pattern: regexp.MustCompile(`[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}`),
-		allowed: regexp.MustCompile(`noreply@|example\.(com|org)`),
+		allowed: regexp.MustCompile(`^(noreply@[^@]+|[^@]+@example\.(com|org))$`),
 	},
 }
 
@@ -64,6 +64,11 @@ var errRecordingLeak = errors.New("a recording carries something the machine tha
 // re-record changes ~475 files, more than anyone reads.
 func ScanRecordings() error {
 	files, err := recordingFiles()
+	if err != nil {
+		return err
+	}
+
+	err = checkRecordingPayloads(files)
 	if err != nil {
 		return err
 	}
@@ -116,11 +121,13 @@ func (s sweep) hits(files []string) []string {
 	return found
 }
 
-// cleared reports whether every line of the file carries an allowed form, so
-// the only addresses in it are ones this project legitimately ships.
+// cleared requires every matched address to be an allowed form.
 func (s sweep) cleared(content string) bool {
-	for _, line := range strings.Split(strings.TrimSuffix(content, "\n"), "\n") {
-		if !s.allowed.MatchString(line) {
+	// JSON HTML escaping can adjoin \u003c to the address local part (#295).
+	content = strings.ReplaceAll(content, `\u003c`, "<")
+
+	for _, address := range s.pattern.FindAllString(content, -1) {
+		if !s.allowed.MatchString(address) {
 			return false
 		}
 	}

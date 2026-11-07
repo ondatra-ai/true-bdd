@@ -40,12 +40,12 @@ func TestConceptContextHoldsBoundScenariosFixtureInputs(t *testing.T) {
 		fixtureScenario("calc-002", `the toolchain is the "other" fixture's`, "the Owner doubles 6"),
 		fixtureScenario("calc-003", `the toolchain is the "missing" fixture's`, "the Owner halves 7"),
 	}
-	item := &BuildStepsItem{Suite: "tests/calc/steps", Service: repairService, Concept: &BuildStepsConcept{
+	item := &BuildStepsItem{Suite: repairSuite, Service: repairService, Concept: &BuildStepsConcept{
 		Block: catalogue.BlockWhen, Name: repairConcept, Steps: []string{halveSix, "the Owner halves 7"},
 	}}
 
 	err := describeConceptItem(item, &architecture.Architecture{}, conceptSpecification{},
-		&conceptDiscovery{scenarios: scenarios, registryFile: "docs/scenarios.yaml"})
+		&conceptDiscovery{scenarios: scenarios, registryFile: conceptRegistry})
 	if err != nil {
 		t.Fatal(err)
 	}

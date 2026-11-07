@@ -1,36 +1,43 @@
-package runner
+package runner_test
 
 import (
 	"reflect"
 	"testing"
 
-	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/checklist"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/checks"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/runner"
 )
 
-func TestWalkLinksBeforeSketchBindingAndWordJudgements(t *testing.T) {
-	t.Parallel()
+func TestRunnerPreservesWrittenChecklistOrder(t *testing.T) {
+	var calls []string
 
-	const conceptsKey = "concepts"
+	spec := confirmationSpec(t, buildCodeCommand, applyAnswer{validationCalls: &calls})
+	spec.Fix = false
 
-	prompts := []checklist.PromptWithContext{
-		{Index: 1, Prompt: checklist.Prompt{Question: "Sketch", With: map[string]any{conceptsKey: "sketch"}}},
-		{Index: 2, Prompt: checklist.Prompt{Question: "Bindings", With: map[string]any{conceptsKey: "bindings"}}},
-		{Index: 3, Prompt: checklist.Prompt{Check: "public-interface"}},
-		{Index: 4, Prompt: checklist.Prompt{Question: "Link", With: map[string]any{conceptsKey: "link"}}},
-		{Index: 5, Prompt: checklist.Prompt{Check: "concept-bindings"}},
-		{Index: 6, Prompt: checklist.Prompt{Question: "Words", With: map[string]any{conceptsKey: "words"}}},
+	writeConfirmationFile(t, "checklists/test.yaml", `sections:
+- id: written
+  validation_prompts:
+  - Q: {prompt: First question}
+  - Q: {code: first-alphabetically}
+  - Q: {prompt: Another question}
+  - Q: {code: last-alphabetically}
+`)
+
+	spec.Checks = checks.Set[bool]{}
+	for _, name := range []string{"last-alphabetically", "first-alphabetically"} {
+		spec.Checks[name] = checks.Check[bool]{Run: func(_ bool, _ checks.Input) (checks.Verdict, error) {
+			calls = append(calls, name)
+
+			return checks.Verdict{Pass: true}, nil
+		}}
 	}
 
-	indices := make([]int, 0, len(prompts))
-	for _, prompt := range walkOrder(prompts) {
-		indices = append(indices, prompt.Index)
+	err := runner.Run(t.Context(), spec)
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	if !reflect.DeepEqual(indices, []int{3, 5, 4, 1, 2, 6}) {
-		t.Fatalf("want D gates, link, then other Q turns with original artifact indices; got %v", indices)
-	}
-
-	if prompts[0].Index != 1 || prompts[1].Index != 2 {
-		t.Fatal("ordering mutated the file-order prompts")
+	if !reflect.DeepEqual(calls, []string{"prompt", "first-alphabetically", "prompt", "last-alphabetically"}) {
+		t.Fatalf("question order = %v", calls)
 	}
 }

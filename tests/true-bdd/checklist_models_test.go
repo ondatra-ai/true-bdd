@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // checklist-models-001-declarations-pass: Model declarations must name existing templates and a valid scheme and occur in a Scenario step.
 func TestChecklistModels001DeclarationsPass(t *testing.T) {
-	s := scenarios.New(t, "checklist-models-001-declarations-pass")
+	s := New(t, "checklist-models-001-declarations-pass")
 	s.Given(`the "model-declarations-valid" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 0`)
@@ -36,7 +34,7 @@ func TestChecklistModels001DeclarationsPass(t *testing.T) {
 
 // checklist-models-002-unreferenced-refused: Scen check must refuse a declared Model no Scenario step of its service names before any AI turn.
 func TestChecklistModels002UnreferencedRefused(t *testing.T) {
-	s := scenarios.New(t, "checklist-models-002-unreferenced-refused")
+	s := New(t, "checklist-models-002-unreferenced-refused")
 	s.Given(`the "model-declarations-unreferenced" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -48,7 +46,7 @@ func TestChecklistModels002UnreferencedRefused(t *testing.T) {
 
 // checklist-models-003-scheme-missing-refused: Scen check must refuse a declared Model whose scheme file is absent before any AI turn.
 func TestChecklistModels003SchemeMissingRefused(t *testing.T) {
-	s := scenarios.New(t, "checklist-models-003-scheme-missing-refused")
+	s := New(t, "checklist-models-003-scheme-missing-refused")
 	s.Given(`the "model-declarations-missing-scheme" project tree`)
 	s.And(`the project tree has no "true-bdd/models/scen_check_checklist.schema.yaml"`)
 	s.When(`the Quality Engineer runs "scen check"`)

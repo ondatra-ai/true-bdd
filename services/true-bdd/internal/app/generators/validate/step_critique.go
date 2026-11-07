@@ -8,7 +8,7 @@ import (
 )
 
 // ErrStepCritiqueAnswer identifies an unusable critique, never a passing verdict.
-var ErrStepCritiqueAnswer = errors.New("unusable step critique answer")
+var ErrStepCritiqueAnswer = errors.New("unusable step verification answer")
 
 type stepCritiqueAnswer struct {
 	Answer   string                `json:"answer"`
@@ -30,10 +30,10 @@ const stepCritiqueSchema = `{
   "findings":{"type":"array","items":{
    "type":"object","additionalProperties":false,
    "properties":{
-    "definition":{"type":"string","minLength":1},
+    "definition":{"type":"string"},
     "category":{"type":"string","enum":["pattern_captures","pattern_scope",
      "concept_binding","concept_meaning","computes_assertion"]},
-    "finding":{"type":"string","minLength":1}
+    "finding":{"type":"string"}
    },"required":["definition","category","finding"]
   }}
  },"required":["answer","findings"]

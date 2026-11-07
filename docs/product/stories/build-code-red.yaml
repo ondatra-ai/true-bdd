@@ -1,0 +1,38 @@
+story:
+  id: build-code-red
+  feature: build-code
+  title: Check Red without the target before code generation
+  as_a: System Architect
+  i_want: each Scenario without code to fail at an executed definition
+  so_that: code generation starts from tests that demand the service
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 001-executed-definition
+    description: "With no source build code lists every Scenario and accepts an executed definition failure as red"
+    steps:
+    - given:
+      - "the \"build-code-no-code-red\" project tree"
+    - when:
+      - "the System Architect runs \"build code\""
+    - then:
+      - "the command exits with code 1"
+      - "stdout matches Scenario list passed"
+      - "stdout matches Scenario red without target.*scenario=calc-001-double"
+      - "stdout matches Red without target passed.*scenarios=1"
+      - "the engine dispatched no AI turns"
+      - "the engine spawned exactly 1 test runner with arguments matching -list \\."
+      - "no file outside \"tmp\" changed"
+  - id: 002-existing-source
+    description: "With partly written source build code skips Red without the target and accepts green discovery"
+    steps:
+    - given:
+      - "the \"build-code-existing-source\" project tree"
+    - when:
+      - "the System Architect runs \"build code\""
+    - then:
+      - "the command exits with code 0"
+      - "stdout matches BUILD CODE COMPLETE"
+      - "stdout does not match Red without target"
+      - "the engine spawned exactly 0 test runners with arguments matching -list"
+      - "the engine dispatched no AI turns"
+      - "no file outside \"tmp\" changed"

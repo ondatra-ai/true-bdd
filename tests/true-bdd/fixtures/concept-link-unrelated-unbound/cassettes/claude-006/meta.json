@@ -20,17 +20,17 @@
     "stream-json",
     "--verbose",
     "--json-schema",
-    "{\"additionalProperties\":false,\"properties\":{\"concepts\":{\"additionalProperties\":false,\"properties\":{\"then:number result\":{\"additionalProperties\":false,\"properties\":{\"reason\":{\"minLength\":1,\"type\":\"string\"},\"undeclared_words\":{\"items\":{\"minLength\":1,\"type\":\"string\"},\"type\":\"array\",\"uniqueItems\":true}},\"required\":[\"reason\",\"undeclared_words\"],\"type\":\"object\"}},\"required\":[\"then:number result\"],\"type\":\"object\"}},\"required\":[\"concepts\"],\"type\":\"object\"}",
+    "{\"additionalProperties\":false,\"properties\":{\"concepts\":{\"additionalProperties\":false,\"properties\":{\"then:number result\":{\"additionalProperties\":false,\"properties\":{\"reason\":{\"type\":\"string\"},\"undeclared_words\":{\"items\":{\"type\":\"string\"},\"type\":\"array\"}},\"required\":[\"reason\",\"undeclared_words\"],\"type\":\"object\"}},\"required\":[\"then:number result\"],\"type\":\"object\"}},\"required\":[\"concepts\"],\"type\":\"object\"}",
     "-p",
     "{\n  \"product\": \"{\\n  \\\"roles\\\": [\\n    {\\n      \\\"name\\\": \\\"Product Owner\\\",\\n      \\\"description\\\": \\\"Owns meanings.\\\"\\n    }\\n  ],\\n  \\\"concepts\\\": {\\n    \\\"given\\\": [\\n      {\\n        \\\"concept\\\": \\\"number ready\\\",\\n        \\\"means\\\": \\\"A number is entered before the action.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ],\\n    \\\"when\\\": [\\n      {\\n        \\\"concept\\\": \\\"halve\\\",\\n        \\\"means\\\": \\\"Halve the entered number once.\\\",\\n        \\\"terms\\\": []\\n      },\\n      {\\n        \\\"concept\\\": \\\"square\\\",\\n        \\\"means\\\": \\\"Square the number.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ],\\n    \\\"then\\\": [\\n      {\\n        \\\"concept\\\": \\\"number result\\\",\\n        \\\"means\\\": \\\"Compare the displayed number with an expected value.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ]\\n  },\\n  \\\"glossary\\\": []\\n}\\n\",\n  \"concepts\": {\n    \"then:number result\": {\n      \"Name\": \"number result\",\n      \"Means\": \"Compare the displayed number with an expected value.\",\n      \"Terms\": [],\n      \"Block\": \"then\"\n    }\n  }\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 13752,
-  "request_hash": "sha256:126bb34362df62e9676e3859991fa6d7a6da72d4d0dd8c46a67a572a17641ddd",
+  "duration_ms": 6560,
+  "request_hash": "sha256:a5d03d2db7c68888d75c31b23819c14760fcec0eb7ed5fbb7e4806842bda8559",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-11-02T15:33:32Z"
+  "recorded_at": "2026-11-05T16:55:01Z"
 }

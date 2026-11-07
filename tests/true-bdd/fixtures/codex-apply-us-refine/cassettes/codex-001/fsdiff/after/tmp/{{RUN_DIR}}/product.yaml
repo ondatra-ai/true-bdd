@@ -45,8 +45,8 @@ concepts:
   then:
     - concept: reply
       means: >-
-        Claude's reply in the conversation is exactly one of three: it
-        lists exactly a stated number of headings, in document order; or
-        it is exactly a stated message; or it offers to summarise the
+        Claude's reply in the conversation is one of three forms: it lists
+        exactly a stated number of headings, in document order; or it is
+        exactly a stated message; or it offers the role to summarise the
         Google Doc instead.
       terms: [Google Doc, outline]

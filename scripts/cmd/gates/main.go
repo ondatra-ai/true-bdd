@@ -30,7 +30,7 @@ import (
 var (
 	errNoCommand = errors.New(
 		"usage: gates run [--changed <base> | --staged] | recordings | release-rehearsal | " +
-			"engine-imports | build | test | vet | list")
+			"engine-imports | generated-tests | build | test | vet | list")
 	errTwoScopes = errors.New("--changed and --staged are exclusive")
 )
 
@@ -60,6 +60,8 @@ func run(args []string) error {
 		return gates.ReleaseRehearsal() //nolint:wrapcheck // the gate names the failed install step.
 	case "engine-imports":
 		return gates.CheckEngineImports(".") //nolint:wrapcheck // the gate names each offending source and import.
+	case "generated-tests":
+		return gates.GeneratedTests() //nolint:wrapcheck // the gate names its engine command.
 	case "recordings":
 		return gates.ScanRecordings() //nolint:wrapcheck // the gate's own diagnosis.
 	case "run":

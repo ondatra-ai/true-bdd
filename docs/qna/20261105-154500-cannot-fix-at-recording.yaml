@@ -1,0 +1,463 @@
+intent: |
+  #299's live recording, 5 and 6 November, showed how models use the cannot-fix outcome
+  ADR-0042 gives every F (docs/qna/20261104-081811-critique-size.yaml, Q21). Decide what
+  the outcome covers before the remaining fixtures are recorded. Evidence: the record logs
+  tmp/299/record*.json and run dirs under tmp/test_run/2026-11-05_* in
+  tmp/codex-worktrees/code-299-checklist-items/. Answers chosen from offered options are
+  quoted as the Owner selected them.
+
+log:
+  - decision_trace:
+      research:
+        - |
+          The first recording stopped at every F turn: Claude refused the fix proposal's answer
+          schema ("API Error: 400 tools.5.custom.input_schema: input_schema does not support
+          oneOf, allOf, or anyOf at the top level") and Codex its strict form
+          ("invalid_json_schema … In context=('anyOf', '0'), 'additionalProperties' is required").
+      recommendation: |
+        The answer schema is the shape in which Claude and Codex return a turn's result; drop
+        the top-level anyOf and check the either-or rule in the engine after parsing.
+      settled: |
+        Confirmed: an answer schema tells Claude and Codex how to return a result. A Model
+        scheme (true-bdd/models/*.schema.yaml) describes the engine's own input data and is
+        never sent to a provider.
+    question: |
+      Q1 - What is anyOf, where is the restriction written, and what is the schema for?
+    answer: |
+      Давай понемножечко. Это что такое any of? Покажи мне пример. э, Где это вообще записано?
+
+      То есть, подожди, это ответ, в котором Claude и кодекс возвращают результаты. Правильно
+      я тебя понял? То есть мы таким образом хотим сказать Claude и коду, каким образом ему
+      возвращать результат. Правильно?
+  - decision_trace:
+      research:
+        - |
+          In build-code-spec-missing-registry the Codex writer made the edit, its own test run
+          was refused by its sandbox, and it answered cannot_fix. The writer's instruction read
+          "If this F cannot fix, return the result block with cannot_fix: …". Narrowing it
+          changes every writer request: 28 of the 29 fixtures recorded in e50cfe63 re-record.
+      recommendation: |
+        Narrow it: cannot_fix only when the Specification and the permitted paths leave no way
+        to make the fix; a failure of the writer's own tools, sandbox or test run goes in summary.
+      settled: |
+        Narrowed (ecdcebbb).
+    question: |
+      Q2 - Narrow the writer's cannot-fix instruction, re-recording 28 fixtures?
+    answer: |
+      Сузить (Recommended)
+
+      что такой 29ка?
+
+      а что мы сужаем? Я понимаю что я ответил но напомни мне еше раз детально и с примерами
+  - decision_trace:
+      research:
+        - |
+          ADR-0042: an F that cannot fix names "the earlier step when the cause lies there"
+          (Q21: «попросить человека вернуться к предыдущему шагу»). In concept-bodies-005 the body
+          F stopped the run because the pattern, written by build steps itself, captured one digit.
+          The pipeline the documents name: us refine, us apply, build steps, build tests, build
+          code (README.md, docs/product/product.yaml).
+      recommendation: |
+        A: an earlier step is one this command does not write: the Specification or an earlier
+        command; the command's own earlier work is repaired by its own checklist items.
+      settled: |
+        An earlier step is a previous command of the pipeline us refine, us apply, build steps,
+        build tests, build code. The mention of an earlier step leaves the checklists: no prompt,
+        instruction or answer schema asks an F for it, and cannot_fix carries a reason and what a
+        person must correct. The term goes into the documents as a term, not as an instruction
+        for behaviour.
+    question: |
+      Q3 - What is "the earlier step" of Q21, and where does its definition go?
+    answer: |
+      тут надо определиться что такое " более ранний шаг". как ты это понимаешь?
+
+      Это A с уточнением что у нас есть псоледовательность в которой надо вызывать команды
+      (посмотри ее) и вот это один из предидущих команд этой последовательности
+
+      Я б упоминание предыдущего шага вообще удалил бы из чеклистов. А термин записал бы в
+      документах. Но как термин а не как инструкцию к поведению.
+  - decision_trace:
+      research:
+        - |
+          In fix-loop-bounds-003 the Product Owner answered "I have not decided yet" five times and
+          the F answered cannot_fix, asking the person to decide; the Scenario expected the
+          clarification bound and exit 0.
+      recommendation: |
+        Legitimate: the Scenario expects the cannot-fix stop that asks the person to decide, with
+        the Story unchanged.
+      settled: |
+        A person's pending decision is a legitimate cannot-fix.
+    question: |
+      Q4 - Is cannot_fix a legitimate answer when the person has not decided?
+    answer: |
+      Да, законный (Recommended)
+  - decision_trace:
+      research:
+        - |
+          In concept-link-001 the us refine writer answered cannot_fix: "permitted writable paths
+          are confined to tmp/". Its prompt was the Story-rewrite branch of the applier template,
+          without the line naming the product working copy tmp/<run>/product.yaml that the old
+          recording carried; the concept judgement (Judgement) was lost on the way to the writer
+          after a clarification. The writer edited docs/product/product.yaml, was denied, and
+          answered as its prompt allowed.
+      recommendation: |
+        Not a template problem: restore what the engine passes to the writer, with a test.
+      settled: |
+        A #299 regression in the engine, not a model failure; fixed in the engine, the template
+        unchanged.
+    question: |
+      Q5 - Why did the us refine writer decide it could not edit the product document?
+    answer: |
+      Почему он так решил? Это не штатная ситация. Если надо стразу уточнить теплейт - то да!
+      Править темплейт но я не понял проблемы пока что
+  - decision_trace:
+      research:
+        - |
+          The failed Q in concept-bodies-005 is Q {code: step-coverage}, which found "step not
+          written yet". Its F is "Write only the bodies …". The F's text reached the fix proposal
+          (Claude first said it did not: an awk range cut the output at "Suggested Fix Template";
+          corrected 6 November). The proposal was asked for bodies "against the concept's binding",
+          saw that the pattern hands "6" from "the Owner halves 64" and stopped. No checklist item
+          asks before the body whether a pattern captures what its binding needs: today only the
+          engine's pattern check and the hidden critique after the body do.
+      recommendation: |
+        One rule for every F: fix only what the failed Q found, and a problem it did not find is
+        no reason for cannot_fix; move the pattern check into a checklist item before body
+        writing, its F proposing the pattern again, by its own ticket under #249.
+      settled: |
+        An F fixes only what its Q found, nothing more. The rule is stated for every F in #299;
+        the lost concept judgement of Q5 is restored there. The pattern check becomes a checklist
+        item by its own ticket under #249 (#303).
+    question: |
+      Q6 - Why did an F, not a Q, find the pattern problem, and where does the pattern check go?
+    answer: |
+      Давай перейдем и обсудим что там не так. Объясни примерами что откуда тянется что за
+      проблема?
+
+      Слушай, а почему проблему увидел F, а не Q? F же должен чинить ту проблему, которую нашел
+      Q. Почему он тут? То есть, по-моему, это опять путаница между F и Q.
+
+      Нет, смотри, F должен починить только то, что нашел Q, и не больше, ни шаг вправо, ни шаг
+      влево. Ну, в смысле, там может быть, там, да, какие-то шаг вправо, шаг влево, это же
+      LLM-ка, но суть именно в этом. Почему он нашел эту проблему? Почему мы вообще зашли в F?
+      То есть, хорошо, смотри, упал step coverage, и он должен передать достаточно информации в
+      F, потому что там же, помнишь, там есть такая фишка, что часть этой информации берется из
+      F, ой, из Q. То есть, когда Q упал, он же передал часть информации в F, где именно он
+      упал. Там посмотри search код, как это сделано. Я правильно понимаю, что ты именно это и
+      предлагаешь сейчас? То есть тут я рассматриваю твой первый шаг, да, это правило для любого
+      эвча. Не только то, что нашел опавший куй, не упали себе мозг. Правильная структура
+      отдельным тикетом. Проверку паттерн перенести в чек-лист. Да, отлично. Да, отлично. Все
+      так и должно быть. Только подумай, нужен ли тикет или может прямо сейчас починить.
+
+      Отдельный тикет под #249 (Recommended)
+  - decision_trace:
+      research:
+        - |
+          Three readings of the #303 draft asked how a pattern #301's verification F proposes after
+          a body is judged. #299 implements ADR-0042's walk: after an apply the same Q runs again,
+          and once it passes the checklist starts from its first item; a walk that applied a fix
+          walks every Item again.
+      recommendation: |
+        #303 carries only the engine's pattern check as a code Q before step-coverage, its F the
+        pattern proposal and skeleton rewrite; the walk judges every new pattern.
+      settled: |
+        The walk's order solves the handoff: no pending proposal and no second semantic check
+        before the body. #303 was published narrowed, after its readings.
+    question: |
+      Q7 - How does a pattern proposed after a body come back under the pattern check?
+    answer: |
+      Не забудь проверить тикет на архитектуру и прочие проверки.
+
+      Продолжай работу.
+
+      Блин а как это реализовано сейчас? Ты вообще текущий алгоритм смотришь?
+
+      Смотри, я не знаю, где это записано, и записано ли, и не ушли ли мы от этого. Но раньше
+      была такая фишка, что например, ну, то есть, смотри, мы же как делаем? Мы берем,
+      прогоняем чек-лист. На определенном этапе находится Q заметил проблему. F начинает эту
+      проблему фиксить. И если F эту проблему пофиксил, то я вот не помню, как сейчас. Либо мы
+      еще раз запускаем этот же самый Q, и вот он-то и проверяет, что, ой, смотрите, а я
+      проблему пофиксил. И после этого начинает запускать чек-лист с нуля. Ну, в общем, короче,
+      там же есть вот этот дополнительный проход чек-листа. Да, то есть тут вторая фишка. Это,
+      ну, либо Q нашел проблему, F ее пофиксил, и мы сразу начинаем чек-лист с начала. И тогда
+      получается, что, смотри, на каком-то этапе этот же самый Q еще раз проверит этот паттерн.
+      То есть, я не помню, какой там точная реализация алгоритма сейчас, но как будто об этом
+      нужно, ну, не нужно волноваться. Ну, то есть, если F не починил, то какая-то ерунда на
+      самом деле происходит, но и он ее поймает. Ну, это должно быть вот именно алгоритм обхода
+      чек-листа. То есть проблема решается алгоритмом обхода чек-листа.
+  - decision_trace:
+      research:
+        - |
+          us-refine-fix-002: the plan F rendered existing steps as flat lines with "(and)" and the
+          writer returned a step whose key is "and" beside "then"; ScenarioStep.UnmarshalYAML
+          (services/true-bdd/internal/domain/models/story/scenario_step.go) skipped the unknown key
+          and saved "- {}", losing the step silently. The same reader reads Stories people write.
+      recommendation: |
+        Refuse a step whose key is not given, when or then, naming the key.
+      settled: |
+        Forbidden: a step whose key is not given, when or then is not a valid Story step and is
+        refused, from a writer and in a Story on disk.
+    question: |
+      Q8 - What does the engine do with a step "- and:" beside "- then:"?
+    answer: |
+      Покажи пример
+
+      Стой нет. - then: "Claude displays a summary of the first 10000 words"
+      - and: "Claude states that only the first 10000 words were summarized"
+       Это надо просто запретить
+
+      - then: "Claude displays a summary of the first 10000 words"
+      - and: "Claude states that only the first 10000 words were summarized"
+       Это надо запретить, те это не правильный yaml
+  - decision_trace:
+      research:
+        - |
+          concept-link-004: the walk's recheck after the first F found the new binding still
+          ambiguous, and the second F also widened a means in product.yaml, which that item's F
+          allows. fix-loop-bounds-003: on "I have not decided yet" the F answers cannot_fix in one
+          run and reaches the clarification bound in another.
+      recommendation: |
+        Allow product.yaml in concept-link-004's Then; let fix-loop-bounds-003's Then state only
+        what both outcomes share.
+      settled: |
+        As recommended. The fourth recording of 121 fixtures was authorized; this log is kept and
+        corrected.
+    question: |
+      Q9 - How do the two Scenarios state outcomes the walk and the model may reach two ways?
+    answer: |
+      Да, записать 121 (Recommended)
+
+      Оставить, но поправить
+
+      Разрешить product.yaml (Recommended)
+
+      Общее для обоих исходов (Recommended)
+  - decision_trace:
+      research:
+        - |
+          The body proposal's prompt asks for bodies "against the concept's binding" and shows the
+          captures beside the step text ("the Owner halves 64" captures "6"); it never says the
+          captures are all the body knows or that a later check judges a pattern's captures. The
+          turn reads the generated tests (64 gives 32) and concludes no faithful body is possible.
+          In the base recording the same turn asked a question about the same defect; now it
+          answers cannot_fix. Codex (tmp/codex/research-body-f-cannot-fix/final.md) and Claude
+          Fable 5.1 read the evidence independently and agreed.
+      recommendation: |
+        Tell the body proposal that the captures are all the body knows, that a pattern's fit is
+        a later check's question, and that it neither asks about, refuses on nor works around a
+        pattern; cannot_fix only for a Specification that leaves no way to write a body for the
+        captures listed.
+      settled: |
+        An F fixes what it was told and nothing it was not. A bad pattern is a bad pattern: it is
+        the concern of the check that judges patterns, not of the body's F.
+    question: |
+      Q10 - How should the body proposal behave when the pattern it receives captures too little?
+    answer: |
+      Покажи мне пример как f написан сейчас и как ты предлагаешь?
+
+      Я считаю что обе проблемы чинятся только уточнениями ароматов. Посмотри какие реальные
+      ароматы генеряться и посмотри в чем в них проблемы.
+
+      А ты посмотрел реальные промпт который гегерится?
+
+      Так как чинить f?
+
+      А посоветуйся с кодексом и фейблом спроси что не так с тем что есть сейчас , почему ведет
+      себя не правильно
+
+      Я вообще запутался. А почему у нас неправильный паттерн?
+
+      Те это q обнаружил что pattern не верный? А на каком шаге паттерн должен быть записан?
+
+      Надо сделать так чтоб f чинил что сказали и не чинил чего не говорили. Плохой шаблон
+      значит плохой шаблон . Все.
+  - decision_trace:
+      research:
+        - |
+          build-steps-critique-assertion's Codex writer wrote tmp/go-cache (70 MB) and the
+          recording captured it. zsh here-documents use $TMPPREFIX (default /tmp/zsh), not
+          $TMPDIR, and the writer's sandbox denies /tmp, so the writer made its own scratch; the
+          fixture's template override also lacked the shipped writer's environment rule.
+      recommendation: |
+        Point TMPPREFIX at host tmp/codex-tmp/zsh in the writer's environment and give the
+        fixture overrides the shipped environment rule.
+      settled: |
+        As recommended, through a fix run on #299 (0f05f1c9).
+    question: |
+      Q11 - Why does a writer create its own Go cache, and where must it go to stay out of a cassette?
+    answer: |
+      Разобраться почему он заводит и где он должен заводить чтоб а кассету не попало .
+
+      Да
+  - decision_trace:
+      research:
+        - |
+          #299's review found two prompt defects that change requests: F answer contracts that
+          did not name cannot_fix, and fixture writer templates without the environment rule.
+      recommendation: |
+        Fix both in #299 before its recording.
+      settled: |
+        Both fixed in #299 (8652d6f53).
+    question: |
+      Q12 - Fix the two prompt findings in #299 now or later?
+    answer: |
+      Оба сейчас
+  - decision_trace:
+      research:
+        - |
+          Of #249's tickets, #302, #300, #301 and the new #303 remained; each changes requests
+          that #299's recording would otherwise record twice.
+      recommendation: |
+        Implement #302, #300, #301 and #303 stacked on #299's branch, each through its code run,
+        three reviews and fixes, then one combined inventory and one sequential recording, then
+        merge the stack in order.
+      settled: |
+        As recommended. The 31 fixtures of #299 were authorized first; the combined recording of
+        109 fixtures was then authorized, sequentially.
+    question: |
+      Q13 - How are #249's remaining tickets implemented and recorded?
+    answer: |
+      Да, последовательно
+
+      А если посмотреть тикеты этого эпика. Сделай мне таблице что еще осталось? Может надо
+      сделать еще несколько чтоб потом ща один заход прогонять
+
+      Давай делай одним заходом
+
+      А покажи мне бриф для ревью?
+
+      Да, последовательно (Recommended)
+  - decision_trace:
+      research:
+        - |
+          The combined recording left four failures. scen-check-fix-002: the generator wrote
+          "apply only after approval" into its fix prompt, prompted by "Propose at the menu before
+          apply", and the Term Document Editor applier, unlike the concept-bindings one, does not
+          say that menu reminders are satisfied; the generator also asked again for a meaning
+          the answers already gave, since templates/scen-check.fix-generator.prompt.tpl renders
+          answers unmarked before an unconditional "Ask for the missing meaning".
+          concept-words-006: a proposed glossary means broke the glossary form (#287), which no
+          template names. codex-apply-002: its Scenario kept 4 validation turns where #303
+          made the like Scenarios 5. concept-steps-002: the Scenario relies on the model first
+          proposing an unused pattern. A Codex plan-read
+          (tmp/codex/plan-read-scen-check-fix-002b/final.md) confirmed the first and found the
+          second.
+      recommendation: |
+        One fix run on #303 for all of them: clarify the templates, correct the Scenario, plant
+        the unused pattern deterministically; then one inventory before recording.
+      settled: |
+        As recommended. A recording is called clean when no cassette's file diff names a path
+        outside the places a run may write and the Recordings gate passes.
+    question: |
+      Q14 - How are the recording's failures fixed?
+    answer: |
+      На чем остановился?
+
+      Что значит чистая?
+
+      Один fix run, всё сразу (Recommended)
+  - decision_trace:
+      research:
+        - |
+          Build-code writers created tmp/go-cache (72 MB), tmp/go-mod-cache, tmp/go-tmp,
+          tmp/calc-module-cache and tmp/calc-tool-tmp. Each dependency's recording.unread in
+          docs/architecture/architecture.yaml already declares what a recording does not read.
+      recommendation: |
+        Add broad patterns to both dependencies' recording.unread.
+      settled: |
+        Build caches stay out of recordings, declared in the architecture: 'tmp/*cache*/**',
+        'tmp/go-*/**' and 'tmp/*-tmp/**' join recording.unread of codex and claude. The
+        build-code writer's template is unchanged.
+    question: |
+      Q15 - How are a writer's build caches kept out of recordings?
+    answer: |
+      Их надо исключить но какие именно ключи исключать надо определять в architecture yaml.
+
+      Широкие шаблоны (Recommended)
+  - decision_trace:
+      research:
+        - |
+          8b5ea434 committed a 72 MB Go cache inside one cassette; ed5f5ff1 removed it, but the
+          blob stays in the unpushed branch's history. History is never rewritten here.
+      recommendation: |
+        Build a new branch from 3102eb3c repeating the recording commits as new commits, with
+        8b5ea434 and its removal joined into one commit without the blob; merge that branch.
+      settled: |
+        As recommended.
+    question: |
+      Q16 - How does the 72 MB blob stay out of impl/249-suite-folder?
+    answer: |
+      Чистая ветка (Recommended)
+  - decision_trace:
+      research:
+        - |
+          Q15 put the cache patterns under recording.unread of each dependency, and a fix run
+          did so (59c0f89e4). The codex and claude dependencies already repeat the same six
+          unread entries; a build cache is no dependency's own.
+      recommendation: |
+        testing.commands.record becomes a mapping of command and exclude, the paths a recording
+        neither reads nor records for any dependency. The shared unread entries and the three
+        cache patterns move there; a dependency keeps only its own rules. A plain string stays
+        valid as a command with nothing excluded, so no fixture's architecture changes.
+      settled: |
+        As recommended; this replaces where Q15 put the patterns.
+    question: |
+      Q17 - Where does a recording declare what it excludes?
+    answer: |
+      commands:
+            record: "go test -tags bdd -json -count=1 -timeout=180m ./tests/true-bdd/ -mode=services:record,tests:record" - надо для команды record добавить поле exclude. понял о чем я?
+
+      Да, и перенести всё
+  - decision_trace:
+      research:
+        - |
+          Besides 8b5ea434, two unpushed commits carry Go caches in cassettes: dd744fe86 (#299's
+          recording, build-code-no-confirmation-retries, 67.7 MB, still in the tree until
+          re-recorded) and d8caa7b4d (4 November, already in the local impl/249-suite-folder,
+          build-steps-critique-assertion, 38.2 MB). The local integration branch is 42 commits
+          ahead of origin/impl/249-suite-folder (da7aa37a7); none of the three is pushed.
+      recommendation: |
+        Rebuild every unpushed commit as new commits from origin/impl/249-suite-folder, keeping
+        the previous cassette where a commit brought a cache.
+      settled: |
+        One squash commit instead: after the recording, a single commit from
+        origin/impl/249-suite-folder carries the final tree, and the local
+        impl/249-suite-folder points at it. The ticket branches stay as they are. This
+        replaces Q16's clean branch.
+    question: |
+      Q18 - How does the unpushed history lose its Go caches?
+    answer: |
+      Один squash-коммит
+  - decision_trace:
+      research:
+        - |
+          After the fixes of Q14, Q15 and Q17, tmp/303/rerecord-2.txt lists 40 fixtures: 248
+          turns, about $19.4 Claude +/-30% and 36 Codex turns; five RECORD ALONE, three golden
+          only.
+      recommendation: |
+        Record them sequentially, scanning every new cassette before its commit.
+      settled: |
+        As recommended.
+    question: |
+      Q19 - Record the 40 fixtures of the second inventory?
+    answer: |
+      Да, последовательно (Recommended)
+  - decision_trace:
+      research:
+        - |
+          The final review of the whole stack (tmp/codex/final-249-{standards,spec,architecture})
+          found: pattern-bindings' F cannot answer cannot_fix (its schema admits it only with a
+          verification Critique); the judgement branches of the scen-check and us-checklist
+          fix-generator prompts still promise exactly one of fix_prompt and questions; #301's
+          known-answer controls are not confirmed live (the exact-double control was not
+          reproduced); the harness rules described earlier states; an unused apply counter in
+          build steps. The first three change requests (about 33 fixtures, $37-40).
+      recommendation: |
+        Fix all five in one fix run before the squash.
+      settled: |
+        The scope is closed: the stale harness rules are corrected, the other four become
+        follow-ups, and the stack goes to the squash and merge without another recording.
+    question: |
+      Q20 - What does the final review change before the squash?
+    answer: |
+      Да мне не важно. Давай уже сажать скоуп и доводить до мержа. Хоть все засквошим

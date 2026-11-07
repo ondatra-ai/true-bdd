@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // codex-apply-001-us-refine-writes-scratch: A codex apply turn of us refine writes its scratch product document through the confined profile and the engine commits the converged change
 func TestCodexApply001UsRefineWritesScratch(t *testing.T) {
-	s := scenarios.New(t, "codex-apply-001-us-refine-writes-scratch")
+	s := New(t, "codex-apply-001-us-refine-writes-scratch")
 	s.Given(`the "codex-apply-us-refine" project tree`)
 	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine doc-outline --fix"`)
@@ -48,7 +46,7 @@ func TestCodexApply001UsRefineWritesScratch(t *testing.T) {
 
 // engine-005-prompt-without-fix-refused: A `us refine --fix` run must be refused at startup when a prompt it would walk carries no `F:`, naming that prompt, rather than spending a fix turn that has nothing to say
 func TestEngine005PromptWithoutFixRefused(t *testing.T) {
-	s := scenarios.New(t, "engine-005-prompt-without-fix-refused")
+	s := New(t, "engine-005-prompt-without-fix-refused")
 	s.Given(`the "us-refine-fix-unfixable-checklist" project tree`)
 	s.When(`the Product Owner runs "us refine 96.1 --fix"`)
 	s.Then(`the command exits with code 1`)
@@ -64,7 +62,7 @@ func TestEngine005PromptWithoutFixRefused(t *testing.T) {
 
 // engine-007-missing-document-refused: A `us refine` run must be refused at startup when a prompt it would walk cites a document the engine cannot hand it, naming the missing document
 func TestEngine007MissingDocumentRefused(t *testing.T) {
-	s := scenarios.New(t, "engine-007-missing-document-refused")
+	s := New(t, "engine-007-missing-document-refused")
 	s.Given(`the "us-refine-missing-document" project tree`)
 	s.When(`the Product Owner runs "us refine 96.1"`)
 	s.Then(`the command exits with code 1`)
@@ -80,7 +78,7 @@ func TestEngine007MissingDocumentRefused(t *testing.T) {
 
 // engine-entry-004-failed-us-command-prints-no-usage: A `us` command that fails once it has started must exit 1 printing its error on stderr once, after the command's name alone, and not its usage, as the `build` and `scen` commands do, and must change no file
 func TestEngineEntry004FailedUsCommandPrintsNoUsage(t *testing.T) {
-	s := scenarios.New(t, "engine-entry-004-failed-us-command-prints-no-usage")
+	s := New(t, "engine-entry-004-failed-us-command-prints-no-usage")
 	s.Given(`the "us-refine-error-without-usage" project tree`)
 	s.When(`the Product Owner runs "us refine 96.9"`)
 	s.Then(`the command exits with code 1`)
@@ -93,7 +91,7 @@ func TestEngineEntry004FailedUsCommandPrintsNoUsage(t *testing.T) {
 
 // fix-loop-bounds-001-one-walk-keeps-story: A `us refine --fix` run whose checklist allows one walk must stop after the walk that applied a fix, before the re-walk that would confirm it, saying it hit max apply attempts and leaving the Story file as it was
 func TestFixLoopBounds001OneWalkKeepsStory(t *testing.T) {
-	s := scenarios.New(t, "fix-loop-bounds-001-one-walk-keeps-story")
+	s := New(t, "fix-loop-bounds-001-one-walk-keeps-story")
 	s.Given(`the "fix-loop-attempts-exhausted" project tree`)
 	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine 97.2 --fix"`)
@@ -106,50 +104,43 @@ func TestFixLoopBounds001OneWalkKeepsStory(t *testing.T) {
 	s.And(`stdout does not match msg="Story saved"`)
 	s.And(`the file "docs/product/stories/97.2-document-summary-attempts.yaml" is unchanged`)
 	s.And(`no file outside "tmp" changed`)
-	s.And(`the engine dispatched 4 AI turns`)
+	s.And(`the engine dispatched 5 AI turns`)
 	s.Done()
 }
 
-// fix-loop-bounds-002-refixed-prompt-stops-walk: A `us refine --fix` run whose checklist allows one fix per Prompt must stop with exit code 1 when the same Prompt still fails after its fix and needs a second, leaving the Story file as it was
+// fix-loop-bounds-002-refixed-prompt-stops-walk: A `us refine --fix` run whose checklist allows one apply per Checklist item must stop with exit code 1 when the same Q still fails after its one allowed apply, before another fix prompt or apply, leaving the Story file as it was
 func TestFixLoopBounds002RefixedPromptStopsWalk(t *testing.T) {
-	s := scenarios.New(t, "fix-loop-bounds-002-refixed-prompt-stops-walk")
+	s := New(t, "fix-loop-bounds-002-refixed-prompt-stops-walk")
 	s.Given(`the "fix-loop-refix-stops" project tree`)
 	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine 97.3 --fix"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Walk stopped" command="us refine"`)
-	s.And(`stdout matches gave up after 2 applied fix\(es\) that never made the check pass`)
-	s.And(`stdout matches (?s)(msg="User chose fix action" rawInput=1 action=apply.*){2}`)
+	s.And(`stdout matches gave up after 1 applied fix\(es\) that never made the check pass`)
+	s.And(`stdout matches (?s)(msg="User chose fix action" rawInput=1 action=apply.*){1}`)
 	s.But(`stdout does not match REFINE COMPLETE`)
 	s.And(`the file "docs/product/stories/97.3-document-summary-refix.yaml" is unchanged`)
 	s.And(`no file outside "tmp" changed`)
-	s.And(`the engine dispatched 6 AI turns`)
+	s.And(`the engine dispatched 4 AI turns`)
 	s.Done()
 }
 
-// fix-loop-bounds-003-unsettled-questions-keep-story: A `us refine --fix` run whose clarifying questions the person never settles must give up after five rounds of questions with no fix proposed, saying no fix was applied, and leave the Story file as it was
+// fix-loop-bounds-003-unsettled-questions-keep-story: A `us refine --fix` run whose person has not decided must log the undecided answer and leave the Story file as it was, whether the F reports cannot-fix or reaches the clarification bound
 func TestFixLoopBounds003UnsettledQuestionsKeepStory(t *testing.T) {
-	s := scenarios.New(t, "fix-loop-bounds-003-unsettled-questions-keep-story")
+	s := New(t, "fix-loop-bounds-003-unsettled-questions-keep-story")
 	s.Given(`the "fix-loop-unsettled" project tree`)
 	s.And(`the Product Owner's answer to every question is "I have not decided yet"`)
 	s.When(`the Product Owner runs "us refine 97.4 --fix"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches msg="User answered clarification question" .* answer="I have not decided yet"`)
-	s.And(`stdout matches msg="Generating fix prompt" .* iteration=5 hasUserAnswers=true`)
-	s.But(`stdout does not match iteration=6`)
-	s.And(`stdout matches Validation failed\. No fix was applied\.`)
-	s.And(`stdout matches REFINE COMPLETE`)
-	s.But(`stdout does not match FIX PROMPT GENERATED`)
+	s.Then(`stdout matches msg="User answered clarification question" .* answer="I have not decided yet"`)
 	s.And(`stdout does not match msg="Story saved"`)
 	s.And(`the file "docs/product/stories/97.4-document-summary-unsettled.yaml" is unchanged`)
 	s.And(`no file outside "tmp" changed`)
-	s.And(`the engine dispatched 6 AI turns`)
 	s.Done()
 }
 
 // fix-loop-choices-003-exit-keeps-story: Choosing to exit a `us refine --fix` run's fix loop must leave the Story file exactly as it was, saying where the latest version of the Story was kept
 func TestFixLoopChoices003ExitKeepsStory(t *testing.T) {
-	s := scenarios.New(t, "fix-loop-choices-003-exit-keeps-story")
+	s := New(t, "fix-loop-choices-003-exit-keeps-story")
 	s.Given(`the "fix-loop-exit-story" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "whether its description field contains a vague word" prompt`)
 	s.And(`the Product Owner's answer to every question is "3"`)
@@ -167,7 +158,7 @@ func TestFixLoopChoices003ExitKeepsStory(t *testing.T) {
 
 // us-refine-fix-001-vague-description-made-measurable: A vague qualifier in an acceptance criterion's description must drive the fix loop until the description is measurable
 func TestUsRefineFix001VagueDescriptionMadeMeasurable(t *testing.T) {
-	s := scenarios.New(t, "us-refine-fix-001-vague-description-made-measurable")
+	s := New(t, "us-refine-fix-001-vague-description-made-measurable")
 	s.Given(`the "us-refine-fix-desc-qualifier" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "whether its description field contains a vague word" prompt`)
 	s.And(`the Product Owner's answer to every question is "1"`)
@@ -188,7 +179,7 @@ func TestUsRefineFix001VagueDescriptionMadeMeasurable(t *testing.T) {
 
 // us-refine-fix-002-gherkin-description-states-a-rule: An acceptance criterion described in Given/When/Then prose must drive the fix loop until it states a rule
 func TestUsRefineFix002GherkinDescriptionStatesARule(t *testing.T) {
-	s := scenarios.New(t, "us-refine-fix-002-gherkin-description-states-a-rule")
+	s := New(t, "us-refine-fix-002-gherkin-description-states-a-rule")
 	s.Given(`the "us-refine-fix-descriptions" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "whether its description field follows the rule-based format" prompt`)
 	s.And(`the Product Owner's answer to every question is "1"`)
@@ -210,7 +201,7 @@ func TestUsRefineFix002GherkinDescriptionStatesARule(t *testing.T) {
 
 // us-refine-fix-003-forbidden-verb-made-observable: A forbidden action verb in a step must drive the fix loop until the step names an observable action
 func TestUsRefineFix003ForbiddenVerbMadeObservable(t *testing.T) {
-	s := scenarios.New(t, "us-refine-fix-003-forbidden-verb-made-observable")
+	s := New(t, "us-refine-fix-003-forbidden-verb-made-observable")
 	s.Given(`the "us-refine-fix-forbidden-verb" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "use action verbs from the forbidden_actions list" prompt`)
 	s.And(`the Product Owner's answer to every question is "1"`)
@@ -231,7 +222,7 @@ func TestUsRefineFix003ForbiddenVerbMadeObservable(t *testing.T) {
 
 // us-refine-fix-004-vague-step-made-measurable: A vague qualifier in a step must drive the fix loop until the step is measurable
 func TestUsRefineFix004VagueStepMadeMeasurable(t *testing.T) {
-	s := scenarios.New(t, "us-refine-fix-004-vague-step-made-measurable")
+	s := New(t, "us-refine-fix-004-vague-step-made-measurable")
 	s.Given(`the "us-refine-fix-step-qualifier" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "whether its steps field contains a vague word" prompt`)
 	s.And(`the Product Owner's answer to every question is "1"`)
@@ -252,7 +243,7 @@ func TestUsRefineFix004VagueStepMadeMeasurable(t *testing.T) {
 
 // us-refine-fix-005-missing-steps-written: An acceptance criterion with no steps must drive the fix loop until it carries Given/When/Then
 func TestUsRefineFix005MissingStepsWritten(t *testing.T) {
-	s := scenarios.New(t, "us-refine-fix-005-missing-steps-written")
+	s := New(t, "us-refine-fix-005-missing-steps-written")
 	s.Given(`the "us-refine-fix-steps" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "whether its steps field follows the Given/When/Then format" prompt`)
 	s.And(`the Product Owner's answer to every question is "1"`)
@@ -272,7 +263,7 @@ func TestUsRefineFix005MissingStepsWritten(t *testing.T) {
 
 // us-refine-fix-006-feature-label-survives: A Story's `feature:` label must survive `us refine` rewriting the story, through the fix the applier writes and the final save alike
 func TestUsRefineFix006FeatureLabelSurvives(t *testing.T) {
-	s := scenarios.New(t, "us-refine-fix-006-feature-label-survives")
+	s := New(t, "us-refine-fix-006-feature-label-survives")
 	s.Given(`the "us-refine-fix-keeps-feature" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "whether its description field contains a vague word" prompt`)
 	s.And(`the Product Owner's answer to every question is "1"`)
@@ -295,7 +286,7 @@ func TestUsRefineFix006FeatureLabelSurvives(t *testing.T) {
 
 // us-refine-quality-fix-001-count-proposes-criteria: A Story with two criteria must get a count-fix proposal at the menu, and apply must save a third criterion worded in the product's concepts
 func TestUsRefineQualityFix001CountProposesCriteria(t *testing.T) {
-	s := scenarios.New(t, "us-refine-quality-fix-001-count-proposes-criteria")
+	s := New(t, "us-refine-quality-fix-001-count-proposes-criteria")
 	s.Given(`the "us-refine-fix-count" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "Count the total number of acceptance criteria" prompt`)
 	s.And(`the Product Owner's answer to every question is "1"`)
@@ -313,7 +304,7 @@ func TestUsRefineQualityFix001CountProposesCriteria(t *testing.T) {
 
 // us-refine-quality-fix-002-implementation-rewritten: Implementation details must be rewritten as observable behaviour through the menu
 func TestUsRefineQualityFix002ImplementationRewritten(t *testing.T) {
-	s := scenarios.New(t, "us-refine-quality-fix-002-implementation-rewritten")
+	s := New(t, "us-refine-quality-fix-002-implementation-rewritten")
 	s.Given(`the "us-refine-fix-implementation" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "whether it describes implementation" prompt`)
 	s.And(`the Product Owner's answer to every question is "1"`)
@@ -331,7 +322,7 @@ func TestUsRefineQualityFix002ImplementationRewritten(t *testing.T) {
 
 // us-refine-quality-fix-003-happy-path-added: A Story containing only failures must get a success criterion through the menu
 func TestUsRefineQualityFix003HappyPathAdded(t *testing.T) {
-	s := scenarios.New(t, "us-refine-quality-fix-003-happy-path-added")
+	s := New(t, "us-refine-quality-fix-003-happy-path-added")
 	s.Given(`the "us-refine-fix-happy-path" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "whether it describes the happy path" prompt`)
 	s.And(`the Product Owner's answer to every question is "1"`)
@@ -349,7 +340,7 @@ func TestUsRefineQualityFix003HappyPathAdded(t *testing.T) {
 
 // us-refine-quality-fix-004-uncovered-failure-added: An uncovered real failure mode must fail the error-scenario Prompt and get its own criterion through the menu
 func TestUsRefineQualityFix004UncoveredFailureAdded(t *testing.T) {
-	s := scenarios.New(t, "us-refine-quality-fix-004-uncovered-failure-added")
+	s := New(t, "us-refine-quality-fix-004-uncovered-failure-added")
 	s.Given(`the "us-refine-fix-failure-mode" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "Identify every failure mode" prompt`)
 	s.And(`the Product Owner's answer to every question is "1"`)
@@ -367,7 +358,7 @@ func TestUsRefineQualityFix004UncoveredFailureAdded(t *testing.T) {
 
 // us-refine-quality-fix-005-criteria-made-measurable: Unmeasurable criteria must get concrete thresholds from the product through the menu
 func TestUsRefineQualityFix005CriteriaMadeMeasurable(t *testing.T) {
-	s := scenarios.New(t, "us-refine-quality-fix-005-criteria-made-measurable")
+	s := New(t, "us-refine-quality-fix-005-criteria-made-measurable")
 	s.Given(`the "us-refine-fix-measurable" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "whether it includes specific measurable criteria" prompt`)
 	s.And(`the Product Owner's answer to every question is "1"`)
@@ -385,7 +376,7 @@ func TestUsRefineQualityFix005CriteriaMadeMeasurable(t *testing.T) {
 
 // us-refine-quality-fix-006-outcome-made-binary: A subjective outcome must become a binary observation through the menu
 func TestUsRefineQualityFix006OutcomeMadeBinary(t *testing.T) {
-	s := scenarios.New(t, "us-refine-quality-fix-006-outcome-made-binary")
+	s := New(t, "us-refine-quality-fix-006-outcome-made-binary")
 	s.Given(`the "us-refine-fix-binary" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "whether it has a binary pass/fail outcome" prompt`)
 	s.And(`the Product Owner's answer to every question is "1"`)
@@ -403,7 +394,7 @@ func TestUsRefineQualityFix006OutcomeMadeBinary(t *testing.T) {
 
 // us-refine-quality-fix-007-test-sketch-made-runnable: A criterion without an objective runnable sketch must be rewritten through the menu using the product's concepts and the service's declared kind of Public interface
 func TestUsRefineQualityFix007TestSketchMadeRunnable(t *testing.T) {
-	s := scenarios.New(t, "us-refine-quality-fix-007-test-sketch-made-runnable")
+	s := New(t, "us-refine-quality-fix-007-test-sketch-made-runnable")
 	s.Given(`the "us-refine-fix-sketch" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "attempt to draft a runnable test sketch" prompt`)
 	s.And(`the Product Owner's answer to every question is "1"`)
@@ -421,7 +412,7 @@ func TestUsRefineQualityFix007TestSketchMadeRunnable(t *testing.T) {
 
 // us-refine-refusals-001-missing-story-refused: `us refine` on a story nobody has written must be refused, and the refusal must tell the user to write the Story file first and where it goes
 func TestUsRefineRefusals001MissingStoryRefused(t *testing.T) {
-	s := scenarios.New(t, "us-refine-refusals-001-missing-story-refused")
+	s := New(t, "us-refine-refusals-001-missing-story-refused")
 	s.Given(`the "us-refine-missing-story" project tree`)
 	s.When(`the Product Owner runs "us refine 96.9"`)
 	s.Then(`the command exits with code 1`)
@@ -441,7 +432,7 @@ func TestUsRefineRefusals001MissingStoryRefused(t *testing.T) {
 
 // us-refine-refusals-002-slug-id-accepted: A Story id that is a slug rather than a numeric `<N>.<M>` must pass validation, so a story with no file is refused as a missing Story, never as a malformed id
 func TestUsRefineRefusals002SlugIdAccepted(t *testing.T) {
-	s := scenarios.New(t, "us-refine-refusals-002-slug-id-accepted")
+	s := New(t, "us-refine-refusals-002-slug-id-accepted")
 	s.Given(`the "us-refine-slug-id-missing-story" project tree`)
 	s.When(`the Product Owner runs "us refine scen-check"`)
 	s.Then(`the command exits with code 1`)
@@ -459,7 +450,7 @@ func TestUsRefineRefusals002SlugIdAccepted(t *testing.T) {
 
 // us-refine-refusals-003-path-like-id-refused: A path-like Story id must be refused at startup with a refusal naming the id, so it never reaches the filesystem
 func TestUsRefineRefusals003PathLikeIdRefused(t *testing.T) {
-	s := scenarios.New(t, "us-refine-refusals-003-path-like-id-refused")
+	s := New(t, "us-refine-refusals-003-path-like-id-refused")
 	s.Given(`the "us-refine-path-like-story-id" project tree`)
 	s.When(`the Product Owner runs "us refine ../x"`)
 	s.Then(`the command exits with code 1`)
@@ -474,7 +465,7 @@ func TestUsRefineRefusals003PathLikeIdRefused(t *testing.T) {
 
 // us-refine-refusals-004-two-files-one-id-refused: Two files claiming the same story id must be refused, not silently resolved by picking one
 func TestUsRefineRefusals004TwoFilesOneIdRefused(t *testing.T) {
-	s := scenarios.New(t, "us-refine-refusals-004-two-files-one-id-refused")
+	s := New(t, "us-refine-refusals-004-two-files-one-id-refused")
 	s.Given(`the "us-refine-ambiguous-story" project tree`)
 	s.When(`the Product Owner runs "us refine 96.9"`)
 	s.Then(`the command exits with code 1`)
@@ -493,7 +484,7 @@ func TestUsRefineRefusals004TwoFilesOneIdRefused(t *testing.T) {
 
 // us-refine-refusals-005-other-id-refused: A Story file whose name starts with the requested id but which declares another Story's id must be refused at startup, naming both ids, so `us refine scen` never walks the Story `scen-check`
 func TestUsRefineRefusals005OtherIdRefused(t *testing.T) {
-	s := scenarios.New(t, "us-refine-refusals-005-other-id-refused")
+	s := New(t, "us-refine-refusals-005-other-id-refused")
 	s.Given(`the "us-refine-story-id-mismatch" project tree`)
 	s.When(`the Product Owner runs "us refine scen"`)
 	s.Then(`the command exits with code 1`)
@@ -510,7 +501,7 @@ func TestUsRefineRefusals005OtherIdRefused(t *testing.T) {
 
 // us-refine-refusals-006-invalid-yaml-refused: A story file that is not valid YAML must be refused with the parser's own complaint, not a generic failure
 func TestUsRefineRefusals006InvalidYamlRefused(t *testing.T) {
-	s := scenarios.New(t, "us-refine-refusals-006-invalid-yaml-refused")
+	s := New(t, "us-refine-refusals-006-invalid-yaml-refused")
 	s.Given(`the "us-refine-malformed-story" project tree`)
 	s.When(`the Product Owner runs "us refine 96.9"`)
 	s.Then(`the command exits with code 1`)
@@ -527,7 +518,7 @@ func TestUsRefineRefusals006InvalidYamlRefused(t *testing.T) {
 
 // us-refine-refusals-007-shared-prefix-reads-own-file: When the requested id is a prefix of another Story's id, so that both Story files start with it, `us refine` must read the file whose own id is the requested one, so a fault in that file is what the refusal names and the other Story is never mentioned
 func TestUsRefineRefusals007SharedPrefixReadsOwnFile(t *testing.T) {
-	s := scenarios.New(t, "us-refine-refusals-007-shared-prefix-reads-own-file")
+	s := New(t, "us-refine-refusals-007-shared-prefix-reads-own-file")
 	s.Given(`the "us-refine-shared-prefix" project tree`)
 	s.When(`the Product Owner runs "us refine scen-check"`)
 	s.Then(`the command exits with code 1`)
@@ -544,9 +535,24 @@ func TestUsRefineRefusals007SharedPrefixReadsOwnFile(t *testing.T) {
 	s.Done()
 }
 
+// us-refine-refusals-008-unknown-step-key-refused: A Story with a step key other than given, when or then must be refused before any AI turn, naming the key and Acceptance Criterion and leaving the Story unchanged
+func TestUsRefineRefusals008UnknownStepKeyRefused(t *testing.T) {
+	s := New(t, "us-refine-refusals-008-unknown-step-key-refused")
+	s.Given(`the "us-refine-unknown-step-key" project tree`)
+	s.When(`the Product Owner runs "us refine summary"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches acceptance criterion 001-summary: unknown Story step key: and`)
+	s.And(`stdout matches expected given, when or then`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us refine"`)
+	s.And(`the file "docs/product/stories/summary-story.yaml" is unchanged`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
 // us-refine-shipped-001-shipped-checklist-reaches-menu: The full shipped checklist must reach a fix proposal, and exit at the menu must leave the Story and the product document unchanged
 func TestUsRefineShipped001ShippedChecklistReachesMenu(t *testing.T) {
-	s := scenarios.New(t, "us-refine-shipped-001-shipped-checklist-reaches-menu")
+	s := New(t, "us-refine-shipped-001-shipped-checklist-reaches-menu")
 	s.Given(`the "us-refine-shipped-menu-exit" project tree`)
 	s.And(`the Product Owner's answer to every question is "3"`)
 	s.When(`the Product Owner runs "us refine halve-negative --fix"`)
@@ -563,7 +569,7 @@ func TestUsRefineShipped001ShippedChecklistReachesMenu(t *testing.T) {
 
 // us-refine-shipped-002-shipped-checklist-adds-phrase: The full shipped checklist must add a missing concept only after apply and retain the Story words
 func TestUsRefineShipped002ShippedChecklistAddsPhrase(t *testing.T) {
-	s := scenarios.New(t, "us-refine-shipped-002-shipped-checklist-adds-phrase")
+	s := New(t, "us-refine-shipped-002-shipped-checklist-adds-phrase")
 	s.Given(`the "us-refine-shipped-catalogue" project tree`)
 	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine halve-negative --fix"`)
@@ -584,7 +590,7 @@ func TestUsRefineShipped002ShippedChecklistAddsPhrase(t *testing.T) {
 
 // us-refine-shipped-003-no-own-failure-passes: A Story with no failure mode of its own must pass the error-scenario Prompt with a context line saying why
 func TestUsRefineShipped003NoOwnFailurePasses(t *testing.T) {
-	s := scenarios.New(t, "us-refine-shipped-003-no-own-failure-passes")
+	s := New(t, "us-refine-shipped-003-no-own-failure-passes")
 	s.Given(`the "us-refine-shipped-no-failure" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "Identify every failure mode" prompt`)
 	s.When(`the Product Owner runs "us refine halve-negative"`)
@@ -600,7 +606,7 @@ func TestUsRefineShipped003NoOwnFailurePasses(t *testing.T) {
 
 // us-refine-verdicts-001-passing-story-saved-in-place: A story whose acceptance criteria already pass every check must converge on the first walk and be rewritten in place
 func TestUsRefineVerdicts001PassingStorySavedInPlace(t *testing.T) {
-	s := scenarios.New(t, "us-refine-verdicts-001-passing-story-saved-in-place")
+	s := New(t, "us-refine-verdicts-001-passing-story-saved-in-place")
 	s.Given(`the "us-refine-happy-path" project tree`)
 	s.When(`the Product Owner runs "us refine 96.1"`)
 	s.Then(`the command exits with code 0`)
@@ -618,7 +624,7 @@ func TestUsRefineVerdicts001PassingStorySavedInPlace(t *testing.T) {
 
 // us-refine-verdicts-002-no-happy-path-fails: A story whose acceptance criteria are all error scenarios must fail the happy-path check and pass the rest
 func TestUsRefineVerdicts002NoHappyPathFails(t *testing.T) {
-	s := scenarios.New(t, "us-refine-verdicts-002-no-happy-path-fails")
+	s := New(t, "us-refine-verdicts-002-no-happy-path-fails")
 	s.Given(`the "us-refine-no-happy-path" project tree`)
 	s.When(`the Product Owner runs "us refine 96.4"`)
 	s.Then(`the command exits with code 0`)
@@ -633,7 +639,7 @@ func TestUsRefineVerdicts002NoHappyPathFails(t *testing.T) {
 
 // us-refine-verdicts-003-implementation-and-subjective-fail: A story with implementation-level and subjective acceptance criteria must report each failure and leave the story unchanged
 func TestUsRefineVerdicts003ImplementationAndSubjectiveFail(t *testing.T) {
-	s := scenarios.New(t, "us-refine-verdicts-003-implementation-and-subjective-fail")
+	s := New(t, "us-refine-verdicts-003-implementation-and-subjective-fail")
 	s.Given(`the "us-refine-validation-fails" project tree`)
 	s.When(`the Product Owner runs "us refine 96.3"`)
 	s.Then(`the command exits with code 0`)

@@ -23,7 +23,7 @@ func TestCodeFailureMatchesGeneratedNameAndOwningPackage(t *testing.T) {
 	for name, content := range map[string]string{
 		"go.mod":                 "module host\n",
 		"true-bdd/true-bdd.yaml": "documents:\n  scenarios_yaml: docs/scenarios.yaml\n",
-		"docs/scenarios.yaml": `scenarios:
+		conceptRegistry: `scenarios:
   calc-001-double:
     service: calculator
     path: tests/calc/calc_test.go

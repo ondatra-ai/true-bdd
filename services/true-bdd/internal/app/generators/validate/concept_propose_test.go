@@ -44,7 +44,7 @@ func bindHalve(t *testing.T) {
 	}
 }
 
-func TestProposalRefusedByTheEngineCheckFailsWithItsFindings(t *testing.T) {
+func TestProposalLeavesPatternJudgementToTheChecklist(t *testing.T) {
 	evaluator, reply, _ := conceptRequestEvaluator(t)
 	bindHalve(t)
 
@@ -53,13 +53,10 @@ func TestProposalRefusedByTheEngineCheckFailsWithItsFindings(t *testing.T) {
 	subject := proposalSubject()
 
 	result, err := evaluator.EvaluateOne(t.Context(), subject, subject.ID, proposalPrompt(), t.TempDir())
-	if err != nil || result.Status != checklist.StatusFail || len(subject.Patterns) != 0 {
+	if err != nil || result.Status != checklist.StatusPass || len(subject.Patterns) != 1 {
 		t.Fatalf("colliding proposal: %+v, %v", result, err)
 	}
 
-	if len(result.Context) != 1 || !strings.Contains(result.Context[0], `also binds when step "halve 6"`) {
-		t.Fatalf("collision finding: %q", result.Context)
-	}
 
 	for _, want := range []string{`"halve -7"`, `^halve (\\d+)$`, "Press Halve once.", "Halve"} {
 		if !strings.Contains(reply.user, want) {
@@ -98,7 +95,12 @@ func TestMalformedProposalAnswerCrashes(t *testing.T) {
 	evaluator, reply, _ := conceptRequestEvaluator(t)
 	bindHalve(t)
 
-	for _, answer := range []string{`{"patterns":[`, `{"patterns":[{"pattern":"^halve$"}]}`, `{"patterns":[]}`} {
+	for _, answer := range []string{
+		`{"patterns":[`, `{"patterns":[{"pattern":"^halve$"}]}`, `{"patterns":[]}`,
+		`{"patterns":[{"pattern":"^halve (\\d+)$","captures":[{"name":"","means":"The number."}],"serves":"Run halve."}]}`,
+		`{"patterns":[{"pattern":"^halve (\\d+)$","captures":[{"name":"number","means":""}],"serves":"Run halve."}]}`,
+		`{"patterns":[{"pattern":"^halve (\\d+)$","captures":[{"name":"number","means":" \t\n"}],"serves":"Run halve."}]}`,
+	} {
 		reply.response = answer
 		subject := proposalSubject()
 

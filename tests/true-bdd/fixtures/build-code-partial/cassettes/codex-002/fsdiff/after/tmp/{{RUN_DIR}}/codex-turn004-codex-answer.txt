@@ -2,5 +2,5 @@
 applied: true
 impossible: []
 target: "services/calc"
-summary: "Changed B() to return 2; preserved A() returning 1. Ran go test -count=1 ./tests/suite/... successfully, including failing-set TestB and TestA."
+summary: "Changed B to return 2; preserved A. TestB passed with the permitted selection command. Patch tool was blocked; shell write succeeded. Git status was unavailable because the workspace is not a Git repository."
 === FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter2-result.yaml ===

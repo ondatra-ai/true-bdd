@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestCritiqueEmbedsUsedFixtureContractsWithoutScenarioCorpus(t *testing.T) {
+func TestVerificationCarriesNoFixtureFileOrScenarioCorpus(t *testing.T) {
 	t.Chdir(t.TempDir())
 
 	for path, content := range map[string]string{
@@ -36,15 +36,14 @@ func TestCritiqueEmbedsUsedFixtureContractsWithoutScenarioCorpus(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for _, want := range []string{"CALC_REAL_GO", "input/bin/go", "concept: toolchain"} {
-		if !strings.Contains(rendered, want) {
-			t.Errorf("missing %q: %s", want, rendered)
-		}
+	if !strings.Contains(rendered, "concept: toolchain") {
+		t.Fatal(rendered)
 	}
 
-	for _, unwanted := range []string{"unrelated product corpus", "recorded answer", "registry:"} {
+	for _, unwanted := range []string{"CALC_REAL_GO", "input/bin/go", "unrelated product corpus",
+		"recorded answer", "fixture_inputs", "calc-001", "scenarios.yaml"} {
 		if strings.Contains(rendered, unwanted) {
-			t.Errorf("unexpected %q: %s", unwanted, rendered)
+			t.Errorf("verification includes %q: %s", unwanted, rendered)
 		}
 	}
 }

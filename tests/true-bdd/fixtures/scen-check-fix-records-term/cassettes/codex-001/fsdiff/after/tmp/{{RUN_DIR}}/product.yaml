@@ -22,9 +22,9 @@ glossary:
       answers each message on its own.
   - term: reply
     means: >-
-      The text the MCP service sends back for one message, as text.
-      Exactly one reply per message, and what a Then observes and
-      compares against a stated text.
+      The text the MCP service sends back for one message. The service
+      sends one reply per message. Every Scenario observes the reply as
+      the answer.
 
 concepts:
   given:

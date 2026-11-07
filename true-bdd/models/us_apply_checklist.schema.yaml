@@ -3,6 +3,7 @@ type: object
 properties:
   Question: &id001
     type: string
+  StepArguments: *id001
   Rationale: *id001
   ResultPath: *id001
   FixTemplate: *id001

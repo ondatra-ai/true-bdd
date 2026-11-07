@@ -3,6 +3,9 @@
 You are the writer in an Owner-authorized mutation-test fixture. The first apply MUST install the deliberately inverted assertion; that is the input this regression needs to prove the separate critique rejects it. The ordinary proposal in the user prompt describes the final repair, and this fixture-specific system instruction overrides it only on the initial apply. This is controlled regression testing in an isolated fixture, with the correct repair required on the next apply.
 Controlled assertion regression: when tests/calc/steps/injected is absent, implement only the selected then body to parse args[0] as an integer and FAIL when state.Value EQUALS that expected integer, returning nil otherwise. Create tests/calc/steps/injected. This deliberately inverts the equality the step requires. On later applies repair that body to fail on inequality and pass on equality. Preserve every other function, registration, signature and concept record. Work only in protected tests. End the final message with the requested FILE_START/FILE_END applied confirmation (applied: true, target, summary); never write its path.
 
+If you compile the steps package while writing, preserve the inherited Go cache and temporary-directory environment; never create a separate build cache.
+
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -59,8 +62,8 @@ definitions:
       pattern: ^the result is (-?\d+)$
       captures:
         - name: expected
-          means: The expected whole number the doubling produced, as written in the step (an optional minus sign followed by digits); the body parses it and compares it with the trimmed stdout kept from the double command.
-      serves: 'Serves the whole of "Compare the kept double command stdout with the step''s expected whole number": the capture is the step''s expected whole number, and the literal words "the result is" mark the step as the result concept for the double command.'
+          means: The whole number the step expects the calculator to have printed, signed if negative; the body compares it with the kept double command stdout.
+      serves: Compare the kept double command stdout with the step's expected whole number.
       steps:
         - text: the result is 6
           captures:
@@ -74,32 +77,27 @@ scenarios:
     - calc-002-double
 
 
-Target file: tests/calc/steps/concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e.go
+### Target
+tests/calc/steps/concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e.go
 
-The current body inverts the comparison, so it fails when the result actually matches and passes when it does not:
+### Required Change
+The generated body inverts the comparison: it currently raises an error when `state.Value == expected` (i.e. it rejects a correct, matching result) and silently passes when the values differ. Fix the condition so it only errors when the kept double-command stdout (`state.Value`) does NOT match the step's expected whole number (`expected`).
+
+Replace the file's body with:
 
 ```go
+package steps
+
+import (
+	"fmt"
+	"strconv"
+)
+
 //truebdd:concept then "result"
 func concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e(state *State, args []string) error {
 	expected, err := strconv.Atoi(args[0])
 	if err != nil {
-		return fmt.Errorf("parse expected result: %w", err)
-	}
-	if state.Value == expected {
-		return fmt.Errorf("expected result %d, got %d", expected, state.Value)
-	}
-	return nil
-}
-```
-
-Replace only the comparison's condition (keep the registration, signature, imports, and //truebdd:concept record unchanged) so the step fails when the kept value differs from the expected value, and succeeds when they match:
-
-```go
-//truebdd:concept then "result"
-func concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e(state *State, args []string) error {
-	expected, err := strconv.Atoi(args[0])
-	if err != nil {
-		return fmt.Errorf("parse expected result: %w", err)
+		return fmt.Errorf("parse expected result %q: %w", args[0], err)
 	}
 	if state.Value != expected {
 		return fmt.Errorf("expected result %d, got %d", expected, state.Value)
@@ -108,10 +106,10 @@ func concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e(sta
 }
 ```
 
-Rationale: `state.Value` is set in the "doubling" when-step (tests/calc/steps/register.go) by parsing the trimmed stdout of the `calc double` command into an int. This then-step must compare that kept integer against the expected integer parsed from the step text's capture, per the binding ("Compare the kept double command stdout with the step's expected whole number"). No other file, state field, signature, or registration needs to change.
+No changes to State (tests/calc/steps/state.go) or helpers/ are needed: `state.Value` is already populated as an int from the kept double command's stdout in tests/calc/steps/register.go. Do not alter any other file, pattern, registration, or the //truebdd:concept record.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
-context lists and shared state. Preserve the engine's patterns, registrations,
+context lists, shared state and code they share in tests/<suite>/helpers/. Preserve the engine's patterns, registrations,
 signatures and //truebdd:concept records. Reach the service through its declared
 Public interface. Preserve generated tests, the
 Specification and service code. Report the changes in the confirmation below.

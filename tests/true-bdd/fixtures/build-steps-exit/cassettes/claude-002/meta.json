@@ -20,17 +20,17 @@
     "stream-json",
     "--verbose",
     "--json-schema",
-    "{\"additionalProperties\":false,\"properties\":{\"bindings\":{\"additionalProperties\":false,\"properties\":{\"when:doubling\":{\"additionalProperties\":false,\"properties\":{\"reason\":{\"minLength\":1,\"type\":\"string\"},\"unambiguous\":{\"type\":\"boolean\"}},\"required\":[\"reason\",\"unambiguous\"],\"type\":\"object\"}},\"required\":[\"when:doubling\"],\"type\":\"object\"}},\"required\":[\"bindings\"],\"type\":\"object\"}",
+    "{\"additionalProperties\":false,\"properties\":{\"bindings\":{\"additionalProperties\":false,\"properties\":{\"when:doubling\":{\"additionalProperties\":false,\"properties\":{\"reason\":{\"type\":\"string\"},\"unambiguous\":{\"type\":\"boolean\"}},\"required\":[\"reason\",\"unambiguous\"],\"type\":\"object\"}},\"required\":[\"when:doubling\"],\"type\":\"object\"}},\"required\":[\"bindings\"],\"type\":\"object\"}",
     "-p",
     "{\n  \"product_path\": \"./docs/product/product.yaml\",\n  \"steps\": [\n    {\n      \"key\": \"1\",\n      \"block\": \"when\",\n      \"text\": \"the Owner doubles 3\"\n    }\n  ],\n  \"service\": \"calc\",\n  \"bindings\": {\n    \"when:doubling\": {\n      \"concept\": {\n        \"Name\": \"doubling\",\n        \"Means\": \"The Owner doubles a whole number with the calculator.\",\n        \"Terms\": [\n          \"number\"\n        ],\n        \"Block\": \"when\"\n      },\n      \"binding\": {\n        \"Concept\": \"doubling\",\n        \"Block\": \"when\",\n        \"Service\": \"calc\",\n        \"References\": [\n          {\n            \"Command\": \"double\",\n            \"File\": \"\",\n            \"LogRecord\": \"\",\n            \"OutgoingCall\": \"\",\n            \"OperationID\": \"\",\n            \"Element\": null\n          }\n        ],\n        \"Does\": \"Run the kept calculator program's double command as a process from the host root with the step's whole number and keep its integer stdout.\",\n        \"Intent\": \"\"\n      }\n    }\n  },\n  \"public_interface\": {\n    \"declaration\": {\n      \"Kind\": \"cli\",\n      \"Document\": \"docs/architecture/calc-cli.yaml\",\n      \"Elements\": null\n    },\n    \"docs/architecture/calc-cli.yaml\": \"opencli: 0.1\\ninfo: {title: Calculator CLI, version: '1.0'}\\ncommands:\\n  double:\\n    description: The calculator program, built with go build from ./services/calc at the host root and run from the host root; calc double VALUE prints the doubled integer and a newline.\\n    parameters:\\n      - {name: value, in: argument, required: true, schema: {type: integer}}\\n    responses:\\n      '0': {description: Doubled integer on stdout}\\n      '1': {description: Invalid arguments}\\n\"\n  }\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 26076,
-  "request_hash": "sha256:4b30937347915730c02c885bf0aa41f4098b5320aee010c43d3104cf1dc7a5fc",
+  "duration_ms": 21336,
+  "request_hash": "sha256:734ece9d3eb1af31870e4631a96ec36ea8f289e61b7a95315608540d0e99f475",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-11-02T15:09:57Z"
+  "recorded_at": "2026-11-07T01:35:26Z"
 }

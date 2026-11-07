@@ -2,5 +2,5 @@
 applied: true
 impossible: []
 target: "services/greeter"
-summary: "Added greeting.js with a named CommonJS greet export, a world default, and one greeting template. Ran npx jest --config jest.config.js: greeting.test.js loaded successfully and both greeting tests passed."
+summary: "Added greeting.js with a CommonJS greet export, preserving supplied names and defaulting to world. Ran npx jest --config jest.config.js: the failing suite loaded successfully and both greeting tests passed. apply_patch failed; the file was successfully created using the shell."
 === FILE_END: tmp/{{RUN_DIR}}/apply--jest-jest-tests.unit.greeting.test.js-load--iter1-result.yaml ===

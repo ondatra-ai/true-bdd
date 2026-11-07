@@ -11,7 +11,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/engine"
 )
 
-func TestConcurrentValidationGatesAndDiscardsStaleFixes(t *testing.T) {
+func TestConcurrentValidationRepairsBeforeAdvancingAndDiscardsStaleFixes(t *testing.T) {
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -28,7 +28,7 @@ func TestConcurrentValidationGatesAndDiscardsStaleFixes(t *testing.T) {
 
 	var menus []int
 
-	walker := &engine.ConcurrentWalker[int, string]{Limit: 2, Gate: func(q string) bool { return q == "d" }}
+	walker := &engine.ConcurrentWalker[int, string]{Limit: 2}
 	walker.CellFor = func(item int, query string) *engine.CellHandler[int, string] {
 		return &engine.CellHandler[int, string]{FixMode: true,
 			UI: &stubUI{actionsScript: []engine.UserAction{engine.UserActionApply}},
@@ -42,9 +42,6 @@ func TestConcurrentValidationGatesAndDiscardsStaleFixes(t *testing.T) {
 					return item != 3, nil
 				}
 
-				if item == 3 {
-					t.Error("failed D dispatched Q")
-				}
 
 				if !nowFixed {
 					starts <- item
@@ -67,7 +64,7 @@ func TestConcurrentValidationGatesAndDiscardsStaleFixes(t *testing.T) {
 					return engine.FixResult{}, nil
 				}
 
-				return engine.FixResult{FixPrompt: "repair"}, nil
+				return engine.FixResult{FixPrompt: orderFix}, nil
 			},
 			Fix: func(_ context.Context, item int, _ engine.FixDecision) (int, error) {
 				guard.Lock()
@@ -114,7 +111,7 @@ func TestConcurrentWalkAllowsRepairsToMoreThanFiveScenarios(t *testing.T) {
 					return repaired[item], nil
 				},
 				GenFix: func(_ context.Context, _ int, _ string, _ map[string]string, _ int) (engine.FixResult, error) {
-					return engine.FixResult{FixPrompt: "repair"}, nil
+					return engine.FixResult{FixPrompt: orderFix}, nil
 				},
 				Fix: func(_ context.Context, item int, _ engine.FixDecision) (int, error) {
 					repaired[item] = true
@@ -201,7 +198,7 @@ func TestConcurrentWalkerStartsAWaitingPromptOnlyAfterEveryItemsEarlierPrompts(t
 	var order, walks []string
 
 	walker := &engine.ConcurrentWalker[int, string]{Limit: 2,
-		Waits:      func(query string) bool { return query == "bindings" },
+		Waits: func(query string) bool { return query == "bindings" },
 		OnValidate: func(items []int) { walks = append(walks, fmt.Sprint(items)) },
 		CellFor: func(_ int, _ string) *engine.CellHandler[int, string] {
 			return &engine.CellHandler[int, string]{Query: func(_ context.Context, item int, query string) (bool, error) {

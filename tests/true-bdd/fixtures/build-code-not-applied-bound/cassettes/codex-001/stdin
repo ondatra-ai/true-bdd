@@ -6,6 +6,7 @@ Write only inside the edit roots in the request. Never modify tests, *_test.go, 
 
 Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, impossible, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -19,51 +20,41 @@ Never modify tests or documents. Only services/calc/ is writable.
 
 # Repair plan for /go-test/go-test:fixture.buildcodefix.tests.suite::TestAdd
 
-## Diagnosis
+## Root cause
 
-The failing set has exactly one member, `TestAdd` in `tests/suite/calc_test.go`, and exactly one cause: the production function `calc.Add` performs subtraction instead of addition.
+`services/calc/calc.go` is the only production file in the declared write root `services/calc`. It currently reads:
 
-- `services/calc/calc.go` declares `package calc` and defines a single function, currently `func Add(a, b int) int { return a - b }`.
-- `tests/suite/calc_test.go` imports `fixture/buildcodefix/services/calc` (resolved by the `module fixture/buildcodefix` declaration in `go.mod`) and calls `calc.Add(2, 3)`, requiring `5`.
-- With the subtraction body the call returns `2 - 3 = -1`, which reproduces the reported harness output verbatim: `calc_test.go:10: Add(2, 3) = -1, want 5`.
+```
+package calc
 
-There is no second defect. The package name, the file location, the exported identifier `Add`, and the signature `(a, b int) int` all already match what the test imports and calls, so the import path resolves and the suite compiles. The only wrong thing is the arithmetic operator in the function body.
+func Add(a, b int) int { return a - b }
+```
 
-## Contract to implement
+The exported `Add` is named and consumed as addition, but its body performs subtraction. `tests/suite/calc_test.go` calls `calc.Add(2, 3)` and requires `5`; subtraction returns `2 - 3 = -1`, which is exactly the harness failure text `calc_test.go:10: Add(2, 3) = -1, want 5`. There is no second code path, no configuration, and no build-tag variant involved — the defect is the arithmetic operator in that single expression.
 
-`calc.Add(a, b int) int` must return the integer sum of its two arguments — the mathematical addition of `a` and `b` — for any pair of `int` inputs. It must be commutative (`Add(x, y) == Add(y, x)`), must return `a` when `b` is zero, and specifically must return `5` for the inputs `(2, 3)`.
+## Contract that `Add` must satisfy
+
+`calc.Add(a, b int) int` returns the integer sum of its two arguments:
+
+- signature, name, receiver-less form, package (`calc`) and exported-ness stay exactly as they are, because `tests/suite/calc_test.go` imports `fixture/buildcodefix/services/calc` and calls the package-level `Add` with two `int` arguments and one `int` result;
+- for all inputs the result equals `a + b` (commutative, `Add(x, 0) == x`), not `a - b`;
+- no panics, no error return, no extra parameters — the test's call site is positional and single-valued, so any signature change would stop the suite compiling.
 
 ## Change to make
 
-**File:** `services/calc/calc.go` (inside the declared writable service root `services/calc`)
+**File: `services/calc/calc.go`** (inside declared root `services/calc`; this is the only file the writer needs to touch)
 
-Change the body of `Add` so it computes addition rather than subtraction: the expression `a - b` becomes `a + b`. This is a single-operator change inside the existing function body.
+Replace the subtraction in `Add`'s body with addition, so the function returns `a + b`. Keep the file's `package calc` clause, the function name, parameter names and types, and the single-expression style intact. No new files, no new imports, no helper functions, and no change to `go.mod` are required.
 
-Do not change anything else about the file:
+## Tests each part serves
 
-- Keep the package clause `package calc` exactly as it is — the test's import path depends on this package living at `services/calc` under module `fixture/buildcodefix`.
-- Keep the function exported and named `Add`, and keep the signature `func Add(a, b int) int` unchanged. The test calls it by that exact name with two untyped integer constants and compares the result to an integer.
-- Do not add new files, new packages, new dependencies, or build tags. Nothing in the suite or the architecture specification asks for more surface than this one function.
-- Do not touch `go.mod`. The module boundary comment there explains it deliberately isolates this fixture's Go sources from the surrounding repository build; the module path and Go version must stay as declared so the test's import keeps resolving.
+- The operator change in `services/calc/calc.go` serves the whole failing set, i.e. the single test `/go-test/go-test:fixture.buildcodefix.tests.suite::TestAdd` (`fixture/buildcodefix/tests/suite::TestAdd`): after the change `calc.Add(2, 3)` evaluates to `5`, the `got != 5` guard does not trip, `t.Fatalf` is not reached, and the test passes under the architecture's command `go test -json -count=1 ./tests/suite/...`.
 
-## Paths that must not be touched
+## Constraints for the writer
 
-- `tests/suite/calc_test.go` — the test and its assertion. Leave the comparison `got != 5` and the `t.Fatalf` message intact. The assertion is correct and is the thing being satisfied; it must not be relaxed, skipped, deleted, or rewritten.
-- `docs/architecture/architecture.yaml` and anything under `true-bdd/` or `templates/` — specification and harness material, read-only here.
-
-## Which tests each part serves
-
-The single change to `Add` in `services/calc/calc.go` serves the single member of the failing set, `/go-test/go-test:fixture.buildcodefix.tests.suite::TestAdd`. After the change, `calc.Add(2, 3)` evaluates to `5`, the `got != 5` branch in `tests/suite/calc_test.go` is not taken, `t.Fatalf` is not reached, and the test passes.
-
-## Verification
-
-Run the command the architecture specification declares for this framework, from the fixture run directory:
-
-```
-go test -json -count=1 ./tests/suite/...
-```
-
-Expect `TestAdd` to report as passing, with no remaining failures in the suite.
+- Edit only `services/calc/calc.go`. Do not create or modify anything under `tests/`, any `*_test.go`, `go.mod`, or any document under `docs/`.
+- Do not touch, relax, delete or skip the assertion in `tests/suite/calc_test.go`; the production arithmetic must change so the existing assertion holds as written.
+- Verify by running `go test -json -count=1 ./tests/suite/...` from the run directory and confirming `TestAdd` reports pass.
 
 Return this confirmation with the correct boolean:
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter1-result.yaml ===

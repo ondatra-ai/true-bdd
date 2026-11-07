@@ -95,9 +95,9 @@ story:
     - then:
       - the command exits with code 1
       - stdout matches level=ERROR msg="Refusing to start" command="build code"
-      - and: 'stdout matches build-code/test-passes #1 D: tests-pass: fix turn: model tier is not configured under engine\.models:
+      - and: 'stdout matches build-code/test-passes #1 Q code: tests-pass: fix turn: model tier is not configured under engine\.models:
           \\"high\\" \(configured: xhigh, quick\)'
-      - and: 'stdout matches build-code/test-passes #1 D: tests-pass: apply turn: model tier is not configured under engine\.models:
+      - and: 'stdout matches build-code/test-passes #1 Q code: tests-pass: apply turn: model tier is not configured under engine\.models:
           \\"coder\\" \(configured: xhigh, quick\)'
       - but: no file outside "tmp" changed
       - and: the engine spawned no test runner

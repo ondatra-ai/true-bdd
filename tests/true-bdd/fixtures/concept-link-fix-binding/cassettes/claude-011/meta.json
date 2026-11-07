@@ -20,17 +20,17 @@
     "stream-json",
     "--verbose",
     "--json-schema",
-    "{\"additionalProperties\":false,\"properties\":{\"concepts\":{\"additionalProperties\":false,\"properties\":{\"then:number result\":{\"additionalProperties\":false,\"properties\":{\"reason\":{\"minLength\":1,\"type\":\"string\"},\"undeclared_words\":{\"items\":{\"minLength\":1,\"type\":\"string\"},\"type\":\"array\",\"uniqueItems\":true}},\"required\":[\"reason\",\"undeclared_words\"],\"type\":\"object\"}},\"required\":[\"then:number result\"],\"type\":\"object\"}},\"required\":[\"concepts\"],\"type\":\"object\"}",
+    "{\"additionalProperties\":false,\"properties\":{\"concepts\":{\"additionalProperties\":false,\"properties\":{\"then:number result\":{\"additionalProperties\":false,\"properties\":{\"reason\":{\"type\":\"string\"},\"undeclared_words\":{\"items\":{\"type\":\"string\"},\"type\":\"array\"}},\"required\":[\"reason\",\"undeclared_words\"],\"type\":\"object\"}},\"required\":[\"then:number result\"],\"type\":\"object\"}},\"required\":[\"concepts\"],\"type\":\"object\"}",
     "-p",
     "{\n  \"product\": \"{\\n  \\\"roles\\\": [\\n    {\\n      \\\"name\\\": \\\"Product Owner\\\",\\n      \\\"description\\\": \\\"Owns meanings.\\\"\\n    }\\n  ],\\n  \\\"concepts\\\": {\\n    \\\"given\\\": [\\n      {\\n        \\\"concept\\\": \\\"number ready\\\",\\n        \\\"means\\\": \\\"A number is entered before the action.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ],\\n    \\\"when\\\": [\\n      {\\n        \\\"concept\\\": \\\"halve\\\",\\n        \\\"means\\\": \\\"Halve the entered number once.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ],\\n    \\\"then\\\": [\\n      {\\n        \\\"concept\\\": \\\"number result\\\",\\n        \\\"means\\\": \\\"Compare the displayed number with an expected value.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ]\\n  },\\n  \\\"glossary\\\": []\\n}\\n\",\n  \"concepts\": {\n    \"then:number result\": {\n      \"Name\": \"number result\",\n      \"Means\": \"Compare the displayed number with an expected value.\",\n      \"Terms\": [],\n      \"Block\": \"then\"\n    }\n  }\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 10593,
-  "request_hash": "sha256:1f7225b02a255db6643bcc00d0f4208b484577ed2e2359ebd9fd6de75b40cd57",
+  "duration_ms": 10419,
+  "request_hash": "sha256:73b5e0748e494f7e3c1d6a76b07d54490e7ae4e0af84051434965be578b11566",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-11-02T15:42:56Z"
+  "recorded_at": "2026-11-07T12:57:40Z"
 }

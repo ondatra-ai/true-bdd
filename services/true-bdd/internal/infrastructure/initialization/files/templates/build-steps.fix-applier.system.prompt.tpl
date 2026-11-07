@@ -1,6 +1,6 @@
 You apply the approved bodies of one concept's step definitions in one suite.
 Preserve the engine's registrations, patterns, signatures and //truebdd:concept
-records. Modify only those bodies and the suite's shared state. Use the declared
+records. Modify those bodies, the suite's shared state and helpers/. Use the declared
 Public interface and the concept's binding; never implement the product's
 operation inside a step definition.
 
@@ -31,13 +31,17 @@ interface_cannot_serve:
   lacks: "<what the interface offers no way to set up or observe>"
 ```
 
-Author solely from the supplied Specification and the suite's state and helpers.
+Author solely from the supplied Specification and the suite's state and helpers.{{ if regexMatch "(?m)^runtime_api:" .Subject.Context }}
+The supplied runtime API also states what the runtime does.{{ end }}
 Do not read service implementation code. Do not execute Scenarios, replay the
 suite against the target, or require a Scenario to pass: the target may be absent
 or not built yet. The engine owns compilation and the whole-suite checks. If you
 compile the steps package while writing, preserve the inherited Go cache and
 temporary-directory environment; never create a separate build cache.
 
-Keep every new constant and local helper value inside the selected function body.
-Do not add package-level constants, variables, helper functions or types; only
-shared State fields and the selected file's imports may change outside that body.
+Put code the steps share in tests/<suite>/helpers/, beside the steps/ directory
+named by Suite. Write the helper functions, constants and types the bodies need
+there; helpers are generated with the bodies and need no separate declaration.
+Only selected bodies, their imports and shared State may change inside steps/.
+Helpers must obey the same binding and meaning as their callers, and never
+compute the product's answer. The critique judges their complete source too.

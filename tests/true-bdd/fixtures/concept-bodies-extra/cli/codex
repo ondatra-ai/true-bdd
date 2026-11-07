@@ -1,0 +1,49 @@
+#!/bin/sh
+set -eu
+prompt=$(cat)
+answer=
+while [ "$#" -gt 0 ]; do
+  if [ "$1" = -o ]; then shift; answer=$1; fi
+  shift
+done
+result=$(printf '%s\n' "$prompt" | sed -n 's/^=== FILE_START: \(.*apply-when-halving-iter[0-9]*-result.yaml\) ===$/\1/p' | head -n 1)
+test -n "$answer"
+test -n "$result"
+target=tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go
+marker=tmp/concept-bodies-extra-first-apply
+mkdir -p tmp
+if [ ! -e "$marker" ]; then
+  cat > "$target" <<'GO'
+package steps
+
+//truebdd:concept when "halving"
+func concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {
+	return state.Halve(args[0])
+}
+GO
+  touch "$marker"
+else
+  cat > "$target" <<'GO'
+package steps
+
+import (
+	"os/exec"
+	"strconv"
+	"strings"
+)
+
+//truebdd:concept when "halving"
+func concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {
+	cmd := exec.Command("go", "run", "./services/calc", "halve", args[0])
+	cmd.Dir = "../.."
+	out, err := cmd.Output()
+	if err != nil {
+		return err
+	}
+	state.Result, err = strconv.Atoi(strings.TrimSpace(string(out)))
+	return err
+}
+GO
+fi
+printf '%s\n' '{"type":"turn.completed"}'
+printf '=== FILE_START: %s ===\napplied: true\ntarget: "%s"\nsummary: "Applied the halving body."\n=== FILE_END: %s ===\n' "$result" "$target" "$result" > "$answer"

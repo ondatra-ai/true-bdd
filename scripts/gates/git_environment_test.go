@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	gitcli "github.com/ondatra-ai/true-bdd/pkg/cli/git"
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 	"github.com/ondatra-ai/true-bdd/scripts/gates"
 )
 
@@ -137,7 +137,7 @@ func TestGateSubprocessesDropRepositoryEnvironment(t *testing.T) {
 		{Name: "command", Command: []string{"sh", "-c", `env > "$GIT_ENV_CAPTURE"`}},
 		gates.All[0],
 		{Name: "fixture phase", Run: func() error {
-			runner.Teardown(root, []string{`env > "$GIT_ENV_CAPTURE"`})
+			testkit.Teardown(root, []string{`env > "$GIT_ENV_CAPTURE"`})
 
 			return nil
 		}},

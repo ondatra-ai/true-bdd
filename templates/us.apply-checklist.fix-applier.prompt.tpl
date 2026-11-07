@@ -32,3 +32,7 @@ applied: true
 target: "{{.Subject.RequirementsScratchPath}}"
 summary: "<one-line summary of what changed>"
 === FILE_END: {{.ResultPath}} ===
+{{if .StepArguments}}
+## Step arguments
+
+{{.StepArguments}}{{end}}

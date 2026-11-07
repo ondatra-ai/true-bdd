@@ -6,10 +6,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/product"
 )
 
-// judgesBindings marks the bindings Prompt, which a shared walk starts only after every Scenario's link.
-func judgesBindings(query *checklist.PromptWithContext) bool {
-	return !query.Prompt.IsCheck() && query.Prompt.Judgement() == checklist.JudgementBindings
-}
+
 
 // conceptPrompts drops the concept judgements of a host declaring no concepts,
 // whose walk keeps its other cells and their request numbering.
@@ -40,4 +37,9 @@ func withoutConceptJudgements(prompts []checklist.PromptWithContext) []checklist
 	}
 
 	return filtered
+}
+
+// judgesBindings starts shared bindings only once every Item's preceding link has answered.
+func judgesBindings(query *checklist.PromptWithContext) bool {
+ return query.Prompt.Judgement() == checklist.JudgementBindings
 }

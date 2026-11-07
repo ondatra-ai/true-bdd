@@ -6,6 +6,7 @@ Write only inside the edit roots in the request. Never modify tests, *_test.go, 
 
 Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, impossible, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -52,46 +53,39 @@ Tests: /go-test/go-test:fixture.stepsrun.tests.calc::TestCalc001Double
 
 ## Diagnosis
 
-The only defect is in production source. `services/calc/calc.go` validates and parses its integer argument correctly, then prints the operand back unchanged instead of the doubled value:
+The failing set has one test, `TestCalc001Double` in `tests/calc/calc_test.go`, running scenario `calc-001-double` (`docs/scenarios.yaml`): Given `the calculator is installed`, When `the Owner doubles 3`, Then `the result is 6`. It fails at step 3/3 with `expected 6, got 3`.
 
-- `fmt.Println(value)` emits the input, so `calc double 3` writes `3\n`.
-- The When step (`tests/calc/steps/register.go:doubling`) runs the built program and stores that stdout as `state.Value`, so `state.Value == 3`.
-- The Then step (`result`) compares against the scenario's expected `6` and fails with `expected 6, got 3` — exactly the reported failure at `calc_test.go:31`, step 3/3.
+The step definitions (`tests/calc/steps/register.go`, read-only here) show the observation path, and it is sound:
 
-Everything else in the chain is already correct and must be left alone:
-- `docs/scenarios.yaml` declares `calc-001-double` with Given `the calculator is installed`, When `the Owner doubles 3`, Then `the result is 6`.
-- `tests/calc/calc_test.go` (generated, DO NOT EDIT) states those three steps literally.
-- `tests/calc/steps/register.go` builds `./services/calc` with `go build -o <host tmp>/calc-program/calc` from the host root, runs `<program> double <n>`, and parses trimmed stdout as an integer. Steps 1 and 2 passed, which confirms the build and the process invocation already work.
-- `docs/architecture/calc-cli.yaml` already specifies the intended contract: `calc double VALUE` prints the doubled integer and a newline, exit `0`; exit `1` for invalid arguments.
+- `installed` runs `go build -o <host-root>/tmp/calc-program/calc ./services/calc` from the host root and keeps the program path in `State.Program`. It rebuilds on every run, so there is no stale-binary problem to chase.
+- `doubling` executes `<program> double 3`, trims the combined output and parses it as an integer into `State.Value`.
+- `result` compares `State.Value` with the expected `6` and reports `expected %d, got %d`.
 
-So this is not a missing-feature build; it is a one-behaviour correction. Do not add new packages, files, flags, or configuration.
+So the harness captured stdout `3` from the program when the scenario asked for the double of 3. The defect is in production code: `services/calc/calc.go` parses the integer argument and then prints the operand back unchanged (`fmt.Println(value)`) instead of printing the doubled value. Nothing in the test, the step registry, or the Specification needs to change — the CLI contract in `docs/architecture/calc-cli.yaml` already says `calc double VALUE` must print *the doubled integer* and a newline, and the glossary in `docs/product/product.yaml` defines `number`'s double as "its sum with itself". The program simply does not implement the declared contract.
 
-## Scope
+## The single change
 
-Edit only `services/calc/calc.go` (inside the declared `services/calc` root). Do not touch `tests/**`, any `*_test.go`, the step definitions, `docs/**`, or the generated scenario glue. Do not weaken, skip, or restate any assertion.
+**File: `services/calc/calc.go`** (inside declared edit root `services/calc`; this is the only file that needs to change).
 
-## Part 1 — Make `double` actually double
+In `main`, make the `double` command print the doubled operand rather than the operand. Keep using `fmt.Println` so the single trailing newline the CLI document promises is preserved, and compute the result as the operand's sum with itself (`value + value`, or equivalently `value * 2`) so it matches the glossary definition of a number's double. The program's stdout for `double 3` must become exactly `6\n`.
 
-**File:** `services/calc/calc.go`
+Preserve everything else about the declared public interface exactly as it is today — do not restructure the CLI, rename the subcommand, add flags, or add any extra output:
 
-**Contract to honour (from `docs/architecture/calc-cli.yaml` and `docs/product/product.yaml`):**
-- Invocation shape: exactly `double` plus one required `value` argument of schema `integer`.
-- On success: write the arithmetic double of the parsed operand — its sum with itself, per the glossary term `number` — to stdout as a base-10 integer followed by a single trailing newline, and exit `0`. Nothing else on stdout.
-- On invalid arguments (wrong argument count, subcommand other than `double`, or a `value` that is not a parseable integer): exit `1`, as today.
+- The subcommand name stays `double`, invoked as `calc double VALUE` with the value as a positional argument. The step builds and invokes the program across a process boundary, so the argument shape and the subcommand name are part of the contract.
+- Exit status 0 on success with only the result on stdout. `doubling` uses `CombinedOutput` and then `strconv.Atoi` on the trimmed bytes, so any extra banner, log line, prompt or diagnostic written to stdout or stderr on the success path would make the parse fail even once the arithmetic is right. Keep the success path's output to the single number.
+- Exit status 1 for invalid arguments — both the wrong argument count / wrong subcommand case and the non-integer operand case — matching response `'1'` (`Invalid arguments`) in `docs/architecture/calc-cli.yaml`. Do not turn a bad argument into a 0 exit or into a printed number.
+- Keep handling negative operands: the step pattern is `^the Owner doubles (-?\d+)$` and `^the result is (-?\d+)$`, so a sign-aware parse must stay (`strconv.Atoi` already handles it). Plain integer addition gives the correct double for negatives; do not introduce any absolute-value or unsigned handling.
 
-**Intended implementation:** keep the existing structure — argument-count and subcommand guard, `strconv.Atoi` of `os.Args[2]` with the error path exiting `1` — and change only the emitted quantity so the printed number is the doubled operand rather than the operand itself. Compute it from the parsed integer (e.g. the parsed value added to itself, or multiplied by two); the two are equivalent and either matches the glossary. Continue printing via a newline-terminated write (`fmt.Println` is already correct) so the When step's `strings.TrimSpace` + `strconv.Atoi` parse keeps working. Preserve negative-number support: the step regexes accept `-?\d+`, so `double -4` must print `-8`; signed `strconv`/`fmt` handling gives this for free, so do not introduce any absolute-value, unsigned, or string-manipulation approach.
+The file must remain a `package main` program that `go build ./services/calc` can build from the host root, since that is exactly what the Given step does. Keep it buildable and `gofmt`-clean under Go 1.25 (module `fixture/stepsrun`), with no new dependencies — `fmt`, `os` and `strconv` are all that is required, and all three stay in use.
 
-Avoid these traps:
-- Do not implement doubling by string concatenation or by re-printing the raw argument text.
-- Do not add extra stdout output (labels, prompts, debug lines); the step parses the whole trimmed stdout as one integer, so any extra text fails the parse.
-- Do not switch to stderr for the result or change the success exit code.
-- Do not relax the argument validation to accept other subcommands or argument counts; the CLI document pins exit `1` for those.
+## Which tests each part serves
 
-**Tests this part serves:** `/go-test/go-test:fixture.stepsrun.tests.calc::TestCalc001Double` — specifically step 3/3, `Then the result is 6`, which will then observe `6` from `calc double 3`. Steps 1/3 (`Given the calculator is installed`) and 2/3 (`When the Owner doubles 3`) already pass and must keep passing: the file must remain a buildable `package main` at `./services/calc` with a `main` entry point so the Given's `go build -o <tmp>/calc-program/calc ./services/calc` still succeeds, and the produced binary must still exit `0` for a valid `double` invocation so the When's `CombinedOutput` returns no error.
+- **Printing the doubled value instead of the operand** — serves the only test in the set, `/go-test/go-test:fixture.stepsrun.tests.calc::TestCalc001Double`, specifically its Then step `the result is 6`, which currently sees `3`. With the program printing `6` for input `3`, `doubling` parses `6` into `State.Value` and `result`'s comparison succeeds.
+- **Keeping the `double` subcommand, positional argument, single-number stdout and the `0`/`1` exit statuses** — serves the Given step `the calculator is installed` (the build must still succeed from `./services/calc`) and the When step `the Owner doubles 3` (the process invocation must still succeed and its stdout must still parse as a lone integer). These are regression guards: breaking any of them would move the failure earlier in the same test rather than fixing it.
 
 ## Verification
 
-Run the architecture-declared suite command from the host root: `go test -tags bdd -json -count=1 ./tests/calc/...`. Expect `TestCalc001Double` to pass with all three steps green. A quick direct sanity check of the built binary is also reasonable — `double 3` → `6`, `double -4` → `-8`, `double abc` → exit `1`, `double` with no value → exit `1` — but the suite command is the authority. No other test in the repository is the subject of this repair, and no test or document should be modified to reach green.
+Run the suite's declared command from the host root: `go test -tags bdd -json -count=1 ./tests/calc/...`. `TestCalc001Double` must pass with all three steps run. Do not edit `tests/calc/calc_test.go`, `tests/calc/steps/*`, `tests/calc/scenarios/*`, `docs/**`, or any assertion; do not relax the `expected %d, got %d` check. The whole repair is the arithmetic correction in `services/calc/calc.go`.
 
 ## Edit roots
 

@@ -5,30 +5,42 @@ Edit only the listed working copies. Preserve every unaffected entry.
 For a Story step rewrite, return the complete Story YAML instead of editing
 a document. For document edits return the requested confirmation markers.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
 The Product Owner chose apply at the menu for Story halve-negative.
 Approved fix:
-## Repair proposal — Item `halve-negative` (actual: fail)
+PROPOSED REPAIR — Item `halve-negative` (not applied; awaiting an explicit menu decision)
 
-### Diagnosis
+## Diagnosis
 
-The three failing judgements are the `when` steps of 001-even, 002-odd and 003-near-zero — all identically worded `the Calculator User halves the number`. Each reports "no concept of when reaches the threshold; scores {}" because `docs/product/product.yaml` declares concepts only under `given:` and `then:`; the `when:` block does not exist, so there is nothing to score against.
+Nine findings, three of which fail: the `when` step of every acceptance criterion
+(001-even, 002-odd, 003-near-zero) is the identical sentence
 
-The step wording is sound and the Story needs no rewrite: the `given` steps link to `number supplied` (10) and the `then` steps to `result` (10), all above the threshold of 9. The gap is a missing Public interface item and kind of use — the halve action invoked in the `when` block. Per policy this is a **new use**, not a variation of an existing concept, so a widened `means` is not available: neither `number supplied` (given) nor `result` (then) is a concept of `when`, and widening either would move it across kinds of use. A new concept is therefore the correct repair.
+    the Calculator User halves the number
 
-### Owner
+and it reaches no concept, because `docs/product/product.yaml` declares concepts
+for the `given` and `then` uses only — there is no `when` block at all. The six
+`given`/`then` steps all score 10 against `number supplied` and `result` and are
+healthy; nothing about them, nor about the Story wording, is at fault.
 
-Product Owner — the change is to a concept in the product document. No binding change is proposed, so nothing is routed to the System Architect.
+Because no `when` concept exists, there is no concept of that item and use to
+widen. Per the repair policy this is a new use, so the repair adds exactly one
+new concept and changes nothing else. No Story or Scenario rewrite is proposed:
+the step wording is already a plain, unqualified statement of the halve action
+and uses no forbidden qualifier.
 
-### Change 1 of 1 — add a `when` concept (Product Owner, product document)
+## Owner
 
-File: `docs/product/product.yaml`
+Product Owner — this is a concept addition to the product document. No binding
+change is requested of the System Architect; the existing `given` and `then`
+bindings stand unchanged.
 
-Insert a `when:` block between the existing `given:` and `then:` blocks under `concepts:`. Nothing else in the file changes: `title`, `description`, `roles`, `vocabulary`, `glossary`, the `given` concept `number supplied` and the `then` concept `result` all stay exactly as they are.
+## Change 1 of 1 — `docs/product/product.yaml`, add a `when` concept
 
-Before (lines 16–25):
+Insert a `when:` block between the existing `given:` and `then:` blocks of
+`concepts:`, so the three uses read in Gherkin order. Replace these lines:
 
 ```yaml
 concepts:
@@ -42,7 +54,7 @@ concepts:
       terms: []
 ```
 
-After:
+with:
 
 ```yaml
 concepts:
@@ -51,8 +63,8 @@ concepts:
       means: The calculator is supplied a stated, already validated integer.
       terms: []
   when:
-    - concept: halve invoked
-      means: The Calculator User invokes the calculator's halve command on the supplied number.
+    - concept: halve requested
+      means: The Calculator User runs the halve command on the supplied number.
       terms: []
   then:
     - concept: result
@@ -60,22 +72,26 @@ concepts:
       terms: []
 ```
 
-The added concept holds only `concept`, `means` and `terms`. Its `means` is closed prose covering the single variation the three failing steps admit: one Calculator User invocation of the halve command on the already supplied number. The three steps are identical in wording, so no further variation needs stating.
+## What is preserved
 
-### Change to the Item
+- `given: number supplied` — unchanged, means and terms verbatim.
+- `then: result` — unchanged, means and terms verbatim.
+- Every step of all three acceptance criteria — unchanged, including the three
+  `when` steps, which this concept is written to admit as stated.
+- `title`, `description`, `roles`, `vocabulary` and `glossary` — untouched.
+- The new concept holds only `concept`, `means` and `terms`, and its means is
+  closed prose covering the single variation the three identical `when` steps
+  present: the Calculator User running halve on the supplied number.
 
-None. All nine steps of `halve-negative` keep their current wording, including the three `when` steps, which this new concept makes linkable as written.
+## Expected effect
 
-### Expected effect
+Each of the three `when` steps links to `halve requested` at or above the
+threshold of 9, and the Item's actual result moves from fail to pass.
 
-- 001-even `when` step `the Calculator User halves the number` → links to `halve invoked`
-- 002-odd `when` step `the Calculator User halves the number` → links to `halve invoked`
-- 003-near-zero `when` step `the Calculator User halves the number` → links to `halve invoked`
-- All six passing given/then judgements unaffected.
+## Apply
 
-### Status
-
-Proposal only — no file has been changed. Awaiting an explicit apply decision at the menu.
+Do not apply yet. Apply only on an explicit menu decision by the Product Owner;
+the change is confined to `docs/product/product.yaml`.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

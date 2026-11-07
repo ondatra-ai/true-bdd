@@ -56,8 +56,9 @@ story:
       - the command exits with code 0
       - stdout matches action=apply
       - stdout matches judgement=bindings answer=pass
-      - the only file changed outside "tmp" is "docs/architecture/architecture.yaml"
+      - no file outside "tmp" and "docs" changed
       - the file "docs/scenarios.yaml" is unchanged
+      - the file "docs/product/stories/host-story.yaml" is unchanged
   - id: 005-wrong-block
     description: An action written as Then must fail naming its When concept
     steps:
@@ -105,7 +106,7 @@ story:
       - the command exits with code 0
       - stdout matches action=apply
       - the file "docs/product/product.yaml" matches means.*(pointer.*keyboard|keyboard.*pointer)
-      - the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "msg":"Cell validation started","subjectID":"alpha","promptIndex":1
+      - the file matching "tmp/true-bdd.log.json" has exactly 4 matches for "msg":"Cell validation started","subjectID":"alpha","promptIndex":1
       - the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "msg":"Cell validation started","subjectID":"beta","promptIndex":1
   - id: 009-threshold-nine
     description: A real-model near miss scored seven fails at threshold nine; the engine threshold test pins the same-answer boundary

@@ -2,5 +2,5 @@
 applied: true
 impossible: []
 target: "services/calc"
-summary: "Changed Add to return a + b. Both TestAAdd and TestBAdd passed via go test -count=1 ./tests/suite/.... No tests or documents were modified."
+summary: "Changed Add to return a + b. TestAAdd and TestBAdd passed using the granted selection command. The patch tool failed; the edit succeeded via Python."
 === FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===

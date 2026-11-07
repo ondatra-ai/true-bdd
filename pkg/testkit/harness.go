@@ -8,34 +8,31 @@ import (
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	proxycli "github.com/ondatra-ai/true-bdd/pkg/proxy/cli"
 	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit/internal/runner"
 )
 
-// StagingDirName holds record mode's in-flight cassettes, one
-// subdirectory per fixture, at the session root — not inside the run
-// directory, whose contents land in the judge's graded diff/prompt.
+// StagingDirName names the session-root directory of in-flight fixture recordings, outside the observed run tree.
 const StagingDirName = ".cassettes-staging"
 
-// ErrNoCassettes is returned when a replay run finds no recording for a
-// scenario. Not a skip: an un-recorded scenario is an un-run scenario,
-// and a skip is the one outcome a green suite can hide.
+// ErrNoCassettes marks a replay requested without a dependency recording.
 var ErrNoCassettes = errors.New("no cassettes for this scenario")
 
-// ErrNoGolden is returned when a cassette directory carries no recorded
-// outcome — a recording made before goldens existed, which replay cannot
-// grade against.
+// ErrNoGolden marks a replay without a recorded outcome to compare.
 var ErrNoGolden = errors.New("no recorded outcome for this scenario")
 
-// ErrNoJudgeRecording marks a fixture asked to replay a verdict it has
-// never recorded. Infrastructure, not a verdict: routing it through the
-// judge's own refusal would suppress the golden mismatch beside it.
+// ErrNoJudgeRecording marks a replay requested without a recorded semantic verdict.
 var ErrNoJudgeRecording = errors.New("no recorded judge verdict for this scenario")
 
-// Harness is everything the suite builds once per `go test` invocation
+// harness is everything the suite builds once per `go test` invocation
 // and every scenario then shares: the binary under test, where the
 // session's run directories go, the shim, and the judge.
-type Harness struct {
+type harness struct {
+	Service      string
+	Dependencies []proxycli.Dependency
+	RepoLayer    []string
+	FixtureStep  string
 	// BinPath is the service executable this run resolved.
 	BinPath string
 	// Binary builds the service only when a definition needs it.
@@ -62,13 +59,13 @@ type Harness struct {
 }
 
 // FixtureDir is where the named fixture's tree lives.
-func (h *Harness) FixtureDir(name string) string {
+func (h *harness) FixtureDir(name string) string {
 	return filepath.Join(h.FixturesDir, name)
 }
 
 // CassetteDir is a fixture's committed cassette directory in the source
 // tree — what replay reads and what a passing record run publishes into.
-func (h *Harness) CassetteDir(name string) (string, error) {
+func (h *harness) CassetteDir(name string) (string, error) {
 	dir, err := filepath.Abs(filepath.Join(h.FixtureDir(name), "cassettes"))
 	if err != nil {
 		return "", fmt.Errorf("resolve cassettes dir for %s: %w", name, err)
@@ -80,7 +77,7 @@ func (h *Harness) CassetteDir(name string) (string, error) {
 // JudgeShelf is the fixture's committed judge recordings — its own
 // shelf, because both callers spawn `claude` and the shim matches by
 // arrival order per binary name: one shared dir would cross their cursors.
-func (h *Harness) JudgeShelf(name string) (string, error) {
+func (h *harness) JudgeShelf(name string) (string, error) {
 	dir, err := h.CassetteDir(name)
 	if err != nil {
 		return "", err
@@ -90,7 +87,7 @@ func (h *Harness) JudgeShelf(name string) (string, error) {
 }
 
 // RequireEngine resolves the lazy build at a step, preserving an explicit oracle binary.
-func (h *Harness) RequireEngine() error {
+func (h *harness) RequireEngine() error {
 	if h.BinPath != "" {
 		return nil
 	}
@@ -108,7 +105,7 @@ func (h *Harness) RequireEngine() error {
 // prepareJudgeStaging gives a judge recording somewhere to land. It sits
 // inside the services caller's staging root, so a run recording both publishes
 // them in one rename.
-func (h *Harness) prepareJudgeStaging(name string) (string, error) {
+func (h *harness) prepareJudgeStaging(name string) (string, error) {
 	staging := filepath.Join(h.SessionRoot, StagingDirName, name, "judge")
 
 	err := disk.RemoveTree(staging)
@@ -127,7 +124,7 @@ func (h *Harness) prepareJudgeStaging(name string) (string, error) {
 // promoteJudgeShelf publishes only the judge recordings, for a run whose
 // services caller was not recording — a whole-dir rename would delete the engine
 // cassettes this run replayed from.
-func (h *Harness) promoteJudgeShelf(name, staging string) error {
+func (h *harness) promoteJudgeShelf(name, staging string) error {
 	dest, err := h.JudgeShelf(name)
 	if err != nil {
 		return err
@@ -150,7 +147,7 @@ func (h *Harness) promoteJudgeShelf(name, staging string) error {
 // prepareStaging gives a record-mode run an empty directory to write
 // into. Empty rather than appended-to, so a shorter re-recording cannot
 // leave a longer one's trailing calls behind.
-func (h *Harness) prepareStaging(name string) (string, error) {
+func (h *harness) prepareStaging(name string) (string, error) {
 	staging := filepath.Join(h.SessionRoot, StagingDirName, name)
 
 	err := disk.RemoveTree(staging)
@@ -169,7 +166,7 @@ func (h *Harness) prepareStaging(name string) (string, error) {
 // promoteCassettes publishes a recording into the source tree — only for
 // a PASSED scenario: promoting a failed run's cassettes would make replay
 // reproduce that failure forever, with the real evidence already overwritten.
-func (h *Harness) promoteCassettes(name, staging string) error {
+func (h *harness) promoteCassettes(name, staging string) error {
 	dest, err := h.CassetteDir(name)
 	if err != nil {
 		return err
@@ -191,18 +188,14 @@ func (h *Harness) promoteCassettes(name, staging string) error {
 	return nil
 }
 
-// JudgeRecordHint is the command that records one scenario's judge
-// verdict without re-running a single engine turn: the services caller keeps
-// replaying, so the recording costs one model call and nothing else.
+// JudgeRecordHint is the command to record one Scenario's verdict while replaying its service dependencies.
 func JudgeRecordHint(scenario bddgo.Scenario) string {
 	return "record it with: go test -tags bdd -run '^" + TestName(scenario) +
 		"$' ./tests/" + scenario.Service + "/ '-mode=services:replay,tests:record'  # fixture: " +
 		FixtureName(scenario)
 }
 
-// RecordHint is the command that re-records one scenario, printed by
-// every failure a re-recording would fix. The fixture name rides along
-// as a trailing comment, since a reader thinks in trees, not scenario ids.
+// RecordHint is the command to re-record one Scenario, annotated with its id.
 func RecordHint(scenario bddgo.Scenario) string {
 	return "record it with: go test -tags bdd -run '^" + TestName(scenario) +
 		"$' ./tests/" + scenario.Service + "/ -mode=services:record,tests:record  # fixture: " + FixtureName(scenario)

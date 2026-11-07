@@ -5,77 +5,66 @@ Edit only the listed working copies. Preserve every unaffected entry.
 For a Story step rewrite, return the complete Story YAML instead of editing
 a document. For document edits return the requested confirmation markers.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
 The Product Owner chose apply at the menu for Story host.
 Approved fix:
-PROPOSED REPAIR — Item: host (AC-1 when step "square six")
+Repair proposal for Item `host` — AC-1 `when` step "square six" (no concept reaches threshold 9).
 
-Owner of this change: Product Owner (concept + means wording).
-Change nothing until an explicit menu apply decision.
+The change is a new concept in the product document, owned by the Product Owner. No binding change is needed, so the System Architect is not involved. The Story stays unchanged.
 
-## Failed judgement
+## Decision behind the proposal
 
-Only one judgement failed: AC-1 when step "square six" reached no concept of
-the `when` block (best score: "halve" = 2, threshold 9). The two other steps
-passed and stay untouched:
-  - given "six is entered"       -> number ready (10)  — unchanged
-  - then  "thirty-six is displayed" -> number result (10) — unchanged
+The step "square six" is a well-formed action for the `when` block, so no rewrite of the Item is needed. The only candidate, `halve` (score 2), cannot be widened: the product description states "The calculator offers separate Halve and Square controls. Halve divides the entered number by two; Square multiplies the entered number by itself." Square is therefore a different Public interface item, not a variation of the Halve control's use. Widening `halve` to admit squaring would merge two separate controls into one concept. A new `when` concept for the Square control is the correct repair.
 
-## Why a new concept, not a widening, and not a rewrite
+## Exact change — `docs/product/product.yaml`
 
-The product description states: "The calculator offers separate Halve and
-Square controls. Halve divides the entered number by two; Square multiplies
-the entered number by itself." Square is a separate Public interface item from
-Halve, so squaring is not a variation of the `halve` concept and widening
-`halve`'s means would misstate the interface. The Story step is faithful to
-the described Square control, so no rewrite of the Item is warranted. Policy
-therefore calls for a new concept for the new item.
+Add one entry to `concepts.when`, after the existing `halve` entry. No other concept, no `glossary` entry, and no `description` text is touched.
 
-## Exact change — one file: docs/product/product.yaml
+Before:
 
-Add one concept to the `when` block, after the existing "halve" concept.
-Nothing else in the file changes (roles, given, then, glossary, description
-all stay byte-identical; "halve" keeps its current means).
-
-Before (lines 16-22):
-
-      "when": [
-        {
-          "concept": "halve",
-          "means": "Halve the entered number once.",
-          "terms": []
-        }
-      ],
+```json
+    "when": [
+      {
+        "concept": "halve",
+        "means": "Halve the entered number once.",
+        "terms": []
+      }
+    ],
+```
 
 After:
 
-      "when": [
-        {
-          "concept": "halve",
-          "means": "Halve the entered number once.",
-          "terms": []
-        },
-        {
-          "concept": "square",
-          "means": "Square the entered number once, multiplying it by itself.",
-          "terms": []
-        }
-      ],
+```json
+    "when": [
+      {
+        "concept": "halve",
+        "means": "Halve the entered number once.",
+        "terms": []
+      },
+      {
+        "concept": "square",
+        "means": "Square the entered number once, multiplying it by itself.",
+        "terms": []
+      }
+    ],
+```
 
-## Change to the Item: none
+## Unaffected and preserved
 
-Story `host` and AC-1 are unchanged — id, title, as_a, i_want, so_that,
-status and all three steps ("six is entered", "square six",
-"thirty-six is displayed") stay exactly as written.
+- `concepts.given` → `number ready` — unchanged; AC-1 given step "six is entered" already links at score 10.
+- `concepts.then` → `number result` — unchanged; AC-1 then step "thirty-six is displayed" already links at score 10.
+- `concepts.when` → `halve` — unchanged, including its closed means.
+- `roles`, `glossary`, `description` — unchanged.
+- Story `host` — unchanged: id, title, as_a, i_want, so_that, status, and all three AC-1 steps stay exactly as written.
 
 ## Expected effect after apply
 
-AC-1 when step "square six" links to the new `when` concept "square": a
-when-kind step naming an action on the entered number, a plain instance of
-squaring the entered number once, which should score at or above the
-threshold of 9.
+AC-1 when step "square six" becomes a plain instance of the new `square` concept — multiply the entered number by itself, once — clearing the threshold and leaving all three steps of AC-1 linked.
+
+Nothing has been applied. Awaiting an explicit menu decision to apply.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

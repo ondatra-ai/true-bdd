@@ -5,61 +5,49 @@ Edit only the listed working copies. Preserve every unaffected entry.
 For a Story step rewrite, return the complete Story YAML instead of editing
 a document. For document edits return the requested confirmation markers.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
 The Product Owner chose apply at the menu for Story host.
 Approved fix:
-# Proposed repair — Item `host`, AC-1 when step "halve twice"
+PROPOSED REPAIR — Item `host`, AC-1 when step "halve twice"
 
-## Decision
+Failed judgement: no `when` concept reaches the threshold for "halve twice" (score 7 for "halve", threshold 9). Cause: "halve" is fixed as halving the entered number *once*, so two applications fall partly outside its meaning, although the product description already admits one or two Halve presses.
 
-Widen the existing `when` concept **`halve`**. Its Public interface item (the Halve control) and kind of use (pressing it to halve the entered number) already exist, so no new concept is added and the Story is left untouched. The current means fixes the use at exactly one halving; the widened means states, in closed prose, every variation the concept admits — one halving or two — matching the product description's bound that three or more presses are not supported.
+Decision under the repair policy: the Public interface item ("halve") and the kind of use ("when") already exist, and "halve twice" is a variation of that same item and use. Therefore WIDEN the existing `halve` concept by rewriting its means in closed prose to state every variation it admits. Do NOT rewrite the Story step, and do NOT add a new concept.
 
-**Owner of this change:** Product Owner (concept means).
+Owner: System Architect (concept binding is unchanged in shape — "halve twice" binds to the widened `halve`); Product Owner confirms the concept means.
 
-## Exact change — `docs/product/product.yaml`
+=== CHANGE 1 of 1 — file: ./docs/product/product.yaml ===
+Scope: the single `means` string of the `when` concept named "halve". No other concept, term, role, glossary entry or description is touched.
 
-One field changes: `concepts.when[0].means` of the concept `halve`.
+BEFORE (lines 16-22):
+  "when": [
+    {
+      "concept": "halve",
+      "means": "Halve the entered number once.",
+      "terms": []
+    }
+  ],
 
-### Before
+AFTER:
+  "when": [
+    {
+      "concept": "halve",
+      "means": "Halve the entered number, either once or twice: halving once displays half the entered number, and halving twice displays its quarter. Halving three or more times is not admitted.",
+      "terms": []
+    }
+  ],
 
-```json
-    "when": [
-      {
-        "concept": "halve",
-        "means": "Halve the entered number once.",
-        "terms": []
-      }
-    ],
-```
+=== NO OTHER CHANGES ===
+- Story `host` is unchanged: the given step "six is entered", the when step "halve twice" and the then step "one and a half is displayed" all keep their exact wording, and `status: DRAFT` is untouched.
+- Concepts "number ready" (given) and "number result" (then) are unchanged; their links at score 10 remain valid.
+- `roles`, `glossary` and `description` are unchanged.
 
-### After
+Expected effect: "halve twice" becomes a plain instance of the widened `halve` concept — an action of the right kind whose two-application variation the means now states — so the when step links above the threshold of 9, and all three AC-1 steps are bound.
 
-```json
-    "when": [
-      {
-        "concept": "halve",
-        "means": "Halve the entered number, either once or twice in succession; halving it more than twice is not admitted.",
-        "terms": []
-      }
-    ],
-```
-
-## Unaffected, preserved as-is
-
-- `given` concept `number ready` — unchanged (AC-1 given step links at 10).
-- `then` concept `number result` — unchanged (AC-1 then step links at 10).
-- Story `host` — no wording change; all three steps keep their current text.
-- `roles`, `glossary`, `description` — unchanged.
-
-## Expected effect
-
-AC-1 when step "halve twice" becomes a plain instance of the widened `halve` (the repeated application is now stated by the concept's prose rather than only by the Item description), so its score reaches the threshold of 9 and the judgement passes.
-
-## Status
-
-Not applied. Awaiting an explicit menu decision to apply.
+This proposal is not applied. Apply requires an explicit menu decision.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

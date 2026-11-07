@@ -2,17 +2,26 @@
 title: TrueBDD
 description:
   summary: 'TrueBDD rebuilds tests and code from the Host project’s Specification through checklists and the pipeline:
-    us refine, us apply, build tests, build steps, build code. A glossary means must be one paragraph of at most
+    us refine, us apply, build steps, build tests, build code. A glossary means must be one paragraph of at most
     three sentences, each at most 25 words. A sentence ends at a run of . ! or ? followed by Unicode whitespace
     or end of text; a remaining nonempty fragment counts. Words are nonempty Unicode-whitespace-separated fields;
     paths, hyphenated words and decimals remain single words. Blank lines separate paragraphs; ordinary line wrapping
     does not. Every product reader and command startup refuses violations, naming the term, sentence count, longest
     sentence’s word count, paragraph count and rule. Concepts’ means are exempt.
+    Story acceptance_criteria steps admit only given, when and then keys; and and but are modifiers inside their
+    statement lists, never step keys. Reading a Story refuses any other step key, naming it and its Acceptance
+    Criterion. A writer Story body that does not parse is a fix not taken: the Story stays unchanged and the
+    refusal reaches the next F as context.
     Body proposals and applications embed the Concept, binding, glossary entries, Word mappings, complete Public
     interface, definitions, patterns, captures and bound steps. They read Scenarios and fixtures from Registry paths,
     Scenario keys and fixture directories through confined tools, never service source. Binding judgements read the
-    complete product document by path, with steps, binding and Public interface embedded. Tool-less critiques embed
-    the semantic core, whole suite source and fixture contracts selected by source or bound captures.
+    complete product document by path, with steps, binding and Public interface embedded. The step-verification Checklist item follows step-coverage and asks whether each generated definition matches
+    its steps under its Concept and binding. Its tool-less Q embeds complete referenced source declarations and
+    dependencies, the semantic core, the architecture step_arguments section, referenced Public interface entries,
+    called runtime API declarations and distinct step forms with up to three complete examples each. It receives
+    no fixture file. A host-specific prerequisite belongs in its architecture binding. Its one F fixes only its
+    findings, proposing a pattern again when needed and writing the body for the new captures. Every apply rechecks
+    the same Q before restarting the checklist.
     Every Claude and Codex dispatch logs system and user UTF-8 bytes, including Codex assembly. Above
     engine.max_prompt_bytes in true-bdd.yaml, a positive integer defaulting to 150000, the walk stops before spawning
     with a distinct error naming turn, size and limit. No digests, compaction or truncation replace required evidence.'
@@ -30,7 +39,7 @@ roles:
   - Approves behaviour and concept changes at the fix menu.
 - name: System Architect
   definition: Owns services, Public interfaces, libraries and test execution.
-  primary_use_case: Runs build tests, build steps and build code.
+  primary_use_case: Runs build steps, build tests and build code.
   characteristics:
   - Repairs contracts rather than changing a Scenario to fit code.
 - name: Quality Engineer
@@ -101,11 +110,11 @@ glossary:
   means: A file created, modified or deleted during a command, compared with the prepared project tree before the
     command started.
 - term: checklist
-  means: The ordered Prompts a command reads from the project tree and asks about the Items it walks. Each command
-    selects its own checklist.
-- term: Prompt
-  means: 'One checklist question, answered by a model for Q: or engine code for D:, with rationale, reference documents
-    and optional fix guidance.'
+  means: The checklist items a command asks about its Items, in written order without skipping after a failure. Each command selects its own checklist.
+- term: Checklist item
+  means: One question Q, answered by a model through prompt or by engine code through code, and its optional fix F. It carries rationale, reference documents and parameters.
+- term: cannot-fix outcome
+  means: An F’s answer that it cannot repair what its Q found, giving its reason and what a person must correct. A problem its Q did not find is neither its work nor a reason for cannot-fix. A person who has not decided qualifies.
 - term: AI turn
   means: One request the engine sends through an AI CLI and waits on. Turns are counted by validation, fix or apply
     role.
@@ -113,7 +122,7 @@ glossary:
   means: 'The agent command-line program an AI turn uses: claude or codex. Configuration binds model tiers to a
     CLI and model.'
 - term: fix loop
-  means: Under --fix, a failed Prompt leads to clarification if needed, a proposed fix, and an apply, refine or
+  means: Under --fix, a failed Checklist item leads to clarification if needed, a proposed fix, and an apply, refine or
     exit menu. Every apply requires an answer from stdin. End of input stops an unanswered question or menu.
 - term: test dependencies
   means: Packages and tools the Host project’s tests need before starting, installed into the project tree by fixture
@@ -196,11 +205,11 @@ concepts:
         state before the run: the named fixture's files, copied fresh; with a
         stated file or directory left out; with a stated path made a symbolic
         link to a stated target; with a stated checklist narrowed to the one
-        Prompt whose question holds a stated text; or holding, put in place by
+        Checklist item whose question holds a stated text; or holding, put in place by
         the fixture, the probes of the engine's atomic replacement of a whole
         file through a staging file: a private file the engine will replace
         and the file a stale staging file will point at.
-      terms: [project tree, fixture, checklist, Prompt, symbolic link, engine, staging file, command]
+      terms: [project tree, fixture, checklist, Checklist item, symbolic link, engine, staging file, command]
     - concept: machine environment
       means: >-
         The machine the engine runs on is in a stated state before the run: the
@@ -215,11 +224,13 @@ concepts:
         fixture supplies, so the engine's handling of it can be observed:
         claude, checking how the engine starts it; codex as the writer of a
         command's changes, with the fixture's dummy authentication and programs,
-        or answering that the Public interface cannot serve a Concept; claude
-        giving malformed answers where a Prompt asks it to link steps to
+        or answering that the Public interface cannot serve a Concept,
+        or reusing a shipped helper on its first apply; claude
+        planting an unused pattern in only the first proposal and forwarding other turns; claude
+        giving malformed answers where a Checklist item asks it to link steps to
         a Concept or group them by Concept; or claude controlling which of two
         Scenarios' validation AI turns arrives first.
-      terms: [AI CLI, engine, fixture, claude, codex, command, Prompt, step, Concept, Scenario, AI turn, Public interface]
+      terms: [AI CLI, engine, fixture, claude, codex, command, Checklist item, step, Concept, Scenario, AI turn, Public interface]
     - concept: scripted answers
       means: >-
         What a role will answer at the command's questions and fix menus is set
@@ -288,7 +299,8 @@ concepts:
       means: >-
         What files of the project tree hold after the run, read by path or glob
         whatever they are, the engine's own log file among them: a stated file
-        has, or every file matching a glob has or has no, match for a pattern; a
+        has, or every file matching a glob has or has no, match for a pattern;
+        some file among two stated globs has a match for a pattern; a
         stated file holds a stated number of lines; the one file matching a glob
         holds a stated number of matches for a pattern; or a rewritten file
         keeps its private permissions and is a new file, its old hard link
@@ -296,7 +308,7 @@ concepts:
         criterion selection and lineage, step block and source order, and/but modifiers, Story embedding and Feature,
         Scenario key and fields, ordered lineage without merge_date, or question and fix verbatim from its checklist.
         A shipped Model scheme equals its declared file.
-      terms: [project tree, glob, pattern, file change, engine, hard link, Model, checklist, Prompt, Story, Feature, Acceptance Criterion, step, Scenario, Registry, lineage, Scenario key]
+      terms: [project tree, glob, pattern, file change, engine, hard link, Model, checklist, Checklist item, Story, Feature, Acceptance Criterion, step, Scenario, Registry, lineage, Scenario key]
     - concept: Story content
       means: >-
         The Story in a stated file of the project tree, read as a Story after
@@ -323,10 +335,10 @@ concepts:
         dispatched, by number, all of them or those of one kind
         (validation, fix or apply) sent to a stated AI CLI; that it logged its
         build identity once at start; or that it validated different Scenarios
-        at overlapping times, each Scenario's Prompts the engine answers itself
-        before those a model answers, and then showed their fix menus one at a
-        time in Scenario order.
-      terms: [engine, test runner, pattern, AI turn, AI CLI, log record, build identity, Scenario, Prompt, fix loop]
+        at overlapping times, each Scenario's checklist items in their written
+        order, and showed fix menus one at a time in Scenario order, with the
+        fixed Q checked again before restarting the checklist.
+      terms: [engine, test runner, pattern, AI turn, AI CLI, log record, build identity, Scenario, Checklist item, fix loop]
     - concept: after-run shell check
       means: >-
         Once the command has ended, a stated shell command run in a stated
@@ -343,8 +355,9 @@ concepts:
         What the AI CLIs the fixture supplies observed of the engine's calls,
         after the run: a process an AI CLI started before the run was cancelled
         has stopped; codex, as the writer of a command's changes, held the
-        fixture's dummy authentication privately for its AI turn, and it was
-        removed afterwards; or, when AI turns are answered from their
+        fixture's exact dummy authentication privately for its AI turn, in a
+        protected private home with no inherited files, with an empty edit root
+        and private shell scratch, and the authentication was removed afterwards; or, when AI turns are answered from their
         recordings, the AI CLI received the validation AI turn recorded second
         before the one recorded first.
       terms: [AI CLI, fixture, engine, AI turn, codex, command]

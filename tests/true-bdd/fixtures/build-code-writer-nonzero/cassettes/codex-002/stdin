@@ -2,6 +2,7 @@
 
 You are the production writer for a controlled lifecycle fixture. Follow the request's required stage exactly. Change only services/calc/, never tests or documents. Complete the changes during this turn and answer with nonempty prose only, without confirmation markers or a result file.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -21,112 +22,140 @@ Test: fixture/buildcodefix/tests/suite::TestB
 ## Proposed repair plan
 # Repair plan for failing-set
 
-## Diagnosis
+## Diagnosis (revised — the failure has changed shape)
 
-The set has **two distinct defects**, both in the single production file
-`services/calc/calc.go`. The first one masks the second.
+The previous iteration's premise no longer holds. The failing set is no longer two
+value mismatches; it is now a **compile failure of the production package**, which
+takes both tests down together:
 
-1. **Build break (blocks the whole suite).** Line 3 reads
-   `func A() int { return closureGlossary }`. The identifier
-   `closureGlossary` is not declared anywhere in `package calc`, in the
-   `fixture/buildcodefix` module, or in any import (the file has no import
-   block at all). The compiler therefore reports
-   `services/calc/calc.go:3:23: undefined: closureGlossary`, the package
-   fails to build, and `./tests/suite/...` fails to link. Because the test
-   binary never builds, **both** `TestA` and `TestB` are reported as
-   `did not run: no passing result of its own` — neither assertion was
-   even reached. This single line is the reason the harness shows one
-   shared failure group for both tests.
+```
+# fixture/buildcodefix/services/calc
+services/calc/calc.go:3:23: undefined: closureGlossary
+FAIL	fixture/buildcodefix/tests/suite [build failed]
+```
 
-2. **Wrong value in `B()`.** Line 4 reads `func B() int { return 0 }`,
-   but the suite asserts `calc.B() == 2`. Even after the build is fixed,
-   `TestB` would fail with `B needs two`.
+Current production source, `services/calc/calc.go` (4 lines):
 
-The suite is the specification and is read-only. `tests/suite/calc_test.go`
-imports `fixture/buildcodefix/services/calc` and calls the package as
-`calc.A()` and `calc.B()`; `go.mod` already declares
-`module fixture/buildcodefix`, so the import path, the package name
-(`package calc`), the file location and the two signatures
-(`func A() int`, `func B() int`) are all already correct and must be
-preserved exactly. Nothing outside `services/calc/calc.go` needs to
-change, and no new file, constant table, helper package or dependency is
-required.
+- line 1: `package calc`
+- line 3: `func A() int { return closureGlossary }` — `closureGlossary` is an
+  undeclared identifier. It is not declared in `calc.go`, in any other file of
+  the `services/calc` package (that package contains exactly one file), nor
+  anywhere else in the module `fixture/buildcodefix` (declared in `go.mod`).
+  It is not an import, a dot-imported name, or a builtin.
+- line 4: `func B() int { return 0 }`
 
-## Part 1 — Remove the undefined identifier and make `A()` yield the service's first constant
+Because `services/calc` fails to typecheck, the suite package
+`fixture/buildcodefix/tests/suite` cannot be linked, so `go test` reports
+`[build failed]` and neither `TestA` nor `TestB` executes — hence the
+"did not run: no passing result of its own" group covering both tests. The two
+reported tests therefore share one root cause for the *run* failure (broken
+build) plus two distinct, still-unsatisfied value requirements underneath it.
 
-File: `services/calc/calc.go` (inside the only declared edit root,
-`services/calc`).
+The specification is the suite, `tests/suite/calc_test.go`, which must not be
+touched. It imports the production package by module path
+`fixture/buildcodefix/services/calc` and asserts two independent facts:
 
-Intended behaviour: `A()` is an exported, zero-argument accessor that
-reports the service's first constant, which the suite fixes at `1`. The
-writer must eliminate the reference to the undefined `closureGlossary`
-so that `package calc` compiles, and have the function evaluate to `1`.
+- `TestA` (calc_test.go:8–12) calls `calc.A()` with no arguments and fails with
+  `A needs one` unless the result equals `1`.
+- `TestB` (calc_test.go:13–17) calls `calc.B()` with no arguments and fails with
+  `B needs two` unless the result equals `2`.
 
-Implementation guidance: return the integer value directly from the
-existing one-line body — the simplest correct form is a literal `1`
-(equivalently, a locally declared `const` in this same file whose value
-is `1`). Do **not** attempt to "define" `closureGlossary` as a stand-in
-name just to satisfy the compiler, and do not introduce an unrelated
-helper, interface, closure or extra file to hold it; the defect is a
-stray identifier with no meaning in this service, not a missing
-dependency. Keep the signature `func A() int`, keep it exported, keep the
-file in `package calc`, and do not add imports (an unused import would
-re-break the build).
+All required work lies inside the declared edit root `services/calc`. No test
+file, step definition, document, or undeclared path needs to change. Nothing is
+impossible here.
 
-Serves:
-- `/go-test/go-test:fixture.buildcodefix.tests.suite::TestA`
-  (`fixture/buildcodefix/tests/suite::TestA`) — asserts `calc.A() != 1`
-  fails with `A needs one`. This part is what makes the test run at all
-  **and** makes it pass.
-- Also a precondition for
-  `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB`: until the
-  package compiles, `TestB` cannot execute either, so Part 1 must land
-  for Part 2 to be observable.
+## Part 1 — Restore compilability of the `calc` package
 
-## Part 2 — Make `B()` yield the service's second constant
+**File:** `services/calc/calc.go` (the only file to modify, and the only file
+this repair needs).
 
-File: `services/calc/calc.go` (same file, line 4).
+**Contract:** the package must typecheck on its own. Concretely: the package
+clause stays `package calc`; every identifier referenced in a function body must
+be declared; and the package must export exactly the two symbols the suite
+names, `A` and `B`, each a no-argument function returning `int`.
 
-Intended behaviour: `B()` is an exported, zero-argument accessor that
-reports the service's second constant, which the suite fixes at `2`.
-Change only the yielded value so that `calc.B()` evaluates to `2`. Keep
-the signature `func B() int` and its export; do not merge it with `A()`,
-rename it, convert it to a variable or package-level constant with a
-different access shape, or give it parameters — the suite calls it as
-`calc.B()`.
+**Intended implementation:** eliminate the reference to the undeclared
+`closureGlossary` from `A`'s body. The correct direction is to **remove the
+dangling reference**, not to satisfy it: the identifier is a leftover with no
+meaning in this package's contract, and the suite says nothing about any such
+name. Specifically, do **not** repair the build by declaring a
+`closureGlossary` variable, constant, type, or function (in `calc.go` or in a new
+file) and then returning it — that would keep a meaningless indirection in
+production source and add surface no test in the set exercises. Replace the body
+expression with the specified value directly, as described in Part 2.
 
-Serves:
-- `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB`
-  (`fixture/buildcodefix/tests/suite::TestB`) — asserts `calc.B() != 2`
-  fails with `B needs two`.
+Also keep the file free of imports: neither function needs one, and an unused
+import is itself a compile error.
 
-## Constraints the writer must respect
+**Tests served:** both
+`/go-test/go-test:fixture.buildcodefix.tests.suite::TestA` and
+`/go-test/go-test:fixture.buildcodefix.tests.suite::TestB` — until the package
+builds, neither test can run at all, so this part is a precondition for both.
 
-- Edit only `services/calc/` — in practice only
-  `services/calc/calc.go`. Do not touch `tests/suite/calc_test.go` or any
-  `*_test.go`, `docs/architecture/architecture.yaml`, `true-bdd/`,
-  `go.mod` or `CLAUDE.md`. None of them require changes for this repair.
-- Do not weaken, skip, delete, reword or rewrite any assertion. The
-  failing comparisons in the suite are the specification; the production
-  values move to meet them, never the reverse.
-- Do not add build tags, `t.Skip`, stubs, fakes or test helpers, and do
-  not add a second package or file to work around the undefined symbol.
-- Leave `A()` and `B()` as two separate exported zero-argument functions
-  returning `int` on `package calc`.
-- The file must end up gofmt-clean, import-free and compiling.
-- Re-read `services/calc/calc.go` before editing: it has been modified by
-  a previous fix attempt, so the broken line is `return closureGlossary`,
-  not the original `return 0`, and `A()` must not be left returning `0`.
+## Part 2 — `A()` must yield the specified value `1`
+
+**File:** `services/calc/calc.go`
+
+**Contract:** `A` is an exported, no-argument function with a single `int`
+result, returning `1`. Preserve the exported name `A`, the empty parameter list
+and the `int` result type exactly — the suite calls `calc.A()` with no arguments
+and compares the result to an untyped integer constant, so any signature change
+breaks compilation of the suite instead of fixing it.
+
+**Intended implementation:** the body should yield the fixed value `1`
+directly. This is a specification constant, not a computation: introduce no
+parameters, no package-level mutable state, no configuration or environment
+lookup, no randomness, and no helper indirection to produce it. This is the edit
+that removes the `closureGlossary` reference identified in Part 1.
+
+**Tests served:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestA`
+(assertion `A needs one`).
+
+## Part 3 — `B()` must yield the specified value `2`
+
+**File:** `services/calc/calc.go`
+
+**Contract:** `B` is an exported, no-argument function with a single `int`
+result, returning `2`. As with `A`, preserve the exported name, the empty
+parameter list and the `int` result type.
+
+**Intended implementation:** change the body from its current `0` so it yields
+`2` directly. Keep `A` and `B` independent — do not express one in terms of the
+other (for example `B()` as `A() + 1`), and do not route both through a shared
+table or constant block, because the two tests assert two separate facts and
+coupling them would let a future change to one silently alter the other.
+
+**Tests served:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB`
+(assertion `B needs two`).
+
+## Scope and constraints for the writer
+
+- Edit only `services/calc/calc.go`. Do not add new files under
+  `services/calc` — three function-body-level facts are the entire repair, and a
+  second file would only create somewhere for a `closureGlossary` declaration to
+  hide.
+- Do not modify `tests/suite/calc_test.go` or any `*_test.go` file. Do not
+  weaken, invert, delete or skip any assertion; do not add build constraints,
+  `t.Skip`, `//go:build ignore`, or anything else that stops either test from
+  executing its comparison. Making the package compile must not come at the cost
+  of the tests not running.
+- Do not modify `docs/architecture/architecture.yaml`, `CLAUDE.md`,
+  `true-bdd/`, `templates/`, or `go.mod`. The module path `fixture/buildcodefix`
+  in `go.mod` is what makes the suite's import of
+  `fixture/buildcodefix/services/calc` resolve; leave it alone.
+- Keep `package calc` as the package clause, and add no imports.
 
 ## Verification
 
-Run the suite command from `docs/architecture/architecture.yaml`:
-`go test -json -count=1 ./tests/suite/...`.
+Run the suite command from the architecture's `architecture.testing.commands`
+entries: `go test -json -count=1 ./tests/suite/...` (record, replay and live are
+identical). Expected outcome:
 
-Expected outcome:
-- No `undefined: closureGlossary` and no `[build failed]` line for
-  `fixture/buildcodefix/services/calc`.
-- `TestA` and `TestB` both report `pass` (they must actually run, not be
-  absent).
-- No `A needs one` / `B needs two` output and no other test in the suite
-  regressing.
+1. No `# fixture/buildcodefix/services/calc` build diagnostic and no
+   `[build failed]` line — in particular no `undefined: closureGlossary`.
+2. `TestA` and `TestB` both actually execute (each produces its own `pass`
+   action in the JSON stream, rather than being reported as "did not run").
+3. Neither `A needs one` nor `B needs two` appears in the output.
+
+A build-clean run in which a test is absent from the results is **not** a pass
+for this set; both named tests must report a passing result of their own.

@@ -1,36 +1,28 @@
 package steps
 
 import (
-	"bytes"
 	"fmt"
-	"os/exec"
 	"strconv"
-	"strings"
+
+	"fixture/conceptbodiescapture/tests/calc/helpers"
 )
 
 //truebdd:concept when "halving"
 func concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {
-	const (
-		hostRoot    = "../.."
-		servicePath = "./services/calc"
-		commandName = "halve"
-	)
-	number := args[0]
-	if _, err := strconv.Atoi(number); err != nil {
-		return fmt.Errorf("halves step: %q is not a whole number: %w", number, err)
+	if len(args) < 1 {
+		return fmt.Errorf("the Owner halves: step needs the number capture, got %d captures", len(args))
 	}
-	cmd := exec.Command("go", "run", servicePath, commandName, number)
-	cmd.Dir = hostRoot
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("go run %s %s %s in %s: %w: %s", servicePath, commandName, number, hostRoot, err, strings.TrimSpace(stderr.String()))
-	}
-	result, err := strconv.Atoi(strings.TrimSpace(stdout.String()))
+	// args[0] is the step's whole number, minus sign and every digit included.
+	number, err := strconv.Atoi(args[0])
 	if err != nil {
-		return fmt.Errorf("%s %s stdout %q is not an integer: %w", commandName, number, stdout.String(), err)
+		return fmt.Errorf("the Owner halves: %q is not a whole number: %w", args[0], err)
 	}
-	state.Result = result
+	// The declared `halve` command runs as a process and alone decides the
+	// integer; the step only carries the number in and the printed result out.
+	halved, err := helpers.Halve(number)
+	if err != nil {
+		return err
+	}
+	state.Result = halved
 	return nil
 }

@@ -76,6 +76,9 @@ markers:
 === FILE_END: {{.ResultPath}} ===
 {{ end -}}
 {{ end -}}
-This host keeps a confirmation's summary unquoted: write it as plain text
+{{if .StepArguments}}
+## Step arguments
+
+{{.StepArguments}}{{end}}This host keeps a confirmation's summary unquoted: write it as plain text
 right after `summary: `, without quotation marks, and name each concept the
 fix adds or widens with its terms in the form `(terms: [...])`.

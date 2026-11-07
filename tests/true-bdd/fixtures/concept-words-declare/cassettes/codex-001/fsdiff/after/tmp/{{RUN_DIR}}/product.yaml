@@ -38,7 +38,7 @@
   "glossary": [
     {
       "term": "idempotency key",
-      "means": "The label a caller supplies with a request so that repeating the same request with the same label changes the number only once."
+      "means": "An idempotency key is the request label a caller sends together with a request. Requests that repeat the same key change the number only once."
     }
   ],
   "description": "A calculator accepts a number and a request label. Repeating a request with the same label changes the number only once.",

@@ -409,7 +409,7 @@ func TestSequentialWalker_FailNonFixModeContinues(t *testing.T) {
 	}
 
 	if calls != 3 {
-		t.Errorf("want 3 query calls, got %d", calls)
+		t.Errorf("want 4 query calls, got %d", calls)
 	}
 }
 
@@ -461,23 +461,21 @@ func TestSequentialWalker_FixRestartsFromZero(t *testing.T) {
 		t.Errorf("want 1 fix call, got %d", fixCalls)
 	}
 
-	if queryCalls != 3 { // first fail, then restart: pass, pass.
-		t.Errorf("want 3 query calls, got %d", queryCalls)
+	if queryCalls != 4 { // Failed Q, same Q after apply, then the checklist again.
+		t.Errorf("want 4 query calls, got %d", queryCalls)
 	}
 }
 
-// gatedWalk is a walker whose gate "d" fails until a fix bumps the item
-// to 2, recording which queries ran and which it skipped.
-type gatedWalk struct {
+// codeWalk records queries while its code Q fails until a fix raises the Item to 2.
+type codeWalk struct {
 	walker  *engine.SequentialWalker[int, string]
 	queried []string
-	skipped []string
 }
 
-func newGatedWalk(t *testing.T, fixMode bool) *gatedWalk {
+func newCodeWalk(t *testing.T, fixMode bool) *codeWalk {
 	t.Helper()
 
-	walk := &gatedWalk{}
+	walk := &codeWalk{}
 	handler := newHandler(t,
 		func(_ context.Context, item int, query string) (bool, error) {
 			walk.queried = append(walk.queried, query)
@@ -491,38 +489,34 @@ func newGatedWalk(t *testing.T, fixMode bool) *gatedWalk {
 		&stubUI{actionsScript: []engine.UserAction{engine.UserActionApply}}, fixMode,
 	)
 	walk.walker = &engine.SequentialWalker[int, string]{
-		Cell:   handler,
-		Gate:   func(query string) bool { return query == "d" },
-		OnSkip: func(_ int, query string) { walk.skipped = append(walk.skipped, query) },
+		Cell: handler,
 	}
 
 	return walk
 }
 
-// TestSequentialWalker_FailedGateSkipsOtherQueries pins ADR 0015's skip: a
-// failed gate spares the item's other queries, which are never queried.
-func TestSequentialWalker_FailedGateSkipsOtherQueries(t *testing.T) {
+// A failed code Q leaves every later Q in the walk.
+func TestSequentialWalker_FailedCodeDoesNotSkipOtherQueries(t *testing.T) {
 	t.Parallel()
 
-	walk := newGatedWalk(t, false)
+	walk := newCodeWalk(t, false)
 
 	out, err := walk.walker.Walk(context.Background(), 1, []string{"d", "q"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if out.Passed || len(walk.queried) != 1 || len(walk.skipped) != 1 || walk.skipped[0] != "q" {
-		t.Errorf("want d failed and q skipped; got passed=%v queried=%v skipped=%v",
-			out.Passed, walk.queried, walk.skipped)
+	if out.Passed || len(walk.queried) != 2 {
+		t.Errorf("want d failed and q queried; got passed=%v queried=%v",
+			out.Passed, walk.queried)
 	}
 }
 
-// TestSequentialWalker_FixLiftsTheGateSkip proves the fix that restarts
-// the item lifts the skip: the gate re-runs, passes, and q runs after it.
-func TestSequentialWalker_FixLiftsTheGateSkip(t *testing.T) {
+// A fixed code Q is rechecked before the whole checklist starts again.
+func TestSequentialWalker_RechecksFixedCodeBeforeRestart(t *testing.T) {
 	t.Parallel()
 
-	walk := newGatedWalk(t, true)
+	walk := newCodeWalk(t, true)
 
 	out, err := walk.walker.Walk(context.Background(), 1, []string{"d", "q"})
 	if err != nil {
@@ -530,12 +524,12 @@ func TestSequentialWalker_FixLiftsTheGateSkip(t *testing.T) {
 	}
 
 	if !out.Passed || !out.FixApplied {
-		t.Errorf("want passed after the gate's fix, got %+v", out)
+		t.Errorf("want passed after the code Q's fix, got %+v", out)
 	}
 
-	if len(walk.skipped) != 0 || strings.Join(walk.queried, ",") != "d,d,q" {
-		t.Errorf("want d (failed, fixed), d, q queried and nothing skipped; got queried=%v skipped=%v",
-			walk.queried, walk.skipped)
+	if strings.Join(walk.queried, ",") != "d,d,d,q" {
+		t.Errorf("want d (failed, fixed), d rechecked, then d, q queried and nothing skipped; got queried=%v",
+			walk.queried)
 	}
 }
 
@@ -763,9 +757,8 @@ func TestSequentialWalker_StopsWhenFixesNeverConverge(t *testing.T) {
 		t.Fatalf("Walk() error = %v, want ErrFixLoopStuck", err)
 	}
 
-	// Budget of 2 plus the one that trips the guard.
-	if fixCalls != 3 {
-		t.Errorf("want 3 fix calls (MaxFixes+1), got %d", fixCalls)
+	if fixCalls != 2 {
+		t.Errorf("want 2 fix calls (MaxFixes), got %d", fixCalls)
 	}
 }
 
@@ -868,7 +861,9 @@ func TestEngine_WholeSuiteFindingsUseTheSameAttemptBound(t *testing.T) {
 		t.Run(example.name, func(t *testing.T) {
 			t.Parallel()
 
-			walker := &stubWalker[int, string]{runs: []engine.ItemRun[int]{{Item: 1, Passed: true, FixApplied: true}}}
+			walker := &stubWalker[int, string]{runs: []engine.ItemRun[int]{
+				{Item: 1, Passed: true, FixApplied: true}, {Item: 1, Passed: true},
+			}}
 			eng := engine.New[int, string, string](
 				func(_ int, prompt string) string { return prompt }, walker, engine.Options{MaxApplyAttempts: 2})
 			checks := 0
@@ -891,5 +886,21 @@ func TestEngine_WholeSuiteFindingsUseTheSameAttemptBound(t *testing.T) {
 				t.Fatalf("result=%+v, checks=%d, walks=%d", result, checks, walker.calls)
 			}
 		})
+	}
+}
+
+func TestEngineConvergenceDoesNotSkipTheWalkAfterAFix(t *testing.T) {
+	t.Parallel()
+
+	walker := &stubWalker[int, string]{runs: []engine.ItemRun[int]{
+		{Item: 1, Passed: true, FixApplied: true}, {Item: 1, Passed: true},
+	}}
+	eng := engine.New[int, string, string](func(_ int, prompt string) string { return prompt },
+		walker, engine.Options{MaxApplyAttempts: 3})
+	eng.CheckConvergence = func(context.Context, []int) (bool, error) { return true, nil }
+
+	result, err := eng.Run(t.Context(), []int{1}, []string{"pattern", "coverage", "verification"})
+	if err != nil || result.Reason != engine.Converged || walker.calls != 2 {
+		t.Fatalf("result=%+v, error=%v, walks=%d; an apply requires another whole walk", result, err, walker.calls)
 	}
 }

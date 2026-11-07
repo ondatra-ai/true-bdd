@@ -1,6 +1,6 @@
 # Roadmap
 
-> Interactive companion: [`roadmap.html`](./roadmap.html) — same content, with the pipeline drawn out; open it in a browser.
+> Historical whiteboard companion: [`roadmap.html`](./roadmap.html) — the original board, before the pipeline order of ADR-0040.
 >
 > Transcribed from the **"Idea"** whiteboard as it stood on 2026-08-21. This file is now the
 > source.
@@ -11,56 +11,30 @@ The whole product, stated as what a person does rather than what the engine does
 
 1. **I have Idea**
 2. **I create user story with all artifacts and scenarios**
-3. **I build tests**
-4. **I build code**
-5. **It works**
+3. **I build steps**
+4. **I build tests**
+5. **I build code**
+6. **It works**
 
 Every milestone below is a step toward making that list run end to end without a person
 writing the middle of it.
 
 ## The pipeline
 
-Steps 2–4 of the list are three commands, each reading documents and writing exactly one
-thing. Boxed names are commands; everything else is a document on disk.
+The order is `us refine`, `us apply`, `build steps`, `build tests`, `build code` (ADR-0040). The Specification supplies every command's evidence; each command writes its own artifact.
 
-```text
-                        prd.yaml
-                        scenarios.yaml
-
-                        user_story.yaml
-                              │
-                        ┌─────┴─────┐
-                        │  Us Apply │
-                        └─────┬─────┘
-                              │
-                              ▼
-              scenarios.yaml        docs/architecture/architecture.yaml
-                        │                          │
-                        └────────────┬─────────────┘
-                                     ▼
-                             ┌──────────────┐
-                             │  Build Tests │
-                             └──────┬───────┘
-                                    ▼
-                                  tests        docs/architecture/architecture.yaml
-                                    │                          │
-                                    └────────────┬─────────────┘
-                                                 ▼
-                                         ┌──────────────┐
-                                         │  Build Code  │
-                                         └──────┬───────┘
-                                                ▼
-                                               code
+```mermaid
+flowchart LR
+  STORY[Story] -->|us refine, us apply| REG[Registry]
+  REG -->|build steps| STEPS[Steps package]
+  STEPS -->|build tests| TESTS[Scenario tests and main_test.go]
+  TESTS -->|build code: red first when no source| CODE[Service code]
+  SPEC[Product and architecture documents] -.-> STEPS
+  SPEC -.-> TESTS
+  SPEC -.-> CODE
 ```
 
-Two things the shape is saying:
-
-- **`architecture.yaml` is read twice, by two different commands.** It is not consumed and
-  discarded at the top of the pipeline — both `build tests` and `build code` join against it,
-  which is why it is drawn as an input to each rather than as a document that flows downward.
-- **Each command has exactly one output.** `us apply` writes the registry, `build tests`
-  writes tests, `build code` writes code. Nothing writes two things, and nothing writes
-  backwards.
+`build steps` writes and checks the Steps package before any test exists. `build tests` renders the tests and their main file in one deterministic pass, refusing without that package and holding the two host folder checks. `build code` lists and runs the Go suite first when a service has no source: every Scenario of that service must fail at an executed definition. A green Scenario stops it distinctly, naming the Scenario; with code present, it proceeds to the Failing set. The repository's generated-suite gate runs `build tests` without `--fix`, and its fixture gate holds the two repository fixture contracts.
 
 ## What `build` means
 

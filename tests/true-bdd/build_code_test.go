@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // build-code-commands-001-unknown-framework-refused: A test framework the engine cannot run must be refused, naming the framework, before any test runner is spawned
 func TestBuildCodeCommands001UnknownFrameworkRefused(t *testing.T) {
-	s := scenarios.New(t, "build-code-commands-001-unknown-framework-refused")
+	s := New(t, "build-code-commands-001-unknown-framework-refused")
 	s.Given(`the "build-code-unknown-framework" project tree`)
 	s.When(`the System Architect runs "build code"`)
 	s.Then(`the command exits with code 1`)
@@ -39,7 +37,7 @@ func TestBuildCodeCommands001UnknownFrameworkRefused(t *testing.T) {
 
 // build-code-commands-002-empty-program-refused: A suite command that is present but names no program must be refused
 func TestBuildCodeCommands002EmptyProgramRefused(t *testing.T) {
-	s := scenarios.New(t, "build-code-commands-002-empty-program-refused")
+	s := New(t, "build-code-commands-002-empty-program-refused")
 	s.Given(`the "build-code-empty-command" project tree`)
 	s.When(`the System Architect runs "build code"`)
 	s.Then(`the command exits with code 1`)
@@ -54,7 +52,7 @@ func TestBuildCodeCommands002EmptyProgramRefused(t *testing.T) {
 
 // build-code-commands-003-unclosed-quote-refused: A suite command whose quoting never closes must be refused, not guessed
 func TestBuildCodeCommands003UnclosedQuoteRefused(t *testing.T) {
-	s := scenarios.New(t, "build-code-commands-003-unclosed-quote-refused")
+	s := New(t, "build-code-commands-003-unclosed-quote-refused")
 	s.Given(`the "build-code-unterminated-quote" project tree`)
 	s.When(`the System Architect runs "build code"`)
 	s.Then(`the command exits with code 1`)
@@ -69,7 +67,7 @@ func TestBuildCodeCommands003UnclosedQuoteRefused(t *testing.T) {
 
 // build-code-commands-004-not-machine-readable-refused: A suite command that runs but never asks for machine-readable output must be refused, naming the flag it is missing
 func TestBuildCodeCommands004NotMachineReadableRefused(t *testing.T) {
-	s := scenarios.New(t, "build-code-commands-004-not-machine-readable-refused")
+	s := New(t, "build-code-commands-004-not-machine-readable-refused")
 	s.Given(`the "build-code-command-not-machine-readable" project tree`)
 	s.When(`the System Architect runs "build code"`)
 	s.Then(`the command exits with code 1`)
@@ -85,7 +83,7 @@ func TestBuildCodeCommands004NotMachineReadableRefused(t *testing.T) {
 
 // build-code-commands-005-jest-without-json-refused: A Jest suite command that never asks for machine-readable output must be refused, naming the --json flag it is missing, before any test runner is spawned
 func TestBuildCodeCommands005JestWithoutJsonRefused(t *testing.T) {
-	s := scenarios.New(t, "build-code-commands-005-jest-without-json-refused")
+	s := New(t, "build-code-commands-005-jest-without-json-refused")
 	s.Given(`the "build-code-jest-command-not-machine-readable" project tree`)
 	s.When(`the System Architect runs "build code"`)
 	s.Then(`the command exits with code 1`)
@@ -100,7 +98,7 @@ func TestBuildCodeCommands005JestWithoutJsonRefused(t *testing.T) {
 
 // build-code-frameworks-001-jest-failing-test-exits-1: A Jest suite with one failing test must end `build code` with exit code 1, counting that one failure and naming the test by its spec file and full name
 func TestBuildCodeFrameworks001JestFailingTestExits1(t *testing.T) {
-	s := scenarios.New(t, "build-code-frameworks-001-jest-failing-test-exits-1")
+	s := New(t, "build-code-frameworks-001-jest-failing-test-exits-1")
 	s.Given(`the "build-code-jest-failing-test" project tree`)
 	s.And(`the project's test dependencies are installed`)
 	s.When(`the System Architect runs "build code"`)
@@ -119,7 +117,7 @@ func TestBuildCodeFrameworks001JestFailingTestExits1(t *testing.T) {
 
 // build-code-frameworks-002-jest-fix-reruns-test-by-name: For a Jest failure with one declared service, `build code --fix` must name that service without Registry content in its fix prompt, re-run the fixed test by its full name through --testNamePattern, and exit with code 0 once it passes
 func TestBuildCodeFrameworks002JestFixRerunsTestByName(t *testing.T) {
-	s := scenarios.New(t, "build-code-frameworks-002-jest-fix-reruns-test-by-name")
+	s := New(t, "build-code-frameworks-002-jest-fix-reruns-test-by-name")
 	s.Given(`the "build-code-jest-fix-named-test" project tree`)
 	s.And(`the project's test dependencies are installed`)
 	s.And(`the System Architect's answer to every question is "1"`)
@@ -143,7 +141,7 @@ func TestBuildCodeFrameworks002JestFixRerunsTestByName(t *testing.T) {
 
 // build-code-frameworks-003-playwright-fix-reruns-test-by-grep: After a fix is applied to a Playwright suite whose app started and one assertion failed, `build code --fix` must re-run only that test, selected by its title through --grep, and end with exit code 0 once it passes
 func TestBuildCodeFrameworks003PlaywrightFixRerunsTestByGrep(t *testing.T) {
-	s := scenarios.New(t, "build-code-frameworks-003-playwright-fix-reruns-test-by-grep")
+	s := New(t, "build-code-frameworks-003-playwright-fix-reruns-test-by-grep")
 	s.Given(`the "build-code-playwright-failing-assertion" project tree`)
 	s.And(`the project's browser test dependencies are installed`)
 	s.And(`the System Architect's answer to every question is "1"`)
@@ -165,7 +163,7 @@ func TestBuildCodeFrameworks003PlaywrightFixRerunsTestByGrep(t *testing.T) {
 
 // build-code-frameworks-004-go-package-not-compiling-rerun-unfiltered: A Go test package that does not compile must count as one failing test, and after a fix `build code --fix` must re-run that package's tests without a name filter and end with exit code 0 once they pass
 func TestBuildCodeFrameworks004GoPackageNotCompilingRerunUnfiltered(t *testing.T) {
-	s := scenarios.New(t, "build-code-frameworks-004-go-package-not-compiling-rerun-unfiltered")
+	s := New(t, "build-code-frameworks-004-go-package-not-compiling-rerun-unfiltered")
 	s.Given(`the "build-code-go-package-does-not-compile" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -186,7 +184,7 @@ func TestBuildCodeFrameworks004GoPackageNotCompilingRerunUnfiltered(t *testing.T
 
 // build-code-frameworks-005-not-applied-revalidated: A completed apply turn reporting applied false while its Go test still fails must keep its files and revalidate that test before another repair completes the walk
 func TestBuildCodeFrameworks005NotAppliedRevalidated(t *testing.T) {
-	s := scenarios.New(t, "build-code-frameworks-005-not-applied-revalidated")
+	s := New(t, "build-code-frameworks-005-not-applied-revalidated")
 	s.Given(`the "build-code-not-applied" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -205,30 +203,59 @@ func TestBuildCodeFrameworks005NotAppliedRevalidated(t *testing.T) {
 	s.Done()
 }
 
-// build-code-frameworks-006-not-applied-hits-fix-bound: Not-applied turns in build code --fix must consume the configured per-set fix allowance and stop at the unchanged non-converging fix bound
+// build-code-frameworks-006-not-applied-hits-fix-bound: Not-applied turns in build code --fix must consume the configured per-set fix allowance and stop after the last allowed apply at the non-converging fix bound
 func TestBuildCodeFrameworks006NotAppliedHitsFixBound(t *testing.T) {
-	s := scenarios.New(t, "build-code-frameworks-006-not-applied-hits-fix-bound")
+	s := New(t, "build-code-frameworks-006-not-applied-hits-fix-bound")
 	s.Given(`the "build-code-not-applied-bound" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 1`)
 	s.But(`stdout does not match BUILD CODE COMPLETE`)
 	s.And(`stdout matches level=WARN msg="Fix was NOT applied"`)
-	s.And(`stdout matches level=ERROR msg="Walk stopped".*gave up after 3 applied fix`)
+	s.And(`stdout matches level=ERROR msg="Walk stopped".*gave up after 2 applied fix`)
 	s.And(`the engine dispatched no validation AI turns to "claude"`)
-	s.And(`the engine dispatched 3 fix AI turns to "claude"`)
-	s.And(`the engine dispatched 3 apply AI turns to "codex"`)
-	s.And(`the engine dispatched 6 AI turns`)
-	s.And(`the engine spawned exactly 4 test runners`)
+	s.And(`the engine dispatched 2 fix AI turns to "claude"`)
+	s.And(`the engine dispatched 2 apply AI turns to "codex"`)
+	s.And(`the engine dispatched 4 AI turns`)
+	s.And(`the engine spawned exactly 3 test runners`)
 	s.And(`the file "services/calc/prepared-first.txt" matches ^prepared`)
 	s.And(`the file "services/calc/prepared-second.txt" matches ^prepared`)
 	s.But(`the file "tests/suite/calc_test.go" is unchanged`)
 	s.Done()
 }
 
+// build-code-red-001-executed-definition: With no source build code lists every Scenario and accepts an executed definition failure as red
+func TestBuildCodeRed001ExecutedDefinition(t *testing.T) {
+	s := New(t, "build-code-red-001-executed-definition")
+	s.Given(`the "build-code-no-code-red" project tree`)
+	s.When(`the System Architect runs "build code"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches Scenario list passed`)
+	s.And(`stdout matches Scenario red without target.*scenario=calc-001-double`)
+	s.And(`stdout matches Red without target passed.*scenarios=1`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`the engine spawned exactly 1 test runner with arguments matching -list \.`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// build-code-red-002-existing-source: With partly written source build code skips Red without the target and accepts green discovery
+func TestBuildCodeRed002ExistingSource(t *testing.T) {
+	s := New(t, "build-code-red-002-existing-source")
+	s.Given(`the "build-code-existing-source" project tree`)
+	s.When(`the System Architect runs "build code"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.And(`stdout does not match Red without target`)
+	s.And(`the engine spawned exactly 0 test runners with arguments matching -list`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
 // build-code-run-001-runs-declared-replay-command: `build code` must run the command its architectural spec declares — and specifically the `replay` one
 func TestBuildCodeRun001RunsDeclaredReplayCommand(t *testing.T) {
-	s := scenarios.New(t, "build-code-run-001-runs-declared-replay-command")
+	s := New(t, "build-code-run-001-runs-declared-replay-command")
 	s.Given(`the "build-code-commands-from-spec" project tree`)
 	s.When(`the System Architect runs "build code"`)
 	s.Then(`the command exits with code 0`)
@@ -246,7 +273,7 @@ func TestBuildCodeRun001RunsDeclaredReplayCommand(t *testing.T) {
 
 // build-code-run-002-unstartable-runner-exits-1: A suite command the architecture declares whose program the machine cannot start must end the run with exit code 1 and name that program on stdout
 func TestBuildCodeRun002UnstartableRunnerExits1(t *testing.T) {
-	s := scenarios.New(t, "build-code-run-002-unstartable-runner-exits-1")
+	s := New(t, "build-code-run-002-unstartable-runner-exits-1")
 	s.Given(`the "build-code-command-not-executable" project tree`)
 	s.When(`the System Architect runs "build code"`)
 	s.Then(`the command exits with code 1`)
@@ -262,7 +289,7 @@ func TestBuildCodeRun002UnstartableRunnerExits1(t *testing.T) {
 
 // build-code-run-003-failing-test-exits-1: A walk that ends with a test still failing must exit non-zero
 func TestBuildCodeRun003FailingTestExits1(t *testing.T) {
-	s := scenarios.New(t, "build-code-run-003-failing-test-exits-1")
+	s := New(t, "build-code-run-003-failing-test-exits-1")
 	s.Given(`the "build-code-nonconvergence" project tree`)
 	s.When(`the System Architect runs "build code"`)
 	s.Then(`the command exits with code 1`)
@@ -279,7 +306,7 @@ func TestBuildCodeRun003FailingTestExits1(t *testing.T) {
 
 // build-code-run-004-fix-reruns-fixed-test: After a fix is applied, build code reruns the failing set in one selection before fresh outer discovery
 func TestBuildCodeRun004FixRerunsFixedTest(t *testing.T) {
-	s := scenarios.New(t, "build-code-run-004-fix-reruns-fixed-test")
+	s := New(t, "build-code-run-004-fix-reruns-fixed-test")
 	s.Given(`the "build-code-fix-named-test" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -302,7 +329,7 @@ func TestBuildCodeRun004FixRerunsFixedTest(t *testing.T) {
 
 // build-code-run-005-playwright-fix-loop-converges: A Playwright suite whose app does not exist yet must drive the fix loop until the browser assertion passes
 func TestBuildCodeRun005PlaywrightFixLoopConverges(t *testing.T) {
-	s := scenarios.New(t, "build-code-run-005-playwright-fix-loop-converges")
+	s := New(t, "build-code-run-005-playwright-fix-loop-converges")
 	s.Given(`the "build-code-playwright-nextjs" project tree`)
 	s.And(`the project's browser test dependencies are installed`)
 	s.And(`the System Architect's answer to every question is "1"`)
@@ -324,7 +351,7 @@ func TestBuildCodeRun005PlaywrightFixLoopConverges(t *testing.T) {
 
 // build-code-run-006-shared-fix-skips-green-peer: Two failing tests receive one plan and one writer for both, with one selected rerun and no validation turn
 func TestBuildCodeRun006SharedFixSkipsGreenPeer(t *testing.T) {
-	s := scenarios.New(t, "build-code-run-006-shared-fix-skips-green-peer")
+	s := New(t, "build-code-run-006-shared-fix-skips-green-peer")
 	s.Given(`the "build-code-shared-fix" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -350,7 +377,7 @@ func TestBuildCodeRun006SharedFixSkipsGreenPeer(t *testing.T) {
 
 // build-code-run-007-next-walk-finds-regression: A repair that breaks a test passing at discovery must cause the next suite run to discover and repair that regression before the command exits successfully
 func TestBuildCodeRun007NextWalkFindsRegression(t *testing.T) {
-	s := scenarios.New(t, "build-code-run-007-next-walk-finds-regression")
+	s := New(t, "build-code-run-007-next-walk-finds-regression")
 	s.Given(`the "build-code-cross-walk" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -370,7 +397,7 @@ func TestBuildCodeRun007NextWalkFindsRegression(t *testing.T) {
 
 // build-code-spec-001-malformed-spec-refused: A spec the loader cannot decode must be refused with the file named
 func TestBuildCodeSpec001MalformedSpecRefused(t *testing.T) {
-	s := scenarios.New(t, "build-code-spec-001-malformed-spec-refused")
+	s := New(t, "build-code-spec-001-malformed-spec-refused")
 	s.Given(`the "build-code-malformed-spec" project tree`)
 	s.When(`the System Architect runs "build code"`)
 	s.Then(`the command exits with code 1`)
@@ -386,7 +413,7 @@ func TestBuildCodeSpec001MalformedSpecRefused(t *testing.T) {
 
 // build-code-spec-002-no-services-refused: An architectural spec that declares no services at all must be refused, not walked to a trivial success
 func TestBuildCodeSpec002NoServicesRefused(t *testing.T) {
-	s := scenarios.New(t, "build-code-spec-002-no-services-refused")
+	s := New(t, "build-code-spec-002-no-services-refused")
 	s.Given(`the "build-code-no-services" project tree`)
 	s.When(`the System Architect runs "build code"`)
 	s.Then(`the command exits with code 1`)
@@ -400,7 +427,7 @@ func TestBuildCodeSpec002NoServicesRefused(t *testing.T) {
 
 // build-code-spec-003-no-test-suite-refused: An architectural spec that never says how its tests run must be refused, not walked to a trivial success
 func TestBuildCodeSpec003NoTestSuiteRefused(t *testing.T) {
-	s := scenarios.New(t, "build-code-spec-003-no-test-suite-refused")
+	s := New(t, "build-code-spec-003-no-test-suite-refused")
 	s.Given(`the "build-code-no-suites" project tree`)
 	s.When(`the System Architect runs "build code"`)
 	s.Then(`the command exits with code 1`)
@@ -414,7 +441,7 @@ func TestBuildCodeSpec003NoTestSuiteRefused(t *testing.T) {
 
 // build-code-spec-004-no-replay-command-refused: A test suite that does not say how to run itself must be refused, not run some other way
 func TestBuildCodeSpec004NoReplayCommandRefused(t *testing.T) {
-	s := scenarios.New(t, "build-code-spec-004-no-replay-command-refused")
+	s := New(t, "build-code-spec-004-no-replay-command-refused")
 	s.Given(`the "build-code-missing-suite-command" project tree`)
 	s.When(`the System Architect runs "build code"`)
 	s.Then(`the command exits with code 1`)
@@ -429,7 +456,7 @@ func TestBuildCodeSpec004NoReplayCommandRefused(t *testing.T) {
 
 // build-code-spec-005-matched-scenario-embedded: A failing generated Go test must hand both fix turns its Scenario and the concept meanings of its steps
 func TestBuildCodeSpec005MatchedScenarioEmbedded(t *testing.T) {
-	s := scenarios.New(t, "build-code-spec-005-matched-scenario-embedded")
+	s := New(t, "build-code-spec-005-matched-scenario-embedded")
 	s.Given(`the "build-code-spec-scenario" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -460,7 +487,7 @@ func TestBuildCodeSpec005MatchedScenarioEmbedded(t *testing.T) {
 
 // build-code-spec-006-unreadable-product-warned: A declared product document that cannot be read must be warned about while the fix still repairs the failing test
 func TestBuildCodeSpec006UnreadableProductWarned(t *testing.T) {
-	s := scenarios.New(t, "build-code-spec-006-unreadable-product-warned")
+	s := New(t, "build-code-spec-006-unreadable-product-warned")
 	s.Given(`the "build-code-spec-missing-product" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -478,7 +505,7 @@ func TestBuildCodeSpec006UnreadableProductWarned(t *testing.T) {
 
 // build-code-spec-007-unreadable-registry-warned: A declared Registry that cannot be read must be warned about while the fix uses the only declared service
 func TestBuildCodeSpec007UnreadableRegistryWarned(t *testing.T) {
-	s := scenarios.New(t, "build-code-spec-007-unreadable-registry-warned")
+	s := New(t, "build-code-spec-007-unreadable-registry-warned")
 	s.Given(`the "build-code-spec-missing-registry" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -496,7 +523,7 @@ func TestBuildCodeSpec007UnreadableRegistryWarned(t *testing.T) {
 
 // build-code-spec-008-linked-concepts-embedded: On a concept host both fix turns must embed each concept the failing Scenarios link to, with its meaning, its words and its binding, and no concept they do not link
 func TestBuildCodeSpec008LinkedConceptsEmbedded(t *testing.T) {
-	s := scenarios.New(t, "build-code-spec-008-linked-concepts-embedded")
+	s := New(t, "build-code-spec-008-linked-concepts-embedded")
 	s.Given(`the "build-code-spec-concepts" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -529,15 +556,45 @@ func TestBuildCodeSpec008LinkedConceptsEmbedded(t *testing.T) {
 	s.Done()
 }
 
+// build-steps-writing-006-bringup-is-not-red: build code refuses a bring-up failure as Red without the target
+func TestBuildStepsWriting006BringupIsNotRed(t *testing.T) {
+	s := New(t, "build-steps-writing-006-bringup-is-not-red")
+	s.Given(`the "build-steps-bringup" project tree`)
+	s.When(`the System Architect runs "build code"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches Red without target check failed`)
+	s.And(`stderr matches red without target check failed.*calc-001-double`)
+	s.And(`stdout does not match BUILD CODE COMPLETE`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// build-steps-writing-007-green-body-repaired: build code stops on a green Scenario without service code and offers no fix
+func TestBuildStepsWriting007GreenBodyRepaired(t *testing.T) {
+	s := New(t, "build-steps-writing-007-green-body-repaired")
+	s.Given(`the "build-steps-green" project tree`)
+	s.When(`the System Architect runs "build code"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches Scenario list passed`)
+	s.And(`stdout matches Scenario green without target.*calc-001-double`)
+	s.And(`stderr matches scenario green without target.*calc-001-double`)
+	s.And(`stdout does not match BUILD CODE COMPLETE`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`the engine spawned exactly 1 test runner with arguments matching -list \.`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
 // engine-config-005-checklist-tiers-unconfigured-refused: A `--fix` run must be refused at startup, before it runs the suite or any AI turn, when the tiers its checklist's `engine:` block names for the fix and apply turns are not configured under `engine.models`, naming each turn, its tier and the tiers the table does configure
 func TestEngineConfig005ChecklistTiersUnconfiguredRefused(t *testing.T) {
-	s := scenarios.New(t, "engine-config-005-checklist-tiers-unconfigured-refused")
+	s := New(t, "engine-config-005-checklist-tiers-unconfigured-refused")
 	s.Given(`the "build-code-fix-tiers-unconfigured" project tree`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build code"`)
-	s.And(`stdout matches build-code/test-passes #1 D: tests-pass: fix turn: model tier is not configured under engine\.models: \\"high\\" \(configured: xhigh, quick\)`)
-	s.And(`stdout matches build-code/test-passes #1 D: tests-pass: apply turn: model tier is not configured under engine\.models: \\"coder\\" \(configured: xhigh, quick\)`)
+	s.And(`stdout matches build-code/test-passes #1 Q code: tests-pass: fix turn: model tier is not configured under engine\.models: \\"high\\" \(configured: xhigh, quick\)`)
+	s.And(`stdout matches build-code/test-passes #1 Q code: tests-pass: apply turn: model tier is not configured under engine\.models: \\"coder\\" \(configured: xhigh, quick\)`)
 	s.But(`no file outside "tmp" changed`)
 	s.And(`the engine spawned no test runner`)
 	s.And(`the engine dispatched no AI turns`)
@@ -546,7 +603,7 @@ func TestEngineConfig005ChecklistTiersUnconfiguredRefused(t *testing.T) {
 
 // engine-documents-002-missing-architecture-flag-refused: `build code --architecture` naming a file that does not exist must be refused before it starts a test runner, naming that file, even where the architectural spec `true-bdd.yaml` names exists
 func TestEngineDocuments002MissingArchitectureFlagRefused(t *testing.T) {
-	s := scenarios.New(t, "engine-documents-002-missing-architecture-flag-refused")
+	s := New(t, "engine-documents-002-missing-architecture-flag-refused")
 	s.Given(`the "build-code-missing-architecture-flag" project tree`)
 	s.When(`the System Architect runs "build code --architecture docs/architecture/absent.yaml"`)
 	s.Then(`the command exits with code 1`)
@@ -560,7 +617,7 @@ func TestEngineDocuments002MissingArchitectureFlagRefused(t *testing.T) {
 
 // engine-documents-006-directory-document-refused: A document path declared in `true-bdd.yaml` that names a directory must be refused at startup, naming the path, rather than read as the file inside it
 func TestEngineDocuments006DirectoryDocumentRefused(t *testing.T) {
-	s := scenarios.New(t, "engine-documents-006-directory-document-refused")
+	s := New(t, "engine-documents-006-directory-document-refused")
 	s.Given(`the "build-code-directory-architecture" project tree`)
 	s.When(`the System Architect runs "build code"`)
 	s.Then(`the command exits with code 1`)
@@ -575,7 +632,7 @@ func TestEngineDocuments006DirectoryDocumentRefused(t *testing.T) {
 
 // engine-routes-001-codex-sandbox-per-turn: `build code --fix` with every tier naming codex sends the plan turn to its read-only sandbox and the writer to its confined profile with replay forms, without a validation turn
 func TestEngineRoutes001CodexSandboxPerTurn(t *testing.T) {
-	s := scenarios.New(t, "engine-routes-001-codex-sandbox-per-turn")
+	s := New(t, "engine-routes-001-codex-sandbox-per-turn")
 	s.Given(`the "build-code-fix-by-codex" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)

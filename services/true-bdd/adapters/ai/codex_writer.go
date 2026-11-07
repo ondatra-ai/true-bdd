@@ -157,6 +157,7 @@ func codexCommandEnvironment(temporary string, paths map[string]string) map[stri
 	return map[string]string{
 		"PATH": filepath.Join(paths["GOROOT"], "bin") + ":/usr/bin:/bin:/usr/sbin:/sbin",
 		"HOME": filepath.Join(temporary, "codex-shell-home"), "TMPDIR": filepath.Join(temporary, "codex-tmp"),
+		"TMPPREFIX": filepath.Join(temporary, "codex-tmp", "zsh"),
 		codexCacheEnv: filepath.Join(temporary, "codex-go-build"), "GOROOT": paths["GOROOT"],
 		"GOMODCACHE": paths["GOMODCACHE"], "GOPROXY": codexDisabled, "GOSUMDB": codexDisabled, "GOTOOLCHAIN": "local",
 		"GOFLAGS": "-trimpath -buildvcs=false", "GOTELEMETRY": codexDisabled, "CGO_ENABLED": "0",

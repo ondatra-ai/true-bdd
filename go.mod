@@ -13,6 +13,9 @@ require (
 	github.com/spf13/pflag v1.0.6 // indirect
 )
 
-require github.com/ondatra-ai/true-bdd/pkg v0.0.0
+require (
+	github.com/ondatra-ai/true-bdd/pkg v0.0.0
+	znkr.io/diff v1.0.1
+)
 
 replace github.com/ondatra-ai/true-bdd/pkg => ./pkg

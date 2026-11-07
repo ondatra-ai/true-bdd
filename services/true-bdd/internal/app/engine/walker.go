@@ -2,39 +2,34 @@ package engine
 
 import (
 	"context"
+	"fmt"
 
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/pkg/errors"
 )
 
-// Walker iterates queries for ONE item. The interface lets the engine
-// stay agnostic to iteration policy — SequentialWalker restarts
-// prompts from 0 on fix; other policies could plug in here.
+// Walker traverses one Item's Checklist items. A fix rechecks its own Q
+// before restarting the checklist in written order.
 type Walker[I, Q any] interface {
 	Walk(ctx context.Context, item I, queries []Q) (ItemRun[I], error)
 }
 
-// SequentialWalker walks queries in index order. On CellFixed it
-// restarts from index 0 so the fix is re-verified against earlier
-// prompts that may have implicitly relied on the post-fix state.
+// SequentialWalker walks written order, rechecking a fixed query before
+// restarting the checklist to detect regressions in earlier queries.
 type SequentialWalker[I, Q any] struct {
 	Cell *CellHandler[I, Q]
-	// MaxFixes bounds fixes for ONE query, not the whole walk (0 →
-	// defaultMaxApplyAttempts) — per query because repeat-failing the
-	// SAME check is the stuck symptom; see the check below for the +1.
+	// MaxFixes bounds applies per Checklist item (0 → defaultMaxApplyAttempts).
+	// Every apply is rechecked, including the last allowed one.
 	MaxFixes int
-	// Gate, if non-nil, marks the queries whose failure skips the item's
-	// other queries until a fix restarts it: a `D:` Prompt's Cells.
-	Gate func(q Q) bool
-	// OnSkip, if non-nil, is told of every query a failed gate skipped.
-	OnSkip func(item I, q Q)
+	// CellLabel names the bounded Cell in an exhaustion error.
+	CellLabel func(I, Q) string
 }
 
 // itemWalk is one Walk's progress over one item's queries.
 type itemWalk[I any] struct {
-	out          ItemRun[I]
-	idx          int
-	gateFailed   bool
-	fixesByQuery map[int]int
+	out              ItemRun[I]
+	idx              int
+	restartAfterPass bool
+	fixesByQuery     map[int]int
 }
 
 // Walk runs one item across all queries.
@@ -51,19 +46,20 @@ func (w *SequentialWalker[I, Q]) Walk(
 	for walk.idx < len(queries) {
 		query := queries[walk.idx]
 
-		if skippedByGate(walk.gateFailed, w.Gate, w.OnSkip, walk.out.Item, query) {
-			walk.idx++
+		handler := *w.Cell
+		handler.FixMode = w.Cell.FixMode && walk.fixesByQuery[walk.idx] < fixLimit(w.MaxFixes)
 
-			continue
-		}
-
-		result, err := w.Cell.Handle(ctx, walk.out.Item, query)
+		result, err := handler.Handle(ctx, walk.out.Item, query)
 		if err != nil {
 			return walk.out, err
 		}
 
-		done, err := w.advance(walk, result, isGate(w.Gate, query))
+		done, err := w.advance(walk, result)
 		if err != nil || done {
+			if err != nil && w.CellLabel != nil {
+				err = fmt.Errorf("%s: %w", w.CellLabel(walk.out.Item, query), err)
+			}
+
 			return walk.out, err
 		}
 	}
@@ -73,28 +69,30 @@ func (w *SequentialWalker[I, Q]) Walk(
 
 // advance applies one Cell's outcome to the walk, reporting whether the
 // item's walk is over.
-func (w *SequentialWalker[I, Q]) advance(walk *itemWalk[I], result CellResult[I], gate bool) (bool, error) {
+func (w *SequentialWalker[I, Q]) advance(walk *itemWalk[I], result CellResult[I]) (bool, error) {
 	switch result.Outcome {
 	case CellPassed:
-		walk.idx++
+		if walk.restartAfterPass {
+			walk.idx = 0
+			walk.restartAfterPass = false
+			walk.out.Passed = true
+		} else {
+			walk.idx++
+		}
 	case CellFailedNoFix:
+		if w.Cell.FixMode && walk.fixesByQuery[walk.idx] >= fixLimit(w.MaxFixes) {
+			return true, pkgerrors.ErrFixLoopNotConverging(walk.fixesByQuery[walk.idx])
+		}
+
+		walk.restartAfterPass = false
 		walk.out.Passed = false
-		walk.gateFailed = walk.gateFailed || gate
 		walk.idx++
 	case CellFixed:
 		walk.fixesByQuery[walk.idx]++
 		walk.out.Item = result.Item
 		walk.out.FixApplied = true
 
-		// Strictly greater, not >=: MaxFixes fixes are allowed and
-		// each gets re-validated by the restart below, so failing on
-		// the last one would reject a fix that actually worked.
-		if walk.fixesByQuery[walk.idx] > fixLimit(w.MaxFixes) {
-			return true, pkgerrors.ErrFixLoopNotConverging(walk.fixesByQuery[walk.idx])
-		}
-
-		walk.idx = 0
-		walk.gateFailed = false
+		walk.restartAfterPass = true
 	case CellUserExited:
 		walk.out.UserExited = true
 

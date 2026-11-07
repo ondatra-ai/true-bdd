@@ -6,6 +6,7 @@ Write only inside the edit roots in the request. Never modify tests, *_test.go, 
 
 Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, impossible, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -60,47 +61,52 @@ Tests: /go-test/go-test:fixture.buildcodefix.tests.suite::TestB
 ## Proposed repair plan
 # Repair plan for failing-set
 
-## Contract (from the tests, which are the specification)
+## Scope and permitted paths
 
-`tests/suite/calc_test.go` imports the production package `fixture/buildcodefix/services/calc` and asserts two things:
+Edit only `services/calc/` (the declared service root, matching `architecture.services[0].path` in `docs/architecture/architecture.yaml`). Do **not** touch `tests/suite/calc_test.go`, any `*_test.go`, `go.mod`, `docs/`, `true-bdd/`, `templates/` or `CLAUDE.md`. No assertion may be weakened, skipped, renamed or deleted; the failing assertions are the specification.
 
-- `TestA` — `calc.A()` must return `1` (failure message: "A needs one").
-- `TestB` — `calc.B()` must return `2` (failure message: "B needs two").
+## Why the set fails
 
-Both tests currently fail because the production implementations return `0`. Nothing else is wrong: the module (`module fixture/buildcodefix`, go 1.25.0), the package name, the exported function names and the `int` return signatures all already line up, and the suite command `go test -json -count=1 ./tests/suite/...` compiles and runs. So the repair is purely in the two function bodies — no new files, no new packages, no signature or import changes.
+The suite command is `go test -json -count=1 ./tests/suite/...`. `tests/suite/calc_test.go` imports `fixture/buildcodefix/services/calc` (module `fixture/buildcodefix` per `go.mod`, so `services/calc` resolves to package `calc`) and asserts:
 
-## Part 1 — Correct `A()` to satisfy the documented value
+- `TestA`: `calc.A()` must equal `1`; it fails with `A needs one`.
+- `TestB`: `calc.B()` must equal `2`; it fails with `B needs two`.
 
-**File:** `services/calc/calc.go` (inside the declared edit root `services/calc`)
+`services/calc/calc.go` today is:
 
-`func A() int` currently returns the zero placeholder `0`. Change its body so the function yields the integer `1`, which is the value `TestA` requires. Keep the exported name `A`, the empty parameter list and the `int` result type exactly as they are — the test calls `calc.A()` and compares the result to `1` with `!=`, so any change to the identifier or signature would break compilation of the test package.
+```go
+package calc
+func A() int{return 0}
+func B() int{return 0}
+```
 
-**Serves:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestA`
+Both exported functions return the zero value, so both assertions fail. This is a value-contract defect only — the package name, import path, function names and `func() int` signatures already match what the suite expects, and the package compiles. There is no missing file, missing dependency or build-tag issue to chase.
 
-## Part 2 — Correct `B()` to satisfy the documented value
+## Part 1 — `calc.A()` must report one (serves `/go-test/go-test:fixture.buildcodefix.tests.suite::TestA`)
 
-**File:** `services/calc/calc.go` (same file, same edit root)
+File: `services/calc/calc.go`
 
-`func B() int` also returns `0`. Change its body so the function yields the integer `2`, the value `TestB` requires. Again preserve the exported name `B`, the zero-arg parameter list and the `int` result type.
+Change the body of the existing exported `A() int` so it yields the value `1` instead of `0`. Keep the declaration exactly as `func A() int` in `package calc` — the test calls it with no arguments and compares the single `int` result against `1`, so any change to the name, parameter list, result arity or result type would break compilation of the read-only test file. The function takes no input and has no state, so the correct implementation is a direct constant result; do not introduce parameters, receivers, package-level mutable state, initialisation order dependencies or `init()` side effects to produce it.
 
-**Serves:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB`
+## Part 2 — `calc.B()` must report two (serves `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB`)
 
-## Constraints the writer must respect
+File: `services/calc/calc.go`
 
-- Edit only `services/calc/calc.go`. Do not touch `tests/suite/calc_test.go` or any `*_test.go`, do not touch `docs/architecture/architecture.yaml`, `true-bdd/`, `CLAUDE.md`, `go.mod`, or any template.
-- Do not weaken, skip, delete or rewrite any assertion; the two `t.Fatal` comparisons must remain exactly as written and must pass because production returns the right values.
-- Keep `package calc` as the package clause and add no imports — the file needs none for a pair of constant-returning functions.
-- Keep both functions exported and in this one file; do not split them into new files or introduce indirection (helpers, vars, init functions). The minimal, honest implementation is each function returning its specified literal.
+Same treatment for the existing exported `B() int`: its body must yield `2` instead of `0`, with the declaration left as `func B() int` in `package calc` for the same compilation reason. Again a direct constant result, no added parameters or shared state.
+
+If you prefer to name the two values (e.g. a small `const` block in the same package) rather than inline the literals, that is acceptable, but it must stay inside `services/calc/` and the exported signatures must remain unchanged. Do not add a second package, move the file, or split it across new files — one file already holds the whole contract and both tests import a single package path.
+
+## Constraints the implementation must respect
+
+- Package clause stays `package calc`; the file stays at `services/calc/calc.go` so the import path `fixture/buildcodefix/services/calc` keeps resolving.
+- Both `A` and `B` stay exported (capitalised) and stay `func() int`.
+- Do not add build tags, `//go:build` lines or files that would exclude the package from the default build.
+- Do not add new module requirements; the fixture module has no dependencies and must keep compiling with the stdlib alone under go 1.25.0.
+- Keep the file gofmt-clean and valid Go; the existing file is written in a compressed style, but normal formatting is fine and preferred.
 
 ## Verification
 
-Run the architecture's suite command from the fixture root:
-
-```
-go test -json -count=1 ./tests/suite/...
-```
-
-Both `TestA` and `TestB` must report `--- PASS`, with no compilation errors from the test package and no remaining failures in the set.
+From the workspace root run the declared suite command: `go test -json -count=1 ./tests/suite/...`. Both `TestA` and `TestB` must report `pass` in the JSON stream, with no build or vet error, and `git status` must show `services/calc/calc.go` as the only modified file.
 
 ## Edit roots
 

@@ -20,17 +20,17 @@
     "stream-json",
     "--verbose",
     "--json-schema",
-    "{\"additionalProperties\":false,\"properties\":{\"assignments\":{\"items\":{\"additionalProperties\":false,\"properties\":{\"concept\":{\"enum\":[\"result\"],\"type\":\"string\"},\"index\":{\"type\":\"integer\"},\"runner_up\":{\"type\":\"null\"},\"runner_up_score\":{\"maximum\":10,\"minimum\":0,\"type\":\"integer\"},\"score\":{\"maximum\":10,\"minimum\":0,\"type\":\"integer\"}},\"required\":[\"concept\",\"index\",\"runner_up\",\"runner_up_score\",\"score\"],\"type\":\"object\"},\"type\":\"array\"}},\"required\":[\"assignments\"],\"type\":\"object\"}",
+    "{\"additionalProperties\":false,\"properties\":{\"assignments\":{\"items\":{\"additionalProperties\":false,\"properties\":{\"concept\":{\"enum\":[\"result\"],\"type\":\"string\"},\"index\":{\"type\":\"integer\"},\"runner_up\":{\"type\":\"null\"},\"runner_up_score\":{\"type\":\"integer\"},\"score\":{\"type\":\"integer\"}},\"required\":[\"concept\",\"index\",\"runner_up\",\"runner_up_score\",\"score\"],\"type\":\"object\"},\"type\":\"array\"}},\"required\":[\"assignments\"],\"type\":\"object\"}",
     "-p",
     "{\n  \"suite\": \"tests/calc-then-1\",\n  \"service\": \"calc\",\n  \"product\": \"roles:\\n  - name: Owner\\n    description: Uses the calculator.\\nconcepts:\\n  given:\\n    - concept: installation\\n      means: The calculator program is built from its source and ready for the Owner to run.\\n      terms: []\\n  when:\\n    - concept: doubling\\n      means: The Owner doubles a whole number with the calculator.\\n      terms: [number]\\n  then:\\n    - concept: result\\n      means: The calculator prints the whole number the doubling produced.\\n      terms: [number]\\nglossary:\\n  - term: number\\n    means: An integer operand whose double is its sum with itself.\\n\",\n  \"steps\": [\n    {\n      \"key\": \"1\",\n      \"block\": \"then\",\n      \"text\": \"the result is 6\"\n    }\n  ]\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 5078,
-  "request_hash": "sha256:e76ed3f4a684c44721c5314001387f91ae902c5dfbfd2139c22877887643dfb1",
+  "duration_ms": 4970,
+  "request_hash": "sha256:38b6e0ab3cf2305674556ef36ebd59e82b13d2f2f2b7d84bacbca2885c885ac5",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-11-02T15:29:46Z"
+  "recorded_at": "2026-11-07T02:44:41Z"
 }

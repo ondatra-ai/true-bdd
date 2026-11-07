@@ -27,6 +27,7 @@ Scenario's description or steps are rewritten.
   - `target:` — the working copy you edited (QUOTED)
   - `summary:` — one line on what changed
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -48,70 +49,43 @@ Then:
 
 ## Fix Prompt to Apply
 
-=== FILE_START: tmp/{{RUN_DIR}}/06-E2E-001-fix-prompts.md ===
 # Fix Prompt for Scenario E2E-001: Greeting a name prints the configured greeting followed by that name, and the greeter exits with code 0
 
 ## Target
-The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry,
-`tmp/{{RUN_DIR}}/scenarios_yaml.yaml`), field `description` only.
+The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry), file `tmp/{{RUN_DIR}}/scenarios_yaml.yaml`.
 
-Do not touch any other field, any other scenario, the generated test
-`tests/greeter/greet_test.go`, any step definition, the product document or the
-architecture document. `E2E-001`'s `service:`, `path:`, `user_stories:` and all
-four `merged_steps` entries stay byte-for-byte as they are.
-
-## Finding being fixed
-`scen-check/scenario_quality`: `E2E-001: missing must/should — "Greeting a name
-prints the configured greeting followed by that name, and the greeter exits with
-code 0"`. The description is prose, not a rule: it carries neither `must` nor
-`should`.
+Edit only the `description:` field of that entry. Leave `service:`, `path:`, `user_stories:` and every key under `merged_steps:` exactly as they are. Change no other Scenario, no generated test (`tests/greeter/greet_test.go`) and no step definition — the test is re-rendered later by `true-bdd build tests --fix`.
 
 ## Required Changes
-### Change #1: state the description as one rule sentence with "must"
+### Change #1: State the description as one rule sentence using "must"
 **Document:** scenarios_yaml
-**Field:** description (under `scenarios: E2E-001:`)
+**Field:** description
 **Current text:**
 ```
 Greeting a name prints the configured greeting followed by that name, and the greeter exits with code 0
 ```
 **New text:**
 ```
-The greeter must print the configured greeting followed by the name it was run with on its standard output and must exit with code 0
+The greeter must print the configured greeting followed by the given name on standard output and exit with code 0
 ```
 
-Apply it as a plain YAML scalar on the same line, exactly as the surrounding
-entry already formats it:
+## Why this satisfies the failed check
+- Contains the keyword "must".
+- One sentence only.
+- No Gherkin Given/When/Then text; the Gherkin stays in `merged_steps`.
+- Same behaviour as before: the configured greeting followed by the name on standard output, and exit code 0 — both assertions in `merged_steps.then` are still described, none dropped or added.
+- Wording stays inside the product vocabulary: it uses the glossary terms `greeting`, `standard output` and `exit code`, names observable actions ("print", "exit") rather than the forbidden actions `handle`/`process`/`parse`, and uses no forbidden qualifier.
 
+## Exact edit, in place
+In `tmp/{{RUN_DIR}}/scenarios_yaml.yaml`, line 9 reads:
 ```yaml
-scenarios:
-  E2E-001:
-    description: The greeter must print the configured greeting followed by the name it was run with on its standard output and must exit with code 0
+    description: Greeting a name prints the configured greeting followed by that name, and the greeter exits with code 0
 ```
-
-## Why this replacement satisfies the check
-- Carries the keyword `must` (twice), so the rule-based format is met.
-- One sentence, with a single `and` joining the two obligations and no second
-  sentence boundary.
-- No Gherkin text: the words `Given`, `When` and `Then` do not appear, and the
-  phrase "the name it was run with" is used instead of "the given name" so no
-  Gherkin keyword appears even as a substring.
-- Behaviour is unchanged and still fully covered by the untouched steps: the
-  configured greeting (`given: the greeting is configured as "Hello"`), the run
-  (`when: the Operator runs "greet Ada"`), exit code 0 (`then: the command exits
-  with code 0`) and the printed line (`then: and: stdout matches ^Hello Ada$`).
-- Wording stays in the product document's words: `greeting`, `standard output`
-  and `exit ... code` are glossary terms, and no `forbidden_qualifiers`
-  (properly, correctly, appropriate, user-friendly, fast, quickly, helpful) or
-  `forbidden_actions` (handle, process, parse) verb is introduced.
-
-## Verification after applying
-1. `tmp/{{RUN_DIR}}/scenarios_yaml.yaml` differs from before in
-   exactly one line: the `description:` of `E2E-001`.
-2. Re-run the scen-check `scenario_quality` prompt for `E2E-001`; it should emit
-   `E2E-001: ok`.
-3. Re-render the generated test with `true-bdd build tests --fix`; do not
-   hand-edit `tests/greeter/greet_test.go`.
-=== FILE_END: tmp/{{RUN_DIR}}/06-E2E-001-fix-prompts.md ===
+Replace that single line with:
+```yaml
+    description: The greeter must print the configured greeting followed by the given name on standard output and exit with code 0
+```
+Make no other change to the file.
 
 ---
 

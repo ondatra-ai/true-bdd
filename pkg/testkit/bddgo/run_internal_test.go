@@ -156,7 +156,7 @@ func TestClassifyRefusesAPrefixInTheWrongBlock(t *testing.T) {
 	}
 }
 
-// generatedFile is a generated test file as the renderer emits one: two
+// generatedFile is a legacy generated test file: two
 // scenarios sharing a path, and a helper that must NOT be mistaken for
 // one.
 const generatedFile = `//go:build bdd
@@ -168,13 +168,13 @@ package truebdd_test
 import "testing"
 
 func TestE2E001(t *testing.T) {
-	s := scenarios.New(t, "E2E-001")
+	s := legacy.New(t, "E2E-001")
 	s.Given(` + "`a tree`" + `)
 	s.Done()
 }
 
 func TestE2E002(t *testing.T) {
-	s := scenarios.New(t, "E2E-002")
+	s := legacy.New(t, "E2E-002")
 	s.Done()
 }
 

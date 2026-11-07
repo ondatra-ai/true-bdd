@@ -1,20 +1,21 @@
 sections:
   - id: prompt_text
     validation_prompts:
-      - Q: |
-          Decide whether this scenario's description follows the
-          rule-based format. A violation is any of:
-          - missing the keyword "must" or "should"
-          - exceeds one sentence
-          - contains Gherkin Given/When/Then text (Gherkin belongs in the
-            steps, not the description)
+      - Q:
+          prompt: |
+            Decide whether this scenario's description follows the
+            rule-based format. A violation is any of:
+            - missing the keyword "must" or "should"
+            - exceeds one sentence
+            - contains Gherkin Given/When/Then text (Gherkin belongs in the
+              steps, not the description)
 
-          Pass when the description follows the rule-based format.
-          Fail when it violates any of the above.
+            Pass when the description follows the rule-based format.
+            Fail when it violates any of the above.
 
-          Context: emit one line.
-            - "<scenario id>: ok"
-            - "<scenario id>: <violation> — <quoted offending phrase>"
+            Context: emit one line.
+              - "<scenario id>: ok"
+              - "<scenario id>: <violation> — <quoted offending phrase>"
         rationale: A description is the one sentence a reader sees first; a rule states what must hold, where prose only gestures at it.
         F: |+
           Rewrite this Scenario's description as one sentence with must or should.

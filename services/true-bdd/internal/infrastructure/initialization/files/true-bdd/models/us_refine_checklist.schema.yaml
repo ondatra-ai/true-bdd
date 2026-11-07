@@ -3,6 +3,7 @@ type: object
 properties:
   Question: &id001
     type: string
+  StepArguments: *id001
   Rationale: *id001
   ResultPath: *id001
   FixTemplate: *id001
@@ -72,6 +73,7 @@ $defs:
     - $ref: '#/$defs/and'
     - $ref: '#/$defs/but'
   step:
+    description: Story step keys are only given, when or then; and and but are modifiers inside their statement lists, never step keys.
     type: object
     properties:
       given:

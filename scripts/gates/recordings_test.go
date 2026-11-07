@@ -97,13 +97,31 @@ func TestEmailSweepAllowsOnlyTheShippedForms(t *testing.T) {
 
 	const report = "e-mail address in a recording"
 
-	clean := "noreply@github.com\nuser@example.com\nnobody@example.org\n"
+	clean := "model reply\nCo-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>\n" +
+		"other text\nuser@example.com and nobody@example.org\n"
 	if found := hits(t, report, clean); len(found) != 0 {
 		t.Errorf("the shipped addresses were reported: %v", found)
 	}
 
+	encoded := `{"reply":"Intro\nCo-Authored-By: Claude Sonnet 5 \u003cnoreply@anthropic.com\u003e\nDone"}`
+	if found := hits(t, report, encoded); len(found) != 0 {
+		t.Errorf("JSON HTML-escaped allowed address was reported: %v", found)
+	}
+
 	if found := hits(t, report, "{\"author\":\"someone@real-domain.dev\"}\n"); len(found) != 1 {
 		t.Errorf("a real address went unreported")
+	}
+
+	for _, content := range []string{
+		"noreply@anthropic.com someone@real-domain.dev\n",
+		"user@example.com\nsomeone@real-domain.dev\n",
+		"someone@not-example.com\n", "someone@example.com.evil.dev\n",
+		"notnoreply@real-domain.dev\n",
+		`{"reply":"\u003cnoreply@anthropic.com\u003e and \u003csomeone@real-domain.dev\u003e"}`,
+	} {
+		if found := hits(t, report, content); len(found) != 1 {
+			t.Errorf("a real address beside an allowed form went unreported: %q", content)
+		}
 	}
 }
 

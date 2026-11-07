@@ -31,11 +31,12 @@ type failedCheck struct {
 }
 
 type fixData struct {
-	DocPaths    map[string]string
-	Subject     fixSubject
-	FailedCheck failedCheck
-	UserAnswers map[string]string
-	ResultPath  string
+	StepArguments string
+	DocPaths      map[string]string
+	Subject       fixSubject
+	FailedCheck   failedCheck
+	UserAnswers   map[string]string
+	ResultPath    string
 	// Structured selects the answer contract; false renders the
 	// delimited-marker branch these tests assert on.
 	Structured bool

@@ -36,13 +36,13 @@
             }
           }
         ],
-        "does": "Clear the Number textbox on page Calc and type the Given step’s numeral into it verbatim, character for character, with no parsing, reformatting, rounding, padding or stripping of leading or trailing characters, so the textbox value is exactly the text the step wrote, and leave it set before the action."
+        "does": "Parse the Given step’s numeral as a decimal number, replace the entire Number textbox value with its decimal representation, and leave it set before the action."
       },
       {
         "concept": "halve",
         "block": "when",
         "service": "calc",
-        "intent": "On page Calc, activate the button named \"Halve\" exactly once, and do nothing else: do not type into or otherwise modify the Number textbox, do not activate the button a second time, and do not compute or substitute the halved value yourself. The number already entered in the Number textbox is the input the button acts on."
+        "intent": "Halve the number already present in the Calc page textbox named \"Number\" by pressing the Calc page button named \"Halve\" exactly once. Do not type, clear or re-enter the number, do not compute or write any value yourself, and do not press \"Halve\" a second time or interact with any other element; after the single press, leave the page as it is so the Then step can read the Number textbox."
       },
       {
         "concept": "number result",

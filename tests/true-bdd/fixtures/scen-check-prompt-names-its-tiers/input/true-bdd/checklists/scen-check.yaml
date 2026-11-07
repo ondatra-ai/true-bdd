@@ -19,17 +19,18 @@ sections:
     name: "Scenario Quality"
     description: "Every registry scenario must read as one testable behaviour, in the product's vocabulary."
     validation_prompts:
-      - Q: |
-          Decide whether this scenario's description contains a vague word
-          from the forbidden_qualifiers list in the product document
-          (properly, correctly, appropriate, user-friendly, fast, etc.).
+      - Q:
+          prompt: |
+            Decide whether this scenario's description contains a vague word
+            from the forbidden_qualifiers list in the product document
+            (properly, correctly, appropriate, user-friendly, fast, etc.).
 
-          Pass when the description contains no forbidden qualifier.
-          Fail when it contains one or more.
+            Pass when the description contains no forbidden qualifier.
+            Fail when it contains one or more.
 
-          Context: emit one line.
-            - "<scenario id>: ok"
-            - "<scenario id>: contains '<word>'[, '<word2>'...]"
+            Context: emit one line.
+              - "<scenario id>: ok"
+              - "<scenario id>: contains '<word>'[, '<word2>'...]"
         rationale: "A vague qualifier cannot be tested objectively, so a scenario carrying one asserts nothing a run can settle."
         docs:
           - product

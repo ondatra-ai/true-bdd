@@ -2,6 +2,7 @@ package validate
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -48,9 +49,24 @@ func (e *ChecklistEvaluator) evaluatePropose(ctx context.Context, subject any, p
 		return result, err
 	}
 
-	response, err := e.conceptTurn(ctx, prompt, request, proposalSchema)
+	schema := proposalSchema
+	if len(item.Critique) > 0 {
+		schema = patternRepairSchema()
+		prompt.Prompt.Question += "\nThis is the F of step-verification. Fix only its supplied findings; " +
+			"preserve every other pattern. If this fix is impossible under the Specification, " +
+			"return patterns: [] and cannot_fix: {reason, correction}; otherwise return the patterns and cannot_fix: null."
+	}
+
+	response, err := e.conceptTurn(ctx, prompt, request, schema)
 	if err != nil {
 		return result, err
+	}
+
+	if len(item.Critique) > 0 {
+		outcomeErr := cannotFixFromContent(response, false)
+		if outcomeErr != nil {
+			return result, outcomeErr
+		}
 	}
 
 	patterns, err := gradeProposal(response)
@@ -58,17 +74,8 @@ func (e *ChecklistEvaluator) evaluatePropose(ctx context.Context, subject any, p
 		return result, fmt.Errorf("pattern proposal malformed or incomplete (crash): %w", err)
 	}
 
-	findings := catalogue.CheckPatterns(item.ID, patterns, item.Suites)
-	if len(findings) > 0 {
-		for _, finding := range findings {
-			failConcept(&result, finding)
-		}
-
-		item.Previous, item.Findings = patterns, findings
-	} else {
-		item.Patterns = patterns
-		result.Context = proposalBindings(item, patterns)
-	}
+	item.Patterns = patterns
+	result.Context = proposalBindings(item, patterns)
 
 	e.saveConceptResult(result)
 
@@ -138,7 +145,8 @@ func (e *ChecklistEvaluator) conceptGlossary(terms []string) ([]map[string]strin
 
 func gradeProposal(response string) ([]catalogue.ProposedPattern, error) {
 	var answer struct {
-		Patterns []catalogue.ProposedPattern `json:"patterns"`
+		Patterns  []catalogue.ProposedPattern `json:"patterns"`
+		CannotFix json.RawMessage             `json:"cannot_fix"`
 	}
 
 	err := strictAnswer(response, &answer)
@@ -156,7 +164,7 @@ func gradeProposal(response string) ([]catalogue.ProposedPattern, error) {
 		}
 
 		for _, capture := range pattern.Captures {
-			if strings.TrimSpace(capture.Name) == "" {
+			if strings.TrimSpace(capture.Name) == "" || strings.TrimSpace(capture.Means) == "" {
 				return nil, errConceptAnswer
 			}
 		}
@@ -186,9 +194,18 @@ func proposalBindings(item *template.ConceptProposalData, patterns []catalogue.P
 }
 
 const proposalSchema = `{"type":"object","additionalProperties":false,"required":["patterns"],"properties":{
-"patterns":{"type":"array","minItems":1,"items":{"type":"object","additionalProperties":false,
+"patterns":{"type":"array","items":{"type":"object","additionalProperties":false,
 "required":["pattern","captures","serves"],"properties":{
-"pattern":{"type":"string","minLength":1},
+"pattern":{"type":"string"},
 "captures":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["name","means"],
-"properties":{"name":{"type":"string","minLength":1},"means":{"type":"string","minLength":1}}}},
-"serves":{"type":"string","minLength":1}}}}}}`
+"properties":{"name":{"type":"string"},"means":{"type":"string"}}}},
+"serves":{"type":"string"}}}}}}`
+
+func patternRepairSchema() string {
+	const property = `"cannot_fix":{"type":["object","null"],"additionalProperties":false,
+ "required":["reason","correction"],"properties":{"reason":{"type":"string"},"correction":{"type":"string"}}},`
+
+	schema := strings.Replace(proposalSchema, `"required":["patterns"]`, `"required":["patterns","cannot_fix"]`, 1)
+
+	return strings.Replace(schema, `"properties":{`, `"properties":{`+property, 1)
+}

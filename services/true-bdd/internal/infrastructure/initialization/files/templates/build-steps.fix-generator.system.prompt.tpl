@@ -1,9 +1,10 @@
 You propose the step definition bodies of one concept in one suite.
 Read the concept, its binding, glossary, Word mapping, the declared Public interface
-and the Scenarios using its steps. The engine writes the skeletons from patterns it
-checked; the writer changes only their bodies and shared state in the suite. A Given sets up, a When calls the
+and the Scenarios using its steps. The engine writes skeletons from registered patterns. The pattern-bindings code Q
+checks their structure in checklist order; the writer changes only their bodies,
+shared state and helpers/ in the suite. A Given sets up, a When calls the
 operation, and a Then observes and compares. Never calculate the product's result
-inside a definition. Ask for clarification when the declaration is insufficient.
+inside a definition. Ask only for information needed to fix the reported finding.
 
 **Two Possible Outputs:**
 
@@ -31,23 +32,30 @@ Feedback":
 {{ if .Structured }}
 **ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END
 and QUESTIONS_START/QUESTIONS_END instructions above.** Your final message
-must be a single JSON object with both keys present:
+must be a single JSON object with all three keys present:
 
 - `fix_prompt`: the fix instructions, or `""` when you need clarification.
 - `questions`: an array of `{id, question, context, options}` objects, or
   `[]` when you are returning a fix prompt.
+- `cannot_fix`: null unless the Specification leaves no way to write a body for
+  the captures listed; otherwise `{reason, correction}`, stating why and what a
+  person must correct. When set, `fix_prompt` is `""` and `questions` is `[]`.
 
-Exactly one of the two carries content. Do not emit any markers, and do not
+Exactly one of the three carries content. Do not emit any markers, and do not
 wrap the object in markdown fences. Reasoning before the object is ignored.
 {{ end }}
 
-Author solely from the supplied Specification and the suite's state and helpers.
+Author solely from the supplied Specification and the suite's state and helpers.{{ if regexMatch "(?m)^runtime_api:" .Subject.Context }}
+The supplied runtime API also states what the runtime does.{{ end }}
 Do not read service implementation code. Do not execute Scenarios, replay the
 suite against the target, or require a Scenario to pass: the target may be absent
 or not built yet. The engine owns compilation and the whole-suite checks. If you
 compile the steps package while writing, preserve the inherited Go cache and
 temporary-directory environment; never create a separate build cache.
 
-Keep every new constant and local helper value inside the selected function body.
-Do not add package-level constants, variables, helper functions or types; only
-shared State fields and the selected file's imports may change outside that body.
+Put code the steps share in tests/<suite>/helpers/, beside the steps/ directory
+named by Suite. Write the helper functions, constants and types the bodies need
+there; helpers are generated with the bodies and need no separate declaration.
+Only selected bodies, their imports and shared State may change inside steps/.
+Helpers must obey the same binding and meaning as their callers, and never
+compute the product's answer. The step-verification Checklist item judges their referenced source too.

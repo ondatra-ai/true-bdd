@@ -5,61 +5,51 @@ Edit only the listed working copies. Preserve every unaffected entry.
 For a Story step rewrite, return the complete Story YAML instead of editing
 a document. For document edits return the requested confirmation markers.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
 The Product Owner chose apply at the menu. Apply this approved word repair:
-## Proposed word repair — Item `host`, concept `when: halve` (Product Owner)
+PROPOSED REPAIR (Product Owner — word repair; NOT APPLIED. Apply only after an explicit `apply` decision at the menu.)
 
-**Failed judgement:** `when:halve` — the means uses the undeclared domain word **"idempotency key"**.
+Item: host | Failed judgement: `when: halve` — undeclared domain word "idempotency key".
 
-**Why a reword, not a glossary entry:** the product's `language_policy` states: *"Describe repeated requests and their labels in ordinary words; avoid technical protocol vocabulary in the glossary."* "Idempotency key" is exactly such technical protocol vocabulary, so declaring it as a glossary term is closed off by the product's own policy. The `description` already names the ordinary product word for this thing — a **request label** — and states that repeating a request with the same label changes the number only once. So the repair is to say the means in the product's own words.
+DECISION: reword the concept's `means` in product words and plain English. No new glossary term.
+WHY NOT A DECLARED TERM: the product's `language_policy` reads "Product meanings use everyday English. Describe repeated requests and their labels in ordinary words; avoid technical protocol vocabulary in the glossary." Declaring "idempotency key" in the glossary is therefore ruled out by the product document itself. The product `description` already supplies the product word — "request label" — so the meaning can be carried in ordinary English with no term at all. `glossary` stays `[]` and every `terms` list stays `[]`.
 
-No new concept and no new variation is needed: this is the same item (`host`) and the same use (halving once per label); only the wording of the existing concept's `means` changes.
+FILE: docs/product/product.yaml (single file; document is JSON-shaped, keep that shape and 2-space indentation)
 
-### Change — `docs/product/product.yaml` only (one line)
+EXACTLY ONE EDIT — replace the `means` string of the `when` concept `halve`.
 
-Replace the `means` of the `when` concept `halve`:
-
-```yaml
-# before
-when:
-  - concept: "halve"
-    means: "Halve the entered number once with the supplied idempotency key."
-    terms: []
-
-# after
-when:
-  - concept: "halve"
-    means: "Halve the entered number once for the given request label, so that repeating the same label does not halve it again."
-    terms: []
-```
-
-The document is written in JSON (valid YAML). In the file's own style the edit is exactly:
-
-```json
-    "when": [
+BEFORE (lines 16-22):
+  "when": [
       {
         "concept": "halve",
-        "means": "Halve the entered number once for the given request label, so that repeating the same label does not halve it again.",
+        "means": "Halve the entered number once with the supplied idempotency key.",
         "terms": []
       }
     ],
-```
 
-### What is untouched
+AFTER:
+  "when": [
+      {
+        "concept": "halve",
+        "means": "Halve the entered number once for the request label given with it. Repeating the same label does not halve the number again.",
+        "terms": []
+      }
+    ],
 
-- `glossary` stays `[]` — no new term is declared, so there is **no** follow-up Word mapping for the System Architect from this repair.
-- `terms` of `halve` stays `[]`.
-- `given: number ready`, `then: number result` and `then: unused` concepts are unchanged (the two findings against `given:number ready` and `then:number result` report plain, declared English — no repair is due there; the "undeclared word" note on `then:number result` does not match its means, which contains no such word).
-- `roles`, `description`, `language_policy` unchanged.
-- No Story, Scenario or architecture edit: the Story step "halve six once with idempotency key alpha" is **not** changed by this repair; Item/Story wording is a separate Product Owner decision and a Word mapping is later System Architect work via `scen check` D: term-mappings.
+MEANING PRESERVED: "with the supplied idempotency key" becomes "for the request label given with it"; the second sentence states in ordinary words the once-only effect that the protocol term used to carry, matching the product `description` ("Repeating a request with the same label changes the number only once."). Both sentences are plain English, each under 25 words.
 
-### Meaning preserved
+OUT OF SCOPE — DO NOT CHANGE:
+- `given: number ready` and `then: number result` — their `means` are already ordinary English and contain no protocol word; the findings naming "idempotency key" against them are spurious (the word does not occur in either `means`). Leave both untouched.
+- `then: unused` — unrelated concept, leave its `means` and `terms` exactly as they are.
+- `glossary`, `description`, `language_policy`, `roles` — unchanged.
+- Story `host` (including the step "halve six once with idempotency key alpha"), any Scenario, and all architecture files — no edit belongs to this repair.
+- No new concept and no new variation: this widens nothing; the item `host` and its `when` use already have the concept `halve`.
+- No `meaning` field anywhere — this document's schema uses `means`.
 
-"Once with the supplied idempotency key" and "once for the given request label, so that repeating the same label does not halve it again" assert the same behaviour — a single halving per label, repeats having no further effect — stated in the ordinary English the language policy requires.
-
-**Not applied.** Awaiting an explicit menu decision (`apply`).
+FOLLOW-UP (not part of this fix): none. Because no term is declared, there is no Word mapping for the System Architect to add via `scen check` D: term-mappings. Refinement does not wait on anything here.
 Edit ONLY the product working copy below, adding the glossary entry AND the
 concept's terms (a string list), or rewording its means. Glossary entries
 have term and means fields. Preserve unrelated product content.

@@ -94,7 +94,10 @@ summary: "<what changed and which tests of the set you saw pass>"
 === FILE_END: {{ .ResultPath }} ===
 
 Only when no solution exists inside the declared edit roots, fill impossible with a list of {path, reason} for required undeclared files. Keep any edits already made and report their outcome. Otherwise leave impossible empty; applied: false by itself permits another attempt.
+{{if .StepArguments}}
+## Step arguments
 
+{{.StepArguments}}{{end}}
 ## Fixture confirmation protocol
 
 This Scenario exercises a completed applied repair. Make the required service change and report applied: true in the final confirmation once the service files are repaired. The engine will run the declared suite outside this writer's sandbox after your turn. If npx, Node, or a browser is unavailable inside the sandbox, state that verification limitation in summary while still reporting the completed edit as applied: true. Do not change tests, documents, dependencies, or the test runner to bypass that limitation.

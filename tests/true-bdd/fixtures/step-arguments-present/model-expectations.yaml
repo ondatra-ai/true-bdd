@@ -1,0 +1,16 @@
+the scen_check_checklist prompt carries the complete step arguments from its Model:
+  glob: tmp/*/01-E2E-001-checklist-*-user.txt
+  operator: matches
+  pattern: |-
+    \n## Step arguments\n\nstep_arguments:
+      - name: quoted literal text
+        read: Read the characters between the delimiting double quotes literally\.
+        applies: Greeting text and command arguments
+        escaping: YAML scalar decoding only; no shell unescaping
+      - name: regular expression
+        read: \|
+          Read the complete undelimited tail, including "quotes"\.
+          Compile it as it stands; \{\{CWD\}\} is not expanded here\.
+        applies: stdout and stderr comparisons
+        escaping: RE2 escaping only
+    \z

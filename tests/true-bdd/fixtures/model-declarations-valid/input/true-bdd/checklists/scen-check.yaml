@@ -1,7 +1,8 @@
 sections:
 - id: term_closure
   validation_prompts:
-  - D: public-interface
+  - Q:
+      code: public-interface
     rationale: A Scenario must observe what its service offers across a process boundary,
       declared before the code is built.
     docs:

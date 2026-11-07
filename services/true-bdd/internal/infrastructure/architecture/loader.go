@@ -40,14 +40,16 @@ var ErrMissingSuiteCommand = errors.New("test suite command is required")
 // executes Replay today; Record and Live are declared and validated but
 // not yet reachable from any command (see ErrMissingSuiteCommand for why all three are mandatory).
 type SuiteCommands struct {
-	Record string `yaml:"record"`
-	Replay string `yaml:"replay"`
-	Live   string `yaml:"live"`
+	Record        string   `yaml:"record"`
+	RecordExclude []string `yaml:"-"`
+	Replay        string   `yaml:"replay"`
+	Live          string   `yaml:"live"`
 }
 
-// Testkit declares harness use; an empty AI CLI list proxies no service CLIs.
+// Testkit declares the fixture layer and the Given pattern naming a suite's fixtures.
 type Testkit struct {
-	AICLIs []string `yaml:"ai_clis,omitempty"`
+	RepoLayer   []string `yaml:"repo_layer,omitempty"`
+	FixtureStep string   `yaml:"fixture_step,omitempty"`
 }
 
 // Testing is `architecture.testing:` — how this repository runs its
@@ -69,6 +71,7 @@ func (t Testing) Label() string { return t.Framework }
 
 // Service declares a production folder and any additional exact writable paths.
 type Service struct {
+	Dependencies    []Dependency     `yaml:"dependencies,omitempty"`
 	Models          map[string]Model `yaml:"models,omitempty"`
 	PublicInterface *PublicInterface `yaml:"public_interface,omitempty"`
 	Libraries       []Library        `yaml:"libraries,omitempty"`

@@ -65,51 +65,71 @@ One testable condition inside a refined user story, before it is merged into the
 _Avoid_: AC (in prose), criterion, condition
 
 **Item**:
-Whatever a single command walks — a Story for `us refine`, an Acceptance Criterion for `us apply`, a Scenario for `scen check`, the Failing set for `build code`, and for `build steps` a concept and a go-test suite. A concept Item holds the suite's unbound steps grouped into its concept, or the pending skeletons of that concept a walk finds, and requires a fresh unambiguous service binding before any skeleton. The AI proposes its patterns, which the engine checks against every step of the suite and turns into skeletons recording the concept; the AI then writes the bodies, and the critique judges each pattern and body, a pattern finding sending the whole Item back to the proposal and a body finding only that body.
+Whatever a single command walks — a Story for `us refine`, an Acceptance Criterion for `us apply`, a Scenario for `scen check`, the Failing set for `build code`, and for `build steps` a concept and a go-test suite. A concept Item holds the suite's unbound steps grouped into its concept, or the pending skeletons of that concept a walk finds, and requires a fresh unambiguous service binding before any skeleton. The Pattern bindings Checklist item checks its registered patterns against every deterministic suite step; its F proposes patterns and rewrites skeletons recording the concept. Step coverage then writes the bodies through its F, and the step-verification Checklist item judges each pattern and body. Its one F fixes the named definitions, proposing a pattern again when needed and writing its body for the new captures.
 _Avoid_: subject, entity, record
 
-**Prompt**:
-One validation question in a Checklist, with its rationale, its declared reference documents and its optional `F:` fix template. A model answers a `Q:` Prompt; the engine's own code answers a `D:` Prompt, which names one of the engine's built-in checks, and an Item's `D:` Prompts are answered before any of its `Q:` Prompts. Never the rendered text sent to a model; that is the rendered prompt for a Cell.
-_Avoid_: check, question, validation item
+**Checklist**:
+The checklist items a command asks about its Items, in their written order. The command decides what each is asked about.
+_Avoid_: validation pipeline
+
+**Checklist item**:
+One verification `Q`, answered by a model through its `prompt` option or engine code through its `code` option, never both, with optional fix `F`, rationale, reference documents and parameters. One checklist item answers one question; its position in the selected checklist names its Cell's artifacts.
+_Avoid_: Prompt, validation item
 
 **Model-run step**:
 A step a model carries out in place of a step definition. An `llm:` step performs, in a Given or When, an operation its Concept binding states by intent rather than by element; a `judge:` clause rules, in a Then, on meaning no comparison can settle. Every other step runs through a step definition.
 _Avoid_: AI step, LLM step, smart step
 
 **Built-in check**:
-Code of the engine that a `D:` Prompt names, answering that Prompt for an Item without a model: pass or fail, with one line per finding. "Check" alone stays avoided: a Prompt is what a checklist asks, and a built-in check is one way to answer it.
+Engine code named by a Q's `code` option, answering it for an Item without a model: pass or fail, with one line per finding.
 _Avoid_: deterministic check, D-check, rule, validator
 
 **Cell**:
-One (Item, Prompt) pair. The unit of work an AI turn is spent on, and the unit a fix is applied to.
+One (Item, Checklist item) pair, answered by its Q and repaired by its F.
 _Avoid_: check, cell-run
 
 **Walk**:
-One full traversal of every Cell in a run. A fix applied mid-walk restarts the traversal from the first Cell.
+A traversal of every Cell, in written checklist order within each Item. Without `--fix` it reports every failure with no skip. With `--fix` an apply rechecks its Q, repeating its F within the bound until it passes, then restarts the Item's checklist; a walk applying a fix is followed by a walk of all Items.
 _Avoid_: pass, sweep, iteration
+
+**Earlier step**:
+A previous command of the pipeline `us refine`, `us apply`, `build steps`, `build tests`, `build code`. This names a term, not an instruction to an F.
+_Avoid_: earlier work within the current command
+
+**Cannot-fix outcome**:
+Any F's answer that it cannot repair what its Q found, at proposal, clarification reply or apply, with a reason and what a person must correct. An F fixes only what its Q found; a problem it did not find is neither its work nor a reason for cannot-fix. The optional `cannot_fix` mapping uses `reason` and `correction`; it stops the run distinctly, naming the Checklist item's section and index. A person's pending decision is a legitimate cannot-fix. `interface_cannot_serve` and `impossible` remain instances with their existing behaviour, reruns and log records.
+_Avoid_: retry exhaustion, not-applied repair
+
+**Pattern bindings**:
+The `pattern-bindings` code Checklist item of `build steps`, before Step coverage, checking one concept Item's registered patterns against every deterministic suite step. Patterns compile, name one capture per group and bind only the Item's own steps, each exactly once; every pattern binds some step. Its F holds the original pattern-proposal prompt, proposes and rewrites skeletons without judging them; its Q judges them after apply, then the checklist restarts. A resumed registration takes its capture count from its regex; new proposals retain the named-capture comparison.
+_Avoid_: proposal evaluation, hidden pattern check
 
 **Step coverage**:
 The engine's own answer to which Scenarios have a step no definition binds: the Scenarios it examined, and the unbound steps among them. `examined` is the load-bearing half — an empty gap list says nothing about a Scenario nobody looked at. Answered by `build steps` in-process by parsing each suite's `steps/` package, never by running a test; a step two definitions match is a refusal rather than a gap. On a concept host, distinct gap texts feed grouping per suite and block, excluding `judge:` and `llm:`; this separate model pass applies the link threshold and ambiguity rule, and the gaps grouped into one concept become that concept's Item. A step whose one definition is a pending concept skeleton is not grouped again but resumed in its concept's Item. Coverage passes once every step binds one definition with its body written; `scen check`'s step-definitions check then holds each definition a step binds to a declared concept of the step's block.
 _Avoid_: coverage report, coverage output, step report, gap list
 
 **Red without the target**:
-The state of every test while the code is not built: red, because there is no code. `build code` checks it first when no code is built, running the suite once, where every Scenario must fail at a step whose definition ran; a Scenario that passes stops it with a distinct error, since correctly written steps cannot pass without the code (ADR-0040).
+The state of every test while the code is not built: red, because there is no code. `build code` checks it first when no code is built, listing the tests and running the suite once, where every Scenario whose service has no code must fail at a step whose definition ran; a Scenario that passes stops it with a distinct error naming it, since correctly written steps cannot pass without the code (ADR-0040).
 _Avoid_: expected failure, any failure counts
 
 **Steps package**:
-A suite's step definitions and the helpers they need, the one generated part of a suite that is checked. `build steps` writes it before any test exists; the tests `build tests` renders import it.
+A suite's step definitions in `tests/<suite>/steps/` and code they share in the sibling `helpers/`, the one generated part of a suite that is checked. Helpers need no separate declaration and are verified as part of their calling bodies, including whether they do the product's work. `build steps` writes the Steps package before any test exists; the tests `build tests` renders import it.
 _Avoid_: step folder, step library, test steps
 
 **Step definition**:
 The Go function that carries out a Scenario's step, registered against a pattern that binds step texts: the step is the Scenario's line of text, the step definition the code that runs it. The Steps package holds them.
 _Avoid_: step (for the function), step implementation, glue
 
+**Verification of step definitions**:
+The `step-verification` Checklist item of `build steps`, after Step coverage, asking whether a generated step definition matches its steps under its Concept and binding. Its tool-less Q receives complete referenced code and API declarations, the semantic core, declared architecture step-argument rules and step forms with complete examples, with no fixture files. Its one F fixes only its findings, proposing a pattern and rewriting its skeleton through the same protocol as Pattern bindings, with no independent pattern check. After apply the verification Q runs again; once it passes, the checklist restarts and Pattern bindings judges any changed pattern.
+_Avoid_: critique
+
 **Catalogue**:
 Retired: the product document's former `catalogue` key of step templates, each a step's shape, block, meaning and terms. Concepts replaced it (ADR-0034), and the engine refuses at startup a product document that still declares one, naming `concepts:` in its place. Older ADRs still name it.
 _Avoid_: vocabulary (the words a Story must not use), phrase book, step library
 
 **Concept**:
-One way of putting state in place (Given), calling (When), or observing and comparing (Then) through one Public interface item, per block. The item is what the use is about and may be reached through several declared references. What the step definition does, as the step's wording fixes it, decides its concept; an argument's target never changes it. Its closed `means` names the item, kind of use and every admitted variation in prose, relying only on declared `terms` and plain English; a concept holds only `concept`, `means` and `terms`, so a widening rewrites its `means`, and the engine refuses any other key wherever it reads concepts. A Given concept states a state. Names are unique within a block (ADR-0036). After the link, a separate model Prompt judges every linked meaning for undeclared domain words, per Story in `us refine` and, in `scen check`, once per walk for each linked concept, every Scenario linking it answering from that verdict. Its Product Owner menu fix declares the word in both the glossary and the concept, or rewords the meaning; a new Word mapping follows through the System Architect’s term-mapping menu.
+One way of putting state in place (Given), calling (When), or observing and comparing (Then) through one Public interface item, per block. The item is what the use is about and may be reached through several declared references. What the step definition does, as the step's wording fixes it, decides its concept; an argument's target never changes it. Its closed `means` names the item, kind of use and every admitted variation in prose, relying only on declared `terms` and plain English; a concept holds only `concept`, `means` and `terms`, so a widening rewrites its `means`, and the engine refuses any other key wherever it reads concepts. A Given concept states a state. Names are unique within a block (ADR-0036). After the link, a separate model Checklist item judges every linked meaning for undeclared domain words, per Story in `us refine` and, in `scen check`, once per walk for each linked concept, every Scenario linking it answering from that verdict. Its Product Owner menu fix declares the word in both the glossary and the concept, or rewords the meaning; a new Word mapping follows through the System Architect’s term-mapping menu.
 _Avoid_: step template, phrase (for a concept)
 
 **Concept binding**:
@@ -129,19 +149,19 @@ A specification document holding declared meanings and their implementation: the
 _Avoid_: vocabulary file, dictionary
 
 **Closure check**:
-One of the five Built-in checks over a Scenario and its Term documents. public-interface holds its service to a valid Public interface declaration. declared-terms and term-mappings hold every declared concept's terms to the glossary and the Word mapping, concept-bindings holds every Concept binding to a declared concept and its service's Public interface, and step-definitions holds each step of the Scenario that a step definition binds to exactly one, recording a declared concept of the step's block, a Story claiming the Scenario or not; a step no definition binds yet passes as build steps' gap, since scen check runs before build steps writes it. These four pass every Scenario of a host declaring no concepts as not checked. Model Prompts link steps and judge their service bindings; the Closure checks answer without an AI turn.
+One of the five Built-in checks over a Scenario and its Term documents. public-interface holds its service to a valid Public interface declaration. declared-terms and term-mappings hold every declared concept's terms to the glossary and the Word mapping, concept-bindings holds every Concept binding to a declared concept and its service's Public interface, and step-definitions holds each step of the Scenario that a step definition binds to exactly one, recording a declared concept of the step's block, a Story claiming the Scenario or not; a step no definition binds yet passes as build steps' gap, since scen check runs before build steps writes it. These four pass every Scenario of a host declaring no concepts as not checked. Model Checklist items link steps and judge their service bindings; the Closure checks answer without an AI turn.
 _Avoid_: spec check, term check
 
 **Services**:
-The process a scenario exercises — the `true-bdd` binary for the CLI suite — as distinct from the tests that drive it. Its `third_party` CLI dependencies are the ones the harness shims; a Services caller declaring none has a vacuous mode axis.
+The process a scenario exercises — the `true-bdd` binary for the CLI suite — as distinct from the tests that drive it. Its dependencies with `protocol: cli` and `scope: third_party` are the ones `pkg/proxy/cli` substitutes with CLI stand-ins; a Services caller declaring none has a vacuous mode axis.
 _Avoid_: SUT, subject, system, target
 
 **Fix loop**:
-What a command run with `--fix` does for a failed Prompt: ask any clarifying questions, propose a fix, and read the person's apply, refine or exit choice from stdin at the fix menu. Every apply requires that answer; the engine offers no way to approve fixes in advance. End of input stops the menu or an unanswered clarification with a distinct error.
+What a command run with `--fix` does for a failed Checklist item: ask any clarifying questions, propose a fix, and read the person's apply, refine or exit choice from stdin at the fix menu. Every apply requires that answer; the engine offers no way to approve fixes in advance. End of input stops the menu or an unanswered clarification with a distinct error.
 _Avoid_: automatic approval, advance approval
 
 **Failing set**:
-All tests failing in one `build code` discovery, walked as one Item with one proposed repair plan. After each completed apply, including a started codex writer that exits non-zero or answers empty, or a started Claude writer that exits non-zero, returns an error result or answers empty, the engine reruns its remaining members once; passing members leave, missing results stay failing. Synthetic members include Go `package::<build>`, Jest `file::<load>` for each file that fails to load (carrying Jest's message), and Playwright `<startup>`. A load member reruns by file path and passes only when that file reports success; a missing file stays failing. A non-zero test command with no named member stops the run with its command, exit code and output tail, before any AI turn or `BUILD CODE COMPLETE`. A green discovery yields no Item; `build code` reports success only after the test command succeeds. Its `D:` Prompt answers the whole set's latest runner verdict without an AI turn. Its plan and writer turns get each matched Scenario and what the Specification says its steps mean: the concepts the steps' definitions record, with their words and bindings.
+All tests failing in one `build code` discovery, walked as one Item with one proposed repair plan. After each completed apply, including a started codex writer that exits non-zero or answers empty, or a started Claude writer that exits non-zero, returns an error result or answers empty, the engine reruns its remaining members once; passing members leave, missing results stay failing. Synthetic members include Go `package::<build>`, Jest `file::<load>` for each file that fails to load (carrying Jest's message), and Playwright `<startup>`. A load member reruns by file path and passes only when that file reports success; a missing file stays failing. A non-zero test command with no named member stops the run with its command, exit code and output tail, before any AI turn or `BUILD CODE COMPLETE`. A green discovery yields no Item; `build code` reports success only after the test command succeeds. Its code Q answers the whole set's latest runner verdict without an AI turn. Its plan and writer turns get each matched Scenario and what the Specification says its steps mean: the concepts the steps' definitions record, with their words and bindings.
 _Avoid_: repair batch, failure queue
 
 **Writable paths**:
@@ -149,7 +169,7 @@ The exact files or folders a service declares under `writable` in the architectu
 _Avoid_: extra roots, writable globs, implicit manifest grants
 
 **Impossible repair**:
-A plan or writer verdict that no solution exists within the declared writable paths, listing the required undeclared files and a reason for each under `impossible`. A preferred undeclared change alone is insufficient. The first report keeps edits, reruns the remaining Failing set once, then fails with a distinct error naming the files, reasons, remaining failures and the remedy: change the files by hand or add them to the service's `writable`. No further attempt or COMPLETE banner follows. An empty list preserves ordinary retries, including `applied: false`.
+The build-code instance of a Cannot-fix outcome: a plan or writer verdict that no solution exists within the declared writable paths, listing the required undeclared files and a reason for each under `impossible`. A preferred undeclared change alone is insufficient. The first report keeps edits, reruns the remaining Failing set once, then fails with a distinct error naming the files, reasons, remaining failures and the remedy: change the files by hand or add them to the service's `writable`. No further attempt or COMPLETE banner follows. An empty list preserves ordinary retries, including `applied: false`.
 _Avoid_: retry exhaustion, not-applied repair
 
 **Model override**:
@@ -161,11 +181,19 @@ Code supplied apart from a service's own source that the service or its tests bu
 _Avoid_: dependency (a service's dependencies are the processes and CLIs it talks to while it runs), package, framework
 
 **Suite wiring**:
-Retired (ADR-0040, Q21): the former name of the tests' main file, `main_test.go`, which builds the suite, registers the step definitions, creates each Scenario's state and hands each test its run. `build tests` writes it with the tests; until that is built, `build steps --fix` writes a separate `scenarios` package and a `TestMain` file instead.
+Retired (ADR-0040, Q21): the former name of the tests' main file, `main_test.go`, which builds the suite, registers the step definitions, creates each Scenario's state and hands each test its run. `build tests` writes it with the tests, which call `New(t, id)` directly.
 _Avoid_: glue, shim, bootstrap, wiring
 
+**Test runtime**:
+The same mechanisms for every Host project: `pkg/testkit` exposes the harness through its root API and keeps its runner and reporter under `internal/`; `pkg/proxy/cli` supplies the CLI SDK and `utilities/cliproxy` its stand-in binary. Product facts come from the Specification and the Steps package; this repository's report and coverage tooling lives in `scripts/`.
+_Avoid_: engine harness, product runtime
+
+**CLI stand-in**:
+The program `utilities/cliproxy` that `pkg/proxy/cli` builds from the host's `pkg` commit and puts first on PATH under a declared dependency's name. It records, replays or forwards calls using the dependency's recording rules, and records spawn observations whose paths a Given supplies through the SDK; Then steps judge them. Vendor invocation rules stay in the stand-in; it knows no Host project's product.
+_Avoid_: AI proxy, aiproxy (for the runtime component)
+
 **Scenario run**:
-The harness's state for one Scenario, carried by `testkit.ScenarioRun`: its test, Scenario, prepared fixture, proxy setup, result, run recorder and grading, with access to the suite's modes, recordings, judge and built service. A suite declaring `architecture.testing.testkit` embeds `*testkit.ScenarioRun` in `State` as its one harness field (ensured even when no new skeleton is written) and adds only the definitions' own data.
+The Test runtime's state for one Scenario, carried by `testkit.ScenarioRun`: its test, Scenario, prepared fixture and result, with methods for the next command's environment and PATH, its mode and work before the initial snapshot. The runtime privately owns proxy setup, recording and grading; step definitions use the `pkg/testkit` root and `pkg/proxy/cli` SDK. A suite declaring `architecture.testing.testkit` embeds `*testkit.ScenarioRun` in `State` as its one harness field (ensured even when no new skeleton is written) and adds only the definitions' own data.
 _Avoid_: world (for the harness's type), harness state, test context
 
 ## Repository vocabulary
@@ -177,7 +205,7 @@ A program's ANSWER — bytes a caller reads verbatim in a shape it fixed, plus t
 _Avoid_: output, print, terminal, UI
 
 **Log**:
-One `log/slog` record: everything a program says ABOUT its own run. Severity is a level, never a choice of stream — the stream is bound once per program in `main()`, and every `scripts/` program stamps each record with its writer in `tool` and its process in `run`. `services/true-bdd/internal/infrastructure/logging` implements the engine's Log; `pkg/logging` implements it independently for tests and tooling; the engine's message strings and attribute keys are a wire contract `pkg/testkit/reporter` reads.
+One `log/slog` record: everything a program says ABOUT its own run. Severity is a level, never a choice of stream — the stream is bound once per program in `main()`, and every `scripts/` program stamps each record with its writer in `tool` and its process in `run`. `services/true-bdd/internal/infrastructure/logging` implements the engine's Log; `pkg/logging` implements it independently for tests and tooling; the engine's message strings and attribute keys are a wire contract `scripts/reporter` reads.
 _Avoid_: trace, diagnostic, stderr
 
 **Run**:

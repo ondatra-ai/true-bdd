@@ -5,9 +5,9 @@
     {
       "path": "services/calc/calc.go",
       "kind": "created",
-      "size": 152,
-      "sha256": "4b9eeaee97b72bd36b0ec0ed2e2b575b6a6234d2922ac81ca1fd37a945c10c78",
-      "text": "// Package calc provides constant integer results.\npackage calc\n\n// A returns 1.\nfunc A() int {\n\treturn 1\n}\n\n// B returns 2.\nfunc B() int {\n\treturn 2\n}\n"
+      "size": 124,
+      "sha256": "fbaf849a719015a0495242e99931ccd900a98e96b99cdee69292bbdf9a8d7e86",
+      "text": "// Package calc provides constant calculation results.\npackage calc\n\nfunc A() int {\n\treturn 1\n}\n\nfunc B() int {\n\treturn 2\n}\n"
     }
   ]
 }

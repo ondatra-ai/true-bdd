@@ -1,1 +1,3 @@
-Changed only A in services/calc/calc.go to return 1; B still returns 0. TestA passes, while TestB remains failing as expected for this stage.
+TestA passes; TestB still fails as expected for this stage. The patch tool failed, so I applied the edit through the shell. Git diff was unavailable because this directory is not a Git repository.
+
+Updated calc.go so A returns 1, while B remains 0 and prepared.txt remains absent.

@@ -41,6 +41,7 @@ summary: "<one-line summary>"
 - Edit the scratch file directly during this turn — the confirmation
   block is informational only.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -66,72 +67,59 @@ Then:
 
 ## Fix Prompt to Apply
 
-=== FILE_START: tmp/{{RUN_DIR}}/01-calc-halve-001-even-fix-prompts.md ===
 # Fix Prompt for AC calc-halve-001-even: The calculator must print 3 when the Owner halves 6.
 
 ## Target
 Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 
-## Context gathered
-- The registry currently holds exactly two scenarios: `calc-001-double` (service `calc`, path `tests/calc/calc_test.go`) and `neighbour-001-greets` (service `neighbour`, path `tests/neighbour/neighbour_test.go`). Neither has a `user_stories:` list, so the subject AC (story `docs/product/stories/calc-halve-a-number.yaml`, lineage id `calc-halve-001-even`) is not present anywhere — the `us-apply/merge` check fails until a new entry is added.
-- `docs/architecture/architecture.yaml` declares two services: `calc` and `neighbour`. The AC is a calculator behaviour ("the calculator is installed" / "the Owner halves 6"), the same command family as the existing `calc-001-double` scenario, whose generated test file is `tests/calc/calc_test.go`. So the new scenario REUSES that existing path, and per step 3 its `service:` is the service of that reused suite: `calc` (a name the architecture declares).
-- Today's date: `2026-10-31`.
+## Context
+- The failed check `us-apply/merge` reported: `AC 001-even (lineage calc-halve-001-even): not present`. No entry under `scenarios:` has a `user_stories[]` item carrying both the story path `docs/product/stories/calc-halve-a-number.yaml` and the lineage scenario id `calc-halve-001-even`.
+- `docs/architecture/architecture.yaml` declares exactly two services by `services[].name`: `calc` and `neighbour`.
+- The halving behaviour belongs to the same calculator-arithmetic family as the existing scenario `calc-001-double` (same `given: [the calculator is installed]`, same `the Owner <operation> <number>` command shape). So REUSE that family's test file `tests/calc/calc_test.go`, and take `service:` from the scenarios in that suite, which is `calc` — a name the architecture declares. Do NOT invent a new path and do NOT use `neighbour`.
+- The registry key for the new entry is the lineage scenario id verbatim: `calc-halve-001-even`. Do not renumber it or invent another id.
+- Insert the new entry immediately after `calc-001-double` and before `neighbour-001-greets`, so the `calc` scenarios stay grouped and existing ordering is otherwise preserved. Use 2-space indentation for the scenario key and the same nesting as the surrounding entries. Steps are copied verbatim from the AC, in the file's existing inline-list style.
+- Change nothing else: leave `metadata:`, `calc-001-double`, and `neighbour-001-greets` exactly as they are.
 
 ## Required Changes
 
-### Change #1: Add scenario `calc-halve-001-even` to the registry
-**Issue:** No entry under `scenarios:` has a `user_stories[]` member pairing story `docs/product/stories/calc-halve-a-number.yaml` with lineage scenario id `calc-halve-001-even`, so the AC does not appear in the registry.
+### Change #1: Add scenario `calc-halve-001-even` under `scenarios:`
 
-**Action:** Use the Edit tool on `tmp/{{RUN_DIR}}/scenarios.yaml` with the exact `old_string` and `new_string` below. This appends the new entry at the end of the `scenarios:` mapping, leaving `calc-001-double` and `neighbour-001-greets` byte-for-byte untouched and preserving the existing 2-space indentation style.
+**Issue:** The acceptance criterion `001-even` of story `calc-halve` (lineage id `calc-halve-001-even`) is not present in the registry — no scenario entry links the story path `docs/product/stories/calc-halve-a-number.yaml` together with the lineage scenario id `calc-halve-001-even`, so the merge check fails.
+
+**Action:** Use the Edit tool on `tmp/{{RUN_DIR}}/scenarios.yaml` with the exact `old_string` and `new_string` below (single occurrence; do not use `replace_all`).
 
 **old_string:**
 ```
+      then: [the result is 6]
   neighbour-001-greets:
-    description: The neighbour greets the Owner who knocks
-    service: neighbour
-    path: tests/neighbour/neighbour_test.go
-    merged_steps:
-      given: [the neighbour is at home]
-      when: [the Owner knocks]
-      then: [the greeting is "hello"]
 ```
 
 **new_string:**
 ```
-  neighbour-001-greets:
-    description: The neighbour greets the Owner who knocks
-    service: neighbour
-    path: tests/neighbour/neighbour_test.go
-    merged_steps:
-      given: [the neighbour is at home]
-      when: [the Owner knocks]
-      then: [the greeting is "hello"]
+      then: [the result is 6]
   calc-halve-001-even:
     description: Halving an even number returns half its value
     service: calc
     path: tests/calc/calc_test.go
-    last_updated: "2026-10-31"
+    last_updated: "2026-11-07"
     user_stories:
       - story: docs/product/stories/calc-halve-a-number.yaml
         scenario_id: calc-halve-001-even
-        merge_date: "2026-10-31"
+        merge_date: "2026-11-07"
     merged_steps:
       given: [the calculator is installed]
       when: [the Owner halves 6]
       then: [the result is 3]
+  neighbour-001-greets:
 ```
 
-## Constraints for the applier
-- The registry key MUST be the lineage id verbatim: `calc-halve-001-even`. Do not renumber it, do not invent another id.
-- `service:` MUST remain `calc` — it is declared in `docs/architecture/architecture.yaml` under `services[].name` and matches the reused `tests/calc/` suite. Never leave it empty and never use a name the architecture does not declare.
-- `path:` MUST reuse the existing `tests/calc/calc_test.go` — do not create a new test file for this scenario.
-- `merged_steps` given/when/then MUST stay verbatim from the AC: `the calculator is installed`, `the Owner halves 6`, `the result is 3`.
-- Do not modify `metadata:`, `calc-001-double`, or `neighbour-001-greets`. Make no other edits to the file.
-
-## Verification after the edit
-- The file still parses as YAML and `scenarios:` has three keys: `calc-001-double`, `neighbour-001-greets`, `calc-halve-001-even`.
-- The `us-apply/merge` check line should now read: `AC 001-even (lineage calc-halve-001-even): present in calc-halve-001-even`.
-=== FILE_END: tmp/{{RUN_DIR}}/01-calc-halve-001-even-fix-prompts.md ===
+## Verification
+After the edit, `tmp/{{RUN_DIR}}/scenarios.yaml` must satisfy all of:
+1. A `scenarios:` entry keyed exactly `calc-halve-001-even` exists.
+2. Its `user_stories[]` contains an item whose `story` is `docs/product/stories/calc-halve-a-number.yaml` and whose `scenario_id` is `calc-halve-001-even` — this is what makes `us-apply/merge` report `AC 001-even (lineage calc-halve-001-even): present in calc-halve-001-even`.
+3. `service:` is `calc` (a name declared in `docs/architecture/architecture.yaml`) and `path:` is `tests/calc/calc_test.go`, reused from the `calc-001-double` family.
+4. `merged_steps` given/when/then match the AC verbatim: `the calculator is installed` / `the Owner halves 6` / `the result is 3`.
+5. The file remains valid YAML, `calc-001-double` and `neighbour-001-greets` are byte-for-byte unchanged, and `metadata:` is untouched.
 
 ---
 

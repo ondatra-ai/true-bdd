@@ -1,10 +1,9 @@
 package steps
 
 import (
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 	"path/filepath"
 	"regexp"
-
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // assertFileMatchCount counts occurrences in one user-visible file chosen by glob.
@@ -39,7 +38,7 @@ func assertFileMatchCount(state *State, args []string) error {
 		return err
 	}
 
-	content, err := disk.Read(full)
+	content, err := testkit.Read(full)
 	if err != nil {
 		return state.fail("read matched file %q: %w", args[0], err)
 	}

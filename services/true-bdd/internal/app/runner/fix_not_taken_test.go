@@ -12,6 +12,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/validate"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/runner"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/provider"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/ports"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/checklist"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/config"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/disk"
@@ -74,12 +75,12 @@ func TestAFixNeverTakenStopsAtTheBound(t *testing.T) {
 	}
 
 	err := runner.Run(t.Context(), spec)
-	if err == nil || !strings.Contains(err.Error(), "gave up after 3 applied fix") || len(requests) != 3 {
-		t.Fatalf("Run = %v after %d fixes, want the bound after three", err, len(requests))
+	if err == nil || !strings.Contains(err.Error(), "gave up after 2 applied fix") || len(requests) != 2 {
+		t.Fatalf("Run = %v after %d fixes, want the bound after two", err, len(requests))
 	}
 }
 
-func notTakenSpec(t *testing.T, answer notTakenAnswer) runner.Spec[bool] {
+func notTakenSpec(t *testing.T, answer ports.AIPort) runner.Spec[bool] {
 	t.Helper()
 	root := t.TempDir()
 	t.Chdir(root)
@@ -88,7 +89,7 @@ func notTakenSpec(t *testing.T, answer notTakenAnswer) runner.Spec[bool] {
 		"true-bdd/true-bdd.yaml": "paths:\n  checklists_dir: checklists\nengine:\n  models:\n    high: claude:test\n" +
 			"  default_prompt_model: high\n  default_fix_model: high\n  default_apply_model: high\n",
 		"checklists/refusal.yaml": "version: '1.0'\nconfig:\n  max_apply_attempts: 2\nsections:\n- id: verdict\n" +
-			"  validation_prompts:\n  - D: tests-pass\n    F: Repair the product\n",
+			"  validation_prompts:\n  - Q: {code: tests-pass}\n    F: Repair the product\n",
 		"system.tpl": "Fix it.",
 		"fix.tpl":    "{{ range .FailedCheck.Context }}{{ . }}\n{{ end }}",
 		"apply.tpl":  "{{.ResultPath}}",

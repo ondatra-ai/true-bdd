@@ -20,8 +20,6 @@ type ConfigBlock struct {
 // EngineBlock selects checklist model tiers under engine.models. Empty fields
 // use the role's default; prompt, fix and apply also accept per-Prompt overrides.
 type EngineBlock struct {
-	// CritiqueModel selects build steps' separate definition critique turn.
-	CritiqueModel string `yaml:"critique_model,omitempty"`
 	// PromptModel runs the validation turn that answers `Q:`.
 	PromptModel string `yaml:"prompt_model,omitempty"`
 	// FixModel runs the turn that converts a failure into a fix prompt.

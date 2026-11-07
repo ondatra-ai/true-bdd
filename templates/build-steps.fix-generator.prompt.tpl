@@ -13,7 +13,10 @@ Concept: {{ .Subject.Concept.Name }}
 Block: {{ .Subject.Concept.Block }}
 Meaning: {{ .Subject.Concept.Means }}
 
-Read the listed Scenario keys from the Registry path and inspect their fixture
+{{ if regexMatch "(?m)^runtime_api:" .Subject.Context }}Read the semantic core and Public interface first; next read the saved complete go doc -all files
+named by runtime_api for the runtime's API meanings; then read suite source and fixture inputs.
+
+{{ end }}Read the listed Scenario keys from the Registry path and inspect their fixture
 input directories under fixture_root as needed (exclude cassettes/). Read the definitions, State,
 helpers and architecture-declared test libraries. These paths carry the complete
 evidence; no digest or summary replaces it. Never read service implementation.
@@ -23,17 +26,37 @@ evidence; no digest or summary replaces it. Never read service implementation.
 
 Propose the body of every definition the context lists, against the concept's
 binding and the declared Public interface. Each function receives its pattern's
-captures in args, in the order its captures name them. Derive every body solely
-from the declared interface, never from service source or a target-dependent
-test run. Do not propose running a Scenario or making it green. When the
-declaration cannot serve the concept, propose that the writer return
+captures in args, in the order its captures name them, and the captures are all
+the body knows of the step: each capture is the step's value for the body, even
+where the step text beside it shows more. Whether a pattern captures the right
+part of a step is not this check's question: the step-verification Checklist item judges the pattern
+(pattern_captures), sends it back to the pattern proposal, and the body is
+proposed again for the new captures. Do not ask about, refuse on or work around
+a pattern or capture; write the body for the captures as listed. Derive every
+body solely from the declared interface, never from service source or a
+target-dependent test run. Do not propose running a Scenario or making it green.
+When the declaration cannot serve the concept, propose that the writer return
 interface_cannot_serve with the concept and what setup or observation is
 missing; do not ask a clarification question to invent or extend the interface.
 
 The engine owns every registration, pattern, function signature and
 //truebdd:concept record. Reuse the suite's state and helpers. Never implement
 the service's behaviour inside a definition. Never edit the Specification or
-service code. Ask for missing context before proposing.
+service code. {{ $missingBodies := gt (len .FailedCheck.Context) 0 }}{{ range .FailedCheck.Context }}{{ if not (regexMatch "^step not written yet(:|$)" .) }}{{ $missingBodies = false }}{{ end }}{{ end }}{{ if $missingBodies }}This check found only that the bodies are not written{{ else }}This check's findings are listed under Validation Failure; this F fixes only those findings{{ end }}; cannot_fix
+is for a Specification that leaves no way to make this reported fix.
+The step-verification F may revise only the patterns its findings name; its
+prepared context supplies the new captures and engine-owned skeleton locations.
+Every other F writes bodies for the listed captures and leaves their fit to
+step-verification. Ask only
+for information needed to fix the reported finding.
+
+{{ if regexMatch "/step-verification$" .FailedCheck.SectionPath }}
+For a pattern repair, a new definition path in the context is a planned engine
+skeleton and may not exist yet. Its signature is func <function>(state *State,
+args []string) error. The engine writes it after the person's apply choice,
+before the body writer runs. Propose bodies for the listed locations and captures;
+a missing planned file is not a reason for clarification or cannot_fix.
+{{ end }}
 
 ## Validation Failure
 
@@ -94,7 +117,7 @@ Using the user's clarifications above, generate a complete fix prompt.
 Analyze if you have enough context to generate a confident fix.
 {{- end }}
 
-When ready, propose only these definitions' bodies and any shared state they need.
+When ready, propose these definitions' bodies, shared State and code they share in tests/<suite>/helpers/.
 Preserve registrations, patterns, signatures and concept records. Do not edit other
 definitions, generated tests, the Specification or service code. Follow the binding
 through the declared Public interface; never perform the product's operation yourself.
@@ -106,7 +129,7 @@ through the declared Public interface; never perform the product's operation you
 {{.Subject.Suite}}
 
 ## Required Changes
-<paste the body and shared-state changes here>
+<paste the body, shared-state and helpers/ changes here>
 === FILE_END: {{.ResultPath}} ===
 
 **If you need clarification first**, output:
@@ -128,12 +151,19 @@ questions:
 {{ if .Structured }}
 **ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END
 and QUESTIONS_START/QUESTIONS_END instructions above.** Your final message
-must be a single JSON object with both keys present:
+must be a single JSON object with all three keys present:
 
 - `fix_prompt`: the fix instructions, or `""` when you need clarification.
 - `questions`: an array of `{id, question, context, options}` objects, or
   `[]` when you are returning a fix prompt.
+- `cannot_fix`: null unless the Specification leaves no way to write a body for
+  the reported fix; otherwise `{reason, correction}`, stating why and what a
+  person must correct. When set, `fix_prompt` is `""` and `questions` is `[]`.
 
-Exactly one of the two carries content. Do not emit any markers, and do not
+Exactly one of the three carries content. Do not emit any markers, and do not
 wrap the object in markdown fences. Reasoning before the object is ignored.
 {{ end }}
+{{if .StepArguments}}
+## Step arguments
+
+{{.StepArguments}}{{end}}

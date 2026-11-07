@@ -18,19 +18,17 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
-// scen-check-speed-001-overlapping-validation: Concurrent validation preserves each Scenario gate and Prompt order and serializes fixes in Scenario order
+// scen-check-speed-001-overlapping-validation: Concurrent validation must preserve written checklist order and serialize fixes in Scenario order
 func TestScenCheckSpeed001OverlappingValidation(t *testing.T) {
-	s := scenarios.New(t, "scen-check-speed-001-overlapping-validation")
+	s := New(t, "scen-check-speed-001-overlapping-validation")
 	s.Given(`the "scen-check-concurrent" project tree`)
 	s.And(`the validation CLIs are controlled for concurrent arrival`)
 	s.And(`the Quality Engineer's answers are "1/1/3" line by line`)
 	s.When(`the Quality Engineer runs "scen check --fix"`)
 	s.Then(`the command exits with code 1`)
-	s.And(`Scenario validation overlaps with ordered gates and fix menus`)
+	s.And(`Scenario validation overlaps with ordered checklist items and fix menus`)
 	s.And(`stdout matches Exiting\.`)
 	s.And(`stdout does not match Walk stopped`)
 	s.Done()
@@ -38,13 +36,13 @@ func TestScenCheckSpeed001OverlappingValidation(t *testing.T) {
 
 // scen-check-speed-002-reverse-request-replay: A concurrent walk replays when its validation requests arrive in reverse recorded order
 func TestScenCheckSpeed002ReverseRequestReplay(t *testing.T) {
-	s := scenarios.New(t, "scen-check-speed-002-reverse-request-replay")
+	s := New(t, "scen-check-speed-002-reverse-request-replay")
 	s.Given(`the "scen-check-reverse" project tree`)
 	s.And(`the validation CLIs are controlled for concurrent arrival`)
 	s.And(`the Quality Engineer's answers are "1/1/3" line by line`)
 	s.When(`the Quality Engineer runs "scen check --fix"`)
 	s.Then(`the command exits with code 1`)
-	s.And(`Scenario validation overlaps with ordered gates and fix menus`)
+	s.And(`Scenario validation overlaps with ordered checklist items and fix menus`)
 	s.And(`stdout matches Exiting\.`)
 	s.And(`stdout does not match Walk stopped`)
 	s.And(`replay consumes the recorded validation requests in reverse order`)
@@ -53,7 +51,7 @@ func TestScenCheckSpeed002ReverseRequestReplay(t *testing.T) {
 
 // scen-check-speed-003-shared-judgements: A walk judges each binding and each linked concept's words once, and every Scenario using them answers from those verdicts
 func TestScenCheckSpeed003SharedJudgements(t *testing.T) {
-	s := scenarios.New(t, "scen-check-speed-003-shared-judgements")
+	s := New(t, "scen-check-speed-003-shared-judgements")
 	s.Given(`the "scen-check-shared-judgements" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 0`)

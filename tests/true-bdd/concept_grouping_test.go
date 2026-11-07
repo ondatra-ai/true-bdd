@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // concept-grouping-001-no-concept: A step outside every closed concept stops before skeletons
 func TestConceptGrouping001NoConcept(t *testing.T) {
-	s := scenarios.New(t, "concept-grouping-001-no-concept")
+	s := New(t, "concept-grouping-001-no-concept")
 	s.Given(`the "concept-grouping-none" project tree`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 1`)
@@ -38,7 +36,7 @@ func TestConceptGrouping001NoConcept(t *testing.T) {
 
 // concept-grouping-002-ambiguous: Two identical meanings reaching the configured threshold of seven stop grouping as ambiguous
 func TestConceptGrouping002Ambiguous(t *testing.T) {
-	s := scenarios.New(t, "concept-grouping-002-ambiguous")
+	s := New(t, "concept-grouping-002-ambiguous")
 	s.Given(`the "concept-grouping-ambiguous" project tree`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 1`)
@@ -50,7 +48,7 @@ func TestConceptGrouping002Ambiguous(t *testing.T) {
 
 // concept-grouping-003-missing-text: A missing grouping text is a crash
 func TestConceptGrouping003MissingText(t *testing.T) {
-	s := scenarios.New(t, "concept-grouping-003-missing-text")
+	s := New(t, "concept-grouping-003-missing-text")
 	s.Given(`the "concept-grouping-missing" project tree`)
 	s.And(`the grouping answer CLI is controlled for invalid replies`)
 	s.When(`the System Architect runs "build steps --fix"`)
@@ -63,7 +61,7 @@ func TestConceptGrouping003MissingText(t *testing.T) {
 
 // concept-grouping-004-repeated-text: A repeated grouping text is a crash
 func TestConceptGrouping004RepeatedText(t *testing.T) {
-	s := scenarios.New(t, "concept-grouping-004-repeated-text")
+	s := New(t, "concept-grouping-004-repeated-text")
 	s.Given(`the "concept-grouping-repeat" project tree`)
 	s.And(`the grouping answer CLI is controlled for invalid replies`)
 	s.When(`the System Architect runs "build steps --fix"`)
@@ -76,7 +74,7 @@ func TestConceptGrouping004RepeatedText(t *testing.T) {
 
 // concept-grouping-005-runner-rank: A runner-up above the best is a crash
 func TestConceptGrouping005RunnerRank(t *testing.T) {
-	s := scenarios.New(t, "concept-grouping-005-runner-rank")
+	s := New(t, "concept-grouping-005-runner-rank")
 	s.Given(`the "concept-grouping-rank" project tree`)
 	s.And(`the grouping answer CLI is controlled for invalid replies`)
 	s.When(`the System Architect runs "build steps --fix"`)
@@ -89,7 +87,7 @@ func TestConceptGrouping005RunnerRank(t *testing.T) {
 
 // concept-grouping-006-cut-off: An output-capped grouping answer is a crash
 func TestConceptGrouping006CutOff(t *testing.T) {
-	s := scenarios.New(t, "concept-grouping-006-cut-off")
+	s := New(t, "concept-grouping-006-cut-off")
 	s.Given(`the "concept-grouping-cap" project tree`)
 	s.And(`the grouping answer CLI is controlled for invalid replies`)
 	s.When(`the System Architect runs "build steps --fix"`)
@@ -102,13 +100,15 @@ func TestConceptGrouping006CutOff(t *testing.T) {
 
 // concept-grouping-007-balanced-batches: Five distinct texts use the fewest balanced batches under a limit of three
 func TestConceptGrouping007BalancedBatches(t *testing.T) {
-	s := scenarios.New(t, "concept-grouping-007-balanced-batches")
+	s := New(t, "concept-grouping-007-balanced-batches")
 	s.Given(`the "concept-grouping-batches" project tree`)
 	s.When(`the System Architect runs "build steps"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches batch=1 texts=3`)
 	s.And(`stdout matches batch=2 texts=2`)
 	s.And(`stdout matches step definitions are missing`)
+	s.And(`stdout matches Check answered.*check=pattern-bindings.*answer=fail.*no pattern binds`)
+	s.And(`stdout does not match Concept judgement answered.*judgement=propose`)
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the engine spawned no test runners`)
 	s.Done()
@@ -116,7 +116,7 @@ func TestConceptGrouping007BalancedBatches(t *testing.T) {
 
 // concept-grouping-008-changed-binding: A changed ambiguous binding is judged again before skeletons
 func TestConceptGrouping008ChangedBinding(t *testing.T) {
-	s := scenarios.New(t, "concept-grouping-008-changed-binding")
+	s := New(t, "concept-grouping-008-changed-binding")
 	s.Given(`the "concept-grouping-binding" project tree`)
 	s.When(`the System Architect runs build steps after scen check and a binding change`)
 	s.Then(`the command exits with code 1`)
@@ -128,7 +128,7 @@ func TestConceptGrouping008ChangedBinding(t *testing.T) {
 
 // concept-grouping-009-missing-binding: A grouped concept needs a binding for its suite service
 func TestConceptGrouping009MissingBinding(t *testing.T) {
-	s := scenarios.New(t, "concept-grouping-009-missing-binding")
+	s := New(t, "concept-grouping-009-missing-binding")
 	s.Given(`the "concept-grouping-unbound" project tree`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 1`)
@@ -140,7 +140,7 @@ func TestConceptGrouping009MissingBinding(t *testing.T) {
 
 // concept-grouping-010-model-steps: Model-run steps produce no concept Item
 func TestConceptGrouping010ModelSteps(t *testing.T) {
-	s := scenarios.New(t, "concept-grouping-010-model-steps")
+	s := New(t, "concept-grouping-010-model-steps")
 	s.Given(`the "concept-grouping-prefix" project tree`)
 	s.When(`the System Architect runs "build steps"`)
 	s.Then(`the command exits with code 0`)
@@ -153,7 +153,7 @@ func TestConceptGrouping010ModelSteps(t *testing.T) {
 
 // concept-grouping-011-build-tests: build tests renders a concept host's free-text steps without matching them against anything
 func TestConceptGrouping011BuildTests(t *testing.T) {
-	s := scenarios.New(t, "concept-grouping-011-build-tests")
+	s := New(t, "concept-grouping-011-build-tests")
 	s.Given(`the "concept-grouping-render" project tree`)
 	s.When(`the System Architect runs "build tests --fix"`)
 	s.Then(`the command exits with code 0`)
@@ -164,7 +164,7 @@ func TestConceptGrouping011BuildTests(t *testing.T) {
 
 // concept-grouping-012-unknown-index: An unknown grouping index is a crash
 func TestConceptGrouping012UnknownIndex(t *testing.T) {
-	s := scenarios.New(t, "concept-grouping-012-unknown-index")
+	s := New(t, "concept-grouping-012-unknown-index")
 	s.Given(`the "concept-grouping-unknown" project tree`)
 	s.And(`the grouping answer CLI is controlled for invalid replies`)
 	s.When(`the System Architect runs "build steps --fix"`)
@@ -177,7 +177,7 @@ func TestConceptGrouping012UnknownIndex(t *testing.T) {
 
 // concept-grouping-013-same-runner: A runner-up equal to the best concept is a crash
 func TestConceptGrouping013SameRunner(t *testing.T) {
-	s := scenarios.New(t, "concept-grouping-013-same-runner")
+	s := New(t, "concept-grouping-013-same-runner")
 	s.Given(`the "concept-grouping-same" project tree`)
 	s.And(`the grouping answer CLI is controlled for invalid replies`)
 	s.When(`the System Architect runs "build steps --fix"`)

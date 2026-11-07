@@ -5,9 +5,9 @@
     {
       "path": "tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go",
       "kind": "modified",
-      "size": 716,
-      "sha256": "68c2a824c14ae91e1ec573048c4bc84ffeeb555597274a0c2655430b15a032bf",
-      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"halving\"\nfunc concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {\n\tnumber := args[0]\n\tcmd := exec.Command(\"go\", \"run\", \"./services/calc\", \"halve\", number)\n\tcmd.Dir = \"../..\"\n\tvar stderr strings.Builder\n\tcmd.Stderr = \u0026stderr\n\tout, err := cmd.Output()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"halve %s: %w: %s\", number, err, strings.TrimSpace(stderr.String()))\n\t}\n\tresult, err := strconv.Atoi(strings.TrimSpace(string(out)))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"halve %s: stdout %q is not an integer: %w\", number, string(out), err)\n\t}\n\tstate.Result = result\n\treturn nil\n}\n"
+      "size": 436,
+      "sha256": "a34f0c390850536a772004ec3e0b24f8c72c05c1ec4810ccb0b00a437244cc4e",
+      "text": "package steps\n\nimport (\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"halving\"\nfunc concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {\n\tcmd := exec.Command(\"go\", \"run\", \"./services/calc\", \"halve\", args[0])\n\tcmd.Dir = \"../..\"\n\tout, err := cmd.Output()\n\tif err != nil {\n\t\treturn err\n\t}\n\tstate.Result, err = strconv.Atoi(strings.TrimSpace(string(out)))\n\treturn err\n}\n"
     }
   ]
 }

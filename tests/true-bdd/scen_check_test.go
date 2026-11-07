@@ -18,116 +18,127 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
-// checklist-checks-001-checks-run-before-questions: Within a Scenario every `D:` Prompt must run before any `Q:` Prompt, whatever the file order, and a Scenario failing one must be reported failed with its `Q:` Prompts skipped and no AI turn spent on it, while a Scenario passing it walks its `Q:` Prompts
+// checklist-checks-001-checks-run-before-questions: Checklist items must run in their written order without skipping a prompt Q after a failed code Q
 func TestChecklistChecks001ChecksRunBeforeQuestions(t *testing.T) {
-	s := scenarios.New(t, "checklist-checks-001-checks-run-before-questions")
+	s := New(t, "checklist-checks-001-checks-run-before-questions")
 	s.Given(`the "scen-check-failed-check-skips-questions" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches SCEN CHECK`)
-	s.And(`stdout matches msg="Check answered" check=given-when-then subjectID=E2E-001 promptIndex=2 answer=pass`)
-	s.And(`stdout matches msg="Check answered" check=given-when-then subjectID=E2E-002 promptIndex=2 answer=fail context="\[E2E-002: missing then step\]"`)
-	s.And(`stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=1`)
-	s.And(`stdout matches scen-check/scenario_quality +D: given-when-then +fail +FAIL`)
-	s.And(`stdout matches SKIP: 1\n`)
+	s.And(`stdout matches (?s)Cell validation started.*subjectID=E2E-001 promptIndex=1.*Check answered.*subjectID=E2E-001 promptIndex=2`)
+	s.And(`stdout matches (?s)Check answered.*subjectID=E2E-002 promptIndex=2 answer=fail.*Cell validation started.*subjectID=E2E-002 promptIndex=3`)
+	s.And(`stdout does not match Prompt skipped after a failed check`)
 	s.And(`stdout matches Validation failed`)
 	s.But(`stdout does not match ALL CHECKS PASSED`)
-	s.And(`the engine dispatched 1 AI turn`)
+	s.And(`the engine dispatched 4 AI turns`)
 	s.And(`no file outside "tmp" changed`)
 	s.Done()
 }
 
-// checklist-checks-002-check-and-question-refused: A checklist Prompt carrying both `D:` and `Q:` must be refused at startup, naming the Prompt, because a built-in check or a model answers a Prompt and never both
+// checklist-checks-002-check-and-question-refused: A checklist item carrying both Q options, prompt and code must be refused at startup, naming the checklist item, because a Q has only one answering option
 func TestChecklistChecks002CheckAndQuestionRefused(t *testing.T) {
-	s := scenarios.New(t, "checklist-checks-002-check-and-question-refused")
+	s := New(t, "checklist-checks-002-check-and-question-refused")
 	s.Given(`the "scen-check-prompt-with-both-kinds" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
-	s.And(`stdout matches scen-check/scenario_quality #2 carries both D: and Q:`)
+	s.And(`stdout matches scen-check/scenario_quality #2 carries both Q options`)
 	s.But(`stdout does not match SCEN CHECK`)
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
 
-// checklist-checks-003-neither-check-nor-question-refused: A checklist Prompt carrying neither `D:` nor `Q:` must be refused at startup, naming the Prompt, because nothing would answer it
+// checklist-checks-003-neither-check-nor-question-refused: A checklist item carrying neither Q option, prompt nor code must be refused at startup, naming the checklist item, because nothing would answer it
 func TestChecklistChecks003NeitherCheckNorQuestionRefused(t *testing.T) {
-	s := scenarios.New(t, "checklist-checks-003-neither-check-nor-question-refused")
+	s := New(t, "checklist-checks-003-neither-check-nor-question-refused")
 	s.Given(`the "scen-check-prompt-with-no-kind" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
-	s.And(`stdout matches scen-check/scenario_quality #1 carries neither D: nor Q:`)
+	s.And(`stdout matches scen-check/scenario_quality #1 carries neither Q option`)
 	s.But(`stdout does not match SCEN CHECK`)
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
 
-// checklist-checks-004-unknown-check-refused: A `D:` Prompt naming a check the engine does not hold must be refused at startup, naming the Prompt and the checks the command has
+// checklist-checks-004-unknown-check-refused: A code Q naming a check the engine does not hold must be refused at startup, naming the checklist item and the checks the command has
 func TestChecklistChecks004UnknownCheckRefused(t *testing.T) {
-	s := scenarios.New(t, "checklist-checks-004-unknown-check-refused")
+	s := New(t, "checklist-checks-004-unknown-check-refused")
 	s.Given(`the "scen-check-unknown-check" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
-	s.And(`stdout matches scen-check/scenario_quality #1 D: steps-are-present names no built-in check of scen check, which has concept-bindings, declared-terms, given-when-then, public-interface, step-definitions, term-mappings`)
+	s.And(`stdout matches scen-check/scenario_quality #1 Q code: steps-are-present names no built-in check of scen check, which has concept-bindings, declared-terms, given-when-then, public-interface, step-definitions, term-mappings`)
 	s.But(`stdout does not match SCEN CHECK`)
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
 
-// checklist-checks-005-model-on-check-refused: A `D:` Prompt carrying `model:` must be refused at startup, naming the Prompt, because no model answers a built-in check
+// checklist-checks-005-model-on-check-refused: A code Q carrying `model:` must be refused at startup, naming the checklist item, because no model answers a built-in check
 func TestChecklistChecks005ModelOnCheckRefused(t *testing.T) {
-	s := scenarios.New(t, "checklist-checks-005-model-on-check-refused")
+	s := New(t, "checklist-checks-005-model-on-check-refused")
 	s.Given(`the "scen-check-model-on-check" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
-	s.And(`stdout matches scen-check/scenario_quality #1 D: given-when-then carries model:, but no model answers a built-in check`)
+	s.And(`stdout matches scen-check/scenario_quality #1 Q code: given-when-then carries model:, but no model answers a built-in check`)
 	s.But(`stdout does not match SCEN CHECK`)
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
 
-// checklist-checks-006-unread-parameter-refused: A `D:` Prompt passing its check a `with:` parameter the check does not read must be refused at startup, naming the parameter, rather than run the check as though it were honoured
+// checklist-checks-006-unread-parameter-refused: A code Q passing its check a `with:` parameter the check does not read must be refused at startup, naming the parameter, rather than run the check as though it were honoured
 func TestChecklistChecks006UnreadParameterRefused(t *testing.T) {
-	s := scenarios.New(t, "checklist-checks-006-unread-parameter-refused")
+	s := New(t, "checklist-checks-006-unread-parameter-refused")
 	s.Given(`the "scen-check-unknown-check-parameter" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
-	s.And(`stdout matches scen-check/scenario_quality #1 D: given-when-then has no with: parameter min_steps; it takes none`)
+	s.And(`stdout matches scen-check/scenario_quality #1 Q code: given-when-then has no with: parameter min_steps; it takes none`)
 	s.But(`stdout does not match SCEN CHECK`)
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
 
-// checklist-checks-007-unlisted-document-refused: A `D:` Prompt naming a check that reads a document must be refused at startup when its `docs:` does not list that document, because the check would otherwise read no product document and pass every Scenario unchecked
+// checklist-checks-007-unlisted-document-refused: A code Q naming a check that reads a document must be refused at startup when its `docs:` does not list that document, because the check would otherwise read no product document and pass every Scenario unchecked
 func TestChecklistChecks007UnlistedDocumentRefused(t *testing.T) {
-	s := scenarios.New(t, "checklist-checks-007-unlisted-document-refused")
+	s := New(t, "checklist-checks-007-unlisted-document-refused")
 	s.Given(`the "scen-check-phrase-docs-unlisted" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
-	s.And(`stdout matches scen-check/term_closure #1 D: declared-terms reads the product document, so its docs: must list product`)
+	s.And(`stdout matches scen-check/term_closure #1 Q code: declared-terms reads the product document, so its docs: must list product`)
 	s.But(`stdout does not match SCEN CHECK`)
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
 
-// checklist-skip-001-skipped-prompt-not-walked: A checklist Prompt carrying `skip: true` must not be walked and must cost no AI turn, while the checklist's other Prompts, with `skip: false` or no `skip:`, are walked as before
+// checklist-checks-008-legacy-d-refused: A checklist still declaring D must be refused at startup with both replacement Q forms before any AI turn
+func TestChecklistChecks008LegacyDRefused(t *testing.T) {
+	s := New(t, "checklist-checks-008-legacy-d-refused")
+	s.Given(`the "scen-check-legacy-d-refused" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches scen-check/scenario_quality #1 retired D:`)
+	s.And(`stdout matches Q: .prompt: .* or Q: .code:`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// checklist-skip-001-skipped-prompt-not-walked: A checklist item carrying `skip: true` must not be walked and must cost no AI turn, while the checklist's other Prompts, with `skip: false` or no `skip:`, are walked as before
 func TestChecklistSkip001SkippedPromptNotWalked(t *testing.T) {
-	s := scenarios.New(t, "checklist-skip-001-skipped-prompt-not-walked")
+	s := New(t, "checklist-skip-001-skipped-prompt-not-walked")
 	s.Given(`the "scen-check-skipped-prompt" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 0`)
@@ -141,9 +152,9 @@ func TestChecklistSkip001SkippedPromptNotWalked(t *testing.T) {
 	s.Done()
 }
 
-// checklist-skip-002-non-boolean-skip-refused: A checklist Prompt whose `skip:` is not a boolean, such as the string "false", must be refused at startup, naming the Prompt, with no AI turn, rather than skipped or walked on a guess at what it meant
+// checklist-skip-002-non-boolean-skip-refused: A checklist item whose `skip:` is not a boolean, such as the string "false", must be refused at startup, naming the checklist item, with no AI turn, rather than skipped or walked on a guess at what it meant
 func TestChecklistSkip002NonBooleanSkipRefused(t *testing.T) {
-	s := scenarios.New(t, "checklist-skip-002-non-boolean-skip-refused")
+	s := New(t, "checklist-skip-002-non-boolean-skip-refused")
 	s.Given(`the "scen-check-skip-not-boolean" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -157,7 +168,7 @@ func TestChecklistSkip002NonBooleanSkipRefused(t *testing.T) {
 
 // checklist-skip-003-every-prompt-skipped-refused: A checklist whose every Prompt carries `skip: true` must be refused at startup as one with no Prompts, with no AI turn, never walked to a trivial success
 func TestChecklistSkip003EveryPromptSkippedRefused(t *testing.T) {
-	s := scenarios.New(t, "checklist-skip-003-every-prompt-skipped-refused")
+	s := New(t, "checklist-skip-003-every-prompt-skipped-refused")
 	s.Given(`the "scen-check-every-prompt-skipped" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -169,15 +180,15 @@ func TestChecklistSkip003EveryPromptSkippedRefused(t *testing.T) {
 	s.Done()
 }
 
-// engine-006-check-without-fix-refused: A `--fix` run must be refused at startup when a `D:` Prompt it would walk carries no `F:`, naming that Prompt by its check, as it is for a `Q:` Prompt
+// engine-006-check-without-fix-refused: A `--fix` run must be refused at startup when a code Q it would walk carries no `F:`, naming that checklist item by its check, as it is for a prompt Q
 func TestEngine006CheckWithoutFixRefused(t *testing.T) {
-	s := scenarios.New(t, "engine-006-check-without-fix-refused")
+	s := New(t, "engine-006-check-without-fix-refused")
 	s.Given(`the "scen-check-fix-check-without-f" project tree`)
 	s.When(`the Quality Engineer runs "scen check --fix"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
 	s.And(`stdout matches checklist has prompts with no F fix template, so --fix has nothing to apply`)
-	s.And(`stdout matches scen-check has 1 of 2 — scen-check/scenario_quality #2 D: given-when-then"`)
+	s.And(`stdout matches scen-check has 1 of 2 — scen-check/scenario_quality #2 Q code: given-when-then"`)
 	s.But(`stdout does not match SCEN CHECK`)
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
@@ -186,7 +197,7 @@ func TestEngine006CheckWithoutFixRefused(t *testing.T) {
 
 // engine-checklists-001-missing-checklist-refused: A command must be refused at startup when the directory `paths.checklists_dir` names holds no checklist for it, naming the checklist file it looked for, before its walk starts or any AI turn
 func TestEngineChecklists001MissingChecklistRefused(t *testing.T) {
-	s := scenarios.New(t, "engine-checklists-001-missing-checklist-refused")
+	s := New(t, "engine-checklists-001-missing-checklist-refused")
 	s.Given(`the "scen-check-checklist-missing" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -200,7 +211,7 @@ func TestEngineChecklists001MissingChecklistRefused(t *testing.T) {
 
 // engine-checklists-002-checklist-not-yaml-refused: A command must be refused at startup when its checklist is not valid YAML, naming the checklist file and the line its reader stopped at, before its walk starts or any AI turn
 func TestEngineChecklists002ChecklistNotYamlRefused(t *testing.T) {
-	s := scenarios.New(t, "engine-checklists-002-checklist-not-yaml-refused")
+	s := New(t, "engine-checklists-002-checklist-not-yaml-refused")
 	s.Given(`the "scen-check-checklist-not-yaml" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -212,14 +223,14 @@ func TestEngineChecklists002ChecklistNotYamlRefused(t *testing.T) {
 	s.Done()
 }
 
-// engine-checklists-003-check-with-not-a-mapping-refused: A command must be refused at startup when a `D:` Prompt of its checklist passes its check a `with:` that is not a mapping, naming the checklist file, the Prompt, what its `with:` is and that `with:` takes a mapping, rather than run the check without the parameters it was given
+// engine-checklists-003-check-with-not-a-mapping-refused: A command must be refused at startup when a code Q of its checklist passes its check a `with:` that is not a mapping, naming the checklist file, the Prompt, what its `with:` is and that `with:` takes a mapping, rather than run the check without the parameters it was given
 func TestEngineChecklists003CheckWithNotAMappingRefused(t *testing.T) {
-	s := scenarios.New(t, "engine-checklists-003-check-with-not-a-mapping-refused")
+	s := New(t, "engine-checklists-003-check-with-not-a-mapping-refused")
 	s.Given(`the "scen-check-check-with-not-a-mapping" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
-	s.And(`stdout matches checklist true-bdd/checklists/scen-check\.yaml: D: declared-terms carries a with: that is a list, but with: takes a mapping of check parameters`)
+	s.And(`stdout matches checklist true-bdd/checklists/scen-check\.yaml: Q code: declared-terms carries a with: that is a list, but with: takes a mapping of check parameters`)
 	s.But(`stdout does not match interface`)
 	s.And(`stdout does not match SCEN CHECK`)
 	s.And(`no file outside "tmp" changed`)
@@ -227,9 +238,9 @@ func TestEngineChecklists003CheckWithNotAMappingRefused(t *testing.T) {
 	s.Done()
 }
 
-// engine-config-004-prompt-tier-unconfigured-refused: A command must be refused at startup, before it asks any Prompt, when a Prompt's own `model:` names a tier that `engine.models` does not configure, naming that Prompt, the tier and the tiers the table does configure, even when the Prompt is not the first the walk would ask
+// engine-config-004-prompt-tier-unconfigured-refused: A command must be refused at startup, before it asks any Prompt, when a Prompt's own `model:` names a tier that `engine.models` does not configure, naming that checklist item, the tier and the tiers the table does configure, even when the Prompt is not the first the walk would ask
 func TestEngineConfig004PromptTierUnconfiguredRefused(t *testing.T) {
-	s := scenarios.New(t, "engine-config-004-prompt-tier-unconfigured-refused")
+	s := New(t, "engine-config-004-prompt-tier-unconfigured-refused")
 	s.Given(`the "scen-check-prompt-tier-unconfigured" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -244,7 +255,7 @@ func TestEngineConfig004PromptTierUnconfiguredRefused(t *testing.T) {
 
 // engine-documents-005-undeclared-registry-refused-by-scen-check: A host whose `true-bdd.yaml` declares no scenario registry must have `scen check` refused before it walks, naming the missing `documents.scenarios_yaml` key, never served the registry at its conventional path
 func TestEngineDocuments005UndeclaredRegistryRefusedByScenCheck(t *testing.T) {
-	s := scenarios.New(t, "engine-documents-005-undeclared-registry-refused-by-scen-check")
+	s := New(t, "engine-documents-005-undeclared-registry-refused-by-scen-check")
 	s.Given(`the "scen-check-undeclared-registry" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -258,7 +269,7 @@ func TestEngineDocuments005UndeclaredRegistryRefusedByScenCheck(t *testing.T) {
 
 // engine-entry-003-missing-config-refused: A command run in a project tree with no `true-bdd/true-bdd.yaml` must exit 1 before it reads any document, saying on stderr that it could not open that file, and must change no file
 func TestEngineEntry003MissingConfigRefused(t *testing.T) {
-	s := scenarios.New(t, "engine-entry-003-missing-config-refused")
+	s := New(t, "engine-entry-003-missing-config-refused")
 	s.Given(`the "scen-check-without-config" project tree`)
 	s.And(`the project tree has no "true-bdd/true-bdd.yaml"`)
 	s.When(`the Quality Engineer runs "scen check"`)
@@ -272,26 +283,26 @@ func TestEngineEntry003MissingConfigRefused(t *testing.T) {
 
 // engine-routes-003-prompt-tiers-win: A Prompt naming its own `model:`, `fix_model:` and `apply_model:` tiers must send its validation, fix and apply turns to the AI CLIs those tiers name, and none to the AI CLI its checklist's tier names for that kind of turn
 func TestEngineRoutes003PromptTiersWin(t *testing.T) {
-	s := scenarios.New(t, "engine-routes-003-prompt-tiers-win")
+	s := New(t, "engine-routes-003-prompt-tiers-win")
 	s.Given(`the "scen-check-prompt-names-its-tiers" project tree`)
 	s.And(`the Quality Engineer's answer to every question is "1"`)
 	s.When(`the Quality Engineer runs "scen check --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches ALL CHECKS PASSED`)
-	s.And(`the engine dispatched 3 validation AI turns to "codex"`)
+	s.And(`the engine dispatched 4 validation AI turns to "codex"`)
 	s.And(`the engine dispatched 1 fix AI turn to "codex"`)
 	s.And(`the engine dispatched 1 apply AI turn to "claude"`)
 	s.But(`the engine dispatched no validation AI turns to "claude"`)
 	s.And(`the engine dispatched no fix AI turns to "claude"`)
 	s.And(`the engine dispatched no apply AI turns to "codex"`)
-	s.And(`the engine dispatched 5 AI turns`)
+	s.And(`the engine dispatched 6 AI turns`)
 	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
 	s.Done()
 }
 
 // engine-routes-004-failed-claude-turn-stops-run: A validation turn whose claude CLI exits non-zero, here on a model id the CLI does not know, must stop `scen check` with exit code 1, a log record naming the turn, its AI CLI and its model, and the error on stderr after the command's name alone, before any verdict is reported
 func TestEngineRoutes004FailedClaudeTurnStopsRun(t *testing.T) {
-	s := scenarios.New(t, "engine-routes-004-failed-claude-turn-stops-run")
+	s := New(t, "engine-routes-004-failed-claude-turn-stops-run")
 	s.Given(`the "scen-check-claude-turn-fails" project tree`)
 	s.And(`the "scen-check" checklist is narrowed to its "whether this scenario includes at least one specific" prompt`)
 	s.When(`the Quality Engineer runs "scen check"`)
@@ -307,7 +318,7 @@ func TestEngineRoutes004FailedClaudeTurnStopsRun(t *testing.T) {
 
 // engine-routes-005-failed-codex-turn-stops-run: A validation turn whose codex CLI exits non-zero, here on a model id the CLI does not know, must stop `scen check` with exit code 1 and a log record naming the turn, its AI CLI and its model, before any verdict is reported
 func TestEngineRoutes005FailedCodexTurnStopsRun(t *testing.T) {
-	s := scenarios.New(t, "engine-routes-005-failed-codex-turn-stops-run")
+	s := New(t, "engine-routes-005-failed-codex-turn-stops-run")
 	s.Given(`the "scen-check-codex-turn-fails" project tree`)
 	s.And(`the "scen-check" checklist is narrowed to its "whether this scenario includes at least one specific" prompt`)
 	s.When(`the Quality Engineer runs "scen check"`)
@@ -321,7 +332,7 @@ func TestEngineRoutes005FailedCodexTurnStopsRun(t *testing.T) {
 
 // engine-routes-006-host-memory-excluded: A host CLAUDE.md instructing every validation to fail must not reach an engine claude turn: a Scenario satisfying the selected Prompt still passes
 func TestEngineRoutes006HostMemoryExcluded(t *testing.T) {
-	s := scenarios.New(t, "engine-routes-006-host-memory-excluded")
+	s := New(t, "engine-routes-006-host-memory-excluded")
 	s.Given(`the "engine-claude-minimal" project tree`)
 	s.And(`the "scen-check" checklist is narrowed to its "whether this scenario's description follows the rule-based format" prompt`)
 	s.When(`the Quality Engineer runs "scen check E2E-001"`)
@@ -336,7 +347,7 @@ func TestEngineRoutes006HostMemoryExcluded(t *testing.T) {
 
 // engine-term-documents-001-glossary-not-a-list-stops-scen-check: `scen check` must stop at its declared-term check when the product document's `glossary:` is not a list, naming the document and that the glossary must hold a list of terms, before any later check or AI turn
 func TestEngineTermDocuments001GlossaryNotAListStopsScenCheck(t *testing.T) {
-	s := scenarios.New(t, "engine-term-documents-001-glossary-not-a-list-stops-scen-check")
+	s := New(t, "engine-term-documents-001-glossary-not-a-list-stops-scen-check")
 	s.Given(`the "scen-check-glossary-not-a-list" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -350,7 +361,7 @@ func TestEngineTermDocuments001GlossaryNotAListStopsScenCheck(t *testing.T) {
 
 // engine-term-documents-002-mapping-not-a-list-stops-scen-check: `scen check` must stop at its term-mapping check when the architecture document's `architecture.terms:` is not a list, naming the document and that the word mapping must hold a list of mappings, before any later check or AI turn
 func TestEngineTermDocuments002MappingNotAListStopsScenCheck(t *testing.T) {
-	s := scenarios.New(t, "engine-term-documents-002-mapping-not-a-list-stops-scen-check")
+	s := New(t, "engine-term-documents-002-mapping-not-a-list-stops-scen-check")
 	s.Given(`the "scen-check-mapping-not-a-list" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -364,7 +375,7 @@ func TestEngineTermDocuments002MappingNotAListStopsScenCheck(t *testing.T) {
 
 // engine-term-documents-003-product-not-yaml-stops-scen-check: `scen check` must stop at its first check that reads the product document when that document is not valid YAML, naming the document and the line its reader stopped at, before any later check or AI turn
 func TestEngineTermDocuments003ProductNotYamlStopsScenCheck(t *testing.T) {
-	s := scenarios.New(t, "engine-term-documents-003-product-not-yaml-stops-scen-check")
+	s := New(t, "engine-term-documents-003-product-not-yaml-stops-scen-check")
 	s.Given(`the "scen-check-product-not-yaml" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -378,7 +389,7 @@ func TestEngineTermDocuments003ProductNotYamlStopsScenCheck(t *testing.T) {
 
 // engine-term-documents-004-architecture-not-yaml-stops-scen-check: `scen check` must refuse startup when the architecture document is not valid YAML, naming the document and the line its reader stopped at, before any later check or AI turn
 func TestEngineTermDocuments004ArchitectureNotYamlStopsScenCheck(t *testing.T) {
-	s := scenarios.New(t, "engine-term-documents-004-architecture-not-yaml-stops-scen-check")
+	s := New(t, "engine-term-documents-004-architecture-not-yaml-stops-scen-check")
 	s.Given(`the "scen-check-architecture-not-yaml" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -392,7 +403,7 @@ func TestEngineTermDocuments004ArchitectureNotYamlStopsScenCheck(t *testing.T) {
 
 // fix-loop-bounds-004-walks-exhausted-keep-term-documents: A `scen check --fix` run whose checklist allows one walk must stop after the walk that applied a fix, before the re-walk that would confirm it, saying it hit max apply attempts, and must put the term document that fix wrote back as it was, exiting 1
 func TestFixLoopBounds004WalksExhaustedKeepTermDocuments(t *testing.T) {
-	s := scenarios.New(t, "fix-loop-bounds-004-walks-exhausted-keep-term-documents")
+	s := New(t, "fix-loop-bounds-004-walks-exhausted-keep-term-documents")
 	s.Given(`the "fix-loop-walks-exhausted-terms" project tree`)
 	s.And(`the Quality Engineer's answer to every question is "1"`)
 	s.When(`the Quality Engineer runs "scen check --fix"`)
@@ -410,7 +421,7 @@ func TestFixLoopBounds004WalksExhaustedKeepTermDocuments(t *testing.T) {
 
 // fix-loop-choices-001-refine-reshapes-fix: Choosing to refine a proposed fix must read the person's feedback up to an empty line, propose the fix again shaped by that feedback, and apply the refined fix once the person picks apply
 func TestFixLoopChoices001RefineReshapesFix(t *testing.T) {
-	s := scenarios.New(t, "fix-loop-choices-001-refine-reshapes-fix")
+	s := New(t, "fix-loop-choices-001-refine-reshapes-fix")
 	s.Given(`the "fix-loop-refine-feedback" project tree`)
 	s.And(`the Quality Engineer's answers are "2 / Say the client clock measures it / / 1" line by line`)
 	s.When(`the Quality Engineer runs "scen check --fix"`)
@@ -429,7 +440,7 @@ func TestFixLoopChoices001RefineReshapesFix(t *testing.T) {
 
 // fix-loop-choices-002-own-words-answer-kept: A clarifying question answered in the person's own words rather than by an option's number must reach the fix as typed, so the fix applied carries those words
 func TestFixLoopChoices002OwnWordsAnswerKept(t *testing.T) {
-	s := scenarios.New(t, "fix-loop-choices-002-own-words-answer-kept")
+	s := New(t, "fix-loop-choices-002-own-words-answer-kept")
 	s.Given(`the "fix-loop-own-words" project tree`)
 	s.And(`the Quality Engineer's answers are "It means the round trip from sending the message to receiving its reply, in milliseconds / 1" line by line`)
 	s.When(`the Quality Engineer runs "scen check --fix"`)
@@ -447,7 +458,7 @@ func TestFixLoopChoices002OwnWordsAnswerKept(t *testing.T) {
 
 // fix-loop-choices-005-exit-keeps-term-documents: Choosing to exit a `scen check --fix` run's fix loop must leave the term documents and the Registry exactly as they were, report the failed Prompt with its fix, and exit 1
 func TestFixLoopChoices005ExitKeepsTermDocuments(t *testing.T) {
-	s := scenarios.New(t, "fix-loop-choices-005-exit-keeps-term-documents")
+	s := New(t, "fix-loop-choices-005-exit-keeps-term-documents")
 	s.Given(`the "fix-loop-exit-terms" project tree`)
 	s.And(`the Quality Engineer's answer to every question is "3"`)
 	s.When(`the Quality Engineer runs "scen check --fix"`)
@@ -464,7 +475,7 @@ func TestFixLoopChoices005ExitKeepsTermDocuments(t *testing.T) {
 
 // scen-check-001-claimed-scenario-passes: A registry scenario a Story claims that satisfies every prompt of the shipped checklist, its closure checks and its model questions alike, must pass the walk and report success
 func TestScenCheck001ClaimedScenarioPasses(t *testing.T) {
-	s := scenarios.New(t, "scen-check-001-claimed-scenario-passes")
+	s := New(t, "scen-check-001-claimed-scenario-passes")
 	s.Given(`the "scen-check-happy-path" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the scen_check_checklist prompt keeps the Scenario's Registry key and fields`)
@@ -475,7 +486,7 @@ func TestScenCheck001ClaimedScenarioPasses(t *testing.T) {
 	s.And(`stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=pass`)
 	s.And(`stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=2 answer=pass`)
 	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=3 answer=pass`)
-	s.And(`stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=14 judgement=link answer=pass`)
+	s.And(`stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=6 judgement=link answer=pass`)
 	s.And(`stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=15 judgement=bindings answer=pass`)
 	s.And(`stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=16 judgement=words answer=pass`)
 	s.And(`stdout matches PASS: 16 `)
@@ -488,26 +499,26 @@ func TestScenCheck001ClaimedScenarioPasses(t *testing.T) {
 
 // scen-check-002-failed-scenario-exits-1: A registry scenario that fails a walked prompt of the shipped checklist, a model question or a closure check, must be reported as failed and make the command exit 1, so a bare `scen check` can gate a change
 func TestScenCheck002FailedScenarioExits1(t *testing.T) {
-	s := scenarios.New(t, "scen-check-002-failed-scenario-exits-1")
+	s := New(t, "scen-check-002-failed-scenario-exits-1")
 	s.Given(`the "scen-check-validation-fails" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches SCEN CHECK`)
 	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=3 answer=pass`)
 	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=3 answer=fail context="\[E2E-002: then step \\"the greeter prints \\\\\\"Hello Ada\\\\\\" on one line\\" binds to the step definition \^the greeter prints \\"\(\[\^\\"\]\+\)\\" on one line\$ \(greet_steps\.go:23\), which records no concept\]"`)
-	s.And(`stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=14 judgement=link answer=fail`)
-	s.And(`stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=12`)
-	s.And(`stdout matches SKIP: 11\n`)
+	s.And(`stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=6 judgement=link answer=fail`)
+	s.And(`stdout matches msg="Cell validation finished" subjectID=E2E-002 promptIndex=14`)
+	s.And(`stdout does not match Prompt skipped after a failed check`)
 	s.And(`stdout matches Validation failed`)
 	s.But(`stdout does not match ALL CHECKS PASSED`)
-	s.And(`the engine dispatched 9 AI turns`)
+	s.And(`the engine dispatched 18 AI turns`)
 	s.And(`no file outside "tmp" changed`)
 	s.Done()
 }
 
 // scen-check-003-unknown-id-refused: An id naming no scenario in the registry must be refused before the first prompt, never walked as an empty selection
 func TestScenCheck003UnknownIdRefused(t *testing.T) {
-	s := scenarios.New(t, "scen-check-003-unknown-id-refused")
+	s := New(t, "scen-check-003-unknown-id-refused")
 	s.Given(`the "scen-check-unknown-id" project tree`)
 	s.When(`the Quality Engineer runs "scen check E2E-999"`)
 	s.Then(`the command exits with code 1`)
@@ -520,7 +531,7 @@ func TestScenCheck003UnknownIdRefused(t *testing.T) {
 
 // scen-check-004-empty-registry-refused: A registry file that declares no scenarios must be refused, so the walk never reports success over nothing
 func TestScenCheck004EmptyRegistryRefused(t *testing.T) {
-	s := scenarios.New(t, "scen-check-004-empty-registry-refused")
+	s := New(t, "scen-check-004-empty-registry-refused")
 	s.Given(`the "scen-check-empty-registry" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -533,7 +544,7 @@ func TestScenCheck004EmptyRegistryRefused(t *testing.T) {
 
 // scen-check-005-ids-narrow-the-walk: Ids given on the command line must narrow the walk to exactly those scenarios, in ascending id order whatever order they were typed
 func TestScenCheck005IdsNarrowTheWalk(t *testing.T) {
-	s := scenarios.New(t, "scen-check-005-ids-narrow-the-walk")
+	s := New(t, "scen-check-005-ids-narrow-the-walk")
 	s.Given(`the "scen-check-id-filter" project tree`)
 	s.And(`the "scen-check" checklist is narrowed to its "whether this scenario's description follows the rule-based format" prompt`)
 	s.When(`the Quality Engineer runs "scen check E2E-002 E2E-001"`)
@@ -548,7 +559,7 @@ func TestScenCheck005IdsNarrowTheWalk(t *testing.T) {
 
 // scen-check-006-duplicate-id-refused: An id given twice on the command line must be refused before the first prompt, naming the id, never walked once or twice as though asked
 func TestScenCheck006DuplicateIdRefused(t *testing.T) {
-	s := scenarios.New(t, "scen-check-006-duplicate-id-refused")
+	s := New(t, "scen-check-006-duplicate-id-refused")
 	s.Given(`the "scen-check-duplicate-id" project tree`)
 	s.When(`the Quality Engineer runs "scen check E2E-001 E2E-001"`)
 	s.Then(`the command exits with code 1`)
@@ -562,7 +573,7 @@ func TestScenCheck006DuplicateIdRefused(t *testing.T) {
 
 // scen-check-007-prompt-lineage-order: The Scenario checklist prompt must identify the Registry key, keep and or but modifiers, reproduce lineage in source order without merge_date, and preserve the multiline Q and F text
 func TestScenCheck007PromptLineageOrder(t *testing.T) {
-	s := scenarios.New(t, "scen-check-007-prompt-lineage-order")
+	s := New(t, "scen-check-007-prompt-lineage-order")
 	s.Given(`the "scen-check-prompt-lineage" project tree`)
 	s.When(`the Quality Engineer runs "scen check E2E-001"`)
 	s.Then(`the scen_check_checklist prompt uses the Scenario's Registry key`)
@@ -577,7 +588,7 @@ func TestScenCheck007PromptLineageOrder(t *testing.T) {
 
 // scen-check-fix-002-undefined-term-gets-definition: `scen check --fix` must propose a definition for a declared term the glossary lacks, asking what it means first, record the definition the user applies in the product glossary and never in the Scenario, and pass the re-walk
 func TestScenCheckFix002UndefinedTermGetsDefinition(t *testing.T) {
-	s := scenarios.New(t, "scen-check-fix-002-undefined-term-gets-definition")
+	s := New(t, "scen-check-fix-002-undefined-term-gets-definition")
 	s.Given(`the "scen-check-fix-records-term" project tree`)
 	s.And(`the Quality Engineer's answer to every question is "1"`)
 	s.When(`the Quality Engineer runs "scen check --fix"`)
@@ -597,7 +608,7 @@ func TestScenCheckFix002UndefinedTermGetsDefinition(t *testing.T) {
 
 // scen-check-fix-003-unmapped-term-gets-mapping: `scen check --fix` must propose a mapping for a declared term the architecture does not map, asking how it is built and observed first, record the mapping the user applies in the architecture document and never in the Scenario or the product document, and pass the re-walk
 func TestScenCheckFix003UnmappedTermGetsMapping(t *testing.T) {
-	s := scenarios.New(t, "scen-check-fix-003-unmapped-term-gets-mapping")
+	s := New(t, "scen-check-fix-003-unmapped-term-gets-mapping")
 	s.Given(`the "scen-check-fix-records-mapping" project tree`)
 	s.And(`the Quality Engineer's answer to every question is "1"`)
 	s.When(`the Quality Engineer runs "scen check --fix"`)
@@ -617,7 +628,7 @@ func TestScenCheckFix003UnmappedTermGetsMapping(t *testing.T) {
 
 // scen-check-fix-004-recorded-concept-declared: `scen check --fix` must propose declaring the concept a step's one step definition records when the product document does not declare it under the step's block, asking what the step means first, record the concept the user applies in the product document and never in the Scenario or a step definition, and pass the re-walk
 func TestScenCheckFix004RecordedConceptDeclared(t *testing.T) {
-	s := scenarios.New(t, "scen-check-fix-004-recorded-concept-declared")
+	s := New(t, "scen-check-fix-004-recorded-concept-declared")
 	s.Given(`the "scen-check-fix-records-concept" project tree`)
 	s.And(`the Quality Engineer's answer to every question is "1"`)
 	s.When(`the Quality Engineer runs "scen check --fix"`)
@@ -636,7 +647,7 @@ func TestScenCheckFix004RecordedConceptDeclared(t *testing.T) {
 
 // scen-check-fix-007-whole-checklist-fixes-description: `scen check --fix` over the shipped checklist, every prompt of which carries a fix, must rewrite a description that states no rule in that Scenario's entry in the Registry, and pass the re-walk of every prompt about the Scenario as it now reads
 func TestScenCheckFix007WholeChecklistFixesDescription(t *testing.T) {
-	s := scenarios.New(t, "scen-check-fix-007-whole-checklist-fixes-description")
+	s := New(t, "scen-check-fix-007-whole-checklist-fixes-description")
 	s.Given(`the "scen-check-fix-rewrites-description" project tree`)
 	s.And(`the Quality Engineer's answer to every question is "1"`)
 	s.When(`the Quality Engineer runs "scen check --fix"`)
@@ -657,7 +668,7 @@ func TestScenCheckFix007WholeChecklistFixesDescription(t *testing.T) {
 
 // scen-check-mappings-003-term-mapped-twice-fails: A term a concept declares, which the architecture maps more than once, must fail every Scenario, naming the concept, the term and how many times it is mapped, because a word built two ways has no one way a step definition can follow
 func TestScenCheckMappings003TermMappedTwiceFails(t *testing.T) {
-	s := scenarios.New(t, "scen-check-mappings-003-term-mapped-twice-fails")
+	s := New(t, "scen-check-mappings-003-term-mapped-twice-fails")
 	s.Given(`the "scen-check-term-mapped-twice" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -670,7 +681,7 @@ func TestScenCheckMappings003TermMappedTwiceFails(t *testing.T) {
 
 // scen-check-mappings-004-no-catalogue-unchecked: A product document that declares no concepts must leave every Scenario unchecked by the term-mapping and step-definition checks, saying so, whatever the architecture maps
 func TestScenCheckMappings004NoCatalogueUnchecked(t *testing.T) {
-	s := scenarios.New(t, "scen-check-mappings-004-no-catalogue-unchecked")
+	s := New(t, "scen-check-mappings-004-no-catalogue-unchecked")
 	s.Given(`the "scen-check-closure-no-catalogue" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 0`)
@@ -684,7 +695,7 @@ func TestScenCheckMappings004NoCatalogueUnchecked(t *testing.T) {
 
 // scen-check-quality-fix-001-missing-step-added: `scen check --fix` must add the given, when or then step a Scenario lacks to that Scenario's entry in the Registry, saying what its description pins, and pass the re-walk
 func TestScenCheckQualityFix001MissingStepAdded(t *testing.T) {
-	s := scenarios.New(t, "scen-check-quality-fix-001-missing-step-added")
+	s := New(t, "scen-check-quality-fix-001-missing-step-added")
 	s.Given(`the "scen-check-fix-adds-missing-step" project tree`)
 	s.And(`the "scen-check" checklist is narrowed to its "whether this scenario's steps carry all three" prompt`)
 	s.And(`the Quality Engineer's answer to every question is "1"`)
@@ -697,13 +708,13 @@ func TestScenCheckQualityFix001MissingStepAdded(t *testing.T) {
 	s.But(`stdout does not match Hit max apply attempts`)
 	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
 	s.And(`the file "docs/scenarios.yaml" matches (?m)^      then:$`)
-	s.And(`the engine dispatched 5 AI turns`)
+	s.And(`the engine dispatched 6 AI turns`)
 	s.Done()
 }
 
 // scen-check-quality-fix-002-description-qualifier-replaced: `scen check --fix` must replace a forbidden qualifier in a Scenario's description with the measurable criterion its steps state, in that Scenario's entry in the Registry, and pass the re-walk
 func TestScenCheckQualityFix002DescriptionQualifierReplaced(t *testing.T) {
-	s := scenarios.New(t, "scen-check-quality-fix-002-description-qualifier-replaced")
+	s := New(t, "scen-check-quality-fix-002-description-qualifier-replaced")
 	s.Given(`the "scen-check-fix-rewrites-description-qualifier" project tree`)
 	s.And(`the "scen-check" checklist is narrowed to its "whether this scenario's description contains a vague word" prompt`)
 	s.And(`the Quality Engineer's answer to every question is "1"`)
@@ -716,13 +727,13 @@ func TestScenCheckQualityFix002DescriptionQualifierReplaced(t *testing.T) {
 	s.But(`stdout does not match Hit max apply attempts`)
 	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
 	s.And(`the file "docs/scenarios.yaml" matches (?m)^    description: [^\n]*\b100\b`)
-	s.And(`the engine dispatched 5 AI turns`)
+	s.And(`the engine dispatched 6 AI turns`)
 	s.Done()
 }
 
 // scen-check-quality-fix-003-step-qualifier-replaced: `scen check --fix` must replace a forbidden qualifier in a Scenario's step with the measurable criterion its description states, in that Scenario's entry in the Registry, and pass the re-walk
 func TestScenCheckQualityFix003StepQualifierReplaced(t *testing.T) {
-	s := scenarios.New(t, "scen-check-quality-fix-003-step-qualifier-replaced")
+	s := New(t, "scen-check-quality-fix-003-step-qualifier-replaced")
 	s.Given(`the "scen-check-fix-rewrites-step-qualifier" project tree`)
 	s.And(`the "scen-check" checklist is narrowed to its "whether any of this scenario's steps contains a vague" prompt`)
 	s.And(`the Quality Engineer's answer to every question is "1"`)
@@ -735,13 +746,13 @@ func TestScenCheckQualityFix003StepQualifierReplaced(t *testing.T) {
 	s.But(`stdout does not match Hit max apply attempts`)
 	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
 	s.And(`the file "docs/scenarios.yaml" matches (?m)^ +- [^\n]*exits with code 0[^\n]*\b100\b`)
-	s.And(`the engine dispatched 5 AI turns`)
+	s.And(`the engine dispatched 6 AI turns`)
 	s.Done()
 }
 
 // scen-check-quality-fix-004-forbidden-verb-replaced: `scen check --fix` must rewrite a Scenario's step that uses a forbidden action verb with the observable action the product document gives in its place, in that Scenario's entry in the Registry, and pass the re-walk
 func TestScenCheckQualityFix004ForbiddenVerbReplaced(t *testing.T) {
-	s := scenarios.New(t, "scen-check-quality-fix-004-forbidden-verb-replaced")
+	s := New(t, "scen-check-quality-fix-004-forbidden-verb-replaced")
 	s.Given(`the "scen-check-fix-rewrites-forbidden-verb" project tree`)
 	s.And(`the "scen-check" checklist is narrowed to its "whether any of this scenario's steps uses an action verb" prompt`)
 	s.And(`the Quality Engineer's answer to every question is "1"`)
@@ -753,13 +764,13 @@ func TestScenCheckQualityFix004ForbiddenVerbReplaced(t *testing.T) {
 	s.And(`stdout matches ALL CHECKS PASSED`)
 	s.But(`stdout does not match Hit max apply attempts`)
 	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
-	s.And(`the engine dispatched 5 AI turns`)
+	s.And(`the engine dispatched 6 AI turns`)
 	s.Done()
 }
 
 // scen-check-quality-fix-005-implementation-step-rewritten: `scen check --fix` must rewrite a Scenario's step that names an implementation detail as the output a user observes, in that Scenario's entry in the Registry, and pass the re-walk
 func TestScenCheckQualityFix005ImplementationStepRewritten(t *testing.T) {
-	s := scenarios.New(t, "scen-check-quality-fix-005-implementation-step-rewritten")
+	s := New(t, "scen-check-quality-fix-005-implementation-step-rewritten")
 	s.Given(`the "scen-check-fix-rewrites-implementation" project tree`)
 	s.And(`the "scen-check" checklist is narrowed to its "whether this scenario describes observable behaviour" prompt`)
 	s.And(`the Quality Engineer's answer to every question is "1"`)
@@ -771,13 +782,13 @@ func TestScenCheckQualityFix005ImplementationStepRewritten(t *testing.T) {
 	s.And(`stdout matches ALL CHECKS PASSED`)
 	s.But(`stdout does not match Hit max apply attempts`)
 	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
-	s.And(`the engine dispatched 5 AI turns`)
+	s.And(`the engine dispatched 6 AI turns`)
 	s.Done()
 }
 
 // scen-check-quality-fix-006-measurable-criterion-added: `scen check --fix` must ask which measurable criterion a Scenario lacking one asserts, add the criterion the user picks to that Scenario's entry in the Registry, and pass the re-walk
 func TestScenCheckQualityFix006MeasurableCriterionAdded(t *testing.T) {
-	s := scenarios.New(t, "scen-check-quality-fix-006-measurable-criterion-added")
+	s := New(t, "scen-check-quality-fix-006-measurable-criterion-added")
 	s.Given(`the "scen-check-fix-adds-measurable-criterion" project tree`)
 	s.And(`the "scen-check" checklist is narrowed to its "whether this scenario includes at least one specific" prompt`)
 	s.And(`the Quality Engineer's answer to every question is "1"`)
@@ -790,13 +801,13 @@ func TestScenCheckQualityFix006MeasurableCriterionAdded(t *testing.T) {
 	s.And(`stdout matches ALL CHECKS PASSED`)
 	s.But(`stdout does not match Hit max apply attempts`)
 	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
-	s.And(`the engine dispatched 6 AI turns`)
+	s.And(`the engine dispatched 7 AI turns`)
 	s.Done()
 }
 
 // scen-check-quality-fix-007-subjective-outcome-rewritten: `scen check --fix` must ask what counts as correct for a Scenario whose outcome is a matter of taste, rewrite the outcome as one a reviewer decides without judgement in that Scenario's entry in the Registry, and pass the re-walk
 func TestScenCheckQualityFix007SubjectiveOutcomeRewritten(t *testing.T) {
-	s := scenarios.New(t, "scen-check-quality-fix-007-subjective-outcome-rewritten")
+	s := New(t, "scen-check-quality-fix-007-subjective-outcome-rewritten")
 	s.Given(`the "scen-check-fix-rewrites-subjective-outcome" project tree`)
 	s.And(`the "scen-check" checklist is narrowed to its "whether this scenario has a binary pass/fail outcome" prompt`)
 	s.And(`the Quality Engineer's answer to every question is "1"`)
@@ -809,13 +820,13 @@ func TestScenCheckQualityFix007SubjectiveOutcomeRewritten(t *testing.T) {
 	s.And(`stdout matches ALL CHECKS PASSED`)
 	s.But(`stdout does not match Hit max apply attempts`)
 	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
-	s.And(`the engine dispatched 6 AI turns`)
+	s.And(`the engine dispatched 7 AI turns`)
 	s.Done()
 }
 
 // scen-check-step-definitions-003-step-binds-twice-fails: A step of a Scenario a Story claims that two step definitions of its suite bind must fail that Scenario, naming the step and both definitions with where each is written, because which one runs depends on the order they were registered in
 func TestScenCheckStepDefinitions003StepBindsTwiceFails(t *testing.T) {
-	s := scenarios.New(t, "scen-check-step-definitions-003-step-binds-twice-fails")
+	s := New(t, "scen-check-step-definitions-003-step-binds-twice-fails")
 	s.Given(`the "scen-check-step-binds-twice" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -828,7 +839,7 @@ func TestScenCheckStepDefinitions003StepBindsTwiceFails(t *testing.T) {
 
 // scen-check-step-definitions-004-one-to-one-passes: A Scenario must pass the step-definition check when each of its steps binds one step definition of its suite, which records a declared concept of the step's block, naming the suite, while a step no definition binds yet is reported as a gap rather than a failure, a step a model runs is exempt, and a Scenario no Story claims is checked like the others
 func TestScenCheckStepDefinitions004OneToOnePasses(t *testing.T) {
-	s := scenarios.New(t, "scen-check-step-definitions-004-one-to-one-passes")
+	s := New(t, "scen-check-step-definitions-004-one-to-one-passes")
 	s.Given(`the "scen-check-definitions-correspond" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 0`)
@@ -843,7 +854,7 @@ func TestScenCheckStepDefinitions004OneToOnePasses(t *testing.T) {
 
 // scen-check-step-definitions-005-unreadable-pattern-exits-1: A suite whose step definitions register a pattern that does not fold to a constant must stop the step-definition check at the first Scenario a Story claims, naming the check, the file and line of the pattern, and exit 1, because a definition the check cannot read would leave the steps it binds unchecked
 func TestScenCheckStepDefinitions005UnreadablePatternExits1(t *testing.T) {
-	s := scenarios.New(t, "scen-check-step-definitions-005-unreadable-pattern-exits-1")
+	s := New(t, "scen-check-step-definitions-005-unreadable-pattern-exits-1")
 	s.Given(`the "scen-check-definitions-unreadable" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -858,7 +869,7 @@ func TestScenCheckStepDefinitions005UnreadablePatternExits1(t *testing.T) {
 
 // scen-check-terms-003-term-defined-twice-fails: A term a concept declares, which the glossary defines more than once, must fail every Scenario, naming the concept, the term and how many times it is defined, because a word with two meanings has none a reader can rely on
 func TestScenCheckTerms003TermDefinedTwiceFails(t *testing.T) {
-	s := scenarios.New(t, "scen-check-terms-003-term-defined-twice-fails")
+	s := New(t, "scen-check-terms-003-term-defined-twice-fails")
 	s.Given(`the "scen-check-term-defined-twice" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -871,7 +882,7 @@ func TestScenCheckTerms003TermDefinedTwiceFails(t *testing.T) {
 
 // scen-check-terms-004-no-catalogue-unchecked: A product document that declares no concepts must leave every Scenario unchecked by the declared-term check, saying so, whatever its glossary holds
 func TestScenCheckTerms004NoCatalogueUnchecked(t *testing.T) {
-	s := scenarios.New(t, "scen-check-terms-004-no-catalogue-unchecked")
+	s := New(t, "scen-check-terms-004-no-catalogue-unchecked")
 	s.Given(`the "scen-check-terms-no-catalogue" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 0`)

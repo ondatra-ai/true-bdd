@@ -1,7 +1,7 @@
 # Story `scen-check`: `scen check` as the verifier of the Registry.
 #
 # The walk, the id filter and the exit code. The closure checks, the
-# checklist's `D:` refusals and `scen check --fix` are Stories of their own:
+# checklist's Q.code refusals and `scen check --fix` are Stories of their own:
 # scen-check-terms, scen-check-mappings, scen-check-step-definitions,
 # checklist-checks, scen-check-fix and scen-check-quality-fix.
 #
@@ -36,7 +36,7 @@ story:
                 - and: stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=pass
                 - and: stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=2 answer=pass
                 - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=3 answer=pass
-                - and: stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=14 judgement=link answer=pass
+                - and: stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=6 judgement=link answer=pass
                 - and: stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=15 judgement=bindings answer=pass
                 - and: stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=16 judgement=words answer=pass
                 - and: 'stdout matches PASS: 16 '
@@ -56,12 +56,12 @@ story:
                 - stdout matches SCEN CHECK
                 - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=3 answer=pass
                 - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=3 answer=fail context="\[E2E-002: then step \\"the greeter prints \\\\\\"Hello Ada\\\\\\" on one line\\" binds to the step definition \^the greeter prints \\"\(\[\^\\"\]\+\)\\" on one line\$ \(greet_steps\.go:23\), which records no concept\]"'
-                - and: stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=14 judgement=link answer=fail
-                - and: stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=12
-                - and: 'stdout matches SKIP: 11\n'
+                - and: stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=6 judgement=link answer=fail
+                - and: stdout matches msg="Cell validation finished" subjectID=E2E-002 promptIndex=14
+                - and: stdout does not match Prompt skipped after a failed check
                 - and: stdout matches Validation failed
                 - but: stdout does not match ALL CHECKS PASSED
-                - and: the engine dispatched 9 AI turns
+                - and: the engine dispatched 18 AI turns
                 - and: no file outside "tmp" changed
         - id: 003-unknown-id-refused
           description: An id naming no scenario in the registry must be refused before the first prompt, never walked as an empty selection

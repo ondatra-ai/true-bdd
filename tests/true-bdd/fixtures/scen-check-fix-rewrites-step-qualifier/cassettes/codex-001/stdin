@@ -27,6 +27,7 @@ Scenario's description or steps are rewritten.
   - `target:` — the working copy you edited (QUOTED)
   - `summary:` — one line on what changed
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -51,20 +52,24 @@ Then:
 # Fix Prompt for Scenario E2E-001: The greeter must print the configured greeting followed by the name it is given, and exit with code 0 within 100 milliseconds
 
 ## Target
-The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry).
+The `E2E-001` entry of the `scenarios_yaml` document (the
+scenario registry).
 
-Edit nothing else: not `tests/greeter/greet_test.go` (it is re-rendered by `true-bdd build tests --fix`), not any step definition, not `docs/product/product.yaml`, and no other Scenario entry. Within `E2E-001`, leave `id`, `service: greeter`, `path: tests/greeter/greet_test.go` and `user_stories: []` exactly as they are.
+Do not touch any other scenario entry. Do not touch `tests/greeter/greet_test.go`
+or any step definition file — the generated test is re-rendered from the registry
+by `true-bdd build tests --fix` after this edit.
 
-## Finding being fixed
-`scen-check/scenario_quality` — `E2E-001: contains 'quickly' in then`.
-
-`quickly` is on `vocabulary.forbidden_qualifiers` in `docs/product/product.yaml`. The measurable criterion it stands for is already stated in this Scenario's own description — "exit with code 0 within 100 milliseconds" — so the vague word is replaced by that criterion. The assertion is unchanged: exit code 0, bounded by 100 milliseconds.
+Within the `E2E-001` entry, leave `id`, `service: greeter`, `path`,
+`user_stories:` (empty), the `description`, the `given` steps and the `when`
+steps exactly as they are. Only the first `then` step changes.
 
 ## Required Changes
 
-### Change #1: replace the forbidden qualifier 'quickly' with the 100 millisecond bound from the description
+### Change #1: Replace the forbidden qualifier "quickly" in the first `then` step with the measurable time bound the Scenario's description already states
+
 **Document:** scenarios_yaml
-**Field:** merged_steps.then (the first `then` step of `E2E-001`)
+**Field:** merged_steps.then (first entry of the `then` step list; the second
+entry, `stdout matches ^Hello Ada$`, is unchanged and keeps its position)
 **Current text:**
 ```
 the command exits with code 0 quickly
@@ -74,16 +79,34 @@ the command exits with code 0 quickly
 the command exits with code 0 within 100 milliseconds
 ```
 
-## What must stay as it is
-- The second `then` step stays exactly `and stdout matches ^Hello Ada$`.
-- The `given` step stays exactly `the greeting is configured as "Hello"`.
-- The `when` step stays exactly `the Operator runs "greet Ada"`.
-- The description stays exactly `The greeter must print the configured greeting followed by the name it is given, and exit with code 0 within 100 milliseconds` — it contains no forbidden qualifier, and it is the source of the 100 millisecond bound used above.
+**Why this exact replacement:** the reviewer's finding is `E2E-001: contains
+'quickly' in then`, and `quickly` is listed under
+`vocabulary.forbidden_qualifiers` in `docs/product/product.yaml`. The Scenario's
+own description already states the measurable criterion that `quickly` stands
+for — "exit with code 0 within 100 milliseconds" — so the bound is taken from the
+description and not invented here. The asserted behaviour is unchanged: the
+command must still end with exit code 0, and it must still do so inside the time
+bound the description names; only the unbindable word is replaced by the number
+it referred to.
 
-## Check after applying
-- No step of `E2E-001` contains any word from `vocabulary.forbidden_qualifiers` (`properly`, `correctly`, `appropriate`, `appropriately`, `user-friendly`, `fast`, `quickly`, `helpful`).
-- The rewritten step is still an instance of the `then` concept `exit code` ("The command the role ran ended with a stated exit code; 0 means it succeeded"), now with the exit code stated as 0 and the bound the description sets written out instead of the vague word.
-- Re-render the generated test with `true-bdd build tests --fix`; do not hand-edit it.
+## Do not do
+- Do not delete the time requirement (i.e. do not shorten the step to `the
+  command exits with code 0`). That would drop an assertion the description
+  makes and silently lose coverage.
+- Do not reword the `description`; it contains no forbidden qualifier.
+- Do not reword the `given` step (`the greeting is configured as "Hello"`), the
+  `when` step (`the Operator runs "greet Ada"`) or the second `then` step
+  (`stdout matches ^Hello Ada$`); the finding names none of them.
+- Do not change the millisecond figure, the unit, or the exit code value.
+
+## Done when
+The `E2E-001` entry's `then` list reads, in order:
+1. `the command exits with code 0 within 100 milliseconds`
+2. `stdout matches ^Hello Ada$`
+
+and no step of the entry contains any word from
+`vocabulary.forbidden_qualifiers` (properly, correctly, appropriate,
+appropriately, user-friendly, fast, quickly, helpful).
 
 ---
 

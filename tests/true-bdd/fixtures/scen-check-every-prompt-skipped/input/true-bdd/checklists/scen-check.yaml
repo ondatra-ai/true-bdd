@@ -12,21 +12,23 @@ sections:
   - id: scenario_quality
     name: "Scenario Quality"
     validation_prompts:
-      - Q: |
-          Decide whether this scenario has a binary pass/fail outcome —
-          whether a reviewer can decide pass or fail without subjective
-          judgement, with no ambiguity about what counts as correct.
+      - Q:
+          prompt: |
+            Decide whether this scenario has a binary pass/fail outcome —
+            whether a reviewer can decide pass or fail without subjective
+            judgement, with no ambiguity about what counts as correct.
 
-          Pass when the outcome is binary.
-          Fail when it is subjective.
+            Pass when the outcome is binary.
+            Fail when it is subjective.
 
-          Context: emit one line.
-            - "<scenario id>: binary"
-            - "<scenario id>: subjective — '<reason>'"
+            Context: emit one line.
+              - "<scenario id>: binary"
+              - "<scenario id>: subjective — '<reason>'"
         skip: true
         rationale: "A scenario a reviewer must interpret is a scenario two runs can disagree about while both being right."
         F: "Rewrite the subjective outcome in this Scenario's registry entry, in its description and the step that asserts it, as one a reviewer decides without judgement, asking what counts as correct first. Keep the behaviour."
 
-      - D: given-when-then
+      - Q:
+          code: given-when-then
         skip: true
         rationale: "A scenario missing a kind cannot be executed as written: no precondition, no action, or nothing asserted."

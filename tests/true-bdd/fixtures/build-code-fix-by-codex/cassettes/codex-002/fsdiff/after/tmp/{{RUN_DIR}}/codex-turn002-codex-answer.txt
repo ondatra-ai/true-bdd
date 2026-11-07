@@ -2,5 +2,5 @@
 applied: true
 impossible: []
 target: "services/calc"
-summary: "Changed Add to return a + b and removed the stale defect comment while preserving its signature and sum contract. TestAddSumsItsArguments passed using the exact test filter."
+summary: "Changed Add to return a + b, preserved its signature, and removed the obsolete defect comment. TestAddSumsItsArguments passed with go test -count=1 ./tests/suite/... -run '^TestAddSumsItsArguments$'. The patch tool failed; the edit succeeded using a fallback."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===

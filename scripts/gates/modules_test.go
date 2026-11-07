@@ -14,7 +14,7 @@ func TestModuleGatesRejectBrokenNestedModulesAndIgnoreFixtures(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			root := t.TempDir()
 
-			for _, module := range []string{".", "pkg", "services/true-bdd"} {
+			for _, module := range []string{".", "pkg", "services/true-bdd", "utilities"} {
 				moduleName := "example.com/module" + strings.ReplaceAll(filepath.Base(module), ".", "root")
 				write(t, root, filepath.Join(module, "go.mod"), "module "+moduleName+"\n\ngo 1.25.0\n")
 				write(t, root, filepath.Join(module, "sample.go"), "package sample\n")
@@ -36,7 +36,7 @@ func TestModuleGatesRejectBrokenNestedModulesAndIgnoreFixtures(t *testing.T) {
 				t.Fatalf("valid modules: %v", err)
 			}
 
-			for _, module := range []string{"pkg", "services/true-bdd"} {
+			for _, module := range []string{"pkg", "services/true-bdd", "utilities"} {
 				path := filepath.Join(module, "broken_test.go")
 				body := "package sample\nimport \"testing\"\n" +
 					"func TestBroken(t *testing.T) { t.Fatal(\"nested module must fail\") }\n"

@@ -12,18 +12,20 @@ import (
 // 0015). Free of regex metacharacters: fixtures pin them with `stdout matches`.
 var (
 	ErrPromptHasBothKinds = errors.New(
-		"carries both D: and Q:, but a built-in check or a model answers a prompt, never both")
-	ErrPromptHasNoKind = errors.New("carries neither D: nor Q:, so nothing would answer it")
+		"carries both Q options; use Q: {prompt: …} or Q: {code: …}, never both")
+	ErrPromptHasNoKind = errors.New("carries neither Q option; use Q: {prompt: …} or Q: {code: …}")
+	ErrLegacyQuestion = errors.New("retired D: or scalar Q:; use Q: {prompt: …} or Q: {code: …}")
+	ErrQuestionOptions = errors.New("question must have exactly one key; use Q: {prompt: …} or Q: {code: …}")
 	ErrModelOnCheck    = errors.New("carries model:, but no model answers a built-in check")
 	ErrSkipNotBoolean  = errors.New("skip: takes true or false")
 	errWithNotMapping  = errors.New("with: takes a mapping of check parameters")
 )
 
 // Prompt represents a single validation prompt: a model answers its
-// Question (`Q:`), or the built-in check its Check names (`D:`) does.
+// Question (`Q.prompt`), or the built-in check its Check names (`Q.code`) does.
 type Prompt struct {
-	Question    string         // The validation question (Q in YAML)
-	Check       string         // The built-in check answering it instead (D in YAML, trimmed)
+	Question    string         // The validation question (Q.prompt in YAML)
+	Check       string         // The built-in check answering it instead (Q.code in YAML, trimmed)
 	With        map[string]any // The check's parameters (with in YAML)
 	Rationale   string         // Why this matters
 	Skip        bool           // Parks the prompt, left out of the walk (skip: true in YAML)
@@ -37,6 +39,7 @@ type Prompt struct {
 	// skipValue is a `skip:` that is not a boolean, kept for the refusal:
 	// YAML reads "false" and yes as strings, and either reading is a guess.
 	skipValue any
+	questionError error
 }
 
 // UnmarshalYAML implements custom YAML unmarshaling for Prompt.
@@ -49,8 +52,7 @@ func (p *Prompt) UnmarshalYAML(node *yaml.Node) error {
 		return fmt.Errorf("failed to decode prompt: %w", err)
 	}
 
-	p.Question = getStringFromMap(raw, "Q")
-	p.Check = strings.TrimSpace(getStringFromMap(raw, "D"))
+	p.decodeQuestion(raw)
 
 	err = p.decodeWith(raw)
 	if err != nil {
@@ -101,8 +103,8 @@ func (p *Prompt) ShouldSkip() bool {
 	return p.Skip
 }
 
-// IsCheck reports whether a built-in check answers the prompt (`D:`)
-// rather than a model (`Q:`).
+// IsCheck reports whether a built-in check answers the prompt (`Q.code`)
+// rather than a model (`Q.prompt`).
 func (p *Prompt) IsCheck() bool {
 	return p.Check != ""
 }
@@ -111,6 +113,8 @@ func (p *Prompt) IsCheck() bool {
 // engine holds, or nil; which checks exist is the walking command's call.
 func (p *Prompt) ShapeError() error {
 	switch {
+	case p.questionError != nil:
+		return p.questionError
 	case p.skipValue != nil:
 		return fmt.Errorf("%s carries skip: %s, but %w", p.Label(), describeValue(p.skipValue), ErrSkipNotBoolean)
 	case p.IsCheck() && p.asksModel():
@@ -124,11 +128,11 @@ func (p *Prompt) ShapeError() error {
 	return p.conceptShapeError()
 }
 
-// Label names the prompt in one line: `D: <check>` for a check, else the
+// Label names the prompt in one line: `Q code: <check>` for a check, else the
 // first non-blank line of its question.
 func (p *Prompt) Label() string {
 	if p.IsCheck() {
-		return "D: " + p.Check
+		return "Q code: " + p.Check
 	}
 
 	for line := range strings.SplitSeq(p.Question, "\n") {
@@ -218,7 +222,7 @@ type PromptWithContext struct {
 	DefaultDocs   []string     // Default docs from checklist root level
 	DefaultModels *EngineBlock // Default model tiers from the checklist `engine:` block
 	// Index is the 1-based position in the checklist, in file order: it
-	// names the Cell's artifacts and orders the report, though `D:` walks first.
+	// names the Cell's artifacts and orders the walk and report.
 	Index  int
 	Prompt Prompt
 }

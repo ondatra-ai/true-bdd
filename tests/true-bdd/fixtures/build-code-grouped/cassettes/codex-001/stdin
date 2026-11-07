@@ -6,6 +6,7 @@ Write only inside the edit roots in the request. Never modify tests, *_test.go, 
 
 Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, impossible, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -52,102 +53,74 @@ Tests: /go-test/go-test:fixture.buildcodefix.tests.suite::TestA, /go-test/go-tes
 ## Proposed repair plan
 # Repair plan for failing-set
 
-## Summary
+## Diagnosis
 
-Both failures come from one production file, `services/calc/calc.go`. The two
-exported accessors in package `calc` return a placeholder `0` instead of the
-values the suite specifies. The repair is a single, self-contained correction
-of those two return values inside the declared service root `services/calc`.
-No new files, no new packages, no test or document changes.
+The failing set is two Go tests in one package, `tests/suite/calc_test.go`
+(package `suite_test`, module `fixture/buildcodefix`):
 
-## Contract (derived from the executable specification)
+- `TestA` asserts `calc.A() != 1` is false — i.e. `calc.A()` must return `1`.
+- `TestB` asserts `calc.B() != 2` is false — i.e. `calc.B()` must return `2`.
 
-`tests/suite/calc_test.go` is the specification and is read-only. It imports
-`fixture/buildcodefix/services/calc` and asserts:
+Both fail with the same marker `SHARED-FAILURE-EVIDENCE`, which is why they
+are reported as one failure group; the group's quoted evidence only shows
+`TestA` because `t.Fatal` aborts that test first, but `TestB` is failing for
+the identical reason.
 
-- `calc.A()` must return `int` `1` — any other value fails `TestA` with
-  `SHARED-FAILURE-EVIDENCE`.
-- `calc.B()` must return `int` `2` — any other value fails `TestB` with
-  `SHARED-FAILURE-EVIDENCE`.
+The production source under the declared edit root is
+`services/calc/calc.go`:
 
-Therefore the contract of package `calc` is:
+```
+package calc
+func A() int{return 0}
+func B() int{return 0}
+```
 
-- Package name stays `calc` (the suite imports it by that path/name).
-- `A()` and `A`'s signature stay `func A() int` — exported, no parameters,
-  single `int` result. It must evaluate to `1`.
-- `B()` and `B`'s signature stay `func B() int` — exported, no parameters,
-  single `int` result. It must evaluate to `2`.
+Both exported functions return the zero value, so neither assertion can hold.
+This is a production defect, not a test defect: per `CLAUDE.md` and
+`docs/architecture/architecture.yaml`, `services/calc` is the only writable
+tree and the failing assertions are the specification.
 
-Signatures, names and export status must not change: the test file calls
-`calc.A()` and `calc.B()` with no arguments and compares the result to an
-untyped integer constant. Renaming, adding parameters, changing the result
-type, or making either function unexported would break compilation of the
-suite, which counts as a failure, not a repair.
+There is no hidden dependency, build tag, interface, or wiring problem — the
+test imports `fixture/buildcodefix/services/calc` directly, the module path in
+`go.mod` matches, and the package compiles today (the tests run and fail on
+the assertion rather than on a build error). So the repair is purely the
+return-value contract of the two functions.
 
-## Part 1 — correct `A()` in `services/calc/calc.go`
+## What to change
 
-**File:** `services/calc/calc.go` (inside declared edit root `services/calc`)
+### Part 1 — `services/calc/calc.go`: correct `A()`
 
-**Change:** `func A() int` currently returns the placeholder `0`. Make it
-return `1`, the value the specification requires. Keep the existing package
-clause (`package calc`), the function name, the exported capitalisation and
-the `func A() int` signature exactly as they are; only the produced value
-changes.
+Serves: `/go-test/go-test:fixture.buildcodefix.tests.suite::TestA`
 
-**Tests served:**
-`/go-test/go-test:fixture.buildcodefix.tests.suite::TestA`
-(`fixture/buildcodefix/tests/suite::TestA`, `calc_test.go:3`).
+Change `A()` so that it returns the integer `1` instead of `0`. Keep the
+exported name, the `package calc` declaration, the zero-argument signature
+and the `int` result type exactly as they are — the test calls `calc.A()` with
+no arguments and compares the result to an untyped integer constant, so the
+signature must not change.
 
-## Part 2 — correct `B()` in `services/calc/calc.go`
+### Part 2 — `services/calc/calc.go`: correct `B()`
 
-**File:** `services/calc/calc.go` (same file, same declared root)
+Serves: `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB`
 
-**Change:** `func B() int` currently returns the placeholder `0`. Make it
-return `2`, the value the specification requires. Again keep the package
-clause, the name `B`, its exported capitalisation and the `func B() int`
-signature unchanged; only the produced value changes.
+Change `B()` so that it returns the integer `2` instead of `0`. Same
+constraints as Part 1: keep the name exported, keep the no-argument signature
+and the single `int` return.
 
-**Tests served:**
-`/go-test/go-test:fixture.buildcodefix.tests.suite::TestB`
-(`fixture/buildcodefix/tests/suite::TestB`, `calc_test.go:4`).
+Both parts are edits to the same single file; no new files, no new packages,
+no changes to `go.mod` and no new imports are required.
 
-Both parts land in the same small file, so the writer should apply them in one
-edit pass rather than two, but they are listed separately because they serve
-separate tests in the set: fixing only one leaves the other test red.
+## Constraints for the writer
 
-## Why the failure group lists both tests under one trace
-
-The harness grouped `TestA` and `TestB` because they fail with the same
-message text (`SHARED-FAILURE-EVIDENCE`) and the captured excerpt only shows
-`TestA`'s frame. The raw discovery log
-(`tmp/.../testrun-001-go-test-discover-stdout.jsonl`) confirms two distinct
-failures: `calc_test.go:3` for `TestA` and `calc_test.go:4` for `TestB`. The
-shared message is not a shared root cause in one function — it is two
-placeholder return values in the same file. The writer must fix both; fixing
-only `A()` will flip `TestA` green and leave `TestB` failing with an
-identical-looking message, which is easy to mistake for "no progress".
-
-## Constraints the writer must respect
-
-- Edit only `services/calc/` (the declared root for service `calc`, per
-  `docs/architecture/architecture.yaml`, where `calc.path: services/calc`).
-  Scratch output, if any, goes to host tmp.
-- Do **not** touch `tests/suite/calc_test.go` or any `*_test.go` file, and do
-  not weaken, skip, retitle or delete any assertion. The failing assertions
-  are the specification.
-- Do not touch `docs/architecture/architecture.yaml`, `true-bdd/`,
-  `templates/`, `CLAUDE.md` or `go.mod`. `go.mod` already declares module
-  `fixture/buildcodefix` with a matching Go version, so the import path
-  `fixture/buildcodefix/services/calc` already resolves — no module work is
-  required.
-- Do not add build tags, `//go:build ignore`, `t.Skip` helpers, environment
-  switches or any other mechanism that would cause the suite or either test
-  to be skipped rather than pass.
-- Do not introduce randomness, global mutable state, init-time side effects or
-  time/environment dependence: both functions must be pure and deterministic
-  so `go test -count=1` is stable on repeat runs.
-- Keep the file valid, gofmt-clean Go that compiles with no unused imports;
-  the file needs no imports at all.
+- Edit only `services/calc/calc.go`. Do not touch `tests/suite/calc_test.go`
+  or any `*_test.go`, do not touch `docs/architecture/architecture.yaml`,
+  `true-bdd/`, `go.mod` or `CLAUDE.md`.
+- Do not weaken, skip, remove or rewrite any assertion, and do not add build
+  tags, `t.Skip`, or conditional compilation to steer the tests.
+- Do not rename or re-sign `A` or `B`; the test's call sites and the
+  comparisons against `1` and `2` are the contract.
+- The file may be reformatted to idiomatic gofmt layout (the current
+  single-line function bodies are unformatted), but that is cosmetic and
+  optional; correctness only requires the two returned constants.
 
 ## Verification
 
@@ -157,9 +130,9 @@ Run the suite command from `docs/architecture/architecture.yaml`:
 go test -json -count=1 ./tests/suite/...
 ```
 
-Expected: `TestA` and `TestB` both report `Action":"pass"`, the package
-reports `pass`, and no `SHARED-FAILURE-EVIDENCE` output lines remain. Confirm
-`git status` shows `services/calc/calc.go` as the only modified tracked file.
+Expect `TestA` and `TestB` both to pass, with no occurrence of
+`SHARED-FAILURE-EVIDENCE` in the output. No other tests exist in this
+fixture workspace, so nothing else should be affected.
 
 ## Edit roots
 

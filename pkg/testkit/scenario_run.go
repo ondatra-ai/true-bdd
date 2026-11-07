@@ -9,25 +9,28 @@ import (
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit/internal/runner"
 )
 
-// ErrJudgeRefused is returned when the judge ruled against a scenario's
-// clauses. A step failure rather than a cleanup-time note, so the
-// scenario's own output names it alongside the steps that passed.
+// ErrJudgeRefused marks a judge's refusal of the Scenario's collected clauses.
 var ErrJudgeRefused = errors.New("judge ruled against the scenario's clauses")
 
 // ScenarioRun is the harness's per-Scenario state: the fixture it prepared, the proxy
 // setup it runs behind, and what the CLI left behind.
 type ScenarioRun struct {
-	T        *testing.T
+	beforeSnapshot []func(string) error
+	// T reports this Scenario through the Go test runner.
+	T *testing.T
+	// Scenario is the Registry entry whose steps are running.
 	Scenario bddgo.Scenario
-	Harness  *Harness
+	harness  *harness
 
-	Fixture  *runner.Fixture
-	Proxy    ProxySetup
-	Result   *runner.RunResult
-	Recorder *runner.HarnessRecorder
+	// Fixture is the selected starting tree and invocation contract.
+	Fixture *Fixture
+	proxy   proxySetup
+	// Result retains the latest invocation outputs and file changes.
+	Result   *RunResult
+	recorder *runner.HarnessRecorder
 
 	// judged carries the verdict from Judge into finish: Judge runs as the
 	// scenario's last act (a FAIL can still stop the test); finish runs in
@@ -36,15 +39,15 @@ type ScenarioRun struct {
 	judgeVerdict runner.Verdict
 }
 
-// NewScenarioRun returns the per-scenario state constructor bddgo calls before
+// newScenarioRun returns the per-scenario state constructor bddgo calls before
 // the first step. It registers ONE cleanup (not three) that grades, then
 // publishes, then records in order — t.Cleanup's LIFO would reverse that.
-func NewScenarioRun(harness *Harness) func(*bddgo.World) (*ScenarioRun, error) {
+func newScenarioRun(harness *harness) func(*bddgo.World) (*ScenarioRun, error) {
 	return func(world *bddgo.World) (*ScenarioRun, error) {
-		state := &ScenarioRun{T: world.T, Scenario: world.Scenario, Harness: harness}
+		state := &ScenarioRun{T: world.T, Scenario: world.Scenario, harness: harness}
 
-		name := FixtureName(world.Scenario)
-		state.Recorder = runner.NewHarnessRecorder(
+		name := FixtureName(world.Scenario, harness.FixtureStep)
+		state.recorder = runner.NewHarnessRecorder(
 			harness.SessionRoot, name, harness.Modes.String(), harness.Usage)
 
 		world.T.Cleanup(state.finish)
@@ -53,9 +56,7 @@ func NewScenarioRun(harness *Harness) func(*bddgo.World) (*ScenarioRun, error) {
 	}
 }
 
-// Judge implements bddgo.Judgeable: rules on `judge:` clauses once, after
-// every step passed — in EVERY mode. Replay hands it a byte-identical diff
-// run after run, which is what makes a verdict disagreement measurable.
+// Judge rules once on the collected judge clauses after every step passes, using the configured tests mode.
 func (s *ScenarioRun) Judge(clauses []bddgo.Step) error {
 	texts := clauseTexts(clauses)
 
@@ -74,21 +75,22 @@ func (s *ScenarioRun) Judge(clauses []bddgo.Step) error {
 		return s.fail("%w", ErrNoTreePrepared)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), s.Harness.JudgeTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), s.harness.JudgeTimeout)
 	defer cancel()
 
 	// Armed for the call and no longer: what this process exports is what
 	// the next fixture's engine subprocess inherits.
-	if len(s.Proxy.JudgeEnv) > 0 {
-		restore := runner.ArmProcess(s.Proxy.JudgeEnv)
+	if len(s.proxy.JudgeEnv) > 0 {
+		restore := runner.ArmProcess(s.proxy.JudgeEnv)
 		defer restore()
 	}
 
 	s.judgeVerdict = runner.Evaluate(ctx, runner.JudgeRequest{
 		Cmd:     s.Fixture.Cmd,
 		Clauses: texts,
-		Diff:    s.Result.Diff,
-	}, s.Harness.Judge)
+		Service: s.harness.Service,
+		Diff:    resultToRunner(s.Result).Diff,
+	}, s.harness.Judge)
 	s.judged = true
 
 	if !s.judgeVerdict.JudgeOK {
@@ -107,8 +109,8 @@ func (s *ScenarioRun) finish() {
 		s.grade()
 	}
 
-	s.Recorder.ObserveFixture(s.Fixture)
-	s.Recorder.Finish(s.T.Failed(), s.T.Skipped())
+	s.recorder.ObserveFixture(fixtureToRunner(s.Fixture))
+	s.recorder.Finish(s.T.Failed(), s.T.Skipped())
 
 	// Last act of the scenario, not of the CLI run: a Then step that
 	// re-runs the host suite needs the stack the run left standing.
@@ -121,7 +123,7 @@ func (s *ScenarioRun) finish() {
 // `timeout:` if declared, else the suite default. Carried onto the
 // fixture too, since the run record reads it there for the report.
 func (s *ScenarioRun) runTimeout() time.Duration {
-	timeout := s.Harness.Timeout
+	timeout := s.harness.Timeout
 	if s.Scenario.Timeout > 0 {
 		timeout = s.Scenario.Timeout
 	}
@@ -167,7 +169,7 @@ func renderClauses(texts []string) string {
 // a reader thought the new output satisfied the scenario's clauses.
 func (s *ScenarioRun) grade() {
 	verdict := s.finalVerdict()
-	s.Recorder.ObserveVerdict(verdict)
+	s.recorder.ObserveVerdict(verdict)
 
 	// A judge refusal already stopped the scenario as a step failure, and
 	// reporting it here too would show one verdict as two. Golden and
@@ -185,13 +187,13 @@ func (s *ScenarioRun) grade() {
 // the steps as well as the verdict, which is what makes this the promotion
 // gate: a recording is published only for a scenario that passed WHOLE.
 func (s *ScenarioRun) publishRecordings() {
-	recordingServices := s.Harness.Modes.Services == runner.ProxyModeRecord
-	if !recordingServices && s.Proxy.JudgeStaging == "" {
+	recordingServices := s.harness.Modes.Services == runner.ProxyModeRecord
+	if !recordingServices && s.proxy.JudgeStaging == "" {
 		return
 	}
 
 	if s.T.Failed() {
-		dest, _ := s.Harness.CassetteDir(s.fixtureName())
+		dest, _ := s.harness.CassetteDir(s.fixtureName())
 		s.T.Logf("recordings NOT published — the run failed; the rejected recording is at %s "+
 			"and %s is unchanged", s.stagingRoot(), dest)
 
@@ -206,7 +208,7 @@ func (s *ScenarioRun) publishRecordings() {
 		return
 	}
 
-	err := s.Harness.promoteJudgeShelf(s.fixtureName(), s.Proxy.JudgeStaging)
+	err := s.harness.promoteJudgeShelf(s.fixtureName(), s.proxy.JudgeStaging)
 	if err != nil {
 		s.T.Errorf("publish judge shelf: %v", err)
 
@@ -220,16 +222,16 @@ func (s *ScenarioRun) publishRecordings() {
 // its recorder, run dir and staging use: read from the scenario, so it holds
 // whether or not a step definition kept the Fixture it loaded.
 func (s *ScenarioRun) fixtureName() string {
-	return FixtureName(s.Scenario)
+	return FixtureName(s.Scenario, s.harness.FixtureStep)
 }
 
 // stagingRoot is whichever staging directory this run wrote into.
 func (s *ScenarioRun) stagingRoot() string {
-	if s.Proxy.Staging != "" {
-		return s.Proxy.Staging
+	if s.proxy.Staging != "" {
+		return s.proxy.Staging
 	}
 
-	return s.Proxy.JudgeStaging
+	return s.proxy.JudgeStaging
 }
 
 // finalVerdict is what the record states, which is not always what the
@@ -240,9 +242,9 @@ func (s *ScenarioRun) finalVerdict() runner.Verdict {
 
 	// Golden and census are WHEN-stage fidelity: they prove the replay
 	// reproduced the recorded tree and consumed every recorded turn.
-	if s.Harness.Modes.Services == runner.ProxyModeReplay {
+	if s.harness.Modes.Services == runner.ProxyModeReplay {
 		verdict = runner.EvaluateRecorded(
-			s.Result, s.Proxy.Golden, s.Proxy.Cassettes, s.Proxy.StateDir)
+			resultToRunner(s.Result), s.proxy.Golden, s.proxy.Cassettes, s.proxy.StateDir)
 	}
 
 	// The judge grades the outcome's semantics, in every mode. Neither
@@ -273,16 +275,16 @@ func (s *ScenarioRun) finalVerdict() runner.Verdict {
 // publishes both, so a later replay has something deterministic to be
 // graded against.
 func (s *ScenarioRun) recordOutcome() {
-	golden := runner.NewGoldenTree(s.fixtureName(), s.Result.Diff)
+	golden := runner.NewGoldenTree(s.fixtureName(), resultToRunner(s.Result).Diff)
 
-	err := runner.WriteGolden(s.Proxy.Staging, golden)
+	err := runner.WriteGolden(s.proxy.Staging, golden)
 	if err != nil {
 		s.T.Errorf("write golden tree: %v", err)
 
 		return
 	}
 
-	err = s.Harness.promoteCassettes(s.fixtureName(), s.Proxy.Staging)
+	err = s.harness.promoteCassettes(s.fixtureName(), s.proxy.Staging)
 	if err != nil {
 		s.T.Errorf("publish cassettes: %v", err)
 

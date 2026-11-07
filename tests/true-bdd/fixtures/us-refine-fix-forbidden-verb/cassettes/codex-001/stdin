@@ -65,6 +65,7 @@ acceptance_criteria:
 - The `description` must NEVER contain Given/When/Then — those belong
   in `steps`.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -102,7 +103,7 @@ Claude must state that only the first 10000 words were summarized when the docum
 ## Instructions
 Apply the following changes to the acceptance criteria for this story.
 
-Scope: ONLY AC-1's `then` step changes. AC-2, AC-3 and AC-4 are reproduced word for word — do not touch them.
+Scope: this is a vocabulary fix only. Exactly one step in AC-1 uses the forbidden action verb `handle` (product.yaml `vocabulary.forbidden_actions`). AC-2, AC-3 and AC-4 already use concrete, observable verbs (`displays`, `does not display`, `states`) and must be reproduced word for word, unchanged.
 
 ## Original Acceptance Criteria
 1. AC-1: Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc. [has steps]
@@ -115,9 +116,9 @@ Scope: ONLY AC-1's `then` step changes. AC-2, AC-3 and AC-4 are reproduced word 
 ### Change #1: AC-1
 **Before (then step):** "Claude handles the summary request and displays a summary of 150 words or fewer in the conversation"
 
-**Issue:** The step uses the forbidden action verb `handle` from the product document's `vocabulary.forbidden_actions` (reason: "Hides what the system observably does with the input."; replacement guidance: "Name the observable action: displays, returns, lists, rejects."). The clause "Claude handles the summary request and" contributes no observable outcome beyond the display that follows it, so it is dropped rather than reworded — the remaining verb `displays` is already the concrete observable action the guidance asks for.
+**Issue:** The step uses the forbidden action verb `handle` ("Claude handles the summary request"). Per product.yaml: reason — "Hides what the system observably does with the input"; replacement guidance — "Name the observable action: displays, returns, lists, rejects." The product document declares no `concepts:` section, so apply the replacement guidance only. The "handles the summary request" clause adds no observable behaviour beyond the display action that follows it, so it is dropped and only the observable display action is kept.
 
-**After (description):** unchanged — "Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc." (the description contains no forbidden verb)
+**After (description):** unchanged — "Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc."
 
 **After (steps):**
 ```yaml
@@ -130,7 +131,9 @@ Scope: ONLY AC-1's `then` step changes. AC-2, AC-3 and AC-4 are reproduced word 
 ```
 
 ### No change: AC-2, AC-3, AC-4
-Their steps already use concrete observable verbs (`displays`, `does not display`, `states`) and contain no verb from `forbidden_actions` (`handle`, `process`, `parse`). Reproduce them exactly as they stand. No acceptance criteria are added, merged or removed.
+These criteria contain no forbidden action verbs. Keep their descriptions and steps exactly as they are — do not reword, re-split, or re-order them. Do not introduce `handle`, `process` or `parse` anywhere.
+
+No acceptance criteria are added, merged or removed.
 
 ## Complete Fixed Acceptance Criteria
 

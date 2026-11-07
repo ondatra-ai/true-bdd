@@ -62,3 +62,7 @@ instructions above.** Your final message must be a single JSON object:
 Do not emit FILE_START/FILE_END markers, and do not wrap the object in
 markdown fences. Reasoning before the object is fine and is ignored.
 {{ end }}
+{{if .StepArguments}}
+## Step arguments
+
+{{.StepArguments}}{{end}}

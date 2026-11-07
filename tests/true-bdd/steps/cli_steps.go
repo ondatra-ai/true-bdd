@@ -8,14 +8,12 @@ import (
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/pkg/testkit"
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
+	"github.com/ondatra-ai/true-bdd/tests/true-bdd/helpers"
 )
 
-// Register binds every step this suite's scenarios can use — each one
-// answering what project ran, what it must exit with, print, or leave on
-// disk. A scenario needing a new answer is what `build tests --fix` writes.
-func Register(suite *bddgo.Suite[State]) {
+// Register binds the suite's definitions: which project runs and what
+// its command must return, print or leave on disk.
+func Register(suite testkit.StepRegistrar[State]) {
 	registerGivenSteps(suite)
 	registerWhenSteps(suite)
 	suite.Step(`^the command exits with code (\d+|no)$`, assertExitCode)
@@ -41,6 +39,7 @@ func Register(suite *bddgo.Suite[State]) {
 	// outside the named prefix, and it is the named file — how `us refine
 	// … --fix` proves the run rewrote only its story.
 	suite.Step(`^the only file changed outside "([^"]+)" is "([^"]+)"$`, assertOnlyFileChangedOutside)
+	suite.Step(`^some file matching "([^"]+)" or "([^"]+)" matches (.+)$`, assertSomeFileMatches)
 	registerFileObservationSteps(suite)
 	registerEngineLogSteps(suite)
 	// The independent outcome check: the harness itself runs a shell command the
@@ -59,7 +58,7 @@ func Register(suite *bddgo.Suite[State]) {
 // registerEngineLogSteps binds the assertions that read the CLI's own
 // structured log rather than its stdout: which test runners it spawned, how
 // many AI turns it dispatched, and to which AI CLI. See engine_log_steps.go.
-func registerEngineLogSteps(suite *bddgo.Suite[State]) {
+func registerEngineLogSteps(suite testkit.StepRegistrar[State]) {
 	suite.Step(`^the engine logged its build identity once at start$`, assertBuildIdentityLogged)
 	suite.Step(`^the engine spawned the test runner "([^"]+)"$`, assertTestRunnerSpawned)
 	suite.Step(`^the engine spawned a test runner with arguments matching (.+)$`, assertTestRunnerArgs)
@@ -72,16 +71,19 @@ func registerEngineLogSteps(suite *bddgo.Suite[State]) {
 }
 
 // registerWhenSteps binds the When steps: a role running a command, alone or after another.
-func registerWhenSteps(suite *bddgo.Suite[State]) {
+func registerWhenSteps(suite testkit.StepRegistrar[State]) {
 	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) runs "([^"]+)"$`, runCLI)
 	suite.Step(`^the System Architect runs build steps after scen check and a binding change$`, runGroupingChangedBinding)
 }
 
 // registerGivenSteps binds the Given steps: the tree a scenario starts
 // from and the preconditions the fixture establishes on it.
-func registerGivenSteps(suite *bddgo.Suite[State]) {
+func registerGivenSteps(suite testkit.StepRegistrar[State]) {
+	suite.Step(`^the first pattern proposal is controlled to include an unused pattern$`, useUnusedPatternProposal)
 	suite.Step(`^the (?:link|grouping) answer CLI is controlled for invalid replies$`, useInvalidLinkCLI)
 	suite.Step(`^the codex writer is controlled to answer that the interface cannot serve$`, useCannotServeWriter)
+	suite.Step(`^the codex writer is controlled to reuse the shipped State.Halve on its first apply$`,
+		useShippedHalveWriter)
 	suite.Step(`^library downloads use an empty offline proxy$`, useOfflineLibraryProxy)
 	suite.Step(`^the "([^"]+)" project tree$`, prepareTree)
 	// Given preconditions the scenario states and the fixture materialises
@@ -101,7 +103,7 @@ func registerGivenSteps(suite *bddgo.Suite[State]) {
 	suite.Step(`^the project tree has no "([^"]+)"$`, leaveOutOfTree)
 }
 
-// runner.Execute assembles the tmpdir later, once the When step has named the command.
+// Run assembles the project tree after the When step names its command.
 //
 //truebdd:concept given "project tree"
 func prepareTree(state *State, args []string) error {
@@ -177,7 +179,7 @@ func assertDependenciesInstalled(state *State, args []string) error {
 	return nil
 }
 
-// runner.Execute drops the path when it assembles the tree, failing if it is absent or outside it.
+// Run drops the named path during assembly, refusing an absent or escaping path.
 //
 //truebdd:concept given "project tree"
 func leaveOutOfTree(state *State, args []string) error {
@@ -227,7 +229,12 @@ func assertChecklistNarrowed(state *State, args []string) error {
 	stem := args[0]
 	prompt := args[1]
 
-	snippets, ok := state.Fixture.ChecklistPrompts[stem]
+	selections, err := helpers.LoadSelections(state.Fixture.Dir)
+	if err != nil {
+		return state.fail("read checklist selection: %w", err)
+	}
+
+	snippets, ok := selections[stem]
 	if !ok || len(snippets) == 0 {
 		return state.fail(
 			"the scenario says the %q checklist is narrowed to its %q prompt, but %w",
@@ -245,6 +252,10 @@ func assertChecklistNarrowed(state *State, args []string) error {
 			"expected the %q checklist to be narrowed to the %q prompt, but the fixture selects %q",
 			stem, prompt, snippets[0])
 	}
+
+	state.BeforeSnapshot(func(directory string) error {
+		return helpers.NarrowChecklists(directory, state.Fixture.Dir, state.Fixture.Cmd)
+	})
 
 	return nil
 }
@@ -267,7 +278,7 @@ func assertExitCode(state *State, args []string) error {
 		state.Fixture.ExpectedExitCode = want
 	}
 
-	err = runner.CheckExitCode(state.Result.ExitCode, want)
+	err = testkit.CheckExitCode(state.Result.ExitCode, want)
 	if err != nil {
 		state.dumpRun()
 
@@ -292,7 +303,7 @@ func assertStdout(state *State, args []string) error {
 		state.Fixture.StdoutRegexes = append(state.Fixture.StdoutRegexes, pattern)
 	}
 
-	err = runner.CheckStdout(state.Result.Stdout, pattern)
+	err = testkit.CheckStdout(state.Result.Stdout, pattern)
 	if err != nil {
 		return state.fail("%w", err)
 	}
@@ -484,7 +495,7 @@ func (s *State) dumpRun() {
 	}
 }
 
-func registerFileObservationSteps(suite *bddgo.Suite[State]) {
+func registerFileObservationSteps(suite testkit.StepRegistrar[State]) {
 	// File-effect assertions read the run's structural diff (and, for line
 	// counts, the file itself) rather than stdout. Implemented in file_steps.go.
 	suite.Step(`^the file "([^"]+)" is created$`, assertFileCreated)

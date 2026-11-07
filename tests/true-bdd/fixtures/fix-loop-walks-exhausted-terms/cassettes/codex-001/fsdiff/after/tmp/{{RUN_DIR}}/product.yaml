@@ -13,6 +13,11 @@ roles:
     definition: Writes the clients that send the MCP service its requests.
 
 glossary:
+  - term: latency
+    means: >-
+      The time a reply takes to arrive, from when a client sends its
+      message to when the MCP service's reply reaches it. Measured in
+      milliseconds.
   - term: mcp service
     means: >-
       The service this project builds: it takes a message from a client
@@ -22,11 +27,6 @@ glossary:
       What the MCP service sends back for one message, and how long it
       took to arrive. A client waits on it, so its content and its delay
       are both behaviour.
-  - term: latency
-    means: >-
-      How long a reply takes to arrive, counted from the moment the MCP
-      service receives the message until the client has the reply.
-      Measured in milliseconds.
 
 concepts:
   given:

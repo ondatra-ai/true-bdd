@@ -6,6 +6,7 @@ Write only inside the edit roots in the request. Never modify tests, *_test.go, 
 
 Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, impossible, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -56,49 +57,57 @@ Received: [31m"Welcome"[39m
 ## Proposed repair plan
 # Repair plan for /playwright/playwright:home.spec.ts::home.spec.ts_>_home_page_>_shows_the_store_name_as_its_heading
 
-## Diagnosis
+## Summary of the defect
 
-The only production file in the declared edit root is `services/web/server.js`. It serves a single hard-coded HTML document for every request. Its top-level heading is a generic greeting:
+The web service renders one static HTML document from a single template literal in `services/web/server.js`. Its top-level heading reads `Welcome` — a generic greeting — where the specification requires the store's own name. The document's `<title>` in the same template already reads `Corner Shop`, so the store name is established by the production source itself; only the `<h1>` is out of step. This is a production defect, not a test defect: the assertion is the specification.
+
+## Evidence chain
+
+- `docs/architecture/architecture.yaml` declares one service, `web`, at `services/web`, language javascript, with the Playwright suite configured at `tests/playwright.config.ts`.
+- `tests/playwright.config.ts` sets `webServer.command: 'node ../services/web/server.js'` and `use.baseURL: http://127.0.0.1:${port}`, where `port` is derived from `process.cwd()`. Playwright therefore starts this exact service and every `page.goto('/')` in the suite is answered by it.
+- `services/web/server.js` responds to *every* request path with one constant HTML string (the handler ignores `req.url`). Line 10 of that string is `<h1>Welcome</h1>`.
+- The failure is `Expected: "Corner Shop" / Received: "Welcome"` at `tests/integration/home.spec.ts:9`, which matches that line exactly.
+
+## The change to make
+
+**File: `services/web/server.js` (the only file that needs to change)**
+
+In the `page` template literal, change the text content of the single `<h1>` element from `Welcome` to `Corner Shop`, so the served document's top-level heading is the store's name.
+
+Contract the heading must satisfy:
+
+- The document served at `/` contains exactly one `h1` element (the suite uses the bare locator `page.locator('h1')`; a second `h1` would make that locator strict-mode-ambiguous and break the test in a new way, so do not add one).
+- `textContent` of that `h1` must be the exact string `Corner Shop` — no surrounding whitespace, no newline, no nested markup, no `&nbsp;` or HTML entity that decodes to anything else. The assertion is `toBe`, a strict equality on the raw `textContent`, so `\n      Corner Shop\n    ` would still fail. Keep the heading's text on one line inside the tag, exactly as `Welcome` sits there now.
+- Prefer spelling the literal text directly in the markup, mirroring the existing style. If you instead introduce a constant (for example a `storeName` variable interpolated into both the `<title>` and the `<h1>`), it must produce byte-identical output for both elements — `Corner Shop` — and must not be read from an environment variable or any other runtime input, because the Playwright `webServer.env` block passes only `PORT` and nothing would supply a name at test time.
+
+**What must not change**
+
+- Keep `<a href="/hours">Opening hours</a>` exactly as it is, including the `href` value and the fact that it is the only `a` element in the document. The suite's second test (`home.spec.ts > home page > links to the opening hours`) asserts `page.locator('a').getAttribute('href')` is `/hours`, and that test passes today; it must still pass after the repair.
+- Keep the response status `200`, the `Content-Type: text/html; charset=utf-8` header, and the `.listen(Number(process.env.PORT), '127.0.0.1')` call unchanged. Playwright's `webServer.url` health check polls `http://127.0.0.1:${port}/` and the suite will not start if the service stops binding that host and port or stops answering `/` with a success status.
+- Keep the server answering every path with a success response. The handler currently ignores `req.url`; do not add routing or a 404 branch as part of this repair — Playwright's readiness probe and both tests only hit `/`, and narrowing the handler adds risk without serving any test in this set.
+- Do not touch anything under `tests/` — not `home.spec.ts`, not `playwright.config.ts`, not `package.json`. Do not touch `docs/architecture/architecture.yaml` or `true-bdd/`.
+
+**Optional, non-behavioural tidy-up (same file, low priority)**
+
+The comment block at the top of `services/web/server.js` currently narrates the defect ("Its heading says 'Welcome' where the store's name belongs: that is the planted defect"). Once the heading is corrected that sentence is false. You may reword those lines to describe what the service actually does — one page, served on the port `PORT` names, heading carrying the store's name. This is a comment-only edit inside the declared root with no effect on the served bytes; skip it if you prefer the minimal diff, but do not leave a comment that contradicts the code *and* also change behaviour elsewhere to match it.
+
+## Which tests each part serves
+
+| Part of the change | Test it serves |
+| --- | --- |
+| `<h1>` text becomes the exact string `Corner Shop`; still exactly one `h1` in the document | `/playwright/playwright:home.spec.ts::home.spec.ts > home page > shows the store name as its heading` — the single failing test in this set (`expect(await page.locator('h1').textContent()).toBe('Corner Shop')`, line 9) |
+| `<a href="/hours">` left intact as the document's only anchor | `home.spec.ts > home page > links to the opening hours` — currently green, protected from regression |
+| Status 200, `text/html; charset=utf-8`, bind on `127.0.0.1:$PORT`, every path answered | `webServer` readiness gate in `tests/playwright.config.ts`; both tests in the suite depend on it, since neither runs if the health check never goes green |
+
+## How to verify
+
+From the `tests/` directory (the directory holding `playwright.config.ts`, as the architecture document specifies), run the declared replay command:
 
 ```
-<h1>Welcome</h1>
+npx playwright test --reporter=json --config playwright.config.ts integration
 ```
 
-while the page title already names the store (`<title>Corner Shop</title>`). The spec (`docs/architecture/architecture.yaml` plus the suite under `tests/`) treats the home page's heading as the place where the store's name belongs. The Playwright suite runs `tests/playwright.config.ts`, which boots this exact file as its `webServer` (`node ../services/web/server.js`) before any test, so the page the test reads is produced solely by `services/web/server.js`. The failing assertion reads `h1` once (no retry) and compares it to `"Corner Shop"`, receiving `"Welcome"`. This is a production-source defect, not a test defect.
-
-## Contract to satisfy
-
-The document served at `GET /` on the configured port must:
-
-1. Contain exactly one `<h1>` element whose text content is precisely `Corner Shop` — no surrounding whitespace, no nested markup, no extra words, matching byte-for-byte under `toBe`. Playwright's `textContent()` returns the raw node text, so do not introduce newlines or indentation inside the heading element.
-2. Continue to contain exactly one `<a>` element whose `href` attribute is exactly `/hours` — the first (and only) anchor matched by the `a` locator. Do not add further anchors (e.g. a nav link or footer link), because a second `<a>` would make the `a` locator ambiguous and break the currently passing sibling test. Likewise do not add a second `<h1>`.
-3. Keep serving the response synchronously with HTTP 200 and `Content-Type: text/html; charset=utf-8`, and keep listening on `Number(process.env.PORT)` at `127.0.0.1`, since `playwright.config.ts` supplies `PORT` and polls `http://127.0.0.1:<port>/` as the readiness URL. Any change to the port source, host binding, status code, or startup timing would stall or fail `webServer` startup and take the whole suite down.
-
-## Change to make
-
-**File: `services/web/server.js` (the only file to touch; no new files are needed).**
-
-Replace the heading text in the `page` template literal so the top-level heading carries the store's name — `Corner Shop` — instead of `Welcome`. Keep the element a single-line `<h1>Corner Shop</h1>` inside the existing `<body>`, keeping the anchor, the `<title>`, the doctype, and the response/listen logic exactly as they are.
-
-If the writer prefers to avoid duplicating the literal string in both `<title>` and `<h1>`, it is acceptable to introduce a single module-level constant in the same file (e.g. `const storeName = 'Corner Shop';`) and interpolate it into both places — provided the rendered heading text remains exactly `Corner Shop` with no added whitespace inside the element. This is optional; the minimal literal edit is sufficient and lower risk.
-
-Also update the stale comment block at the top of `services/web/server.js`, which currently describes the heading as "the planted defect" saying `Welcome`. After the repair that comment is false; reword it to describe what the file actually does (serves the Corner Shop home page with the store name as its heading and a link to the opening hours).
-
-## Tests each part serves
-
-- **Heading text now reading `Corner Shop`** → serves the failing subject test `home.spec.ts > home page > shows the store name as its heading` (`expect(await page.locator('h1').textContent()).toBe('Corner Shop')`).
-- **Keeping exactly one anchor with `href="/hours"`, and not adding other anchors or headings** → protects the already-passing sibling test `home.spec.ts > home page > links to the opening hours` from regression and keeps the `h1` locator unambiguous.
-- **Keeping the 200 / `text/html` response and the `PORT`-based listen on `127.0.0.1`** → keeps the `webServer` readiness probe in `tests/playwright.config.ts` satisfied, which both tests in the suite depend on for the app to be up.
-
-## Out of scope / prohibitions
-
-- Do not edit anything under `tests/` (including `tests/integration/home.spec.ts` and `tests/playwright.config.ts`), `docs/`, `true-bdd/`, or `CLAUDE.md`.
-- Do not weaken, skip, retry-wrap, or remove any assertion.
-- Do not add routes, dependencies, build steps, or frameworks: the repair is a content correction in one served document, and no new behaviour (such as an actual `/hours` page) is required by this failing set.
-
-## Verification
-
-From `tests/`, run `npx playwright test --reporter=json --config playwright.config.ts integration` (the architecture's `replay`/`live` command). Both tests in `home.spec.ts` must pass, with no change to the test files.
+Both tests in `home.spec.ts` must report as passed. Playwright starts and stops the service itself (`reuseExistingServer: false`), so no manual server management is needed; if the port appears busy, it is a stale process from an earlier run rather than a problem with this change.
 
 ## Edit roots
 

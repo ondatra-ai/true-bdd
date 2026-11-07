@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // concept-link-001-add-concept: An unlinked Story step must offer a new concept through the menu
 func TestConceptLink001AddConcept(t *testing.T) {
-	s := scenarios.New(t, "concept-link-001-add-concept")
+	s := New(t, "concept-link-001-add-concept")
 	s.Given(`the "concept-link-add-concept" project tree`)
 	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine host --fix"`)
@@ -38,7 +36,7 @@ func TestConceptLink001AddConcept(t *testing.T) {
 
 // concept-link-002-refine-before-binding: A Story must pass refinement sketches before its concept has a binding
 func TestConceptLink002RefineBeforeBinding(t *testing.T) {
-	s := scenarios.New(t, "concept-link-002-refine-before-binding")
+	s := New(t, "concept-link-002-refine-before-binding")
 	s.Given(`the "concept-link-refine-before-binding" project tree`)
 	s.When(`the Product Owner runs "us refine host"`)
 	s.Then(`the command exits with code 0`)
@@ -50,7 +48,7 @@ func TestConceptLink002RefineBeforeBinding(t *testing.T) {
 
 // concept-link-003-missing-binding: An unclaimed Scenario must fail when its linked concept has no service binding
 func TestConceptLink003MissingBinding(t *testing.T) {
-	s := scenarios.New(t, "concept-link-003-missing-binding")
+	s := New(t, "concept-link-003-missing-binding")
 	s.Given(`the "concept-link-missing-binding" project tree`)
 	s.When(`the Product Owner runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -61,21 +59,22 @@ func TestConceptLink003MissingBinding(t *testing.T) {
 
 // concept-link-004-fix-binding: A missing linked binding must be added only after menu apply
 func TestConceptLink004FixBinding(t *testing.T) {
-	s := scenarios.New(t, "concept-link-004-fix-binding")
+	s := New(t, "concept-link-004-fix-binding")
 	s.Given(`the "concept-link-fix-binding" project tree`)
 	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "scen check --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches action=apply`)
 	s.And(`stdout matches judgement=bindings answer=pass`)
-	s.And(`the only file changed outside "tmp" is "docs/architecture/architecture.yaml"`)
+	s.And(`no file outside "tmp" and "docs" changed`)
 	s.And(`the file "docs/scenarios.yaml" is unchanged`)
+	s.And(`the file "docs/product/stories/host-story.yaml" is unchanged`)
 	s.Done()
 }
 
 // concept-link-005-wrong-block: An action written as Then must fail naming its When concept
 func TestConceptLink005WrongBlock(t *testing.T) {
-	s := scenarios.New(t, "concept-link-005-wrong-block")
+	s := New(t, "concept-link-005-wrong-block")
 	s.Given(`the "concept-link-wrong-block" project tree`)
 	s.When(`the Product Owner runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -86,7 +85,7 @@ func TestConceptLink005WrongBlock(t *testing.T) {
 
 // concept-link-006-malformed: A malformed link answer must fail its cell
 func TestConceptLink006Malformed(t *testing.T) {
-	s := scenarios.New(t, "concept-link-006-malformed")
+	s := New(t, "concept-link-006-malformed")
 	s.Given(`the "concept-link-malformed" project tree`)
 	s.And(`the link answer CLI is controlled for invalid replies`)
 	s.When(`the Product Owner runs "scen check"`)
@@ -98,7 +97,7 @@ func TestConceptLink006Malformed(t *testing.T) {
 
 // concept-link-007-incomplete: A link answer leaving one concept unscored must fail its cell
 func TestConceptLink007Incomplete(t *testing.T) {
-	s := scenarios.New(t, "concept-link-007-incomplete")
+	s := New(t, "concept-link-007-incomplete")
 	s.Given(`the "concept-link-incomplete" project tree`)
 	s.And(`the link answer CLI is controlled for invalid replies`)
 	s.When(`the Product Owner runs "scen check"`)
@@ -110,21 +109,21 @@ func TestConceptLink007Incomplete(t *testing.T) {
 
 // concept-link-008-shared-fix: A shared concept fix must cause every linked Scenario to be judged afresh
 func TestConceptLink008SharedFix(t *testing.T) {
-	s := scenarios.New(t, "concept-link-008-shared-fix")
+	s := New(t, "concept-link-008-shared-fix")
 	s.Given(`the "concept-link-shared-fix" project tree`)
 	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "scen check --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches action=apply`)
 	s.And(`the file "docs/product/product.yaml" matches means.*(pointer.*keyboard|keyboard.*pointer)`)
-	s.And(`the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "msg":"Cell validation started","subjectID":"alpha","promptIndex":1`)
+	s.And(`the file matching "tmp/true-bdd.log.json" has exactly 4 matches for "msg":"Cell validation started","subjectID":"alpha","promptIndex":1`)
 	s.And(`the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "msg":"Cell validation started","subjectID":"beta","promptIndex":1`)
 	s.Done()
 }
 
 // concept-link-009-threshold-nine: A real-model near miss scored seven fails at threshold nine; the engine threshold test pins the same-answer boundary
 func TestConceptLink009ThresholdNine(t *testing.T) {
-	s := scenarios.New(t, "concept-link-009-threshold-nine")
+	s := New(t, "concept-link-009-threshold-nine")
 	s.Given(`the "concept-link-threshold-nine" project tree`)
 	s.When(`the Product Owner runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -135,7 +134,7 @@ func TestConceptLink009ThresholdNine(t *testing.T) {
 
 // concept-link-010-threshold-eight: A real-model borderline score of eight links at threshold eight; the engine threshold test pins rejection of that same score at nine and the default
 func TestConceptLink010ThresholdEight(t *testing.T) {
-	s := scenarios.New(t, "concept-link-010-threshold-eight")
+	s := New(t, "concept-link-010-threshold-eight")
 	s.Given(`the "concept-link-threshold-eight" project tree`)
 	s.When(`the Product Owner runs "scen check"`)
 	s.Then(`the command exits with code 0`)
@@ -146,7 +145,7 @@ func TestConceptLink010ThresholdEight(t *testing.T) {
 
 // concept-link-011-ambiguous: An ambiguous step must fail naming both fitting concepts
 func TestConceptLink011Ambiguous(t *testing.T) {
-	s := scenarios.New(t, "concept-link-011-ambiguous")
+	s := New(t, "concept-link-011-ambiguous")
 	s.Given(`the "concept-link-ambiguous" project tree`)
 	s.When(`the Product Owner runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -157,7 +156,7 @@ func TestConceptLink011Ambiguous(t *testing.T) {
 
 // concept-link-012-widen: An unstated variation must fail and widen its concept only through the menu
 func TestConceptLink012Widen(t *testing.T) {
-	s := scenarios.New(t, "concept-link-012-widen")
+	s := New(t, "concept-link-012-widen")
 	s.Given(`the "concept-link-widen" project tree`)
 	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine host --fix"`)
@@ -172,7 +171,7 @@ func TestConceptLink012Widen(t *testing.T) {
 
 // concept-link-013-rewrite: A rewritten step must change the Story and preserve the concepts
 func TestConceptLink013Rewrite(t *testing.T) {
-	s := scenarios.New(t, "concept-link-013-rewrite")
+	s := New(t, "concept-link-013-rewrite")
 	s.Given(`the "concept-link-rewrite" project tree`)
 	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine host --fix"`)
@@ -186,7 +185,7 @@ func TestConceptLink013Rewrite(t *testing.T) {
 
 // concept-link-014-judge-intent: A judge clause must pass unlinked and an llm step must link to an intent binding
 func TestConceptLink014JudgeIntent(t *testing.T) {
-	s := scenarios.New(t, "concept-link-014-judge-intent")
+	s := New(t, "concept-link-014-judge-intent")
 	s.Given(`the "concept-link-judge-intent" project tree`)
 	s.When(`the Product Owner runs "scen check"`)
 	s.Then(`the command exits with code 0`)
@@ -198,7 +197,7 @@ func TestConceptLink014JudgeIntent(t *testing.T) {
 
 // concept-link-015-ambiguous-binding: An ambiguous binding must fail and be repaired only through the menu
 func TestConceptLink015AmbiguousBinding(t *testing.T) {
-	s := scenarios.New(t, "concept-link-015-ambiguous-binding")
+	s := New(t, "concept-link-015-ambiguous-binding")
 	s.Given(`the "concept-link-ambiguous-binding" project tree`)
 	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "scen check --fix"`)
@@ -211,7 +210,7 @@ func TestConceptLink015AmbiguousBinding(t *testing.T) {
 
 // concept-link-016-missing-answer: A missing link answer must fail its cell
 func TestConceptLink016MissingAnswer(t *testing.T) {
-	s := scenarios.New(t, "concept-link-016-missing-answer")
+	s := New(t, "concept-link-016-missing-answer")
 	s.Given(`the "concept-link-missing-answer" project tree`)
 	s.And(`the link answer CLI is controlled for invalid replies`)
 	s.When(`the Product Owner runs "scen check"`)
@@ -222,7 +221,7 @@ func TestConceptLink016MissingAnswer(t *testing.T) {
 
 // concept-link-017-llm-needs-intent: An llm step must fail when its binding does not state intent
 func TestConceptLink017LlmNeedsIntent(t *testing.T) {
-	s := scenarios.New(t, "concept-link-017-llm-needs-intent")
+	s := New(t, "concept-link-017-llm-needs-intent")
 	s.Given(`the "concept-link-llm-needs-intent" project tree`)
 	s.When(`the Product Owner runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -232,7 +231,7 @@ func TestConceptLink017LlmNeedsIntent(t *testing.T) {
 
 // concept-link-018-unrelated-unbound: An unbound concept no step links to must not fail the Scenario
 func TestConceptLink018UnrelatedUnbound(t *testing.T) {
-	s := scenarios.New(t, "concept-link-018-unrelated-unbound")
+	s := New(t, "concept-link-018-unrelated-unbound")
 	s.Given(`the "concept-link-unrelated-unbound" project tree`)
 	s.When(`the Product Owner runs "scen check"`)
 	s.Then(`the command exits with code 0`)
@@ -243,7 +242,7 @@ func TestConceptLink018UnrelatedUnbound(t *testing.T) {
 
 // concept-link-019-unfixed: An unlinked Story step must fail refinement and leave its Story unsaved
 func TestConceptLink019Unfixed(t *testing.T) {
-	s := scenarios.New(t, "concept-link-019-unfixed")
+	s := New(t, "concept-link-019-unfixed")
 	s.Given(`the "concept-link-unfixed" project tree`)
 	s.When(`the Product Owner runs "us refine host"`)
 	s.Then(`the command exits with code 0`)
@@ -255,7 +254,7 @@ func TestConceptLink019Unfixed(t *testing.T) {
 
 // concept-link-020-unquoted-confirmation: A concept fix whose confirmation summary holds an unquoted colon must be committed and the Story linked again
 func TestConceptLink020UnquotedConfirmation(t *testing.T) {
-	s := scenarios.New(t, "concept-link-020-unquoted-confirmation")
+	s := New(t, "concept-link-020-unquoted-confirmation")
 	s.Given(`the "concept-link-unquoted-confirmation" project tree`)
 	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine host --fix"`)
@@ -274,7 +273,7 @@ func TestConceptLink020UnquotedConfirmation(t *testing.T) {
 
 // concept-link-021-extra-key-refused: A concept fix whose working copy widens a concept through a key beyond concept, means and terms must not be committed, naming the key, and the next fix must widen its means instead
 func TestConceptLink021ExtraKeyRefused(t *testing.T) {
-	s := scenarios.New(t, "concept-link-021-extra-key-refused")
+	s := New(t, "concept-link-021-extra-key-refused")
 	s.Given(`the "concept-link-extra-key" project tree`)
 	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine host --fix"`)

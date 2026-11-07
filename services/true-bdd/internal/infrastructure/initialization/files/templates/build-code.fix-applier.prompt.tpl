@@ -94,3 +94,7 @@ summary: "<what changed and which tests of the set you saw pass>"
 === FILE_END: {{ .ResultPath }} ===
 
 Only when no solution exists inside the declared edit roots, fill impossible with a list of {path, reason} for required undeclared files. Keep any edits already made and report their outcome. Otherwise leave impossible empty; applied: false by itself permits another attempt.
+{{if .StepArguments}}
+## Step arguments
+
+{{.StepArguments}}{{end}}

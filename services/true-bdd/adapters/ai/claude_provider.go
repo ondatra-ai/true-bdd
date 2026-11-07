@@ -117,7 +117,7 @@ func answerText(data json.RawMessage) string {
 }
 
 // logEvent narrates one streaming record. These messages are the reporter's
-// folding keys (pkg/testkit/reporter/engine_log.go): drop one and a column of
+// folding keys (scripts/reporter/engine_log.go): drop one and a column of
 // the report UI goes empty on every future run.
 func logEvent(event claude.Event) {
 	switch event.Kind {

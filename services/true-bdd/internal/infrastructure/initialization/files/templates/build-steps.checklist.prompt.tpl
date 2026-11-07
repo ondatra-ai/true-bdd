@@ -13,3 +13,7 @@ answer: <pass | fail>
 context:
   - <finding>
 === FILE_END: {{ .ResultPath }} ===
+{{if .StepArguments}}
+## Step arguments
+
+{{.StepArguments}}{{end}}

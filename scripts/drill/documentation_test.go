@@ -23,8 +23,8 @@ func TestDocumentedDrillPipeline(t *testing.T) {
 		pipeline = append(pipeline, command[1])
 	}
 
-	if !slices.Equal(pipeline, []string{"build tests --fix", "build steps --fix", "build code --fix"}) {
-		t.Fatalf("documented drill pipeline diverges from ADR-0031: %v", pipeline)
+	if !slices.Equal(pipeline, []string{"build steps --fix", "build tests --fix", "build code --fix"}) {
+		t.Fatalf("documented drill pipeline diverges from ADR-0040: %v", pipeline)
 	}
 
 	runner, record := fixture(t)

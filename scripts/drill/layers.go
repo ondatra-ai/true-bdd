@@ -22,7 +22,8 @@ func kept(path string, documents map[string]bool) bool {
 		return true
 	}
 
-	for _, root := range []string{"docs/product/", "true-bdd/", "templates/", "pkg/", "scripts/", "tests/true-bdd/"} {
+	for _, root := range []string{"docs/product/", "true-bdd/", "templates/", "pkg/", "utilities/",
+		"scripts/", "tests/true-bdd/"} {
 		if strings.HasPrefix(path, root) {
 			return true
 		}

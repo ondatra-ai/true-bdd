@@ -41,6 +41,7 @@ summary: "<one-line summary>"
 - Edit the scratch file directly during this turn — the confirmation
   block is informational only.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -72,21 +73,25 @@ Then:
 ## Target
 Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 
-## Context gathered
-- The registry currently holds exactly one scenario, `99.3-001-mcp-initialize`, with `service: mcp` and `path: tests/mcp/initialize_test.go`.
-- `docs/architecture/architecture.yaml` declares exactly one service: `services[].name: mcp`. So `service:` must be `mcp` (no ambiguity, no question needed).
-- Feature family: both ACs describe HTTP request handling on the `/mcp` endpoint of the same service, so REUSE the existing path `tests/mcp/initialize_test.go` rather than inventing a new file.
-- Lineage id `99.3-002-mcp-get-refused` is used verbatim as the registry key.
+## Context (already verified — do not re-derive)
+- The registry currently holds exactly one scenario, `"99.3-001-mcp-initialize"`, and no entry anywhere lists the pair (`docs/product/stories/99.3-rewalk-fixture.yaml`, `99.3-002-mcp-get-refused`). So this AC is genuinely absent and must be added as a NEW scenario entry.
+- `service:` — `docs/architecture/architecture.yaml` declares exactly one service, `services[].name: mcp`. Therefore `service: mcp`.
+- `path:` — REUSE the existing file `tests/mcp/mcp_endpoint_test.go` from scenario `99.3-001-mcp-initialize`. Both scenarios cover HTTP behaviour of the same `/mcp` endpoint (same feature family), so they belong in one test file. Do NOT invent a new path.
+- Registry key must be the lineage id verbatim: `99.3-002-mcp-get-refused`. Do not renumber or invent an id.
+- Keep the existing quoted-key style, 2-space indentation, and append the new entry AFTER the existing one so current ordering is preserved.
 
 ## Required Changes
 
 ### Change #1: Add scenario `99.3-002-mcp-get-refused` under `scenarios:`
-**Issue:** The AC `002-mcp-get-refused` (lineage `99.3-002-mcp-get-refused`) has no entry under `scenarios:` whose `user_stories[]` contains both the story path `docs/product/stories/99.3-rewalk-fixture.yaml` and the scenario id `99.3-002-mcp-get-refused`. The merge check reports "not present".
 
-**Action:** Use the Edit tool on `tmp/{{RUN_DIR}}/scenarios.yaml` with the exact `old_string` and `new_string` below. This appends the new entry at the end of the file, after the existing `99.3-001-mcp-initialize` entry. Do not modify the `metadata:` block and do not touch the existing scenario entry.
+**Issue:** AC `002-mcp-get-refused` of story `docs/product/stories/99.3-rewalk-fixture.yaml` (lineage id `99.3-002-mcp-get-refused`) does not appear in the registry — no `scenarios:` entry has a `user_stories[]` element whose `story` is that story path and whose `scenario_id` is that lineage id. The `us-apply/merge` check therefore reports "not present".
+
+**Action:** Use the Edit tool on `tmp/{{RUN_DIR}}/scenarios.yaml` with the exact `old_string` and `new_string` below. This appends the new entry at the end of the file and touches no other entry.
 
 **old_string:**
 ```
+      when:
+        - the Claude User posts a valid JSON-RPC initialize request to /mcp
       then:
         - the server returns HTTP 200
         - and the response body is a well-formed JSON-RPC envelope referencing the request id
@@ -94,19 +99,20 @@ Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 
 **new_string:**
 ```
+      when:
+        - the Claude User posts a valid JSON-RPC initialize request to /mcp
       then:
         - the server returns HTTP 200
         - and the response body is a well-formed JSON-RPC envelope referencing the request id
-
-  99.3-002-mcp-get-refused:
-    description: "MCP server returns HTTP 405 Method Not Allowed for an HTTP GET request to /mcp"
+  "99.3-002-mcp-get-refused":
+    description: "MCP server returns HTTP 405 Method Not Allowed for a GET request to /mcp"
     service: mcp
-    path: tests/mcp/initialize_test.go
-    last_updated: "2026-10-31"
+    path: tests/mcp/mcp_endpoint_test.go
+    last_updated: "2026-11-07"
     user_stories:
       - story: docs/product/stories/99.3-rewalk-fixture.yaml
         scenario_id: 99.3-002-mcp-get-refused
-        merge_date: "2026-10-31"
+        merge_date: "2026-11-07"
     merged_steps:
       given:
         - the MCP server is running on its configured port
@@ -118,12 +124,10 @@ Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 ```
 
 ## Verification after applying
-- `scenarios:` contains two keys: `99.3-001-mcp-initialize` (unchanged) and `99.3-002-mcp-get-refused` (new).
-- The new entry's `user_stories[0]` has `story: docs/product/stories/99.3-rewalk-fixture.yaml` and `scenario_id: 99.3-002-mcp-get-refused`, so the merge check now emits:
-  `AC 002-mcp-get-refused (lineage 99.3-002-mcp-get-refused): present in 99.3-002-mcp-get-refused`
-- `service: mcp` matches a declared `services[].name` in `docs/architecture/architecture.yaml`.
-- Indentation matches the existing entry exactly: 2 spaces for the scenario key, 4 for its fields, 6 for `merged_steps` step keys and `user_stories` list items, 8 for step list items.
-- `merged_steps` given/when/then are verbatim copies of the AC's steps.
+- `scenarios:` contains two keys: `"99.3-001-mcp-initialize"` (unchanged, byte-for-byte) and `"99.3-002-mcp-get-refused"`.
+- The new entry's `user_stories[0]` has `story: docs/product/stories/99.3-rewalk-fixture.yaml` and `scenario_id: 99.3-002-mcp-get-refused`, so the merge check now emits: `AC 002-mcp-get-refused (lineage 99.3-002-mcp-get-refused): present in 99.3-002-mcp-get-refused`.
+- `merged_steps.given`, `.when`, and `.then` match the AC's steps verbatim (1 given, 1 when, 2 then).
+- The `metadata:` block is untouched.
 
 ---
 

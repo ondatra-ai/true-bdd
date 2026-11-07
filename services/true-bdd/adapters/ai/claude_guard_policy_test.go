@@ -20,6 +20,37 @@ const claudeEdit = "Edit"
 const claudeJest = "npx jest --config jest.config.js"
 const claudeReplay = "go test ./tests/ -mode=replay"
 
+const evidenceCache = "/cache"
+const evidenceTests = "tests"
+
+func TestClaudeSearchesResolveInsideEvidenceRoots(t *testing.T) {
+	t.Parallel()
+
+	policy := ai.ClaudeGuardPolicy{Replay: ai.ReplayPolicy{ReadRoot: claudeHost},
+		EvidenceRoots: []string{"/host/tests/true-bdd"},
+		ReadRoots:     []string{"/cache/example.org/library@v1.0.0"}, LibraryCache: evidenceCache}
+
+	for _, testCase := range []struct {
+		tool, path, pattern string
+		allow               bool
+	}{
+		{claudeGlob, "", "tests/true-bdd/steps/*.go", true},
+		{claudeGlob, evidenceTests, "true-bdd/**/*.go", true},
+		{claudeGlob, "", "/cache/example.org/library@v1.0.0/*.go", true},
+		{claudeGrep, "tests/true-bdd/steps", "ScenarioRun", true},
+		{claudeGlob, "", "tests/*/steps/*.go", false},
+		{claudeGlob, "", "tests/true-bdd/../other/*.go", false},
+		{claudeGlob, "", "/cache/example.org/*/*.go", false},
+		{claudeGrep, evidenceTests, "ScenarioRun", false},
+	} {
+		payload := fmt.Sprintf(`{"tool_name":%q,"cwd":"/host","tool_input":{"path":%q,"pattern":%q}}`,
+			testCase.tool, testCase.path, testCase.pattern)
+		if allowed, reason := policy.DecidePayload([]byte(payload)); allowed != testCase.allow {
+			t.Errorf("%s: allowed=%v, want %v (%s)", payload, allowed, testCase.allow, reason)
+		}
+	}
+}
+
 func TestClaudeWritesResolveDanglingSymlinks(t *testing.T) {
 	t.Parallel()
 

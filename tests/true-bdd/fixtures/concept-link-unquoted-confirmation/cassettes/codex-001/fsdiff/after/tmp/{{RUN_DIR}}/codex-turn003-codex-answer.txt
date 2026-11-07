@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
 applied: true
 target: "product"
-summary: Added when concept square (terms: []) meaning Square the entered number once by multiplying it by itself.
+summary: Added square (terms: []) after halve with the approved meaning; verified all existing content was preserved. Initial editing tools failed under sandbox restrictions; fallback editing and verification succeeded.
 === FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===

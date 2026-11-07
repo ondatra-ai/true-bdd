@@ -20,17 +20,17 @@
     "stream-json",
     "--verbose",
     "--json-schema",
-    "{\"additionalProperties\":false,\"properties\":{\"assignments\":{\"items\":{\"additionalProperties\":false,\"properties\":{\"concept\":{\"enum\":[\"halve\",\"double\"],\"type\":\"string\"},\"index\":{\"type\":\"integer\"},\"runner_up\":{\"enum\":[\"halve\",\"double\"],\"type\":\"string\"},\"runner_up_score\":{\"maximum\":10,\"minimum\":0,\"type\":\"integer\"},\"score\":{\"maximum\":10,\"minimum\":0,\"type\":\"integer\"}},\"required\":[\"concept\",\"index\",\"runner_up\",\"runner_up_score\",\"score\"],\"type\":\"object\"},\"type\":\"array\"}},\"required\":[\"assignments\"],\"type\":\"object\"}",
+    "{\"additionalProperties\":false,\"properties\":{\"assignments\":{\"items\":{\"additionalProperties\":false,\"properties\":{\"concept\":{\"enum\":[\"halve\",\"double\"],\"type\":\"string\"},\"index\":{\"type\":\"integer\"},\"runner_up\":{\"enum\":[\"halve\",\"double\"],\"type\":\"string\"},\"runner_up_score\":{\"type\":\"integer\"},\"score\":{\"type\":\"integer\"}},\"required\":[\"concept\",\"index\",\"runner_up\",\"runner_up_score\",\"score\"],\"type\":\"object\"},\"type\":\"array\"}},\"required\":[\"assignments\"],\"type\":\"object\"}",
     "-p",
     "{\n  \"suite\": \"tests/calc-when-1\",\n  \"service\": \"calc\",\n  \"product\": \"{\\n  \\\"roles\\\": [\\n    {\\n      \\\"name\\\": \\\"Owner\\\",\\n      \\\"description\\\": \\\"Uses the calculator.\\\"\\n    }\\n  ],\\n  \\\"concepts\\\": {\\n    \\\"when\\\": [\\n      {\\n        \\\"concept\\\": \\\"halve\\\",\\n        \\\"means\\\": \\\"Press Halve once for the named number, halving that entered number.\\\",\\n        \\\"terms\\\": []\\n      },\\n      {\\n        \\\"concept\\\": \\\"double\\\",\\n        \\\"means\\\": \\\"Press Double once to double the entered number.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ]\\n  },\\n  \\\"glossary\\\": []\\n}\\n\",\n  \"steps\": [\n    {\n      \"key\": \"1\",\n      \"block\": \"when\",\n      \"text\": \"Press Halve once for one.\"\n    },\n    {\n      \"key\": \"2\",\n      \"block\": \"when\",\n      \"text\": \"Press Halve once for two.\"\n    },\n    {\n      \"key\": \"3\",\n      \"block\": \"when\",\n      \"text\": \"Press Halve once for three.\"\n    }\n  ]\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 7420,
-  "request_hash": "sha256:9ab807f0f4f22feffa7352a497bd4e803fff01297b46384c664413e54c2088e7",
+  "duration_ms": 5165,
+  "request_hash": "sha256:09f5f11faeacff36d81724938a1d77c03ebe487ec1c3c5a3f5e22977650d5d0d",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-11-02T15:15:46Z"
+  "recorded_at": "2026-11-05T17:01:14Z"
 }

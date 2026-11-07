@@ -1,0 +1,472 @@
+package helpers
+
+import (
+	"errors"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
+	"gopkg.in/yaml.v3"
+)
+
+// writeTestFixture materializes a loadable fixture directory: the
+// checklist selection (checklist-prompts.yaml body, empty for none)
+// and an input tree from the caller's paths (path -> content).
+func writeTestFixture(t *testing.T, selection string, inputFiles map[string]string) string {
+	t.Helper()
+
+	dir := t.TempDir()
+
+	if selection != "" {
+		err := os.WriteFile(
+			filepath.Join(dir, ChecklistPromptsFile), []byte(selection), 0o644)
+		if err != nil {
+			t.Fatalf("write %s: %v", ChecklistPromptsFile, err)
+		}
+	}
+
+	err := os.MkdirAll(filepath.Join(dir, "input"), 0o755)
+	if err != nil {
+		t.Fatalf("mkdir input: %v", err)
+	}
+
+	for rel, content := range inputFiles {
+		path := filepath.Join(dir, "input", rel)
+
+		err = os.MkdirAll(filepath.Dir(path), 0o755)
+		if err != nil {
+			t.Fatalf("mkdir %s: %v", rel, err)
+		}
+
+		err = os.WriteFile(path, []byte(content), 0o644)
+		if err != nil {
+			t.Fatalf("write %s: %v", rel, err)
+		}
+	}
+
+	return dir
+}
+
+// loadedChecklist is the minimal shape needed to inspect a generated
+// checklist file.
+type loadedChecklist struct {
+	Config   map[string]any `yaml:"config"`
+	Sections []struct {
+		ID                string `yaml:"id"`
+		ValidationPrompts []struct {
+			Q struct { Prompt string `yaml:"prompt"` } `yaml:"Q"` //nolint:tagliatelle // checklist schema key
+			F string `yaml:"F"` //nolint:tagliatelle // checklist schema key
+		} `yaml:"validation_prompts"`
+	} `yaml:"sections"`
+}
+
+// parseGeneratedChecklist reads a checklist out of a prepared tmpdir.
+func parseGeneratedChecklist(t *testing.T, tmpDir, stem string) loadedChecklist {
+	t.Helper()
+
+	data, err := disk.Read(filepath.Join(tmpDir, "true-bdd", "checklists", stem+".yaml"))
+	if err != nil {
+		t.Fatalf("read generated checklist: %v", err)
+	}
+
+	var doc loadedChecklist
+
+	err = yaml.Unmarshal(data, &doc)
+	if err != nil {
+		t.Fatalf("parse generated checklist: %v", err)
+	}
+
+	return doc
+}
+
+// TestPrepareRunDirGeneratesFilteredChecklist drives the real wiring
+// (LoadFixture -> prepareRunDir) and asserts the tmpdir's us-refine
+// checklist keeps only the selected prompt; other checklists stay complete.
+func TestPrepareRunDirGeneratesFilteredChecklist(t *testing.T) {
+	t.Parallel()
+
+	dir := writeTestFixture(t,
+		"us-refine:\n  - \"whether its steps field follows the Given/When/Then format\"\n",
+		nil)
+
+	fixture, err := LoadFixture(dir)
+	if err != nil {
+		t.Fatalf("load fixture: %v", err)
+	}
+
+	tmpDir, err := prepareRunDir(fixture, t.TempDir())
+	if err != nil {
+		t.Fatalf("prepare run dir: %v", err)
+	}
+
+	refined := parseGeneratedChecklist(t, tmpDir, "us-refine")
+	if len(refined.Sections) != 1 || len(refined.Sections[0].ValidationPrompts) != 1 {
+		t.Fatalf("generated us-refine: want 1 section with 1 prompt, got %+v", refined.Sections)
+	}
+
+	prompt := refined.Sections[0].ValidationPrompts[0]
+	if !strings.Contains(prompt.Q.Prompt, "steps field follows the") {
+		t.Errorf("generated prompt is not the steps-format one: %q", prompt.Q.Prompt)
+	}
+
+	if strings.TrimSpace(prompt.F) == "" {
+		t.Error("generated prompt lost its F template")
+	}
+
+	checked := parseGeneratedChecklist(t, tmpDir, "scen-check")
+	if checked.promptCount() < 2 {
+		t.Errorf("scen-check.yaml must stay unfiltered, got %+v", checked.Sections)
+	}
+}
+
+// promptCount counts the prompts of every section of the checklist.
+func (c loadedChecklist) promptCount() int {
+	count := 0
+	for _, section := range c.Sections {
+		count += len(section.ValidationPrompts)
+	}
+
+	return count
+}
+
+// TestPrepareRunDirWithoutFilterLeavesChecklistIdentical pins the
+// no-declaration path: the tmpdir checklist is byte-identical to the
+// shipped one.
+func TestPrepareRunDirWithoutFilterLeavesChecklistIdentical(t *testing.T) {
+	t.Parallel()
+
+	dir := writeTestFixture(t, "", nil)
+
+	fixture, err := LoadFixture(dir)
+	if err != nil {
+		t.Fatalf("load fixture: %v", err)
+	}
+
+	tmpDir, err := prepareRunDir(fixture, t.TempDir())
+	if err != nil {
+		t.Fatalf("prepare run dir: %v", err)
+	}
+
+	repoRoot, err := FindRepoRoot()
+	if err != nil {
+		t.Fatalf("find repo root: %v", err)
+	}
+
+	shipped, err := disk.Read(filepath.Join(repoRoot, "true-bdd", "checklists", "us-refine.yaml"))
+	if err != nil {
+		t.Fatalf("read shipped checklist: %v", err)
+	}
+
+	generated, err := disk.Read(filepath.Join(tmpDir, "true-bdd", "checklists", "us-refine.yaml"))
+	if err != nil {
+		t.Fatalf("read tmpdir checklist: %v", err)
+	}
+
+	if string(shipped) != string(generated) {
+		t.Error("without checklist_prompts the tmpdir checklist must be byte-identical to shipped")
+	}
+}
+
+// TestPrepareRunDirPreservesConfigBlock filters us-apply down to its
+// first prompt and requires the shipped config block (the engine's
+// max_apply_attempts source) to survive.
+func TestPrepareRunDirPreservesConfigBlock(t *testing.T) {
+	t.Parallel()
+
+	dir := writeTestFixture(t, "", nil)
+
+	fixture, err := LoadFixture(dir)
+	if err != nil {
+		t.Fatalf("load fixture: %v", err)
+	}
+
+	fixture.Cmd = "us apply 9.9 --fix"
+	fixture.ChecklistPrompts = map[string][]string{
+		"us-apply": {"already appear as a scenario in the registry"},
+	}
+
+	tmpDir, err := prepareRunDir(fixture, t.TempDir())
+	if err != nil {
+		t.Fatalf("prepare run dir: %v", err)
+	}
+
+	applied := parseGeneratedChecklist(t, tmpDir, "us-apply")
+	if len(applied.Sections) != 1 || len(applied.Sections[0].ValidationPrompts) != 1 {
+		t.Fatalf("generated us-apply: want 1 section with 1 prompt, got %+v", applied.Sections)
+	}
+
+	if applied.Config["max_apply_attempts"] != 5 {
+		t.Errorf("config block lost: %v", applied.Config)
+	}
+}
+
+// TestLoadFixtureRejectsBadFilterDeclarations covers the load-time
+// invariants: stem/cmd mismatch, override conflict, empty selection.
+func TestLoadFixtureRejectsBadFilterDeclarations(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name       string
+		selection  string
+		inputFiles map[string]string
+		wantErr    error
+	}{
+		{
+			name:      "stem does not match cmd",
+			selection: "us-apply:\n  - \"a snippet\"\n",
+			wantErr:   ErrFilterStemMismatch,
+		},
+		{
+			name:      "declaration plus input override",
+			selection: "us-refine:\n  - \"a snippet\"\n",
+			inputFiles: map[string]string{
+				"true-bdd/checklists/us-refine.yaml": "version: \"1.0\"\nsections: []\n",
+			},
+			wantErr: ErrFilterConflict,
+		},
+		{
+			name:      "empty snippet list",
+			selection: "us-refine: []\n",
+			wantErr:   ErrSnippetEmpty,
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			dir := writeTestFixture(t, testCase.selection, testCase.inputFiles)
+
+			fixture, err := LoadFixture(dir)
+			if err != nil {
+				t.Fatalf("LoadFixture: %v", err)
+			}
+
+			// The filter rules depend on WHICH checklist is invoked, so
+			// they cannot fire until the scenario names the command.
+			err = fixture.UseCommand("us refine 9.9")
+			if !errors.Is(err, testCase.wantErr) {
+				t.Errorf("want %v, got %v", testCase.wantErr, err)
+			}
+		})
+	}
+}
+
+// TestPrepareRunDirRejectsBadSnippets covers the prep-time snippet
+// resolution failures: unmatched, ambiguous, and duplicate snippets.
+func TestPrepareRunDirRejectsBadSnippets(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name     string
+		snippets []string
+		wantErr  error
+	}{
+		{
+			name:     "unmatched snippet",
+			snippets: []string{"this text appears in no shipped prompt"},
+			wantErr:  ErrSnippetUnmatched,
+		},
+		{
+			name:     "ambiguous snippet",
+			snippets: []string{"For every AC"},
+			wantErr:  ErrSnippetAmbiguous,
+		},
+		{
+			name: "two snippets resolving to one prompt",
+			snippets: []string{
+				"whether its steps field follows the Given/When/Then format",
+				"steps field does not have at least one Given step",
+			},
+			wantErr: ErrSnippetDuplicate,
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			dir := writeTestFixture(t, "", nil)
+
+			fixture, err := LoadFixture(dir)
+			if err != nil {
+				t.Fatalf("load fixture: %v", err)
+			}
+
+			fixture.ChecklistPrompts = map[string][]string{"us-refine": testCase.snippets}
+
+			_, err = prepareRunDir(fixture, t.TempDir())
+			if !errors.Is(err, testCase.wantErr) {
+				t.Errorf("want %v, got %v", testCase.wantErr, err)
+			}
+		})
+	}
+}
+
+// writeTempChecklist materializes a checklist file for direct
+// FilterChecklistFile tests.
+func writeTempChecklist(t *testing.T, content string) string {
+	t.Helper()
+
+	path := filepath.Join(t.TempDir(), "us-x.yaml")
+
+	err := os.WriteFile(path, []byte(content), 0o644)
+	if err != nil {
+		t.Fatalf("write checklist: %v", err)
+	}
+
+	return path
+}
+
+// TestFilterChecklistFileRejectsUnsupportedYAML pins the deliberate
+// refusals: aliases/merge keys (pruning could orphan anchors) and
+// multi-document streams (only the first would survive).
+func TestFilterChecklistFileRejectsUnsupportedYAML(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name    string
+		content string
+	}{
+		{
+			name: "alias",
+			content: "anchor: &a \"text\"\nsections:\n  - id: s\n    validation_prompts:\n" +
+				"      - Q: {prompt: *a}\n        rationale: r\n",
+		},
+		{
+			name: "merge key",
+			content: "base: &b\n  rationale: r\nsections:\n  - id: s\n    validation_prompts:\n" +
+				"      - <<: *b\n        Q: {prompt: \"question\"}\n",
+		},
+		{
+			name:    "multi document",
+			content: "sections: []\n---\nsections: []\n",
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			path := writeTempChecklist(t, testCase.content)
+
+			err := FilterChecklistFile(path, []string{"question"})
+			if !errors.Is(err, ErrUnsupportedYAML) {
+				t.Errorf("want ErrUnsupportedYAML, got %v", err)
+			}
+		})
+	}
+}
+
+// TestFilterChecklistFileExcludesSkippedPrompts pins production-parity
+// skip semantics: only `skip: true` hides the prompt from selection;
+// `skip: false` and a non-boolean, which production refuses, do not.
+func TestFilterChecklistFileExcludesSkippedPrompts(t *testing.T) {
+	t.Parallel()
+
+	content := "sections:\n  - id: s\n    validation_prompts:\n" +
+		"      - Q: {prompt: \"parked question\"}\n        skip: true\n" +
+		"      - Q: {prompt: \"walked question\"}\n        skip: false\n" +
+		"      - Q: {prompt: \"string-skip question\"}\n        skip: \"flaky\"\n"
+
+	path := writeTempChecklist(t, content)
+
+	err := FilterChecklistFile(path, []string{"parked question"})
+	if !errors.Is(err, ErrSnippetUnmatched) {
+		t.Errorf("a skip: true prompt must be unselectable, got %v", err)
+	}
+
+	for _, snippet := range []string{"walked question", "string-skip question"} {
+		path = writeTempChecklist(t, content)
+
+		err = FilterChecklistFile(path, []string{snippet})
+		if err != nil {
+			t.Errorf("%q: production walks or refuses it, never skips it, so it must stay selectable, got %v",
+				snippet, err)
+		}
+	}
+}
+
+// TestLoadFixtureRejectsEmptyFilterDeclaration pins the
+// declared-but-empty failure: a checklist_prompts key selecting nothing
+// must not silently run the full checklist.
+func TestLoadFixtureRejectsEmptyFilterDeclaration(t *testing.T) {
+	t.Parallel()
+
+	for _, extra := range []string{"{}\n", "\n"} {
+		dir := writeTestFixture(t, extra, nil)
+
+		_, err := LoadFixture(dir)
+		if !errors.Is(err, ErrFilterDeclaredEmpty) {
+			t.Errorf("selection %q: want ErrFilterDeclaredEmpty, got %v", extra, err)
+		}
+	}
+}
+
+// TestCommandChecklistStemStopsAtTheFirstArgument pins the boundary
+// between the command path and what follows it: a story number, a
+// scenario id and a flag are all arguments, and none names a checklist.
+func TestCommandChecklistStemStopsAtTheFirstArgument(t *testing.T) {
+	t.Parallel()
+
+	const scenCheck = "scen-check"
+
+	for cmd, want := range map[string]string{
+		"us refine scen-check":       "us-refine",
+		"us apply 95.1 --fix":        "us-apply",
+		"build tests --fix":          "build-tests",
+		"scen check":                 scenCheck,
+		"scen check --fix":           scenCheck,
+		"scen check E2E-002 E2E-001": scenCheck,
+		"scen check e2e-002":         scenCheck,
+		"scen check subcmd":          "scen-check-subcmd",
+	} {
+		if got := commandChecklistStem(cmd); got != want {
+			t.Errorf("commandChecklistStem(%q) = %q, want %q", cmd, got, want)
+		}
+	}
+}
+
+func LoadFixture(dir string) (*selection, error) {
+	prompts, err := LoadSelections(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	return &selection{Name: filepath.Base(dir), Dir: dir, InputPath: "input", ChecklistPrompts: prompts}, nil
+}
+func (s *selection) UseCommand(command string) error {
+	s.Cmd = command
+
+	return validateChecklistFilters(s)
+}
+func prepareRunDir(selected *selection, session string) (string, error) {
+	root, err := FindRepoRoot()
+	if err != nil {
+		return "", err
+	}
+
+	directory := filepath.Join(session, selected.Name)
+	for _, layer := range []string{"true-bdd", "templates"} {
+		err = disk.CopyTree(filepath.Join(directory, layer), filepath.Join(root, layer), disk.Shared)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	err = disk.CopyTree(directory, filepath.Join(selected.Dir, "input"), disk.Shared)
+	if err != nil {
+		return "", err
+	}
+
+	err = applyChecklistFilters(selected, directory)
+	if err != nil {
+		return "", err
+	}
+
+	return directory, nil
+}
+func FindRepoRoot() (string, error) { return testkit.FindRepoRoot() }

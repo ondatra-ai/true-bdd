@@ -19,16 +19,17 @@
     "-"
   ],
   "exit_code": 0,
-  "duration_ms": 46904,
-  "request_hash": "sha256:d6dd6fcaae748d5d39d5756d7c114d37a72413aeb367ca02f19f6e8bc53ad554",
+  "duration_ms": 605,
+  "request_hash": "sha256:0dc763d6da2a6ef35f3641365d8284ab4a65dd9c8a0185f294ebf3c8aa6cf2fb",
   "fsdiff": {
     "created": [
-      "tmp/{{RUN_DIR}}/codex-turn003-codex-answer.txt"
+      "tmp/{{RUN_DIR}}/codex-turn003-codex-answer.txt",
+      "tmp/concept-bodies-extra-first-apply"
     ],
     "modified": [
       "tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go"
     ],
     "deleted": []
   },
-  "recorded_at": "2026-11-02T15:12:55Z"
+  "recorded_at": "2026-11-07T04:07:34Z"
 }

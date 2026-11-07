@@ -10,7 +10,8 @@ sections:
     name: "Term Closure"
     description: "Every step a Scenario binds must bind one step definition, which records a declared concept of the step's block."
     validation_prompts:
-      - D: step-definitions
+      - Q:
+          code: step-definitions
         rationale: "A step bound to two step definitions, or to one recording no declared concept of its block, leaves what runs for it to chance, so no step definition follows from the spec."
         docs:
           - product

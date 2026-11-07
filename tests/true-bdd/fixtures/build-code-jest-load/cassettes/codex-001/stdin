@@ -6,6 +6,7 @@ Write only inside the edit roots in the request. Never modify tests, *_test.go, 
 
 Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, impossible, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -54,68 +55,73 @@ Tests: /jest/jest:tests.unit.greeting.test.js::<load>
 ## Proposed repair plan
 # Repair plan for /jest/jest:tests.unit.greeting.test.js::<load>
 
-## Diagnosis
+## What the failure actually is
 
-The suite does not fail on an assertion — it fails to load. `tests/unit/greeting.test.js` line 1 does:
+The suite does not fail on an assertion — it fails at module load:
 
-    const { greet } = require('../../services/greeter/greeting');
+```
+Cannot find module '../../services/greeter/greeting' from 'unit/greeting.test.js'
+```
 
-The test file lives at `tests/unit/greeting.test.js`, so `../../` resolves to the repository root and the require target is `<repo root>/services/greeter/greeting`. That module does not exist. In fact the whole `services/` tree is absent from the repository: there is no `services/`, no `services/greeter/`, and no `greeting.js` anywhere. Jest's resolver therefore throws `Cannot find module '../../services/greeter/greeting' from 'unit/greeting.test.js'` before any `describe`/`test` body runs, which is why the harness reports a single `<load>` failure for the file rather than per-test failures.
+`tests/unit/greeting.test.js` line 1 does `require('../../services/greeter/greeting')`. Resolved from `tests/unit/`, `../../` is the project root, so the test demands a module at:
 
-The repair is purely additive production code inside the declared edit root `services/greeter`. Nothing in `tests/` needs to change, and no file outside the declared root is required.
+```
+<project root>/services/greeter/greeting.js
+```
 
-## What to build
+I verified the current tree: there is **no `services/` directory at all** (glob `services/**` → no files). The production module the suite is written against has never been created. Nothing is broken inside an existing implementation; the implementation is simply absent. (The test's comment about "the planted defect in greet()" describes the intended later state of the harness fixture; it is not a hint that a file exists somewhere else — do not go looking for one to move.)
 
-Create exactly one new file:
+`services/greeter` is the declared edit root for this service (`docs/architecture/architecture.yaml` → `services: - name: greeter, path: services/greeter`), so the whole repair sits inside permitted paths. No test, config, or document needs to change.
 
-**`services/greeter/greeting.js`** — the greeter service's greeting module.
+## Part 1 — create `services/greeter/greeting.js`
 
-It must be a CommonJS module that exports a named function `greet`, because the test destructures it: `const { greet } = require(...)`. A default/single-function export (`module.exports = greet`) would make `greet` `undefined` and produce a `TypeError` instead of a pass, so export an object with a `greet` property (e.g. `module.exports = { greet }`, or `exports.greet = greet`).
+**File (new):** `services/greeter/greeting.js`
 
-### Contract for `greet`
+**Module format:** CommonJS, exporting a named binding `greet`, i.e. `module.exports = { greet };` (or `exports.greet = ...`). This is required, not stylistic:
 
-`greet(name)` returns a greeting string:
+- `tests/jest.config.js` sets `transform: {}` — there is no Babel/ESM transform in play, so the file is loaded verbatim by Jest's CJS runtime. An `export function greet` / `export default` would throw a syntax error and leave the suite failing at load exactly as it does now.
+- There is no `package.json` at the project root (only `tests/package.json`, which is private and has no `"type"` field), so Node/Jest treat `.js` as CommonJS. Do **not** add a root `package.json`, and do **not** add a `services/greeter/package.json` with `"type": "module"`.
+- The test destructures: `const { greet } = require(...)`. A bare `module.exports = greet` would make `greet` `undefined` and produce `TypeError: greet is not a function`. The export must be an object with a `greet` property.
+- Keep the filename exactly `greeting.js` (singular, lowercase) and the directory exactly `services/greeter/` — the require path is literal and case-sensitive on CI filesystems.
 
-- When called with a non-empty name, it returns `Hello, <name>!` — e.g. `greet('Ada')` → `'Hello, Ada!'`.
-- When called with no argument, it returns `Hello, world!` — i.e. the name parameter defaults to the literal `world` when the caller supplies nothing.
+**Contract of `greet`:**
 
-Both cases must be produced by the same single template so the two forms cannot drift: build the result as the fixed prefix `Hello, `, then the resolved name, then the fixed suffix `!`. The simplest correct implementation is a default parameter value of `'world'` plus one template string — do not special-case the two outcomes with separate return statements, and do not hardcode `'Hello, Ada!'` or otherwise branch on specific input values; the function must be general.
+`greet(name)` returns a greeting string of the shape `` `Hello, ${who}!` `` — the literal word `Hello`, a comma, a single space, the subject, and a single trailing exclamation mark. There is no trailing newline and no surrounding whitespace.
 
-Note the exact expected punctuation and casing the test asserts: a capital `H`, a comma and a single space after `Hello`, a lowercase `world` for the default, and a trailing exclamation mark with no trailing whitespace or newline. Any deviation (`Hello <name>!`, `Hello, World!`, `Hi, Ada!`) fails the assertions.
+- When called with a usable name, the subject is that name, passed through unchanged (no capitalisation, trimming, or escaping): `greet('Ada')` → `'Hello, Ada!'`.
+- When called with no argument, the subject defaults to the literal `'world'` (lowercase): `greet()` → `'Hello, world!'`.
 
-### Environment constraints the implementation must respect
+Implement the default with a plain parameter default (`function greet(name = 'world')`) or an equivalent guard. One small robustness point worth building in, since it costs nothing and matches the evident intent of "when no name is given": treat `null` and the empty/whitespace-only string the same as a missing argument, i.e. fall back to `'world'`. A parameter default alone does **not** cover `null` or `''`, so if you want that behaviour, guard explicitly — e.g. coerce the argument, trim it, and use `'world'` when the result is empty. Either way the two behaviours the suite pins must hold exactly.
 
-- `tests/jest.config.js` sets `transform: {}`, so there is **no** Babel/TypeScript transform. Write plain CommonJS JavaScript — `require`/`module.exports`, no `import`/`export` syntax, no JSX, no TypeScript annotations.
-- There is no `package.json` at the repository root, so `.js` is treated as CommonJS by Node and by Jest's resolver. Do **not** add a root `package.json`, and do not add a `"type": "module"` anywhere — that would break the `require` in the test.
-- The require path has no extension, so name the file exactly `greeting.js` (not `greeting/index.js`, not `greeting.mjs`, not `greeting.cjs`). A directory named `services/greeter/greeting/` with an `index.js` would also resolve, but prefer the plain file — it matches the architecture's single-service, single-module shape.
-- No new dependencies. The function needs nothing beyond core JavaScript; do not add a `services/greeter/package.json` with dependencies or install anything, and do not rely on anything from `tests/node_modules`.
-- Keep the module side-effect free: define and export the function only. No logging, no reading `process.env`, no top-level work. The test requires the module at load time and the harness captures stdout as JSON (`--json`), so stray output could corrupt the run's report.
+Keep the module dependency-free and side-effect-free: no imports, no I/O, no console output, no module-level state. It must be safe to `require` repeatedly. Do not install any packages — `tests/package.json` already carries the only dependency (`jest`), and the greeter needs none.
 
-## Which tests each part serves
+**Which tests this part serves:** the entire failing set — `tests/unit/greeting.test.js::<load>`. Creating this module is what makes the suite loadable at all; the resolution error at line 1 disappears, and both tests in the `describe('greet')` block then execute:
 
-The single new file `services/greeter/greeting.js` serves the entire failing set:
+- `greets a person by name` — `expect(greet('Ada')).toBe('Hello, Ada!')` — served by the name-passthrough branch.
+- `greets the world when no name is given` — `expect(greet()).toBe('Hello, world!')` — served by the `'world'` default.
 
-- **`/jest/jest:tests.unit.greeting.test.js::<load>`** — the reported failure. Creating `services/greeter/greeting.js` at the exact path the test requires makes module resolution succeed, so the suite loads and the `describe('greet')` block registers its tests. This is the whole of the failing set; the `<load>` entry resolves as soon as the module exists and exports `greet` as a named CommonJS export.
+Both are exact-equality (`toBe`) string assertions, so the format must match character for character. Do not touch either assertion, the test file, `tests/jest.config.js`, `tests/stack-frames.js`, or `docs/architecture/architecture.yaml`.
 
-Once the file loads, the two tests inside it run and are covered by the contract above:
+## Part 2 — nothing else
 
-- **`greet > greets a person by name`** — served by the `Hello, <name>!` template branch; `greet('Ada')` must equal `'Hello, Ada!'`.
-- **`greet > greets the world when no name is given`** — served by the `'world'` default for the name parameter; `greet()` must equal `'Hello, world!'`.
+Resist scope creep. Specifically, do **not**:
 
-## Verification
+- add other modules, an `index.js`, a barrel export, a CLI entry point, or a server under `services/greeter/` — nothing in the suite or the architecture requires them;
+- add a `services/greeter/package.json`, a root `package.json`, a lockfile, or any build/transform step;
+- add new test files or fixtures (tests are out of bounds for this repair);
+- widen `testMatch` or otherwise alter how the suite is discovered.
 
-Run the suite the way the architecture declares it, from the directory holding the config so `npx` finds the local Jest install:
+The architecture declares a single JavaScript service with a single Jest suite; one dependency-free module is the whole of the production surface this set needs.
 
-    cd tests && npx jest --json --config jest.config.js
+## How to verify
 
-Expect the `unit/greeting.test.js` suite to load (no resolver error) and both tests to pass. The comment in the test file mentions a "planted defect in greet()" — that is fixture narrative describing the scenario this repository exercises; do **not** deliberately introduce a failing branch. The repair's goal is a correct, general `greet` that satisfies both assertions.
+Run the suite the way the architecture declares — from the directory holding the config, so `npx` finds the Jest install under `tests/node_modules`:
 
-## Out of scope — do not do these
+```
+cd tests && npx jest --json --config jest.config.js
+```
 
-- Do not modify `tests/unit/greeting.test.js`, `tests/jest.config.js`, `tests/package.json`, or `tests/stack-frames.js`. In particular, do not add `moduleNameMapper`, `roots`, or `moduleDirectories` entries to the Jest config to redirect the require — the require path is the contract, and the production module must live where it points.
-- Do not weaken, skip, rename, or delete any assertion or test, and do not mark anything `test.skip`/`test.todo`.
-- Do not edit `docs/architecture/architecture.yaml` or any other document; the architecture already declares `services/greeter` at the path this plan writes to.
-- Do not create files outside `services/greeter`.
+Expect the suite to load and report 2 passing tests, 0 failures, with no module-resolution error.
 
 ## Edit roots
 

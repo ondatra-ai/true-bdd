@@ -6,6 +6,7 @@ Write only inside the edit roots in the request. Never modify tests, *_test.go, 
 
 Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, impossible, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -59,145 +60,68 @@ Tests: /go-test/go-test:fixture.buildcodefix.tests.suite::TestB
 
 
 ## Proposed repair plan
-# Repair plan for failing-set (revised — iteration 2)
+# Repair plan for failing-set
 
-## Why this is a revision
+## Diagnosis
 
-The previous iteration's plan was correct in substance but was mis-applied. The
-production file moved from `return 0` to `return 1` — the one value the plan
-explicitly ruled out. Re-read the "Required value" section below before touching
-anything; the required value is **`2`**, and `1` is a regression, not progress.
+Both failures are one value-contract defect in a single production file. Nothing is missing, nothing fails to compile, and no new package or dependency is needed.
 
-Current on-disk state of the only production file,
-`services/calc/calc.go`:
+Current production state:
 
-```
-package calc
+- `services/calc/calc.go` is the only file under the declared edit root. It declares the package's single exported member as `func Mode() int { return 1 }`.
 
-func Mode() int { return 1 }
-```
+What the suite requires (`tests/suite/calc_test.go`, package `suite_test`, importing `fixture/buildcodefix/services/calc`):
 
-Current run result with that value:
+- `TestA` (line 3): first guards `if calc.Mode() == 1 { t.Skip("no execution result") }`, then `if calc.Mode() != 2 { t.Fatal("A needs mode two") }`.
+- `TestB` (line 4): `if calc.Mode() != 2 { t.Fatal("B needs mode two") }`.
 
-- `TestA` → `calc_test.go:3: no execution result`, `--- SKIP` → the harness
-  reports *"did not run: no passing result of its own"*. **A skip is not a
-  pass.** The set still fails.
-- `TestB` → `calc_test.go:4: B needs mode two`, `--- FAIL`.
+So `Mode()` has exactly one acceptable value: `2`.
 
-## Scope
+**Important — the current value `1` is a trap, not a near-miss.** With `Mode() == 1`:
 
-Exactly one file may change: `services/calc/calc.go`, inside the single declared
-edit root `services/calc` (the `path:` of service `calc` in
-`docs/architecture/architecture.yaml`). Nothing else is writable — not
-`tests/suite/calc_test.go`, not `go.mod`, not `docs/`, not `true-bdd/`,
-not `CLAUDE.md`. No assertion may be weakened, skipped, deleted or made
-conditional. No new files are needed; no new packages, interfaces or
-indirection layers are needed.
+- `TestA` takes the `t.Skip` branch, so it reports as **skipped**, not passed. That is precisely the reported group `TestA did not run: no passing result of its own` / `--- SKIP: TestA`. A skip is not a pass and does not clear the failing set.
+- `TestB` has no skip guard, so it still hits `t.Fatal` and reports `B needs mode two` / `--- FAIL: TestB`.
 
-## The contract, read off the executable specification
+For context, the earlier iteration of this repair moved the return value from `0` to `1`. That escaped `TestA`'s fatal branch only by falling into its skip branch, and did nothing for `TestB`. Do not repeat that: the target value is `2`, and nothing else in `{0, 1, 3, ...}` is acceptable.
 
-`tests/suite/calc_test.go` is read-only and is the specification. It imports the
-package path `fixture/buildcodefix/services/calc`, binds it as `calc`, and calls
-the single exported member `calc.Mode()`:
+The spec (`docs/architecture/architecture.yaml`) declares service `calc` at `path: services/calc`, with all three testing commands identical: `go test -json -count=1 ./tests/suite/...`. The whole repair therefore lives inside the single declared edit root `services/calc`; no undeclared path is required.
 
-- `TestA` branches twice on the same value. First, `if calc.Mode() == 1` it
-  calls `t.Skip("no execution result")`. Then, `if calc.Mode() != 2` it calls
-  `t.Fatal("A needs mode two")`. So `TestA` only *passes* when `Mode()` is
-  neither `1` nor anything other than `2`.
-- `TestB` has one branch: `if calc.Mode() != 2` it calls
-  `t.Fatal("B needs mode two")`. So `TestB` only passes when `Mode()` is `2`.
+## Part 1 — Make the `calc` package report mode two (the only change)
 
-Intersecting the two: the single satisfying value is **two**.
+**File:** `services/calc/calc.go` — inside the declared root `services/calc`; package `calc`, import path `fixture/buildcodefix/services/calc`.
 
-### Required value — the whole repair
+**Contract to implement:** the package's exported mode accessor `Mode() int` must yield the value `2` on every call in a default, unconfigured process. That is the service's correct operating mode as the suite specifies it.
 
-`calc.Mode()` must report the integer **`2`**, unconditionally, on every call.
+**Intended implementation:**
 
-Truth table for the candidate values, so there is no room left for guessing:
+- Keep the package name, exported identifier and signature byte-for-byte compatible with the call sites: `package calc`, `func Mode() int`. The test imports `fixture/buildcodefix/services/calc` and calls `calc.Mode()` with no arguments, so do not rename the function, do not add parameters or return values, do not make it a method or a variable of function type, and do not move the symbol into a different package or import path.
+- Change the returned value so the function yields `2`. Prefer naming the value rather than leaving a bare literal: declare a package-level constant in `services/calc/calc.go` (for example `const modeTwo = 2`, or an exported `ModeTwo` if you want it readable from outside) and `return` that constant from `Mode()`. A plain `return 2` is acceptable in this one-line file, but the named constant is the preferred shape because it records the intent.
+- Keep `Mode()` deterministic and side-effect free. No package-level mutable state, no `init()`, no environment-variable or file lookups, no clock, no randomness, no build tags. The suite calls `Mode()` three times (twice in `TestA`, once in `TestB`) and both tests run in the same process in the same package; every call must observe the same value, and the outcome must not depend on test ordering or on `-count=1` vs repeated runs.
+- Do not introduce a test-only escape hatch. No exported setter, no hook, no `testing`-aware branch, no conditional that reads the caller. The production default itself must be `2`.
+- Keep the file gofmt-clean and respect the `fixture/buildcodefix` module boundary: do not edit `go.mod`, do not add dependencies, and do not create files or packages outside `services/calc`.
 
-| `Mode()` returns | `TestA` | `TestB` | Set result |
-|---|---|---|---|
-| `0` (original) | FAIL `A needs mode two` | FAIL `B needs mode two` | fail |
-| `1` (what was applied last round) | **SKIP** `no execution result` → counted as "did not run" | FAIL `B needs mode two` | fail |
-| `2` | **pass** | **pass** | **pass** |
-| anything else (`3`, `-1`, …) | FAIL `A needs mode two` | FAIL `B needs mode two` | fail |
+**Tests this part serves:**
 
-Only the `2` row is green. If the edited file contains the literal `1` as the
-value `Mode()` yields, the repair has not been made.
+- `/go-test/go-test:fixture.buildcodefix.tests.suite::TestA` — with `Mode() == 2`, the `== 1` skip guard is not taken (so the test actually executes and yields a passing result of its own rather than `SKIP`), and the `!= 2` fatal is not reached. Resolves the group `TestA did not run: no passing result of its own`.
+- `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB` — the `!= 2` fatal is not reached. Resolves the group `B needs mode two` / `--- FAIL: TestB`.
 
-## The change to make
+Both tests are served by this single change; there is no second part.
 
-**File:** `services/calc/calc.go` — the only file to edit.
+## Out of scope / prohibitions
 
-Change the value `Mode()` yields from `1` to `2`. Preserve everything else about
-the package's shape, because the read-only test compiles against it:
-
-- Keep the package clause exactly `package calc`, and keep the file in the
-  `services/calc` directory. Moving or renaming either breaks the test's import
-  of `fixture/buildcodefix/services/calc`.
-- Keep the exported identifier spelled exactly `Mode`, and keep the signature
-  exactly `func Mode() int` — no parameters, no second return value, no method
-  receiver, no change of return type, no rename, no wrapper that shadows it. The
-  test calls it as a plain package-level function; any signature change is a
-  compile error in a file you may not edit.
-- The function body must yield `2` with no conditions attached.
-
-Optionally express the value as a named file-level constant (for example
-`const modeTwo = 2`) and `return modeTwo`, so the number carries a name. That is
-a styling preference only — a plain `return 2` is equally acceptable. What the
-tests pin is the value, so do not let the styling choice distract from it.
-
-Leave the file gofmt-clean: package clause, blank line, then the declaration
-with normal spacing.
-
-## Traps to avoid
-
-1. **Do not return `1`.** This is the mistake made last round. `1` is the
-   sentinel `TestA` interprets as "no execution result" and skips on, and `TestB`
-   has no such branch so it fails outright. The harness treats a skipped test as
-   *not run*, which is a failure of this set, not a pass.
-2. **Do not make the value conditional.** No build tags, no `os.Getenv` lookup,
-   no `testing.Testing()` check, no init-time mutable package variable that a
-   caller could flip, no detection of whether the process is a test binary.
-   `Mode()` must answer `2` the same way for every caller, always. A value that
-   is only `2` under `go test` is a cheat, not a repair.
-3. **Do not touch the test to remove the skip branch.** The skip branch is part
-   of the specification; it is satisfied by not being in state `1`, not by being
-   deleted.
-4. **Do not add indirection to dodge the literal** — no second function, no
-   interface, no config struct. The package has one exported member and one
-   correct answer for it.
-
-## Which tests each part serves
-
-| Part | Tests served |
-|---|---|
-| `calc.Mode()` in `services/calc/calc.go` yields `2` | `/go-test/go-test:fixture.buildcodefix.tests.suite::TestA` — avoids the `== 1` skip branch so the test actually executes to completion, and clears the `!= 2` guard that emits `A needs mode two`, producing a genuine pass rather than a skip. |
-| the same single change | `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB` — clears the `!= 2` guard that emits `B needs mode two`. |
-
-Both members of the failing set are served by this one value correction. There
-is no second defect anywhere in the set; do not go looking for additional work
-to do in `services/calc`.
+- Do not edit `tests/suite/calc_test.go`, any `*_test.go`, any step definition or harness file, or any document (`docs/architecture/architecture.yaml`, `CLAUDE.md`, the `tmp/` run artifacts). The assertions `A needs mode two` and `B needs mode two`, and the `Mode() == 1` skip guard, must remain exactly as written.
+- Do not weaken, skip, delete or route around any assertion. In particular, making `TestA` green by way of its `t.Skip` path is not a repair — a skipped test is graded as having no passing result.
+- Do not change the testing commands, add new suites, or add new test files. The existing `go test -json -count=1 ./tests/suite/...` is what must turn green.
 
 ## Verification
 
-Run the suite command declared in `docs/architecture/architecture.yaml`:
+From the run directory, run the spec's command:
 
 ```
 go test -json -count=1 ./tests/suite/...
 ```
 
-Acceptance criteria, all of which must hold:
-
-- A `{"Action":"pass","Test":"TestA"}` record is present. If you instead see
-  `"Action":"skip"` for `TestA`, the value is `1` — go back and set it to `2`.
-- A `{"Action":"pass","Test":"TestB"}` record is present, with no
-  `B needs mode two` output line.
-- The package record `fixture/buildcodefix/tests/suite` has `"Action":"pass"`.
-- `git status --short` lists exactly one modified path:
-  `services/calc/calc.go`. `tests/suite/calc_test.go`, `go.mod`, `docs/`,
-  `true-bdd/` and `CLAUDE.md` must be unmodified.
-- `gofmt -l services/calc` prints nothing.
+In the JSON stream, the package `fixture/buildcodefix/tests/suite` must emit `"Action":"pass"` for both `"Test":"TestA"` and `"Test":"TestB"`, and the package itself must emit `"Action":"pass"`. Confirm specifically that **no** `"Action":"skip"` event appears for `TestA` and that no `calc_test.go:3` / `calc_test.go:4` error output is produced, and that the `fixture/buildcodefix/services/calc` import still resolves with no build errors.
 
 ## Edit roots
 

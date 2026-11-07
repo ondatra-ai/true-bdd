@@ -31,24 +31,24 @@ func (g Gate) Always() bool { return len(g.Globs) == 0 }
 
 // The argv fragments and the one path that repeat across the table.
 const (
+	servicesGlob  = "services/**"
+	gatesGlob     = "scripts/gates/**"
 	goBin         = "go"
 	testVerb      = "test"
-	tagsFlag      = "-tags"
-	bddTag        = "bdd"
 	templatesGlob = "templates/**"
-	// testkitGlob is the harness tree every BDD gate depends on.
-	testkitGlob = "pkg/testkit/**"
 	// countOnce defeats the test cache, so a gate re-runs what it claims to.
-	countOnce   = "-count=1"
-	registry    = "docs/scenarios.yaml"
-	goGlob      = "**/*.go"
-	goMod       = "go.mod"
-	nestedGoMod = "**/go.mod"
-	nestedGoSum = "**/go.sum"
-	goSum       = "go.sum"
-	lintCmd     = "./scripts/cmd/linters"
-	runVerb     = "run"
-	gatesCmd    = "./scripts/cmd/gates"
+	countOnce     = "-count=1"
+	runFilterFlag = "-run"
+	gatesPackage  = "./scripts/gates/"
+	registry      = "docs/scenarios.yaml"
+	goGlob        = "**/*.go"
+	goMod         = "go.mod"
+	nestedGoMod   = "**/go.mod"
+	nestedGoSum   = "**/go.sum"
+	goSum         = "go.sum"
+	lintCmd       = "./scripts/cmd/linters"
+	runVerb       = "run"
+	gatesCmd      = "./scripts/cmd/gates"
 )
 
 // Cheapest first, so a doomed run dies in under a second.
@@ -86,23 +86,29 @@ var (
 			Name:    "Engine owns repository code",
 			Command: []string{goBin, runVerb, gatesCmd, "engine-imports"},
 			Run:     engineImports,
-			Globs:   append([]string{"services/**", "scripts/gates/**", "scripts/cmd/gates/**"}, goSources...),
+			Globs:   append([]string{servicesGlob, gatesGlob, "scripts/cmd/gates/**"}, goSources...),
+		},
+		{
+			Name:    "Runtime knows no product",
+			Command: []string{goBin, testVerb, countOnce, runFilterFlag,
+				"^Test(RuntimeKnowsNoProduct|StepDefinitionsUseRootAPI)$", gatesPackage},
+			Globs:   []string{"pkg/testkit/**", "pkg/proxy/cli/**", "utilities/cliproxy/**", "tests/true-bdd/**", gatesGlob},
 		},
 		{
 			Name:    "Release rehearsal",
 			Command: []string{goBin, runVerb, gatesCmd, "release-rehearsal"},
 			Run:     ReleaseRehearsal,
 			Globs: append([]string{
-				"services/**", "pkg/**", "scripts/**", "tests/**", "true-bdd/**", templatesGlob,
+				servicesGlob, "pkg/**", "scripts/**", "tests/**", "true-bdd/**", templatesGlob,
 				".github/workflows/release.yml",
 			}, goSources...),
 		},
 		{
 			Name:    "Init defaults drift",
-			Command: []string{goBin, testVerb, countOnce, "-run", "^TestInitDefaultsMatchProjectFiles$", "./scripts/gates/"},
+			Command: []string{goBin, testVerb, countOnce, runFilterFlag, "^TestInitDefaultsMatchProjectFiles$", gatesPackage},
 			Globs: []string{
 				"services/true-bdd/internal/infrastructure/initialization/**",
-				"true-bdd/true-bdd.yaml", "true-bdd/checklists/**", templatesGlob, "scripts/gates/**",
+				"true-bdd/true-bdd.yaml", "true-bdd/checklists/**", templatesGlob, gatesGlob,
 			},
 		},
 		{
@@ -126,15 +132,18 @@ var (
 			Run:     gomodules.Vet,
 			Globs:   goSources,
 		},
+
 		{
-			// Hand-written, model-free, and answer in a second.
-			Name: "BDD cli coverage guards",
-			Command: []string{
-				goBin, testVerb, tagsFlag, bddTag, countOnce, "-run",
-				"^Test(ScenarioCoverage|FixtureTreesArePaired|FixtureTemplateOverlays|FixtureCommentsNameNoVerdict)$",
-				"./tests/true-bdd/",
-			},
-			Globs: []string{registry, "tests/true-bdd/**", templatesGlob, testkitGlob},
+			Name:    "Generated BDD suite",
+			Command: []string{goBin, runVerb, gatesCmd, "generated-tests"},
+			Run:     GeneratedTests,
+			Globs:   []string{registry, "tests/true-bdd/**", servicesGlob, "docs/architecture/**", gatesGlob},
+		},
+		{
+			Name: "Fixture contracts",
+			Command: []string{goBin, testVerb, countOnce, runFilterFlag,
+				"^TestFixture(TemplateOverlays|CommentsNameNoVerdict)$", gatesPackage},
+			Globs: []string{"tests/true-bdd/fixtures/**", templatesGlob, gatesGlob},
 		},
 		{
 			// Committed recordings must not carry the recording machine's identity.

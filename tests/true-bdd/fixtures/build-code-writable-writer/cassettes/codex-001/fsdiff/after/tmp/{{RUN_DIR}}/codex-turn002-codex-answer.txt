@@ -4,5 +4,5 @@ impossible:
   - path: go.sum
     reason: "deployment requires a root checksum repair outside the declared paths"
 target: "services/calc"
-summary: "Fixed Add to return a + b and created prepared.txt containing exactly prepared followed by a newline. TestAdd passed with go test -count=1 ./tests/suite/.... Retained service edits and left go.sum unchanged."
+summary: "Fixed Add to return a + b and created prepared.txt containing exactly prepared followed by a newline. TestAdd passed using the permitted selection command. Tests and go.sum were untouched. The patch tool failed under sandbox restrictions; shell writes succeeded. Git status was unavailable because the workspace is not a Git repository."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter1-result.yaml ===

@@ -32,11 +32,11 @@ sections:
   - id: test-passes
     name: "Test Passes"
     validation_prompts:
-      - Q: "inherits every tier"
+      - Q: {prompt: "inherits every tier"}
         rationale: "why"
-      - Q: "overrides the validation tier only"
+      - Q: {prompt: "overrides the validation tier only"}
         model: coder
-      - Q: "overrides all three"
+      - Q: {prompt: "overrides all three"}
         model: high
         fix_model: coder
         apply_model: xhigh

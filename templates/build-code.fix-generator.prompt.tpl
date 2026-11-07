@@ -124,13 +124,22 @@ If clarification is required, output one QUESTIONS_START/QUESTIONS_END block wit
 {{ if .Structured }}
 **ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END
 and QUESTIONS_START/QUESTIONS_END instructions above.** Your final message
-must be a single JSON object with all three keys present:
+must be a single JSON object with all four keys present:
 
-- `impossible`: an array of `{path, reason}` objects naming required undeclared files only when no permitted solution exists, otherwise `[]`.
-- `fix_prompt`: the fix instructions, or `""` when you need clarification.
+- `impossible`: an array of `{path, reason}` objects naming required undeclared
+  files only when no permitted solution exists, otherwise `[]`. When set,
+  `fix_prompt` is `""`, `questions` is `[]` and `cannot_fix` is null.
+- `fix_prompt`: the fix instructions, or `""` otherwise.
 - `questions`: an array of `{id, question, context, options}` objects, or
-  `[]` when you are returning a fix prompt.
+  `[]` otherwise.
+- `cannot_fix`: null unless this F cannot fix what its Q found; otherwise
+  `{reason, correction}`, stating why and what a person must correct. When set,
+  `fix_prompt` is `""`, `questions` is `[]` and `impossible` is `[]`.
 
-Exactly one of the three carries content. For impossible work, fix_prompt is empty and questions is []. Do not emit any markers, and do not
+Exactly one of the four carries content. Do not emit any markers, and do not
 wrap the object in markdown fences. Reasoning before the object is ignored.
 {{ end }}
+{{if .StepArguments}}
+## Step arguments
+
+{{.StepArguments}}{{end}}

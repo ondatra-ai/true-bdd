@@ -2,5 +2,5 @@
 applied: true
 impossible: []
 target: "services/calc"
-summary: "Changed Mode() from 0 to 1 and formatted calc.go, completing the required lifecycle stage. Ran go test -count=1 ./tests/suite/... covering both tests: TestA skipped and TestB failed with 'B needs mode two'. Neither test passed."
+summary: "Completed the required lifecycle stage: changed Mode from 0 to 1 only. Ran go test -count=1 ./tests/suite/...; TestA skipped, TestB failed, and neither passed. Patch and Perl tools failed; the shell edit succeeded. Git diff was unavailable."
 === FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===

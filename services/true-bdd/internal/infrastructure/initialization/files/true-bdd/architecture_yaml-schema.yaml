@@ -19,6 +19,7 @@
 # adding a block to its architectural spec adds it here too.
 
 architecture: include('architecture')
+step_arguments: list(include('step_argument'), required=False)
 # No `vocabulary:` here: the product document holds it and its concepts,
 # which `us refine` cites; this document maps words (`terms:`) and binds
 # concepts (`concepts:`). The engine refuses the retired `architecture.phrases`.
@@ -60,7 +61,8 @@ testing:
 
 ---
 testkit:
-  ai_clis: list(str(), required=False)
+  repo_layer: list(str(), required=False)
+  fixture_step: str(required=False)
 
 ---
 library:
@@ -99,6 +101,7 @@ dependency:
   # How the service spawns a `protocol: cli` dependency, when a rebuild must
   # send exactly the same request: replay hashes argv and stdin.
   invocation: include('invocation', required=False)
+  recording: include('recording', required=False)
 
 ---
 # One spawn of a CLI dependency, stated byte for byte. A `{name}` token
@@ -156,7 +159,7 @@ code_gate:
 # the machine-readable flag (-json/--json/--reporter=json) — without it the runner parses prose, finds no failures, and the walk goes falsely green.
 commands:
   # Real AI CLIs, recording their calls for later replay.
-  record: str()
+  record: any(str(), include('record-command'))
   # Recorded calls served back. MUST reach no model and cost nothing —
   # `build code` runs it in its fix loop, where a paid call would bill a
   # walk per attempt. Every AI caller in the run replays, not just some.
@@ -216,3 +219,29 @@ model:
 model_templates:
   system: str()
   user: str()
+
+---
+recording:
+  placeholders: list(include('recording_placeholder'), required=False)
+  unrecorded: list(str(), required=False)
+  unread: list(str(), required=False)
+  read_only_when: map(str(), required=False)
+
+---
+recording_placeholder:
+  token: str()
+  pattern: str()
+  directory: str()
+
+---
+step_argument:
+  name: str()
+  read: str()
+  applies: str()
+  escaping: str()
+
+---
+# A recording's shared unread paths, relative to its run's Host project root.
+record-command:
+  command: str()
+  exclude: list(str(), required=False, none=False)

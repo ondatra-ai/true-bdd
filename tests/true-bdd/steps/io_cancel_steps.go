@@ -3,18 +3,16 @@ package steps
 import (
 	"errors"
 	"fmt"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
-
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
 )
 
-func registerIOCancelSteps(suite *bddgo.Suite[State]) {
+func registerIOCancelSteps(suite testkit.StepRegistrar[State]) {
 	suite.Step(`^the System Architect cancels "([^"]+)" after a CLI descendant starts$`, cancelActiveCLI)
 	suite.Step(`^the CLI descendant has stopped$`, assertDescendantStopped)
 }
@@ -58,7 +56,7 @@ func cancelActiveCLI(state *State, args []string) error {
 }
 
 func readIOPID(path string) (int, error) {
-	data, err := disk.Read(path)
+	data, err := testkit.Read(path)
 	if err != nil {
 		return 0, fmt.Errorf("read PID: %w", err)
 	}

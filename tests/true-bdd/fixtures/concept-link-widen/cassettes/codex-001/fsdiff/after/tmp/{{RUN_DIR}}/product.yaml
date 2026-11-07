@@ -16,7 +16,7 @@
     "when": [
       {
         "concept": "halve",
-        "means": "Halve the entered number, either once or twice in succession; halving it more than twice is not admitted.",
+        "means": "Halve the entered number, either once or twice: halving once displays half the entered number, and halving twice displays its quarter. Halving three or more times is not admitted.",
         "terms": []
       }
     ],

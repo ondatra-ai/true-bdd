@@ -13,5 +13,10 @@ func InitHost(ctx context.Context, binary string, opt shell.Options) (shell.Resu
 
 // RehearseCode runs the release's build-code fix loop with the caller's stdin.
 func RehearseCode(ctx context.Context, binary string, opt shell.Options) (shell.Result, error) {
- return shell.Run(ctx, []string{binary, buildVerb, "code", fixFlag}, opt)
+	return shell.Run(ctx, []string{binary, buildVerb, "code", fixFlag}, opt)
+}
+
+// VerifyTests checks the host suite without accepting generated-file changes.
+func VerifyTests(ctx context.Context, binary string, opt shell.Options) (shell.Result, error) {
+	return shell.Run(ctx, []string{binary, buildVerb, "tests"}, opt)
 }

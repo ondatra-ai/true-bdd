@@ -5,28 +5,17 @@ Edit only the listed working copies. Preserve every unaffected entry.
 For a Story step rewrite, return the complete Story YAML instead of editing
 a document. For document edits return the requested confirmation markers.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
 The responsible person chose apply at the menu for Scenario host-001.
 Approved fix:
-## Repair proposal — Item `host-001`, service `calc`
+Owner: System Architect (concept binding).
 
-**Failed judgement:** `when` concept "halve" for service `calc` has 0 Concept bindings.
+Edit `docs/architecture/architecture.yaml` only. Add one concept binding for the `when` concept `halve` of service `calc`. Make no other change: leave `services`, `public_interface`, `terms`, the existing `number ready` and `number result` bindings, and `docs/product/product.yaml` exactly as they are. The declared Public interface already exposes the `Halve` button on page `Calc`, so it does not need to be extended.
 
-**Diagnosis**
-- The meaning is already correct and sufficient: `docs/product/product.yaml` → `concepts.when[0]` = `halve` / "Halve the entered number once." → **no Product Owner change required**, no new or widened variation.
-- The declared Public interface of `calc` already exposes everything the step needs: `{page: "Calc", role: "button", name: "Halve"}` → **no interface extension required**.
-- The only gap is the missing concept binding in the architecture document → **System Architect change, one addition**.
-- The step is a deterministic click on a declared element, so the binding uses `references` + `does` (not `intent`).
-
-**Owner:** System Architect
-**File:** `docs/architecture/architecture.yaml`
-**Change type:** add exactly one entry to `architecture.concepts`; change nothing else.
-
-### Exact change
-
-Insert the following object into `architecture.concepts`, between the existing `number ready` (given) entry and the existing `number result` (then) entry, so the array stays in given/when/then order:
+In the `architecture.concepts` array, insert the following object between the existing `number ready` binding and the existing `number result` binding (keeping given/when/then order), adding the required comma after the `number ready` object:
 
 ```json
       {
@@ -42,11 +31,11 @@ Insert the following object into `architecture.concepts`, between the existing `
             }
           }
         ],
-        "does": "Press the Halve button on the Calc page once to halve the number currently entered in the Number field."
+        "does": "Click the Halve button on the Calc page once to halve the number entered in the Number field."
       },
 ```
 
-### Resulting `architecture.concepts` array (context, unaffected entries preserved verbatim)
+After the edit, the `architecture.concepts` array reads exactly:
 
 ```json
     "concepts": [
@@ -78,7 +67,7 @@ Insert the following object into `architecture.concepts`, between the existing `
             }
           }
         ],
-        "does": "Press the Halve button on the Calc page once to halve the number currently entered in the Number field."
+        "does": "Click the Halve button on the Calc page once to halve the number entered in the Number field."
       },
       {
         "concept": "number result",
@@ -98,13 +87,7 @@ Insert the following object into `architecture.concepts`, between the existing `
     ],
 ```
 
-### Explicitly unchanged
-- `docs/product/product.yaml` — no edit; `halve` already means "Halve the entered number once."
-- `architecture.services[0].public_interface` — no edit; the `Halve` button is already declared.
-- Item `host-001` Steps wording (`six is entered` / `halve six` / `three is displayed`) — no edit; all three steps link to existing concepts once this binding is added.
-- Concepts `number ready` and `number result`, and `architecture.terms` — untouched.
-
-**Nothing has been applied.** This awaits an explicit menu decision; on apply, make only the single insertion above.
+This gives item host-001's `When: halve six` step one binding for service `calc`, resolving the finding that concept "halve" had 0 Concept bindings.
 Working copies (edit only the approved target):
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

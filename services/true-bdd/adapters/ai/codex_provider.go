@@ -200,13 +200,20 @@ func codexStrictSchema(schema string) (string, error) {
 }
 
 // requireEveryProperty walks a decoded schema, setting each object's
-// `required` to all of its `properties`, sorted so the file is stable.
+// `required` to all properties; optional values become nullable before they are required.
 func requireEveryProperty(node any) {
 	switch typed := node.(type) {
 	case map[string]any:
 		properties, isObject := typed["properties"].(map[string]any)
 		if isObject {
-			typed["required"] = slices.Sorted(maps.Keys(properties))
+			required, _ := typed["required"].([]any)
+			for name, property := range properties {
+				if !slices.Contains(required, any(name)) {
+					nullableSchema(property)
+				}
+			}
+
+			typed["required"] = append([]string{}, slices.Sorted(maps.Keys(properties))...)
 		}
 
 		for _, child := range typed {
@@ -216,6 +223,29 @@ func requireEveryProperty(node any) {
 		for _, child := range typed {
 			requireEveryProperty(child)
 		}
+	}
+}
+
+// nullableSchema preserves absence as null when strict mode requires an optional property.
+func nullableSchema(node any) {
+	schema, ok := node.(map[string]any)
+	if !ok {
+		return
+	}
+
+	switch types := schema["type"].(type) {
+	case string:
+		if types != "null" {
+			schema["type"] = []any{types, "null"}
+		}
+	case []any:
+		if !slices.Contains(types, any("null")) {
+			schema["type"] = append(types, "null")
+		}
+	}
+
+	if values, ok := schema["enum"].([]any); ok && !slices.Contains(values, nil) {
+		schema["enum"] = append(values, nil)
 	}
 }
 

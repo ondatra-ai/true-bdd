@@ -47,6 +47,14 @@ func RunBuildCode(
 	architectureFile string,
 	fix bool,
 ) error {
+	if deps.BuildCodeFixPromptGenerator != nil {
+		deps.BuildCodeFixPromptGenerator.UseStepArgumentArchitecture(architectureFile)
+	}
+
+	if deps.BuildCodeFixApplier != nil {
+		deps.BuildCodeFixApplier.UseStepArgumentArchitecture(architectureFile)
+	}
+
 	tmpDir := deps.RunDir.GetTmpOutPath()
 	execution := newBuildCodeExecution(deps, architectureFile, fix)
 
@@ -91,6 +99,7 @@ func loadFailingTests(
 	fix bool,
 ) func(ctx context.Context) ([]*testrunner.FailingTest, error) {
 	configured := false
+	redChecked := false
 
 	return func(ctx context.Context) ([]*testrunner.FailingTest, error) {
 		arch, err := architecture.Load(architectureFile)
@@ -126,6 +135,13 @@ func loadFailingTests(
 
 			configured = true
 		}
+
+		err = checkCodeRed(deps, arch, redChecked)
+		if err != nil {
+			return nil, err
+		}
+
+		redChecked = true
 
 		failures, err := walkSuites(ctx, deps.TestRunnerDispatcher, arch)
 		if err != nil {

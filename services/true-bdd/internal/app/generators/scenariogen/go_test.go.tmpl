@@ -19,12 +19,11 @@ package {{.Package}}
 import (
 	"testing"
 
-	"{{.ScenariosPkg}}"
 )
 {{range .Scenarios}}
 // {{.ID}}: {{.Description}}
 func {{.FuncName}}(t *testing.T) {
-	s := scenarios.New(t, "{{.ID}}")
+	s := New(t, "{{.ID}}")
 {{- range .Steps}}
 	s.{{.Method}}({{.Literal}})
 {{- end}}

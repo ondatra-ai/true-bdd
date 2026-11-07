@@ -6,8 +6,8 @@
       "path": "services/greeter/greeting.js",
       "kind": "created",
       "size": 92,
-      "sha256": "75c043966fe63e95423057c5540052a5b850681a1be110841d9a8a93c8698dec",
-      "text": "function greet(name = \"world\") {\n  return `Hello, ${name}!`;\n}\n\nmodule.exports = { greet };\n"
+      "sha256": "90f1fee442666f42777674ed94fddfab6f325e993c81e4790f273f7d1055a02d",
+      "text": "function greet(name = 'world') {\n  return `Hello, ${name}!`;\n}\n\nmodule.exports = { greet };\n"
     }
   ]
 }

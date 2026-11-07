@@ -1,0 +1,8 @@
+scenarios:
+  calc-001-double:
+    description: Doubling a number returns twice its value
+    service: calc
+    path: tests/calc/calc_test.go
+    merged_steps:
+      when: [the Owner doubles 3]
+      then: [the result is 6]

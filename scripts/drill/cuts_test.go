@@ -87,12 +87,15 @@ done
 		"true-bdd/config.yaml",
 		"templates/fix.md",
 		testChannel,
+		"utilities/go.mod",
+		"utilities/go.sum",
+		"utilities/cliproxy/main.go",
 		"scripts/tool.go",
 		"tests/true-bdd/coverage_test.go",
 		"tests/true-bdd/main_test.go",
 		"tests/true-bdd/support.txt",
 		"tests/true-bdd/steps/steps.go",
-		"tests/true-bdd/scenarios/scenarios.go",
+		"tests/true-bdd/support/scenarios.go",
 		"tests/true-bdd/fixtures/example/prep.sh",
 		"tests/true-bdd/fixtures/example/input/project.yaml",
 		"tests/true-bdd/fixtures/example/cassettes/golden.json",
@@ -181,11 +184,14 @@ func expectedCutFiles(name string) []string {
 		"true-bdd/config.yaml",
 		"templates/fix.md",
 		testChannel,
+		"utilities/go.mod",
+		"utilities/go.sum",
+		"utilities/cliproxy/main.go",
 		"scripts/tool.go"}
 	if name == "a" {
 		expected = append(expected, "tests/true-bdd/generated_test.go", "tests/true-bdd/steps/steps.go",
 			"tests/true-bdd/coverage_test.go", "tests/true-bdd/main_test.go",
-			"tests/true-bdd/scenarios/scenarios.go", "tests/true-bdd/support.txt")
+			"tests/true-bdd/support/scenarios.go", "tests/true-bdd/support.txt")
 	}
 
 	if name != "d" {

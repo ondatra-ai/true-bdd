@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // claude-replay-001-whole-command: The write guard allows whole command
 func TestClaudeReplay001WholeCommand(t *testing.T) {
-	s := scenarios.New(t, "claude-replay-001-whole-command")
+	s := New(t, "claude-replay-001-whole-command")
 	s.Given(`the "claude-replay-whole-command" project tree`)
 	s.And(`claude's write policy grants the test command "go test ./..." with selector "-run" in "."`)
 	s.And(`the tool call is a "foreground" shell call in directory "." with command go test ./...`)
@@ -35,7 +33,7 @@ func TestClaudeReplay001WholeCommand(t *testing.T) {
 
 // claude-replay-002-selected-command: The write guard allows selected command
 func TestClaudeReplay002SelectedCommand(t *testing.T) {
-	s := scenarios.New(t, "claude-replay-002-selected-command")
+	s := New(t, "claude-replay-002-selected-command")
 	s.Given(`the "claude-replay-selected-command" project tree`)
 	s.And(`claude's write policy grants the test command "go test ./..." with selector "-run" in "."`)
 	s.And(`the tool call is a "foreground" shell call in directory "." with command go test ./... -run '^TestSlow$'`)
@@ -46,7 +44,7 @@ func TestClaudeReplay002SelectedCommand(t *testing.T) {
 
 // claude-replay-003-shell-operator: The write guard denies shell operator
 func TestClaudeReplay003ShellOperator(t *testing.T) {
-	s := scenarios.New(t, "claude-replay-003-shell-operator")
+	s := New(t, "claude-replay-003-shell-operator")
 	s.Given(`the "claude-replay-shell-operator" project tree`)
 	s.And(`claude's write policy grants the test command "go test ./..." with selector "-run" in "."`)
 	s.And(`the tool call is a "foreground" shell call in directory "." with command go test ./...; cat /etc/passwd`)
@@ -58,7 +56,7 @@ func TestClaudeReplay003ShellOperator(t *testing.T) {
 
 // claude-replay-004-assignment: The write guard denies assignment
 func TestClaudeReplay004Assignment(t *testing.T) {
-	s := scenarios.New(t, "claude-replay-004-assignment")
+	s := New(t, "claude-replay-004-assignment")
 	s.Given(`the "claude-replay-assignment" project tree`)
 	s.And(`claude's write policy grants the test command "go test ./..." with selector "-run" in "."`)
 	s.And(`the tool call is a "foreground" shell call in directory "." with command X=1 go test ./...`)
@@ -70,7 +68,7 @@ func TestClaudeReplay004Assignment(t *testing.T) {
 
 // claude-replay-005-another-program: The write guard denies another program
 func TestClaudeReplay005AnotherProgram(t *testing.T) {
-	s := scenarios.New(t, "claude-replay-005-another-program")
+	s := New(t, "claude-replay-005-another-program")
 	s.Given(`the "claude-replay-another-program" project tree`)
 	s.And(`claude's write policy grants the test command "go test ./..." with selector "-run" in "."`)
 	s.And(`the tool call is a "foreground" shell call in directory "." with command cat /etc/passwd`)
@@ -82,7 +80,7 @@ func TestClaudeReplay005AnotherProgram(t *testing.T) {
 
 // claude-replay-006-extra-flag: The write guard denies extra flag
 func TestClaudeReplay006ExtraFlag(t *testing.T) {
-	s := scenarios.New(t, "claude-replay-006-extra-flag")
+	s := New(t, "claude-replay-006-extra-flag")
 	s.Given(`the "claude-replay-extra-flag" project tree`)
 	s.And(`claude's write policy grants the test command "go test ./..." with selector "-run" in "."`)
 	s.And(`the tool call is a "foreground" shell call in directory "." with command go test ./... -v`)
@@ -94,7 +92,7 @@ func TestClaudeReplay006ExtraFlag(t *testing.T) {
 
 // claude-replay-007-double-quotes: The write guard denies double quotes
 func TestClaudeReplay007DoubleQuotes(t *testing.T) {
-	s := scenarios.New(t, "claude-replay-007-double-quotes")
+	s := New(t, "claude-replay-007-double-quotes")
 	s.Given(`the "claude-replay-double-quotes" project tree`)
 	s.And(`claude's write policy grants the test command "go test ./..." with selector "-run" in "."`)
 	s.And(`the tool call is a "foreground" shell call in directory "." with command go test ./... -run "^TestSlow$"`)
@@ -106,7 +104,7 @@ func TestClaudeReplay007DoubleQuotes(t *testing.T) {
 
 // claude-replay-008-wrong-directory: The write guard denies wrong directory
 func TestClaudeReplay008WrongDirectory(t *testing.T) {
-	s := scenarios.New(t, "claude-replay-008-wrong-directory")
+	s := New(t, "claude-replay-008-wrong-directory")
 	s.Given(`the "claude-replay-wrong-directory" project tree`)
 	s.And(`claude's write policy grants the test command "go test ./..." with selector "-run" in "."`)
 	s.And(`the tool call is a "foreground" shell call in directory "tests" with command go test ./...`)
@@ -118,7 +116,7 @@ func TestClaudeReplay008WrongDirectory(t *testing.T) {
 
 // claude-replay-009-no-command: The write guard denies no command
 func TestClaudeReplay009NoCommand(t *testing.T) {
-	s := scenarios.New(t, "claude-replay-009-no-command")
+	s := New(t, "claude-replay-009-no-command")
 	s.Given(`the "claude-replay-no-command" project tree`)
 	s.And(`the tool call is a "foreground" shell call in directory "." with command go test ./...`)
 	s.When(`claude asks the guard about the tool call`)

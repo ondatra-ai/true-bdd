@@ -1,1 +1,1 @@
-{"type": "result", "subtype": "success", "is_error": false, "total_cost_usd": 0, "structured_output": {"answer": "pass", "context": ["alpha"], "fix_prompt": ""}}
+{"type": "result", "subtype": "success", "is_error": false, "total_cost_usd": 0, "structured_output": {"answer": "fail", "context": ["beta"], "fix_prompt": ""}}

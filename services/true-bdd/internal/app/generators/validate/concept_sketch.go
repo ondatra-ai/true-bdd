@@ -49,6 +49,7 @@ func (e *ChecklistEvaluator) conceptSketch(prompt checklist.PromptWithContext, d
 		return fmt.Errorf("encode interface kinds: %w", err)
 	}
 
+	data.Judgement = checklist.JudgementSketch
 	data.Docs = map[string]*docs.ArchitectureDoc{}
 	data.Question = "For every AC, draft a runnable test sketch against its product concepts' closed means " +
 		"and the service's kind of Public interface. Use explicit inputs, actions and objective assertions. " +
@@ -75,12 +76,22 @@ func serviceInterfaceKinds(services []architecture.Service) map[string]string {
 	return kinds
 }
 
-func (e *ChecklistEvaluator) renderChecklistPrompts(prompt checklist.PromptWithContext, data ChecklistPromptData,
+func (e *ChecklistEvaluator) renderChecklistPrompts(prompt checklist.PromptWithContext, data *ChecklistPromptData,
 ) (string, string, error) {
-	err := e.conceptSketch(prompt, &data)
+	err := e.conceptSketch(prompt, data)
 	if err != nil {
 		return "", "", err
 	}
 
-	return e.renderPrompts(data)
+	reference := ""
+	if architectureDoc := data.Docs[docs.KeyArchitectureYAML]; architectureDoc != nil {
+		reference = architectureDoc.FilePath
+	}
+
+	data.StepArguments, err = e.evidence(e.config, reference)
+	if err != nil {
+		return "", "", err
+	}
+
+	return e.renderPrompts(*data)
 }

@@ -26,14 +26,16 @@ const ()
 
 // ChecklistPromptData represents data needed for checklist validation prompts.
 type ChecklistPromptData struct {
-	Subject      any
-	SubjectID    string
-	SubjectTitle string
-	Question     string
-	Rationale    string
-	ResultPath   string
-	Docs         map[string]*docs.ArchitectureDoc
-	FixTemplate  string // Template for generating fix prompt when validation fails
+	StepArguments string
+	Judgement     checklist.ConceptJudgement
+	Subject       any
+	SubjectID     string
+	SubjectTitle  string
+	Question      string
+	Rationale     string
+	ResultPath    string
+	Docs          map[string]*docs.ArchitectureDoc
+	FixTemplate   string // Template for generating fix prompt when validation fails
 	// Structured is true when the resolved CLI enforces a result schema,
 	// so the template asks for a JSON object instead of a FILE block.
 	Structured bool
@@ -60,6 +62,8 @@ const checklistResultSchema = `{
 
 // ChecklistEvaluator evaluates subjects against validation prompts using AI.
 type ChecklistEvaluator struct {
+	stepArgumentSource
+
 	aiClient      ports.AIPort
 	config        *config.ViperConfig
 	models        *provider.Registry
@@ -184,7 +188,7 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 		Structured:  ai.SupportsResultSchema(model.CLI),
 	}
 
-	systemPrompt, userPrompt, err := e.renderChecklistPrompts(promptCtx, promptData)
+	systemPrompt, userPrompt, err := e.renderChecklistPrompts(promptCtx, &promptData)
 	if err != nil {
 		return checklist.ValidationResult{}, err
 	}
@@ -226,6 +230,7 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 	return checklist.ValidationResult{
 		SectionPath:  promptCtx.GetFullSectionPath(),
 		Question:     promptData.Question,
+		Judgement:    promptData.Judgement,
 		ActualAnswer: parsedResult.Answer,
 		Context:      parsedResult.Context,
 		Status:       status,

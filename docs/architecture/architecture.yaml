@@ -7,33 +7,40 @@ architecture:
   # fields keys are Go template access paths; [] means a range element.
   # A whole-object read describes its serialised shape, not a wildcard.
   model_rendering: &prompt-rendering >-
-    Render Go text/template with Sprig and toYaml = yaml.v3 Marshal, retaining its final newline. Preserve literal bytes, trim markers and YAML-decoded strings; no final trim. Lists retain order; string map keys sort. Both templates receive the same typed data; FormatSteps and FormatUserStories remain methods. Models validate an explicit YAML view without replacing typed Subjects. Question, Rationale and FixTemplate are unchanged decoded checklist values; sketch replacements remain in concept_protocols. Effective nonempty Prompt docs replace defaults; keys resolve through documents unchanged, duplicate keys collapse, map keys sort. Structured follows the resolved CLI result-schema support. ResultPath is <run_dir>/<index:%02d>-<safe subject>-checklist-<safe section>-result.yaml: run_dir is the cleaned paths.tmp_dir/date-pid join; safe replaces each run outside [A-Za-z0-9._-] with one hyphen. Section is the checklist stem and slash-joined section ids. Index is the selected file position before walk reordering; subject is the Story id, StoryID-ACID, Registry key or concept block/name (suite-prefixed on collision), respectively. Schemes resolve through templates.schemes.<model>, default true-bdd/models/<model>.schema.yaml, relative to the host working directory just like template paths; no embedded runtime fallback. Missing or malformed schemes refuse rendering. Before its walk, scen check checks every declared Model's scheme and two template files, and requires its name as a whole word in a Scenario step of its service anywhere in the complete Registry, even when ids select a subset.
+    Render Go text/template with Sprig and toYaml = yaml.v3 Marshal, retaining its final newline. Preserve literal bytes, trim markers and YAML-decoded strings; no final trim. Lists retain order; string map keys sort. Both templates receive the same typed data; FormatSteps and FormatUserStories remain methods. Models validate an explicit YAML view without replacing typed Subjects. Question, Rationale and FixTemplate are unchanged decoded checklist values; sketch replacements remain in concept_protocols. Effective nonempty Checklist item docs replace defaults; keys resolve through documents unchanged, duplicate keys collapse, map keys sort. Structured follows the resolved CLI result-schema support. ResultPath is <run_dir>/<index:%02d>-<safe subject>-checklist-<safe section>-result.yaml: run_dir is the cleaned paths.tmp_dir/date-pid join; safe replaces each run outside [A-Za-z0-9._-] with one hyphen. Section is the checklist stem and slash-joined section ids. Index is the selected written file position; subject is the Story id, StoryID-ACID, Registry key or concept block/name (suite-prefixed on collision), respectively. Schemes resolve through templates.schemes.<model>, default true-bdd/models/<model>.schema.yaml, relative to the host working directory just like template paths; no embedded runtime fallback. Missing or malformed schemes refuse rendering. Before its walk, scen check checks every declared Model's scheme and two template files, and requires its name as a whole word in a Scenario step of its service anywhere in the complete Registry, even when ids select a subset.
+    StepArguments is an optional string field of us_refine_checklist, us_apply_checklist, scen_check_checklist and build_steps_checklist. Construct it after the sketch projection has selected its Docs: when the top-level step_arguments section exists and Docs already names the architecture, give an instruction to read that complete named section at Docs.architecture_yaml.FilePath; otherwise give the complete section text (preserving block source, losslessly rendering flow documents and resolved aliases). A sketch has no architecture path and embeds it. With no section, omit the field from the validation view and render zero bytes, preserving older host schemes and prompts. The current build steps walk has no ordinary prompt Q, but its reserved Model seam follows this same construction. Build commands use the architecture selected by --architecture, when supplied, for all these evidence readers; an existing architecture reference then names that selected path. The step-arguments construction Scenarios and engine tests pin the shared rule.
   concept_protocols: >-
-    Structured concept Q protocols bypass these templates: the Q text plus a JSON-only instruction is the system prompt, and indented JSON is the user prompt. Link embeds the Item id/title, steps with numeric keys and optional criterion ids, and the whole product including roles/glossary. Its schema requires every non-judge step and every own-block concept score (integer 0..10), reason and nullable other_block_concept. with.threshold defaults to 9 and accepts integers 1..10. In scen check, Binding is one turn per binding (concept, block, service) per walk, started once every Scenario has answered the Prompts before it: it supplies product_path for reading the complete product document and embeds every distinct step (block and text, keyed from 1 in block and text order) of the walk's passing links that reached the concept for that service, the service, that one linked means and binding, and the full Public interface; its schema requires that block:name key, an unambiguous boolean and reason, and each Scenario's cell grades the verdicts of the bindings its link reached. build steps starts its own walk and shares Item steps before using the same binding judgement. In scen check, Words is one turn per linked concept per walk embedding the product and that concept; in us refine one turn per Story embeds the item id, the product and every linked concept. A shared turn's artifacts are named shared-<index> <judgement> <key>, and each walk validation round, --fix ones included, judges afresh. Raw model answers are saved as model-answer.txt, and the engine-derived canonical answer/context JSON is saved in both response.txt and result.yaml for the coverage census. Links live only in the current walk Item. Walking orders D prompts, then concept links, then other Q prompts, preserving file-position indices; a host declaring no concepts omits the concept cells and keeps its order.
+    Structured concept Q protocols bypass these templates: the Q text plus a JSON-only instruction is the system prompt, and indented JSON is the user prompt. Link embeds the Item id/title, steps with numeric keys and optional criterion ids, and the whole product including roles/glossary. Its schema requires every non-judge step and every own-block concept score (integer 0..10), reason and nullable other_block_concept. with.threshold defaults to 9 and accepts integers 1..10. In scen check, Binding is one turn per binding (concept, block, service) per walk, started once every Scenario has answered the Checklist items before it: it supplies product_path for reading the complete product document and embeds every distinct step (block and text, keyed from 1 in block and text order) of the walk's passing links that reached the concept for that service, the service, that one linked means and binding, and the full Public interface; its schema requires that block:name key, an unambiguous boolean and reason, and each Scenario's cell grades the verdicts of the bindings its link reached. build steps starts its own walk and shares Item steps before using the same binding judgement. In scen check, Words is one turn per linked concept per walk embedding the product and that concept; in us refine one turn per Story embeds the item id, the product and every linked concept. A shared turn's artifacts are named shared-<index> <judgement> <key>, and each walk validation round, --fix ones included, judges afresh. Raw model answers are saved as model-answer.txt, and the engine-derived canonical answer/context JSON is saved in both response.txt and result.yaml for the coverage census. Links live only in the current walk Item. Checklist items run in written order with no failed-code skip, preserving selected file-position indices; a host declaring no concepts omits the concept cells and keeps its order.
+    Every concept protocol turn also receives step_arguments as a JSON string when the top-level architecture section exists: Link, Group, Words (including the shared per-concept turns), Bindings (including shared per-service turns) and Propose, with retries. These turns have no architecture path; embed the entire section, preserving block source or losslessly rendering flow documents and resolved aliases, never a summary. When absent, omit the key and preserve the previous JSON field order and bytes. Body proposal/application and tool-less verification transport the same section under their prompt_data contracts, while already supplied architecture paths name its section explicitly. The router counts every rendered system/user byte and refuses oversized evidence before provider start.
   prompt_data:
     fix_generator:
       rendering: *prompt-rendering
       fields:
+        StepArguments: &step-argument-evidence >-
+          Empty when the architecture document has no top-level step_arguments section. Otherwise the
+          complete section text, including every family, scope and escaping rule, or an instruction naming
+          that section at an architecture path this read-enabled turn already receives. Never summarized
+          or truncated; the router measures the final prompt against engine.max_prompt_bytes.
         Subject: >-
           Complete StoryRefineData serialized with the same Story fields and exclusions as checklist.Subject, only for a structured concept repair.
         SubjectID: >-
           Selected Story id, unchanged.
         FailedCheck.Judgement: >-
-          The structured Q protocol from with.concepts: link, bindings or words, empty for ordinary Q and D prompts. Selects concept repair wording; no earlier link is trusted.
+          The structured Q protocol from with.concepts: link, bindings, words or a concept-host sketch, empty for ordinary Q.prompt and Q.code. The failed result retains it through proposal and clarification and passes it unchanged to the applier to select concept repair wording; no earlier link is trusted.
         DocPaths: &docpaths >-
           Failed check effective docs resolved to config path strings by the same resolver as Docs. Duplicate keys collapse; resolution errors warn and skip; template ranges lexically by key, displaying keys unchanged. Empty map renders no Read lines; paths retain configured ./ and are not made absolute.
         FailedCheck.ActualAnswer: &failedcheck-actualanswer >-
           Model JSON answer is copied unchanged; YAML scalar answer is TrimSpace, YAML mapping or sequence is yaml.Marshal with trailing newline bytes removed. Status classification alone lowercases and trims. Built-in or runtime failures supply literal fail.
         FailedCheck.Context: &failedcheck-context >-
-          Failed result observation strings in original list order, without trimming or joining; built-in checks supply their finding lines. After a fix whose commit was refused (runner.ErrFixNotTaken), the same subject and Prompt's next failed result gains one last line, that refusal's error text unchanged; a passing result drops it. Template prefixes each with "- "; an empty list produces no findings.
+          Failed result observation strings in original list order, without trimming or joining; built-in checks supply their finding lines. After a fix whose commit was refused (runner.ErrFixNotTaken), the same subject and Checklist item's next failed result gains one last line, that refusal's error text unchanged; a passing result drops it. Template prefixes each with "- "; an empty list produces no findings.
         FailedCheck.FixPrompt: &failedcheck-fixprompt >-
           Failed model result fix_prompt is TrimSpace after JSON/YAML decoding; pass discards it. Built-in and structured concept failures use TrimSpace of F; the template inserts it unchanged, even if empty.
         FailedCheck.Question: &failedcheck-question >-
-          Evaluated Q text, including the concept-sketch replacement and embedded context when active; otherwise unchanged, including a trailing YAML block newline. For a built-in check, "D: " plus the trimmed D name.
+          Evaluated Q text, including the concept-sketch replacement and embedded context when active; otherwise unchanged, including a trailing YAML block newline. For a built-in check, "Q code: " plus the trimmed Q.code name.
         FailedCheck.SectionPath: &failedcheck-sectionpath >-
           Checklist command stem (us-refine, us-apply, build-steps, build-code or scen-check), with "/" plus the checklist sections[].id only when nonempty. The runner calls these SectionID and CriterionID respectively; display is unsanitised, while artifact filenames sanitise the entire combined path.
         ResultPath: &generation-result-path >-
-          Run result path: run_dir is the cleaned paths.tmp_dir/date-pid join described in invocation.values.run_dir (./tmp yields tmp/<run>, relative; an absolute configured tmp_dir stays absolute); cassettes normalise its date-pid segment to {{RUN_DIR}}. Filename sanitising replaces each run of characters outside [A-Za-z0-9._-] with one hyphen; no other escaping. Subject id has the same command-specific source as the validation path. Format is <run_dir>/<failed Prompt index zero-padded to at least 2 digits>-<safe subject id>-fix-prompts.md. Reused across clarification/refinement iterations; iteration appears only in saved debug filenames, not this rendered path.
+          Run result path: run_dir is the cleaned paths.tmp_dir/date-pid join described in invocation.values.run_dir (./tmp yields tmp/<run>, relative; an absolute configured tmp_dir stays absolute); cassettes normalise its date-pid segment to {{RUN_DIR}}. Filename sanitising replaces each run of characters outside [A-Za-z0-9._-] with one hyphen; no other escaping. Subject id has the same command-specific source as the validation path. Format is <run_dir>/<failed Checklist item index zero-padded to at least 2 digits>-<safe subject id>-fix-prompts.md. Reused across clarification/refinement iterations; iteration appears only in saved debug filenames, not this rendered path.
         Structured: &structured >-
           Run boolean from the resolved role model CLI: true for both supported CLIs, claude and codex. Validation and generation pass the same populated data to both templates; appliers never receive this field.
         Subject.AcceptanceCriteria: &subject-acceptancecriteria >-
@@ -74,11 +81,12 @@ architecture:
       rendering: *prompt-rendering
       fields:
         FailedCheck.Judgement: >-
-          The structured Q protocol from with.concepts: link, bindings or words, empty for ordinary Q and D prompts. Selects concept repair wording; no earlier link is trusted.
+          The structured Q protocol from with.concepts: link, bindings, words or a concept-host sketch, empty for ordinary Q.prompt and Q.code. The failed result retains it through proposal and clarification and passes it unchanged to the applier to select concept repair wording; no earlier link is trusted.
         Structured: *structured
     fix_applier:
       rendering: *prompt-rendering
       fields:
+        StepArguments: *step-argument-evidence
         Subject: >-
           StoryRefineData serialised with the same Story shape and exclusions as checklist.Subject; used for an approved concept-link step rewrite.
         Judgement: >-
@@ -86,7 +94,7 @@ architecture:
         FixPrompt: &fixprompt >-
           Run-selected generated fix, unchanged at applier construction. JSON generation TrimSpace; marker generation extracts between matching FILE markers, TrimSpace, strips a whole wrapping backtick/tilde code fence and TrimSpace again. Clarification/refinement replaces the fix only when a nonempty new fix is returned; no further applier trim.
         ResultPath: &application-result-path >-
-          Run result path: run_dir is the cleaned paths.tmp_dir/date-pid join described in invocation.values.run_dir (./tmp yields tmp/<run>, relative; an absolute configured tmp_dir stays absolute); cassettes normalise its date-pid segment to {{RUN_DIR}}. Filename sanitising replaces each run of characters outside [A-Za-z0-9._-] with one hyphen; no other escaping. Subject id has the same command-specific source as the validation path. Format is <run_dir>/apply-<safe subject id>-iter<n>-result.yaml, where n counts applies from 1 across every Item and Cell in this runner. No checklist section or Prompt index here.
+          Run result path: run_dir is the cleaned paths.tmp_dir/date-pid join described in invocation.values.run_dir (./tmp yields tmp/<run>, relative; an absolute configured tmp_dir stays absolute); cassettes normalise its date-pid segment to {{RUN_DIR}}. Filename sanitising replaces each run of characters outside [A-Za-z0-9._-] with one hyphen; no other escaping. Subject id has the same command-specific source as the validation path. Format is <run_dir>/apply-<safe subject id>-iter<n>-result.yaml, where n counts applies from 1 across every Item and Cell in this runner. No checklist section or Checklist item index here.
         Subject.AcceptanceCriteria: *subject-acceptancecriteria
         Subject.AcceptanceCriteria[].Description: *subject-acceptancecriteriaitem-description
         Subject.AcceptanceCriteria[].ID: *subject-acceptancecriteriaitem-id
@@ -114,6 +122,7 @@ architecture:
     apply_fix_generator:
       rendering: *prompt-rendering
       fields:
+        StepArguments: *step-argument-evidence
         DocPaths: *docpaths
         FailedCheck.ActualAnswer: *failedcheck-actualanswer
         FailedCheck.FixPrompt: *failedcheck-fixprompt
@@ -145,6 +154,7 @@ architecture:
     apply_fix_applier:
       rendering: *prompt-rendering
       fields:
+        StepArguments: *step-argument-evidence
         FixPrompt: *fixprompt
         ResultPath: *application-result-path
         Subject.ACID: *subject-acid
@@ -160,22 +170,32 @@ architecture:
         ResultPath: *application-result-path
     build_steps_fix_generator:
       rendering: >-
-        Build steps uses the shared Fix loop. An Item is a concept and suite whose patterns the proposal Prompt supplied and the engine checked. All skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
+        Build steps uses the shared Fix loop. An Item is a concept and suite whose pattern proposal is pattern-bindings' F, shared by step-verification's F; the pattern-bindings code Q judges every pattern in the checklist's written order. Initial skeletons precede the first body proposal; verification repairs may supply planned replacement locations before the menu. Replacements are written before the body writer. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. The writer puts code the steps share in tests/<suite>/helpers/, without a separate declaration; its roots admit steps/ and helpers/. Helpers obey their callers' bindings and meanings and are judged like bodies. Body checks precede whole-suite Step coverage at convergence; test listing belongs to build code.
       fields:
+        StepArguments: *step-argument-evidence
         Subject.Context: YAML semantic core (Concept, binding, glossary entries, Word mappings, complete Public interface,
-          definitions, patterns, captures and every bound step), Registry path, Scenario keys, fixture_root and fixture_inputs
+          selected definitions, patterns, captures and every step bound to them), Registry path, Scenario keys, fixture_root and fixture_inputs
           directory names. Confined reads admit Specification, suite and declared libraries, never service source;
-          write grants stay unchanged. Codex body profiles set PWD to the canonical Host root for Go directory resolution.
+          the github.com/ondatra-ai/true-bdd/pkg module's source directory and archive are withheld even when
+          declared directly or in the downloaded graph, while its version metadata and every other library grant remain.
+          Write grants cover steps/ and helpers/. Codex body profiles set PWD to the canonical Host root for Go directory resolution.
+          When testing.testkit is declared, runtime_api maps the pkg/testkit root and pkg/proxy/cli import paths to
+          saved complete go doc -all files, resolved from the Host project's module graph once before any AI turn.
+          Body proposals and both applications receive read grants on those saved API files, never the runtime module's source.
+          When runtime_api is present, instructions say to read the semantic core and Public interface first,
+          next the saved complete go doc -all files named by runtime_api for the runtime's API meanings,
+          then suite source and fixture inputs; their system prompts admit the supplied runtime API as what the runtime does.
+          An undeclared host retains its existing prompts; a documentation failure refuses startup naming the package and error.
           No digests, compaction or truncation.
         Subject.Concept.Name: Verbatim concept name.
         Subject.Concept.Block: Concept block.
         Subject.Concept.Means: Verbatim concept meaning.
         Subject.Label: The concept Item's label, its block and quoted concept name.
-        FailedCheck.Context: Every finding from the last per-Item compile, binding, body and critique check.
+        FailedCheck.Context: Every finding from the failed Checklist item, with definition/category/finding for step-verification.
         DocPaths: Configured document paths.
         FailedCheck.ActualAnswer: Latest answer.
-        FailedCheck.FixPrompt: Failed Prompt fix guidance.
-        FailedCheck.Question: Failed Prompt.
+        FailedCheck.FixPrompt: Failed Checklist item fix guidance.
+        FailedCheck.Question: Failed Checklist item.
         FailedCheck.SectionPath: Checklist section.
         ResultPath: Result artifact path.
         Structured: Provider structured answer selection.
@@ -185,14 +205,21 @@ architecture:
         UserAnswers: Prior clarification answers.
     build_steps_fix_generator_system:
       rendering: >-
-        Build steps uses the shared Fix loop. An Item is a concept and suite whose patterns the proposal Prompt supplied and the engine checked. All skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
+        Build steps uses the shared Fix loop. An Item is a concept and suite whose pattern proposal is pattern-bindings' F, shared by step-verification's F; the pattern-bindings code Q judges every pattern in the checklist's written order. Initial skeletons precede the first body proposal; verification repairs may supply planned replacement locations before the menu. Replacements are written before the body writer. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. The writer puts code the steps share in tests/<suite>/helpers/, without a separate declaration; its roots admit steps/ and helpers/. Helpers obey their callers' bindings and meanings and are judged like bodies. Body checks precede whole-suite Step coverage at convergence; test listing belongs to build code.
       fields:
         Structured: Provider structured answer selection.
+        Subject.Context: A top-level runtime_api entry conditionally admits the runtime API as what the runtime does.
     build_steps_fix_applier:
       rendering: >-
-        Build steps uses the shared Fix loop. An Item is a concept and suite whose patterns the proposal Prompt supplied and the engine checked. All skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
+        Build steps uses the shared Fix loop. An Item is a concept and suite whose pattern proposal is pattern-bindings' F, shared by step-verification's F; the pattern-bindings code Q judges every pattern in the checklist's written order. Initial skeletons precede the first body proposal; verification repairs may supply planned replacement locations before the menu. Replacements are written before the body writer. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. The writer puts code the steps share in tests/<suite>/helpers/, without a separate declaration; its roots admit steps/ and helpers/. Helpers obey their callers' bindings and meanings and are judged like bodies. Body checks precede whole-suite Step coverage at convergence; test listing belongs to build code.
       fields:
-        Subject.Context: Whole concept context, identical to the proposal turn.
+        StepArguments: *step-argument-evidence
+        Subject.Context: The semantic core and selected definitions, identical to the proposal turn, including the saved complete go doc -all
+          paths for the pkg/testkit root and pkg/proxy/cli when testing.testkit is declared; both CLI applications read
+          those saved API files, never the runtime module's source. When runtime_api is present, instructions say to
+          read the semantic core and Public interface first, next the saved complete go doc -all files named by
+          runtime_api for the runtime's API meanings, then suite source and fixture inputs; existing state and
+          helpers follow the runtime API. Without runtime_api, the existing state-and-helpers-first instruction remains.
         FixPrompt: Approved proposal.
         ResultPath: Confirmation artifact path.
         Subject.Suite: Suite steps directory.
@@ -203,27 +230,60 @@ architecture:
         Subject.Label: The concept an interface_cannot_serve verdict names, its block and quoted name.
     build_steps_fix_applier_system:
       rendering: >-
-        Build steps uses the shared Fix loop. An Item is a concept and suite whose patterns the proposal Prompt supplied and the engine checked. All skeletons precede the first turn. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. Body checks precede whole-suite coverage and listing.
+        Build steps uses the shared Fix loop. An Item is a concept and suite whose pattern proposal is pattern-bindings' F, shared by step-verification's F; the pattern-bindings code Q judges every pattern in the checklist's written order. Initial skeletons precede the first body proposal; verification repairs may supply planned replacement locations before the menu. Replacements are written before the body writer. Turns read the Specification and tests only, never service implementation, and do not execute Scenarios against the target. Compilation uses inherited caches. The writer puts code the steps share in tests/<suite>/helpers/, without a separate declaration; its roots admit steps/ and helpers/. Helpers obey their callers' bindings and meanings and are judged like bodies. Body checks precede whole-suite Step coverage at convergence; test listing belongs to build code.
       fields:
         ResultPath: Confirmation artifact path.
         Subject.Label: The concept an interface_cannot_serve verdict names, its block and quoted name.
+        Subject.Context: A top-level runtime_api entry conditionally admits the runtime API as what the runtime does.
     build_steps_critique:
       rendering: >-
-        After a completed apply whose compilation, binding and body checks pass, before the Item can pass, a separate read-only prompt-role turn reads the selected definition; an apply those checks fail goes back to the Fix loop without it. Claude's file and shell tools are disabled; Codex uses the standard read-only validation sandbox. Only that definition, imports and shared State may change; the existing suite shape check rejects other definition edits. All suite steps-package Go files are embedded in lexical path order, whole, with path headings, so shared State and helper context are visible even when compilation fails. The semantic core stays embedded; fixture contracts are filtered by source or bound captures. Findings append to the Item's existing compile, binding and body findings and return through D: step-coverage to the same bounded Fix loop. A pattern_captures or pattern_scope finding first sends the Item back to the concept-patterns Prompt, its refusal the Item's current patterns and every such finding prefixed critique:, within max_apply_attempts proposals of the engine's check; the engine then removes each skeleton whose pattern the proposal dropped with its registration, keeps an unchanged one, writes the new ones, compiles, renders the Item's context again and adds a pending-body finding. A malformed verdict stops the walk. The build-steps checklist engine.critique_model tier overrides engine.default_prompt_model; templates and tier validate before any skeleton or runner. No prompt budget is stated. Each apply saves critique-<Item id>-<apply count>-{system,user,response}.txt under the run directory.
+        The step-verification prompt Checklist item follows step-coverage, asking one question about one concept Item:
+        does the generated definition match its steps under its Concept and binding? No verification turn runs in postFix.
+        The walk asks the Q, and its single F fixes only the named findings. A pattern_captures or pattern_scope finding
+        prepares a fresh pattern proposal through the same proposal protocol as pattern-bindings' F, with the current patterns refused and the findings;
+        its answer adds nullable cannot_fix with reason/correction, excluding ordinary work. The engine plans new
+        definition locations and captures without editing files before the menu. On apply it rewrites changed skeletons,
+        then writes the selected bodies for the new captures. Other findings select only their named bodies.
+        Proposal, clarification and apply preserve the shared cannot-fix protocol and stop with the Checklist item location.
+        After an apply the verification Q runs again; once it passes, the checklist restarts and the pattern-bindings code Q judges the changed patterns. Compilation, binding and written-body checks
+        after apply stay unchanged. Standard model/fix_model/apply_model precedence selects tiers; no separate critique_model is read.
+        Every Q saves its system/user/response and typed answer under the Cell artifact stem, including section and index.
+        The response schema remains answer pass/fail and findings with definition, category and finding; malformed answers stop.
+        The router refuses oversized evidence distinctly at engine.max_prompt_bytes, without truncation or a provider start.
       fields:
-        Definition: >-
-          Every definition of the concept Item, each its engine file path joined with :: and its function name, joined with commas.
-        Context: Semantic core, every bound step and fixture contracts selected by source basename or bound captures,
-          always including prep.sh, teardown.sh and checklist-prompts.yaml. Scenario keys retain provenance; Registry
-          path and unrelated Scenario blocks or fixture files are omitted. No digests or truncation.
-        Sources: Whole suite steps-package Go files in lexical path order with path headings, including the definition, imports, registrations and shared State.
+        Question: The authored step-verification Checklist item Q.prompt, verbatim.
+        StepArguments: *step-argument-evidence
+        Context: >-
+          Complete Concept, binding, glossary entries and Word mappings selected by the Concept terms; the Public interface
+          kind and document identity with only entries named by binding references and their referenced declarations;
+          definitions with file/function identity, full pattern, capture declarations and serves clause when supplied.
+          Each definition retains every distinct step form with up to three complete original texts and capture tuples.
+          Finite alternatives remain literal, including a captured negation; other captures become numbered argument slots.
+          Examples start in lexical order, then maximize unseen capture values with lexical ties. Patterns are judged beyond examples.
+          runtime_api embeds only referenced declarations from the host-resolved go doc outputs, including required types,
+          fields, constants and comments. Selection follows complete local declarations transitively and conservatively by name.
+          Registry paths, Scenario ids, fixture metadata and all fixture file contents are omitted. No digest replaces evidence.
+        Sources: >-
+          Complete selected definition declarations and their transitive local State, method, constant, type, callback and
+          helpers/ dependencies, with selected registration calls, imports and origin file headings in lexical source order.
+          Unrelated declarations and _test.go files are excluded; helpers are judged as part of their calling definitions.
     build_steps_critique_system:
       rendering: >-
-        Static semantic review policy and JSON verdict contract. Answer pass with no findings, or fail with at least one finding. Each finding requires a nonempty definition, category and finding. The patterns are an AI's proposal, checked by the engine only for binding, and are judged as well as the bodies: the categories are pattern_captures and pattern_scope against a pattern, and concept_binding, concept_meaning and computes_assertion against a body, judged against the binding, each pattern's bound steps and the bound Scenarios' fixture inputs. The binding criterion follows the concept's block: when calls its operation, given puts the state in place, then observes and compares; not every definition must itself call a command. A body requiring anything beyond its binding and those fixture inputs is a concept_binding finding. Unusable replies are errors, never passes.
-      fields: {}
+        One semantic question, not five independent checks or fixes. Pass has no findings; fail names a definition and
+        pattern_captures, pattern_scope, concept_binding, concept_meaning or computes_assertion for each discrepancy.
+        The first two name pattern discrepancies; the same F prepares the pattern again when needed, then writes its body.
+        The complete regex language is judged against the closed Concept and binding, including combinations absent from examples.
+        Read the semantic core and referenced Public interface, then referenced runtime API meanings, then selected source.
+        Runtime API comments state what the runtime does; relying on them is not itself a finding. Host-specific requirements
+        must come from the Specification, never fixture files. Given sets state, When calls, Then observes and compares;
+        product computation delegated to helpers is still a computes_assertion finding against its calling definition.
+        Use only embedded evidence, with file/shell tools disabled. Service implementation is never an authority.
+      fields:
+        Context: A top-level runtime_api entry conditionally admits selected runtime declarations and their meanings.
     build_code_fix_generator:
       rendering: *prompt-rendering
       fields:
+        StepArguments: *step-argument-evidence
         WriteRoots: >-
           The remaining failing set's declared service paths and exact writable entries; unknown-service failures use all service declarations. Services are sorted by name, each path precedes its writable list, and equal grants are deduplicated. Host tmp is operational scratch. No protected tests or step definitions (as defined by writable paths) may overlap a grant.
         DocPaths: >-
@@ -233,7 +293,7 @@ architecture:
         FailedCheck.FixPrompt: >-
           Shipped F: plan guidance, unchanged.
         FailedCheck.Question: >-
-          D: tests-pass.
+          Q code: tests-pass.
         FailedCheck.SectionPath: >-
           Checklist stem and section, unchanged.
         ResultPath: >-
@@ -318,6 +378,7 @@ architecture:
     build_code_fix_applier:
       rendering: *prompt-rendering
       fields:
+        StepArguments: *step-argument-evidence
         FixPrompt: >-
           The person-approved repair plan, unchanged.
         ResultPath: >-
@@ -415,12 +476,13 @@ architecture:
     scen_check_fix_generator:
       rendering: *prompt-rendering
       fields:
+        StepArguments: *step-argument-evidence
         FailedCheck.Judgement: >-
-          The structured Q protocol from with.concepts: link, bindings or words, empty for ordinary Q and D prompts. Selects concept repair wording; no earlier link is trusted.
+          The structured Q protocol from with.concepts: link, bindings, words or a concept-host sketch, empty for ordinary Q.prompt and Q.code. The failed result retains it through proposal and clarification and passes it unchanged to the applier to select concept repair wording; no earlier link is trusted.
         DocPaths: *docpaths
         FailedCheck.ActualAnswer: *failedcheck-actualanswer
         FailedCheck.Check: &failedcheck-check >-
-          TrimSpace of the checklist D name; empty for a model Q. Selects the model-fix wording when empty, the public-interface wording, or the concept document wording of declared-terms, term-mappings, step-definitions and concept-bindings.
+          TrimSpace of the checklist Q.code name; empty for Q.prompt. Selects the model-fix wording when empty, the public-interface wording, or the concept document wording of declared-terms, term-mappings, step-definitions and concept-bindings.
         FailedCheck.Context: *failedcheck-context
         FailedCheck.FixPrompt: *failedcheck-fixprompt
         FailedCheck.Question: *failedcheck-question
@@ -452,7 +514,7 @@ architecture:
       rendering: *prompt-rendering
       fields:
         FailedCheck.Judgement: >-
-          The structured Q protocol from with.concepts: link, bindings or words, empty for ordinary Q and D prompts. Selects concept repair wording; no earlier link is trusted.
+          The structured Q protocol from with.concepts: link, bindings, words or a concept-host sketch, empty for ordinary Q.prompt and Q.code. The failed result retains it through proposal and clarification and passes it unchanged to the applier to select concept repair wording; no earlier link is trusted.
         FailedCheck.Check: *failedcheck-check
         Structured: *structured
         Subject.Service: *registry-service
@@ -460,11 +522,12 @@ architecture:
     scen_check_fix_applier:
       rendering: *prompt-rendering
       fields:
+        StepArguments: *step-argument-evidence
         Judgement: >-
           The failed structured Q protocol, carried unchanged to the approved applier; empty retains legacy wording.
         Subject.Service: *registry-service
         Check: &check >-
-          Failed result D name carried unchanged into the applier; empty for a model Q. Selects Scenario rewrite versus term-document fix; public-interface and concept-bindings select application to the architecture and the Public interface documents it names.
+          Failed result Q.code name carried unchanged into the applier; empty for Q.prompt. Selects Scenario rewrite versus term-document fix; public-interface and concept-bindings select application to the architecture and the Public interface documents it names.
         FixPrompt: *fixprompt
         ResultPath: *application-result-path
         Subject.Description: *registry-description
@@ -494,11 +557,13 @@ architecture:
         Check: *check
         Subject.Writes: *subject-writes
 
-  # How this repository runs its tests, stated once. No suites: a test's
-  # service and file are the scenario's own.
+  # Testing is shared; a Scenario owns its service and file. record accepts a
+  # command string or {command, exclude}; host-root-relative unread globs reach
+  # testkit through the main file (Q17). replay and live remain strings.
   testing:
     testkit:
-      ai_clis: [claude, codex]
+      repo_layer: [true-bdd, templates]
+      fixture_step: 'the "([^"]+)" project tree'
     libraries:
       - module: gopkg.in/yaml.v3
         version: v3.0.1
@@ -506,7 +571,18 @@ architecture:
         version: v1.0.1
     framework: go-test
     commands:
-      record: "go test -tags bdd -json -count=1 -timeout=180m ./tests/true-bdd/ -mode=services:record,tests:record"
+      record:
+        command: "go test -tags bdd -json -count=1 -timeout=180m ./tests/true-bdd/ -mode=services:record,tests:record"
+        exclude:
+          - tmp/codex-homes/**
+          - '**/*-codex-home/**'
+          - '**/codex-go-build/**'
+          - '**/library-download/**'
+          - '**/codex-shell-home/**'
+          - '**/codex-tmp/**'
+          - 'tmp/*cache*/**'
+          - 'tmp/go-*/**'
+          - 'tmp/*-tmp/**'
       replay: "go test -tags bdd -json -count=1 -timeout=40m ./tests/true-bdd/ -mode=services:replay,tests:replay"
       live: "go test -tags bdd -json -count=1 -timeout=180m ./tests/true-bdd/ -mode=services:live,tests:live"
 
@@ -734,12 +810,23 @@ architecture:
       #	third_party — a vendor's service, wherever the binary lives (a vendor CLI is
       #	              local, GLM's API is not); builds mock these (record/replay)
       dependencies:
-        # Replay hashes every AI turn's argv and stdin, so each CLI states its
-        # invocation exactly (docs/qna Q2, Q19): a rebuilt engine must send
-        # the same requests.
+        # Replay hashes argv and stdin; invocation fixes their bytes (docs/qna Q2, Q19).
+        # Shared unread paths live on testing.commands.record.exclude (Q17); each
+        # recording keeps its own placeholders, unrecorded and read_only_when rules.
         - name: codex
           protocol: cli
           scope: third_party
+          recording:
+            placeholders:
+              - token: '{{RUN_DIR}}'
+                pattern: '\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}-\d+'
+                directory: tmp
+            unrecorded:
+              - tmp/true-bdd.log.json
+              - tmp/aiproxy-state/**
+              - tmp/aiproxy-state-judge/**
+            read_only_when:
+              CLAUDE_HISTORY_ROLE: prompt
           # binary and args match every codex cassette's `binary` and `argv`.
           invocation:
             binary: codex
@@ -790,13 +877,15 @@ architecture:
                 `codex-turn<NNN>`: NNN is this turn's number, from 1 and
                 zero-padded to three digits, among every AI turn the run
                 dispatched, whichever CLI ran it. For concurrent scen check validation only,
-                the label is validation-<Prompt index, at least two digits>-<SHA256 of subject id,
+                the label is validation-<Checklist item index, at least two digits>-<SHA256 of subject id,
                 lowercase hex>, so schema and answer paths remain stable under reordered turns.
               schema_path: >-
                 `{run_dir}/{label}-codex-schema.json`, written before the spawn
                 with the JSON Schema the answer must satisfy, every object's
                 `required` listing all of its properties: codex refuses a
-                schema that leaves one out, which claude accepts.
+                schema that leaves one out, which claude accepts. Properties not
+                originally required become nullable, including enum values;
+                an empty object keeps required: [].
               answer_path: >-
                 `{run_dir}/{label}-codex-answer.txt`, where codex writes its final
                 message; the engine reads the answer there, never from stdout.
@@ -831,9 +920,10 @@ architecture:
                 Edit roots resolving outside the host are refused. The profile grants remain limited to the edit roots and host tmp;
                 creating their parents does not grant the writer any other host-root writes. Existing files stay files; missing files are not made into directories. Configured globs authorize creating and changing matching files even without existing matches. Terminal /** grants its literal subtree; other wildcards grant their narrowest literal directory and enforce the original patterns after every turn, including failed turns. Newly created non-matching files are removed; a changed, deleted, renamed or permission-changed pre-existing non-matching file fails the turn with one WARN naming it. Overlapping grants authorize their union. Such violations are fatal even for build code, with changed pre-existing contents retained for diagnosis. Non-matching files can be changed during the turn; this boundary is enforced afterward. Generated homes are excluded from comparison. Malformed patterns, host-root grants and escapes refuse (ADR-0024).
               - >-
+                Before the turn, the engine creates private codex-shell-home, codex-tmp and codex-go-build directories inside host tmp.
                 Writer subprocesses inherit no environment: the profile sets PATH to
                 GOROOT/bin, system bin directories and a generated runtime-bin with installed node, npm, npx and docker links; HOME, TMPDIR and GOCACHE inside
-                host tmp, GOROOT/GOMODCACHE, GOPROXY=off, GOSUMDB=off,
+                host tmp, TMPPREFIX={host}/tmp/codex-tmp/zsh for zsh here-documents, GOROOT/GOMODCACHE, GOPROXY=off, GOSUMDB=off,
                 GOTOOLCHAIN=local, GOFLAGS='-trimpath -buildvcs=false', GOTELEMETRY=off
                 and CGO_ENABLED=0. Optional node/npm/npx/docker executables, npm's validated package, Mach-O dependency libraries and their installation links are listed as read grants. Homebrew opt link directories supply symlink metadata, while unrelated canonical installation targets remain denied. npm/npx JavaScript package grants require bin/npm-cli.js or bin/npx-cli.js beneath a package.json naming npm, outside the host and authentication roots and the user's sensitive .codex, .claude, work, .ssh, .aws and .config roots and their ancestors. An unsafe or unverifiable runtime is refused with a WARN and no link or grant. npm uses offline mode and scratch cache/config; Docker uses scratch config without a daemon/socket grant; OPENSSL_CONF=/dev/null suppresses outside configuration. Network is disabled for commands and their children.
                 Codex's own model connection remains available. This is calibrated
@@ -912,6 +1002,7 @@ architecture:
                 OPENSSL_CONF = "/dev/null"
                 PATH = "{GOROOT}/bin:/usr/bin:/bin:/usr/sbin:/sbin:{host}/tmp/codex-shell-home/runtime-bin"
                 TMPDIR = "{host}/tmp/codex-tmp"
+                TMPPREFIX = "{host}/tmp/codex-tmp/zsh"
                 npm_config_cache = "{host}/tmp/codex-shell-home/npm-cache"
                 npm_config_offline = "true"
                 npm_config_userconfig = "{host}/tmp/codex-shell-home/.npmrc"
@@ -919,9 +1010,20 @@ architecture:
                 {host} is the symlink-resolved Host project root; go env -json GOROOT GOMODCACHE supplies the two Go roots. The library_read_entries are sorted, deduplicated quoted read paths: each resolved module source directory and its exact .info, .mod, .zip and .ziphash files, with no organization-specific rule. Scratch paths resolve within the host before emission. Shell set keys are sorted lexically. The runtime PATH suffix and Docker/npm/OpenSSL environment entries are always emitted, even when no optional executable is installed. Runtime discovery visits installed docker, node, npm, npx in lexical name order. For each it emits the executable, recursively enumerated non-system Mach-O libraries (installation alias then canonical path), validated npm package when applicable, then installation symlink ancestors, necessary Homebrew opt metadata directories and dylib parent directories, preserving discovery order and deduplicating paths by first occurrence. Each is a quoted path = "read" assignment; no installed runtime means no such entries. The acceptance and refusal rules above govern these paths.
 
                 {write_entries} emits each accepted execution-mode write root as a quoted resolved path = "write" assignment, in Write/Edit/MultiEdit pattern order, then any additional SourceWriteRoots, then host tmp. Overlapping roots are deduplicated by first occurrence. Literal files stay exact; terminal /** strips the suffix; other globs grant their narrowest literal directory and retain the post-turn enforcement described above. The six deny entries follow all write grants in the stated order. The network value must be enabled = false within [permissions.writer.network]; network = false directly under [permissions.writer] is refused by the real CLI.
-                    - name: claude
+        - name: claude
           protocol: cli
           scope: third_party
+          recording:
+            placeholders:
+              - token: '{{RUN_DIR}}'
+                pattern: '\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}-\d+'
+                directory: tmp
+            unrecorded:
+              - tmp/true-bdd.log.json
+              - tmp/aiproxy-state/**
+              - tmp/aiproxy-state-judge/**
+            read_only_when:
+              CLAUDE_HISTORY_ROLE: prompt
           # binary and args match every engine claude cassette's `binary` and
           # `argv`: fitting prompts retain their recorded argument form; larger
           # prompts use stdin. Replay hashes argv and stdin together.
@@ -973,7 +1075,7 @@ architecture:
                 dispatched, whichever CLI ran it. The counter is shared with
                 codex, not restarted per CLI or role. Thus the Claude writer
                 after one plan turn is `claude-turn002`. Concurrent scen check validation instead uses
-                validation-<Prompt index, at least two digits>-<SHA256 of subject id, lowercase hex>
+                validation-<Checklist item index, at least two digits>-<SHA256 of subject id, lowercase hex>
                 to keep artifact paths independent of dispatch order.
               writer_settings: >-
                 {run_dir}/{label}-claude-config/settings.json. Explicit PreToolUse
@@ -1010,8 +1112,11 @@ architecture:
               user_prompt: *user-prompt
               work_dir: *work-dir
               schema: >-
-                `{validation_schema}` for a validation turn, `{fix_schema}` for
-                a fix turn, each byte for byte.
+                `{validation_schema}` for an ordinary checklist validation turn,
+                `{build_code_fix_schema}` for a build-code plan turn, and
+                `{fix_schema}` for every other fix proposal or clarification
+                reply, each byte for byte. Structured concept protocols use
+                their declared answer forms instead.
               validation_schema: |-
                 {
                   "type": "object",
@@ -1028,6 +1133,16 @@ architecture:
                   "type": "object",
                   "properties": {
                     "fix_prompt": {"type": "string"},
+                    "cannot_fix": {
+                      "type": ["object", "null"],
+                      "description": "Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Null when fixable; only if the Specification and your permitted paths leave no way to make this fix, change nothing and return cannot_fix with nonblank reason (why) and correction (what a person must correct), fix_prompt empty and questions []; a failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.",
+                      "properties": {
+                        "reason": {"type":"string"},
+                        "correction": {"type":"string"}
+                      },
+                      "required": ["reason", "correction"],
+                      "additionalProperties": false
+                    },
                     "questions": {
                       "type": "array",
                       "items": {
@@ -1043,7 +1158,41 @@ architecture:
                       }
                     }
                   },
-                  "required": ["fix_prompt", "questions"],
+                  "required": ["fix_prompt", "questions", "cannot_fix"],
+                  "additionalProperties": false
+                }
+              build_code_fix_schema: |-
+                {
+                  "type": "object",
+                  "properties": {
+                    "fix_prompt": {"type": "string"},
+                    "impossible": {"type":"array", "items":{"type":"object", "properties":{"path":{"type":"string"}, "reason":{"type":"string"}}, "required":["path","reason"], "additionalProperties":false}},
+                    "cannot_fix": {
+                      "type": ["object", "null"],
+                      "description": "Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Null when fixable; only if the Specification and your permitted paths leave no way to make this fix, change nothing and return cannot_fix with nonblank reason (why) and correction (what a person must correct), fix_prompt empty and questions []; a failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.",
+                      "properties": {
+                        "reason": {"type":"string"},
+                        "correction": {"type":"string"}
+                      },
+                      "required": ["reason", "correction"],
+                      "additionalProperties": false
+                    },
+                    "questions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {"type": "string"},
+                          "question": {"type": "string"},
+                          "context": {"type": "string"},
+                          "options": {"type": "array", "items": {"type": "string"}}
+                        },
+                        "required": ["id", "question", "context", "options"],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": ["fix_prompt", "questions", "cannot_fix", "impossible"],
                   "additionalProperties": false
                 }
             dir: "{work_dir}"
@@ -1181,8 +1330,8 @@ architecture:
     technical: The true-bdd process under services/true-bdd, with independent IO channels as patterns.owned_io specifies.
       Text INFO+ goes to stdout; JSON DEBUG+ goes to paths.tmp_dir/true-bdd.log.json, created even without records.
   - term: command
-    technical: 'Run the engine in the prepared tree, splitting the step’s command at whitespace without shell quoting;
-      substitute {{CWD}} per argument. Supply queued stdin and the mode’s AI CLI PATH. The Scenario timeout defaults
+    technical: 'Run the engine in the prepared tree, reading its arguments under the top-level step_arguments section.
+      Supply queued stdin and the mode’s AI CLI PATH. The Scenario timeout defaults
       to five minutes. Hand completed and incomplete runs to the harness recorder before returning: run directory,
       stream paths, file changes and exit status when available. Evidence is published in true-bdd-logs/harness.json.'
   - term: project tree
@@ -1212,23 +1361,39 @@ architecture:
       changes.path or arguments.file_path/path respectively. Other failures and narration prove no denial. Warnings
       do not change turn outcomes.
   - term: pattern
-    technical: Go RE2 expression, taken verbatim as the rest of the step, including quotes. Compilation failure fails
-      the step.
-    observed_by: Every-file patterns expand {{CWD}}, {{ENGINE}}, {{GOROOT}} and {{GOMODCACHE}} to resolved runtime
-      paths. Escape as JSON string contents for .json, TOML basic strings for .toml, raw otherwise, then regex-escape.
-      ENGINE inside JSON hook commands also shell-escapes single quotes first. Lookup failures fail the step.
+    technical: A stream or file comparison argument. Its reading, scope, token expansion and escaping are declared once in the architecture document's top-level step_arguments section.
   - term: file change
     technical: Structural diff between prepared pre-run and post-command snapshots, with relative paths and created/modified/deleted
       kind. Exclude noise directories such as .git and node_modules, include tmp. Directory membership requires a
       whole path-component prefix.
   - term: checklist
-    technical: Host true-bdd/checklists/<command-stem>.yaml holds sections of validation_prompts. D Prompts precede
-      ordered Q Prompts; a failed D skips Q. scen check uses a bounded worker pool controlled by engine.scen_check_concurrency
-      (default 1), waits for all prior links before shared bindings, joins validation before serial Scenario-id-ordered
-      menus, and discards all verdicts after an apply. max_apply_attempts bounds new walks.
-  - term: Prompt
-    technical: An ordered validation_prompts entry contains Q or D, rationale, docs and optional F. A question snippet
-      must select exactly one Prompt.
+    technical: >-
+      Host true-bdd/checklists/<command-stem>.yaml holds ordered sections of validation_prompts.
+      Both walkers use written order, with no failed-code skip. Without --fix every failure is reported.
+      Under --fix an Item pauses at its first failed Q for its F and fix menu; other Items may validate
+      concurrently through engine.scen_check_concurrency (default 1), with menus in Scenario order.
+      Shared bindings wait for every Item's preceding links. Each apply invalidates shared verdicts,
+      reruns its own Q (retrying its F within max_apply_attempts), then restarts the checklist once it passes.
+      A full walk applying any fix is followed by another walk of every Item.
+  - term: Checklist item
+    technical: >-
+      A validation_prompts entry has Q with exactly one string key, prompt or code, and optional F,
+      rationale, docs and with, with the existing model tiers and skip. Parameters remain under with.
+      Legacy D, scalar Q, both options, neither option and extra Q keys refuse before any AI turn,
+      including on parked entries, naming Q: {prompt: text} and Q: {code: check} as replacements.
+      model is refused on a code Q; unknown checks, unread parameters and uncited documents refuse as before.
+      A question snippet must select exactly one Q.prompt, preserving its decoded text, rationale and F.
+  - term: cannot-fix outcome
+    technical: >-
+      An F fixes only what its Q found, receiving the question, answer, context lines and item's F text.
+      A problem its Q did not find is neither its work nor a reason for cannot_fix.
+      Any F may answer cannot_fix with reason and correction strings; a person who has not decided qualifies. The same optional mapping is accepted in a fix
+      proposal, a reply after clarification and an apply confirmation; cannot_fix excludes ordinary work.
+      Structured proposals advertise it in the answer schema, nullable for normal fixes under Codex strict required fields; other proposals and writers in their system prompt.
+      It stops the run with ErrCannotFix and the checklist section and index, reason and what a person must correct,
+      without asking for an Earlier step (a previous command of us refine, us apply, build steps, build tests, build code).
+      The existing interface_cannot_serve and impossible wire names remain instances, preserving log records,
+      edits and the build-code remaining-set rerun at plan or apply. Their original errors remain identifiable.
   - term: AI turn
     technical: Before spawning claude or codex, the router counts system and user UTF-8 bytes, including Codex assembly
       headings. engine.max_prompt_bytes is a positive integer in true-bdd.yaml, default 150000; above it PromptLimitError
@@ -1236,16 +1401,17 @@ architecture:
       Retries and fixes are measured anew; CLI-owned system/tool bytes are excluded. Replay answers the same request
       from its cassette.
   - term: AI CLI
-    technical: Resolve <cli>:<model> by splitting the first colon. Role tier precedence is Prompt model/fix_model/apply_model,
+    technical: Resolve <cli>:<model> by splitting the first colon. Role tier precedence is Checklist item model/fix_model/apply_model,
       checklist engine, then engine.default_<role>_model. Validate configured tiers and run-only overrides before
       dispatch. CLI and role are logged per turn.
   - term: fix loop
-    technical: A failed Prompt under --fix proposes a fix after any clarification. Clarification options are numbered
+    technical: A failed Checklist item under --fix proposes a fix after any clarification. Clarification options are numbered
       from 1 with 0) Other; final nonempty EOF text counts as an answer. Menu lines are [1] Apply this fix to working
       copy, [2] Refine the fix prompt, [3] Exit without applying. Accept 1/apply, 2/refine (feedback through a blank
       line), otherwise exit. Empty EOF raises a distinct person-required or menu-choice error; blank newline retains
-      interactive meaning. No advance approval or terminal detection. allowance two permits three applies; the terminal
-      apply reruns but still ends at the bound. Started build-code writer failures or missing confirmations keep edits,
+      interactive meaning. No advance approval or terminal detection. At most max_apply_attempts applies per Checklist
+      item; every apply reruns its own Q. A failed Q after the last allowed apply stops with FIX_LOOP_NOT_CONVERGING
+      before another fix prompt or apply; a passing Q restarts the checklist. Started build-code writer failures or missing confirmations keep edits,
       warn once and rerun; start failures stay fatal.
   - term: test dependencies
     technical: Fixture prep.sh runs in the assembled tree before snapshots, capped at 15 minutes. A blank script is
@@ -1253,16 +1419,12 @@ architecture:
   - term: fixture
     technical: A single-component quoted step value naming an existing <suite>/fixtures/<name>/ identifies fixture
       inputs. Read regular files outside cassettes/ without following symbolic links; unrelated fixtures are excluded.
-      Body turns receive fixture directory paths; the tool-less critique embeds contracts selected under prompt_data.
+      Body turns receive fixture directory paths. Step-verification receives no fixture files; a host-specific prerequisite must be stated in its architecture binding.
   - term: glob
-    technical: 'Use Go filepath.Match on relative paths: * and ** do not cross /; ? matches one character and brackets
-      a set. Validate syntax before matching, even for an empty diff. Created-file counts inspect only created entries.
-      Content counts require exactly one current regular file; every-file comparisons require at least one, with each
-      path confined to the tree.'
+    technical: A run-relative file-selection argument whose syntax, confinement and per-use cardinality are defined in the top-level step_arguments section. Created-file counts inspect only created diff entries.
   - term: Story
     technical: YAML under paths.stories_dir, named <id>-<slug>.yaml; story holds id, feature, title, as_a, i_want,
-      so_that, status and acceptance_criteria. A read glob must resolve to exactly one confined file with a story
-      mapping.
+      so_that, status and acceptance_criteria. Read a confined file with a story mapping; step_arguments defines the Story glob family.
   - term: Feature
     technical: The Story’s feature scalar, compared unchanged; absent means empty.
   - term: Acceptance Criterion
@@ -1288,14 +1450,16 @@ architecture:
   - term: step definition
     technical: Literal .Step(pattern, function) registrations pair whole-text regexes with func(*State, []string)
       error. Checked proposals create one concept skeleton per block/name/suite/pattern SHA256 identity, with a //truebdd:concept
-      record and pending failure. Preserve signatures/registrations while writing bodies, imports and shared State.
+      record and pending failure. Preserve signatures/registrations while writing bodies, imports and shared State;
+      code the steps share goes in the sibling helpers/ directory and is verified as part of its calling bodies.
       Missing Register/State get register.go/state.go, prefixed true_bdd_ on filename collision. Static inspection
       parses every immediate Go file and requires exactly one pattern per deterministic step, skipping model-run steps;
       parse or regex errors fail.
     observed_by: Inspect only the confined steps directory, without building it. Name every unmatched or multiply
       matched step. The red-without-target run separately rejects definitions doing product work.
   - term: test runner
-    technical: Split architecture testing.commands with shell quoting, preserving working directory and machine-output
+    technical: Read the command string (record.command for a record mapping), then split architecture testing.commands
+      with shell quoting, preserving working directory and machine-output
       requirements. Rerun remaining build-code members in one start using alternated -run, --testNamePattern or --grep
       selectors. Go <build> and Playwright <startup> force an unfiltered rerun; Jest <load> selects remaining file
       paths with --runTestsByPath. Require each member’s own success; missing/skipped ordinary members stay failing.
@@ -1356,23 +1520,18 @@ architecture:
     - file: checklists
     - file: prompt-templates
     - file: staging-files
-    - outgoing_call: claude
-    - outgoing_call: codex
     does: >-
-      Select tests/true-bdd/fixtures/<name>/ from the named project-tree Given; retain its name and
-      directory for later steps. Defer assembly until When: overlay input/ on repository true-bdd/ and
-      templates/ in tmp/test_run/<session>/<name>/, run optional fixture-root prep.sh, then snapshot. The
-      suite's -mode services value selects replay (PATH-first claude/codex programs answer from fixture
-      cassettes/; require cassettes/golden.json), record (those programs record real CLI calls; publish on
-      Scenario success), or live (real CLIs without recording). Further Givens remove an existing confined
-      path; or queue shell-quoted mkdir -p <link-directory> && ln -s <target> <link> before snapshots,
-      confining only the relative link path, preserving the target literally even outside the tree. Links
-      belong inside snapshot-excluded node_modules, .git, .next, test-results or playwright-report.
-      Checklist narrowing asserts fixture-root checklist-prompts.yaml has exactly one snippet under the
-      named checklist stem, equal to the quoted text; the harness then keeps only questions containing that
-      snippet during assembly, without the Given editing checklists. Atomic probes require nonblank
-      fixture-root prep.sh; engine-io-atomic's script makes tests/mcp/ticket_test.go mode 0600 and
-      tmp/staging-target.txt contain sentinel plus newline. Teardown runs after all Then steps.
+      Select the named tests/true-bdd/fixtures/<name>/ as the starting project tree for later steps.
+      A missing-path Given leaves out that existing confined path. A symbolic-link Given creates the
+      stated relative link with its target preserved literally, even outside the tree; the link belongs
+      inside snapshot-excluded node_modules, .git, .next, test-results or playwright-report.
+      A narrowed-checklist Given requires exactly one snippet under the named stem in the selected
+      fixture's checklist-prompts.yaml, equal to the quoted text, and keeps only the checklist questions
+      whose Q.prompt contains it in the starting tree. Apply the selection through testkit's BeforeSnapshot hook
+      after fixture input is present; preserve other checklist content. Refuse a stem not invoked by the
+      command, an input override of that checklist, or a snippet selecting no question or several.
+      Atomic probes require nonblank fixture-root prep.sh; engine-io-atomic's script makes
+      tests/mcp/ticket_test.go mode 0600 and tmp/staging-target.txt contain sentinel plus newline.
   - concept: machine environment
     block: given
     service: true-bdd
@@ -1382,9 +1541,8 @@ architecture:
     does: >-
       Change only the next command's environment. The project-tree Given identifies
       tests/true-bdd/fixtures/<name>/: dependencies require its root prep.sh nonblank, browser dependencies
-      additionally require that script to contain literal "playwright install". The harness runs it in the
-      assembled tree before snapshots to install dependencies; these Givens only verify preparation. Failed
-      downloads set GOPROXY=file://<absolute-run-root>/empty-module-proxy (an empty local source),
+      additionally require that script to contain literal "playwright install". These Givens verify the
+      declared preparation. Failed downloads set GOPROXY=file://<absolute-run-root>/empty-module-proxy (an empty local source),
       GOSUMDB=off, GONOPROXY=none and GOPRIVATE="". Git probes set GIT_DIR=/outside/nonexistent-git and
       GIT_INDEX_FILE=/outside/index, without creating either. Resolve genuine go on the step process's PATH
       before fixture programs are prepended; set TRUE_BDD_REAL_GO to that executable's absolute path for
@@ -1397,22 +1555,26 @@ architecture:
     - outgoing_call: codex
     does: >-
       Change the next command's PATH/environment. The project-tree Given selects F=absolute
-      tests/true-bdd/fixtures/<name>; R is its assembled run root. The suite reads
-      services:record/replay/live from -mode: PATH-first claude/codex proxies record real calls or replay
-      fixture cassettes/; ordinary live runs reach real CLIs directly. Controlled writer/concurrent variants
-      retain observing proxies even live. Observed Claude prepends F/claude-only before proxies in every
-      mode; set TRUE_BDD_IO_FIXTURE=F, CLAUDE_CONFIG_DIR=R/tmp/claude-state,
+      tests/true-bdd/fixtures/<name>; R is its assembled run root. Use the runtime's declared API and CLI SDK
+      to select the fixture's programs and retain their observations in every mode. Observed Claude puts
+      F/claude-only first on PATH; set TRUE_BDD_IO_FIXTURE=F, CLAUDE_CONFIG_DIR=R/tmp/claude-state,
       CLAUDECODE=fixture-parent-session, CLAUDE_HISTORY_ROLE=inherited-parent-role, CLAUDE_CODE_SAFE_MODE=1,
       CLAUDE_CODE_SIMPLE=1, CLAUDE_RELAUNCH_SESSION_ADD_DIRS=/outside/inherited and
-      CLAUDE_CODE_DISABLE_ADVISOR_TOOL=0. Controlled codex inserts F/cli immediately after proxies, sets
-      CODEX_HOME=F/auth (dummy auth.json) and TRUE_BDD_AIPROXY_WRITER_FIXTURE=F for the proxy's spawn
-      verification. Invalid link/grouping replies both insert F/input/cli after proxies, first in live; the
+      CLAUDE_CODE_DISABLE_ADVISOR_TOOL=0. Controlled codex uses F/cli as the fallback CLI and sets
+      CODEX_HOME=F/auth (dummy auth.json). Retain its spawn environment, arguments and the paths needed by
+      its Then observations through the SDK, including file contents only in fixture-controlled trees.
+      Invalid link/grouping replies use F/input/cli as the fallback CLI; the
       selected fixture's claude supplies its particular invalid answer. Accept only concept-link-malformed,
       concept-link-missing-answer, concept-link-incomplete, concept-grouping-missing,
       concept-grouping-repeat, concept-grouping-rank, concept-grouping-cap, concept-grouping-unknown or
-      concept-grouping-same; fail otherwise or if claude is absent. Cannot-serve inserts F/cli similarly,
-      requiring codex and fixture build-steps-cannot-serve. Concurrent arrival orders PATH as F/front,
-      proxies, F/cli, remaining PATH; set TRUE_BDD_CONCURRENT_PROXY to the proxy claude's absolute path.
+      concept-grouping-same; fail otherwise or if claude is absent. Cannot-serve uses F/cli as fallback,
+      requiring codex and fixture build-steps-cannot-serve. Reusing shipped State.Halve on the first apply
+      uses F/cli as fallback, requiring codex and fixture concept-bodies-extra; later applies run the
+      declared halve command without that helper. The first unused-pattern proposal uses F/cli as fallback,
+      requiring claude and fixture concept-steps-unused. Only its first pattern proposal adds a pattern
+      binding no suite step; all other turns forward unchanged to the genuine CLI outside F/cli and
+      every proxy directory. Concurrent arrival uses F/front first and F/cli
+      as fallback; set TRUE_BDD_CONCURRENT_PROXY to the observing claude's absolute path.
       Existing front launchers coordinate alpha/beta requests, alpha first in record, beta first in replay;
       the Given installs them without implementing ordering.
   - concept: scripted answers
@@ -1432,8 +1594,8 @@ architecture:
     references:
     - file: write-policy
     - command: claude-guard
-    does: 'Record the policy for When to prepare tmp/claude-guard-policy.json before snapshots. Write {"replay": P}
-      only: P.read_root is absolute tree root or empty when absent, write_roots are root-joined directories in step
+    does: 'Define the policy the guard invocation receives at tmp/claude-guard-policy.json: {"replay": P}
+      only; P.read_root is absolute tree root or empty when absent, write_roots are root-joined directories in step
       order. A granted command adds test_command, test_selector and root-joined test_dir from the three quoted values.
       Unreadable means literal invalid; missing means no file, still named by --policy.'
   - concept: tool call
@@ -1458,8 +1620,7 @@ architecture:
     - command: init
     - command: version
     does: Run the quoted command once in the prepared tree with queued stdin and {{CWD}} substitution, retaining status,
-      stdout, stderr, engine log and file changes. The role changes no execution behaviour. Register the outcome with
-      the harness recorder even when execution fails.
+      stdout, stderr, engine log and file changes even when execution fails. The role changes no execution behaviour.
   - concept: a command runs under interference
     block: when
     service: true-bdd
@@ -1501,9 +1662,12 @@ architecture:
     references:
     - command: claude-guard
     - file: write-policy
-    does: Prepare the recorded policy at tmp/claude-guard-policy.json before snapshots, except for a missing policy.
-      Run claude-guard --policy tmp/claude-guard-policy.json with the recorded JSON payload on stdin, keeping status
-      and streams. No AI turn.
+    does: >-
+      While the tree is prepared, before the run's changes are counted, write the policy the write
+      policy Given defined to tmp/claude-guard-policy.json as {"replay": P}; for an unreadable policy
+      write the literal text invalid instead; for a missing policy write no file. Then run claude-guard
+      --policy tmp/claude-guard-policy.json once, with the payload the tool call Given recorded as JSON
+      on stdin, keeping its exit status, stdout and stderr. No AI turn.
   - concept: exit code
     block: then
     service: true-bdd
@@ -1545,19 +1709,17 @@ architecture:
     - file: model-schemes
     - file: staging-files
     does: >-
-      Read confined regular files after the run. Match the rest-of-step regex in one named file; count lines with
-      a final newline closing the last; require at least one glob match and every file matching, or none matching
-      for does not match; or require one glob-matched file and count non-overlapping regex matches. Every-file patterns
-      expand {{CWD}} to the symlink-resolved run root, {{ENGINE}} to either the invoked or symlink-resolved engine
-      executable, and {{GOROOT}}/{{GOMODCACHE}} to go env -json roots. Encode paths as JSON string contents for .json,
-      TOML basic string contents for .toml, raw otherwise, then regex-escape. For ENGINE in JSON, first shell-escape
-      internal single quotes as '"'"'. Atomic replacement requires mode 0600,
+      Read confined regular files after the run. Observe pattern matches, their absence, non-overlapping match
+      counts and line counts; a final newline closes the last line. The top-level step_arguments section defines
+      how each argument is read, including glob cardinalities and the distinct ordinary and every-file patterns.
+      A two-glob alternative lets a contract used by steps appear in either steps/ or helpers/.
+      Atomic replacement requires mode 0600,
       different inode from the named old hard link, and differing content. For each Model construction rule,
       read the selected fixture root's model-expectations.yaml, outside input/ and never overlaid into the run.
       Its YAML mapping keys are complete step texts without the Given/When/Then/and/but keyword; each value has
       glob (saved user-prompt path relative to the run root), operator (matches or does not match) and pattern (regex).
-      Look up the current step verbatim; missing or invalid entries fail. Require at least one glob match and apply
-      that comparison to every matched prompt. An optional checklist field names the configured checklist stem:
+      Look up the current step verbatim; missing or invalid entries fail. Follow the top-level step_arguments
+      section's every-file argument rules for that comparison. An optional checklist field names the configured checklist stem:
       substitute regex-escaped decoded Q, rationale and F scalars into {{Q}}, {{rationale}} and {{F}} in pattern,
       preserving all whitespace; each prompt must match one Q/rationale/F triple from the same checklist entry.
       These assertions precede exit-code assertions. Model scheme is shipped compares bytes at
@@ -1577,15 +1739,25 @@ architecture:
     references:
     - file: registry
     - file: step-definitions
-    does: Read the named confined Registry as YAML. Count lineage scenario_id matches; other origin assertions require
-      exactly one and compare its Story path, key or YAML-rendered entry. Detect duplicate merged_steps by YAML equality,
-      ignoring entries without steps. For definition coverage parse immediate Go files’ literal .Step registrations
-      and require each named Scenario’s deterministic step to match exactly one pattern, excluding judge:/llm:.
+    does: >-
+      Read the named Registry, confined to the run directory, as YAML: its scenarios mapping, each entry
+      under its Scenario key. A Scenario comes from an Acceptance Criterion when one of its user_stories
+      items has scenario_id equal to that criterion. Count: the number of such Scenarios equals the
+      stated number. Cite, key and match first require exactly one such Scenario: cite holds when one of
+      its user_stories items has story equal to the stated path; key holds when its Scenario key equals
+      the stated key; match holds when the stated pattern matches its entry's value, without its key,
+      re-marshalled by gopkg.in/yaml.v3 as a top-level mapping with that library's default indentation.
+      Duplicate steps: no two Scenarios' merged_steps, each re-marshalled by the same library, are
+      equal; Scenarios without merged_steps are skipped. Definition coverage: parse the Go files
+      directly in the stated directory for Step registrations with a literal pattern; each deterministic
+      step of the named Scenario, not judge: or llm:, matches exactly one pattern.
   - concept: engine activity
     block: then
     service: true-bdd
     references:
     - file: engine-log
+    - file: configuration
+    - file: checklists
     - log_record: spawning-test-runner
     - log_record: dispatching-ai-turn
     - log_record: engine-started
@@ -1593,13 +1765,18 @@ architecture:
     - log_record: cell-validation-finished
     - log_record: check-answered
     - log_record: applying-fix
+    - log_record: fix-action
     - outgoing_call: suite-command
     does: Read tmp/true-bdd.log.json; missing fails. Inspect/count Spawning test runner by binary or regex on space-joined
       args; count Dispatching AI turn, optionally by CLI and role (validation=prompt, fix=fix, apply=apply); or require
       the first and sole Engine started record at INFO with nonempty whitespace-free version/commit. For overlap,
-      each Cell validation started follows its subject’s Check answered since the latest Applying fix prompt, never
-      names gamma, and follows its previous finish. Require two subjects outstanding simultaneously. Applying fix
-      prompt occurs with none outstanding and reads alpha then beta.
+      read the selected scen-check checklist through paths.checklists_dir in true-bdd/true-bdd.yaml; its unparked
+      Checklist items define the consecutive indices starting at 1. Track each subject’s Check answered and Cell
+      validation started indices in that order, starting at the first item. After Applying fix prompt, require that
+      subject’s last Q again immediately, then restart every subject from the first item; another apply requires
+      another recheck of its own Q. Match each model finish to its start, allowing no overlap within a subject.
+      Require two subjects outstanding simultaneously. Applying fix prompt occurs with none outstanding and reads
+      alpha then beta. Missing indices or incomplete rechecks fail; a final checklist may stop early only on a logged exit choice.
   - concept: after-run shell check
     block: then
     service: true-bdd
@@ -1622,13 +1799,86 @@ architecture:
     - outgoing_call: codex
     - file: project-tree
     does: >-
-      Inspect run-root artifacts in every services mode, read from the suite's services: value of -mode
-      (record/replay/live). Cancellation reads tmp/descendant.pid and requires no process with that PID
-      within three seconds. Writer provisioning requires tmp/aiproxy-state/writer-spawn.txt to equal
-      "fixture authentication and edit roots verified\n" and exactly one tmp/codex-homes/*/*-codex-home with
-      no auth.json. The suite's observing codex proxy, enabled by the controlled-writer Given even live,
-      writes this receipt only after checking the spawn's exact dummy-auth copy, file mode 0600, home mode
-      0700, absence of other inherited home files, protected home and deny entry, empty edit root and
-      private shell scratch. Reverse-order replay reads tmp/aiproxy-state/consumed-claude, a JSON array of
-      consumed recording names in order, requiring first name "claude-002"; record/live pass without reading
-      it.
+      Read spawn facts through the CLI SDK: Spawns(run) gives what codex received at spawn,
+      Consumed(run, "claude") the replay order, and run.Mode() the services mode; <host> is the run
+      directory with symlinks resolved. Step "started with private fixture authentication, protected
+      homes, an empty edit root and private shell scratch": exactly one codex spawn; its CODEX_HOME is a
+      real 0700 directory under <host>/tmp/codex-homes ending -codex-home, holding only auth.json and
+      config.toml, both real 0600 files; the fixture's auth/auth.json holds exactly
+      {"true_bdd_dummy_auth":"issue-210-no-credentials"} and a newline, and the home's auth.json equals
+      it byte for byte; config.toml contains the double-quoted path <host>/tmp/codex-homes, then =
+      "deny" and a newline; services/calc exists and is empty; tmp/codex-shell-home, tmp/codex-tmp and
+      tmp/codex-go-build are real 0700 directories. Step "provisioned and removed its fixture
+      authentication": after the run exactly one tmp/codex-homes/*/*-codex-home directory remains,
+      without auth.json. Step "the CLI descendant has stopped": the fixture program wrote its child's
+      PID to tmp/descendant.pid; no process with that PID exists within three seconds after the run.
+      Step "replay consumes the recorded validation requests in reverse order": in replay mode the first
+      consumed claude recording is claude-002; in record and live modes the step passes.
+
+step_arguments:
+  - name: quoted literal text
+    read: >-
+      The double quotes delimiting an argument are not part of its value. Read the characters between them
+      literally, after the containing YAML scalar has been decoded. A quote inside an undelimited regex is
+      instead part of that regex. Split a When command at whitespace without shell quoting, then replace
+      {{CWD}} in each argument with the run directory's absolute path, retaining it as one argument.
+    applies: >-
+      Quoted fixture names, answers, identifiers and command text; path arguments and patterns have their
+      own families below. {{CWD}} substitution in a When command does not extend to ordinary regexes.
+    escaping: No additional backslash or shell unescaping of quoted step values; YAML escaping belongs to the document scalar.
+  - name: regular expression
+    read: >-
+      Take the complete undelimited tail of the step, including any double quotes, as a Go RE2 expression.
+      Compile the captured text as it stands. A compilation failure fails the step.
+    applies: >-
+      Ordinary stdout and stderr comparisons, one literal file's matches tail, Story descriptions and
+      steps, Registry comparisons, test-runner argument patterns, the match-count pattern and the
+      some-file-among-two-globs pattern. The every-file pattern family below is the token-expanding exception.
+    escaping: >-
+      No token substitution, format escaping or quote removal. Regex escapes and metacharacters retain
+      their RE2 meaning; {{CWD}}, {{ENGINE}}, {{GOROOT}} and {{GOMODCACHE}} receive no special interpretation.
+  - name: every-file pattern
+    read: >-
+      Read the complete matches or does not match tail as a Go RE2 expression, including quotes. Before
+      compiling for each matched file, expand {{CWD}} to the symlink-resolved run root; {{ENGINE}} to either
+      the invoked or symlink-resolved engine executable; and {{GOROOT}}/{{GOMODCACHE}} to go env -json roots.
+      A lookup, serialization or compilation failure fails the step. No other regex family expands these tokens.
+    applies: >-
+      Every file matching a glob, for both matches and does not match, including the saved-prompt
+      comparisons selected by Model construction rules in model-expectations.yaml.
+    escaping: >-
+      For each substituted path, encode JSON string contents for .json files, TOML basic string contents
+      for .toml files (the contents of Go strconv.Quote), and the raw path otherwise; then regex-escape the encoded contents. For ENGINE in
+      a .json file, first replace internal shell single quotes with '"'"'. Alternative ENGINE paths form
+      a noncapturing regex alternation. Leave the rest of the pattern unchanged.
+  - name: glob
+    read: >-
+      A quoted glob uses Go filepath glob syntax on run-relative paths: * and ** do not cross /,
+      ? matches one non-separator character, and brackets form character classes. Story arguments must
+      resolve to exactly one file: zero and multiple matches fail. Every-file comparisons require at
+      least one file and compare every match, including for does not match. A match-count argument
+      resolves to exactly one file. A created-file count compares the matching created files with its
+      stated number, including zero. A two-glob alternative succeeds when some file in their union
+      matches; either individual glob may match nothing. Invalid globs fail even for a zero count.
+    applies: >-
+      Story arguments, every-file comparisons, the file matching a glob has a match count, created-file
+      counts, and some file matching either of two globs. These are not the literal file-path arguments.
+    escaping: >-
+      Strip the step's delimiting quotes only; no token expansion or recursive-glob extension. Content
+      reads remain confined to the run tree, including after resolving matched symbolic links.
+  - name: literal path
+    read: Read the quoted path as one exact run-relative file or directory name, without glob expansion.
+    applies: >-
+      The file is created, modified, unchanged, matches or has a line count; change-directory and
+      outside-directory assertions; named input paths and shell-command working directories.
+    escaping: >-
+      Strip the delimiting quotes only. Preserve path characters literally. A content read must stay
+      inside the run tree after cleaning and symbolic-link resolution; a literal * is not a glob.
+  - name: number
+    read: Read decimal digits as an integer; in count and exit-code slots the word no means zero.
+    applies: Counts of files, lines, matches, Acceptance Criteria, test runners and AI turns, and exit codes.
+    escaping: No quoting, token expansion or regex interpretation; a value that cannot be parsed fails the step.
+  - name: role
+    read: Read Product Owner, System Architect or Quality Engineer as the named actor of the step.
+    applies: The role running a command or supplying answers at the fix menu.
+    escaping: No token expansion or effect on execution; the role fixes who acts, while the quoted command fixes what runs.

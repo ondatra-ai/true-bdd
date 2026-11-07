@@ -1,7 +1,5 @@
-Installed the deliberate initial inversion and marker. All five isolated checks passed.
-
 === FILE_START: tmp/{{RUN_DIR}}/apply-then-result-iter1-result.yaml ===
 applied: true
 target: "tests/calc/steps/concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e.go"
-summary: "Parse the expected integer, fail on equality, pass on inequality, and create tests/calc/steps/injected."
+summary: "Parsed args[0], deliberately failed on equality, and created injected marker; package compiles in GOPATH mode. Patch tool was blocked; shell fallback succeeded. Initial module-mode check failed because go.mod was absent."
 === FILE_END: tmp/{{RUN_DIR}}/apply-then-result-iter1-result.yaml ===

@@ -135,3 +135,6 @@ func BuildCodeChecks() checks.Set[*BuildCodeItem] {
 }
 
 func buildCodeSubject(item *BuildCodeItem) (string, string) { return item.id, item.title }
+
+// SpecificationDocuments exposes the paths the planner and writer already read.
+func (item *BuildCodeItem) SpecificationDocuments() map[string]string { return item.Documents }

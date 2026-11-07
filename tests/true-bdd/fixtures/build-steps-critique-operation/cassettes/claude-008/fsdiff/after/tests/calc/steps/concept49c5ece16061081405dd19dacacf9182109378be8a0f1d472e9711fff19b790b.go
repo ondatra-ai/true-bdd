@@ -19,13 +19,13 @@ func concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b(sta
 	if err != nil {
 		var exit *exec.ExitError
 		if errors.As(err, &exit) {
-			return fmt.Errorf("double %s: %w: %s", args[0], err, exit.Stderr)
+			return fmt.Errorf("run calc double %s: %w: %s", args[0], err, exit.Stderr)
 		}
-		return fmt.Errorf("double %s: %w", args[0], err)
+		return fmt.Errorf("run calc double %s: %w", args[0], err)
 	}
 	value, err := strconv.Atoi(strings.TrimSpace(string(stdout)))
 	if err != nil {
-		return fmt.Errorf("double %s printed %q, not an integer: %w", args[0], stdout, err)
+		return fmt.Errorf("calc double %s printed %q: %w", args[0], stdout, err)
 	}
 	state.Value = value
 	return nil

@@ -17,6 +17,7 @@ Findings:
 This is the Product Owner's word repair. Propose ONLY a product glossary plus
 concept terms change, or a reworded means. No Story, Scenario or architecture
 change belongs to this fix; a Word mapping is a later System Architect menu.
+Each glossary entry's means must be one paragraph of at most three sentences, each at most 25 words.
 {{ end }}
 Required repair policy:
 {{.FailedCheck.FixPrompt}}
@@ -242,17 +243,23 @@ questions:
 {{ if .Structured }}
 **ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END
 and QUESTIONS_START/QUESTIONS_END instructions above.** Your final message
-must be a single JSON object with both keys present:
+must be a single JSON object with all three keys present:
 
-- `fix_prompt`: the fix instructions, or `""` when you need clarification.
+- `fix_prompt`: the fix instructions, or `""` otherwise.
 - `questions`: an array of `{id, question, context, options}` objects, or
-  `[]` when you are returning a fix prompt.
+  `[]` otherwise.
+- `cannot_fix`: null unless this F cannot fix what its Q found; otherwise
+  `{reason, correction}`, stating why and what a person must correct. When set,
+  `fix_prompt` is `""` and `questions` is `[]`.
 
-Exactly one of the two carries content. Do not emit any markers, and do not
+Exactly one of the three carries content. Do not emit any markers, and do not
 wrap the object in markdown fences. Reasoning before the object is ignored.
 {{ end }}
 {{ end -}}
-{{ if not (contains "was not committed" (join "\n" .FailedCheck.Context)) -}}
+{{if .StepArguments}}
+## Step arguments
+
+{{.StepArguments}}{{end}}{{ if not (contains "was not committed" (join "\n" .FailedCheck.Context)) -}}
 This host's product document records each widening as a `variations:` list on
 the widened concept and keeps that concept's `means` exactly as it reads. For
 this host, propose a widening only that way, whatever the policy above says.

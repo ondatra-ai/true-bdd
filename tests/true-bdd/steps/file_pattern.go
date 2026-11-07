@@ -3,12 +3,11 @@ package steps
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/ondatra-ai/true-bdd/pkg/cli/gotool"
 )
 
 // compileFilePattern matches serialized paths literally, including format escapes and regex metacharacters.
@@ -58,16 +57,16 @@ func filePatternPaths(state *State, pattern string) (map[string][]string, error)
 	}
 
 	if strings.Contains(pattern, "{{ENGINE}}") {
-		executable, err := filepath.EvalSymlinks(state.Harness.BinPath)
+		executable, err := filepath.EvalSymlinks(state.Result.ServiceBinary)
 		if err != nil {
 			return nil, state.fail("resolve pattern engine: %w", err)
 		}
 
-		paths["{{ENGINE}}"] = []string{state.Harness.BinPath, executable}
+		paths["{{ENGINE}}"] = []string{state.Result.ServiceBinary, executable}
 	}
 
 	if strings.Contains(pattern, "{{GOROOT}}") || strings.Contains(pattern, "{{GOMODCACHE}}") {
-		toolchain, err := gotool.Environment(state.T.Context())
+		toolchain, err := testkit.GoEnvironment(state.T.Context())
 		if err != nil {
 			return nil, state.fail("resolve pattern toolchain: %w", err)
 		}

@@ -27,6 +27,7 @@ Scenario's description or steps are rewritten.
   - `target:` — the working copy you edited (QUOTED)
   - `summary:` — one line on what changed
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -47,35 +48,19 @@ Then:
 
 ## Fix Prompt to Apply
 
-=== FILE_START: tmp/{{RUN_DIR}}/01-E2E-001-fix-prompts.md ===
 # Fix Prompt for Scenario E2E-001: The greeter must greet the person whose name it is given so that they feel welcome
 
 ## Target
-The `E2E-001` entry of the `scenarios_yaml` document (the
-scenario registry).
+The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry, conventionally `docs/scenarios.yaml`).
 
-Edit nothing else: no other Scenario, no other document. Within `E2E-001`,
-leave `service: greeter`, `path: tests/greeter/greet_test.go`,
-`user_stories: []`, the `given:` step and the `when:` step exactly as they
-stand. Do NOT touch `tests/greeter/greet_test.go` or any step definition —
-`true-bdd build tests --fix` re-renders the test from the registry once the
-entry reads correctly.
+Edit only the two fields named below inside that one entry. Leave `service:`, `path:`, `user_stories:`, the `given:` block and the `when:` block byte-for-byte as they are, and do not touch any other scenario, the generated test `tests/greeter/greet_test.go`, or any step definition. `true-bdd build tests --fix` re-renders the test from the registry afterwards.
 
 ## Why
-scen-check/scenario_quality failed: "E2E-001: subjective — 'Then step asserts
-"Ada feels welcomed by what the greeter prints" — a human emotional state
-with no stated expected output, so two reviewers can disagree on the same
-printed text'". The user settled what counts as correct: a line matching
-`^Hello Ada$` — the configured greeting, one space, the name, nothing else.
-The two changes below state that same behaviour as an outcome a reviewer
-settles by comparison, and keep the `then:` step an instance of the product
-document's `then:` concept `standard output` ("A line the command printed on
-its standard output has a match for a stated pattern, a regular
-expression.", terms: command, standard output).
+The scen-check `scenario_quality` reviewer ruled: "E2E-001: subjective — 'Then step asserts "Ada feels welcomed by what the greeter prints", an emotional reaction with no stated correct output, so a reviewer must judge whether e.g. "Hello Ada" counts as welcoming'". The user has settled what counts as correct: standard output must carry a line matching `^Hello Ada$` — the configured greeting, a space, then the name, nothing else on the line. The same behaviour is being said in words a run can settle; nothing is added or dropped.
 
 ## Required Changes
 
-### Change #1: Replace the subjective description with the printed-line one the user chose
+### Change #1: State the behaviour as printed output rather than a feeling
 **Document:** scenarios_yaml
 **Field:** description
 **Current text:**
@@ -84,52 +69,30 @@ The greeter must greet the person whose name it is given so that they feel welco
 ```
 **New text:**
 ```
-The greeter must print the configured greeting followed by the name it is given so that the Operator reads that person's name in the line it prints
+The greeter must print the configured greeting followed by the name it is given, so an Operator sees who was greeted
 ```
 
-### Change #2: Replace the emotional-state assertion with the stated output pattern
+### Change #2: Replace the subjective Then step with the standard-output assertion
 **Document:** scenarios_yaml
 **Field:** merged_steps.then
 **Current text:**
 ```
-- Ada feels welcomed by what the greeter prints
+      then:
+        - Ada feels welcomed by what the greeter prints
 ```
 **New text:**
 ```
-- the command printed a line on standard output matching "^Hello Ada$"
-```
-
-Keep `then:` a one-step list: replace the single existing step, do not append
-alongside it, and do not add an exit-code step or any other assertion — the
-Scenario asserts exactly what it asserted before, now in words a run can
-settle.
-
-## After the edit, the entry must read exactly
-```yaml
-  E2E-001:
-    description: The greeter must print the configured greeting followed by the name it is given so that the Operator reads that person's name in the line it prints
-    service: greeter
-    path: tests/greeter/greet_test.go
-    user_stories: []
-    merged_steps:
-      given:
-        - the greeting is configured as "Hello"
-      when:
-        - the Operator runs "greet Ada"
       then:
-        - the command printed a line on standard output matching "^Hello Ada$"
+        - the standard output has a line matching "^Hello Ada$"
 ```
 
-## Checks before you finish
-- No word from the product document's `vocabulary.forbidden_qualifiers`
-  (properly, correctly, appropriate, appropriately, user-friendly, fast,
-  quickly, helpful) and no forbidden action (handle, process, parse) appears
-  in the new description or step.
-- The new `then:` step reads as the `standard output` concept's `means`: one
-  line the command printed, matched against one stated regular expression.
-- `metadata:` and every key of the entry other than `description` and
-  `merged_steps.then` are byte-identical to before.
-=== FILE_END: tmp/{{RUN_DIR}}/01-E2E-001-fix-prompts.md ===
+The `then:` block keeps exactly one step — replace the single existing step; add no second step and no exit-code step.
+
+## Checks on the result
+- The new Then step is an instance of the product document's `then` concept `standard output` — "A line the command printed on its standard output has a match for a stated pattern, a regular expression" — with the pattern stated literally as `^Hello Ada$`. The `given` step stays an instance of `configured greeting` and the `when` step an instance of `a role runs a command`; neither is edited.
+- Neither new wording uses a word from the product document's `vocabulary.forbidden_qualifiers` (properly, correctly, appropriate, appropriately, user-friendly, fast, quickly, helpful) or `vocabulary.forbidden_actions` (handle, process, parse); "print" names the observable action.
+- The pattern must be written in double quotes exactly as `"^Hello Ada$"` so YAML keeps `^` and `$` as literal regex anchors.
+- The entry still validates against `true-bdd/scenarios_yaml-schema.yaml`: `description`, `service`, `path`, `user_stories`, `merged_steps` all present and unchanged in shape.
 
 ---
 

@@ -70,10 +70,9 @@ func wordsSchema(linked map[string]product.Concept) (string, error) {
 	for key := range linked {
 		properties[key] = requiredObject(answerSchema{
 			"undeclared_words": answerSchema{
-				schemaType: "array", "items": answerSchema{schemaType: schemaString, schemaMinLength: 1},
-				"uniqueItems": true,
+				schemaType: "array", "items": answerSchema{schemaType: schemaString},
 			},
-			schemaReason: answerSchema{schemaType: schemaString, schemaMinLength: 1},
+			schemaReason: answerSchema{schemaType: schemaString},
 		})
 	}
 

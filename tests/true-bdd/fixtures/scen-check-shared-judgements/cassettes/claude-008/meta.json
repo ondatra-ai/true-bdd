@@ -20,17 +20,17 @@
     "stream-json",
     "--verbose",
     "--json-schema",
-    "{\"additionalProperties\":false,\"properties\":{\"concepts\":{\"additionalProperties\":false,\"properties\":{\"when:halve\":{\"additionalProperties\":false,\"properties\":{\"reason\":{\"minLength\":1,\"type\":\"string\"},\"undeclared_words\":{\"items\":{\"minLength\":1,\"type\":\"string\"},\"type\":\"array\",\"uniqueItems\":true}},\"required\":[\"reason\",\"undeclared_words\"],\"type\":\"object\"}},\"required\":[\"when:halve\"],\"type\":\"object\"}},\"required\":[\"concepts\"],\"type\":\"object\"}",
+    "{\"additionalProperties\":false,\"properties\":{\"concepts\":{\"additionalProperties\":false,\"properties\":{\"when:halve\":{\"additionalProperties\":false,\"properties\":{\"reason\":{\"type\":\"string\"},\"undeclared_words\":{\"items\":{\"type\":\"string\"},\"type\":\"array\"}},\"required\":[\"reason\",\"undeclared_words\"],\"type\":\"object\"}},\"required\":[\"when:halve\"],\"type\":\"object\"}},\"required\":[\"concepts\"],\"type\":\"object\"}",
     "-p",
     "{\n  \"product\": \"roles:\\n  - name: Product Owner\\n    description: Owns meanings.\\nconcepts:\\n  given:\\n    - concept: number ready\\n      means: A number is entered before the action.\\n      terms: []\\n  when:\\n    - concept: halve\\n      means: Halve the entered number once.\\n      terms: []\\n  then:\\n    - concept: number result\\n      means: Compare the displayed number with an expected value.\\n      terms: []\\nglossary: []\\ndescription: A calculator accepts a number and halves it.\\n\",\n  \"concepts\": {\n    \"when:halve\": {\n      \"Name\": \"halve\",\n      \"Means\": \"Halve the entered number once.\",\n      \"Terms\": [],\n      \"Block\": \"when\"\n    }\n  }\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 6893,
-  "request_hash": "sha256:94ff00b0f85920bf4e856b4cda0587a2b9166992dd6b56afddd95051ea53cfc5",
+  "duration_ms": 6758,
+  "request_hash": "sha256:3648212a9196c63ac66c5203bd1fa181285520eb051a8ec3621cabf2cdc13cbd",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-11-02T16:11:29Z"
+  "recorded_at": "2026-11-05T17:16:11Z"
 }

@@ -5,32 +5,43 @@ Edit only the listed working copies. Preserve every unaffected entry.
 For a Story step rewrite, return the complete Story YAML instead of editing
 a document. For document edits return the requested confirmation markers.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
 The Product Owner chose apply at the menu for Story host.
 Approved fix:
-Repair for failed judgement — Item: host (Story), AC-1 "when" step.
+# Proposed repair — Item `host` (awaiting menu apply)
 
-OWNER: Product Owner (Story wording rewrite only). No concept change, no binding change.
+**Failed judgement:** AC-1 when step "square six" — no `when` concept reaches the threshold (best: `halve`, score 1 of 9).
 
-WHY A REWRITE, NOT A CONCEPT CHANGE
-The only failing step is the "when" step "square six". Its kind of use is correct (an action step in the when block), but the operation named is squaring. The product document states: "The calculator offers one operation, Halve, which displays half the entered number. It has no Square operation." So squaring is not an item of the Public interface at all, and the existing concept "halve" ("Halve the entered number once.") must not be widened to admit it, nor may a new "square" concept be added for an operation the product does not offer. Everything else in the Story already describes halving: title "Halve a number", i_want "to halve a number", so_that "I can read its half", AC-1 "The number must be halved", given "six is entered", then "three is displayed" (three is half of six). The step text is the defect; the Story's intent is halving.
+**Diagnosis:** The product states the calculator offers one operation, Halve, and *has no Square operation*. There is therefore no Public interface item "Square" and no existing kind of use for squaring, so neither widening a concept nor adding a new concept is warranted — a `square` concept would assert an operation the product denies. The Story's own title ("Halve a number"), `i_want` ("to halve a number"), `so_that` ("I can read its half") and AC-1 description ("The number must be halved"), together with the then step "three is displayed" (three being half of six), all show the intended action is halving. The word "square" is a wording slip in the step.
 
-EXACT CHANGE — apply only to the Item (Story `host`), AC-1, when block
+**Owner of this change:** Product Owner (Story wording).
 
-File: the Story `host` (no change to ./docs/product/product.yaml)
+**Change 1 of 1 — rewrite the when step in the Story `host`, AC-1.**
 
-Replace:
+Target: Item `host`, acceptance criterion `AC-1`, the single `when` step.
+
+Before:
+
+```yaml
         - when:
             - square six
+```
 
-With:
+After:
+
+```yaml
         - when:
             - halve six
+```
 
-Resulting Story after apply (unaffected fields and steps preserved verbatim):
+The rewritten step reads as a plain instance of the existing `when` concept `halve` ("Halve the entered number once."): it is an action on the calculator that halves the entered number exactly once.
 
+**Resulting Story after the change** (all other fields and steps unchanged):
+
+```yaml
 id: host
 title: Halve a number
 as_a: Product Owner
@@ -47,15 +58,11 @@ acceptance_criteria:
             - halve six
         - then:
             - three is displayed
+```
 
-EFFECT ON JUDGEMENT
-- AC-1 given "six is entered" — unchanged; stays linked to "number ready".
-- AC-1 when "halve six" — becomes a plain instance of the existing concept "halve" ("Halve the entered number once."): a single halving of the entered number, scoring at or above the threshold of 9.
-- AC-1 then "three is displayed" — unchanged; stays linked to "number result".
+**No change to `docs/product/product.yaml`.** The concepts `number ready`, `halve` and `number result` stay exactly as written; the given step "six is entered" and the then step "three is displayed" stay exactly as written, both already linked above threshold.
 
-CONCEPTS: unchanged. ./docs/product/product.yaml is not modified — "number ready", "halve" and "number result" keep their current concept, means and terms.
-
-Nothing has been applied. Awaiting an explicit menu decision from the Product Owner.
+**Apply:** requires an explicit menu decision. Nothing has been changed.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

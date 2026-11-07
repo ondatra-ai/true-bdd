@@ -65,6 +65,7 @@ acceptance_criteria:
 - The `description` must NEVER contain Given/When/Then — those belong
   in `steps`.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -99,7 +100,7 @@ Claude must state that only the first 10000 words were summarized when the docum
 # Fix Prompt for Story 97.2: Document Summary On Demand
 
 ## Instructions
-Apply the following changes to the acceptance criteria for this story. Only ONE acceptance criterion changes (AC-3), and only its `description` field. AC-1, AC-2 and AC-4 are reproduced unchanged — do not edit them.
+Apply the following changes to the acceptance criteria for this story.
 
 ## Original Acceptance Criteria
 1. AC-1: Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc. [has steps]
@@ -109,70 +110,82 @@ Apply the following changes to the acceptance criteria for this story. Only ONE 
 
 ## Required Changes
 
-Change ONLY what the failed check requires: remove the forbidden qualifier `properly` from the AC-3 description. Every other criterion — and every existing step, including all of AC-3's steps — is reproduced exactly as it stands, word for word.
+Only AC-3 is faulted by the failed check (`us-refine/acceptance_criteria` — forbidden qualifier in the description). AC-1, AC-2, and AC-4 contain no forbidden qualifiers from the product document's `vocabulary.forbidden_qualifiers` list (properly, correctly, appropriate, appropriately, user-friendly, fast, quickly, easily, seamless, intuitive) and are reproduced below exactly as they stand — same description, same steps, word for word. Do not edit them.
 
 ### Change #1: AC-3
-**Before:** "Claude must properly display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds."
+**Before:** Claude must properly display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.
 
-**Issue:** The description contains the forbidden qualifier `properly` from the product document's `vocabulary.forbidden_qualifiers` list. `properly` is unmeasurable — it states no observable output that distinguishes a pass from a fail. The exact message string and the 30-second bound already supply the objective, testable criteria, so the qualifier adds only ambiguity.
+**Issue:** The description contains the forbidden qualifier 'properly'. The word is not objectively testable — it does not state what observable outcome distinguishes a correct display from an incorrect one. All of the testable meaning is already carried by the exact message string and the 30-second bound, so the qualifier is deleted rather than elaborated. The description is also made explicit about where the message appears (in the conversation) and what starts the 30-second window (the Claude User asking for a summary), using the exact role from the story's `as_a` clause ("Claude User").
 
-**After (description):** "Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds of the Claude User's request."
+**After (description):** Claude must display the message 'The summary timed out - please try again' in the conversation when no summary is produced within 30 seconds of the Claude User asking for a summary.
 
-**After (steps):** UNCHANGED — keep AC-3's four existing steps exactly as they are. They contain no forbidden qualifiers and already carry Given/Given/When/Then with the exact message text and the numeric 30-second bound.
-
+**After (steps):** unchanged from the current story file — the existing Given/When/Then is already correct and contains no forbidden qualifiers, so it is reproduced verbatim:
 ```yaml
-- given: "a Google Doc is shared with the Claude User's account"
-- given: "the summary backend does not respond within 30 seconds"
-- when: "the Claude User asks Claude to summarize the document"
-- then: "Claude displays the message 'The summary timed out - please try again'"
+- given:
+    - "a Google Doc is shared with the Claude User's account"
+    - "the summary backend does not respond within 30 seconds"
+  when:
+    - "the Claude User asks Claude to summarize the document"
+  then:
+    - "Claude displays the message 'The summary timed out - please try again'"
 ```
 
-### No other changes
-- **AC-1** — description contains no forbidden qualifier. Leave description and steps untouched.
-- **AC-2** — description contains no forbidden qualifier. Leave description and steps untouched.
-- **AC-4** — description contains no forbidden qualifier. Leave description and steps untouched.
-- **No new ACs added, none merged, none removed.** The four ACs cover four distinct behaviours (happy-path summary, no-access error, timeout, over-length truncation) with no overlap.
-- Role wording stays exactly "Claude User" (the story's `as_a` clause) everywhere.
+No new acceptance criteria are added, none are merged, and none are removed: AC-1 (summary of an accessible doc), AC-2 (inaccessible doc), AC-3 (timeout), and AC-4 (over-length truncation) each describe a distinct trigger and a distinct observable outcome.
 
 ## Complete Fixed Acceptance Criteria
-
-This block replaces the whole acceptance-criteria list.
 
 ```yaml
 - ac_id: AC-1
   description: "Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc."
   steps:
-    - given: "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
-    - when: "the Claude User asks Claude to summarize the document"
-    - then: "Claude displays a summary of 150 words or fewer in the conversation"
-    - and_then: "the summary names the document title"
+    - given:
+        - "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
+      when:
+        - "the Claude User asks Claude to summarize the document"
+      then:
+        - "Claude displays a summary of 150 words or fewer in the conversation"
+        - and: "the summary names the document title"
 
 - ac_id: AC-2
   description: "Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access."
   steps:
-    - given: "a Google Doc exists that is not shared with the Claude User's account"
-    - when: "the Claude User asks Claude to summarize that document"
-    - then: "Claude displays the message 'This document is not shared with your account'"
-    - and_then: "Claude does not display any content from the document"
+    - given:
+        - "a Google Doc exists that is not shared with the Claude User's account"
+      when:
+        - "the Claude User asks Claude to summarize that document"
+      then:
+        - "Claude displays the message 'This document is not shared with your account'"
+        - and: "Claude does not display any content from the document"
 
 - ac_id: AC-3
-  description: "Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds of the Claude User's request."
+  description: "Claude must display the message 'The summary timed out - please try again' in the conversation when no summary is produced within 30 seconds of the Claude User asking for a summary."
   steps:
-    - given: "a Google Doc is shared with the Claude User's account"
-    - given: "the summary backend does not respond within 30 seconds"
-    - when: "the Claude User asks Claude to summarize the document"
-    - then: "Claude displays the message 'The summary timed out - please try again'"
+    - given:
+        - "a Google Doc is shared with the Claude User's account"
+        - "the summary backend does not respond within 30 seconds"
+      when:
+        - "the Claude User asks Claude to summarize the document"
+      then:
+        - "Claude displays the message 'The summary timed out - please try again'"
 
 - ac_id: AC-4
   description: "Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words."
   steps:
-    - given: "a Google Doc with more than 10000 words is shared with the Claude User's account"
-    - when: "the Claude User asks Claude to summarize the document"
-    - then: "Claude displays a summary of the first 10000 words"
-    - and_then: "Claude states that only the first 10000 words were summarized"
+    - given:
+        - "a Google Doc with more than 10000 words is shared with the Claude User's account"
+      when:
+        - "the Claude User asks Claude to summarize the document"
+      then:
+        - "Claude displays a summary of the first 10000 words"
+        - and: "Claude states that only the first 10000 words were summarized"
 ```
 
-Note on the `and_then` keys in AC-1, AC-2 and AC-4: these represent the second `then` steps already marked "(and)" in the existing story file. Keep whatever continuation key the story file already uses for them — do not change the step structure of these three criteria while applying the AC-3 description fix.
+## Verification
+After applying, re-check each description against `vocabulary.forbidden_qualifiers` in `docs/product/product.yaml`:
+- AC-1: ok
+- AC-2: ok
+- AC-3: ok (qualifier 'properly' removed)
+- AC-4: ok
 
 ---
 

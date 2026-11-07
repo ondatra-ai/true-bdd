@@ -1,1 +1,1 @@
-Changed only A in services/calc/calc.go to return 1. B remains returning 0, completing the required stage.
+Changed only A in services/calc/calc.go to return 1, leaving B returning 0 as required. TestA passes; TestB still fails, as expected for this stage. Sandbox restrictions blocked two editing tools; the shell edit succeeded.

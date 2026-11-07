@@ -1,6 +1,5 @@
-// Package testkit owns the BDD harness: suite bring-up, Scenario runs,
-// AI CLI modes, recordings and grading. Suite wiring supplies definitions
-// and its State constructor; definitions use ScenarioRun.
+// Package testkit supplies the generic BDD harness that runs a suite's definitions over Scenario fixtures and
+// recorded dependencies.
 package testkit
 
 import (
@@ -10,12 +9,14 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit/internal/runner"
 )
 
 // Flags are the harness options registered on a test binary's flag set.
 type Flags struct {
-	Mode      string
+	// Mode selects record, replay or live independently for services and tests.
+	Mode string
+	// EngineBin overrides the service with an absolute executable path.
 	EngineBin string
 }
 

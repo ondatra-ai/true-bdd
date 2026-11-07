@@ -2,65 +2,79 @@ package commands
 
 import (
 	"fmt"
-	"path/filepath"
-	"strings"
 
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/disk"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/verification"
 	"gopkg.in/yaml.v3"
 )
 
-// critiqueContext embeds the semantic core and fixture contracts used by source or bound steps.
+// critiqueContext supplies complete referenced evidence units, with no fixture files or provenance corpus.
 func critiqueContext(item *BuildStepsItem, sources string) (string, error) {
 	var evidence conceptItemContext
 
 	err := yaml.Unmarshal([]byte(item.Context), &evidence)
 	if err != nil {
-		return "", fmt.Errorf("read critique context: %w", err)
+		return "", fmt.Errorf("read verification context: %w", err)
 	}
 
-	evidence.Registry = ""
-	for index := range evidence.Fixtures {
-		fixture := &evidence.Fixtures[index]
+	evidence.Registry, evidence.FixtureRoot = "", ""
+	evidence.Scenarios, evidence.Fixtures = nil, nil
 
-		files, err := fixtureInputs(filepath.Join(evidence.FixtureRoot, fixture.Fixture))
+	selected, err := selectedRuntimeAPI(evidence.RuntimeAPI, sources)
+	if err != nil {
+		return "", err
+	}
+
+	evidence.RuntimeAPI = selected
+
+	origin := ""
+	if evidence.Interface != nil {
+		origin = evidence.Interface.Document
+	}
+
+	document, err := verification.InterfaceEntries(evidence.Document, evidence.Binding.References, origin)
+	if err != nil {
+		return "", err
+	}
+
+	evidence.Document = document
+	for index := range evidence.Definitions {
+		definition := &evidence.Definitions[index]
+
+		texts := make([]string, 0, len(definition.Steps))
+		for _, step := range definition.Steps {
+			texts = append(texts, step.Text)
+		}
+
+		definition.Forms, err = verification.Forms(definition.Pattern, texts)
 		if err != nil {
 			return "", err
 		}
 
-		for _, file := range files {
-			if usedFixtureContract(file.Path, sources, evidence.Definitions) {
-				fixture.Files = append(fixture.Files, file)
-			}
-		}
+		definition.Steps = nil
 	}
 
 	rendered, err := yaml.Marshal(evidence)
 	if err != nil {
-		return "", fmt.Errorf("render critique context: %w", err)
+		return "", fmt.Errorf("render verification context: %w", err)
 	}
 
 	return string(rendered), nil
 }
 
-func usedFixtureContract(path, sources string, definitions []conceptDefinitionContext) bool {
-	name := filepath.Base(path)
-	switch name {
-	case "prep.sh", "teardown.sh", "checklist-prompts.yaml":
-		return true
-	}
+func selectedRuntimeAPI(paths map[string]string, sources string) (map[string]string, error) {
+	selected := make(map[string]string)
 
-	if strings.Contains(sources, name) {
-		return true
-	}
+	for imported, path := range paths {
+		documentation, err := disk.Read(path)
+		if err != nil {
+			return nil, fmt.Errorf("read Go documentation for %s: %w", imported, err)
+		}
 
-	for _, definition := range definitions {
-		for _, step := range definition.Steps {
-			for _, capture := range step.Captures {
-				if capture != "" && (strings.HasSuffix(path, "/"+capture) || name == capture) {
-					return true
-				}
-			}
+		if declarations := verification.RuntimeDocumentation(string(documentation), sources); declarations != "" {
+			selected[imported] = declarations
 		}
 	}
 
-	return false
+	return selected, nil
 }

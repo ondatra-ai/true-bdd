@@ -2,10 +2,10 @@ package steps
 
 import (
 	"fmt"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 	"regexp"
 	"sort"
 
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"gopkg.in/yaml.v3"
 )
 
@@ -73,7 +73,7 @@ func loadRegistryScenarios(state *State, registryRel string) (map[string]yaml.No
 		return nil, containErr
 	}
 
-	data, err := disk.Read(full)
+	data, err := testkit.Read(full)
 	if err != nil {
 		return nil, state.fail("reading registry %q: %w", registryRel, err)
 	}

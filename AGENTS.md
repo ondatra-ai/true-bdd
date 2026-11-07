@@ -1,14 +1,15 @@
 # TrueBDD
 
-TrueBDD (binary `true-bdd`) is a Go CLI that generates a host project's steps, then its tests, then its code from its specification documents, through Claude-mediated checklists; it tests nothing. Before you plan or change that pipeline or the test runtime, read `.claude/rules/generation.md`. This repository is the engine, not a host project: its own `true-bdd/` and `docs/` are the seed the BDD fixtures run against. `README.md` carries the vision and the configuration reference; `GLOSSARY.md` the domain words.
+TrueBDD (binary `true-bdd`) is a Go CLI that generates a host project's steps, then its tests, then its code from its specification documents, through Claude-mediated checklists; it tests nothing. Before you plan or change a command, its checklist or the test runtime, read `.claude/rules/generation.md`. This repository is the engine, not a host project: its own `true-bdd/` and `docs/` are the seed the BDD fixtures run against. `README.md` carries the vision and the configuration reference; `GLOSSARY.md` the domain words.
 
 ## Layout
 
-The repository has three Go modules: the root (tests and scripts), `pkg/` (shared libraries), and `services/true-bdd/` (the engine). The root replaces `github.com/ondatra-ai/true-bdd/pkg` with `./pkg` for development; the engine has no local replacements. Go lives in four roots, and `.alint.yml` (`go-known-roots`) refuses a fifth:
+The repository has four Go modules: the root (tests and scripts), `pkg/` (shared libraries), `services/true-bdd/` (the engine), and `utilities/` (stand-in binaries). The root replaces `github.com/ondatra-ai/true-bdd/pkg` with `./pkg` for development; the engine has no local replacements. Go lives in five roots, and `.alint.yml` (`go-known-roots`) refuses a sixth:
 
 - `services/true-bdd/`: the engine, all product code including its own IO channels and typed CLI wrappers under `internal/infrastructure/`. It imports no repository code outside this folder.
 - `tests/true-bdd/`: what exercises it: generated scenario tests, `steps/` definitions, and `fixtures/` with their recorded cassettes.
 - `scripts/`: this repository's own tooling, run as `go run ./scripts/cmd/<name>`.
+- `utilities/`: reusable stand-in binaries; `cliproxy/` is built and installed by the SDK in `pkg/proxy/cli` from the same commit as the host's `pkg`.
 - `pkg/`: what the tests and tooling share, their IO channels and `pkg/testkit/` (the BDD harness). A new package under it needs an ADR and an entry in `.alint.yml` (`pkg-is-the-declared-channels`). A wrapper only the engine spawns lives in the engine, under `services/true-bdd/internal/infrastructure/cli/`, so a rebuild regenerates it.
 
 Beside them: `docs/` holds the specification documents (`docs/scenarios.yaml` is the Registry the BDD suite is generated from), `true-bdd/` the engine's config, checklists and schemas, `templates/` the prompt templates, and `tmp/` gitignored scratch, BDD run dirs among it. Session-temporary files go in `./tmp/`.
@@ -17,7 +18,7 @@ Beside them: `docs/` holds the specification documents (`docs/scenarios.yaml` is
 
 Before you create or edit a file, read every `.claude/rules/*.md` whose `paths:` front matter matches its path, and follow it: each is the contract its area's gates enforce.
 
-In engine code, every necessary AI turn receives complete evidence within the configured prompt byte limit. Embed the semantic core; read-enabled body turns get the Registry, Scenario keys and fixture directories by path, and binding judgements get the complete product document by path. Tool-less critiques embed evidence filtered by use. Do not use digests, compact payloads, truncate required evidence, skip critique or reduce reasoning effort to fit. Refuse an oversized prompt distinctly. This governs runtime turns, not how much code you write.
+In engine code, every necessary AI turn receives complete evidence within the configured prompt byte limit. Embed the semantic core; read-enabled body turns get the Registry, Scenario keys and fixture directories by path, and binding judgements get the complete product document by path. The tool-less step-verification Checklist item receives complete referenced source and API declarations, its semantic core, any declared step_arguments section and step forms with complete examples; no fixture files. Do not use digests, compact payloads, truncate required evidence, skip verification or reduce reasoning effort to fit. Refuse an oversized prompt distinctly. This governs runtime turns, not how much code you write.
 
 ## Checks
 
@@ -26,7 +27,7 @@ Claude Code lints every file it writes through a hook; any other agent runs the 
 - After editing: `go run ./scripts/cmd/alint <path>...` over the files you changed. It applies every fix it has and reports what needs a real edit; a Go finding may sit in a sibling file of the same package. Fix them all.
 - Before you finish: `go run ./scripts/cmd/gates run --changed main` runs the gates your diff needs. CI runs all of them, and the pre-commit hook runs `--staged`.
 - When you touch `services/`, `pkg/testkit/` or `tests/`: `GOWORK=off go test -tags bdd ./tests/true-bdd/ -mode=services:replay,tests:replay` replays every scenario offline in well under a minute. No gate runs it.
-- Module checks: from each of `.`, `pkg/` and `services/true-bdd/`, run `GOWORK=off go build ./...` and `GOWORK=off go test ./...`; root `./...` excludes nested modules. `go run ./scripts/cmd/gates build` and `go run ./scripts/cmd/gates test` cover all three.
+- Module checks: from each of `.`, `pkg/`, `services/true-bdd/` and `utilities/`, run `GOWORK=off go build ./...` and `GOWORK=off go test ./...`; root `./...` excludes nested modules. `go run ./scripts/cmd/gates build` and `go run ./scripts/cmd/gates test` cover all four.
 - Build: `GOWORK=off go -C services/true-bdd build -o ../../bin/true-bdd .`. Give every single-command `go build` an `-o ./bin/<name>`, since without it Go writes the binary into the current directory; to only compile-check, run `go build ./...`, which writes nothing.
 
 ## Hard rules

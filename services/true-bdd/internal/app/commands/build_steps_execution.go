@@ -8,8 +8,8 @@ import (
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/checks"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/engine"
-	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/scenariogen"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/stepskeleton"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/validate"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/runner"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/testrunner"
 )
@@ -18,21 +18,18 @@ import (
 var ErrBuildStepsNotConverged = errors.New("step definitions still incomplete after fix walk")
 
 type buildStepsExecution struct {
+	verification     map[*BuildStepsItem][]validate.CritiqueFinding
+	fixItems         map[*BuildStepsItem]*BuildStepsItem
+	allowedFunctions []string
+	runtimeAPI       map[string]string
 	readRoots        []string
 	deps             BuildStepsDeps
 	registryFile     string
 	architectureFile string
-	command          testrunner.Config
 	compiler         *testrunner.GoTestRunner
 	shape            string
 	active           *BuildStepsItem
-	plan             *scenariogen.Plan
-	items            []*BuildStepsItem
 	attempts         map[*BuildStepsItem]int
-	maxAttempts      int
-	critiqueTier     string
-	redChecked       bool
-	green            []string
 	concepts         *conceptRun
 }
 
@@ -49,10 +46,14 @@ func runBuildStepsFix(ctx context.Context, deps BuildStepsDeps, registryFile, ar
 		Name: "build steps", ChecklistName: buildStepsChecklistName, Fix: true, ConfineClaudeWriter: true,
 		OmitConceptJudgements: true, PromptsLogged: true, LoadItems: execution.prepareConcepts,
 		BeforeEvaluate: execution.beforeEvaluate,
-		PostFix:        execution.postFix, PostNotApplied: execution.postNotApplied,
+		GenerateFix: execution.generatePatternFix, ApplyFix: execution.applyPatternFix,
+ AnswerPrompt:   execution.answerVerification, FixSubject: execution.fixSubject, BeforeApply: execution.beforeApply,
+		PostFix: execution.postFix, PostNotApplied: execution.postNotApplied,
 		Finalize: execution.finalize, CheckConvergence: execution.checkConvergence,
 		GetSubject: func(item *BuildStepsItem) (string, string) { return item.subjectID, item.Label() },
-		Checks:     checks.Set[*BuildStepsItem]{"step-coverage": {Run: stepBodyVerdict}},
+		Checks: checks.Set[*BuildStepsItem]{
+ stepCoverageID: {Run: stepBodyVerdict}, patternBindingsID: {Run: execution.patternBindings},
+ },
 
 		Evaluator: deps.Evaluator, FixGenerator: deps.FixGenerator, FixApplier: deps.FixApplier,
 		ChecklistLoader: deps.ChecklistLoader, DocResolver: deps.DocResolver, Renderer: deps.TableRenderer,
@@ -70,19 +71,17 @@ func (e *buildStepsExecution) beforeEvaluate(_ context.Context, item *BuildSteps
 		return false, fmt.Errorf("read the shape of %s before its apply: %w", item.Label(), err)
 	}
 
-	e.active, e.shape = item, shape
+	e.active, e.shape, e.allowedFunctions = item, shape, item.functions()
 
 	return false, nil
 }
 
-func (e *buildStepsExecution) postFix(ctx context.Context, item *BuildStepsItem, _ string) (*BuildStepsItem, error) {
-	e.redChecked = false
+func (e *buildStepsExecution) postFix(_ context.Context, item *BuildStepsItem, _ string) (*BuildStepsItem, error) {
 	e.attempts[item]++
 	item.Findings = nil
 
 	findings := append(append([]error{
-		e.compiler.CompileDefinitions(e.command),
-		VerifyGeneratedTests(e.plan, "."),
+		e.compiler.CompileDefinitions([]string{item.Suite}),
 		e.preserveOtherBodies(item),
 	}, definitionFindings(item)...), conceptDefinitionBinding(item), conceptRecorded(item))
 
@@ -90,29 +89,6 @@ func (e *buildStepsExecution) postFix(ctx context.Context, item *BuildStepsItem,
 		if finding != nil {
 			item.Findings = append(item.Findings, finding.Error())
 		}
-	}
-
-	// The critique reads only a body that compiles, binds and is written:
-	// one that fails those checks already returns to the Fix loop.
-	if len(item.Findings) == 0 {
-		findings, err := e.critique(ctx, item)
-		if err != nil {
-			return item, err
-		}
-
-		err = e.applyCritique(ctx, item, findings)
-		if err != nil {
-			return item, err
-		}
-	}
-
-	if e.attempts[item] > e.maxAttempts {
-		failure := ErrBuildStepsNotConverged
-		if len(e.green) > 0 {
-			failure = ErrScenarioGreen
-		}
-
-		return item, fmt.Errorf("%w: %s", failure, item.Label())
 	}
 
 	slog.Info("Step body checked", "concept", item.Label(), "findings", item.Findings)
@@ -131,13 +107,13 @@ func definitionFindings(item *BuildStepsItem) []error {
 }
 
 func (e *buildStepsExecution) preserveOtherBodies(item *BuildStepsItem) error {
-	shape, err := stepskeleton.Shape(item.Suite, item.functions()...)
+	shape, err := stepskeleton.Shape(item.Suite, e.allowedFunctions...)
 	if err != nil {
 		return err
 	}
 
 	if shape != e.shape {
-		return fmt.Errorf("%w: only the selected body, imports and State may change; "+
+		return fmt.Errorf("%w: only the selected bodies, imports, State and helpers/ may change; "+
 			"remove added package declarations and restore other bodies", stepskeleton.ErrSkeletonChanged)
 	}
 
@@ -152,14 +128,6 @@ func (e *buildStepsExecution) finalize(result *engine.Result[*BuildStepsItem]) e
 	if result.Reason != engine.Converged || !result.AllPassed {
 		slog.Error("Step definition walk did not converge", "reason", result.Reason)
 
-		if len(e.green) > 0 {
-			return fmt.Errorf("%w: %v", ErrScenarioGreen, e.green)
-		}
-
-		return ErrBuildStepsNotConverged
-	}
-
-	if !e.redChecked {
 		return ErrBuildStepsNotConverged
 	}
 

@@ -24,9 +24,9 @@ glossary:
       are both behaviour.
   - term: latency
     means: >-
-      The time from a client sending a message to its reply arriving, as
-      the client clock measures it. A larger latency means a slower
-      reply.
+      The time between a client sending a message and that message's
+      reply arriving back at the client. The client clock measures it, so
+      no other timer decides whether a reply was slow.
 
 concepts:
   given:

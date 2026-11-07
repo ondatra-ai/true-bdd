@@ -10,26 +10,20 @@ import (
 
 //truebdd:concept when "halving"
 func concept9d6e5581dfa811cf4e3a8cc944e187fb33e1289b93c5e58b45730bc9c8c3d3bb(state *State, args []string) error {
-	number := args[0]
-
-	cmd := exec.Command("go", "run", "./services/calc", "halve", number)
+	cmd := exec.Command("go", "run", "./services/calc", "halve", args[0])
 	cmd.Dir = "../.."
-
 	out, err := cmd.Output()
 	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) && len(exitErr.Stderr) > 0 {
-			return fmt.Errorf("halve %s: %w: %s", number, err, strings.TrimSpace(string(exitErr.Stderr)))
+		var exit *exec.ExitError
+		if errors.As(err, &exit) {
+			return fmt.Errorf("halve %s: %w: %s", args[0], err, strings.TrimSpace(string(exit.Stderr)))
 		}
-		return fmt.Errorf("halve %s: %w", number, err)
+		return fmt.Errorf("halve %s: %w", args[0], err)
 	}
-
-	stdout := strings.TrimSpace(string(out))
-	halved, err := strconv.Atoi(stdout)
+	result, err := strconv.Atoi(strings.TrimSpace(string(out)))
 	if err != nil {
-		return fmt.Errorf("halve %s: stdout %q is not an integer: %w", number, stdout, err)
+		return fmt.Errorf("halve %s: stdout %q is not an integer: %w", args[0], string(out), err)
 	}
-
-	state.Result = halved
+	state.Result = result
 	return nil
 }

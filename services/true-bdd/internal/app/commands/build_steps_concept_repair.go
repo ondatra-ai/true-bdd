@@ -7,52 +7,27 @@ import (
 	"slices"
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/stepskeleton"
-	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/app/generators/validate"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/catalogue"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/template"
 )
 
-// applyCritique adds the critique's findings to the Item's. On a concept
-// Item a finding against a pattern first sends the Item back to its
-// proposal; a finding against a body goes back to the writer as it is.
-func (e *buildStepsExecution) applyCritique(ctx context.Context, item *BuildStepsItem,
-	findings []validate.CritiqueFinding,
-) error {
-	critique := make([]string, 0)
-
-	for _, finding := range findings {
-		item.Findings = append(item.Findings, finding.String())
-
-		if item.Concept != nil && finding.Pattern() {
-			critique = append(critique, "critique: "+finding.String())
-		}
-	}
-
-	if len(critique) == 0 {
-		return nil
-	}
-
-	return e.repairPatterns(ctx, item, critique)
-}
-
 // repairPatterns proposes the Item's patterns again with the critique's
-// findings, holds the new proposal to the engine's check and rewrites the
-// skeletons it changes; their bodies then go back to the writer.
+// findings; the checklist judges the rewritten patterns after the apply.
 func (e *buildStepsExecution) repairPatterns(ctx context.Context, item *BuildStepsItem, critique []string) error {
 	run := e.concepts
-	run.rounds[item]++
+	run.rounds[item.subjectID]++
 
-	slog.Warn("Critique sent the patterns back to the proposal", "suite", item.Suite, "concept", item.Label(),
-		"round", run.rounds[item], "findings", critique)
+	slog.Warn("Verification sent the patterns back to the proposal", "suite", item.Suite, "concept", item.Label(),
+		"round", run.rounds[item.subjectID], "findings", critique)
 
-	label := fmt.Sprintf("repair %d proposal", run.rounds[item])
+	label := fmt.Sprintf("repair %d proposal", run.rounds[item.subjectID])
 
-	err := e.proposeConcept(ctx, run.proposal, run.attempts, item, run.repairSubject(item, critique), label)
+	err := e.proposeConcept(ctx, run.proposal, item, run.repairSubject(item, critique), label)
 	if err != nil {
 		return err
 	}
 
-	return e.rewriteSkeletons(item)
+	return nil
 }
 
 // repairSubject is the Item's proposal again: its own steps are its own
@@ -89,6 +64,7 @@ func (concept *BuildStepsConcept) proposed() []catalogue.ProposedPattern {
 
 	for _, definition := range concept.Definitions {
 		pattern := catalogue.ProposedPattern{Pattern: definition.Pattern, Captures: []catalogue.PatternCapture{}}
+
 
 		for _, accepted := range concept.Patterns {
 			if accepted.Pattern == definition.Pattern {
@@ -145,12 +121,19 @@ func (e *buildStepsExecution) rewriteSkeletons(item *BuildStepsItem) error {
 func (e *buildStepsExecution) afterRewrite(item *BuildStepsItem) error {
 	run := e.concepts
 
-	err := describeConceptItem(item, run.arch, run.specification, run.discovery)
+	if run.arch.Testing.Testkit != nil {
+		err := stepskeleton.EnsureScenarioRun(item.Suite)
+		if err != nil {
+			return err
+		}
+	}
+
+	err := describeConceptItem(item, run.arch, run.specification, run.discovery, e.runtimeAPI)
 	if err != nil {
 		return err
 	}
 
-	err = e.compiler.CompileDefinitions(e.command)
+	err = e.compiler.CompileDefinitions([]string{item.Suite})
 	if err != nil {
 		item.Findings = append(item.Findings, err.Error())
 	}

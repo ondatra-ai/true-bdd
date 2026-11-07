@@ -23,27 +23,16 @@ commands:
       '1':
         description: Invalid input
   translate:
-    description: Read greeter.yaml in the working directory, translate its greeting string into the language given by the language argument, and print the translated greeting, followed by a newline. The person argument identifies the recipient and does not interpolate or otherwise change the configured or the translated greeting. With loud omitted (false), the translated greeting is unchanged; with --loud, uppercase the translated greeting before printing and logging it. Each successful call emits one greeted log record on stderr with the supplied person and the exact translated greeting printed, without the trailing newline.
+    description: Read the greeting string from greeter.yaml in the working directory, translate it into the language given by the language argument, and print the translated greeting, followed by a newline. Each successful call emits one greeted log record whose greeting is the translated greeting printed, without the trailing newline.
     parameters:
-    - name: person
-      in: argument
-      required: true
-      schema:
-        type: string
     - name: language
       in: argument
       required: true
       schema:
         type: string
-    - name: loud
-      in: flag
-      required: false
-      schema:
-        type: boolean
-        default: false
     responses:
       '0':
-        description: Translated greeting printed
+        description: Greeting translated and printed
       '1':
         description: Invalid input
 extensions:
@@ -55,7 +44,7 @@ extensions:
   log_records:
     greeted:
       message: Greeting printed
-      format: logfmt on stderr with person equal to the person argument and greeting equal to the printed greeting without its trailing newline; for translate the printed greeting is the translated text
+      format: logfmt on stderr with person equal to the person argument and greeting equal to the printed greeting without its trailing newline
   outgoing_calls:
     notify:
       command: notifier

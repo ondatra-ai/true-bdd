@@ -11,13 +11,10 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/disk"
 )
 
-// scenariosPkgDir holds the Suite wiring that binds bddgo to the suite's state.
-const scenariosPkgDir = "scenarios"
-
-// scenariosImportPath computes the import path of the Suite wiring
+// suiteImportPath computes the import path of the suite itself
 // by walking up to the nearest go.mod — not assumed, since a sentinel module
 // (every fixture tree) gives a suite inside it an unrelated module path.
-func scenariosImportPath(repoRoot, suitePath string) (string, error) {
+func suiteImportPath(repoRoot, suitePath string) (string, error) {
 	suiteDir := filepath.Join(repoRoot, filepath.FromSlash(suitePath))
 
 	moduleDir, modulePath, err := findModule(suiteDir)
@@ -30,7 +27,7 @@ func scenariosImportPath(repoRoot, suitePath string) (string, error) {
 		return "", fmt.Errorf("locate %s inside %s: %w", suiteDir, moduleDir, err)
 	}
 
-	return path.Join(modulePath, filepath.ToSlash(relative), scenariosPkgDir), nil
+	return path.Join(modulePath, filepath.ToSlash(relative)), nil
 }
 
 // findModule returns the nearest directory at or above dir holding a

@@ -2,8 +2,6 @@ package steps
 
 import (
 	"path/filepath"
-
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
 )
 
 //truebdd:concept given "machine environment"
@@ -12,8 +10,8 @@ func useOfflineLibraryProxy(state *State, _ []string) error {
 		return state.fail("%w", ErrNoTreePrepared)
 	}
 
-	directory := runner.RunDir(state.Harness.SessionRoot, state.Fixture.Name)
-	state.Proxy.Env = append(state.Proxy.Env, "GOPROXY=file://"+filepath.Join(directory, "empty-module-proxy"),
+	directory := state.WorkingDirectory()
+	state.SetEnv("GOPROXY=file://"+filepath.Join(directory, "empty-module-proxy"),
 		"GOSUMDB=off", "GONOPROXY=none", "GOPRIVATE=")
 
 	return nil

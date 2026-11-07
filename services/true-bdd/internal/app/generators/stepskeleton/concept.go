@@ -93,7 +93,7 @@ func Concepts(dir string) ([]ConceptDefinition, error) {
 		return nil, err
 	}
 
-	patterns := registeredPatterns(packageFunctions(files))
+	patterns := registeredPatterns(files)
 	found := make([]ConceptDefinition, 0)
 
 	for _, file := range files {
@@ -134,18 +134,19 @@ func recordedConcept(doc *ast.CommentGroup) (string, string, bool) {
 	return "", "", false
 }
 
-// registeredPatterns reads every literal registration of the package, as the
+// registeredPatterns reads every constant registration of the package, as the
 // resolver binds them, wherever Register's helpers make them.
-func registeredPatterns(functions []*ast.FuncDecl) map[string]string {
+func registeredPatterns(files []sourceFile) map[string]string {
 	patterns := make(map[string]string)
+	resolver := patternResolver(files)
 
-	for _, fun := range functions {
+	for _, fun := range packageFunctions(files) {
 		if fun.Body == nil {
 			continue
 		}
 
 		ast.Inspect(fun.Body, func(node ast.Node) bool {
-			pattern, function, found := stepCall(node)
+			pattern, function, found := stepCall(node, resolver)
 			if found {
 				patterns[function] = pattern
 			}

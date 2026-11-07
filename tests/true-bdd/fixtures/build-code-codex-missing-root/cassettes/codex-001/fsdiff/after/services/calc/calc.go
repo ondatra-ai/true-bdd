@@ -1,12 +1,10 @@
-// Package calc provides constant integer results.
+// Package calc provides constant calculation results.
 package calc
 
-// A returns 1.
 func A() int {
 	return 1
 }
 
-// B returns 2.
 func B() int {
 	return 2
 }

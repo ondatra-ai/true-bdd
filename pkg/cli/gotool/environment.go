@@ -18,8 +18,10 @@ const (
 
 // Environment resolves the installed Go runtime and module cache.
 func Environment(ctx context.Context) (map[string]string, error) {
+	// Suppress Go's detached telemetry uploader during discovery: it can outlive
+	// go env and keep writing into a temporary HOME (#295). GOTELEMETRY is not an input.
 	result, err := shell.Run(ctx, []string{Bin, envVerb, jsonOutputFlag, goRootEnv, goModCacheEnv},
-		shell.Options{Env: git.Environment()})
+		shell.Options{Env: git.Environment().Set("GO_TELEMETRY_CHILD=2")})
 	if err != nil {
 		return nil, err
 	}

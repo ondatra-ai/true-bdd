@@ -1,10 +1,9 @@
 package steps
 
 import (
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 	"path/filepath"
 
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
 	"gopkg.in/yaml.v3"
 )
 
@@ -17,7 +16,7 @@ type checklistPromptRule struct {
 	Checklist string `yaml:"checklist"`
 }
 
-func registerChecklistModelSteps(suite *bddgo.Suite[State]) {
+func registerChecklistModelSteps(suite testkit.StepRegistrar[State]) {
 	suite.Step(`^the (us_refine_checklist|us_apply_checklist|scen_check_checklist) prompt (.+)$`, assertChecklistModelRule)
 	suite.Step(`^the (us_refine_checklist|us_apply_checklist|`+
 		`scen_check_checklist|build_steps_checklist) Model scheme is shipped$`,
@@ -30,7 +29,7 @@ func assertChecklistModelRule(state *State, args []string) error {
 		return state.fail("%w", ErrNoRun)
 	}
 
-	content, err := disk.Read(filepath.Join(state.Fixture.Dir, "model-expectations.yaml"))
+	content, err := testkit.Read(filepath.Join(state.Fixture.Dir, "model-expectations.yaml"))
 	if err != nil {
 		return state.fail("read Model expectations: %w", err)
 	}

@@ -18,7 +18,7 @@ type checkAnswer struct {
 	Context []string `json:"context"`
 }
 
-// CheckResult builds a `D:` Cell's result from its check's verdict. On a
+// CheckResult builds a code Q Cell's result from its check's verdict. On a
 // fail the prompt's own `F:` is the fix prompt, which a model would copy.
 func CheckResult(promptCtx checklist.PromptWithContext, verdict checks.Verdict) checklist.ValidationResult {
 	answer, status, fixPrompt := AnswerPass, checklist.StatusPass, ""
@@ -43,20 +43,7 @@ func CheckResult(promptCtx checklist.PromptWithContext, verdict checks.Verdict) 
 	}
 }
 
-// SkippedResult is the report row of a `Q:` Cell a failed check spared,
-// its question shown as the row of an answered one would show it.
-func SkippedResult(promptCtx checklist.PromptWithContext) checklist.ValidationResult {
-	return checklist.ValidationResult{
-		SectionPath: promptCtx.GetFullSectionPath(),
-		Question:    promptCtx.Prompt.Question,
-		Status:      checklist.StatusSkip,
-		Rationale:   promptCtx.Prompt.Rationale,
-		PromptIndex: promptCtx.Index,
-		Docs:        promptCtx.GetEffectiveDocs(),
-	}
-}
-
-// SaveCheckVerdict writes a `D:` Cell's verdict as the response and result
+// SaveCheckVerdict writes a code Q Cell's verdict as the response and result
 // artifacts a model Cell leaves, under the same names.
 func SaveCheckVerdict(tmpDir, subjectID string, result checklist.ValidationResult) error {
 	if tmpDir == "" {

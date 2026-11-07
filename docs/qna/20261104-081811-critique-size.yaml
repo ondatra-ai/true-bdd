@@ -1,0 +1,1472 @@
+intent: |
+  Decide how build steps' tool-less critique fits the prompt limit before drill
+  round 9: on cut B the critique of the given:project tree Item measured
+  769,185 bytes against engine.max_prompt_bytes 150,000, and ADR-0039 says such
+  a critique refuses at the limit and portions are separate work. Evidence:
+  tmp/codex-worktrees/code-296-go-doc/tmp/296/final-measurement.txt and
+  BLOCKER.txt; services/true-bdd/internal/app/commands/build_steps_critique_context.go.
+  The Owner, 4 November, after Claude proposed grilling the critique size as the
+  plan's third step:
+
+  «Let’s grill it. Yes»
+
+log: []
+  - decision_trace:
+      research:
+        - |
+          On cut B the given:project tree critique is 769,185 bytes: fixture_inputs
+          593,900, the whole suite's skeleton code 51,565, every bound step 51,412
+          (tmp/codex-worktrees/code-296-go-doc/tmp/296/final-measurement.txt).
+        - |
+          usedFixtureContract
+          (services/true-bdd/internal/app/commands/build_steps_critique_context.go:44)
+          takes every fixture's prep.sh, teardown.sh and checklist-prompts.yaml
+          (15 KB across 358 fixtures) and any fixture file whose base name appears
+          anywhere in the whole suite's code; TrueBDD's suite names true-bdd.yaml,
+          architecture.yaml, scen-check.yaml, product.yaml and scenarios.yaml, about
+          1.1 MB across the fixtures.
+        - |
+          The critique template asks to judge "each function's body, with the shared
+          State and helpers it uses"; stepCritiqueSources embeds all of steps/*.go and
+          helpers/. ADR-0039: whole suite source, fixture contracts selected by use,
+          a large critique refuses at the limit, portions are separate work; the
+          Owner chose 150,000 bytes over the derived 370,000 to force optimization.
+      recommendation: |
+        A: a critique's evidence is only what this Item's own bodies use (its
+        definitions, State, the helpers they call, fixture files their own code or
+        captures name, plus each fixture's prep, teardown and narrowing files);
+        about 145 KB for project tree on cut B.
+      settled: |
+        Not answered. The Owner turned the session into a brainstorm: first show,
+        on the project tree Given, what the critique compares with what and which
+        question it answers. The word critique is bad and does not say what the
+        step does (the reason the Owner had its glossary entry reverted).
+    question: |
+      Q1 - What does a critique's evidence consist of? A. Only what this Item's own
+      bodies use. B. The whole suite's code, but fixture files selected by what this
+      Item's own code names. C. Today's evidence, with the size solved by splitting
+      or by the limit.
+    answer: |
+      Смотри, походу, что критика, она вообще работает не так, потому что короче,
+      давай здесь брейншторм. Здесь на самом деле нужен не гриллинг, не столько
+      гриллинг, сколько брейншторм. А как это все-таки работает? Для того, чтобы
+      разобраться, покажи мне сейчас given, вот что мы, что конкретно мы
+      критикуем. Мы критикуем, то есть что с чем мы связываем, что с чем мы
+      критикуем, да. Вообще, опять же, слово критика, этот термин, почему я
+      попросил его убрать? Потому что он плохой. Ну, в смысле, он не отражает то,
+      что мы на самом деле делаем. Поэтому давай мы разберемся с тем, что мы
+      делаем. Вот приведи, на что мы должны ответить, на какой вопрос мы сейчас
+      хотим получить ответ.
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        Show, on the given:project tree Item, exactly what the step called critique
+        compares with what, before any decision on its evidence or size.
+      settled: |
+        The brainstorm starts from a definition: what exactly the critique checks,
+        not what the session wants to learn.
+    question: |
+      The Owner's clarification, sent while Claude worked on the reply to Q1.
+    answer: |
+      Я имею в виду, не мы хотим получить, а вот когда то, что ты имеешь в виду,
+      критика, да, то есть что конкретно она критикует, вот давай вот с этим
+      определимся.
+  - decision_trace:
+      research:
+        - |
+          The step called critique compares the step definition an AI wrote (pattern
+          and body) with the Specification: the bound steps, the concept's meaning, the
+          binding's does, the Public interface, the runtime API and, only where the code
+          relies on them, fixture inputs. It answers five questions (pattern_captures,
+          pattern_scope, concept_binding, concept_meaning, computes_assertion;
+          templates/build-steps.critique.system.prompt.tpl). For given:project tree the
+          body is state.PrepareTree(args[0]) (tests/true-bdd/steps/cli_steps.go:107)
+          and relies on no fixture file.
+      recommendation: |
+        In one sentence: does the generated step definition match what its steps mean
+        under its concept and binding. Fixture contents are not needed for project tree.
+      settled: |
+        What the critique checks is that sentence. The fixture trees are not needed for
+        project tree, and the work starts from this definition. The step is to be named
+        verification, not critique; verification has a checklist, and both verification
+        and checklist are to be defined as terms before the next question.
+    question: |
+      Is that what it checks? In one sentence: does the generated step definition match
+      what its steps mean under its concept and binding. If so, the next brainstorm
+      question is what of the table it really needs to answer the five questions.
+    answer: |
+      Вот мне кажется, ты понял мой подход, да, что критика, она вот проверяет
+      конкретно то, что ты сказал. То есть конкретно, вот где ты написал одной
+      фразой, соответствует ли сгенерированный step definition тому, что значит его
+      шаги по концепту биндинга. Ты абсолютно прав. Для этого не надо... вообще
+      Project 3 тут совершенно не нужен. Да? И давай исходить из этого. То есть вот
+      это надо записать, что это... Step, вот поэтому слово критика было плохое, да,
+      что это step, ну типа это verification. То есть и давай мы внесем скорее вот
+      этот термин, да, verification. Поэтому смотри, к тему verification там есть
+      чек-лист. Если ты посмотришь, там же есть чек-лист. Его термин чек-лист тоже
+      нужно записать, что это такое. Если тебе непонятно, то давай мы дальше
+      проговорим, что такое verification, что такое чек-лист. Не переходи к
+      следующему вопросу.
+  - decision_trace:
+      research:
+        - |
+          The product glossary defines checklist ("The ordered Prompts a command reads
+          from the project tree and asks about the Items it walks"); GLOSSARY.md has no
+          checklist entry, only Prompt ("One validation question in a Checklist, with
+          its rationale, its declared reference documents and its optional F: fix
+          template"). build steps' checklist (true-bdd/checklists/build-steps.yaml)
+          holds D: step-coverage, a grouping Q and a pattern-proposal Q; the critique is
+          not among them, its five questions live in
+          templates/build-steps.critique.system.prompt.tpl.
+      recommendation: |
+        Define verification as the build steps stage comparing each written step
+        definition with the Specification, and its checklist as the five questions;
+        ask whether they become Prompts of build steps' checklist.
+      settled: |
+        Not settled: the Owner points to the structure of a checklist element (Q, F and
+        D) as the logic to follow, rather than a separate list of five questions.
+    question: |
+      When you say verification has a checklist, do you mean these five questions? And
+      should they become Prompts in build steps' checklist, as other commands have,
+      rather than living inside the engine's template?
+    answer: |
+      Нет, смотри. Логика каждого шага. То есть вот смотри, из каких. Элементов
+      состоит каждый элемент чек-листа. Да, он состоит из Q и F, по-моему, если я
+      правильно помню. И D.
+  - decision_trace:
+      research:
+        - |
+          A checklist element (GLOSSARY.md: Prompt) has Q: (a question a model answers)
+          or D: (an engine check), with rationale:, docs:, with: and an optional F: (the
+          fix). In build steps, D: step-coverage verifies that every step has a written
+          definition and its F: has the AI write the bodies; the critique is a hidden
+          model verification after that F, outside the checklist, with its question,
+          fix routing and evidence fixed in the engine rather than in docs:.
+      recommendation: |
+        Verification is a checklist element's Q or D; the critique becomes an ordinary
+        element of build steps' checklist with its own Q, F and docs:.
+      settled: |
+        Verification is what a checklist element's Q does, and the critique becomes an
+        ordinary element of build steps' checklist. Q and D merge into one field Q, so an
+        element is Q and F again; Q has two options, a prompt a model answers or code the
+        engine runs.
+    question: |
+      Do I read your logic right: verification is a checklist element's Q (or D), and the
+      critique should become an ordinary element of build steps' checklist, with its own
+      Q, F and docs:, instead of a check hidden inside the engine?
+    answer: |
+      Вот, все правильно. И тут я бы, наверное, сделал бы, смотри, у нас, я бы QED
+      поставил бы одним полем. То есть я бы поставил бы Q только лишь. То есть чтобы
+      было два, Q и F, как раньше. А у Q есть две опции. Он может быть либо prompt,
+      либо код, да, допустим. То есть понял, о чем я говорю?
+  - decision_trace:
+      research:
+        - |
+          GLOSSARY.md's Prompt names the whole checklist element ("One validation
+          question in a Checklist, with its rationale, its declared reference documents
+          and its optional F: fix template"), so a Q option named prompt would give the
+          word two meanings.
+      recommendation: |
+        A: call the element a checklist item; prompt and code stay the two options of Q.
+      settled: |
+        Not answered; the naming stays open. The Owner stated the purpose of merging Q
+        and D: the checklist must reflect what really happens; its three peer fields Q,
+        D and F no longer show the real hierarchy (a verification, done by a prompt or by
+        code, and its fix).
+    question: |
+      Q2 - What do we call a checklist element, the pair of Q and F, so that prompt stays
+      only the text of a model's question? A. checklist item, with prompt and code as
+      Q's options. B. check, though the glossary lists it as a word to avoid. C. Keep the
+      element a Prompt and name Q's options differently, for example ask: and code:.
+    answer: |
+      Тогда это для того, чтобы чек-лист стал отражать реальность. Потому что сейчас,
+      видишь, три поля, они перестали как бы иерархично отражать реальность.
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        A: call the element a checklist item; prompt and code stay the two options of Q.
+      settled: |
+        The pair of Q and F is a checklist item; prompt and code are the two options of Q.
+        This answers Q2, left open by the purpose statement above.
+    question: |
+      Q2, kept open after the purpose statement and answered while Q3 was asked - What do
+      we call a checklist element, the pair of Q and F, so that prompt stays only the
+      text of a model's question?
+    answer: |
+      Хорошо, смотри. Пару QF хорошо было бы назвать чек-лист item. Пусть так и
+      остаются. А prompt и code пускай остаются за вариантами Q.
+  - decision_trace:
+      research:
+        - |
+          build steps verifies seven things: grouping (Q in its checklist), each
+          binding's ambiguity (scen check's Prompt), proposed patterns (Q), the
+          engine's pattern check (catalogue.CheckPatterns, hidden code), step coverage
+          (D), the after-apply checks of source shape, compilation, one binding per step
+          and the concept record (hidden code), and the critique (hidden model turn).
+          Three are in its checklist, one is borrowed, three are hidden in the engine
+          with their fixes.
+      recommendation: |
+        A: every check a command makes, by a model or by code, is a checklist item with
+        its own Q (prompt or code) and F; the engine checks nothing beyond its checklist.
+      settled: |
+        A. Every check is defined by the checklist, and every command is, to one degree or
+        another, a checklist. Before designing it, research the cases in the current
+        logic that may not fit a linear checklist: one item checked, a fix proposed and
+        tried, the walk moving on, and at the end every checklist item checked again until
+        every Q passes. Codex may be consulted.
+    question: |
+      Q3 - What belongs in the checklist? A. Every check a command makes, by a model or by
+      code, each a checklist item with its own Q (prompt or code) and F; the engine checks
+      nothing beyond its checklist. B. Only the model checks; code checks stay built in.
+      C. Only the critique; the rest as now.
+    answer: |
+      Да, смотри, это эй, все проверки должны определяться чек-листом. И вообще каждая
+      команда в том или ином, иной степени, да, это просто чек-лист. Но здесь надо
+      провести ресерч случаев, когда у нас логика может не вкладываться в линейный
+      чек-лист. Ну, то есть ты помнишь, да, что у нас есть такая там достаточно сложная
+      логика, что типа мы проверили один элемент, сделали фикс промпт, пошли попробовали
+      что-нибудь там сделать. И перешли к следующему шагу. А, и в конце концов мы должны
+      повторить все чек-лист-айтемы заново, да, так, чтобы все Q-вещи, да, они прошли
+      проверки. Вот, задача выяснить, можно посоветоваться с кодексом, найти кейсы в
+      существующей логике, где такая вещь не может быть реализована с помощью
+      чек-листа в том или ином виде.
+  - decision_trace:
+      research:
+        - |
+          Codex research run research-checklist-fit
+          (tmp/codex/research-checklist-fit/final.md): across us refine, us apply,
+          scen check, build steps and build code there are 61 check families; 20 fit
+          the shape (checklist item = Q by prompt or code + F, walked per Item, fixes
+          applied, everything checked again at the end) unchanged, 36 need an addition,
+          5 do not fit. Missing capabilities: A part scope (a check per definition, per
+          binding key, per concept's words); B scope or verdicts shared by several Items;
+          C prerequisites, barriers, immediate restarts and final phases; D a fix routed
+          to an earlier stage (the critique's pattern findings back to the proposal);
+          E document transactions, invalidation and feedback from a rejected fix;
+          F outcomes beyond pass or fail (refusal, error, interface cannot serve);
+          G generation returning data rather than a verification (the pattern proposal);
+          H attempt counters scoped separately and interactive fix states.
+          The five that do not fit: the pattern proposal (G), interface cannot serve (F),
+          startup contracts (C, F), answer and protocol completeness (F), the prompt
+          byte limit (F).
+      recommendation: |
+        Present the capabilities; ask first where the checklist's boundary lies:
+        checks about Items versus the engine's own operating contracts.
+      settled: |
+        The fit research is done: 61 check families, 20 fit as is, 36 with an addition,
+        5 not at all; eight missing capabilities, A to H.
+    question: |
+      Which of the engine's checks and fixes cannot be expressed as a checklist of
+      checklist items (Q by prompt or code, and F)?
+    answer: |
+      Claude, no question asked: the research run's answer above, delegated by the
+      Owner in Q3 ("можно посоветоваться с кодексом").
+  - decision_trace:
+      research:
+        - |
+          Of the five checks that do not fit, three check the engine's own operation
+          rather than an Item: startup contracts (configuration, models, checklist,
+          templates, documents, Model resources), the completeness of a model's answer,
+          and the prompt byte limit.
+      recommendation: |
+        A: the checklist holds only checks of Items against the Specification; the
+        engine's operating contracts stay engine mechanics.
+      settled: |
+        B, with how: the checklist is everything. A: the command decides what the left
+        side of a checklist item receives, one Item, an array of Items or text; a Q can be
+        told to read files or a folder, as body turns already do, and say whether any of
+        the items fails. C, D and E stop being problems once the checklists are rebuilt
+        so the behaviour is the same but implemented as checklists. F: pass and fail carry
+        what failed; the engine's own standards (errors, protocol) are the engine's, not
+        the checklist's, while a check such as a Scenario having more than 7 steps can be
+        a checklist item. H: counters can be raised or their logic changed. Claude is to
+        recheck how checklist logic must change for this and name what stays unresolved.
+        The answer holds a contradiction to settle next: B (everything, engine contracts
+        included) against the engine's standards staying out of the checklist.
+    question: |
+      Q4 - Where is the checklist's boundary? A. Only checks of Items against the
+      Specification; the engine's own operation (startup, the answer protocol, the
+      prompt limit, attempt counters) stays engine mechanics. B. Everything, the engine's
+      contracts included.
+    answer: |
+      Я сейчас пройду по всем пунктам и расскажу тебе, как к ним можно подойти,
+      потому что ни А, ни Б не делают вот. То есть, смотри, правильный ответ Б,
+      чек-лист, это все, включая контракты движка. Вопрос в том, как. Вот сейчас я
+      попробую объяснить, как это должно было бы быть. Значит, давай пойдем так. Там,
+      где у тебя пункт, чего не хватает, там есть A, проверка части item. Да, и как
+      здесь может быть? Во-первых, кто мешает нам в качестве левой части отправлять не
+      один айтем, да, а группу айтемов? Это ведь зависит от того, как устроена у нас
+      сейчас команда. То есть это не проблема, потому что мы на уровне логики можем
+      команду, ну короче, как-то определять команду, что мы будем отправлять в
+      чек-лист левым параметром. Либо это отдельный айтем, либо это массив. Ну, то
+      есть, как бы, или даже какой-то текст. Дальше смотри, в принципе, у нас мы можем
+      добавить в вопрос Q, да, ну в смысле там, где вот мы делаем verification, мы
+      сможем добавить туда возможность прочитать, ну то есть сказать ему прочитай
+      какие-то файлы или какую-то папку. Мы так делаем, это все работает. То есть, по
+      идее, в том, мы можем проверить, сказать ему прочитай и скажи, есть ли из этих
+      айтемов хотя бы один, который чему-то там не соответствует. То есть тоже вполне
+      может быть. Си. Ну, CED, мне кажется, это не проблема вообще. Если правильно
+      перестроить сами чек-листы, то они перестают быть проблемами. То есть нам нужно
+      их просто перестроить так, чтобы поведение было такое же, но имплементировалось
+      в виде чек-листа. Я не очень хорошо понимаю, что такое F, потому что pass и
+      fail, они в себе несут информацию о том, что именно fail. И интерфейс cannot
+      serve. Подожди. Исходы, кроме pass и fail, ошибка. Ну да, это стандарты, должны
+      быть какие-то стандарты самого движка. Естественно, они в чек-листе. Они,
+      кстати, могут быть и в чек-листе, потому что, ну вот, но они должны, нет, они не
+      должны быть в чек-листе, это понятно. Вот, в чек-листе может быть просто
+      проверка на то, что там например, сценарий имеет больше 7 шагов, да, там,
+      допустим. Вот, это мы можем делать. Отдельные счетчики попыток. В общем, H вроде
+      тоже fixable, но их можно увеличить, можно изменить эту логику. Теперь смотри,
+      из того, что я ответил, тебе надо еще раз перепроверить, как нужно изменить
+      логику работы с чек-листами, чтобы то, что мы делали, становилось реальностью, и
+      идентифицировать, что дальше, какие все-таки остались нерешенные проблемы.
+  - decision_trace:
+      research:
+        - |
+          The rechecked logic: a checklist item's subject is one Item, an array or text,
+          as the command decides; a Q may read files and folders by path; items run in
+          order with prerequisites and a final recheck of all; an F may do what today's
+          routing does; an F edits working copies committed only when they read; counters
+          are set per item; a generation such as the pattern proposal is the F of a code
+          Q. Left open: which engine contracts are checklist items, an F that answers
+          "cannot be fixed", reading by path against ADR-0039's tool-less critique, who
+          declares the subject, and whether the critique is one item or two.
+      recommendation: |
+        A: checklist items cover the command's inputs the host can fix (configuration,
+        the checklist, templates, document resolution, Model resources); per-turn
+        standards (answer protocol, prompt limit, counters) stay engine mechanics.
+      settled: |
+        Q5 is postponed at the Owner's request. First: the checklist logic is to be drawn
+        as a Mermaid diagram in the architecture, and the step that checks every ticket
+        against the architecture must also ask whether the task could be solved with a
+        checklist (now that a Q can run deterministic code), to push work into checklists
+        rather than new engine logic.
+    question: |
+      Q5 - Which engine contracts belong in the checklist? A. The contracts of the
+      command's inputs the host can fix, as checklist items whose subject is the run;
+      per-turn standards stay engine mechanics. B. Every contract, per-turn standards
+      included. C. Only Item checks; startup contracts stay in the engine.
+    answer: |
+      И смотри, логика работы чек-листов, ее надо описать в виде мермейд-диаграммы,
+      положить тоже в архитектуру. И у нас уже есть шаг, который проверяет каждый
+      тикет на предмет того, не нарушается ли архитектура. Вот этот шаг, этот, он
+      должен еще проверять тикет на предмет, а не решается ли задача не тем способом,
+      ну, то есть, можно ли как бы идентифицировать, короче, он должен, этот шаг,
+      должен идентифицировать, не могла ли бы эта задача решаться при помощи
+      чек-листа для того, чтобы стимулировать использовать чек-листы и логику работы
+      чек-листов, а не писать дополнительную логику в коде. То есть, к примеру, может
+      быть, в чек-листа есть много детерминированных, ну, как бы, когда мы добавили
+      возможность вызывать детерминированный код, да, у нас очень сильно расширились,
+      в принципе, возможности. Я хотел бы, чтобы мы сперва обсудили вот этот
+      последний пункт, а потом вернемся к Q5, хорошо?
+  - decision_trace:
+      research:
+        - |
+          The architecture read of a ticket draft
+          (.claude/skills/common-codex/briefs/architecture-read.md) and the architecture
+          review of a diff (architecture-review.md) each check the six invariants of
+          .claude/rules/generation.md; docs/agents/issue-tracker.md (Architecture fit)
+          requires every change to keep them. docs/adr/generation-architecture.md has
+          three Mermaid diagrams and none of the checklist.
+      recommendation: |
+        A: a seventh invariant in .claude/rules/generation.md (every check of a command
+        is a checklist item, Q by prompt or code and F; a ticket adding such logic to
+        code names why a checklist item cannot do it), checked by both architecture
+        reads; the checklist diagram in generation-architecture.md once this grilling
+        ends.
+      settled: |
+        Delegated: how to change the agent-facing documents is to be worked out by a
+        separate agent with its own context window, running the mpc_writing-for-agents
+        skill, and answered back to Claude.
+    question: |
+      Q6 - How do we write down "checklist first"? A. A seventh invariant in
+      .claude/rules/generation.md, checked by the ticket's architecture read and the
+      code's architecture review; the checklist diagram in generation-architecture.md.
+      B. A separate question in the ticket's architecture read only. C. Advice only, no
+      finding.
+    answer: |
+      Ой, слушай, я не знаю, как это сделать. Я хотел бы, чтобы ты запустил в каком-то
+      отдельном агенте с отдельным контекстным окном вот этот скилл writing for agents,
+      и чтобы он тебе ответил, как это все поменять.
+  - decision_trace:
+      research:
+        - |
+          Claude's brief to the writing-for-agents agent named the six invariants, the
+          files that hold them and asked whether "checklist first" should be a seventh
+          invariant or a question in the architecture briefs: Claude's own recommendation
+          from Q6, which anchors the reader.
+      recommendation: |
+        Stop that agent and start it again with the Owner's words alone, letting it find
+        where the agent-facing rules live and what to change.
+      settled: |
+        The separate agent gets the Owner's requests verbatim and no solution: no
+        invariant, no file list, no options. Claude stopped the first agent.
+    question: |
+      The Owner's objection to the first agent's brief, sent after it started.
+    answer: |
+      А зачем ты передал ему вот эти вещи про инварианты? Твоя же задача, чтобы он
+      тебе сказал, а не ты ему. Зачем ты ему говоришь решение? Я не знаю, что это за
+      решение.
+  - decision_trace:
+      research:
+        - |
+          A separate Claude agent, given only the Owner's five statements verbatim and
+          running mpc_writing-for-agents, proposed: (1) invariant 7 in
+          .claude/rules/generation.md, "Every command is a checklist", checklist first,
+          each check a checklist item (Q by prompt or code, optional F), code that
+          decides pass or fail runs as a code Q, checks still outside a checklist (the
+          critique among them) move in through their own tickets, a change resting on an
+          open point goes to the Owner as a question; (2) a section "Every command is a
+          checklist" with a Mermaid diagram of today's walk in
+          docs/adr/generation-architecture.md, the open points listed under it; (3) a
+          fourth question in briefs/architecture-read.md: for each change adding engine
+          logic, the checklist item that could do the same work or why none can, with a
+          table column and "a checklist" and "the engine" among places; (4) the place list
+          and open-point rule in briefs/architecture-review.md; (5) issue-tracker.md's
+          Architecture fit: a ticket adding engine logic says why a checklist item cannot
+          do it; (6) AGENTS.md's pointer to the rule triggered by "a command, its
+          checklist or the test runtime"; (7) "six" removed in three places. It leaves
+          GLOSSARY.md and the critique wording until the code merges D: into Q. Its own
+          observations: whether code Qs still run first and gate prompt Qs; today a fix
+          restarts that Item's checklist from its first item and a walk that applied a
+          fix is followed by another walk of everything (engine/walker.go:96,
+          engine.go:53-111).
+      recommendation: |
+        Show the proposal to the Owner as it is and ask whether to adopt it.
+      settled: |
+        The proposal is in; the Owner decides whether to adopt it.
+    question: |
+      How should the agent-facing documents change so that every command is a
+      checklist, the checklist logic is drawn in the architecture, and the ticket's
+      architecture check asks whether a checklist could do the work?
+    answer: |
+      Claude, delegated in Q6 ("Я хотел бы, чтобы ты запустил в каком-то отдельном
+      агенте с отдельным контекстным окном вот этот скилл writing for agents, и чтобы
+      он тебе ответил, как это все поменять."): the separate agent's proposal above,
+      not yet adopted.
+  - decision_trace:
+      research:
+        - |
+          The separate agent's proposal: invariant 7 "Every command is a checklist" in
+          .claude/rules/generation.md; the section and Mermaid diagram "Every command is a
+          checklist" in docs/adr/generation-architecture.md with the open points under it;
+          a fourth question in briefs/architecture-read.md; the place list and open-point
+          rule in briefs/architecture-review.md; the checklist-first bar in
+          issue-tracker.md's Architecture fit; AGENTS.md's pointer reworded; "six" removed.
+      recommendation: |
+        A, adopt it as is; ask next about the restart after a fix the agent observed;
+        apply the edits once the grilling ends, so the diagram and the invariant describe
+        the final logic.
+      settled: |
+        The proposal is adopted as is: the seven edits and the diagram. Claude applies
+        them when the grilling ends, with its ADR, unless the Owner asks sooner.
+    question: |
+      Q7 - Do we adopt this proposal? A. Yes, as is: the seven edits and the diagram.
+      B. Yes, with changes. C. No.
+    answer: |
+      A)
+  - decision_trace:
+      research:
+        - |
+          Today an applied fix resets the Item's walk to its first checklist item
+          (services/true-bdd/internal/app/engine/walker.go:84-96, walk.idx = 0); no result
+          is cached, so every earlier item's Q runs again, the fixed one among them; each
+          item has its own fix bound. A walk that applied any fix is followed by another
+          walk of every Item (engine.go:50-111, "any fix triggers another walk (cross-item
+          interactions)"), within the attempt limit.
+      recommendation: |
+        A: re-check the same checklist item after its fix, move on when it passes, and
+        walk everything again at the end if any fix was applied.
+      settled: |
+        Today's behaviour is the basis: after an applied fix its Q runs again. In the code
+        that happens by restarting the Item's checklist from its first item (every earlier
+        Q runs again too), and a walk with any fix is followed by another walk of every
+        Item.
+    question: |
+      Q8 - What happens after an applied fix? A. Check the same checklist item again,
+      move on when it passes, and walk everything again at the end if any fix was
+      applied. B. As now: the Item's checklist starts again from its first item, plus the
+      final walk of everything. C. Move on without checking it again; only the final walk
+      checks it.
+    answer: |
+      Слушай, посмотри, как это сделано сейчас. То есть мы применяем фикс. То есть за
+      основу надо взять то, как это сейчас сделано. По идее, это так. Мы применяем
+      фикс, а потом еще раз прогоняем Q.
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        A: the contracts of the command's inputs become checklist items whose subject is
+        the run, Q by code, F a fix of those files or a refusal; per-turn standards stay
+        engine mechanics.
+      settled: |
+        Not answered: the word contract is unclear. Explain with examples what the
+        engine's contracts are and how the groups differ, then ask again.
+    question: |
+      Q9 - Which engine contracts belong in the checklist (Q5 asked again)? A. The
+      contracts of the command's inputs, as checklist items whose subject is the run;
+      per-turn standards stay engine mechanics. B. Both. C. Neither.
+    answer: |
+      Давай еще раз терминологию. Что такое контракты движка? Чем они отличаются,
+      приводи примеры. Я не очень хорошо понимаю, что имеется в виду под словом
+      контракт. Это может быть что угодно.
+  - decision_trace:
+      research:
+        - |
+          Three groups the engine checks outside any checklist: (1) checks of the host's
+          files at start, refusing with "Refusing to start" (a model with an unknown CLI
+          in true-bdd.yaml, engine-004; a product document with the retired catalogue key,
+          concepts-002, or a glossary means over three sentences, glossary-form-001; a
+          Prompt whose docs: omit what its check reads; an unreadable Registry; a suite
+          without a Steps package; a missing template or Model resource); (2) the rules of
+          one AI turn (a prompt over engine.max_prompt_bytes; an answer outside its schema,
+          "binding answer malformed or incomplete"; a writer's confirmation without
+          applied:); (3) the walk's limits (a checklist item fixed more often than
+          max_apply_attempts, "Walk stopped"; outer walks exhausted).
+      recommendation: |
+        A: group 1 becomes checklist items whose subject is the run, Q by code, F a fix
+        of those files or a refusal; groups 2 and 3 stay engine mechanics.
+      settled: |
+        None of the three groups is a checklist item. A checklist cannot check itself,
+        and a run whose checklist is broken never reaches the checklist; so the checks at
+        start stay in the engine's code when the application starts (a separate
+        deterministic command, like a doctor, is a later alternative). Groups 2 and 3 stay
+        engine mechanics. A product document with a retired key: first placed with scen
+        check's deterministic checks, then settled as a separate deterministic check run
+        by a command. This narrows Q4's "everything, the engine's contracts included" to
+        checks of what the command walks.
+    question: |
+      Q9 - Which of the three groups belongs in the checklist? A. Only group 1, the checks
+      of the host's files at start, as checklist items whose subject is the run; groups 2
+      and 3 stay engine mechanics. B. Groups 1 and 3. C. All three.
+    answer: |
+      Давай так. В трубе DDYAML модель указана в CLI, которого нет. С CLI, которого
+      нет. Смотри, это проверяется на уровне кода движка, когда мы запускаем TurbDD,
+      вот этот, или BDD CLI, как у нас именно называется, этот, я все время путаю,
+      утилитка, название приложения. Там нужно сделать, естественно, эти все проверки
+      на старте где-то. Вот. Альтернативой может быть операция доктор, да, знаешь, как
+      есть у некоторых вещей. Но сейчас на старте вполне подойдет. Другой пункт. В
+      продуктах документ есть удаленный ключ. Это должно проверяться, знаешь, вот там,
+      где сцен-чек. Это вот чек-листом для сцен-чек. Пока что сцен-чек это у нас
+      команда, которая проверяет, ну, должна проверять консистентность всех вещей. Да,
+      это детерминированная проверка. То есть там, где вот Q, две точки, код, да, и там
+      какой-то, блин, проверка каталога. У prompts checklist в docs нет документа,
+      который читает его проверка. Но смотри, это должен проверять движок. То есть
+      разные кейсы, понимаешь? В зависимости от того, что они делают. Prompt checklist
+      docs нет документа, который читает его. Здесь это нужно делать на этапе
+      проверки, потому что чек-лист не может проверять сам себя, понимаешь? То есть,
+      на самом деле, ну, тут могут быть варианты, и они не очень важны. Надо думать из
+      этого по принципу, можно ли это... То есть, чек-лист — это рантайм, да, мы должны
+      как-то вот в этапе, ну, на этапе рантайма это все проверять. Вот. Тогда, ну, не
+      знаю. Короче, чек-лист сам себя проверить не может. Поэтому с доксом точно нужно
+      делать на этапе движка. Product document. То есть это тоже валидация чек-листа.
+      Не, вот есть удаленный ключ. Но смотри, product document это... Хорошо, пусть это
+      будет какая-то детерминированная проверка отдельная, да, там мы стартуем вообще
+      приложение и делаем там команду и какую-нибудь, да, и она детерминированно
+      проверяет все эти вещи. Registry не читается. Что значит registry не читается?
+      Да. Блин, опять же, смотри, здесь есть вторая группа правила одного AI-хода, да,
+      там, это точно не должно входить, вот два точно не входит. Один и тот же, а это
+      мы исправляли, волк стоп, кончилось число, это тоже не должно входить, то есть,
+      посмотри, в принципе, в чек-листы может входить только лишь первое, за тем
+      исключением, что ты не сможешь проверять это, не запустив, ну, как бы, в тот
+      момент, когда ты уже запускаешь чек-лист. По идее, ты там просто не сможешь
+      дойти до запуска чек-листа, если у промсов чек-лист нет документа. Вот. То есть,
+      как будто как раз-таки первое тоже не входит в чек-лист. То есть, как будто бы из
+      тех групп, которые ты... сказал, ни одна в чек-лист не входит.
+  - decision_trace:
+      research:
+        - |
+          ADR-0039 kept the critique tool-less, from #285's recommendation and ADR-0035;
+          no log entry records the Owner deciding that point by itself. Binding judgements
+          already read the product document by path (16 of 19 passed in round 8) and body
+          turns read the Registry and fixture directories through read-only tools. For
+          project tree on cut B about 594 KB of the 769 KB is fixture files, and about
+          100 KB more (suite code 51 KB, runtime go doc 24 KB, the Public interface
+          document 21 KB) could be read by path, leaving an embedded core of about
+          75-80 KB.
+      recommendation: |
+        A: verification embeds the core and reads the rest by path, as body turns do,
+        amending ADR-0039's tool-less critique.
+      settled: |
+        Experiments decide, tool-less first. C: portions, grouped several step
+        definitions per turn (by feature, by five, by ten), measuring how long it takes
+        and how to make it faster. B: tool-less with only what the Item's own code uses,
+        measuring the real size against the estimated 145 KB. Only if C and B fail, A,
+        reading by path. What is agreed so far is recorded first; the discussion resumes
+        on the experiments' results.
+    question: |
+      Q10 - How does verification get its evidence? A. As the body-writing turns do: the
+      core embedded, the rest read by path. B. Tool-less as now, embedding only what the
+      Item's own code uses (about 145 KB). C. Tool-less as now, split into portions, one
+      step definition per turn.
+    answer: |
+      Смотри, давай мы договоримся, что мы попытаемся использовать без инструментов. Не
+      то чтобы говорил, что он может читать файлы и папки, но потенциально мы можем это
+      сделать. Я бы сказал так. Здесь нужно провести, опять же, ресерч. Попробовать без
+      инструментов, посмотреть, как будет работать. То есть вот, делить на части. Что
+      мы получим? Это будет долго. Да? Как мы сможем это оптимизировать? Сможем ли мы,
+      например, взять несколько тысяч то есть не один, да, а по несколько step
+      definition заход. Ну вот, скажем так, по одной фиче, например, заход, да, там,
+      или, короче, как-то их погруппировать, по, может быть, не по одному, по пять,
+      может быть, по 10, да. Вот, это первый момент. До тех пор, пока мы не придем к
+      варианту V без инструментов, как сейчас, вкладывать, посмотреть, что получится.
+      То есть, сколько реальных будет, 145 килобайт, не 145 килобайт, да, вот. И если C
+      и B не получится, тогда A как вариант. То есть, здесь надо идти экспериментальным
+      путем, и как будто хотелось бы на самом деле сперва проверить вот эти пути, да,
+      исходя из того, что, о чем мы уже договорились, это все дело записать, проверить,
+      а потом идти обсуждать дальше по результатам этих ресерчей.
+  - decision_trace:
+      research:
+        - |
+          Codex code run code-verification-experiments, report
+          docs/research/2026-11-04-verification-experiments.md on branch
+          impl/249-verification-experiments (e8ba0159), 68 live calls, $11.90.
+          C, portions: one definition per turn needs 87 turns for the suite; the
+          largest prompt is 164,509 bytes (assertStdout, then:console output, finished),
+          so even the finest grouping exceeds 150,000; five per turn 178,459; ten and by
+          concept Item 178,459. The project tree portions passed, agreeing with the whole
+          Item (131,606 bytes largest, 131.9 s, $1.97 with three concurrent workers;
+          concurrency cut 330 s to 94 s on one comparison). B, minimal embedding: fits 18
+          of 19 Items on cut B and 16 of 19 finished; over the limit project tree 155,366,
+          console output 178,459, file content 161,942. Both variants agreed with all 11
+          known-answer controls. In the single assertStdout prompt the bound steps take
+          72,577 bytes, fixture inputs 27,480, runtime API 22,911, interface document
+          21,595. Splitting one definition's bound steps was not tried; full-suite time,
+          cost and agreement were not measured.
+      recommendation: |
+        Present the results; ask what comes next now that C and B both exceed the limit
+        for a few Items.
+      settled: |
+        Neither C nor B fits the whole suite under 150,000 bytes, by 5 to 28 KB; both
+        judge correctly on the known cases.
+    question: |
+      Do tool-less portions (C) or minimal embedding (B) keep every verification turn of
+      TrueBDD's suite under 150,000 bytes, and do their verdicts hold?
+    answer: |
+      Claude, no question asked: the experiments the Owner asked for in Q10, reported
+      above.
+  - decision_trace:
+      research:
+        - |
+          The experiment's sequential per-turn times (ledger.jsonl in the run's
+          tmp/verification-experiments/): project tree as one minimal B turn 105.9 s,
+          $0.91; as five C portions one after another 267.5 s, $1.97 (single turns 16 to
+          132 s); engine activity as one B turn 123.9 s, $0.64, as two C turns 106.1 s,
+          $0.89. The large turns took 65 s on average, 153 s at most. Full-suite time was
+          not measured.
+        - |
+          The experiments embedded fixture files because Claude's brief defined B with
+          "the fixture files their own code or bound captures name, and each fixture's
+          preparation, teardown and narrowing files", taken from Claude's own Q1 option
+          A, which the Owner never chose; after Q1 the Owner said the project trees are
+          not needed. Recomputed from the same prompts with fixture_inputs removed ($0):
+          B's largest turn is 150,462 bytes finished (console output, 462 over) and
+          149,717 on cut B; C with one definition per turn 137,029 at most, every turn
+          under the limit; C by five, ten or concept matches B.
+      recommendation: |
+        B: keep verification tool-less, split one definition's bound steps and send
+        identical step texts once; A only if that still exceeds the limit.
+      settled: |
+        Not answered. Time is a parameter and must be measured one turn after another,
+        without parallelism, which the Owner is against. Fixture contents (the project
+        trees) are not sent to verification at all, as said after Q1; the experiments
+        sent them by Claude's mistake.
+    question: |
+      Q11 - What next, now that C and B exceed the limit for a few Items? A. As agreed,
+      the experiment with reading by path. B. Push tool-less further: split one
+      definition's bound steps and send identical step texts once. C. Raise the limit to
+      about 180-200 KB. D. A combination.
+    answer: |
+      Мне не хватает еще параметров: времени (не параллельного, я против что-то
+      параллелить)
+      опять же мы ж говорили что нам не надо вообще опралять project tree. зачем?
+  - decision_trace:
+      research:
+        - |
+          Without fixture inputs (recomputed, $0): B's largest turn 150,462 bytes (console
+          output, finished, 462 over), 149,717 on cut B; C one definition per turn 137,029
+          at most. Sequential times measured: project tree as one B turn 105.9 s, as five C
+          turns one after another 267.5 s. Verdicts without fixture inputs are unmeasured;
+          concept-bodies-003, whose body rightly relies on CALC_REAL_GO that a fixture
+          program requires, is at risk.
+      recommendation: |
+        Yes: rerun B and C without fixture inputs, strictly one turn after another, the 11
+        controls and the whole suite on cut B and finished, closing B's 462 bytes without
+        loss; about $15 for B and $40 for C, cap $60.
+      settled: |
+        Not that. Claude keeps asking how to treat the consequence (prompt size against a
+        limit), not its cause. The work is on the cause: how verification receives only
+        what it needs instead of much data.
+    question: |
+      Q12 - Do we run the next experiment so: without fixture inputs, strictly one turn
+      after another, B and C (one definition per turn), the 11 controls again, the whole
+      suite on cut B and finished, and B's 462 bytes closed without loss?
+    answer: |
+      ты спрашиваешь меня как решать следствие проблемы а не ее принчину/. я хочу
+      работать над тем как не передавать много данных в промт. как передавать только
+      то что надол
+  - decision_trace:
+      research:
+        - |
+          The heaviest single verification turn, assertStdout (pattern ^stdout matches
+          (.+)$, code calling regexp and testkit.CheckStdout), receives 417 bound steps of
+          one form (about 72 KB), the whole Public interface document (20 KB) though its
+          binding references two log records (about 0.8 KB), the whole runtime go doc of
+          two packages (about 20 KB) though the code calls CheckStdout (203 bytes), and
+          about 27 KB of fixture files. prepareTree has 358 bound steps of one form. The
+          evidence is gathered by kind, not by what the definition and its binding refer
+          to; selected by reference, assertStdout would be about 10 KB instead of 164 KB.
+      recommendation: |
+        Yes: verification receives its definition's code and what it calls, its
+        concept's binding, glossary and Word mapping, the Public interface entries its
+        binding references, the runtime go doc of what its code calls, the bound steps as
+        distinct forms with a few example values each, and no fixture files.
+      settled: |
+        Not decided without an experiment. Try this selection and compare it with today's
+        evidence: the full linear time (every turn one after another), the prompt sizes
+        and the results.
+    question: |
+      Q13 - Is this the principle for verification's evidence? It receives (1) its
+      definition's code and what that code calls; (2) its concept's binding, glossary and
+      Word mapping; (3) only the Public interface entries its binding's references name;
+      (4) only the runtime go doc of what its code calls; (5) the bound steps as distinct
+      forms with a few example values each, not every instance; (6) no fixture files.
+    answer: |
+      Я не могу ответить на этот вопрос без эксперемента. попробуй этот варинат.
+      сравни  полное линейное время (знаешь что это) и сравни размер промптов и
+      результаты
+  - decision_trace:
+      research:
+        - |
+          The running by-reference experiment saved its real prompts. For given:project
+          tree the by-reference user part is 35,055 bytes (code its five definitions call
+          about 18 KB, runtime_api 5,125, definitions as forms 3,188, word mapping and
+          glossary 5,780, concept, binding and declaration 2,135) against 1,924,117 today;
+          the system part is the same 3,351. The by-reference prompt still uses today's
+          template, whose headings claim a "Complete concept context … whole document" and
+          a "Whole Steps package", and whose system text speaks of the complete
+          Specification and fixture contracts. Copies:
+          tmp/verification-example/project-tree-{by-reference,today}/.
+      recommendation: |
+        Show the experiment's real files for project tree both ways.
+      settled: |
+        The by-reference selection looks broadly right. The prompt itself must now be
+        optimized: fix the template and what goes with it.
+    question: |
+      The Owner asked for example files of the experiment with the values already filled
+      in; Claude copied the project tree prompts both ways.
+    answer: |
+      фиксь темплейт и так далее. сейчас виглядит как то что надо в целом но именно
+      промпт надо оптимизировать/
+  - decision_trace:
+      research:
+        - |
+          Codex fix run fix-verification-by-reference (report section in
+          docs/research/2026-11-04-verification-experiments.md, a6ed7bb7), every turn
+          one after another, 46 calls, $38.63. Time and cost cover 12 of 19 Items (the
+          cap stopped the rest); bytes cover all 19. Today's evidence, 12 Items: 1,135 s
+          linear, largest prompt 2,115,655 bytes, total 15,389,084, $32.02. By reference,
+          same 12 Items: 975.5 s, largest 56,973, total 567,720, $4.18. Controls: today
+          145.9 s, 11 of 11 known answers; by reference 223.3 s, 10 of 11. By reference
+          used transitive declarations, referenced interface entries, selected runtime
+          documentation, 115 step forms with 218 examples and no fixture files.
+          Disagreements, today pass and by reference fail: concept-bodies-003 (the omitted
+          fixture contract declares CALC_REAL_GO); then:AI CLI observations (runtime
+          documentation of Mode includes type bits wrongly); then:after-run shell check
+          (runtime documentation omits environment changes the code makes); then:console
+          output (documentation says a line matches, the code matches the whole stream).
+          Not run either way: engine activity, exit code, file changes, write guard's
+          answer, a command runs under interference, a role runs a command, the write
+          guard is asked.
+      recommendation: |
+        Run the prompt optimization next, comparing by reference with the old and the new
+        templates over all 19 Items, reusing today's measured results.
+      settled: |
+        By reference is about 27 times smaller in total, 7.7 times cheaper and 14% faster
+        in linear time on the 12 measured Items; it agrees on 9 of 12 Items and 10 of 11
+        controls. Three Item disagreements trace to runtime doc comments that do not say
+        what the code does; one control needs a fixture contract that no-fixture selection
+        omits.
+    question: |
+      How do today's evidence and by-reference evidence compare in full linear time,
+      prompt size and results?
+    answer: |
+      Claude, no question asked: the experiment the Owner asked for in Q13, reported
+      above.
+  - decision_trace:
+      research:
+        - |
+          CALC_REAL_GO is an environment variable only fixture files declare: the
+          calculator hosts of concept-bodies-prompt and concept-bodies-contract ship
+          tests/calc/fixtures/offline/bin/go, a stand-in go that prints "CALC_REAL_GO must
+          name the real go" and exits 97 unless CALC_REAL_GO names the real go. The step
+          'every file matching "tmp/*/*fix-iter1-user.txt" does not match CALC_REAL_GO
+          must name the real go' (concept-bodies-002) checks that the first body
+          proposal's prompt names the fixture by path and does not embed its files: the
+          recorded proposal (cassette claude-002) holds "fixture_inputs: - fixture:
+          offline" only; the recorded critique (claude-003) embeds the script, text
+          included.
+      recommendation: |
+        Explain CALC_REAL_GO and the step, with a matching and a non-matching example from
+        the recordings.
+      settled: |
+        The step reads as if CALC_REAL_GO were a term, but it is literal text. The Owner
+        proposes declaring, in the architecture document rather than in the declarative
+        Scenario, what a step form means, for example "does not match {%s}" means: no text
+        "%s" found in the file, and asks how much that would simplify the architecture
+        document.
+    question: |
+      The Owner asked what CALC_REAL_GO is and what the step "every file matching
+      "tmp/*/*fix-iter1-user.txt" does not match CALC_REAL_GO must name the real go"
+      means, with an example that matches in the recording and one that does not.
+    answer: |
+      Смотри, так нам здесь, наверное, нужно прям написать, что типа не мачится с таким
+      текстом. Почему у нас этот call go вообще? То есть, как бы, смотри, у тебя звучит
+      сейчас так, как будто doesn't match call go, и call go под собой несет какой-то
+      термин. А фактически это текстовый... Ну, то есть, литерал, то есть, это, короче,
+      литерал. Так что давай подумаем, что с этим делать. То есть он не, по всей
+      видимости, он не должен был бы сказать. То есть здесь должно было быть... то есть,
+      по всей видимости, в... где-то должно быть указано, то есть, опять же, у меня до
+      сих пор какое-то есть несоответствие, это должно быть в product YAML или в...
+      tool, ну, короче, в каком-то architecture YAML, но где-то должно быть просто
+      указано, что...
+
+      CALC_REAL_GO means no text  "CALC_REAL_GO must name the real go"  found in file
+      Еще лучше, опять же, прям в текстовом. Да, то есть, да, это где-то там, потому что
+      нам же запрещено писать текстовые константы в тест-кейсе, правильно? Ну, в
+      сценарий декларативный. Вот. Но мне кажется, на этот вопрос я ответил. Скорее
+      всего, где-то в архитектуре YAML надо записать что-то вроде того. Вот:
+
+       "does not match  {%s}": means: not text "%s" found in file. Посмотри тогда
+      насколько упрощается сам архитектур. YAML, да, то есть таким образом мы можем вот
+      так делать.
+  - decision_trace:
+      research:
+        - |
+          docs/architecture/architecture.yaml is 129,504 bytes; its 19 Concept bindings
+          take 17,749, their does texts 13,942; the rest (prompt_data, the Word mapping,
+          services, dependencies) is untouched by step forms. TrueBDD's suite registers 84
+          patterns (115 step forms in the experiment); a table of form meanings at
+          100-150 bytes each would be about the bindings' size. The template form existed
+          until 30 October (the Catalogue's templates, architecture.phrases); ADR-0034 (the
+          Owner's) replaced it by concepts: 76 templates for 309 Scenarios, one more per
+          five or six Scenarios, bracket alternatives such as [matches|does not match]
+          indistinguishable, the Catalogue's upkeep judged dearer than code; the engine
+          still refuses that form (concepts-002, -006). The narrow problem is how a step's
+          argument is read; today only the agents' rule .claude/rules/bdd-harness.md
+          (Step-text conventions) says so, not the Specification.
+      recommendation: |
+        B: one rule in the architecture document for how arguments are read (a quoted
+        value is literal text, the tail after matches is a regex, a quoted path after file
+        is a path); concepts and bindings stay; the step may also quote the literal.
+      settled: |
+        B: rules for how a step's arguments are read. Templates stay rejected as a
+        catalogue, but a combination is of interest: a few templates, about ten, each so
+        capacious that one serves about 50 places; one template per case makes no sense.
+    question: |
+      Q14 - What do we write down? A. The meaning of every step form, as the Owner wrote
+      it, which brings back the templates ADR-0034 retired. B. Only a rule for how
+      arguments are read, one short rule for the whole project; concepts and bindings
+      stay. C. Both.
+    answer: |
+      Да, слушай, мы действительно отказались от шаблонов, ты прав. Но в принципе, я
+      больше про вариант B. Вот. Вообще. Вот, тут самое главное, да, действительно
+      сделать какие-то правила, как читаются аргументы. Но мне интересно и C тоже. То
+      есть мне кажется, что должна быть комбинация и шаблонов, и еще чего-то, только
+      шаблонов, ну, их тоже должно быть мало. Не для того и шаблонов, что их там может
+      быть там штук 10, да, там, и все. Вот, ну, в смысле, что они должны быть очень
+      емкие. То есть так, чтобы их можно было один шаблон использовать в 50 местах.
+      Иначе это будет, не будет иметь смысла. Если там один шаблон на один кейс, то
+      это не будет иметь смысла. Вот, поэтому... Ну да, наверное, можно делать
+      B-правила.
+  - decision_trace:
+      research:
+        - |
+          Of TrueBDD's 87 step definitions and 1,447 bound steps, 5 patterns cover 1,018
+          steps (70%), 10 cover 80%, 20 cover 89%; five patterns are used 50 times or more
+          (stdout matches 417, the project tree 358, every file matching … matches 113,
+          the role runs 68, stdout does not match 62) and 35 of 87 once. The argument
+          conventions live in .claude/rules/bdd-harness.md (Step-text conventions: story
+          steps take a glob resolving to exactly one file, file-content steps a literal
+          path, stdout and regex tails run unquoted to the end of the line, {{CWD}} is a
+          token); the Specification holds only the Word mapping line for pattern.
+      recommendation: |
+        A: a short section of the architecture document, for example step_arguments:,
+        listing the argument kinds; every turn that reads steps receives it; the
+        Step-text conventions move there from .claude/rules/bdd-harness.md.
+      settled: |
+        A: the rules for reading a step's arguments are a section of the architecture
+        document.
+    question: |
+      Q15 - Where do the argument-reading rules live? A. A short section of the
+      architecture document, given to every turn that reads steps, with the agents'
+      Step-text conventions moved there. B. Inside the Word mapping, each term with its
+      kind. C. In the product document's glossary.
+    answer: |
+      Я думаю, что это раздел архитектурного документа. Так что да, это A.
+  - decision_trace:
+      research:
+        - |
+          concept-bodies-003's Scenario pins "The critique passes a body that meets a
+          contract a bound Scenario's fixture input states and its binding does not": the
+          requirement CALC_REAL_GO lives only in the fixture file bin/go, and the binding
+          is silent about it.
+      recommendation: |
+        A: a requirement a step body must meet is written in the Specification, in its
+        concept's binding; fixture files stay test data; the Scenario and its fixture are
+        rewritten.
+      settled: |
+        Not answered: the Owner does not understand the question, since a requirement such
+        as CALC_REAL_GO fits the Specification as it is, and that is how it should be. To
+        settle by fact first: is a fixture file part of the Specification?
+    question: |
+      Q16 - Where does a requirement like CALC_REAL_GO live, if verification receives no
+      fixture files? A. In the Specification, in the concept's binding; the Scenario and
+      fixture are rewritten. B. Verification receives the fixture files its code names.
+      C. Verification reads fixture files by path for such cases.
+    answer: |
+      Я вообще не понимаю этот вопрос, потому что требования вроде как RealGo, прям
+      отлично ложится в specification за счет, как оно есть, так вроде бы и должно быть.
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        Answer through host-specific or generic, as the Owner asked.
+      settled: |
+        The question is to be answered through whether the fact is host-specific or
+        generic.
+    question: |
+      The Owner's note, sent while Claude worked on the reply to Q16.
+    answer: |
+      Тут, наверное, скорее надо отвечать на вопрос через это host specific или generic.
+  - decision_trace:
+      research:
+        - |
+          CALC_REAL_GO is host-specific: the calculator's own offline go stand-in. In the
+          concept-bodies-contract host it is written only in the fixture file
+          tests/calc/fixtures/offline/bin/go; its product document, architecture and
+          Registry do not mention it (grep). GLOSSARY.md: the Specification is the product
+          document, the architecture document with the interface documents it names, and
+          the Registry; fixtures are written by people (invariant 1 leaves them out of the
+          generated suite folder) but are not part of it.
+      recommendation: |
+        A: the host states it in its Specification, in the architecture document (for
+        example in its toolchain concept's binding); fixture files stay test data and
+        verification sees the fact through the binding.
+      settled: |
+        A: a host-specific fact a step body must meet is stated in the host's
+        Specification, in its architecture document (for example the toolchain binding);
+        fixture files stay test data and verification gets none. The Owner chose A while
+        saying he did not quite understand the question.
+    question: |
+      Q17 - Where does a host declare such a fact of its own so that verification sees
+      it? A. In its Specification, in the architecture document, for example in its
+      toolchain concept's binding; the fixture file stays test data. B. Fixtures become
+      part of the host's Specification; the glossary and invariant 1 change and
+      verification receives fixture files. C. Something else.
+    answer: |
+      Ну, я вообще не очень понял, но давай A
+  - decision_trace:
+      research:
+        - |
+          The critique answers five questions about two things: the patterns
+          (pattern_captures, pattern_scope; findings go back to the proposal, which reads
+          step forms, the concept's meaning and other concepts' steps) and the bodies
+          (concept_binding, concept_meaning, computes_assertion; findings go back to the
+          body's writer, which reads code, the binding, Public interface entries and the
+          runtime go doc it calls). catalogue.CheckPatterns already checks in code that a
+          pattern binds exactly its own steps.
+      recommendation: |
+        A: two checklist items, a Q on the concept's patterns with the F to propose them
+        again, and a Q on the bodies with the F to rewrite a body; each gets only its own
+        evidence.
+      settled: |
+        Not answered: Claude kept saying critique; the word was dropped and verification
+        taken instead. Q18 is asked again in those words.
+    question: |
+      Q18 - Is the critique one checklist item or two? A. Two: a Q on the concept's
+      patterns with the F to propose them again, and a Q on the bodies with the F to
+      rewrite a body. B. One, as now: one Q for five questions, its F routing by the
+      finding's category.
+    answer: |
+      Мы же отказались от слова критика совсем. Мы взяли слово, где-то мы взяли слово
+      verification, разве нет?
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        A: two checklist items, verification of the concept's patterns (F: propose them
+        again) and verification of the bodies (F: rewrite a body).
+      settled: |
+        No fixed count. A command's checklist has as many checklist items as it takes to
+        verify and update every step; the shape (a Q and its F) is the design, not whether
+        today's critique becomes one item or two.
+    question: |
+      Q18, asked again with the word verification - Is the verification of step
+      definitions one checklist item or two? A. Two: verification of patterns and
+      verification of bodies, each with its own Q and F. B. One, as now, its F routing by
+      the finding's category.
+    answer: |
+      Да, это один чек-лист item. Типа вот... Нет, подожди. Ну, вот у нас есть чек-лист
+      item. Я не понимаю, почему это... Почему два чек-листа айтема? То есть, и почему
+      именно два? Почему не 10? То есть, я бы здесь не концентрировался на том, это
+      один чек-лист айтема или два чек-лист айтема, да, или verification. Это столько
+      чек-лист айтемов, сколько необходимо пройти для того, чтобы проверифицировать и
+      обновить все шаги.
+  - decision_trace:
+      research:
+        - |
+          The Owner's Q4 answer: "мы на уровне логики можем команду ... определять
+          команду, что мы будем отправлять в чек-лист левым параметром. Либо это
+          отдельный айтем, либо это массив. Ну, то есть, как бы, или даже какой-то
+          текст."
+      recommendation: |
+        The command decides what each checklist item is asked about.
+      settled: |
+        Forced by Q4: the command decides what a checklist item is asked about (one
+        Item, an array of Items or text); the checklist item does not declare it.
+    question: |
+      Who declares what a checklist item is asked about (open point the writing-for-agents
+      agent listed)?
+    answer: |
+      Claude, no question asked: forced by the Owner's answer to Q4.
+  - decision_trace:
+      research:
+        - |
+          Today walkOrder (services/true-bdd/internal/app/runner/prompt_validation.go:156)
+          reorders a checklist into three phases, built-in checks first, then concept
+          links, then the other model questions, whatever the written order; a failed
+          built-in check skips the Item's model questions (engine/walk_policy.go:18, the
+          gate).
+      recommendation: |
+        A: checklist items run in the written order with no reordering; a failed code Q
+        skips the checklist items after it for that Item.
+      settled: |
+        Q19 not answered yet. The Owner returned to Q18's ground: a checklist item answers
+        one question. Today's verification of step definitions, one item answering five
+        questions with an F that routes by the finding's category, is not how the
+        checklist was meant; it becomes checklist items that each answer one question.
+    question: |
+      Q19 - In what order do checklist items run and what is skipped after a failure? A.
+      The written order, no reordering; a failed code Q skips the items after it for that
+      Item. B. As now, reordered into phases, code checks first. C. The written order, no
+      skipping.
+    answer: |
+      Вообще, по-хорошему, там была идея в том, что один вопрос должен, ну, как бы, один
+      чек-лист айтем по-хорошему должен был бы отвечать на один вопрос. И то, что
+      сейчас один чек-лист айтем отвечает на 5 вопросов, а F выбирает, куда вернуть по
+      категории находки, это не выглядит так, как задумывался чек-лист.
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        A: the written order with no reordering; a failed code Q skips the checklist items
+        after it for that Item.
+      settled: |
+        Checklist items run in the written order, with no reordering (the Owner said
+        "Q18", meaning the question asked as Q19). Whether a failure skips the items after
+        it is not answered yet.
+    question: |
+      Q19 - In what order do checklist items run and what is skipped after a failure? A.
+      The written order, no reordering; a failed code Q skips the items after it for that
+      Item. B. As now, reordered into phases, code checks first. C. The written order, no
+      skipping.
+    answer: |
+      На Q18 датчик листы идут без перестановок.
+  - decision_trace:
+      research:
+        - |
+          Today a failed built-in check skips the Item's model questions
+          (engine/walk_policy.go:18), saving model turns on a structurally broken Item.
+      recommendation: |
+        A: skip only after a failed code Q; after a failed prompt Q the walk goes on.
+      settled: |
+        Q19 confirmed and sharpened: the engine reorders nothing; where code checks should
+        come first, the checklist itself is written that way, so the shipped checklists
+        are rewritten in the order they run. Q20, what a failure skips, is not answered yet.
+    question: |
+      Q20 - What happens to an Item's other checklist items after a failure? A. They are
+      skipped only after a failed code Q. B. Skipped after any failure. C. Nothing is
+      skipped.
+    answer: |
+      Смотри, нет, должно идти, вот как сейчас не надо, надо сделать в Q19, это реально,
+      надо идти вот в записанном порядке, а то, что движок переставляет по фразам, то это
+      надо не на уровне движка делать, а на уровне чек-лист просто переделать так, чтобы
+      вначале шли кодовые проверки, например, там где-то имеет смысл.
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        A: a checklist item itself says that its failure skips the Item's later items;
+        the engine skips nothing by itself.
+      settled: |
+        Not answered: first look at how skipping works now.
+    question: |
+      Q20, asked again after Q19's clarification - What happens to an Item's other
+      checklist items after a failure? A. The checklist item itself says its failure skips
+      the later ones. B. The engine skips after any failed code Q, by written order. C.
+      Nothing is skipped.
+    answer: |
+      На Q20 посмотри. Пожалуйста, посмотри, как это работает сейчас.
+  - decision_trace:
+      research:
+        - |
+          Today every D: is a gate (isCheckQuery, runner/check_cell.go:77). A D: that fails
+          and is not fixed (no --fix, no F, or no fix applied; engine/cell_handler.go:33,
+          53) sets gateFailed for that Item (engine/walker.go:80-83); every later Q: of the
+          Item is skipped with no AI turn, logged "Prompt skipped after a failed check" and
+          reported SKIP, while later D: prompts still run (engine/walk_policy.go:18). A D:
+          fixed by an applied fix restarts the Item from its first prompt and clears the
+          flag (walker.go:84-97). A failed Q: skips nothing. Scenario
+          checklist-checks-001-checks-run-before-questions pins this, together with the
+          D-first order "whatever the file order", which Q19 now removes.
+      recommendation: |
+        B: the skip is written on the checklist item itself; the engine skips nothing by
+        itself.
+      settled: |
+        As now: an unfixed failure of a code Q skips the Item's later prompt Qs; code Qs
+        still run; a fix restarts the Item. It stays an engine rule, in the written order
+        Q19 set. D: is only today's name for a code Q, which the merge into Q
+        (prompt or code) already decided to replace.
+    question: |
+      Q20 - What happens after a failure? A. As now, by the written order: an unfixed
+      failure of a code Q skips the Item's later prompt Qs, code Qs still run; an engine
+      rule. B. The skip is written on the checklist item itself. C. Nothing is skipped.
+    answer: |
+      Я бы оставлял как сейчас, и не переделывал бы это. Я только не понял, о каком D
+      ты говоришь, если мы как-то переделали эту систему, мы же записали, да, что надо
+      переделать.
+  - decision_trace:
+      research:
+        - |
+          Today an F answers "cannot be fixed" in two places only: build steps'
+          interface_cannot_serve (the writer reports that the Public interface cannot do what
+          the concept needs; the run stops with a distinct architectural error naming the
+          concept and what is lacking; build-steps-writing-004) and build code's impossible:
+          [{path, reason}] (the writer reports a repair only possible outside its permitted
+          files; edits kept, one rerun, ErrImpossibleWork with files, reasons and the remedy).
+          Elsewhere an F that cannot fix fails until the attempt limit.
+      recommendation: |
+        A: any F may answer "cannot be fixed" with a reason and what a person must do; the
+        run stops with a distinct error naming the checklist item and the reason; the two
+        cases become instances of it, unchanged.
+      settled: |
+        Q21 not answered yet. The Owner adds that the logic depends on --fix: without it the
+        checklist only runs its verifications; with --fix, a failed verification has its
+        fix run. That is today's behaviour (engine/cell_handler.go: FixMode) and the agent's
+        diagram already branches on it.
+    question: |
+      Q21 - May an F answer "cannot be fixed"? A. Yes, any F, with a reason and what a
+      person must do; the run stops with a distinct error. B. As now, only those two cases,
+      each its own way. C. No: an F fixes or fails until the attempt limit.
+    answer: |
+      И еще там же логика меняется в зависимости от того, минус-минус фикс или просто.
+      То есть если мы просто прогоняем чек-лист, то ну вот он как-то там работает. А если
+      минус-минус фикс, то он, если один verification провалился, то к нему выполняется
+      фикс.
+  - decision_trace:
+      research:
+        - |
+          Only with --fix does an F run; without it a failed verification is recorded and
+          the walk goes on.
+      recommendation: |
+        A: any F may answer "cannot be fixed" with a reason and what a person must do; the
+        run stops with a distinct error naming the checklist item and the reason; today's
+        interface_cannot_serve and impossible become instances of it, unchanged.
+      settled: |
+        A, sharpened: under --fix any F may answer that it cannot fix, and then the whole
+        run stops. It stops with a recommendation: when the cause lies in an earlier step,
+        the F asks a person to go back to that step and correct what it needs corrected.
+    question: |
+      Q21 - May an F, under --fix, answer "cannot be fixed"? A. Yes, any F, with a reason
+      and what a person must do; the run stops with a distinct error naming the checklist
+      item and the reason; the two current cases become instances. B. As now, only those
+      two. C. No.
+    answer: |
+      Насчет 21-го. Да, ну, гипотетически F может вернуть, что не могу починить. И в этот
+      момент надо остановить весь процесс. То есть он должен починить с рекомендацией. Он
+      иногда может что-то не починить, если на предыдущем шаге возникла какая-то
+      проблема. Да, и тогда ему нужно попросить человека вернуться к предыдущему шагу и
+      поправить что-то, что он, наверное, хотел бы быть поправленным.
+  - decision_trace:
+      research:
+        - |
+          Settled so far: a checklist item is a Q (prompt or code) and its F; one item
+          answers one question; the written order; an unfixed failed code Q skips the
+          Item's later prompt Qs; F runs only under --fix, the Q runs again after an apply,
+          and an F may answer "cannot fix, go back to step X"; the command decides what an
+          item is asked about; engine contracts stay out of the checklist; verification gets
+          no fixture files and host-specific facts come through the host's Specification;
+          the argument-reading rules are a section of the architecture document. Open: the
+          evidence principle (Q13). The running experiment optimizes one verification
+          prompt for five questions, started before Q18's one item, one question.
+      recommendation: |
+        Yes: next, verification of step definitions as separate checklist items, one
+        question each, each with only its question's evidence selected by reference and no
+        fixtures, against one turn for five questions, over the whole suite and the 11
+        controls, one turn after another; cap $40; started when the running experiment ends.
+      settled: |
+        Read as A for Q21, confirmed, and yes to Q22: the one-question experiment runs after
+        the current one ends. Claude states this reading so the Owner can correct it before
+        the run starts.
+    question: |
+      Q22 - The next experiment: verification of step definitions as separate checklist
+      items, one question each, with only that question's evidence, against one turn for
+      five questions, over the whole suite and the 11 controls, one turn after another;
+      cap $40?
+    answer: |
+      Короче, это A, да.
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        Confirm the reading: A for Q21 and yes to Q22.
+      settled: |
+        Confirmed: Q21 is A, and the one-question experiment of Q22 runs.
+    question: |
+      Claude's reading of "Короче, это A, да": A for Q21 and yes to Q22?
+    answer: |
+      Блин. Да, это Q21. По новому эксперименту, да, запускай.
+  - decision_trace:
+      research:
+        - |
+          Codex fix run fix-verification-prompt-optimization (1bbf33a9, report section at
+          docs/research/2026-11-04-verification-experiments.md:328), every turn one after
+          another, 42 calls, $23.92. Optimized by-reference templates (O): the system text
+          names the supplied evidence and excludes fixture files; the user part names its
+          fields, drops the false whole-document claims and duplicate listings, keeps
+          complete dependencies and drops unrelated mapping fields. Items, 19 of 19: O
+          1,593.9 s linear, largest 51,879 bytes, total 511,956, $6.15; old by-reference
+          (B) 1,547.1 s, 56,973, 567,720, $6.47; today (T), 17 of 19 measured, 1,605.7 s
+          observed, largest 1,927,468, total 11,495,605, $46.30. Controls: T 11 of 11
+          known answers, B and O 10 of 11. Agreement on Items T-O 14 of 17. Disagreements,
+          T/B/O: concept-bodies-003 P/F/P; build-steps-critique-correct P/P/F (HostRoot's
+          comment names tests/calc/steps, relative paths resolve from tests/calc); given:
+          project tree P/P/F (PrepCmds' comment); then:AI CLI observations P/F/P (Mode's
+          comment says permission and type bits, the code keeps permissions); then:after-run
+          shell check P/F/P (RunCommand's comment omits GOWORK=off and stripping
+          CLAUDECODE); then:console output P/F/F (CheckStdout's comment says a line, the code
+          matches the whole stream); then:exit code U/P/F (ExpectedExitCode's comment);
+          then:file content P/P/F (assertAtomicReplacement bypasses confinement and lacks a
+          missing-run guard).
+      recommendation: |
+        Run the one-question experiment the Owner approved (Q22).
+      settled: |
+        Honest by-reference templates keep the prompts about 22 times smaller in total and
+        7.5 times cheaper at about the same linear time. Most disagreements trace to runtime
+        doc comments that do not say what the code does; one, assertAtomicReplacement, may
+        be a real defect needing a focused test.
+    question: |
+      What do optimized by-reference templates change in full linear time, prompt size and
+      results?
+    answer: |
+      Claude, no question asked: the experiment the Owner asked for after Q13 ("фиксь
+      темплейт и так далее"), reported above.
+  - decision_trace:
+      research:
+        - |
+          Codex fix run fix-verification-one-question (c6b2036b, report section at
+          docs/research/2026-11-04-verification-experiments.md:538), 150 new turns, every
+          one after another, no fixture files. One question per checklist item: suite
+          3,222.5 s linear, controls 765.0 s, largest prompt 48,687 bytes, total 2,184,839,
+          $24.14; Item agreement 15 of 19, known controls 10 of 11. One turn for five
+          (optimized by-reference templates): suite 1,593.9 s, controls 196.2 s, largest
+          51,879, total 606,401, $7.35; Items 15 of 19, controls 10 of 11. Controls agree
+          between the designs 11 of 11; question-level agreement 90 of 95 on Items, 48 of 55
+          on controls. What each question reads overlaps: pattern_scope, concept_binding and
+          concept_meaning read nearly the same evidence (code and its dependencies,
+          referenced interface entries, runtime go doc, the semantic core); pattern_captures
+          the patterns, forms and core; computes_assertion the code, core and runtime API.
+      recommendation: |
+        Ask Q13 again with the data: adopt by-reference evidence for verification.
+      settled: |
+        One question per item takes about twice the linear time, 3.6 times the prompt bytes
+        and 3.3 times the cost of one turn for five, with the same agreement on this sample.
+    question: |
+      What does one question per checklist item cost and give against one turn for five
+      questions?
+    answer: |
+      Claude, no question asked: the experiment the Owner approved in Q22, reported above.
+  - decision_trace:
+      research:
+        - |
+          Today's evidence, 17 of 19 Items: 1,606 s linear, largest 1,927,468 bytes, 11.5 MB,
+          $46.30, controls 11 of 11. By reference, one turn for five: 1,594 s, largest 51,879,
+          0.61 MB, $7.35, controls 10 of 11, 14 of 17 Items agreeing with today. By
+          reference, one question per item: 3,223 s, 48,687, 2.18 MB, $24.14, controls 10 of
+          11. Disagreements trace to runtime doc comments (CheckStdout, Mode, RunCommand,
+          HostRoot, PrepCmds, ExpectedExitCode) and to CALC_REAL_GO, which Q17 moves into the
+          host's Specification.
+      recommendation: |
+        Yes: verification receives its definition's code and what it calls; its concept,
+        binding and terms; the Public interface entries its binding references; the runtime
+        go doc of what its code calls; the bound steps as distinct forms with examples; no
+        fixture files; with the honest templates; the inaccurate doc comments fixed in a
+        separate ticket.
+      settled: |
+        By reference ("только упомянутое") is verification's evidence principle (answers
+        Q13).
+    question: |
+      Q23 - Do we adopt "only what is referenced" as verification's evidence principle (Q13
+      again, with the measurements)?
+    answer: |
+      Да, давай идем с только упомянутое
+  - decision_trace:
+      research:
+        - |
+          The Owner's own definition after Q1: verification checks "соответствует ли
+          сгенерированный step definition тому, что значит его шаги по концепту биндинга";
+          and after Q18: one checklist item answers one question, an F routing by category
+          is not the checklist's design. Measured: five items 3,223 s and $24.14, one turn
+          for five 1,594 s and $7.35, the same agreement; three of the five questions read
+          nearly the same evidence.
+      recommendation: |
+        B: one checklist item with the Owner's question and one F (rewrite the step
+        definition by its findings, its pattern too when needed).
+      settled: |
+        Measure C first: three checklist items grouped by the evidence they read (the
+        patterns; the body against its binding and step meanings; whether a Then computes
+        its answer), each one question with its F.
+    question: |
+      Q24 - How is verification of step definitions shaped? A. Five checklist items, one
+      per aspect, each with its F. B. One checklist item with the Owner's question and one
+      F. C. Three checklist items by the evidence they read: patterns, body, computes.
+    answer: |
+      Попробуй померить C
+  - decision_trace:
+      research:
+        - |
+          Codex fix run fix-verification-three-items (683cb3a7, report section at
+          docs/research/2026-11-04-verification-experiments.md:942), 60 fresh sequential
+          calls, $12.51. C, three items (patterns; bodies; observation): suite 2,480.5 s,
+          controls 458.0 s, largest 49,069 bytes, total 1,482,897, $16.33, known controls 9
+          of 11 (it also rejects the correct exact-double case, concept-bodies-cases-009, and
+          like A and B the correct-006 HostRoot case). A, five items: 3,222.5 s / 765.0 s,
+          48,687 / 2,184,839, $24.14, 10 of 11. B, one turn: 1,593.9 s / 196.2 s, 51,879 /
+          606,401, $7.35, 10 of 11. Patterns and Bodies read nearly the same evidence.
+      recommendation: |
+        Present A, B and C side by side and ask Q24 again.
+      settled: |
+        C sits between A and B in time and cost and is the least accurate of the three on
+        the controls; B is the fastest, cheapest and as accurate as A.
+    question: |
+      What do three checklist items grouped by evidence (C) cost and give against A and B?
+    answer: |
+      Claude, no question asked: the measurement the Owner asked for in Q24, reported above.
+  - decision_trace:
+      research:
+        - |
+          A, five items: 3,223 s suite, 765 s controls, $24.14, 10 of 11 controls. B, one
+          item: 1,594 s, 196 s, $7.35, 10 of 11. C, three items: 2,480 s, 458 s, $16.33,
+          9 of 11.
+      recommendation: |
+        B: one checklist item with the Owner's question, its one F rewriting the step
+        definition by its findings, its pattern too when needed.
+      settled: |
+        B. Verification of step definitions is one checklist item asking the Owner's
+        question, "does the generated step definition match what its steps mean under its
+        concept and binding?", with one F that rewrites the step definition by its
+        findings, its pattern too when needed; the five aspects are what the question
+        checks, not five routes.
+    question: |
+      Q24, asked again with C measured - How is verification of step definitions shaped?
+      A. Five checklist items. B. One checklist item with the Owner's question and one F.
+      C. Three checklist items.
+    answer: |
+      B
+  - decision_trace:
+      research:
+        - |
+          The summary of decisions Q2 to Q24 put to the Owner for confirmation, with the
+          follow-up ADR, agent-document edits, tickets and round 9.
+      recommendation: |
+        Yes: shared understanding reached; write the ADR, the agent-document edits and the
+        tickets, each ticket with two Codex plan-reads before publication.
+      settled: |
+        Shared understanding, with Q20 replaced and Q8 sharpened. Without --fix, as soon as
+        a Q fails the walk stops: no further logic about code Qs, nothing goes on after it.
+        With --fix, a failed Q gets its fix (the fix prompt, the interaction with the person
+        choosing how to fix), and then the same Q runs again. A Q is either code or a prompt,
+        never both; a check needing both is two checklist items, one code and one prompt.
+        Whether a stop ends only that Item's walk or the whole command is to be confirmed.
+    question: |
+      Q25 - Have we reached a shared understanding (the summary of Q2 to Q24)?
+    answer: |
+      Про пропуски я не понял. Я думаю, мы не пришли к пониманию по этому вопросу. Тут
+      смотри, если провал, то есть если мы работаем в не фикс, ну, то есть без минус-минус
+      фикс, то как только Q провалился, вот так и остановились. Никакой дополнительной
+      логики по поводу Q-код и так далее, что там идет дальше, не идет дальше, нет. Если
+      мы работаем в минус-минус фикс, то как только мы провалились, то надо сделать вот
+      этот фикс-промпт, там будет какая-то интеракция с юзером, выбрать варианты, как
+      пофиксить, да, там, помнишь, есть такая вещь. И потом, после того, как мы
+      пофиксили, то еще раз запускаем этот же самый Q. Вот. У Q может быть или код, или
+      промпт, то есть не может быть одновременно двух элементов. Но мне кажется, что если
+      мы сделаем одновременно два, то нам надо еще уточнять, в каком порядке они идут и
+      так далее, и так далее. Вообще-то мы это можем сделать, например, просто двумя
+      чек-лист-айтами. Один отдельно код, один отдельно этим. Пришли к взаимопониманию.
+  - decision_trace:
+      research:
+        - |
+          scen check walks 358 Scenarios, each an Item; without --fix it goes on past a
+          failure and reports every failure of every Scenario. The coverage fixtures rely on
+          it: one fixture fails all 8 questions in one run (.claude/rules/engine-internals.md,
+          "the walk continues past a failure when no F: exists").
+      recommendation: |
+        A: without --fix a failure stops only that Item's walk; the other Items go on.
+      settled: |
+        The important rule is --fix: a failed Q gets its fix (the fix prompt, the person
+        choosing how to fix, apply); after apply the same Q runs again, and then the whole
+        checklist from its start, because an apply may turn an item that passed before into
+        a failure; except when the F answers that it cannot fix (Q21), which stops the run.
+        Without --fix the Owner sees a stop on failure as fine and is not concerned whether
+        the walk instead goes on to the end to show every failure, as it does today.
+    question: |
+      Q26 - Without --fix, what does a failed Q stop? A. Only that Item's walk; the other
+      Items go on. B. The whole command.
+    answer: |
+      Нет, смотри. Опять непонимание. В общем, смотри, там надо посмотреть, как чек-лист
+      работает сейчас. То есть, если Q провалился, без минус-минус, стоп, и все нормально.
+      Хотя, по-моему, мы там проверяем все чек-листы до конца, чтобы посмотреть их все. Но
+      это не важно. Вот. Самое важное это минус-минус фикс, потому что, ну, в общем,
+      короче, самое важное это минус-минус фикс. Если Q провалился, да, то есть, то
+      запускается его фикс. Человек выбирает как чинник, там бла-бла-бла, после apply
+      запускается этот же самый Q еще раз, а потом весь чек-лист сначала, потому что apply
+      может поменять item, прошедший перед этим. То есть чек-лист item, который был passed
+      перед apply, после apply может стать failed. Поэтому так или иначе чек-лист мы тоже
+      запускаем. За тем исключением, когда у нас появляется, знаешь, там F отвечает типа
+      can't fix, мы об этом договорились, да, то есть вот здесь такая логика.
+  - decision_trace:
+      research:
+        - |
+          Today without --fix a failed Q: is recorded and the walk goes on
+          (CellFailedNoFix, idx++); a failed D: also skips the Item's later Q: prompts (the
+          gate), which the Owner's previous answer rejected ("Никакой дополнительной логики
+          по поводу Q-код").
+      recommendation: |
+        Keep today's walk to the end without --fix, so every failure is shown, with no
+        special rule after a failed code Q.
+      settled: |
+        Without --fix the walk goes on to the end, as today, and reports every failure;
+        the special skip after a failed code Q is dropped. Chosen by Claude because the
+        Owner called the choice unimportant; the Owner may override it.
+    question: |
+      Without --fix, does a failed Q stop the walk or let it go on to the end?
+    answer: |
+      Claude, delegated in Q26 ("Но это не важно."): the walk goes on to the end, as
+      today, with no special rule after a failed code Q.
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        Yes: with the --fix rule corrected, shared understanding is reached; write the ADR
+        and the agent-document edits, then the tickets, each with two Codex plan-reads
+        before publication.
+      settled: |
+        Shared understanding reached. Claude writes the ADR, applies the agent-document
+        edits adopted in Q7 as the later answers shape them, and prepares the tickets.
+    question: |
+      Q27 - With this correction, have we reached a shared understanding?
+    answer: |
+      Да.

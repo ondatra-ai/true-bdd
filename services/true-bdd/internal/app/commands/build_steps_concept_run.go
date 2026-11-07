@@ -7,32 +7,25 @@ import (
 )
 
 // conceptRun is what a concept walk keeps once its Items load, so a
-// critique finding against a pattern can send an Item back to its proposal.
+// verification finding against a pattern can send an Item back to its proposal.
 type conceptRun struct {
 	discovery     *conceptDiscovery
 	arch          *architecture.Architecture
 	specification conceptSpecification
 	proposal      checklist.PromptWithContext
-	attempts      int
-	rounds        map[*BuildStepsItem]int
+	rounds        map[string]int
 }
 
-// loadConceptRun reads the proposal Prompt, its attempts and the Specification every concept Item's context
-// reads before any turn, so a malformed term list is refused before grouping.
+// loadConceptRun reads the pattern item's F and Specification before grouping, refusing malformed term lists.
 func (e *buildStepsExecution) loadConceptRun() (*conceptRun, error) {
 	document, err := e.deps.ChecklistLoader.LoadFull(buildStepsChecklistName)
 	if err != nil {
 		return nil, err
 	}
 
-	prompt, err := conceptBuildPrompt(document, checklist.JudgementPropose)
+	prompt, err := patternProposalPrompt(document)
 	if err != nil {
 		return nil, err
-	}
-
-	attempts := defaultProposalAttempts
-	if document.Config != nil && document.Config.MaxApplyAttempts > 0 {
-		attempts = document.Config.MaxApplyAttempts
 	}
 
 	file := productDocument(e.deps.DocResolver)
@@ -52,7 +45,34 @@ func (e *buildStepsExecution) loadConceptRun() (*conceptRun, error) {
 		return nil, err
 	}
 
-	return &conceptRun{proposal: prompt, attempts: attempts,
+	return &conceptRun{proposal: prompt,
 		specification: conceptSpecification{source.Concepts, definitions, mappings, bindings},
-		rounds:        make(map[*BuildStepsItem]int)}, nil
+		rounds:        make(map[string]int)}, nil
+}
+
+func patternProposalPrompt(document *checklist.Checklist) (checklist.PromptWithContext, error) {
+	index := 0
+
+	for _, section := range document.Sections {
+		for _, prompt := range section.ValidationPrompts {
+			index++
+
+			if prompt.Check != patternBindingsID || prompt.ShouldSkip() {
+				continue
+			}
+
+			err := prompt.ShapeError()
+			if err != nil {
+				return checklist.PromptWithContext{}, err
+			}
+
+			prompt.Question, prompt.Check = prompt.FixTemplate, ""
+			prompt.With = map[string]any{"concepts": "propose"}
+
+			return checklist.PromptWithContext{SectionID: buildStepsChecklistName, CriterionID: section.ID,
+				Index: index, Prompt: prompt, DefaultModels: document.Engine, DefaultDocs: document.DefaultDocs}, nil
+		}
+	}
+
+	return checklist.PromptWithContext{}, ErrBuildStepsChecklist
 }

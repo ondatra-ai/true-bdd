@@ -18,18 +18,17 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // writer-lifecycle-001-success: A successful codex writer provisions private fixture authentication and missing edit roots at spawn and removes authentication afterward
 func TestWriterLifecycle001Success(t *testing.T) {
-	s := scenarios.New(t, "writer-lifecycle-001-success")
+	s := New(t, "writer-lifecycle-001-success")
 	s.Given(`the "writer-lifecycle-success" project tree`)
 	s.And(`the codex writer uses fixture-controlled authentication and CLIs`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
+	s.And(`the codex writer started with private fixture authentication, protected homes, an empty edit root and private shell scratch`)
 	s.And(`the codex writer provisioned and removed its fixture authentication`)
 	s.And(`every file matching "tmp/*/*codex-events.jsonl" matches ^\{"type":"item.completed","item":\{"type":"command_execution","command":"fixture writer sentinel","exit_code":0\}\}\n$`)
 	s.And(`every file matching "tmp/*/*codex.log" matches "command":"fixture writer sentinel"`)
@@ -42,7 +41,7 @@ func TestWriterLifecycle001Success(t *testing.T) {
 
 // writer-lifecycle-002-failure: A failed codex writer removes its private fixture authentication after preserving edits and archiving events
 func TestWriterLifecycle002Failure(t *testing.T) {
-	s := scenarios.New(t, "writer-lifecycle-002-failure")
+	s := New(t, "writer-lifecycle-002-failure")
 	s.Given(`the "writer-lifecycle-failure" project tree`)
 	s.And(`the codex writer uses fixture-controlled authentication and CLIs`)
 	s.And(`the System Architect's answer to every question is "1"`)
@@ -50,6 +49,7 @@ func TestWriterLifecycle002Failure(t *testing.T) {
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches level=WARN msg="Writer turn failed" outcome="non-zero exit"`)
 	s.And(`the engine dispatched 1 apply AI turn to "codex"`)
+	s.And(`the codex writer started with private fixture authentication, protected homes, an empty edit root and private shell scratch`)
 	s.And(`the codex writer provisioned and removed its fixture authentication`)
 	s.And(`every file matching "tmp/*/*codex-events.jsonl" matches ^\{"type":"item.completed","item":\{"type":"command_execution","command":"fixture writer sentinel","exit_code":0\}\}\n$`)
 	s.And(`every file matching "tmp/*/*codex.log" matches "command":"fixture writer sentinel"`)

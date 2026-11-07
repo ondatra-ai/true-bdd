@@ -3,18 +3,25 @@
   "fixture": "concept-steps-unused",
   "files": [
     {
-      "path": "tests/calc/steps/concept51ed02fffcd311c254e473f1ef5f70e51d990908173bb819dd3c0508bb93ef9b.go",
+      "path": "tests/calc/helpers/cli.go",
       "kind": "created",
-      "size": 1061,
-      "sha256": "8e4e09cd483532877c2be18367a8036704d0e6270eb587ced611c9de2272ba3c",
-      "text": "package steps\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"halving\"\nfunc concept51ed02fffcd311c254e473f1ef5f70e51d990908173bb819dd3c0508bb93ef9b(state *State, args []string) error {\n\t// The host root holds ./services/calc; the generated test package runs in\n\t// tests/calc, the same place scenarios.go reads ../../docs/scenarios.yaml from.\n\tconst hostRoot = \"../..\"\n\n\tnumber := args[0]\n\n\tcmd := exec.Command(\"go\", \"run\", \"./services/calc\", \"halve\", number)\n\tcmd.Dir = hostRoot\n\n\tvar stdout, stderr bytes.Buffer\n\tcmd.Stdout = \u0026stdout\n\tcmd.Stderr = \u0026stderr\n\n\tif err := cmd.Run(); err != nil {\n\t\tdetail := strings.TrimSpace(stderr.String())\n\t\tif detail == \"\" {\n\t\t\treturn fmt.Errorf(\"halve %s: %w\", number, err)\n\t\t}\n\t\treturn fmt.Errorf(\"halve %s: %w: %s\", number, err, detail)\n\t}\n\n\tprinted := strings.TrimSpace(stdout.String())\n\thalved, err := strconv.Atoi(printed)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"halve %s printed %q on stdout, want a whole number: %w\", number, printed, err)\n\t}\n\n\tstate.Result = halved\n\treturn nil\n}\n"
+      "size": 2052,
+      "sha256": "45eda8ba7f6fdd6b4ac88a7b47def1947462db2d4d4f37ce10beaba4bc7f4a9d",
+      "text": "// Package helpers holds the code the calc suite's step definitions share.\n//\n// It only drives the calculator's declared CLI and reports what that\n// process wrote; it never works out a halved value itself.\npackage helpers\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"os\"\n\t\"os/exec\"\n\t\"path/filepath\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n// HostRoot returns the directory the architecture calls the host root: the\n// nearest ancestor of the test's working directory that holds\n// docs/architecture/architecture.yaml. The suite runs with its working\n// directory at tests/\u003csuite\u003e, so the declared commands, which are stated\n// relative to the host root, cannot be run from the working directory.\nfunc HostRoot() (string, error) {\n\tdir, err := os.Getwd()\n\tif err != nil {\n\t\treturn \"\", fmt.Errorf(\"host root: %w\", err)\n\t}\n\tfor {\n\t\tmarker := filepath.Join(dir, \"docs\", \"architecture\", \"architecture.yaml\")\n\t\tif _, err := os.Stat(marker); err == nil {\n\t\t\treturn dir, nil\n\t\t}\n\t\tparent := filepath.Dir(dir)\n\t\tif parent == dir {\n\t\t\treturn \"\", fmt.Errorf(\"host root: no ancestor of the working directory holds docs/architecture/architecture.yaml\")\n\t\t}\n\t\tdir = parent\n\t}\n}\n\n// RunHalve runs the declared halve command as a process with value and\n// returns the integer the command wrote to stdout. The calculator decides\n// the value; RunHalve only reads it back.\nfunc RunHalve(value int) (int, error) {\n\troot, err := HostRoot()\n\tif err != nil {\n\t\treturn 0, err\n\t}\n\n\tcmd := exec.Command(\"go\", \"run\", \"./services/calc\", \"halve\", strconv.Itoa(value))\n\tcmd.Dir = root\n\tcmd.Env = os.Environ()\n\n\tvar stdout, stderr bytes.Buffer\n\tcmd.Stdout = \u0026stdout\n\tcmd.Stderr = \u0026stderr\n\n\tif err := cmd.Run(); err != nil {\n\t\tdetail := strings.TrimSpace(stderr.String())\n\t\tif detail == \"\" {\n\t\t\treturn 0, fmt.Errorf(\"halve %d: %w\", value, err)\n\t\t}\n\t\treturn 0, fmt.Errorf(\"halve %d: %w: %s\", value, err, detail)\n\t}\n\n\ttext := strings.TrimSpace(stdout.String())\n\thalved, err := strconv.Atoi(text)\n\tif err != nil {\n\t\treturn 0, fmt.Errorf(\"halve %d: stdout %q is not an integer\", value, text)\n\t}\n\treturn halved, nil\n}\n"
+    },
+    {
+      "path": "tests/calc/steps/conceptce5cc5e8e32829d67d0e502e346fe2bf4a35eb0a459485307a7a2a66aab73f49.go",
+      "kind": "created",
+      "size": 494,
+      "sha256": "fcc25ca09355340f659c798b24f506cd51e64c7b849d876bb388d3ef3183435e",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"strconv\"\n\n\t\"fixture/conceptsteps/tests/calc/helpers\"\n)\n\n//truebdd:concept when \"halving\"\nfunc conceptce5cc5e8e32829d67d0e502e346fe2bf4a35eb0a459485307a7a2a66aab73f49(state *State, args []string) error {\n\toperand, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn fmt.Errorf(\"the Owner's number %q is not a whole number: %w\", args[0], err)\n\t}\n\n\thalved, err := helpers.RunHalve(operand)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tstate.Result = halved\n\treturn nil\n}\n"
     },
     {
       "path": "tests/calc/steps/register.go",
       "kind": "modified",
-      "size": 225,
-      "sha256": "96cca4814a2ad2d058871e2b91beb5aa304dec03fd5b2029cdd03b7dd890d970",
-      "text": "package steps\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the result is (-?\\d+)$`, result)\n\n\tsuite.Step(\"^the Owner halves[ \\\\x{00a0}](-?\\\\d+)$\", concept51ed02fffcd311c254e473f1ef5f70e51d990908173bb819dd3c0508bb93ef9b)\n}\n"
+      "size": 223,
+      "sha256": "2e3ece27992bca3888c914afc780ac95c44d60d87a042d87a040736b8f925247",
+      "text": "package steps\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the result is (-?\\d+)$`, result)\n\n\tsuite.Step(\"^the Owner halves\\\\x{00a0}(-?\\\\d+)$\", conceptce5cc5e8e32829d67d0e502e346fe2bf4a35eb0a459485307a7a2a66aab73f49)\n\n}\n"
     }
   ]
 }

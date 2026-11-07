@@ -51,8 +51,7 @@ story:
       - but: no file outside "tmp" changed
       - and: the engine dispatched no AI turns
   - id: 004-invalid-step-pattern-refused
-    description: A step definition whose pattern is not a valid regular expression must refuse `build steps`, naming its file, line and column, before any generated
-      test file is compared with the Registry
+    description: A step definition whose pattern is not a valid regular expression must refuse `build steps`, naming its file, line and column, before any AI turn
     steps:
     - given:
       - the "build-tests-invalid-step-pattern" project tree
@@ -67,8 +66,7 @@ story:
       - and: no file outside "tmp" changed
       - and: the engine dispatched no AI turns
   - id: 005-step-file-not-go-refused
-    description: A step definition file that is not valid Go must refuse `build steps`, naming the file, line and column where Go stops reading it, before any generated
-      test file is compared with the Registry
+    description: A step definition file that is not valid Go must refuse `build steps`, naming the file, line and column where Go stops reading it, before any AI turn
     steps:
     - given:
       - the "build-tests-step-file-not-go" project tree

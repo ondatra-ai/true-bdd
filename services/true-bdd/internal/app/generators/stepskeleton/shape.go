@@ -16,7 +16,8 @@ import (
 // ErrPending identifies a body that still contains the engine's placeholder.
 var ErrPending = errors.New("step not written yet")
 
-// Shape retains everything except imports, State, and the selected function bodies.
+// Shape retains steps/ declarations except imports, State (including its methods) and selected bodies.
+// Shared code in the sibling helpers/ directory is writable and judged by the critique.
 func Shape(dir string, functions ...string) (string, error) {
 	files, err := readPackage(dir)
 	if err != nil {
@@ -72,6 +73,10 @@ func (d Definition) Written() error {
 }
 
 func shapeDeclaration(declaration ast.Decl) ast.Decl {
+	if fun, ok := declaration.(*ast.FuncDecl); ok && stateMethod(fun) {
+		return nil
+	}
+
 	general, ok := declaration.(*ast.GenDecl)
 	if !ok {
 		return declaration
@@ -117,4 +122,20 @@ func pendingBody(body *ast.BlockStmt) bool {
 	})
 
 	return pending
+}
+
+// Shared State methods may move into helpers/ while other definitions stay intact.
+func stateMethod(fun *ast.FuncDecl) bool {
+	if fun.Recv == nil || len(fun.Recv.List) != 1 {
+		return false
+	}
+
+	receiver := fun.Recv.List[0].Type
+	if pointer, ok := receiver.(*ast.StarExpr); ok {
+		receiver = pointer.X
+	}
+
+	name, ok := receiver.(*ast.Ident)
+
+	return ok && name.Name == stateTypeName
 }

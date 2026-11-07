@@ -11,7 +11,8 @@ sections:
   - id: scenario_quality
     name: "Scenario Quality"
     validation_prompts:
-      - D: given-when-then
+      - Q:
+          code: given-when-then
         with:
           min_steps: 2
         rationale: "A scenario missing a kind cannot be executed as written: no precondition, no action, or nothing asserted."

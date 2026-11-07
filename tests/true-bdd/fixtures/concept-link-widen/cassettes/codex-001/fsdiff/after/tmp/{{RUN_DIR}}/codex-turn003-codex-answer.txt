@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
 applied: true
 target: "product"
-summary: "Widened halve means to admit one or two successive halvings and exclude more than two; preserved all other content."
+summary: "Widened only the halve when concept means to admit once or twice, describing half and quarter results and excluding three or more applications. Verified all other bytes unchanged. Sandbox restrictions caused search and temporary/cache-file errors; the edit and verification succeeded."
 === FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===

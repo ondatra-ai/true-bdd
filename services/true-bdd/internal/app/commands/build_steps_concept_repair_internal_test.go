@@ -3,7 +3,6 @@ package commands
 import (
 	"context"
 	"path/filepath"
-	"slices"
 	"strings"
 	"testing"
 
@@ -45,45 +44,6 @@ func (reply *proposalReplies) ExecutePromptWithSystem(_ context.Context, _ provi
 	return reply.answer, nil
 }
 
-// A critique finding against a pattern sends the Item back to the proposal
-// with that finding; the engine checks the new pattern, rewrites the
-// skeleton and leaves the new body to be written.
-func TestCritiquePatternFindingRepairsTheItemThroughANewProposal(t *testing.T) {
-	reply := &proposalReplies{answer: `{"patterns":[{"pattern":"^the Owner halves (-?\\d+)$",` +
-		`"captures":[{"name":"number","means":"The whole number halved."}],"serves":"Run halve."}]}`}
-	execution := repairExecution(t, reply)
-
-	wrong, err := stepskeleton.WriteConcept(repairSuite, "when", repairConcept, wrongCapture)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	item := &BuildStepsItem{Suite: repairSuite, Service: repairService, subjectID: "when-halving",
-		Concept: &BuildStepsConcept{Block: catalogue.BlockWhen, Name: repairConcept, Resumed: true,
-			Steps: []string{halveSix, "the Owner halves -7"}, Existing: []string{wrongCapture},
-			Definitions: []stepskeleton.Definition{wrong}}}
-	finding := validate.CritiqueFinding{Definition: wrong.File + "::" + wrong.Function,
-		Category: "pattern_captures", Finding: "captures only the first digit of the number"}
-
-	err = execution.applyCritique(t.Context(), item, []validate.CritiqueFinding{finding})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(reply.requests) != 1 || !strings.Contains(reply.requests[0], `"refused"`) ||
-		!strings.Contains(reply.requests[0], "captures only the first digit") ||
-		!strings.Contains(reply.requests[0], `"existing_definitions": []`) {
-		t.Fatalf("the proposal lacks the refused pattern and the critique's finding: %v", reply.requests)
-	}
-
-	requireRewrittenSkeleton(t, item, wrong)
-
-	if !slices.Contains(item.Findings, finding.String()) ||
-		!slices.ContainsFunc(item.Findings, func(line string) bool { return strings.Contains(line, "not written yet") }) {
-		t.Fatalf("the new body is not sent to the writer with the finding: %v", item.Findings)
-	}
-}
-
 func requireRewrittenSkeleton(t *testing.T, item *BuildStepsItem, wrong stepskeleton.Definition) {
 	t.Helper()
 
@@ -114,9 +74,9 @@ func repairExecution(t *testing.T, reply *proposalReplies) *buildStepsExecution 
 	t.Chdir(t.TempDir())
 
 	for target, source := range map[string]string{
-		".":         "tests/true-bdd/fixtures/concept-steps-negative/input",
-		"true-bdd":  "true-bdd",
-		"templates": "templates",
+		".":             "tests/true-bdd/fixtures/concept-steps-negative/input",
+		finishedService: finishedService,
+		"templates":     "templates",
 	} {
 		err = disk.CopyTree(target, filepath.Join(repository, source), disk.Shared)
 		if err != nil {
@@ -162,9 +122,7 @@ func repairRun(t *testing.T, deps BuildStepsDeps) *buildStepsExecution {
 	}
 
 	execution := &buildStepsExecution{deps: deps, architectureFile: repairArchitecture,
-		compiler: testrunner.NewGoTestRunner(testrunner.NewArtifacts(deps.TmpDir)),
-		command: testrunner.Config{Framework: testrunner.FrameworkGoTest,
-			Command: "go test -json -count=1 ./tests/calc/steps/"}}
+		compiler: testrunner.NewGoTestRunner(testrunner.NewArtifacts(deps.TmpDir))}
 
 	discovery := &conceptDiscovery{scenarios: scenarios, steps: map[string][]catalogue.SuiteStep{repairSuite: {
 		{Block: catalogue.BlockWhen, Text: halveSix, Bound: wrongCapture},
@@ -182,32 +140,4 @@ func repairRun(t *testing.T, deps BuildStepsDeps) *buildStepsExecution {
 	execution.concepts = run
 
 	return execution
-}
-
-// A critique finding against a body sends only the body back: no proposal
-// turn, and the Item keeps its skeleton.
-func TestCritiqueBodyFindingSendsOnlyTheBodyBack(t *testing.T) {
-	reply := &proposalReplies{}
-	execution := repairExecution(t, reply)
-
-	written, err := stepskeleton.WriteConcept(repairSuite, "when", repairConcept, `^the Owner halves (-?\d+)$`)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	item := &BuildStepsItem{Suite: repairSuite, Service: repairService, Concept: &BuildStepsConcept{
-		Block: catalogue.BlockWhen, Name: repairConcept, Definitions: []stepskeleton.Definition{written},
-	}}
-	finding := validate.CritiqueFinding{Definition: written.Function, Category: "concept_binding",
-		Finding: "requires CALC_LICENCE, which neither the binding nor a fixture input states"}
-
-	err = execution.applyCritique(t.Context(), item, []validate.CritiqueFinding{finding})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(reply.requests) != 0 || len(item.Findings) != 1 || item.Findings[0] != finding.String() ||
-		len(item.Concept.Definitions) != 1 || written.Intact(repairSuite) != nil {
-		t.Fatalf("a body finding changed more than the body's findings: %v %v", reply.requests, item.Findings)
-	}
 }

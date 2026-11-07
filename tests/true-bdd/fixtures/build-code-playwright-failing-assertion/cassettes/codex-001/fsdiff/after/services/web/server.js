@@ -1,5 +1,5 @@
 // The Corner Shop's web front: one page, served on the port PORT names.
-// The page shows the store name as its heading and links to opening hours.
+// Its heading displays the store's name.
 const http = require('node:http');
 
 const page = `<!doctype html>

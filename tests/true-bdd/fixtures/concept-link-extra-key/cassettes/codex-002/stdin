@@ -5,20 +5,44 @@ Edit only the listed working copies. Preserve every unaffected entry.
 For a Story step rewrite, return the complete Story YAML instead of editing
 a document. For document edits return the requested confirmation markers.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
 The Product Owner chose apply at the menu for Story host.
 Approved fix:
-Proposed repair for Item `host`, AC-1 then step "the calculator prints 3" — widen the existing `then` concept `result`.
+PROPOSED REPAIR — Item `host`, AC-1 then step "the calculator prints 3"
 
-Why widen rather than add: the Public interface item (the whole number the calculator prints) and the kind of use (`then` — the observable outcome) already exist as `result`. The step is only a variation of that same item and use: the printed number comes from the halving instead of the doubling. A new variation widens the existing concept of that item and use, so no new concept is added.
+Owner of this change: the System Architect (concept binding / concept `means` wording in the product document).
+Nothing has been changed. Apply only on an explicit menu decision.
 
-Owner of the change: the System Architect owns concept bindings; the Product Owner owns the concept prose below. The Story `host` is NOT changed — its wording, status and all steps stay exactly as they are.
+## Why this repair
 
-Single change, to `./docs/product/product.yaml` only, line 18 — rewrite the `means` of concept `result` and nothing else. A concept holds only `concept`, `means` and `terms`; no `variations` key is introduced (that is what made the previous attempt unreadable). Every variation is stated inside the `means` prose, closed.
+The failed judgement is the then step `the calculator prints 3`, which reached only 7 against
+concept `then / result` (threshold 9). The reason given is not a missing item and not a new kind
+of use: `result` is already the right Public interface item (what the calculator prints) and
+already the right kind of use (printing the computed whole number). It scores short only because
+its `means` is worded closed to one variation — "the whole number the **doubling** produced" — so
+printing the **halving**'s output is an unstated variation of the same item and use.
 
-BEFORE (lines 16-19):
+Therefore the repair widens the existing concept `result` rather than adding a concept, and does
+not rewrite the Story. The widening is done by rewriting `means` into closed prose that states
+every variation the concept admits — the product has exactly two computing operations, `doubling`
+and `halving`, so both are named and the prose admits nothing further.
+
+This also repairs the earlier rejected attempt, which declared the variations under a separate
+`variations:` key and left the document unreadable. A concept holds only `concept`, `means` and
+`terms`; the variations belong inside `means`. No new key is introduced here.
+
+## The exact change
+
+One file: `./docs/product/product.yaml`
+One concept: `then / result`
+One field: `means`
+No other concept, no other field, no role, no glossary entry and no description line is touched.
+The Story `host` is not touched — its steps stay exactly as written.
+
+### Before (lines 16-19 of ./docs/product/product.yaml)
 
 ```yaml
   then:
@@ -27,20 +51,63 @@ BEFORE (lines 16-19):
       terms: []
 ```
 
-AFTER (lines 16-19):
+### After
 
 ```yaml
   then:
     - concept: result
-      means: The calculator prints the whole number it computed, which is either the whole number the doubling produced or the whole number the halving produced, and no other number.
+      means: The calculator prints the whole number it computed from the whole number the Owner gave it, which is either the whole number the doubling produced or the whole number the halving produced.
       terms: []
 ```
 
-Unaffected and left byte-for-byte unchanged: `roles`, the `given` concept `installation`, the `when` concepts `doubling` and `halving`, `glossary`, `description`, and the whole Story `host` including AC-1's given, when and then steps.
+### Unified diff
 
-Effect once applied: AC-1's then step "the calculator prints 3" is a plain instance of the widened `result` — the printed whole number is the one the halving produced — so it reaches the threshold of 9 and the Item passes.
+```diff
+--- a/docs/product/product.yaml
++++ b/docs/product/product.yaml
+@@
+   then:
+     - concept: result
+-      means: The calculator prints the whole number the doubling produced.
++      means: The calculator prints the whole number it computed from the whole number the Owner gave it, which is either the whole number the doubling produced or the whole number the halving produced.
+       terms: []
+```
 
-Do not apply yet; await an explicit menu decision.
+## Resulting document after apply (whole file, for review)
+
+```yaml
+roles:
+  - name: Owner
+    description: Uses the calculator.
+concepts:
+  given:
+    - concept: installation
+      means: The calculator program is built from its source and ready for the Owner to run.
+      terms: []
+  when:
+    - concept: doubling
+      means: The Owner doubles a whole number with the calculator.
+      terms: []
+    - concept: halving
+      means: The Owner halves a whole number with the calculator, taking the whole-number part of dividing it by two.
+      terms: []
+  then:
+    - concept: result
+      means: The calculator prints the whole number it computed from the whole number the Owner gave it, which is either the whole number the doubling produced or the whole number the halving produced.
+      terms: []
+glossary: []
+description:
+  summary: The calculator doubles or halves a whole number the Owner gives it and prints the whole number it computes.
+```
+
+## What this is expected to settle
+
+- AC-1 then step `the calculator prints 3` becomes a plain instance of the widened `result`: it is
+  the printed whole number the halving produced, now a stated variation instead of an unstated one.
+- AC-1 given step `the calculator is installed` keeps its link to `installation` (10, unchanged).
+- AC-1 when step `the Owner halves 6` keeps its link to `halving` (10, unchanged).
+- `installation`, `doubling` and `halving` are unchanged. `result` keeps its only permitted keys,
+  `concept`, `means` and `terms`, so the document stays readable.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "binary": "claude",
+  "argv": [
+    "--setting-sources",
+    "",
+    "--strict-mcp-config",
+    "--safe-mode",
+    "--disallowed-tools",
+    "Bash,Write,Edit,MultiEdit,NotebookEdit,Read,Glob,Grep",
+    "--model",
+    "claude-sonnet-5",
+    "--system-prompt",
+    "Read all supplied evidence. Verify the selected given builds the declared calculator program from ./services/calc under the host's tmp directory and keeps its path in the shared state for the When, exactly as its binding requires. It need not run the double command. Judge only the body, never the pattern. If correct return {\"answer\":\"pass\",\"findings\":[]}. Otherwise return fail with a finding naming the supplied definition, one category concept_binding/concept_meaning/computes_assertion and a concrete discrepancy. Do not use tools.\n",
+    "--permission-mode",
+    "acceptEdits",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--json-schema",
+    "{\n \"type\":\"object\", \"additionalProperties\":false,\n \"properties\": {\n  \"answer\":{\"type\":\"string\",\"enum\":[\"pass\",\"fail\"]},\n  \"findings\":{\"type\":\"array\",\"items\":{\n   \"type\":\"object\",\"additionalProperties\":false,\n   \"properties\":{\n    \"definition\":{\"type\":\"string\"},\n    \"category\":{\"type\":\"string\",\"enum\":[\"pattern_captures\",\"pattern_scope\",\n     \"concept_binding\",\"concept_meaning\",\"computes_assertion\"]},\n    \"finding\":{\"type\":\"string\"}\n   },\"required\":[\"definition\",\"category\",\"finding\"]\n  }}\n },\"required\":[\"answer\",\"findings\"]\n}",
+    "-p",
+    "Does the generated step definition match what its steps mean under its concept and binding?\n\nVerification evidence for one Concept Item. The YAML contains the Concept, its binding, declared terms' glossary entries, Word mappings, the Public interface kind and document path with the referenced entries, the definitions to judge, and runtime_api declarations when used:\nconcept:\n    concept: installation\n    block: given\n    means: The calculator program is built from its source and ready for the Owner to run.\n    terms: []\nbinding:\n    concept: installation\n    block: given\n    service: calc\n    references:\n        - command: double\n    does: Build the declared calculator command as a program under the host's tmp directory and keep its path for the When.\nglossary: []\nword_mapping: []\npublic_interface:\n    kind: cli\n    document: docs/architecture/calc-cli.yaml\ninterface_document: |\n    commands:\n        double:\n            description: The calculator program, built with go build from ./services/calc at the host root and run from the host root; calc double VALUE prints the doubled integer and a newline.\n            parameters:\n                - in: argument\n                  name: value\n                  required: true\n                  schema:\n                    type: integer\n            responses:\n                \"0\":\n                    description: Doubled integer on stdout\n                \"1\":\n                    description: Invalid arguments\ndefinitions:\n    - function: concept08bdc8ba20fbc17f8cbea598ca6da5bdbc121817e637f18277eb83c75896fcf3\n      file: tests/calc/steps/concept08bdc8ba20fbc17f8cbea598ca6da5bdbc121817e637f18277eb83c75896fcf3.go\n      pattern: ^the calculator is installed$\n      serves: 'Serves the whole does clause: \"Build the declared calculator command as a program under the host''s tmp directory and keep its path for the When.\" The step names no value at all — the command to build (double) comes from the binding''s reference and the declaration in docs/architecture/calc-cli.yaml, the build root is fixed by that declaration, and the output location is the host''s tmp directory, so the body needs no argument from the step text and the definition takes none. The words \"the calculator\" and \"installed\" are stated literally because they are what makes the step the installation concept rather than any other given; nothing in the step varies, so there is no grammatical variant to absorb into a non-capturing group.'\n      forms:\n        - form: the calculator is installed\n          examples:\n            - text: the calculator is installed\n              captures: []\n\n\nSelected Steps package source declarations, with origin file paths and imports:\n\n--- tests/calc/helpers/build.go ---\nimport (\n\t\"fmt\"\n\t\"os\"\n\t\"os/exec\"\n\t\"path/filepath\"\n)\n\n--- tests/calc/helpers/build.go ---\n// HostRoot is relative to the test process working directory, tests/calc.\n// It names the host root where the declared calculator is built and run.\nconst HostRoot = \"../..\"\n\n--- tests/calc/helpers/build.go ---\n// BuildCalculator builds ./services/calc from HostRoot into its tmp directory\n// and returns the program path; it does not run the calculator.\nfunc BuildCalculator() (string, error) {\n\tprogram, err := filepath.Abs(filepath.Join(HostRoot, \"tmp\", \"calc-program\", \"calc\"))\n\tif err != nil {\n\t\treturn \"\", fmt.Errorf(\"resolve calculator program path: %w\", err)\n\t}\n\n\tif err := os.MkdirAll(filepath.Dir(program), 0o755); err != nil {\n\t\treturn \"\", fmt.Errorf(\"create calculator program directory: %w\", err)\n\t}\n\n\tcmd := exec.Command(\"go\", \"build\", \"-o\", program, \"./services/calc\")\n\tcmd.Dir = HostRoot\n\tif output, err := cmd.CombinedOutput(); err != nil {\n\t\treturn \"\", fmt.Errorf(\"go build calculator: %w: %s\", err, output)\n\t}\n\n\treturn program, nil\n}\n\n--- tests/calc/steps/concept08bdc8ba20fbc17f8cbea598ca6da5bdbc121817e637f18277eb83c75896fcf3.go ---\nimport (\n\t\"fmt\"\n\n\t\"fixture/stepsrun/tests/calc/helpers\"\n)\n\n--- tests/calc/steps/concept08bdc8ba20fbc17f8cbea598ca6da5bdbc121817e637f18277eb83c75896fcf3.go ---\n//truebdd:concept given \"installation\"\nfunc concept08bdc8ba20fbc17f8cbea598ca6da5bdbc121817e637f18277eb83c75896fcf3(state *State, args []string) error {\n\tprogram, err := helpers.BuildCalculator()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"install calculator: %w\", err)\n\t}\n\tstate.Program = program\n\treturn nil\n}\n\n--- tests/calc/steps/register.go ---\nimport (\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n--- tests/calc/steps/register.go ---\nsuite.Step(\"^the calculator is installed$\", concept08bdc8ba20fbc17f8cbea598ca6da5bdbc121817e637f18277eb83c75896fcf3)\n\n--- tests/calc/steps/state.go ---\ntype State struct {\n\tProgram string\n\tValue   int\n}\n\n\n"
+  ],
+  "exit_code": 0,
+  "duration_ms": 12768,
+  "request_hash": "sha256:b39c80c62f722fb09c6ab6c1496e92d271a065be18911db0e187f131fe37ed0f",
+  "fsdiff": {
+    "created": [],
+    "modified": [],
+    "deleted": []
+  },
+  "recorded_at": "2026-11-07T02:44:25Z"
+}

@@ -2,41 +2,28 @@ package steps
 
 import (
 	"fmt"
-	"regexp"
-	"strings"
+
+	"fixture/conceptbodiescases/tests/calc/helpers"
 )
 
 //truebdd:concept then "output"
 func concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e(state *State, args []string) error {
+	if len(args) != 2 {
+		return fmt.Errorf("want 2 captures (comparison, pattern), got %d: %q", len(args), args)
+	}
 	comparison, pattern := args[0], args[1]
 
+	// state.Output is the stdout the operation step kept, already without the
+	// single trailing line terminator the CLI document declares. The CLI prints
+	// a value on every successful run, so an empty kept output means no run was
+	// observed rather than an empty answer, and the step says so instead of
+	// silently passing a "does not match".
 	if state.Output == "" {
-		return fmt.Errorf("no output was kept, so the step cannot match %q: the operation step must run first", pattern)
+		return fmt.Errorf(
+			"no calculator output was kept, so it cannot be observed to %s %q: the operation step must run first",
+			comparison, pattern,
+		)
 	}
 
-	// The declared commands print the result and a newline, and the binding
-	// matches the pattern against the kept stdout without that trailing
-	// newline.
-	printed := strings.TrimSuffix(state.Output, "\n")
-
-	expression, err := regexp.Compile(pattern)
-	if err != nil {
-		return fmt.Errorf("the step's pattern %q is no regular expression: %w", pattern, err)
-	}
-	matched := expression.MatchString(printed)
-
-	switch comparison {
-	case "matches":
-		if !matched {
-			return fmt.Errorf("the calculator's output %q does not match %q", printed, pattern)
-		}
-	case "does not match":
-		if matched {
-			return fmt.Errorf("the calculator's output %q matches %q", printed, pattern)
-		}
-	default:
-		return fmt.Errorf("the step names no declared comparison: %q", comparison)
-	}
-
-	return nil
+	return helpers.CompareOutput(state.Output, comparison, pattern)
 }

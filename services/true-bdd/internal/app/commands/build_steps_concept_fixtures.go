@@ -1,16 +1,9 @@
 package commands
 
 import (
-	"errors"
-	"fmt"
-	"io/fs"
-	"os"
 	"path/filepath"
-	"regexp"
 	"slices"
-	"unicode/utf8"
 
-	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/disk"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/registry"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/stepcoverage"
 )
@@ -18,19 +11,8 @@ import (
 // conceptFixture is one fixture a Scenario using the Item's steps names:
 // its directory name under the context's fixture_root.
 type conceptFixture struct {
-	Fixture   string        `yaml:"fixture"`
-	Files     []fixtureFile `yaml:"files,omitempty"`
+	Fixture string `yaml:"fixture"`
 }
-
-type fixtureFile struct {
-	Path    string `yaml:"path"`
-	Content string `yaml:"content"`
-}
-
-// fixtureRecordings holds a fixture's recorded turns, which are not its inputs.
-const fixtureRecordings = "cassettes"
-
-var quotedValue = regexp.MustCompile(`"([^"]+)"`)
 
 // conceptFixtures gathers the fixture inputs of every Scenario of the suite
 // using the Item's steps: each quoted value of its steps that names a
@@ -44,7 +26,7 @@ func conceptFixtures(item *BuildStepsItem, scenarios []*registry.RegistryScenari
 			continue
 		}
 
-		for _, name := range namedFixtures(scenario, root) {
+		for _, name := range registry.NamedFixtures(scenario, root) {
 			dir := name
 
 			index := slices.IndexFunc(fixtures, func(fixture conceptFixture) bool { return fixture.Fixture == dir })
@@ -57,61 +39,4 @@ func conceptFixtures(item *BuildStepsItem, scenarios []*registry.RegistryScenari
 	}
 
 	return fixtures
-}
-
-// namedFixtures lists, in step order, the fixture directories a Scenario names.
-func namedFixtures(scenario *registry.RegistryScenario, root string) []string {
-	names := make([]string, 0)
-
-	for _, step := range scenario.CheckedSteps() {
-		for _, match := range quotedValue.FindAllStringSubmatch(step.Text, -1) {
-			name := match[1]
-			if name != filepath.Base(name) || name == "." || name == ".." || slices.Contains(names, name) {
-				continue
-			}
-
-			info, err := os.Stat(filepath.Join(root, name))
-			if err == nil && info.IsDir() {
-				names = append(names, name)
-			}
-		}
-	}
-
-	return names
-}
-
-// fixtureInputs reads every regular file of a fixture in lexical path
-// order, leaving out its recordings; a file that is not text is named only.
-func fixtureInputs(dir string) ([]fixtureFile, error) {
-	files := make([]fixtureFile, 0)
-
-	err := filepath.WalkDir(filepath.FromSlash(dir), func(path string, entry fs.DirEntry, err error) error {
-		switch {
-		case err != nil:
-			return err
-		case entry.IsDir() && entry.Name() == fixtureRecordings:
-			return filepath.SkipDir
-		case !entry.Type().IsRegular():
-			return nil
-		}
-
-		content, err := disk.Read(path)
-		if err != nil {
-			return fmt.Errorf("read fixture input: %w", err)
-		}
-
-		text := string(content)
-		if !utf8.Valid(content) {
-			text = fmt.Sprintf("(%d bytes, not text)", len(content))
-		}
-
-		files = append(files, fixtureFile{Path: filepath.ToSlash(path), Content: text})
-
-		return nil
-	})
-	if err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return nil, fmt.Errorf("read fixture %s: %w", dir, err)
-	}
-
-	return files, nil
 }

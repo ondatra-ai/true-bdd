@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // engine-003-locations-come-from-config: Every location a host project uses must come from `true-bdd.yaml` — never a hardcoded path
 func TestEngine003LocationsComeFromConfig(t *testing.T) {
-	s := scenarios.New(t, "engine-003-locations-come-from-config")
+	s := New(t, "engine-003-locations-come-from-config")
 	s.Given(`the "us-apply-relocated-registry" project tree`)
 	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us apply 95.2 --fix"`)
@@ -48,7 +46,7 @@ func TestEngine003LocationsComeFromConfig(t *testing.T) {
 
 // engine-documents-004-undeclared-registry-refused-by-us-apply: A host whose `true-bdd.yaml` declares no scenario registry must have `us apply` refused before it walks the Story, naming the missing `documents.scenarios_yaml` key, and must leave the Story and the registry at the conventional path unchanged
 func TestEngineDocuments004UndeclaredRegistryRefusedByUsApply(t *testing.T) {
-	s := scenarios.New(t, "engine-documents-004-undeclared-registry-refused-by-us-apply")
+	s := New(t, "engine-documents-004-undeclared-registry-refused-by-us-apply")
 	s.Given(`the "us-apply-undeclared-registry" project tree`)
 	s.When(`the Product Owner runs "us apply 95.1"`)
 	s.Then(`the command exits with code 1`)
@@ -64,7 +62,7 @@ func TestEngineDocuments004UndeclaredRegistryRefusedByUsApply(t *testing.T) {
 
 // fix-loop-choices-004-exit-keeps-registry: Choosing to exit a `us apply --fix` run's fix loop must leave the Registry exactly as it was and walk no further acceptance criterion, reporting the failed Prompt with the fix it carries
 func TestFixLoopChoices004ExitKeepsRegistry(t *testing.T) {
-	s := scenarios.New(t, "fix-loop-choices-004-exit-keeps-registry")
+	s := New(t, "fix-loop-choices-004-exit-keeps-registry")
 	s.Given(`the "fix-loop-exit-registry" project tree`)
 	s.And(`the "us-apply" checklist is narrowed to its "already appear as a scenario in the registry" prompt`)
 	s.And(`the Product Owner's answer to every question is "3"`)
@@ -84,7 +82,7 @@ func TestFixLoopChoices004ExitKeepsRegistry(t *testing.T) {
 
 // us-apply-001-missing-criteria-added: A story whose acceptance criteria are all missing from the registry must re-walk after the merge and end at a fixpoint
 func TestUsApply001MissingCriteriaAdded(t *testing.T) {
-	s := scenarios.New(t, "us-apply-001-missing-criteria-added")
+	s := New(t, "us-apply-001-missing-criteria-added")
 	s.Given(`the "us-apply-rewalk-converges" project tree`)
 	s.And(`the "us-apply" checklist is narrowed to its "already appear as a scenario in the registry" prompt`)
 	s.And(`the Product Owner's answer to every question is "1"`)
@@ -111,7 +109,7 @@ func TestUsApply001MissingCriteriaAdded(t *testing.T) {
 
 // us-apply-002-duplicates-collapse: Two registry entries claiming the same acceptance criterion must collapse into one, leaving every other entry untouched
 func TestUsApply002DuplicatesCollapse(t *testing.T) {
-	s := scenarios.New(t, "us-apply-002-duplicates-collapse")
+	s := New(t, "us-apply-002-duplicates-collapse")
 	s.Given(`the "us-apply-duplicate-collapse" project tree`)
 	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us apply 95.1 --fix"`)
@@ -136,7 +134,7 @@ func TestUsApply002DuplicatesCollapse(t *testing.T) {
 
 // us-apply-003-reorder-keeps-keys: Reordering a Story's acceptance criteria and applying it again must leave every Scenario key unchanged, because a key comes from the criterion's id and never from its position
 func TestUsApply003ReorderKeepsKeys(t *testing.T) {
-	s := scenarios.New(t, "us-apply-003-reorder-keeps-keys")
+	s := New(t, "us-apply-003-reorder-keeps-keys")
 	s.Given(`the "us-apply-reordered-criteria" project tree`)
 	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us apply mcp-endpoint --fix"`)
@@ -158,7 +156,7 @@ func TestUsApply003ReorderKeepsKeys(t *testing.T) {
 
 // us-apply-004-key-apart-from-lineage-refused: `us apply` must refuse to write the Registry, exiting 1 and leaving it unchanged, when a Scenario claiming one of the Story's criteria is keyed apart from that criterion's lineage id, even though every Prompt passed, naming that Scenario and the lineage it claims
 func TestUsApply004KeyApartFromLineageRefused(t *testing.T) {
-	s := scenarios.New(t, "us-apply-004-key-apart-from-lineage-refused")
+	s := New(t, "us-apply-004-key-apart-from-lineage-refused")
 	s.Given(`the "us-apply-key-apart-from-lineage" project tree`)
 	s.And(`the "us-apply" checklist is narrowed to its "already appear as a scenario in the registry" prompt`)
 	s.When(`the Product Owner runs "us apply mcp-endpoint"`)
@@ -173,7 +171,7 @@ func TestUsApply004KeyApartFromLineageRefused(t *testing.T) {
 
 // us-apply-005-merge-names-declared-service: A criterion merged into a Registry whose architecture declares several services must name the service whose suite holds the test file it reuses, never an empty service
 func TestUsApply005MergeNamesDeclaredService(t *testing.T) {
-	s := scenarios.New(t, "us-apply-005-merge-names-declared-service")
+	s := New(t, "us-apply-005-merge-names-declared-service")
 	s.Given(`the "us-apply-names-service" project tree`)
 	s.And(`the "us-apply" checklist is narrowed to its "already appear as a scenario in the registry" prompt`)
 	s.And(`the Product Owner's answer to every question is "1"`)
@@ -195,7 +193,7 @@ func TestUsApply005MergeNamesDeclaredService(t *testing.T) {
 
 // us-apply-006-undeclared-service-refused: `us apply` must refuse to write the Registry, exiting 1 and leaving it unchanged, when a Scenario claiming one of the Story's criteria leaves its `service` empty or names one the architecture does not declare, even though every Prompt passed, naming each such Scenario and its `service`
 func TestUsApply006UndeclaredServiceRefused(t *testing.T) {
-	s := scenarios.New(t, "us-apply-006-undeclared-service-refused")
+	s := New(t, "us-apply-006-undeclared-service-refused")
 	s.Given(`the "us-apply-undeclared-service" project tree`)
 	s.And(`the "us-apply" checklist is narrowed to its "already appear as a scenario in the registry" prompt`)
 	s.When(`the Product Owner runs "us apply calc-halve"`)
@@ -211,7 +209,7 @@ func TestUsApply006UndeclaredServiceRefused(t *testing.T) {
 
 // us-apply-007-prompt-step-order: The apply checklist prompt must group steps as Given, When, Then, preserving every block's order and every and or but modifier from the selected Acceptance Criterion
 func TestUsApply007PromptStepOrder(t *testing.T) {
-	s := scenarios.New(t, "us-apply-007-prompt-step-order")
+	s := New(t, "us-apply-007-prompt-step-order")
 	s.Given(`the "us-apply-prompt-order" project tree`)
 	s.When(`the Product Owner runs "us apply mcp-endpoint"`)
 	s.Then(`the us_apply_checklist prompt groups Given, When, Then in source order with and/but modifiers`)
@@ -223,7 +221,7 @@ func TestUsApply007PromptStepOrder(t *testing.T) {
 
 // us-apply-refusals-001-missing-story-refused: `us apply` on a story number that has no file must be refused, and the refusal must say what filename it looked for
 func TestUsApplyRefusals001MissingStoryRefused(t *testing.T) {
-	s := scenarios.New(t, "us-apply-refusals-001-missing-story-refused")
+	s := New(t, "us-apply-refusals-001-missing-story-refused")
 	s.Given(`the "us-apply-missing-story" project tree`)
 	s.When(`the Product Owner runs "us apply 95.4"`)
 	s.Then(`the command exits with code 1`)
@@ -239,7 +237,7 @@ func TestUsApplyRefusals001MissingStoryRefused(t *testing.T) {
 
 // us-apply-refusals-002-shared-prefix-reads-own-story: When the requested id is a prefix of another Story's id, so that both Story files start with it, `us apply` must read the file whose own id is the requested one, so a fault in that file is what the refusal names and the other Story is never mentioned
 func TestUsApplyRefusals002SharedPrefixReadsOwnStory(t *testing.T) {
-	s := scenarios.New(t, "us-apply-refusals-002-shared-prefix-reads-own-story")
+	s := New(t, "us-apply-refusals-002-shared-prefix-reads-own-story")
 	s.Given(`the "us-apply-shared-prefix" project tree`)
 	s.When(`the Product Owner runs "us apply scen-check"`)
 	s.Then(`the command exits with code 1`)
@@ -258,7 +256,7 @@ func TestUsApplyRefusals002SharedPrefixReadsOwnStory(t *testing.T) {
 
 // us-apply-refusals-003-mismatched-id-refused: When every Story file starting with the requested id declares another Story's id, `us apply` must be refused at startup, naming each file and the id it declares, so `us apply scen` never applies the Story `scen-check`
 func TestUsApplyRefusals003MismatchedIdRefused(t *testing.T) {
-	s := scenarios.New(t, "us-apply-refusals-003-mismatched-id-refused")
+	s := New(t, "us-apply-refusals-003-mismatched-id-refused")
 	s.Given(`the "us-apply-story-id-mismatch" project tree`)
 	s.When(`the Product Owner runs "us apply scen"`)
 	s.Then(`the command exits with code 1`)
@@ -277,7 +275,7 @@ func TestUsApplyRefusals003MismatchedIdRefused(t *testing.T) {
 
 // us-apply-refusals-004-legacy-layout-refused: A story carried forward from the older `scenarios.test_scenarios[]` layout must be refused, and told what to convert
 func TestUsApplyRefusals004LegacyLayoutRefused(t *testing.T) {
-	s := scenarios.New(t, "us-apply-refusals-004-legacy-layout-refused")
+	s := New(t, "us-apply-refusals-004-legacy-layout-refused")
 	s.Given(`the "us-apply-malformed-scenarios" project tree`)
 	s.When(`the Product Owner runs "us apply 95.5"`)
 	s.Then(`the command exits with code 1`)
@@ -294,7 +292,7 @@ func TestUsApplyRefusals004LegacyLayoutRefused(t *testing.T) {
 
 // us-apply-refusals-005-unrefined-story-refused: `us apply` on a story that was created but never refined must be refused, not walked to a trivial success
 func TestUsApplyRefusals005UnrefinedStoryRefused(t *testing.T) {
-	s := scenarios.New(t, "us-apply-refusals-005-unrefined-story-refused")
+	s := New(t, "us-apply-refusals-005-unrefined-story-refused")
 	s.Given(`the "us-apply-story-without-acs" project tree`)
 	s.When(`the Product Owner runs "us apply 95.3"`)
 	s.Then(`the command exits with code 1`)
@@ -310,7 +308,7 @@ func TestUsApplyRefusals005UnrefinedStoryRefused(t *testing.T) {
 
 // us-apply-refusals-006-unshaped-criterion-id-refused: An acceptance criterion whose id is not `<NNN>-<slug>` must be refused before any AI turn, because `us apply` keys the Scenario it becomes by that id
 func TestUsApplyRefusals006UnshapedCriterionIdRefused(t *testing.T) {
-	s := scenarios.New(t, "us-apply-refusals-006-unshaped-criterion-id-refused")
+	s := New(t, "us-apply-refusals-006-unshaped-criterion-id-refused")
 	s.Given(`the "us-apply-unshaped-criterion-id" project tree`)
 	s.When(`the Product Owner runs "us apply 95.6"`)
 	s.Then(`the command exits with code 1`)

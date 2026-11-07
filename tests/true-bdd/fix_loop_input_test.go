@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // fix-loop-input-007-clarification-eof-stops: A clarifying question with stdin at end of input prints the question and suggestions, requires a person and stops without guessing
 func TestFixLoopInput007ClarificationEofStops(t *testing.T) {
-	s := scenarios.New(t, "fix-loop-input-007-clarification-eof-stops")
+	s := New(t, "fix-loop-input-007-clarification-eof-stops")
 	s.Given(`the "fix-loop-unanswered-eof" project tree`)
 	s.When(`the Quality Engineer runs "scen check --fix"`)
 	s.Then(`the command exits with code 1`)
@@ -42,7 +40,7 @@ func TestFixLoopInput007ClarificationEofStops(t *testing.T) {
 
 // fix-loop-input-008-menu-eof-stops: End of input at the fix menu stops because a person must choose, without a tests-still-failing error or completion banner
 func TestFixLoopInput008MenuEofStops(t *testing.T) {
-	s := scenarios.New(t, "fix-loop-input-008-menu-eof-stops")
+	s := New(t, "fix-loop-input-008-menu-eof-stops")
 	s.Given(`the "fix-loop-menu-eof" project tree`)
 	s.And(`the project's test dependencies are installed`)
 	s.When(`the System Architect runs "build code --fix"`)

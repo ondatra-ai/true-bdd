@@ -1,0 +1,43 @@
+story:
+  id: step-arguments
+  feature: specification-evidence
+  title: Read step arguments under the architecture
+  as_a: System Architect
+  i_want: every step reader to receive the architecture argument rules
+  so_that: generation preserves the scope and escaping of each argument family
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 001-whole-section
+    description: The scen_check_checklist Model must carry the complete step_arguments
+      section, using the same StepArguments construction as us_refine_checklist, us_apply_checklist
+      and build_steps_checklist.
+    steps:
+    - given:
+      - the "step-arguments-present" project tree
+      - the "scen-check" checklist is narrowed to its "whether this scenario's description follows the rule-based format" prompt
+      when:
+      - the Quality Engineer runs "scen check E2E-001"
+      then:
+      - the scen_check_checklist prompt carries the complete step arguments from its
+        Model
+      - the command exits with code 0
+      - the engine dispatched 1 AI turns
+      - no file outside "tmp" changed
+  - id: 002-absent-unchanged
+    description: A host without step_arguments must retain every prompt byte under
+      the shared optional-field construction of the us_refine_checklist, us_apply_checklist,
+      scen_check_checklist and build_steps_checklist Models.
+    steps:
+    - given:
+      - the "step-arguments-absent" project tree
+      - the "scen-check" checklist is narrowed to its "whether this scenario's description follows the rule-based format" prompt
+      when:
+      - the Quality Engineer runs "scen check E2E-001"
+      then:
+      - the scen_check_checklist prompt is byte-identical when step arguments are
+        absent
+      - the scen_check_checklist prompt keeps its system bytes when step arguments
+        are absent
+      - the command exits with code 0
+      - the engine dispatched 1 AI turns
+      - no file outside "tmp" changed

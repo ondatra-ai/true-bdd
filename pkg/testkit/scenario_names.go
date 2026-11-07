@@ -7,17 +7,19 @@ import (
 	"unicode"
 )
 
-// fixtureNamePattern reads the fixture tree's name out of a scenario's
-// Given step. Kept here, not just in the step definition, because the
-// subtest name (what `-run` selects) must be known before any step runs.
-var fixtureNamePattern = regexp.MustCompile(`the "([^"]+)" project tree`)
+// FixtureName returns the first capture of the first matching step, or the Scenario id if none matches.
+func FixtureName(scenario bddgo.Scenario, patterns ...string) string {
+	var pattern *regexp.Regexp
+	if len(patterns) > 0 && patterns[0] != "" {
+		pattern = regexp.MustCompile(patterns[0])
+	}
 
-// FixtureName is the run-directory name for a scenario: the fixture tree
-// it drives, falling back to the scenario id when the Given step names
-// none (a scenario this suite refuses moments later anyway).
-func FixtureName(scenario bddgo.Scenario) string {
+	if pattern == nil {
+		return scenario.ID
+	}
+
 	for _, step := range scenario.Steps {
-		match := fixtureNamePattern.FindStringSubmatch(step.Text)
+		match := pattern.FindStringSubmatch(step.Text)
 		if match != nil {
 			return match[1]
 		}
@@ -26,9 +28,7 @@ func FixtureName(scenario bddgo.Scenario) string {
 	return scenario.ID
 }
 
-// TestName is the generated Go test function for a scenario, mirroring the
-// engine's CamelCase of its key (ADR 0014) so a record hint names a filter
-// that actually selects something.
+// TestName is the generated Go test function name obtained by CamelCasing the Scenario key.
 func TestName(scenario bddgo.Scenario) string {
 	var name strings.Builder
 

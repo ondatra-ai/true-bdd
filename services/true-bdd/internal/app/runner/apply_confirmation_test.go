@@ -126,7 +126,7 @@ func TestExtractedMalformedConfirmationKeepsPostFix(t *testing.T) {
 	}
 }
 
-func TestMissingConfirmationTerminalRerunCannotBypassBound(t *testing.T) {
+func TestMissingConfirmationStopsAfterLastAllowedFailedRerun(t *testing.T) {
 	spec := confirmationSpec(t, buildCodeCommand, applyAnswer{response: "Changed the service."})
 	reruns := 0
 	spec.PostNotApplied = func(_ context.Context, _ bool) (bool, error) {
@@ -136,24 +136,31 @@ func TestMissingConfirmationTerminalRerunCannotBypassBound(t *testing.T) {
 	}
 
 	err := runner.Run(t.Context(), spec)
-	if err == nil || !strings.Contains(err.Error(), "gave up after 3 applied fix") || reruns != 3 {
-		t.Fatalf("Run = %v, reruns = %d; want terminal bound after three applies including green terminal rerun", err, reruns)
+	if err == nil || !strings.Contains(err.Error(), "gave up after 2 applied fix") || reruns != 2 {
+		t.Fatalf("Run = %v, reruns = %d; want bound after two failed reruns, before the third repair", err, reruns)
 	}
 }
 
 type applyAnswer struct {
-	writerCLI    provider.CLI
-	claudeWriter *bool
-	codexWriter  *bool
-	request      *string
-	failRole     provider.Role
-	response     string
-	err          error
+	validationCalls *[]string
+	writerCLI       provider.CLI
+	claudeWriter    *bool
+	codexWriter     *bool
+	request         *string
+	failRole        provider.Role
+	response        string
+	err             error
 }
 
 func (answer applyAnswer) ExecutePromptWithSystem(_ context.Context, role provider.Role, _, user string,
 	_ provider.ModelRef, _ provider.ExecutionMode, _ string, options ...provider.TurnOptions) (string, error) {
 	answer.observeApply(role, user, options)
+
+	if role == provider.RolePrompt && answer.validationCalls != nil {
+		*answer.validationCalls = append(*answer.validationCalls, "prompt")
+
+		return `{"answer":"pass","context":[],"fix_prompt":""}`, nil
+	}
 
 	if role == answer.failRole && answer.err != nil {
 		return "", answer.err
@@ -206,7 +213,7 @@ config:
 sections:
 - id: verdict
   validation_prompts:
-  - D: tests-pass
+  - Q: {code: tests-pass}
     F: Repair the service
 `,
 		"system.tpl": "Apply the fix.",
@@ -311,7 +318,7 @@ func TestStartedCodexFailuresRecoverOnlyBuildCodeApply(t *testing.T) {
 	}
 }
 
-func TestFailedWriterTerminalRerunCannotBypassBound(t *testing.T) {
+func TestFailedWriterStopsAfterLastAllowedFailedRerun(t *testing.T) {
 	failure := &pkgerrors.CodexTurnError{Outcome: pkgerrors.CodexTurnNonZeroExit, Cause: errors.New("writer ended")}
 	spec := confirmationSpec(t, buildCodeCommand, applyAnswer{err: failure})
 	reruns := 0
@@ -322,7 +329,7 @@ func TestFailedWriterTerminalRerunCannotBypassBound(t *testing.T) {
 	}
 
 	err := runner.Run(t.Context(), spec)
-	if err == nil || !strings.Contains(err.Error(), "gave up after 3 applied fix") || reruns != 3 {
+	if err == nil || !strings.Contains(err.Error(), "gave up after 2 applied fix") || reruns != 2 {
 		t.Fatalf("Run = %v, reruns = %d", err, reruns)
 	}
 }
@@ -341,7 +348,8 @@ func useFailureRole(t *testing.T, role provider.Role) {
 		t.Fatal(err)
 	}
 
-	writeConfirmationFile(t, path, strings.Replace(string(body), "D: tests-pass", "Q: Does the test pass?", 1))
+	changed := strings.Replace(string(body), "Q: {code: tests-pass}", "Q: {prompt: Does the test pass}", 1)
+	writeConfirmationFile(t, path, changed)
 }
 
 func TestStartedClaudeFailuresRecoverOnlyBuildCodeApply(t *testing.T) {

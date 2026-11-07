@@ -87,7 +87,7 @@ func groupSchema(steps []conceptStep, concepts []product.Concept) (string, error
 		runner = answerSchema{schemaType: schemaNull}
 	}
 
-	score := answerSchema{schemaType: schemaInteger, "minimum": 0, "maximum": maxConceptScore}
+	score := answerSchema{schemaType: schemaInteger}
 	assignment := requiredObject(answerSchema{
 		"index": answerSchema{schemaType: schemaInteger}, "concept": best, "score": score,
 		"runner_up": runner, "runner_up_score": score})

@@ -1,1 +1,3 @@
 Implement only the selected given body: from the host root (../..) build ./services/calc with go build into ../../tmp/calc-program/calc, store that program's absolute path in state.Program, and return any error. Do not run the double command in this given: its binding says to put the installed program in place. Preserve all other functions, signature, registration and concept record. End the final message with the requested FILE_START/FILE_END applied confirmation (applied: true, target, summary); never write its path.
+
+If you compile the steps package while writing, preserve the inherited Go cache and temporary-directory environment; never create a separate build cache.

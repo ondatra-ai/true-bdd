@@ -2,6 +2,7 @@
 
 You are the production writer for a controlled lifecycle fixture. Follow the request's required stage exactly. Change only services/calc/, never tests or documents. Complete the changes during this turn and answer with nonempty prose only, without confirmation markers or a result file.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -22,85 +23,89 @@ Test: fixture/buildcodefix/tests/suite::TestB
 
 ## Diagnosis
 
-The two failures are not a harness, wiring or build problem. Discovery and
-compilation already succeed: the suite command
-(`go test -json -count=1 ./tests/suite/...`) runs, both tests execute, and each
-one fails on its own value assertion. The module path `fixture/buildcodefix`
-in `go.mod` already makes the test's import of
-`fixture/buildcodefix/services/calc` resolve to the existing production
-package, so nothing structural is missing.
+Both failures in the set come from one cause: the two exported accessors in the
+`calc` production package are stubs that return the zero value, while the suite's
+assertions require specific non-zero results.
 
-The specification lives in the (non-editable) test file `tests/suite/calc_test.go`:
+- `tests/suite/calc_test.go:3` asserts `calc.A() != 1` is a fatal error, i.e. the
+  contract is `A() == 1`. Production returns `0`, so `TestA` fails with
+  `A needs one`.
+- `tests/suite/calc_test.go:4` asserts `calc.B() != 2` is a fatal error, i.e. the
+  contract is `B() == 2`. Production returns `0`, so `TestB` fails with
+  `B needs two`.
 
-- `TestA` asserts `calc.A()` equals `1`, failing with `A needs one`.
-- `TestB` asserts `calc.B()` equals `2`, failing with `B needs two`.
-
-The production source `services/calc/calc.go` returns the zero value from
-both functions, so each assertion fails. These are two independent wrong
-constants in one file — one per test in the set.
+The failing assertions are the specification. The tests, their package
+(`suite_test`), and the import path are all correct and must be left untouched.
 
 ## Scope
 
-Edit exactly one file, inside the single declared edit root `services/calc`:
+Exactly one file changes:
 
-- `services/calc/calc.go`
+- `services/calc/calc.go` — the only production source in the declared edit root
+  `services/calc`.
 
-Do not touch `tests/suite/` or any `*_test.go`, `go.mod`,
-`docs/architecture/architecture.yaml`, `true-bdd/`, `templates/` or `CLAUDE.md`.
-No new files are required and none should be added.
+No other file needs to change. Confirmed during investigation:
 
-## Part 1 — `calc.A()` returns the unit value
+- `go.mod` declares module `fixture/buildcodefix`, and the test imports
+  `fixture/buildcodefix/services/calc`. That path already resolves to
+  `services/calc/` with package clause `package calc`. Do **not** touch `go.mod`,
+  do **not** rename the package, and do **not** move the file.
+- `docs/architecture/architecture.yaml` runs
+  `go test -json -count=1 ./tests/suite/...` for record, replay and live. No
+  harness or configuration change is required for the suite to execute; it
+  already runs and reports real assertion failures.
+
+## Part 1 — make `A` satisfy its contract
 
 **File:** `services/calc/calc.go`
 **Serves:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestA`
 
-Contract: `A()` is a nullary function in package `calc` returning `int`, and
-its specified result is `1`. Change its body so the function yields `1`
-instead of `0`. Keep the existing package clause, the exported name `A`, the
-empty parameter list and the `int` result type exactly as they are — the test
-calls `calc.A()` with no arguments and compares the result to an untyped
-integer constant, so any change to the name, arity or result type would break
-compilation of the untouched test file.
+Change the body of the existing exported function `A() int` so that it yields the
+value `1` instead of `0`. Keep the signature exactly as the test consumes it: an
+exported, parameterless function named `A` on package `calc` returning a single
+`int`. Changing the signature, receiver, arity or return type would break
+compilation of `tests/suite/calc_test.go`, which you may not edit.
 
-## Part 2 — `calc.B()` returns two
+## Part 2 — make `B` satisfy its contract
 
 **File:** `services/calc/calc.go`
 **Serves:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB`
 
-Contract: `B()` is likewise a nullary function in package `calc` returning
-`int`, and its specified result is `2`. Change its body so the function yields
-`2` instead of `0`. Same signature-stability requirement as Part 1: only the
-returned value changes.
+Change the body of the existing exported function `B() int` so that it yields the
+value `2` instead of `0`. Same signature constraint as Part 1: exported,
+parameterless, single `int` result, package `calc`.
 
-The two parts are independent; `A` must stay `1` and `B` must stay `2` — do
-not collapse them into a shared helper or make one delegate to the other, as
-that would couple two separately specified values with no benefit.
+Keep `A` and `B` independent. `B` must not be derived from `A` (for example as
+`A() + 1` or `A() * 2`); the two tests specify two separate constants, and
+coupling them would make a future change to one silently break the other.
 
-## Intended implementation
+## Implementation notes for the writer
 
-Keep the file minimal and idiomatic Go: `package calc` followed by the two
-exported functions, each returning its specified literal. The result should be
-ordinary, compilable, vet-clean Go — plain `return` of an integer literal, no
-globals, no state, no initialisation logic, no build tags and no extra
-dependencies. The file is the whole production surface of this service, so
-there is nothing else to keep in sync.
+- Preserve the existing `package calc` clause and the file's two exported
+  functions. This is an edit to two function bodies, not a rewrite or a new file.
+- The source is currently written in a compressed one-line-per-function style.
+  Reformatting it to standard `gofmt` layout while making the change is
+  acceptable and preferred, provided the package clause and both exported
+  signatures are unchanged.
+- Return the required values directly as literals. There is no input, no state
+  and no collaborator in this package, so no configuration, constructor or
+  dependency is warranted — introducing one would be unused indirection.
+- Add no new files, no new packages and no new dependencies.
 
 ## Verification
 
-Run the suite command from the architecture document:
+From the fixture root, run the suite command from the architecture document:
 
-```
-go test -json -count=1 ./tests/suite/...
-```
+    go test -json -count=1 ./tests/suite/...
 
-Expect `TestA` and `TestB` both to pass. Confirm `git status` shows exactly
-one modified file, `services/calc/calc.go`, and that no test file or document
-appears in the diff.
+Expected: `TestA` and `TestB` both pass, with no change to any file under
+`tests/`, to `docs/architecture/architecture.yaml`, or to `true-bdd/`. Confirm
+the diff touches only `services/calc/calc.go`.
 
-## Constraints restated
+## Prohibitions
 
-- Never change, weaken, skip or delete an assertion; the failing assertions
-  are the specification and the production code is what is wrong.
-- Do not add `t.Skip`, build constraints, or anything that prevents either
-  test from executing.
-- Confine all edits to `services/calc`.
+- Do not edit `tests/suite/calc_test.go` or any `*_test.go` file.
+- Do not weaken, skip, delete or invert any assertion; do not add `t.Skip`,
+  build tags, or `-run` filters to dodge a test.
+- Do not edit `docs/architecture/architecture.yaml`, `CLAUDE.md`, `go.mod`, or
+  anything under `true-bdd/` or `templates/`.

@@ -10,14 +10,14 @@ Review one TrueBDD change for one thing only: whether each part of it fits the g
 
 ## The architecture
 
-`docs/adr/generation-architecture.md`, its six invariants in `.claude/rules/generation.md`, and the decisions behind them, ADR-0040 and ADR-0041. When a change's place is in doubt, the Owner's decisions: {{the `docs/qna/` log the ticket carries out}}, read oldest to newest, a newer entry overriding an older one.
+`docs/adr/generation-architecture.md`, its invariants in `.claude/rules/generation.md`, and the decisions behind them, ADR-0040, ADR-0041 and ADR-0042. When a change's place is in doubt, the Owner's decisions: {{the `docs/qna/` log the ticket carries out}}, read oldest to newest, a newer entry overriding an older one.
 
 ## Question
 
 For every file the diff changes, answer three things:
 
-1. Its place: the command that writes it (`build steps`, `build tests`, `build code`, or none when people write it) and what holds it (the Steps package, the tests, the code, `pkg/testkit`, `pkg/proxy/cli`, `utilities/cliproxy`, a Specification document, the engine, or this repository's tooling).
-2. Each of the six invariants it keeps or breaks.
+1. Its place: the command that writes it (`build steps`, `build tests`, `build code`, or none when people write it) and what holds it (a checklist, the Steps package, the tests, the code, `pkg/testkit`, `pkg/proxy/cli`, `utilities/cliproxy`, a Specification document, the engine, or this repository's tooling).
+2. Each invariant it keeps or breaks.
 3. Whether that place matches the one the ticket names for it.
 
 A broken invariant is a finding unless the ticket names the ADR it amends. Report nothing else: standards and the ticket's spec belong to the review's other two runs.

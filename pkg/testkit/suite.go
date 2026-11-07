@@ -3,7 +3,6 @@ package testkit
 import (
 	"flag"
 	"fmt"
-	"os"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -13,8 +12,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/cli/gotool"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/pkg/logging"
+	proxycli "github.com/ondatra-ai/true-bdd/pkg/proxy/cli"
 	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit/internal/runner"
 	"log/slog"
 )
 
@@ -24,39 +24,50 @@ const (
 	buildTimeout    = 2 * time.Minute
 )
 
-// Suite owns TestMain lifecycle and lazily brings up the harness.
-// NewSuite registers the harness flags; construct adds definition-owned State fields.
+// Suite owns TestMain lifecycle and lazily brings up the shared harness.
 type Suite[S any] struct {
-	name      string
-	aiCLIs    []string
-	flags     *Flags
-	suite     *bddgo.Suite[S]
-	register  func(*bddgo.Suite[S])
-	construct func(*ScenarioRun) *S
-	repoRoot  string
-	config    hostConfig
-	runModes  runner.Modes
-	bootOnce  sync.Once
-	errBoot   error
-	skipWhy   string
-	harness   *Harness
-	teardowns []func()
+	name         string
+	aiCLIs       []string
+	dependencies []proxycli.Dependency
+	options      SuiteOptions
+	flags        *Flags
+	suite        *bddgo.Suite[S]
+	register     func(*bddgo.Suite[S])
+	construct    func(*ScenarioRun) *S
+	repoRoot     string
+	config       hostConfig
+	runModes     runner.Modes
+	bootOnce     sync.Once
+	errBoot      error
+	skipWhy      string
+	harness      *harness
+	teardowns    []func()
 }
 
-// NewSuite creates Suite wiring without reading files or building binaries.
+// NewSuite creates a suite without reading files or building binaries.
 func NewSuite[S any](
-	name string, aiCLIs []string, register func(*bddgo.Suite[S]), construct func(*ScenarioRun) *S,
+	name string, dependencies []proxycli.Dependency, register func(*bddgo.Suite[S]),
+	construct func(*ScenarioRun) *S, options ...SuiteOptions,
 ) *Suite[S] {
+	names := make([]string, 0, len(dependencies))
+	for _, dependency := range dependencies {
+		names = append(names, dependency.Name)
+	}
+
+	settings := SuiteOptions{}
+	if len(options) > 0 {
+		settings = options[0]
+	}
+
 	return &Suite[S]{
-		name: name, aiCLIs: aiCLIs, flags: RegisterFlags(flag.CommandLine), register: register, construct: construct,
+		name: name, aiCLIs: names, dependencies: settings.recordingDependencies(dependencies), options: settings,
+		flags: RegisterFlags(flag.CommandLine), register: register, construct: construct,
 	}
 }
 
-// Main is the suite's TestMain body. It returns instead of calling os.Exit
-// directly, so the caller can run deferred teardowns first — TestMain has
-// no *testing.T, so t.Cleanup is unavailable.
+// Main runs the suite's TestMain lifecycle and returns its exit status so deferred cleanup can finish.
 func (h *Suite[S]) Main(m *testing.M) int {
-	logging.Install(logging.Stderr, "", "true-bdd")
+	logging.Install(logging.Stderr, "", h.name)
 
 	// Parsed explicitly: m.Run parses too late for a flag Main reads.
 	flag.Parse()
@@ -106,9 +117,7 @@ func (h *Suite[S]) Main(m *testing.M) int {
 	return code
 }
 
-// New returns the Run a generated test drives, bringing the harness up
-// lazily on the first call — eager init here would cost every coverage
-// guard a binary build and an aiproxy shim just to compare two files.
+// New returns the run a generated test drives, lazily bringing up the harness on first use.
 func (h *Suite[S]) New(t *testing.T, scenarioID string) *bddgo.Run[S] {
 	t.Helper()
 
@@ -117,9 +126,7 @@ func (h *Suite[S]) New(t *testing.T, scenarioID string) *bddgo.Run[S] {
 	return h.suite.Scenario(t, scenarioID)
 }
 
-// CheckCoverage refuses a repository whose registry and generated tests
-// disagree. Hand-written on purpose: a generated guard is one the
-// generator could silence by regenerating it.
+// CheckCoverage refuses disagreement between the Registry and the generated tests.
 func (h *Suite[S]) CheckCoverage(t *testing.T) {
 	t.Helper()
 
@@ -130,7 +137,7 @@ func (h *Suite[S]) CheckCoverage(t *testing.T) {
 func (h *Suite[S]) CheckFixtureTrees(t *testing.T) {
 	t.Helper()
 
-	h.suite.CheckFixtureTrees(t, filepath.Join(h.repoRoot, "tests", h.name, "fixtures"), FixtureName)
+	h.suite.CheckFixtureTrees(t, filepath.Join(h.repoRoot, "tests", h.name, "fixtures"), h.fixtureName)
 }
 
 // ensureHarness builds everything a scenario shares, once.
@@ -199,7 +206,9 @@ func (h *Suite[S]) bootHarness(t *testing.T) (string, error) {
 
 	h.teardowns = append(h.teardowns, closeLog)
 
-	h.harness = &Harness{
+	h.harness = &harness{
+		Service: h.name, Dependencies: h.dependencies,
+		RepoLayer: h.options.RepoLayer, FixtureStep: h.options.FixtureStep,
 		Binary:       runner.NewLazyBinary(h.buildService),
 		SessionRoot:  sessionRoot,
 		Shims:        shims,
@@ -212,7 +221,7 @@ func (h *Suite[S]) bootHarness(t *testing.T) (string, error) {
 	}
 
 	h.suite.Init(func(world *bddgo.World) (*S, error) {
-		run, stateErr := NewScenarioRun(h.harness)(world)
+		run, stateErr := newScenarioRun(h.harness)(world)
 		if stateErr != nil {
 			return nil, stateErr
 		}
@@ -260,7 +269,7 @@ func (h *Suite[S]) writeSessionMeta(sessionRoot, mode string) error {
 			continue
 		}
 
-		fixtures = append(fixtures, FixtureName(scenario))
+		fixtures = append(fixtures, h.fixtureName(scenario))
 	}
 
 	err = runner.WriteSessionMeta(sessionRoot, mode, fixtures)
@@ -296,9 +305,7 @@ func (h *Suite[S]) installShims(modes runner.Modes) (runner.ShimDirs, error) {
 
 	h.teardowns = append(h.teardowns, func() { _ = disk.RemoveTree(base) })
 
-	proxyPath := filepath.Join(base, "aiproxy")
-
-	err = h.goBuild(proxyPath, h.repoRoot, "github.com/ondatra-ai/true-bdd/pkg/testkit/aiproxy")
+	utility, err := proxycli.Build(h.repoRoot, base)
 	if err != nil {
 		return runner.ShimDirs{}, err
 	}
@@ -313,7 +320,7 @@ func (h *Suite[S]) installShims(modes runner.Modes) (runner.ShimDirs, error) {
 			continue
 		}
 
-		dir, dirErr := h.installShimNames(base, caller, proxyPath)
+		dir, dirErr := h.installShimNames(base, caller, utility)
 		if dirErr != nil {
 			return runner.ShimDirs{}, dirErr
 		}
@@ -329,7 +336,7 @@ func (h *Suite[S]) installShims(modes runner.Modes) (runner.ShimDirs, error) {
 }
 
 // installShimNames symlinks one caller's shim dir.
-func (h *Suite[S]) installShimNames(base, caller, proxyPath string) (string, error) {
+func (h *Suite[S]) installShimNames(base, caller string, utility *proxycli.Utility) (string, error) {
 	dir := filepath.Join(base, caller)
 
 	err := disk.Dir(dir, disk.Shared)
@@ -337,16 +344,14 @@ func (h *Suite[S]) installShimNames(base, caller, proxyPath string) (string, err
 		return "", fmt.Errorf("create shim dir for %s: %w", caller, err)
 	}
 
-	names := h.aiCLIs
+	dependencies := h.dependencies
 	if caller == runner.CallerTests {
-		names = []string{"claude"}
+		dependencies = []proxycli.Dependency{{Name: "claude"}}
 	}
 
-	for _, name := range names {
-		err = os.Symlink(proxyPath, filepath.Join(dir, name))
-		if err != nil {
-			return "", fmt.Errorf("install shim %s: %w", name, err)
-		}
+	err = utility.Substitute(dir, dependencies)
+	if err != nil {
+		return "", fmt.Errorf("install CLI stand-ins: %w", err)
 	}
 
 	return dir, nil
@@ -411,4 +416,8 @@ func (h *Suite[S]) requiredCLIs(modes runner.Modes) (string, error) {
 	}
 
 	return h.missingCLI(), nil
+}
+
+func (h *Suite[S]) fixtureName(scenario bddgo.Scenario) string {
+	return FixtureName(scenario, h.options.FixtureStep)
 }

@@ -2,7 +2,7 @@
 
 You apply the approved bodies of one concept's step definitions in one suite.
 Preserve the engine's registrations, patterns, signatures and //truebdd:concept
-records. Modify only those bodies and the suite's shared state. Use the declared
+records. Modify those bodies, the suite's shared state and helpers/. Use the declared
 Public interface and the concept's binding; never implement the product's
 operation inside a step definition.
 
@@ -40,10 +40,14 @@ or not built yet. The engine owns compilation and the whole-suite checks. If you
 compile the steps package while writing, preserve the inherited Go cache and
 temporary-directory environment; never create a separate build cache.
 
-Keep every new constant and local helper value inside the selected function body.
-Do not add package-level constants, variables, helper functions or types; only
-shared State fields and the selected file's imports may change outside that body.
+Put code the steps share in tests/<suite>/helpers/, beside the steps/ directory
+named by Suite. Write the helper functions, constants and types the bodies need
+there; helpers are generated with the bodies and need no separate declaration.
+Only selected bodies, their imports and shared State may change inside steps/.
+Helpers must obey the same binding and meaning as their callers, and never
+compute the product's answer. The critique judges their complete source too.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -99,9 +103,9 @@ definitions:
       file: tests/calc/steps/concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b.go
       pattern: ^the Owner doubles (-?\d+)$
       captures:
-        - name: number
-          means: The whole number operand to double, written as an optionally negative decimal integer (e.g. 3), passed verbatim as the VALUE argument of the double command.
-      serves: 'Serves "Run the kept calculator program''s double command ... with the step''s whole number": the single capture is the integer argument the process is run with, and the literal words "the Owner doubles" fix the step to the doubling concept; the stdout kept as an integer needs no capture.'
+        - name: value
+          means: The whole number the Owner doubles, passed as the VALUE argument of the calculator's double command.
+      serves: 'Serves "Run the kept calculator program''s double command as a process from the host root with the step''s whole number and keep its integer stdout": the capture supplies the step''s whole number for the double command''s argument, while the literal words "the Owner doubles" state the doubling concept.'
       steps:
         - text: the Owner doubles 3
           captures:
@@ -111,14 +115,37 @@ scenarios:
     - calc-001-double
 
 
+# Fix Prompt for Item when-doubling: when concept "doubling"
+
 ## Target
-tests/calc/steps — the `when` concept "doubling" definition.
+tests/calc/steps
 
-## Required Changes
+## Scope
+Write only the body (and its imports) of the one listed definition. Do **not** touch
+`tests/calc/steps/register.go` (the registration line and the `given`/`then` bodies stay as they are),
+`tests/calc/steps/state.go` (the existing `State` already carries everything this body needs),
+`tests/calc/scenarios/`, `tests/calc/calc_test.go`, `docs/`, or `services/`.
+No `tests/calc/helpers/` package is needed: nothing is shared between two bodies here, so the
+single body stays self-contained and the suite keeps exactly one steps package.
 
-Replace the whole contents of `tests/calc/steps/concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b.go` with the code below. This changes only the selected function's body and that file's import block. Keep the `//truebdd:concept when "doubling"` record, the function name and the signature exactly as shown; do not touch `tests/calc/steps/register.go`, `tests/calc/steps/state.go`, the generated test or any service code.
+## Evidence this body is written from
+- Binding: "Run the kept calculator program's double command as a process from the host root with the
+  step's whole number and keep its integer stdout."
+- `docs/architecture/calc-cli.yaml`: `calc double VALUE` takes one required integer argument, exit `0`
+  prints the doubled integer plus a newline on stdout, exit `1` means invalid arguments.
+- `tests/calc/steps/state.go`: `State{Program string; Value int}`.
+- `tests/calc/steps/register.go`: the given `installed` builds `./services/calc` with `command.Dir = "../.."`
+  and keeps the **absolute** binary path in `state.Program`; the then `result` compares `state.Value`
+  against the expected integer. So the when must run `state.Program` from the host root `"../.."`
+  (tests execute in `tests/calc`) and leave the program's integer stdout in `state.Value`.
+- The body must never compute `2*value`; it only passes the capture to the command and parses stdout.
 
-No shared-state changes are needed: `State.Program` (kept by the given "installation" step) and `State.Value` (observed by the then "result" step) already exist in `tests/calc/steps/state.go`.
+## Required Change — replace the whole file
+
+Replace the entire contents of
+`tests/calc/steps/concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b.go`
+with exactly this (the `//truebdd:concept when "doubling"` record, the function name and the
+signature `func(state *State, args []string) error` are preserved verbatim):
 
 ```go
 package steps
@@ -134,40 +161,52 @@ import (
 //truebdd:concept when "doubling"
 func concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b(state *State, args []string) error {
 	if state.Program == "" {
-		return errors.New("double a number: the calculator is not installed")
+		return errors.New("the calculator is not installed")
 	}
-	number := args[0]
-	if _, err := strconv.Atoi(number); err != nil {
-		return fmt.Errorf("double a number: the step's whole number %q: %w", number, err)
+	value := args[0]
+	if _, err := strconv.Atoi(value); err != nil {
+		return fmt.Errorf("the whole number %q to double: %w", value, err)
 	}
-	command := exec.Command(state.Program, "double", number)
+	command := exec.Command(state.Program, "double", value)
 	command.Dir = "../.."
 	stdout, err := command.Output()
 	if err != nil {
 		var exit *exec.ExitError
 		if errors.As(err, &exit) {
-			return fmt.Errorf("double %s: %w: %s", number, err, exit.Stderr)
+			return fmt.Errorf("double %s: %w: %s", value, err, exit.Stderr)
 		}
-		return fmt.Errorf("double %s: %w", number, err)
+		return fmt.Errorf("double %s: %w", value, err)
 	}
-	printed := strings.TrimSpace(string(stdout))
-	doubled, err := strconv.Atoi(printed)
+	doubled, err := strconv.Atoi(strings.TrimSpace(string(stdout)))
 	if err != nil {
-		return fmt.Errorf("double %s: read the printed integer %q: %w", number, printed, err)
+		return fmt.Errorf("double %s printed %q, want an integer: %w", value, stdout, err)
 	}
 	state.Value = doubled
 	return nil
 }
 ```
 
-## Why this body serves the binding
-- "Run the kept calculator program's double command as a process from the host root": the process is `state.Program` — the binary the given "installation" step built and kept — invoked as `calc double VALUE` per the declared OpenCLI document, with `command.Dir = "../.."`, the same host root the install step builds from (the suite's tests run in `tests/calc`).
-- "with the step's whole number": the single capture `args[0]` is passed verbatim as the `value` argument; it is only validated as a decimal integer, never altered.
-- "and keep its integer stdout": the command's stdout (a doubled integer and a newline, per response `'0'`) is trimmed, parsed and stored in `state.Value` for the then "result" step to compare. The body never computes `2*number` or any other doubling itself — the only source of the value is the process's stdout.
-- A non-zero exit (response `'1'`, invalid arguments) fails the step with the program's stderr attached, rather than being silently treated as a result.
+## Why each line follows the binding
+- `state.Program` is the kept calculator program from the given; an empty value is reported as a
+  missing setup rather than silently running something else.
+- `strconv.Atoi(value)` only checks that the capture is the whole number the pattern promised; the
+  original capture string, not a re-rendered number, is passed to the command.
+- `exec.Command(state.Program, "double", value)` with `command.Dir = "../.."` runs the declared
+  `calc double VALUE` command as a process from the host root, the same host root the given builds from.
+- `command.Output()` keeps stdout separate from stderr, so a non-zero exit (the interface's
+  `'1': Invalid arguments`) is reported with the program's stderr instead of being parsed as a number.
+- `strconv.Atoi(strings.TrimSpace(...))` reads the integer stdout and its trailing newline exactly as
+  the interface documents them.
+- `state.Value = doubled` keeps the program's own answer for the then step. The body performs no
+  arithmetic of its own, so the product's doubling is observed, never reproduced.
+
+## Note
+The sandbox for this proposal denied shell access, so the change was not compiled here; it uses only
+`errors`, `fmt`, `os/exec`, `strconv` and `strings` against the existing `State` fields, and the
+engine owns the whole-suite compile.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
-context lists and shared state. Preserve the engine's patterns, registrations,
+context lists, shared state and code they share in tests/<suite>/helpers/. Preserve the engine's patterns, registrations,
 signatures and //truebdd:concept records. Reach the service through its declared
 Public interface. Preserve generated tests, the
 Specification and service code. Report the changes in the confirmation below.

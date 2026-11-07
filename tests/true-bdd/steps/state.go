@@ -4,7 +4,6 @@ package steps
 import (
 	"fmt"
 	"github.com/ondatra-ai/true-bdd/pkg/testkit"
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
 )
 
 // State adds definition-owned data to the harness's Scenario run.
@@ -14,7 +13,7 @@ type State struct {
 	guardCall *guardCall
 }
 
-var _ bddgo.Judgeable = (*State)(nil)
+var _ testkit.Judgeable = (*State)(nil)
 
 // fail preserves wrapped sentinels while naming the Scenario.
 //

@@ -12,7 +12,9 @@ architecture:
     service: calc
     references:
     - command: halve
-    does: Makes the next halving run the named fixture's Go stand-in, tests/calc/fixtures/<name>/bin/go, in place of go.
+    does: >-
+      Makes the next halving run the named fixture's Go stand-in, tests/calc/fixtures/<name>/bin/go, in place of go.
+      The stand-in requires CALC_REAL_GO to name the real Go executable; the definition supplies it when selecting the stand-in.
   - concept: halving
     block: when
     service: calc

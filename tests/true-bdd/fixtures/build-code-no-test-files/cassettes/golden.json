@@ -5,9 +5,9 @@
     {
       "path": "services/calc/calc.go",
       "kind": "created",
-      "size": 155,
-      "sha256": "2b4dcd37ba4120bf89171217d431017bc5aa0fa49a9ae0360ee5309dfdfc952c",
-      "text": "// Package calc provides integer calculations.\npackage calc\n\n// Double returns value added to itself.\nfunc Double(value int) int {\n\treturn value + value\n}\n"
+      "size": 167,
+      "sha256": "7da052fec7a19e6be5ba0896a8252ad5e67767db34936305d83b1b86dbf78af7",
+      "text": "// Package calc provides integer calculations.\npackage calc\n\n// Double doubles an integer by adding it to itself.\nfunc Double(value int) int {\n\treturn value + value\n}\n"
     }
   ]
 }

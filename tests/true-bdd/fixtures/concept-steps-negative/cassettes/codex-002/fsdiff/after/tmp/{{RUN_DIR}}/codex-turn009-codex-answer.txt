@@ -1,5 +1,0 @@
-=== FILE_START: tmp/{{RUN_DIR}}/apply-when-halving-iter2-result.yaml ===
-applied: true
-target: "tests/calc/steps/concept4f10677f07b3766e772c413192194a4a2a356211a56a28755e7d4750a7a86e64.go"
-summary: "Applied the approved body to run halve and store its integer stdout in State.Result."
-=== FILE_END: tmp/{{RUN_DIR}}/apply-when-halving-iter2-result.yaml ===

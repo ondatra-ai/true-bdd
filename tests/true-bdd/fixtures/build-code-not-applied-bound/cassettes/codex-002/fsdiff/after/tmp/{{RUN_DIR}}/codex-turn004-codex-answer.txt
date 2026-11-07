@@ -1,4 +1,4 @@
-Created `prepared-second.txt` containing exactly `prepared\n`; kept the first file and `calc.go` unchanged. Ran the full failing set: `TestAdd` failed; no tests passed. Build was blocked by restricted directory access; Git diff was unavailable because this directory is not a repository.
+Created `prepared-second.txt` with exactly `prepared\n`; left `calc.go` unchanged. Ran the suite: `TestAdd` still fails (`-1`, expected `5`); no tests passed. Git diff verification was unavailable because this directory is not a Git repository.
 
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter2-result.yaml ===
 applied: false

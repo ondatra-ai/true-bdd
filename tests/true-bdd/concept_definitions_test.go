@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // concept-definitions-001-closure: On a concept host the step-definitions check fails a definition recording no declared concept of its step's block and a step binding two definitions, and passes a Scenario whose every step binds one definition recording its concept
 func TestConceptDefinitions001Closure(t *testing.T) {
-	s := scenarios.New(t, "concept-definitions-001-closure")
+	s := New(t, "concept-definitions-001-closure")
 	s.Given(`the "concept-definitions-closure" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)

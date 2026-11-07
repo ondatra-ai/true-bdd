@@ -12,6 +12,10 @@ import (
 // formatted, never the template's raw output: unformatted bytes would report
 // drift on an already-correct file, and a drift report nobody believes is worse than none.
 func Render(file PlannedFile) ([]byte, error) {
+	if file.Source != nil {
+		return file.Source, nil
+	}
+
 	var buf bytes.Buffer
 
 	err := fileTemplate().Execute(&buf, file)

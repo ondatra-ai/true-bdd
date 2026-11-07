@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // init-001-empty-folder: Init creates the host configuration without scripts, every checklist, every prompt template, four Model schemes and three document schemas without needing configuration or Specification documents
 func TestInit001EmptyFolder(t *testing.T) {
-	s := scenarios.New(t, "init-001-empty-folder")
+	s := New(t, "init-001-empty-folder")
 	s.Given(`the "init-empty" project tree`)
 	s.And(`the project tree has no "true-bdd"`)
 	s.And(`the project tree has no "templates"`)
@@ -47,7 +45,7 @@ func TestInit001EmptyFolder(t *testing.T) {
 
 // init-002-existing-files: Init preserves and reports existing configuration, checklist and template files even when empty or invalid, while creating missing files
 func TestInit002ExistingFiles(t *testing.T) {
-	s := scenarios.New(t, "init-002-existing-files")
+	s := New(t, "init-002-existing-files")
 	s.Given(`the "init-existing" project tree`)
 	s.And(`the project tree has no "templates/build-code.fix-applier.prompt.tpl"`)
 	s.When(`the System Architect runs "init"`)
@@ -66,7 +64,7 @@ func TestInit002ExistingFiles(t *testing.T) {
 
 // start-001-missing-template: Build code with fix refuses a missing fix template before running any tests or AI turns and names the file and init
 func TestStart001MissingTemplate(t *testing.T) {
-	s := scenarios.New(t, "start-001-missing-template")
+	s := New(t, "start-001-missing-template")
 	s.Given(`the "start-missing-template" project tree`)
 	s.And(`the project tree has no "templates/build-code.fix-applier.prompt.tpl"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -81,7 +79,7 @@ func TestStart001MissingTemplate(t *testing.T) {
 
 // start-002-missing-checklist: Build code refuses a missing checklist before work and names the file with init advice
 func TestStart002MissingChecklist(t *testing.T) {
-	s := scenarios.New(t, "start-002-missing-checklist")
+	s := New(t, "start-002-missing-checklist")
 	s.Given(`the "start-missing-checklist" project tree`)
 	s.And(`the project tree has no "true-bdd/checklists/build-code.yaml"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -96,7 +94,7 @@ func TestStart002MissingChecklist(t *testing.T) {
 
 // start-003-missing-config: Build code refuses a missing config before work and names the file with init advice
 func TestStart003MissingConfig(t *testing.T) {
-	s := scenarios.New(t, "start-003-missing-config")
+	s := New(t, "start-003-missing-config")
 	s.Given(`the "start-missing-config" project tree`)
 	s.And(`the project tree has no "true-bdd/true-bdd.yaml"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -110,7 +108,7 @@ func TestStart003MissingConfig(t *testing.T) {
 
 // start-004-invalid-config: Build code refuses a invalid config before work and names the file with its parse error and repair advice without init advice
 func TestStart004InvalidConfig(t *testing.T) {
-	s := scenarios.New(t, "start-004-invalid-config")
+	s := New(t, "start-004-invalid-config")
 	s.Given(`the "start-invalid-config" project tree`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 1`)
@@ -125,7 +123,7 @@ func TestStart004InvalidConfig(t *testing.T) {
 
 // start-005-invalid-checklist: Build code refuses a invalid checklist before work and names the file with its parse error and repair advice without init advice
 func TestStart005InvalidChecklist(t *testing.T) {
-	s := scenarios.New(t, "start-005-invalid-checklist")
+	s := New(t, "start-005-invalid-checklist")
 	s.Given(`the "start-invalid-checklist" project tree`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 1`)
@@ -141,7 +139,7 @@ func TestStart005InvalidChecklist(t *testing.T) {
 
 // start-006-invalid-template: Build code refuses a invalid template before work and names the file with its parse error and repair advice without init advice
 func TestStart006InvalidTemplate(t *testing.T) {
-	s := scenarios.New(t, "start-006-invalid-template")
+	s := New(t, "start-006-invalid-template")
 	s.Given(`the "start-invalid-template" project tree`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 1`)

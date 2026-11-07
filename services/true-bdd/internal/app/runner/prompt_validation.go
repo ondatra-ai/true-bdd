@@ -18,7 +18,7 @@ var errPromptsNotWalkable = errors.New("checklist has prompts the engine cannot 
 // errTiersUnresolved is validateModelTiers' error, likewise free of them.
 var errTiersUnresolved = errors.New("checklist has prompts whose model tier engine.models cannot resolve")
 
-// checkRefusalError is why a well-shaped `D:` prompt still cannot be walked by
+// checkRefusalError is why a well-shaped Checklist item with Q.code still cannot be walked by
 // this command: one whole sentence naming the prompt.
 type checkRefusalError string
 
@@ -143,39 +143,6 @@ func describeParams(params []string) string {
 	}
 
 	return strings.Join(params, ", ")
-}
-
-const (
-	phaseCheck = iota
-	phaseLink
-	phaseModel
-)
-
-// walkOrder answers D prompts, then concept links, then the other Q prompts.
-// Each group keeps file order and every Cell keeps its original artifact index.
-func walkOrder(prompts []checklistmodels.PromptWithContext) []checklistmodels.PromptWithContext {
-	ordered := make([]checklistmodels.PromptWithContext, 0, len(prompts))
-	for _, phase := range []int{phaseCheck, phaseLink, phaseModel} {
-		for index := range prompts {
-			if promptPhase(&prompts[index]) == phase {
-				ordered = append(ordered, prompts[index])
-			}
-		}
-	}
-
-	return ordered
-}
-
-func promptPhase(prompt *checklistmodels.PromptWithContext) int {
-	if prompt.Prompt.IsCheck() {
-		return phaseCheck
-	}
-
-	if prompt.Prompt.Judgement() == checklistmodels.JudgementLink {
-		return phaseLink
-	}
-
-	return phaseModel
 }
 
 func conceptPromptDocs(prompt *checklistmodels.PromptWithContext) error {

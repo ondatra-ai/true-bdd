@@ -2,7 +2,7 @@
 
 You apply the approved bodies of one concept's step definitions in one suite.
 Preserve the engine's registrations, patterns, signatures and //truebdd:concept
-records. Modify only those bodies and the suite's shared state. Use the declared
+records. Modify those bodies, the suite's shared state and helpers/. Use the declared
 Public interface and the concept's binding; never implement the product's
 operation inside a step definition.
 
@@ -40,10 +40,14 @@ or not built yet. The engine owns compilation and the whole-suite checks. If you
 compile the steps package while writing, preserve the inherited Go cache and
 temporary-directory environment; never create a separate build cache.
 
-Keep every new constant and local helper value inside the selected function body.
-Do not add package-level constants, variables, helper functions or types; only
-shared State fields and the selected file's imports may change outside that body.
+Put code the steps share in tests/<suite>/helpers/, beside the steps/ directory
+named by Suite. Write the helper functions, constants and types the bodies need
+there; helpers are generated with the bodies and need no separate declaration.
+Only selected bodies, their imports and shared State may change inside steps/.
+Helpers must obey the same binding and meaning as their callers, and never
+compute the product's answer. The critique judges their complete source too.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -130,10 +134,10 @@ definitions:
       pattern: ^the calculator's output (matches|does not match) (.+)$
       captures:
         - name: comparison
-          means: The alternative that says whether the step requires a match ("matches") or no match ("does not match"), so the body knows which outcome to require.
+          means: The literal alternative "matches" or "does not match", which tells the body whether to require a match of the pattern against the kept stdout or to require no match.
         - name: pattern
-          means: The pattern, the regular expression taken as the rest of the step, matched against the kept stdout without its trailing newline.
-      serves: 'Serves the whole does clause: "Match the step''s pattern, a regular expression taken as the rest of the step, against the kept stdout without its trailing newline, and require a match or, when the step says does not match, no match" — the pattern capture carries the regular expression to match, and the comparison capture carries the required outcome.'
+          means: The rest of the step, taken verbatim as the regular expression to match against the kept stdout without its trailing newline.
+      serves: 'Serves the whole does clause: "Match the step''s pattern, a regular expression taken as the rest of the step, against the kept stdout without its trailing newline, and require a match or, when the step says does not match, no match." The second capture serves the pattern taken as the rest of the step and the matching against the kept stdout; the first capture serves the required-outcome alternative ("require a match or ... no match"), which changes what the body asserts.'
       steps:
         - text: the calculator's output matches ^3$
           captures:
@@ -162,75 +166,134 @@ scenarios:
 # Fix Prompt for Item then-output: then concept "output"
 
 ## Target
-tests/calc/steps
+tests/calc/steps (suite `calc`), definition `concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e`
 
-## Required Changes
+## Evidence this body rests on
+- Binding (`then` / `output`): "Match the step's pattern, a regular expression taken as the rest of the step, against the kept stdout without its trailing newline, and require a match or, when the step says does not match, no match."
+- Captures, in `args` order: `args[0]` = comparison (`matches` | `does not match`), `args[1]` = pattern (verbatim Go regular expression).
+- Shared state `tests/calc/steps/state.go` already carries `State{ Output string }`, and the `when` definition stores the run's stdout there after `helpers.TrimLine` has dropped the single trailing line terminator the CLI document declares. So `state.Output` **is** the kept stdout without its trailing newline; the Then only observes it and must not trim, re-run or recompute anything.
+- Nothing in this change performs halving or doubling, and the calculator is not invoked here at all: the Then is pure observation of what was kept.
 
-### 1. No shared-state change
+## Change 1 — new shared helper file (create)
 
-`tests/calc/steps/state.go` already carries the only field this concept observes: `State.Output`, the stdout the `when "operation"` step keeps (`state.Output = string(stdout)`, raw, including its trailing newline). Leave `state.go` and `register.go` untouched.
+Create `tests/calc/helpers/output.go` with exactly this content:
 
-### 2. Replace the body of the one definition
+```go
+// This file holds the output observation the calc suite's Then steps share.
+//
+// Nothing here produces or predicts what the calculator prints: the printed
+// text arrives as the suite kept it, and the step's pattern arrives as the step
+// wrote it. The only work done is compiling that pattern and reporting whether
+// it has a match in the kept text.
+package helpers
 
-File: `tests/calc/steps/concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e.go`
+import (
+	"fmt"
+	"regexp"
+)
 
-Overwrite the whole file with exactly this content. The package clause, the `//truebdd:concept then "output"` record and the function signature are unchanged; only the import list and the body differ.
+// The words the comparison capture can hold, and what each one requires of the
+// kept output.
+const (
+	// ComparisonMatches requires the step's pattern to have a match in the
+	// kept stdout.
+	ComparisonMatches = "matches"
+
+	// ComparisonDoesNotMatch requires the step's pattern to have no match in
+	// the kept stdout.
+	ComparisonDoesNotMatch = "does not match"
+)
+
+// CompareOutput matches pattern, a Go regular expression taken verbatim from
+// the step, against output, the stdout the suite kept without its trailing
+// newline, and reports whether the comparison the step named holds.
+//
+// The pattern is unanchored on purpose: it is used exactly as the step wrote
+// it, so a step that wants the whole line to be the value anchors it itself.
+func CompareOutput(output, comparison, pattern string) error {
+	expr, err := regexp.Compile(pattern)
+	if err != nil {
+		return fmt.Errorf(
+			"the step's pattern %q is not a Go regular expression: %w",
+			pattern, err,
+		)
+	}
+
+	matched := expr.MatchString(output)
+
+	switch comparison {
+	case ComparisonMatches:
+		if !matched {
+			return fmt.Errorf(
+				"the calculator printed %q, which has no match for %q",
+				output, pattern,
+			)
+		}
+		return nil
+	case ComparisonDoesNotMatch:
+		if matched {
+			return fmt.Errorf(
+				"the calculator printed %q, which has a match for %q",
+				output, pattern,
+			)
+		}
+		return nil
+	default:
+		return fmt.Errorf(
+			"comparison capture %q is neither %q nor %q",
+			comparison, ComparisonMatches, ComparisonDoesNotMatch,
+		)
+	}
+}
+```
+
+## Change 2 — write the definition body (replace file contents)
+
+Replace the whole content of `tests/calc/steps/concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e.go` with exactly this. The `//truebdd:concept then "output"` record, the function name and the `(state *State, args []string) error` signature are unchanged; only the import block and the body change. Do not touch `tests/calc/steps/register.go`, the pattern, or any other definition.
 
 ```go
 package steps
 
 import (
 	"fmt"
-	"regexp"
-	"strings"
+
+	"fixture/conceptbodiescases/tests/calc/helpers"
 )
 
 //truebdd:concept then "output"
 func concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e(state *State, args []string) error {
+	if len(args) != 2 {
+		return fmt.Errorf("want 2 captures (comparison, pattern), got %d: %q", len(args), args)
+	}
 	comparison, pattern := args[0], args[1]
 
+	// state.Output is the stdout the operation step kept, already without the
+	// single trailing line terminator the CLI document declares. The CLI prints
+	// a value on every successful run, so an empty kept output means no run was
+	// observed rather than an empty answer, and the step says so instead of
+	// silently passing a "does not match".
 	if state.Output == "" {
-		return fmt.Errorf("no output was kept, so the step cannot match %q: the operation step must run first", pattern)
+		return fmt.Errorf(
+			"no calculator output was kept, so it cannot be observed to %s %q: the operation step must run first",
+			comparison, pattern,
+		)
 	}
 
-	// The declared commands print the result and a newline, and the binding
-	// matches the pattern against the kept stdout without that trailing
-	// newline.
-	printed := strings.TrimSuffix(state.Output, "\n")
-
-	expression, err := regexp.Compile(pattern)
-	if err != nil {
-		return fmt.Errorf("the step's pattern %q is no regular expression: %w", pattern, err)
-	}
-	matched := expression.MatchString(printed)
-
-	switch comparison {
-	case "matches":
-		if !matched {
-			return fmt.Errorf("the calculator's output %q does not match %q", printed, pattern)
-		}
-	case "does not match":
-		if matched {
-			return fmt.Errorf("the calculator's output %q matches %q", printed, pattern)
-		}
-	default:
-		return fmt.Errorf("the step names no declared comparison: %q", comparison)
-	}
-
-	return nil
+	return helpers.CompareOutput(state.Output, comparison, pattern)
 }
 ```
 
-## Why this body serves the binding
+## Change 3 — shared state
 
-- `args[0]` is the `comparison` capture and `args[1]` the `pattern` capture, in the order the definition's captures name them.
-- "Match the step's pattern, a regular expression taken as the rest of the step, against the kept stdout without its trailing newline" — the body compiles `pattern` as a Go regular expression (the Word mapping's technical term) and matches it against `strings.TrimSuffix(state.Output, "\n")`.
-- "require a match or, when the step says does not match, no match" — the `switch` requires the outcome the `comparison` alternative names and fails with the printed text and the pattern otherwise.
-- The body only observes and compares. It never halves or doubles anything, never re-derives the expected text, and never runs a command; the `when` definition already called the declared CLI and kept its stdout. That keeps the four Scenarios' patterns (`^3$`, `^12$`, `\.`, `^3\.5$`) decided purely by what the calculator printed.
-- No package-level constant, variable, helper or type is added; every value stays inside the function body.
+None. `tests/calc/steps/state.go` already declares the `Output string` field this Then observes; leave the file as it is.
+
+## Notes for the applier
+- The helpers import path `fixture/conceptbodiescases/tests/calc/helpers` is the one the existing `when` definition uses, so it matches the suite's module path.
+- Pattern, registration in `register.go`, the concept record and the signature must stay byte-identical to what the engine generated.
+- Do not run a Scenario or the suite to check this in; the engine owns compilation and the whole-suite checks. If the steps package is compiled while writing, keep the inherited Go build cache and temporary-directory environment and do not create a separate build cache.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
-context lists and shared state. Preserve the engine's patterns, registrations,
+context lists, shared state and code they share in tests/<suite>/helpers/. Preserve the engine's patterns, registrations,
 signatures and //truebdd:concept records. Reach the service through its declared
 Public interface. Preserve generated tests, the
 Specification and service code. Report the changes in the confirmation below.

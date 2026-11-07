@@ -8,31 +8,28 @@ story:
   status: IMPLEMENTED
   acceptance_criteria:
   - id: 001-new-body
-    description: A missing concept's steps get an engine skeleton from the proposed pattern and an AI body that executes the declared CLI command
+    description: "A missing concept gets its Steps package before any generated test or main file exists"
     steps:
     - given:
-      - the "build-steps-new" project tree
-      - the System Architect's answer to every question is "1"
+      - "the \"build-steps-new\" project tree"
+      - "the System Architect's answer to every question is \"1\""
     - when:
-      - the System Architect runs "build steps --fix"
+      - "the System Architect runs \"build steps --fix\""
     - then:
-      - the command exits with code 0
-      - stdout matches BUILD STEPS COMPLETE
-      - stdout matches Step coverage passed
-      - stdout matches Scenario list passed
-      - stdout matches Scenario red without target.*scenario=calc-001-double
-      - stdout matches Scenario red without target.*scenario=calc-002-double
-      - stdout matches Red without target passed.*scenarios=2
-      - the engine spawned exactly 1 test runner with arguments matching -count=1$
-      - no file outside "tmp" and "tests" changed
-      - the engine dispatched 4 validation AI turns to "claude"
-      - the engine spawned exactly 1 test runner with arguments matching -list \.
-      - 'every file matching "tmp/*/*fix-iter*-user.txt" matches binding:'
-      - 'every file matching "tmp/*/apply-*-user.txt" matches interface_document:'
-      - every file matching "tmp/*/apply-*-user.txt" matches calc-001-double
-      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+      - "the command exits with code 0"
+      - "stdout matches BUILD STEPS COMPLETE"
+      - "stdout matches Step coverage passed"
+      - "the engine spawned exactly 0 test runners with arguments matching -list"
+      - "the engine spawned exactly 0 test runners with arguments matching ^test\\b"
+      - "exactly 0 files matching \"tests/calc/*_test.go\" are created"
+      - "exactly 0 files matching \"tests/calc/scenarios/*.go\" are created"
+      - "no file outside \"tmp\" and \"tests/calc\" changed"
+      - "the engine dispatched 5 validation AI turns to \"claude\""
+      - "every file matching \"tmp/*/*fix-iter*-user.txt\" matches binding:"
+      - "every file matching \"tmp/*/apply-*-user.txt\" matches interface_document:"
+      - "every file matching \"tmp/*/apply-*-user.txt\" matches calc-001-double"
   - id: 002-all-skeletons-first
-    description: Every missing concept's skeletons compile before the first body turn and each body is written in one walk; whole-suite checks run once
+    description: Each concept Item's pattern F writes its skeletons before its body F, and a completed fix walk rechecks every Item
     steps:
     - given:
       - the "build-steps-many" project tree
@@ -43,12 +40,9 @@ story:
       - the command exits with code 0
       - stdout matches BUILD STEPS COMPLETE
       - stdout matches Step coverage passed
-      - stdout matches Scenario list passed
       - no file outside "tmp" and "tests" changed
-      - stdout matches All step skeletons written.*items=3
-      - the engine dispatched 12 validation AI turns to "claude"
-      - the engine spawned exactly 1 test runner with arguments matching -list \.
-      - the engine spawned exactly 1 test runner with arguments matching -run \^\(Test
+      - stdout matches Concept skeletons rewritten
+      - the engine dispatched 15 validation AI turns to "claude"
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   - id: 003-slot-order
     description: The quoted command and the number are passed to the written definition in the proposed pattern's capture order
@@ -62,10 +56,8 @@ story:
       - the command exits with code 0
       - stdout matches BUILD STEPS COMPLETE
       - stdout matches Step coverage passed
-      - stdout matches Scenario list passed
       - no file outside "tmp" and "tests" changed
-      - the engine dispatched 4 validation AI turns to "claude"
-      - the engine spawned exactly 1 test runner with arguments matching -list \.
+      - the engine dispatched 5 validation AI turns to "claude"
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   - id: 004-interface-cannot-serve
     description: A writer's verdict that the Public interface cannot serve its concept stops the walk distinctly after that one writer turn, naming the concept and what the interface lacks
@@ -95,82 +87,75 @@ story:
       - the command exits with code 0
       - stdout matches BUILD STEPS COMPLETE
       - stdout matches Step coverage passed
-      - stdout matches Scenario list passed
-      - the engine spawned exactly 1 test runner with arguments matching -list \.
       - no file outside "tmp" and "tests" changed
       - stdout matches msg="Tool calls were denied; this turn did less than it was asked to".*role=apply
-      - the engine dispatched 4 validation AI turns to "claude"
+      - the engine dispatched 5 validation AI turns to "claude"
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   - id: 006-bringup-is-not-red
-    description: Harness bring-up failure without the target fails the red check and names the Scenario
+    description: "build code refuses a bring-up failure as Red without the target"
     steps:
     - given:
-      - the "build-steps-bringup" project tree
+      - "the \"build-steps-bringup\" project tree"
     - when:
-      - the System Architect runs "build steps --fix"
+      - "the System Architect runs \"build code\""
     - then:
-      - the command exits with code 1
-      - stdout matches Red without target check failed
-      - stderr matches red without target check failed.*TestCalc001Double
-      - stdout does not match BUILD STEPS COMPLETE
-      - the engine dispatched no AI turns
-      - no file outside "tmp" and "tests" changed
+      - "the command exits with code 1"
+      - "stdout matches Red without target check failed"
+      - "stderr matches red without target check failed.*calc-001-double"
+      - "stdout does not match BUILD CODE COMPLETE"
+      - "the engine dispatched no AI turns"
+      - "no file outside \"tmp\" changed"
   - id: 007-green-body-repaired
-    description: A written body doing the product work goes back to the Fix loop with the green-without-target finding
+    description: "build code stops on a green Scenario without service code and offers no fix"
     steps:
     - given:
-      - the "build-steps-green" project tree
-      - the System Architect's answer to every question is "1"
+      - "the \"build-steps-green\" project tree"
     - when:
-      - the System Architect runs "build steps --fix"
+      - "the System Architect runs \"build code\""
     - then:
-      - the command exits with code 0
-      - stdout matches Scenario green without target.*TestCalc001Double
-      - stdout matches Red without target passed
-      - stdout matches BUILD STEPS COMPLETE
-      - the engine dispatched 9 AI turns
-      - no file outside "tmp" and "tests" changed
-      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+      - "the command exits with code 1"
+      - "stdout matches Scenario list passed"
+      - "stdout matches Scenario green without target.*calc-001-double"
+      - "stderr matches scenario green without target.*calc-001-double"
+      - "stdout does not match BUILD CODE COMPLETE"
+      - "the engine dispatched no AI turns"
+      - "the engine spawned exactly 1 test runner with arguments matching -list \\."
+      - "no file outside \"tmp\" changed"
   - id: 008-suite-wiring
-    description: A calculator host without a scenarios package gets deterministic Suite wiring before compilation and completes the red check
+    description: "build tests writes the plain bddgo main file beside the Scenario tests"
     steps:
     - given:
-      - the "build-steps-wiring" project tree
+      - "the \"build-steps-wiring\" project tree"
     - when:
-      - the System Architect runs "build steps --fix"
+      - "the System Architect runs \"build tests --fix\""
     - then:
-      - the command exits with code 0
-      - the file "tests/calc/scenarios/scenarios.go" is created
-      - the file "tests/calc/scenarios/scenarios.go" matches // Code generated by true-bdd build steps\. DO NOT EDIT\.
-      - stdout matches Scenario list passed
-      - stdout matches Scenario red without target.*scenario=calc-001-double
-      - stdout matches Red without target passed.*scenarios=1
-      - stdout matches BUILD STEPS COMPLETE
-      - the engine dispatched no AI turns
-      - no file outside "tmp" and "tests" changed
-      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+      - "the command exits with code 0"
+      - "the file \"tests/calc/main_test.go\" is created"
+      - "the file \"tests/calc/main_test.go\" matches // Code generated by `true-bdd build tests`\\. DO NOT EDIT\\."
+      - "the file \"tests/calc/main_test.go\" matches func New\\(t \\*testing.T"
+      - "exactly 0 files matching \"tests/calc/scenarios/*.go\" are created"
+      - "stdout matches BUILD TESTS COMPLETE"
+      - "the engine dispatched no AI turns"
+      - "the engine spawned no test runners"
+      - "no file outside \"tmp\" and \"tests\" changed"
+      - "the shell command \"go test -tags bdd -json -count=1 ./tests/calc/...\" run in \".\" exits with code 0"
   - id: 009-harness-wiring
-    description: A host declaring testkit with written definitions and no pending Item gets Suite wiring and TestMain without an AI turn, lists every test and completes red without the target at executed steps
+    description: "build tests writes the testkit main file beside the Scenario tests"
     steps:
     - given:
-      - the "build-steps-harness-wiring" project tree
+      - "the \"build-steps-harness-wiring\" project tree"
     - when:
-      - the System Architect runs "build steps --fix"
+      - "the System Architect runs \"build tests --fix\""
     - then:
-      - the command exits with code 0
-      - the file "tests/calc/scenarios/scenarios.go" is created
-      - the file "tests/calc/scenarios/scenarios.go" matches // Code generated by true-bdd build steps\. DO NOT EDIT\.
-      - the file "tests/calc/scenarios/scenarios.go" matches testkit.NewSuite
-      - the file "tests/calc/main_test.go" is created
-      - the file "tests/calc/main_test.go" matches // Code generated by true-bdd build steps\. DO NOT EDIT\.
-      - the file "tests/calc/steps/state.go" matches \*testkit.ScenarioRun
-      - the file "tests/calc/steps/state.go" matches Program string
-      - stdout matches All step skeletons written.*items=0
-      - stdout matches Scenario list passed
-      - stdout matches Scenario red without target.*scenario=calc-001-double
-      - stdout matches Scenario red without target.*scenario=calc-002-double
-      - stdout matches Red without target passed.*scenarios=2
-      - stdout matches BUILD STEPS COMPLETE
-      - the engine dispatched no AI turns
-      - no file outside "tmp" and "tests" changed
-      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/... -mode=services:replay,tests:replay" run in "." exits with code 0
+      - "the command exits with code 0"
+      - "the file \"tests/calc/main_test.go\" is created"
+      - "the file \"tests/calc/main_test.go\" matches // Code generated by `true-bdd build tests`\\. DO NOT EDIT\\."
+      - "the file \"tests/calc/main_test.go\" matches func New\\(t \\*testing.T"
+      - "exactly 0 files matching \"tests/calc/scenarios/*.go\" are created"
+      - "stdout matches BUILD TESTS COMPLETE"
+      - "the engine dispatched no AI turns"
+      - "the engine spawned no test runners"
+      - "no file outside \"tmp\" and \"tests\" changed"
+      - "the file \"tests/calc/main_test.go\" matches testkit.NewSuite"
+      - "the file \"tests/calc/steps/state.go\" matches \\*testkit.ScenarioRun"
+      - "the shell command \"go test -tags bdd -json -count=1 ./tests/calc/... -mode=services:replay,tests:replay\" run in \".\" exits with code 0"

@@ -117,7 +117,7 @@ story:
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched 1 AI turn
         - id: 006-exit-fails-build-steps
-          description: Exiting the body-writing Fix loop ends build steps non-zero with no COMPLETE banner
+          description: Exiting the pattern-bindings Fix loop ends build steps non-zero with no COMPLETE banner
           steps:
           - given:
             - the "build-steps-exit" project tree
@@ -128,5 +128,5 @@ story:
             - the command exits with code 1
             - stdout matches action=exit
             - stdout does not match BUILD STEPS COMPLETE
-            - the engine dispatched 4 AI turns
-            - no file outside "tmp" and "tests" changed
+            - the engine dispatched 3 AI turns
+            - no file outside "tmp" changed

@@ -14,14 +14,14 @@ Cuts B, C and D use this pipeline, one command at a time, with an audit and an o
 
 ```text
 go run ./scripts/cmd/drill cut b --iteration <dir>
-go run ./scripts/cmd/drill run b b-tests --iteration <dir> -- build tests --fix
 go run ./scripts/cmd/drill run b b-steps --iteration <dir> -- build steps --fix
+go run ./scripts/cmd/drill run b b-tests --iteration <dir> -- build tests --fix
 go run ./scripts/cmd/drill run b b-code --iteration <dir> -- build code --fix
 ```
 
-`build tests --fix` renders test files deterministically, without AI or a test run. `build steps --fix` writes and verifies the step definitions, including Red without the target; `build code --fix` builds the service to turn the tests green (ADR-0031). The old engine built at the base drives all three commands, but is no test target. The prebuilt oracle flag remains available only for the independent oracle below.
+`build steps --fix` writes and checks the Steps package before any test or main file exists. `build tests --fix` then renders the Scenario tests and `main_test.go` deterministically, without AI or a test run. `build code --fix` first checks Red without the target when the service has no source, stopping on a green Scenario, then builds the service until the tests pass (ADR-0040). The old engine built at the base drives all three commands, but is no test target. The prebuilt oracle flag remains available only for the independent oracle below.
 
-Every cut keeps `docs/product/`, `docs/architecture/architecture.yaml`, `docs/scenarios.yaml`, `true-bdd/`, `templates/`, `pkg/`, `scripts/`, `go.mod`, `go.sum`, `.gitignore` and the portions of `tests/true-bdd/` its layers do not delete. It also keeps each exact interface document named by a service's `public_interface.document` in the base's architecture, relative to the Host project root, wherever the document lives, including inside a deleted layer. Naming one file keeps neither its siblings nor its directory. UI declarations have inline elements and add no document. The architecture is read from the base's archive, so later checkout changes cannot change a cut's kept documents. So every cut keeps what concepts need: the product document's `concepts:` and glossary, the architecture's concept bindings and Word mappings, and the Public interface documents the bindings reference.
+Every cut keeps `docs/product/`, `docs/architecture/architecture.yaml`, `docs/scenarios.yaml`, `true-bdd/`, `templates/`, `pkg/`, `utilities/`, `scripts/`, `go.mod`, `go.sum`, `.gitignore` and the portions of `tests/true-bdd/` its layers do not delete. It also keeps each exact interface document named by a service's `public_interface.document` in the base's architecture, relative to the Host project root, wherever the document lives, including inside a deleted layer. Naming one file keeps neither its siblings nor its directory. UI declarations have inline elements and add no document. The architecture is read from the base's archive, so later checkout changes cannot change a cut's kept documents. So every cut keeps what concepts need: the product document's `concepts:` and glossary, the architecture's concept bindings and Word mappings, and the Public interface documents the bindings reference.
 
 The cuts delete these layers, always preserving the named interface documents above:
 
@@ -32,7 +32,7 @@ The cuts delete these layers, always preserving the named interface documents ab
 | C | Cut B plus every `cassettes/` directory under the fixtures. |
 | D | Cut B plus the whole `tests/true-bdd/fixtures/` folder. |
 
-Cut B keeps the fixtures with their cassettes; cut C keeps their input and fixture-root files such as `prep.sh`; cut D keeps nothing under `tests/true-bdd/`, apart from named interface documents. Cuts B, C and D keep no Suite wiring, step definitions, generated test files, hand-written tests or other suite files unless they are named interface documents (ADR-0038).
+Cut B keeps the fixtures with their cassettes; cut C keeps their input and fixture-root files such as `prep.sh`; cut D keeps nothing under `tests/true-bdd/`, apart from named interface documents. Cuts B, C and D keep no tests' main file, step definitions, generated test files, hand-written tests or other suite files unless they are named interface documents (ADR-0038).
 
 `run` accepts exactly `-- build tests --fix`, `-- build steps --fix` or `-- build code --fix`, optionally followed by repeated `--model <tier>=<cli>:<model>` pairs; every other command line is refused. Each maps to its own typed engine operation. The engine validates model overrides; deterministic `build tests` does not support them. `run` and `oracle` return after launching a detached worker. Read the run's log and state under `record.json`; the worker keeps the three-hour limit, including clarification pauses, without a terminal or launcher. Only one unfinished run is permitted per iteration. Tags cannot be reused. Each rerun remains an operator decision. The fix menu receives `1`; a clarification receives nothing automatically.
 

@@ -46,6 +46,7 @@ story:
       - the System Architect runs "build code --fix"
     - then:
       - the command exits with code 0
+      - the codex writer started with private fixture authentication, protected homes, an empty edit root and private shell scratch
       - the codex writer provisioned and removed its fixture authentication
       - the file matching "tmp/true-bdd.log.json" has exactly 2 matches for "msg":"AssistantMessage received"
       - every file matching "tmp/true-bdd.log.json" matches "msg":"AssistantMessage received","content_blocks":1

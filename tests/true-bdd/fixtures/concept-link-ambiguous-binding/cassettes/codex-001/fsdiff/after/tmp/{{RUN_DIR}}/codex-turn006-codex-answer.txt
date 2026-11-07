@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===
+applied: true
+target: "tmp/{{RUN_DIR}}/architecture_yaml.yaml"
+summary: "Applied the exact approved when: halve intent replacement. Verified all other bytes and working copies unchanged. Initial search and Python commands emitted sandbox warnings; final verification passed."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===

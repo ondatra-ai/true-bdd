@@ -110,3 +110,8 @@ func (e *ChecklistEvaluator) sharedTurn(ctx context.Context, prompt checklist.Pr
 
 	return response, nil
 }
+
+// InvalidateJudgements forces the fixed Q to judge shared bindings and words afresh.
+func (e *ChecklistEvaluator) InvalidateJudgements() {
+ e.sharing.invalidate()
+}

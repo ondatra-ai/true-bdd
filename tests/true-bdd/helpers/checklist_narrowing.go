@@ -1,0 +1,437 @@
+package helpers
+
+import (
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
+	"gopkg.in/yaml.v3"
+)
+
+// ErrFilterStemMismatch is returned when a checklist_prompts stem does
+// not match the checklist the fixture's cmd actually invokes — a dead
+// filter would silently leave the real walk unfiltered.
+var ErrFilterStemMismatch = errors.New(
+	"checklist_prompts: stem does not match the checklist invoked by cmd")
+
+// ErrFilterConflict is returned when a fixture both declares
+// checklist_prompts for a stem and ships an input override for the same
+// checklist file — two competing sources of truth.
+var ErrFilterConflict = errors.New(
+	"checklist_prompts: fixture also ships an input override for this checklist")
+
+// ErrSnippetUnmatched is returned when a snippet matches no prompt —
+// the shipped Q was reworded or the snippet is wrong.
+var ErrSnippetUnmatched = errors.New("checklist_prompts: snippet matches no prompt")
+
+// ErrSnippetAmbiguous is returned when a snippet matches more than one
+// prompt.
+var ErrSnippetAmbiguous = errors.New("checklist_prompts: snippet matches multiple prompts")
+
+// ErrSnippetDuplicate is returned when two snippets resolve to the same
+// prompt.
+var ErrSnippetDuplicate = errors.New("checklist_prompts: two snippets resolve to the same prompt")
+
+// ErrSnippetEmpty is returned for a blank snippet or an empty list.
+var ErrSnippetEmpty = errors.New("checklist_prompts: empty snippet list or blank snippet")
+
+// ErrChecklistShape is returned when the target checklist lacks the
+// document/sections structure the filter needs.
+var ErrChecklistShape = errors.New("checklist_prompts: checklist has no sections to filter")
+
+// ErrUnsupportedYAML is returned for checklist YAML features the filter
+// deliberately refuses: aliases/merge keys (rejectAliases) and
+// multi-document streams (parseSingleDocument).
+var ErrUnsupportedYAML = errors.New(
+	"checklist_prompts: checklist uses YAML aliases, merge keys, or multiple documents — not supported")
+
+// ErrFilterDeclaredEmpty is returned when checklist_prompts is present
+// in fixture.yaml but empty or null — a declared filter must select
+// something, otherwise the fixture silently runs the full checklist.
+var ErrFilterDeclaredEmpty = errors.New(
+	"checklist_prompts: declared but empty — remove the key or declare a selection")
+
+// checklistFilePerm is the mode of the regenerated checklist file.
+
+// validateChecklistFilters checks the load-time invariants: every
+// declared stem matches the invoked checklist and does not collide with
+// an input override shipped by the same fixture.
+func validateChecklistFilters(fixture *selection) error {
+	if len(fixture.ChecklistPrompts) == 0 {
+		return nil
+	}
+
+	invoked := commandChecklistStem(fixture.Cmd)
+
+	for stem, snippets := range fixture.ChecklistPrompts {
+		if stem != invoked {
+			return fmt.Errorf("%w: declared %q, cmd %q invokes %q",
+				ErrFilterStemMismatch, stem, fixture.Cmd, invoked)
+		}
+
+		if len(snippets) == 0 {
+			return fmt.Errorf("%w: stem %s", ErrSnippetEmpty, stem)
+		}
+
+		override := filepath.Join(fixture.Dir, fixture.InputPath,
+			"true-bdd", "checklists", stem+".yaml")
+
+		_, statErr := os.Stat(override)
+		if statErr == nil {
+			return fmt.Errorf("%w: %s", ErrFilterConflict, override)
+		}
+	}
+
+	return nil
+}
+
+// applyChecklistFilters rewrites each declared checklist inside the
+// tmpdir to contain only the fixture's selected prompts. Must run after
+// the input overlay and before the pre-run snapshot, or it pollutes the judge diff.
+func applyChecklistFilters(fixture *selection, tmpDir string) error {
+	for stem, snippets := range fixture.ChecklistPrompts {
+		path := filepath.Join(tmpDir, "true-bdd", "checklists", stem+".yaml")
+
+		err := FilterChecklistFile(path, snippets)
+		if err != nil {
+			return fmt.Errorf("filtering %s for fixture %s: %w", path, fixture.Name, err)
+		}
+	}
+
+	return nil
+}
+
+// commandChecklistStem hyphenates the leading command words of a CLI
+// invocation ("us refine 96.5 --fix" -> "us-refine"), mirroring the
+// production checklist resolution convention.
+func commandChecklistStem(cmd string) string {
+	words := make([]string, 0)
+
+	for _, field := range strings.Fields(cmd) {
+		// The command path is lowercase words; the first field that is
+		// not one is an argument. Testing the whole field, not its first
+		// byte: `scen check E2E-002` reads as a path word by that test.
+		if !isCommandWord(field) {
+			break
+		}
+
+		words = append(words, field)
+	}
+
+	return strings.Join(words, "-")
+}
+
+// isCommandWord reports whether a cmd field is part of the command path
+// rather than a flag or an argument.
+func isCommandWord(field string) bool {
+	if field == "" {
+		return false
+	}
+
+	for _, r := range field {
+		if r < 'a' || r > 'z' {
+			return false
+		}
+	}
+
+	return true
+}
+
+// FilterChecklistFile loads a checklist YAML, keeps only the prompts
+// matched by the snippets, and writes it back as a yaml.Node tree so
+// everything else (config, metadata, prompt text) round-trips unchanged.
+func FilterChecklistFile(path string, snippets []string) error {
+	data, err := testkit.Read(path)
+	if err != nil {
+		return fmt.Errorf("reading checklist: %w", err)
+	}
+
+	doc, err := parseSingleDocument(data)
+	if err != nil {
+		return err
+	}
+
+	err = rejectAliases(doc)
+	if err != nil {
+		return err
+	}
+
+	err = filterDocument(doc, snippets)
+	if err != nil {
+		return err
+	}
+
+	out, err := yaml.Marshal(doc)
+	if err != nil {
+		return fmt.Errorf("marshaling filtered checklist: %w", err)
+	}
+
+	err = testkit.Write(path, out, testkit.Shared)
+	if err != nil {
+		return fmt.Errorf("writing filtered checklist: %w", err)
+	}
+
+	return nil
+}
+
+// filterDocument mutates the parsed document in place, keeping only the
+// selected prompts and dropping sections left without any.
+func filterDocument(doc *yaml.Node, snippets []string) error {
+	root := documentRoot(doc)
+	if root == nil {
+		return fmt.Errorf("%w: no document root", ErrChecklistShape)
+	}
+
+	sections := mappingValue(root, "sections")
+	if sections == nil || sections.Kind != yaml.SequenceNode {
+		return fmt.Errorf("%w: no sections sequence", ErrChecklistShape)
+	}
+
+	matched, err := selectPrompts(sections, snippets)
+	if err != nil {
+		return err
+	}
+
+	kept := make([]*yaml.Node, 0, len(sections.Content))
+
+	for _, section := range sections.Content {
+		prompts := mappingValue(section, "validation_prompts")
+		if prompts == nil {
+			continue
+		}
+
+		selected := make([]*yaml.Node, 0)
+
+		for _, prompt := range prompts.Content {
+			if matched[prompt] {
+				selected = append(selected, prompt)
+			}
+		}
+
+		if len(selected) == 0 {
+			continue
+		}
+
+		prompts.Content = selected
+
+		kept = append(kept, section)
+	}
+
+	sections.Content = kept
+
+	return nil
+}
+
+// selectPrompts resolves every snippet to exactly one prompt node
+// across all sections. Each snippet must match one prompt; two snippets
+// must not land on the same prompt.
+func selectPrompts(sections *yaml.Node, snippets []string) (map[*yaml.Node]bool, error) {
+	matched := map[*yaml.Node]bool{}
+
+	for _, rawSnippet := range snippets {
+		snippet := collapseSpaces(rawSnippet)
+		if snippet == "" {
+			return nil, ErrSnippetEmpty
+		}
+
+		hits := findPromptsBySnippet(sections, snippet)
+
+		switch {
+		case len(hits) == 0:
+			return nil, fmt.Errorf("%w: %q", ErrSnippetUnmatched, rawSnippet)
+		case len(hits) > 1:
+			return nil, fmt.Errorf("%w: %q matches %d prompts", ErrSnippetAmbiguous, rawSnippet, len(hits))
+		case matched[hits[0]]:
+			return nil, fmt.Errorf("%w: %q", ErrSnippetDuplicate, rawSnippet)
+		}
+
+		matched[hits[0]] = true
+	}
+
+	return matched, nil
+}
+
+// findPromptsBySnippet returns every SELECTABLE prompt node whose Q
+// text contains the collapsed snippet. Skipped prompts are excluded —
+// selecting one would leave the fixture walking nothing and passing vacuously.
+func findPromptsBySnippet(sections *yaml.Node, snippet string) []*yaml.Node {
+	hits := make([]*yaml.Node, 0)
+
+	for _, section := range sections.Content {
+		prompts := mappingValue(section, "validation_prompts")
+		if prompts == nil {
+			continue
+		}
+
+		for _, prompt := range prompts.Content {
+			if promptSkipped(prompt) {
+				continue
+			}
+
+			question := mappingValue(mappingValue(prompt, "Q"), "prompt")
+			if question == nil {
+				continue
+			}
+
+			if strings.Contains(collapseSpaces(question.Value), snippet) {
+				hits = append(hits, prompt)
+			}
+		}
+	}
+
+	return hits
+}
+
+// promptSkipped mirrors the production skip rule exactly: skipped only
+// when `skip` is the boolean true. A non-boolean is not skipped, since
+// production refuses that prompt rather than skip it.
+func promptSkipped(prompt *yaml.Node) bool {
+	skip := mappingValue(prompt, "skip")
+	if skip == nil || skip.Kind != yaml.ScalarNode || skip.ShortTag() != "!!bool" {
+		return false
+	}
+
+	var parked bool
+
+	err := skip.Decode(&parked)
+
+	return err == nil && parked
+}
+
+// parseSingleDocument parses checklist YAML, rejecting multi-document
+// streams (only the first document would survive the round trip).
+func parseSingleDocument(data []byte) (*yaml.Node, error) {
+	decoder := yaml.NewDecoder(strings.NewReader(string(data)))
+
+	var doc yaml.Node
+
+	err := decoder.Decode(&doc)
+	if err != nil {
+		return nil, fmt.Errorf("parsing checklist: %w", err)
+	}
+
+	var extra yaml.Node
+
+	err = decoder.Decode(&extra)
+	if err == nil {
+		return nil, fmt.Errorf("%w: multiple documents", ErrUnsupportedYAML)
+	}
+
+	if !errors.Is(err, io.EOF) {
+		return nil, fmt.Errorf("parsing trailing document: %w", err)
+	}
+
+	return &doc, nil
+}
+
+// rejectAliases refuses documents containing alias nodes or merge keys:
+// pruning prompts could orphan an anchor and emit an unparsable file.
+func rejectAliases(node *yaml.Node) error {
+	if node.Kind == yaml.AliasNode {
+		return fmt.Errorf("%w: alias node", ErrUnsupportedYAML)
+	}
+
+	if node.Kind == yaml.MappingNode {
+		for idx := 0; idx+1 < len(node.Content); idx += 2 {
+			if node.Content[idx].Value == "<<" {
+				return fmt.Errorf("%w: merge key", ErrUnsupportedYAML)
+			}
+		}
+	}
+
+	for _, child := range node.Content {
+		err := rejectAliases(child)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// documentRoot unwraps the yaml document node.
+func documentRoot(doc *yaml.Node) *yaml.Node {
+	if doc.Kind == yaml.DocumentNode && len(doc.Content) > 0 {
+		return doc.Content[0]
+	}
+
+	return nil
+}
+
+// mappingValue returns the value node for a key of a mapping node.
+func mappingValue(node *yaml.Node, key string) *yaml.Node {
+	if node == nil || node.Kind != yaml.MappingNode {
+		return nil
+	}
+
+	for idx := 0; idx+1 < len(node.Content); idx += 2 {
+		if node.Content[idx].Value == key {
+			return node.Content[idx+1]
+		}
+	}
+
+	return nil
+}
+
+// collapseSpaces joins all whitespace runs to single spaces, so
+// snippets match across YAML block-scalar line reflow.
+func collapseSpaces(s string) string {
+	return strings.Join(strings.Fields(s), " ")
+}
+
+// ChecklistPromptsFile holds the fixture's selected engine questions.
+const ChecklistPromptsFile = "checklist-prompts.yaml"
+
+type selection struct {
+	Name, Dir, InputPath, Cmd string
+	ChecklistPrompts          map[string][]string
+}
+
+// LoadSelections reads the fixture's declared checklist questions, refusing an empty declaration.
+func LoadSelections(dir string) (map[string][]string, error) {
+	path := filepath.Join(dir, ChecklistPromptsFile)
+
+	data, err := testkit.Read(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return map[string][]string{}, nil
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("read %s: %w", ChecklistPromptsFile, err)
+	}
+
+	var prompts map[string][]string
+
+	err = yaml.Unmarshal(data, &prompts)
+	if err != nil {
+		return nil, fmt.Errorf("parse %s: %w", ChecklistPromptsFile, err)
+	}
+
+	if len(prompts) == 0 {
+		return nil, fmt.Errorf("%s: %w", ChecklistPromptsFile, ErrFilterDeclaredEmpty)
+	}
+
+	return prompts, nil
+}
+
+// NarrowChecklists applies the fixture's question selections to its assembled project tree.
+func NarrowChecklists(runDir, fixtureDir, command string) error {
+	prompts, err := LoadSelections(fixtureDir)
+	if err != nil {
+		return err
+	}
+
+	selected := &selection{Name: filepath.Base(fixtureDir), Dir: fixtureDir, InputPath: "input", Cmd: command,
+		ChecklistPrompts: prompts}
+
+	err = validateChecklistFilters(selected)
+	if err != nil {
+		return err
+	}
+
+	return applyChecklistFilters(selected, runDir)
+}

@@ -36,7 +36,7 @@
   "glossary": [
     {
       "term": "idempotency key",
-      "means": "The request label supplied with a halving. Repeating a halving with the same idempotency key changes the number only once."
+      "means": "An idempotency key is the request label sent with a calculation. Repeating a request with the same key changes the number only once."
     }
   ],
   "description": "A calculator accepts a number and a request label. Repeating a request with the same label changes the number only once.",

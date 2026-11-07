@@ -1,0 +1,80 @@
+[
+  {
+    "control": "concept-bodies-extra-claude-003",
+    "historical_verdict": "fail",
+    "expected_verdict": "fail",
+    "category": "concept_binding",
+    "reason": "State.Halve requires CALC_LICENCE, absent from the closed binding and Public interface."
+  },
+  {
+    "control": "concept-bodies-extra-claude-005",
+    "historical_verdict": "pass",
+    "expected_verdict": "pass",
+    "category": "",
+    "reason": "The repair runs the declared halve operation without the undeclared licence gate."
+  },
+  {
+    "control": "concept-bodies-capture-claude-004",
+    "historical_verdict": "fail",
+    "expected_verdict": "fail",
+    "category": "pattern_captures",
+    "reason": "The first-digit pattern binds halves 64 but supplies 6 to the definition."
+  },
+  {
+    "control": "concept-bodies-capture-claude-008",
+    "historical_verdict": "pass",
+    "expected_verdict": "pass",
+    "category": "",
+    "reason": "The repaired pattern supplies the complete number, including 64."
+  },
+  {
+    "control": "concept-bodies-cases-claude-009",
+    "historical_verdict": "pass",
+    "expected_verdict": "fail",
+    "category": "pattern_scope",
+    "reason": "The regex admits the Owner exactly doubles 6; OperationFromStep selects double and exact=true, then RunCalc returns ErrExactNotDeclared. Exact doubling is outside the closed Concept and declared double interface.",
+    "pattern": "^the Owner (?:(exactly) )?(halves|doubles) (-?\\d+)$"
+  },
+  {
+    "control": "concept-bodies-cases-claude-011",
+    "historical_verdict": "pass",
+    "expected_verdict": "pass",
+    "category": "",
+    "reason": "The Then observes the kept output; matches and does not match stay distinct."
+  },
+  {
+    "control": "concept-bodies-contract-claude-003",
+    "historical_verdict": "pass",
+    "expected_verdict": "pass",
+    "category": "",
+    "reason": "The body supplies CALC_REAL_GO as the toolchain binding now declares; no fixture file is authority."
+  },
+  {
+    "control": "build-steps-critique-assertion-claude-005",
+    "historical_verdict": "fail",
+    "expected_verdict": "fail",
+    "category": "concept_meaning",
+    "reason": "The Then rejects equality and accepts inequality, contradicting the expected result."
+  },
+  {
+    "control": "build-steps-critique-assertion-claude-007",
+    "historical_verdict": "pass",
+    "expected_verdict": "pass",
+    "category": "",
+    "reason": "The repaired Then compares stored process output with the expected value and accepts equality."
+  },
+  {
+    "control": "build-steps-critique-correct-claude-006",
+    "historical_verdict": "pass",
+    "expected_verdict": "pass",
+    "category": "",
+    "reason": "HostRoot ../.. resolves from tests/calc, the Go test process working directory; the helper comment is corrected from tests/calc/steps."
+  },
+  {
+    "control": "computed-assertion-control",
+    "historical_verdict": "fail",
+    "expected_verdict": "fail",
+    "category": "computes_assertion",
+    "reason": "The synthetic Then computes state.Input * 2 instead of observing the saved process output."
+  }
+]

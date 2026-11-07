@@ -2,5 +2,5 @@
 applied: true
 impossible: []
 target: "services/calc"
-summary: "Added B() returning 2 and corrected A() to return 1. go test -count=1 ./tests/... passed: broken package builds, TestBuild passes, and TestA passes. No tests or documents changed."
+summary: "Changed A() to return 1 and added B() returning 2; formatted calc.go. After part 1, TestA passed while the missing B still blocked compilation. Final go test -count=1 ./tests/... passed both packages, including TestA and TestBuild, clearing the build failure. The patch tool failed; edits were completed through the shell."
 === FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===

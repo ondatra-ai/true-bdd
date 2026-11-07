@@ -1,0 +1,14 @@
+# A step-level and is invalid; it belongs inside a given/when/then list.
+story:
+  id: summary
+  title: Summarize a document
+  as_a: Product Owner
+  i_want: a document summary
+  so_that: I can read its main points
+  status: DRAFT
+  acceptance_criteria:
+  - id: 001-summary
+    description: Display the summary and its limit.
+    steps:
+    - then: Claude displays a summary of the first 10000 words
+    - and: Claude states that only the first 10000 words were summarized

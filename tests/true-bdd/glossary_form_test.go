@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // glossary-form-001-startup-refused: A glossary meaning exceeding three sentences and 25 words per sentence must refuse startup with its term, counts and rule before any AI turn
 func TestGlossaryForm001StartupRefused(t *testing.T) {
-	s := scenarios.New(t, "glossary-form-001-startup-refused")
+	s := New(t, "glossary-form-001-startup-refused")
 	s.Given(`the "glossary-form-refused" project tree`)
 	s.When(`the System Architect runs "scen check"`)
 	s.Then(`the command exits with code 1`)

@@ -94,7 +94,10 @@ summary: "<what changed and which tests of the set you saw pass>"
 === FILE_END: {{ .ResultPath }} ===
 
 Only when no solution exists inside the declared edit roots, fill impossible with a list of {path, reason} for required undeclared files. Keep any edits already made and report their outcome. Otherwise leave impossible empty; applied: false by itself permits another attempt.
+{{if .StepArguments}}
+## Step arguments
 
+{{.StepArguments}}{{end}}
 ## Required fixture lifecycle protocol
 
 Read services/calc/calc.go. If Mode returns 0, change it only to return 1. If Mode returns 1, change it to return 2. Complete only that stage during this apply, even if a broader plan is proposed. The intermediate skipped member deliberately exercises missing passing results. Never edit tests or documents.

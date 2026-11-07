@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/architecture"
@@ -33,20 +34,23 @@ func (e *buildStepsExecution) configure(ctx context.Context, arch *architecture.
 		return fmt.Errorf("locate step writer host: %w", err)
 	}
 
+	err = e.prepareRuntimeAPI(ctx, arch)
+	if err != nil {
+		return err
+	}
+
 	err = e.configureRoots(arch, scenarios, host)
 	if err != nil {
 		return err
 	}
 
-	libraries, err := arch.DownloadLibraries(ctx, host)
+	libraries, err := arch.DownloadStepLibraries(ctx, host)
 	if err != nil {
 		return err
 	}
 
 	e.deps.FixApplier.UseLibraryReadRoots(libraries)
 	e.deps.FixGenerator.UseEvidenceReadRoots(e.readRoots, libraries)
-	e.command = testrunner.Config{Framework: arch.Testing.Framework,
-		ConfigFile: arch.Testing.ConfigFile, Command: arch.Testing.Commands.Replay}
 
 	return nil
 }
@@ -66,40 +70,35 @@ func (e *buildStepsExecution) configureRoots(arch *architecture.Architecture,
 		}
 	}
 
+	for _, imported := range []string{
+		"github.com/ondatra-ai/true-bdd/pkg/testkit", "github.com/ondatra-ai/true-bdd/pkg/proxy/cli",
+	} {
+		if path := e.runtimeAPI[imported]; path != "" {
+			documents = append(documents, path)
+		}
+	}
+
 	roots, err := arch.TestWritableRoots(host, suites, documents)
 	if err != nil {
 		return err
 	}
 
-	paths, patterns := make([]string, 0, len(roots)), make([]string, 0, len(roots))
-	for _, root := range roots {
-		paths = append(paths, root.Path)
-		patterns = append(patterns, strings.TrimSuffix(root.Path, "/")+"/**")
-	}
+	readPaths, _ := stepRootPaths(roots)
+	e.configureEvidenceRoots(host, readPaths, documents)
 
-	e.deps.FixApplier.UseDeclaredWriteRoots(paths, patterns)
-	e.configureEvidenceRoots(host, paths, documents)
-
-	return nil
-}
-
-func (e *buildStepsExecution) initializeItems(items []*BuildStepsItem) error {
-	const defaultAttempts = 5
-
-	e.items = items
-	e.attempts = make(map[*BuildStepsItem]int)
-	e.maxAttempts = defaultAttempts
-
-	checklist, err := e.deps.ChecklistLoader.LoadFull(buildStepsChecklistName)
+	roots, err = arch.StepsWritableRoots(host, suites, documents)
 	if err != nil {
 		return err
 	}
 
-	if checklist.Config != nil && checklist.Config.MaxApplyAttempts > 0 {
-		e.maxAttempts = checklist.Config.MaxApplyAttempts
-	}
+	paths, patterns := stepRootPaths(roots)
+	e.deps.FixApplier.UseDeclaredWriteRoots(paths, patterns)
 
 	return nil
+}
+
+func (e *buildStepsExecution) initializeItems() {
+	e.attempts = make(map[*BuildStepsItem]int)
 }
 
 func (e *buildStepsExecution) configureEvidenceRoots(host string, paths, documents []string) {
@@ -117,5 +116,25 @@ func (e *buildStepsExecution) configureEvidenceRoots(host string, paths, documen
 		}
 	}
 
+	unique := make([]string, 0, len(e.readRoots))
+	for _, root := range e.readRoots {
+		root = filepath.Clean(root)
+		if !slices.Contains(unique, root) {
+			unique = append(unique, root)
+		}
+	}
+
+	e.readRoots = unique
+
 	e.deps.FixApplier.UseEvidenceReadRoots(e.readRoots)
+}
+
+func stepRootPaths(roots []architecture.WritableRoot) ([]string, []string) {
+	paths, patterns := make([]string, 0, len(roots)), make([]string, 0, len(roots))
+	for _, root := range roots {
+		paths = append(paths, root.Path)
+		patterns = append(patterns, strings.TrimSuffix(root.Path, "/")+"/**")
+	}
+
+	return paths, patterns
 }

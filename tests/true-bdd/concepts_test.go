@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // concepts-001-loads: A product document with concepts must load and validate its terms and bindings without AI
 func TestConcepts001Loads(t *testing.T) {
-	s := scenarios.New(t, "concepts-001-loads")
+	s := New(t, "concepts-001-loads")
 	s.Given(`the "concepts-valid" project tree`)
 	s.When(`the System Architect runs "scen check"`)
 	s.Then(`the command exits with code 0`)
@@ -38,7 +36,7 @@ func TestConcepts001Loads(t *testing.T) {
 
 // concepts-002-both-refused: A product document still declaring the retired catalogue must refuse startup, naming concepts as its replacement
 func TestConcepts002BothRefused(t *testing.T) {
-	s := scenarios.New(t, "concepts-002-both-refused")
+	s := New(t, "concepts-002-both-refused")
 	s.Given(`the "concepts-catalogue-retired" project tree`)
 	s.When(`the System Architect runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -50,7 +48,7 @@ func TestConcepts002BothRefused(t *testing.T) {
 
 // concepts-003-undefined-term: A concept declaring an undefined glossary term must fail naming the concept and term
 func TestConcepts003UndefinedTerm(t *testing.T) {
-	s := scenarios.New(t, "concepts-003-undefined-term")
+	s := New(t, "concepts-003-undefined-term")
 	s.Given(`the "concepts-undefined-term" project tree`)
 	s.When(`the System Architect runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -62,7 +60,7 @@ func TestConcepts003UndefinedTerm(t *testing.T) {
 
 // concepts-004-unmapped-term: A concept declaring an unmapped term must fail naming the concept and term
 func TestConcepts004UnmappedTerm(t *testing.T) {
-	s := scenarios.New(t, "concepts-004-unmapped-term")
+	s := New(t, "concepts-004-unmapped-term")
 	s.Given(`the "concepts-unmapped-term" project tree`)
 	s.When(`the System Architect runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -74,7 +72,7 @@ func TestConcepts004UnmappedTerm(t *testing.T) {
 
 // concepts-005-bindings: Undeclared concepts and references and duplicate bindings must fail naming each concept without AI
 func TestConcepts005Bindings(t *testing.T) {
-	s := scenarios.New(t, "concepts-005-bindings")
+	s := New(t, "concepts-005-bindings")
 	s.Given(`the "concepts-bindings" project tree`)
 	s.When(`the System Architect runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -89,7 +87,7 @@ func TestConcepts005Bindings(t *testing.T) {
 
 // concepts-006-templates: An architecture document still declaring the retired Phrase mapping must refuse startup, naming architecture.concepts as its replacement
 func TestConcepts006Templates(t *testing.T) {
-	s := scenarios.New(t, "concepts-006-templates")
+	s := New(t, "concepts-006-templates")
 	s.Given(`the "concepts-phrases-retired" project tree`)
 	s.When(`the System Architect runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -101,7 +99,7 @@ func TestConcepts006Templates(t *testing.T) {
 
 // concepts-007-fix-binding: A concept binding fix must write the architecture after apply and preserve the Scenario
 func TestConcepts007FixBinding(t *testing.T) {
-	s := scenarios.New(t, "concepts-007-fix-binding")
+	s := New(t, "concepts-007-fix-binding")
 	s.Given(`the "concepts-fix-binding" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "scen check --fix"`)
@@ -116,7 +114,7 @@ func TestConcepts007FixBinding(t *testing.T) {
 
 // concepts-008-binding-adds-operation: A concept-bindings fix for a binding whose command the CLI document does not declare yet must ask the System Architect first and add the command to that document only after apply, never to the Scenario
 func TestConcepts008BindingAddsOperation(t *testing.T) {
-	s := scenarios.New(t, "concepts-008-binding-adds-operation")
+	s := New(t, "concepts-008-binding-adds-operation")
 	s.Given(`the "concepts-fix-operation" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "scen check --fix"`)
@@ -134,7 +132,7 @@ func TestConcepts008BindingAddsOperation(t *testing.T) {
 
 // concepts-009-extra-key-refused: A product document whose concept carries a key beyond concept, means and terms must refuse startup, naming the block, the concept and the key
 func TestConcepts009ExtraKeyRefused(t *testing.T) {
-	s := scenarios.New(t, "concepts-009-extra-key-refused")
+	s := New(t, "concepts-009-extra-key-refused")
 	s.Given(`the "concepts-extra-key" project tree`)
 	s.When(`the System Architect runs "scen check"`)
 	s.Then(`the command exits with code 1`)

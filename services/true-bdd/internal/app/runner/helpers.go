@@ -345,7 +345,7 @@ func StoryPostFix(
 
 		err := yaml.Unmarshal([]byte(applierContent), &updated)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse updated story body: %w", err)
+			return item, fmt.Errorf("%w: failed to parse updated story body: %w", ErrFixNotTaken, err)
 		}
 
 		updated.ID = item.ID

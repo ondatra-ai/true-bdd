@@ -11,6 +11,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/architecture"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/disk"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/stepcoverage"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/verification"
 )
 
 type conceptItemContext struct {
@@ -20,6 +21,7 @@ type conceptItemContext struct {
 	Words       []catalogue.Mapping           `yaml:"word_mapping"`
 	Interface   *architecture.PublicInterface `yaml:"public_interface"`
 	Document    string                        `yaml:"interface_document"`
+	RuntimeAPI  map[string]string             `yaml:"runtime_api,omitempty"`
 	Definitions []conceptDefinitionContext    `yaml:"definitions"`
 	Registry    string                        `yaml:"registry,omitempty"`
 	Scenarios   []string                      `yaml:"scenarios,omitempty"`
@@ -40,7 +42,8 @@ type conceptDefinitionContext struct {
 	Pattern  string                     `yaml:"pattern"`
 	Captures []catalogue.PatternCapture `yaml:"captures,omitempty"`
 	Serves   string                     `yaml:"serves,omitempty"`
-	Steps    []conceptBoundStep         `yaml:"steps"`
+	Steps    []conceptBoundStep         `yaml:"steps,omitempty"`
+	Forms    []verification.Form        `yaml:"forms,omitempty"`
 }
 
 type conceptBoundStep struct {
@@ -57,9 +60,12 @@ type stepScenarioContext struct {
 }
 
 func describeConceptItem(item *BuildStepsItem, arch *architecture.Architecture, spec conceptSpecification,
-	discovery *conceptDiscovery,
+	discovery *conceptDiscovery, runtimeAPI ...map[string]string,
 ) error {
 	context := spec.meaning(item)
+	if len(runtimeAPI) > 0 {
+		context.RuntimeAPI = runtimeAPI[0]
+	}
 
 	for _, entry := range spec.definitions {
 		if slices.Contains(context.Concept.Terms, entry.Term) {

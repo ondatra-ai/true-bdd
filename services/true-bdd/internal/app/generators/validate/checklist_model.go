@@ -14,10 +14,15 @@ func (data ChecklistPromptData) modelView() map[string]any {
 		documents[key] = modelDocument(document)
 	}
 
-	return map[string]any{
+	view := map[string]any{
 		"Question": data.Question, "Rationale": data.Rationale, "FixTemplate": data.FixTemplate,
 		"ResultPath": data.ResultPath, "Structured": data.Structured, "Docs": documents, "Subject": subject,
 	}
+	if data.StepArguments != "" {
+		view["StepArguments"] = data.StepArguments
+	}
+
+	return view
 }
 
 func modelDocument(document *docs.ArchitectureDoc) any {
