@@ -510,3 +510,21 @@ log:
       тогда прогоняй все Попробуй прогнать а потом если что-то не так?, то спросить у фейбла
       как бы починить и попробовать починить самому 1 раз. если не получится то тогда уже ко
       мне идти с вопросом
+  - decision_trace:
+      research:
+        - |
+          #304's recording left six failures. Fable advised each fix and one attempt settled
+          all six: the judge's shim takes the record command's exclusions; the controls
+          fixtures answer grouping for their planted control; verification's pattern_scope
+          reads the Concept's means and binding as closed, after which all eleven controls
+          return their expected verdicts; concept-link-021's judge clause no longer reads as
+          printing both numbers. The pattern_scope sentence re-hashes 15 more fixtures,
+          about $16.4 Claude +/-30% (tmp/304/rerecord-2.txt, part 2).
+      recommendation: |
+        Record part 2 one batch at a time, then merge #304.
+      settled: |
+        As recommended.
+    question: |
+      Q23 - Record the 15 fixtures the pattern_scope sentence re-hashes?
+    answer: |
+      Да, последовательно (Recommended)
