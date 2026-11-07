@@ -461,3 +461,29 @@ log:
       Q20 - What does the final review change before the squash?
     answer: |
       Да мне не важно. Давай уже сажать скоуп и доводить до мержа. Хоть все засквошим
+  - decision_trace:
+      research:
+        - |
+          After the squash (dd830b434) four things remained: pushing impl/249-suite-folder and
+          PR #280, whose body still describes only #277 and #278; the cut-B drill round; the
+          final review's follow-ups with the older judge-snapshot defect (two record runs at
+          once put one fixture's files into another's judge cassette); the five ticket
+          worktrees.
+      recommendation: |
+        One ticket under #249 for the follow-ups; remove the five worktrees, keeping their
+        branches; the push and PR #280's body after the Owner reads what the PR holds.
+      settled: |
+        One follow-up ticket under #249, finished before the cut-B round; the worktrees of
+        #299 to #303 removed, their branches kept; PR #280 is explained before it changes.
+    question: |
+      Q21 - How are the follow-ups filed, and what comes before the cut-B round?
+    answer: |
+      А что мы делали в 280 пр?
+
+      Давай разберемся с 280?
+
+      Один тикет под #249 (Recommended)
+
+      Убрать сейчас
+
+      Перед cut b я хочу закончить с фолоу апами
