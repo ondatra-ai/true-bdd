@@ -1,7 +1,7 @@
 package steps
 
 import (
-	"errors"
+	"bytes"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -11,22 +11,19 @@ import (
 //truebdd:concept when "doubling"
 func concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b(state *State, args []string) error {
 	if state.Program == "" {
-		return errors.New("the calculator is not installed")
+		return fmt.Errorf("double %s: the calculator is not installed", args[0])
 	}
-	value := args[0]
-	command := exec.Command(state.Program, "double", value)
+	command := exec.Command(state.Program, "double", args[0])
 	command.Dir = "../.."
-	stdout, err := command.Output()
-	if err != nil {
-		var exit *exec.ExitError
-		if errors.As(err, &exit) {
-			return fmt.Errorf("run calc double %s: %w: %s", value, err, exit.Stderr)
-		}
-		return fmt.Errorf("run calc double %s: %w", value, err)
+	var stdout, stderr bytes.Buffer
+	command.Stdout = &stdout
+	command.Stderr = &stderr
+	if err := command.Run(); err != nil {
+		return fmt.Errorf("run calc double %s: %w: %s", args[0], err, strings.TrimSpace(stderr.String()))
 	}
-	doubled, err := strconv.Atoi(strings.TrimSpace(string(stdout)))
+	doubled, err := strconv.Atoi(strings.TrimSpace(stdout.String()))
 	if err != nil {
-		return fmt.Errorf("calc double %s printed %q: %w", value, stdout, err)
+		return fmt.Errorf("calc double %s printed %q: %w", args[0], stdout.String(), err)
 	}
 	state.Value = doubled
 	return nil
