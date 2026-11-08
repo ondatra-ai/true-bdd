@@ -528,3 +528,37 @@ log:
       Q23 - Record the 15 fixtures the pattern_scope sentence re-hashes?
     answer: |
       Да, последовательно (Recommended)
+  - decision_trace:
+      research:
+        - |
+          #304 merged into impl/249-suite-folder (ad2d907b9); offline replay 374/374, gates pass.
+          PR #280 (impl/249-suite-folder into main, draft since 2 November) carries 25 open
+          tickets, #277 to #304; its body still describes only #277 and #278 and closes #249,
+          #277 and #278. Rounds 1 to 8 of cut B each stopped at a point one of these tickets
+          removes; round 8 predicted two more (the critique's size, utilities/), removed by
+          ADR-0042, #299 to #303 and #298. main has not moved since the branch began.
+      recommendation: |
+        Merge #280 into main now and run the cut-B round from main in a new integration
+        branch.
+      settled: |
+        Merge #280 into main and close every ticket it carries, each only after its
+        acceptance criteria are checked again. #249 stays open: no round has passed cut B.
+    question: |
+      Q24 - What happens to PR #280 and the tickets it carries?
+    answer: |
+      и как там? есть новые проблемы?
+
+      Так что там?
+
+      А почему он угадывает где лижит go mod?
+
+      А что в 280 пре? Он вообще актуален?
+
+      Так а в чем его суть?
+
+      Нет.стой.в чем суть этого пр в конкретике. Как конкретно он приближает нас к цели?
+
+      Ааа. Я понял это и емть пр интеграционной ветки
+
+      Его надо смержить в меди и закрыть в е тикеты которые он несет. Только помнишь что перед
+      закрытием перепроверить критерии .
