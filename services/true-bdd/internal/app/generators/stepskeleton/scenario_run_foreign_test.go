@@ -28,7 +28,6 @@ func TestScenarioRunEmbeddingKeepsForeignImports(t *testing.T) {
 
 			dir := filepath.Join(t.TempDir(), "steps")
 			source := fmt.Sprintf(scenarioRunOriginalState, testCase.imports)
-			source = strings.Replace(source, "type State struct {", "type State struct {\n *testkit.ScenarioRun", 1)
 			file := filepath.Join(dir, "definitions.go")
 
 			err := disk.Write(file, []byte(source), disk.Shared)

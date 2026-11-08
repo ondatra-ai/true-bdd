@@ -10,6 +10,8 @@ import (
 	"strings"
 )
 
+const scenarioRunTypeName = "ScenarioRun"
+
 const testkitImport = "github.com/ondatra-ai/true-bdd/pkg/testkit"
 
 var errStateStruct = errors.New("harness requires State to be a struct")
@@ -78,12 +80,12 @@ func scenarioRunType(expression ast.Expr, qualifier string) bool {
 	if selector, ok := expression.(*ast.SelectorExpr); ok {
 		name, named := selector.X.(*ast.Ident)
 
-		return named && name.Name+"." == qualifier && selector.Sel.Name == "ScenarioRun"
+		return named && name.Name+"." == qualifier && selector.Sel.Name == scenarioRunTypeName
 	}
 
 	name, ok := expression.(*ast.Ident)
 
-	return ok && qualifier == "" && name.Name == "ScenarioRun"
+	return ok && qualifier == "" && name.Name == scenarioRunTypeName
 }
 
 func unusedTestkitQualifier(tree *ast.File) string {
@@ -180,7 +182,7 @@ func scenarioRunState(files []sourceFile) (sourceFile, *ast.StructType, error) {
 					return file, nil, errStateStruct
 				}
 
-				return file, state, nil
+				return file, state, scenarioRunConflict(file, state)
 			}
 		}
 	}
@@ -190,11 +192,16 @@ func scenarioRunState(files []sourceFile) (sourceFile, *ast.StructType, error) {
 
 func hasScenarioRun(state *ast.StructType, qualifier string) bool {
 	for _, field := range state.Fields.List {
-		pointer, ok := field.Type.(*ast.StarExpr)
-		if ok && len(field.Names) == 0 && scenarioRunType(pointer.X, qualifier) {
+		if isScenarioRun(field, qualifier) {
 			return true
 		}
 	}
 
 	return false
+}
+
+func isScenarioRun(field *ast.Field, qualifier string) bool {
+	pointer, ok := field.Type.(*ast.StarExpr)
+
+	return ok && len(field.Names) == 0 && scenarioRunType(pointer.X, qualifier)
 }

@@ -131,7 +131,12 @@ commands:
       plain, aliased and dot imports. Missing State or field fails naming the suite
       and file. Its code F names both at the fix menu, then embeds the field while
       keeping every definition-owned field, method and declaration, without a model
-      turn. The same Q runs again after apply, then the checklist restarts. A bare
+      turn. If State has a definition-owned field named ScenarioRun, the Q fails
+      with a context line naming its file and field. Before the menu the F answers
+      cannot fix, naming that conflict and asking a person to rename or remove
+      the field, then run build steps --fix again; no file changes and no AI turn
+      runs. A foreign testkit import without a conflicting field uses a free alias
+      for the harness. The same Q runs again after apply, then the checklist restarts. A bare
       run records this Q per suite without writes. For concept Items, before body turns
       the engine resolves the pkg/testkit root and pkg/proxy/cli against the host
       module graph and saves each complete go doc -all output under host tmp.

@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/architecture"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/registry"
+	pkgerrors "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/pkg/errors"
 )
 
 const scenarioRunID = "scenario-run"
@@ -44,6 +46,10 @@ func scenarioRunItems(scenarios []*registry.RegistryScenario, arch *architecture
 
 func scenarioRunVerdict(item *BuildStepsItem, _ checks.Input) (checks.Verdict, error) {
 	file, present, err := stepskeleton.InspectScenarioRun(item.Suite)
+	if errors.Is(err, stepskeleton.ErrScenarioRunConflict) {
+		return checks.Verdict{Context: []string{fmt.Sprintf("%s: %s", item.Label(), err)}}, nil
+	}
+
 	if err != nil {
 		return checks.Verdict{}, err
 	}
@@ -64,6 +70,16 @@ func (e *buildStepsExecution) generateStepFix(ctx context.Context, item *BuildSt
 	}
 
 	file, _, err := stepskeleton.InspectScenarioRun(item.Suite)
+	if errors.Is(err, stepskeleton.ErrScenarioRunConflict) {
+		report := &pkgerrors.CannotFixReport{
+			Reason: err.Error(),
+			Correction: fmt.Sprintf("rename or remove State's conflicting ScenarioRun field in %s, "+
+				"then run build steps --fix again", file),
+		}
+
+		return engine.FixResult{}, true, report.Refusal()
+	}
+
 	if err != nil {
 		return engine.FixResult{}, true, err
 	}

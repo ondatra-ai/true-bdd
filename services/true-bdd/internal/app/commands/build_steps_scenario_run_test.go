@@ -14,6 +14,8 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/disk"
 )
 
+const scenarioRunBareMode = "bare"
+
 const scenarioRunPlainMode = "plain"
 
 const scenarioRunFixMode = "fix"
@@ -21,7 +23,7 @@ const scenarioRunStateFile = "tests/calc/steps/state.go"
 const scenarioRunArchitecture = "docs/architecture/architecture.yaml"
 
 func TestBuildStepsEnsuresScenarioRunWithoutConceptItems(t *testing.T) {
-	for _, mode := range []string{scenarioRunFixMode, "bare", "present", scenarioRunPlainMode} {
+	for _, mode := range []string{scenarioRunFixMode, scenarioRunBareMode, "present", scenarioRunPlainMode} {
 		t.Run(mode, func(t *testing.T) {
 			deps, reply := scenarioRunHost(t, mode)
 			before := scenarioRunHostFiles(t)
@@ -29,7 +31,7 @@ func TestBuildStepsEnsuresScenarioRunWithoutConceptItems(t *testing.T) {
 
 			err := commands.RunBuildSteps(t.Context(), deps, "docs/scenarios.yaml", scenarioRunArchitecture,
 				mode == scenarioRunFixMode)
-			if mode == "bare" {
+			if mode == scenarioRunBareMode {
 				if err == nil || !strings.Contains(err.Error(), "tests/calc") {
 					t.Fatalf("missing suite failure: %v", err)
 				}
