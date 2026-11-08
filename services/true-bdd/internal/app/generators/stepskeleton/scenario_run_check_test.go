@@ -22,6 +22,7 @@ func TestScenarioRunInspectionNeverWrites(t *testing.T) {
 		{"plain", "import %q\ntype State struct{ *testkit.ScenarioRun }", true},
 		{"alias", "import harness %q\ntype State struct{ *harness.ScenarioRun }", true},
 		{"dot", "import . %q\ntype State struct{ *ScenarioRun }", true},
+		{"foreign testkit", "import testkit \"example.com/other\"\ntype State struct{ *testkit.ScenarioRun }", false},
 		{"missing field", "type State struct{ Name string }", false},
 		{"named field", "import %q\ntype State struct{ Run *testkit.ScenarioRun }", false},
 		{"missing State", "const name = 1", false},

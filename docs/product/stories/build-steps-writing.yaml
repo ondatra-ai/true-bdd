@@ -187,7 +187,8 @@ story:
     - then:
       - "the command exits with code 1"
       - "the engine dispatched no AI turns"
-      - "stderr matches tests/calc"
+      - "stdout matches level=ERROR.*Concept build steps stopped"
+      - "stdout matches level=ERROR.*tests/calc"
       - "stdout does not match BUILD STEPS COMPLETE"
       - "no file outside \"tmp\" changed"
   - id: 012-scenario-run-present

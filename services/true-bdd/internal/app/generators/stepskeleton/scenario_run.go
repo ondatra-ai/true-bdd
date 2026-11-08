@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"path"
 	"strconv"
+	"strings"
 )
 
 const testkitImport = "github.com/ondatra-ai/true-bdd/pkg/testkit"
@@ -37,7 +39,7 @@ func EnsureScenarioRun(dir string) error {
 func embedScenarioRun(file sourceFile, state *ast.StructType) error {
 	qualifier, imported := scenarioRunQualifier(file.tree)
 
-	if hasScenarioRun(state, qualifier) {
+	if imported && hasScenarioRun(state, qualifier) {
 		return nil
 	}
 
@@ -45,7 +47,7 @@ func embedScenarioRun(file sourceFile, state *ast.StructType) error {
 
 	source := string(file.source[:offset]) + "\n*" + qualifier + "ScenarioRun\n" + string(file.source[offset:])
 	if !imported {
-		source = addTestkitImport(file, source)
+		source = addTestkitImport(file, source, qualifier)
 	}
 
 	return writeGo(file.path, []byte(source))
@@ -69,7 +71,7 @@ func scenarioRunQualifier(tree *ast.File) (string, bool) {
 		return imported.Name.Name + ".", true
 	}
 
-	return "testkit.", false
+	return unusedTestkitQualifier(tree), false
 }
 
 func scenarioRunType(expression ast.Expr, qualifier string) bool {
@@ -84,7 +86,34 @@ func scenarioRunType(expression ast.Expr, qualifier string) bool {
 	return ok && qualifier == "" && name.Name == "ScenarioRun"
 }
 
-func addTestkitImport(file sourceFile, source string) string {
+func unusedTestkitQualifier(tree *ast.File) string {
+	names := make(map[string]bool)
+
+	for _, imported := range tree.Imports {
+		importedPath, _ := strconv.Unquote(imported.Path.Value)
+
+		name := path.Base(importedPath)
+		if imported.Name != nil {
+			name = imported.Name.Name
+		}
+
+		names[name] = true
+	}
+
+	name := "testkit"
+	for suffix := 1; names[name]; suffix++ {
+		name = "testkit" + strconv.Itoa(suffix)
+	}
+
+	return name + "."
+}
+
+func addTestkitImport(file sourceFile, source, qualifier string) string {
+	declarationText := strconv.Quote(testkitImport)
+	if qualifier != "testkit." {
+		declarationText = strings.TrimSuffix(qualifier, ".") + " " + declarationText
+	}
+
 	for _, declaration := range file.tree.Decls {
 		general, ok := declaration.(*ast.GenDecl)
 		if !ok || general.Tok != token.IMPORT {
@@ -94,20 +123,20 @@ func addTestkitImport(file sourceFile, source string) string {
 		if general.Lparen.IsValid() {
 			offset := file.positions.Position(general.Lparen).Offset + 1
 
-			return source[:offset] + fmt.Sprintf("\n%q\n", testkitImport) + source[offset:]
+			return source[:offset] + fmt.Sprintf("\n%s\n", declarationText) + source[offset:]
 		}
 
 		start := file.positions.Position(general.TokPos).Offset
 		end := file.positions.Position(general.End()).Offset
 
-		imports := fmt.Sprintf("import (\n%q\n%s\n)", testkitImport, source[start+len("import"):end])
+		imports := fmt.Sprintf("import (\n%s\n%s\n)", declarationText, source[start+len("import"):end])
 
 		return source[:start] + imports + source[end:]
 	}
 
 	offset := file.positions.Position(file.tree.Name.End()).Offset
 
-	return source[:offset] + fmt.Sprintf("\n\nimport %q\n", testkitImport) + source[offset:]
+	return source[:offset] + fmt.Sprintf("\n\nimport %s\n", declarationText) + source[offset:]
 }
 
 // InspectScenarioRun reads State's embedded harness field and the file the fix would edit.
@@ -127,9 +156,9 @@ func InspectScenarioRun(dir string) (string, bool, error) {
 		return unusedSkeletonFile(dir, "state.go"), false, nil
 	}
 
-	qualifier, _ := scenarioRunQualifier(file.tree)
+	qualifier, imported := scenarioRunQualifier(file.tree)
 
-	return file.path, hasScenarioRun(state, qualifier), nil
+	return file.path, imported && hasScenarioRun(state, qualifier), nil
 }
 
 func scenarioRunState(files []sourceFile) (sourceFile, *ast.StructType, error) {

@@ -119,7 +119,7 @@ commands:
       comparison. Invalid registrations still refuse startup before any AI turn.
       With --fix it writes only the Steps package: each Item's skeletons,
       State, Register and bodies, with no test or main file required. It compiles
-      each Item's Steps package and checks Step coverage, one binding per step,
+      each concept Item's Steps package and checks Step coverage, one binding per step,
       written bodies and step-verification. It never lists or runs tests or writes
       their main file. Missing or ambiguous concepts and bindings stop before
       skeletons; malformed answers and output caps crash. A host declaring no

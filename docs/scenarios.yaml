@@ -6563,7 +6563,8 @@ scenarios:
       then:
       - "the command exits with code 1"
       - "the engine dispatched no AI turns"
-      - "stderr matches tests/calc"
+      - "stdout matches level=ERROR.*Concept build steps stopped"
+      - "stdout matches level=ERROR.*tests/calc"
       - "stdout does not match BUILD STEPS COMPLETE"
       - "no file outside \"tmp\" changed"
   build-steps-writing-012-scenario-run-present:
