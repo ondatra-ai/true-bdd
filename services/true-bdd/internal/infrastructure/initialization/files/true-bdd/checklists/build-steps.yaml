@@ -85,3 +85,11 @@ sections:
           threshold: 9
         rationale: Every unbound text needs one closed meaning before any skeleton.
         docs: [product]
+
+  - id: scenario-run
+    name: Scenario run
+    validation_prompts:
+      - Q:
+          code: scenario-run
+        rationale: The generated tests need State to embed *testkit.ScenarioRun to receive their Scenario run.
+        F: Embed *testkit.ScenarioRun in this suite's State, keeping every field, method and declaration the definitions own. Change nothing else.

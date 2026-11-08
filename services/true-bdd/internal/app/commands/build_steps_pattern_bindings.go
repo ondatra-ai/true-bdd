@@ -64,7 +64,7 @@ func (e *buildStepsExecution) generatePatternFix(ctx context.Context, item *Buil
 	}
 
 	return engine.FixResult{FixPrompt: "Rewrite this concept's skeletons with the proposed patterns:\n" +
-  string(encoded)}, true, nil
+		string(encoded)}, true, nil
 }
 
 func (e *buildStepsExecution) applyPatternFix(_ context.Context, item *BuildStepsItem,
@@ -110,6 +110,10 @@ func recordBarePatternBindings(deps BuildStepsDeps, discovery *conceptDiscovery,
 ) error {
 	execution := &buildStepsExecution{concepts: &conceptRun{discovery: discovery}}
 	for _, item := range discovery.items {
+		if !asksBuildSteps(item, &prompt) {
+			continue
+		}
+
 		verdict, err := execution.patternBindings(item, checks.Input{})
 		if err != nil {
 			return err

@@ -18,18 +18,19 @@ import (
 var ErrBuildStepsNotConverged = errors.New("step definitions still incomplete after fix walk")
 
 type buildStepsExecution struct {
-	verification     map[*BuildStepsItem][]validate.CritiqueFinding
-	fixItems         map[*BuildStepsItem]*BuildStepsItem
-	allowedFunctions []string
-	runtimeAPI       map[string]string
-	readRoots        []string
-	deps             BuildStepsDeps
-	registryFile     string
-	architectureFile string
-	compiler         *testrunner.GoTestRunner
-	shape            string
-	active           *BuildStepsItem
-	concepts         *conceptRun
+	scenarioRunApplies int
+	verification       map[*BuildStepsItem][]validate.CritiqueFinding
+	fixItems           map[*BuildStepsItem]*BuildStepsItem
+	allowedFunctions   []string
+	runtimeAPI         map[string]string
+	readRoots          []string
+	deps               BuildStepsDeps
+	registryFile       string
+	architectureFile   string
+	compiler           *testrunner.GoTestRunner
+	shape              string
+	active             *BuildStepsItem
+	concepts           *conceptRun
 }
 
 func runBuildStepsFix(ctx context.Context, deps BuildStepsDeps, registryFile, architectureFile string) error {
@@ -44,15 +45,16 @@ func runBuildStepsFix(ctx context.Context, deps BuildStepsDeps, registryFile, ar
 	return runner.Run(ctx, runner.Spec[*BuildStepsItem]{
 		Name: "build steps", ChecklistName: buildStepsChecklistName, Fix: true, ConfineClaudeWriter: true,
 		OmitConceptJudgements: true, PromptsLogged: true, LoadItems: execution.prepareConcepts,
-		BeforeEvaluate: execution.beforeEvaluate,
-		GenerateFix: execution.generatePatternFix, ApplyFix: execution.applyPatternFix,
- AnswerPrompt:   execution.answerVerification, FixSubject: execution.fixSubject, BeforeApply: execution.beforeApply,
+		BeforeEvaluate: execution.beforeEvaluate, Asks: asksBuildSteps,
+		GenerateFix: execution.generateStepFix, ApplyFix: execution.applyStepFix,
+		AnswerPrompt: execution.answerVerification, FixSubject: execution.fixSubject, BeforeApply: execution.beforeApply,
 		PostFix: execution.postFix, PostNotApplied: execution.postNotApplied,
 		Finalize: execution.finalize, CheckConvergence: execution.checkConvergence,
 		GetSubject: func(item *BuildStepsItem) (string, string) { return item.subjectID, item.Label() },
 		Checks: checks.Set[*BuildStepsItem]{
- stepCoverageID: {Run: stepBodyVerdict}, patternBindingsID: {Run: execution.patternBindings},
- },
+			scenarioRunID:  {Run: scenarioRunVerdict},
+			stepCoverageID: {Run: stepBodyVerdict}, patternBindingsID: {Run: execution.patternBindings},
+		},
 
 		Evaluator: deps.Evaluator, FixGenerator: deps.FixGenerator, FixApplier: deps.FixApplier,
 		ChecklistLoader: deps.ChecklistLoader, DocResolver: deps.DocResolver, Renderer: deps.TableRenderer,
@@ -61,7 +63,7 @@ func runBuildStepsFix(ctx context.Context, deps BuildStepsDeps, registryFile, ar
 }
 
 func (e *buildStepsExecution) beforeEvaluate(_ context.Context, item *BuildStepsItem) (bool, error) {
-	if e.active == item {
+	if item.Concept == nil || e.active == item {
 		return false, nil
 	}
 

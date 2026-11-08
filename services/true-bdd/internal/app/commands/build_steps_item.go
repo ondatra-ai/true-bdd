@@ -7,8 +7,8 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/catalogue"
 )
 
-// BuildStepsItem is one concept and one go-test suite whose steps of that
-// concept still need step definitions.
+// BuildStepsItem is a concept needing definitions, or a harness suite whose State needs its Scenario run.
+// A nil Concept identifies a suite Item.
 type BuildStepsItem struct {
 	subjectID string
 	Context   string
@@ -33,6 +33,10 @@ type BuildStepsConcept struct {
 
 // Label names the Item in findings, logs and errors.
 func (item *BuildStepsItem) Label() string {
+	if item.Concept == nil {
+		return "suite " + item.Suite
+	}
+
 	return fmt.Sprintf("%s concept %q", item.Concept.Block, item.Concept.Name)
 }
 

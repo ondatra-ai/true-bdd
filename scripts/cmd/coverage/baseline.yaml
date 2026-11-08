@@ -1,12 +1,8 @@
-# #303 replaces the proposal Q with pattern-bindings and its F, exercised by engine trace tests.
-# Fresh BDD recordings await tmp/303/rerecord.txt; no live evidence is claimed here.
-# #301 adds verification identities exercised by TestBuildStepsWalkRunsOneVerificationFixAndRechecksItsQuestion.
-# This remains reconstructed evidence; fresh BDD recordings await the combined #301/#303 run.
-# #299 migrates the body-only F identity, retaining the historical coverage ratchet.
-# Fresh fix-effective evidence awaits the stale recordings inventoried in tmp/299/rerecord.txt.
+# Regenerated from the full replay: 112 branches, including all three scenario-run branches.
+# Retains #303's existing trace-backed pattern-bindings fix entry; replay cannot reconstruct that code F.
 schema_version: 1
 evidence_quality: reconstructed
-universe_sha256: f6734b9fcb88dfacc99b290f57ac9766d38329f15d27b2322d0708ad61d40a28
+universe_sha256: 2da7c118caecb994c723ebfb15ab015ce0734adc36dfb7d36de46716f29dda77
 covered:
     - id: build-code/test-passes/d1@d70fca66#fail
       q_sha256: d70fca66cbff910ef759fbefce94bfaff22e1bd20adaad61efe0ff5019b8c4f0
@@ -30,6 +26,15 @@ covered:
     - id: build-steps/pattern-bindings/d1@111f3916#pass
       q_sha256: 111f3916ea81ef9679d9c3d01c43cde36a9dda8c70f6e9a9a14a69a33f88ddd8
       f_sha256: be00be840b041e545985125e66facadd0f3db525df12701731ce08f5f48c1fae
+    - id: build-steps/scenario-run/d1@8ec5c5d6#fail
+      q_sha256: 8ec5c5d6988920d70833febc7a725a3376b153ab977ffce058c383d32ac2f384
+      f_sha256: c3dd99838b4a29a2c1400c1c65814bb76edd670b8b7ef7bd36e23822b3bce4dc
+    - id: build-steps/scenario-run/d1@8ec5c5d6#fix
+      q_sha256: 8ec5c5d6988920d70833febc7a725a3376b153ab977ffce058c383d32ac2f384
+      f_sha256: c3dd99838b4a29a2c1400c1c65814bb76edd670b8b7ef7bd36e23822b3bce4dc
+    - id: build-steps/scenario-run/d1@8ec5c5d6#pass
+      q_sha256: 8ec5c5d6988920d70833febc7a725a3376b153ab977ffce058c383d32ac2f384
+      f_sha256: c3dd99838b4a29a2c1400c1c65814bb76edd670b8b7ef7bd36e23822b3bce4dc
     - id: build-steps/step-coverage/d1@66068d10#fail
       q_sha256: 66068d10d19300cf98b759f4cdf8d60a042d3370ed906d2d9cc0be75fce90ba5
       f_sha256: abaa22a35573d181215d7e2f8e89acaa5ff725c0d643a018fde1220229636302
@@ -39,6 +44,15 @@ covered:
     - id: build-steps/step-coverage/d1@66068d10#pass
       q_sha256: 66068d10d19300cf98b759f4cdf8d60a042d3370ed906d2d9cc0be75fce90ba5
       f_sha256: abaa22a35573d181215d7e2f8e89acaa5ff725c0d643a018fde1220229636302
+    - id: build-steps/step-verification/q1@449cf369#fail
+      q_sha256: 449cf369c6f5335135ad5aa45a313271b338c306f6405e6a733139597a1fa7cb
+      f_sha256: 285840a01cc450a051012929a45721b0de6787a2112bf2d33c25e9c79d12993b
+    - id: build-steps/step-verification/q1@449cf369#fix
+      q_sha256: 449cf369c6f5335135ad5aa45a313271b338c306f6405e6a733139597a1fa7cb
+      f_sha256: 285840a01cc450a051012929a45721b0de6787a2112bf2d33c25e9c79d12993b
+    - id: build-steps/step-verification/q1@449cf369#pass
+      q_sha256: 449cf369c6f5335135ad5aa45a313271b338c306f6405e6a733139597a1fa7cb
+      f_sha256: 285840a01cc450a051012929a45721b0de6787a2112bf2d33c25e9c79d12993b
     - id: scen-check/concept_bindings/q1@49c59ed2#fail
       q_sha256: 49c59ed2ec2f2f70b5a7502bf9076c59bb0507a66308899f142bb04b39597022
       f_sha256: a7225b5c0e6940f871239a282c1a44ba20647a38fe76319f94da5b0944bd76f6
@@ -327,12 +341,3 @@ covered:
     - id: us-refine/concept_words/q1@24a448d9#pass
       q_sha256: 24a448d96682ba7fc2b8e5b0a29363a092b8962f0fa8f49d8a0c0ef6eba59b8b
       f_sha256: dd8623b075cd704aa7c7587c7cddad549250decdd242ea514091093b09903743
-    - id: build-steps/step-verification/q1@449cf369#fail
-      q_sha256: 449cf369c6f5335135ad5aa45a313271b338c306f6405e6a733139597a1fa7cb
-      f_sha256: 285840a01cc450a051012929a45721b0de6787a2112bf2d33c25e9c79d12993b
-    - id: build-steps/step-verification/q1@449cf369#fix
-      q_sha256: 449cf369c6f5335135ad5aa45a313271b338c306f6405e6a733139597a1fa7cb
-      f_sha256: 285840a01cc450a051012929a45721b0de6787a2112bf2d33c25e9c79d12993b
-    - id: build-steps/step-verification/q1@449cf369#pass
-      q_sha256: 449cf369c6f5335135ad5aa45a313271b338c306f6405e6a733139597a1fa7cb
-      f_sha256: 285840a01cc450a051012929a45721b0de6787a2112bf2d33c25e9c79d12993b

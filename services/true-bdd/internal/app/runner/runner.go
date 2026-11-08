@@ -49,7 +49,7 @@ type Spec[I any] struct {
 	// RecoverWriterFailures lets build code rerun files left by a failed writer.
 	RecoverWriterFailures bool
 	// OmitConceptJudgements walks no concept judgement: build steps groups
- // before the walk and invokes the proposal protocol from a failed code Q's F.
+	// before the walk and invokes the proposal protocol from a failed code Q's F.
 	OmitConceptJudgements bool
 	// PromptsLogged means LoadItems logged the run's one "Loaded prompts"
 	// record, which the coverage census reads as the start of a run's log.
@@ -68,14 +68,16 @@ type Spec[I any] struct {
 	ReloadItems func(ctx context.Context) ([]I, error)
 	// CheckConvergence returns whole-suite findings to the current bounded run.
 	CheckConvergence func(context.Context, []I) (bool, error)
+	// Asks selects applicable Cells; false runs nothing and contributes no report row.
+	Asks func(I, *checklistmodels.PromptWithContext) bool
 	// BeforeEvaluate refreshes execution evidence; true skips a passing Cell.
 	BeforeEvaluate func(ctx context.Context, item I) (bool, error)
 	// AnswerPrompt lets a command supply its prompt Q's evidence and answer protocol.
 	AnswerPrompt func(context.Context, I, *checklistmodels.PromptWithContext) (checklistmodels.ValidationResult, error)
 	// GenerateFix and ApplyFix supply a command's specialized F; nil uses the model writer.
 	GenerateFix func(context.Context, I, checklistmodels.ValidationResult,
-  map[string]string, int) (engine.FixResult, bool, error)
-	ApplyFix    func(context.Context, I, checklistmodels.ValidationResult, engine.FixDecision) (bool, error)
+		map[string]string, int) (engine.FixResult, bool, error)
+	ApplyFix func(context.Context, I, checklistmodels.ValidationResult, engine.FixDecision) (bool, error)
 	// FixSubject supplies the definitions a failed Q named, without applying edits.
 	FixSubject func(context.Context, I, checklistmodels.ValidationResult) (I, error)
 	// BeforeApply commits engine-owned parts of a prepared fix after the menu's apply choice.
@@ -318,6 +320,7 @@ func buildSpecEngine[I any](
 	// walk may apply as well as the outer re-walks, so a cell that never
 	// converges fails with a named error instead of spinning.
 	walker := &engine.SequentialWalker[I, *checklistmodels.PromptWithContext]{
+		Asks:     spec.Asks,
 		Cell:     cell,
 		MaxFixes: maxAttempts,
 		CellLabel: func(item I, query *checklistmodels.PromptWithContext) string {
@@ -371,6 +374,7 @@ func concurrentWalker[I any](
 	}
 
 	walker := &engine.ConcurrentWalker[I, *checklistmodels.PromptWithContext]{
+		Asks:  spec.Asks,
 		Limit: max(1, spec.ValidationConcurrency), MaxFixes: maxAttempts,
 		CellFor: func(_ I, _ *checklistmodels.PromptWithContext) *engine.CellHandler[I, *checklistmodels.PromptWithContext] {
 			var result checklistmodels.ValidationResult
@@ -534,10 +538,10 @@ func buildFixClosure[I any](
 		item I,
 		decision engine.FixDecision,
 	) (I, error) {
-  handled, specializedErr := applySpecializedFix(ctx, spec, item, *latestResult, decision)
-  if handled || specializedErr != nil {
-   return item, locateCannotFix(latestResult, specializedErr)
-  }
+		handled, specializedErr := applySpecializedFix(ctx, spec, item, *latestResult, decision)
+		if handled || specializedErr != nil {
+			return item, locateCannotFix(latestResult, specializedErr)
+		}
 
 		*fixCount++
 		subjectID, _ := spec.GetSubject(item)

@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "build-steps-scenario-run-fix",
+  "files": [
+    {
+      "path": "tests/calc/steps/state.go",
+      "kind": "modified",
+      "size": 264,
+      "sha256": "5db9ae913388a8c4ca0bc561fd4474d9ab037f55faea092d2082cbd2cf64ca72",
+      "text": "package steps\n\nimport \"github.com/ondatra-ai/true-bdd/pkg/testkit\"\n\ntype State struct {\n\t*testkit.ScenarioRun\n\n\tProgram string\n\tValue   int\n}\ntype Registrar interface {\n\tStep(string, func(*State, []string) error)\n}\n\nfunc (state *State) Reset() { state.Value = 0 }\n"
+    }
+  ]
+}

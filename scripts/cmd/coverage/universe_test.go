@@ -30,8 +30,8 @@ func repoRoot(t *testing.T) string {
 	}
 }
 
-// TestUniverseCensus pins the verified shipped inventory: 37 prompts,
-// 36 Fs, 110 branches. Step verification has its findings-directed F.
+// TestUniverseCensus pins the verified shipped inventory: 38 prompts,
+// 37 Fs, 113 branches. Step verification has its findings-directed F.
 func TestUniverseCensus(t *testing.T) {
 	t.Parallel()
 
@@ -40,8 +40,8 @@ func TestUniverseCensus(t *testing.T) {
 		t.Fatalf("loading universe: %v", err)
 	}
 
-	if got := len(uni.Prompts); got != 37 {
-		t.Errorf("prompts: got %d, want 37", got)
+	if got := len(uni.Prompts); got != 38 {
+		t.Errorf("prompts: got %d, want 38", got)
 	}
 
 	fCount := 0
@@ -52,12 +52,12 @@ func TestUniverseCensus(t *testing.T) {
 		}
 	}
 
-	if fCount != 36 {
-		t.Errorf("F templates: got %d, want 36", fCount)
+	if fCount != 37 {
+		t.Errorf("F templates: got %d, want 37", fCount)
 	}
 
-	if got := len(uni.Branches); got != 110 {
-		t.Errorf("branches: got %d, want 110", got)
+	if got := len(uni.Branches); got != 113 {
+		t.Errorf("branches: got %d, want 113", got)
 	}
 
 	if len(uni.Diagnostics) != 0 {

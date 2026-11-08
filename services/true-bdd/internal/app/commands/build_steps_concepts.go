@@ -49,17 +49,18 @@ type conceptDiscovery struct {
 	scenarios    []*registry.RegistryScenario
 	answer       *stepcoverage.Answer
 	items        []*BuildStepsItem
+	suites       []*BuildStepsItem
 	steps        map[string][]catalogue.SuiteStep
 }
 
 func discoverConceptItems(ctx context.Context, deps BuildStepsDeps, registryFile, architectureFile string,
 ) (*conceptDiscovery, error) {
-	scenarios, answer, err := scanConceptHost(deps, registryFile, architectureFile)
+	discovery, err := scanConceptHost(deps, registryFile, architectureFile)
 	if err != nil {
 		return nil, err
 	}
 
-	suites, err := conceptSuites(deps, scenarios, answer)
+	suites, err := conceptSuites(deps, discovery.scenarios, discovery.answer)
 	if err != nil {
 		return nil, err
 	}
@@ -73,8 +74,6 @@ func discoverConceptItems(ctx context.Context, deps BuildStepsDeps, registryFile
 	if err != nil {
 		return nil, err
 	}
-
-	discovery := &conceptDiscovery{scenarios: scenarios, answer: answer, registryFile: registryFile}
 
 	err = discovery.collect(suites, groups)
 	if err != nil {
@@ -93,33 +92,34 @@ func discoverConceptItems(ctx context.Context, deps BuildStepsDeps, registryFile
 
 // scanConceptHost reads the Registry, refuses one build tests could not render, and scans its unbound steps.
 func scanConceptHost(deps BuildStepsDeps, registryFile, architectureFile string,
-) ([]*registry.RegistryScenario, *stepcoverage.Answer, error) {
+) (*conceptDiscovery, error) {
 	scenarios, err := deps.RegistryLoader.Load(registryFile)
 	if err != nil {
-		return nil, nil, runner.RefuseStartup("build steps", err)
+		return nil, runner.RefuseStartup("build steps", err)
 	}
 
 	arch, err := architecture.Load(architectureFile)
 	if err != nil {
-		return nil, nil, runner.RefuseStartup("build steps", err)
+		return nil, runner.RefuseStartup("build steps", err)
 	}
 
 	root, err := os.Getwd()
 	if err != nil {
-		return nil, nil, fmt.Errorf("locate concept host: %w", err)
+		return nil, fmt.Errorf("locate concept host: %w", err)
 	}
 
 	_, err = scenariogen.BuildPlan(scenarios, arch, root, registryFile)
 	if err != nil {
-		return nil, nil, runner.RefuseStartup("build steps", err)
+		return nil, runner.RefuseStartup("build steps", err)
 	}
 
 	answer, err := stepcoverage.Scan(scenarios, root)
 	if err != nil {
-		return nil, nil, runner.RefuseStartup("build steps", err)
+		return nil, runner.RefuseStartup("build steps", err)
 	}
 
-	return scenarios, answer, nil
+	return &conceptDiscovery{scenarios: scenarios, answer: answer, registryFile: registryFile,
+		suites: scenarioRunItems(scenarios, arch)}, nil
 }
 
 // conceptJudgements are the grouping Prompt, its batch size and scen check's bindings Prompt, read before any turn.
@@ -384,18 +384,13 @@ func listConceptItems(deps BuildStepsDeps, discovery *conceptDiscovery) error {
 		slog.Error("Step coverage failed", "finding", finding)
 	}
 
-	// Grouping logged this run's one "Loaded prompts" record already.
-	for _, prompt := range prompts {
-		switch prompt.Prompt.Check {
-		case patternBindingsID:
-			err = recordBarePatternBindings(deps, discovery, prompt)
-		case stepCoverageID:
-			err = recordStepCoverage(deps.TmpDir, prompt, findings, len(discovery.items))
-		}
+	suiteFindings, err := recordBareStepChecks(deps, discovery, prompts, findings)
+	if err != nil {
+		return err
+	}
 
-		if err != nil {
-			return err
-		}
+	if len(suiteFindings) > 0 {
+		return fmt.Errorf("%w: %s", ErrBuildStepsNotConverged, strings.Join(suiteFindings, "; "))
 	}
 
 	if len(discovery.items) > 0 || len(findings) > 0 {
@@ -407,4 +402,29 @@ func listConceptItems(deps BuildStepsDeps, discovery *conceptDiscovery) error {
 	slog.Info("BUILD STEPS COMPLETE")
 
 	return nil
+}
+
+func recordBareStepChecks(deps BuildStepsDeps, discovery *conceptDiscovery,
+	prompts []checklist.PromptWithContext, findings []string,
+) ([]string, error) {
+	var err error
+	// Grouping logged this run's one "Loaded prompts" record already.
+	suiteFindings := make([]string, 0)
+
+	for _, prompt := range prompts {
+		switch prompt.Prompt.Check {
+		case scenarioRunID:
+			suiteFindings, err = recordScenarioRuns(deps, discovery.suites, prompt)
+		case patternBindingsID:
+			err = recordBarePatternBindings(deps, discovery, prompt)
+		case stepCoverageID:
+			err = recordStepCoverage(deps.TmpDir, prompt, findings, len(discovery.items))
+		}
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return suiteFindings, nil
 }
