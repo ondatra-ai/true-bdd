@@ -20,21 +20,22 @@ sections:
     name: "Scenario Merge"
     description: "Each AC from the story must be present, and only once, in the registry."
     validation_prompts:
-      - Q: |
-          Does this acceptance criterion already appear as a scenario in the
-          registry?
+      - Q:
+          prompt: |
+            Does this acceptance criterion already appear as a scenario in the
+            registry?
 
-          The registry is the requirements YAML referenced by the subject
-          (the scratch copy for this run). An AC "appears" when there is an
-          entry under `scenarios:` whose `user_stories[]` list contains the
-          subject's story path AND the subject's lineage scenario id.
+            The registry is the requirements YAML referenced by the subject
+            (the scratch copy for this run). An AC "appears" when there is an
+            entry under `scenarios:` whose `user_stories[]` list contains the
+            subject's story path AND the subject's lineage scenario id.
 
-          Pass when at least one such entry exists.
-          Fail otherwise.
+            Pass when at least one such entry exists.
+            Fail otherwise.
 
-          Context: emit one line.
-            - "AC <ac id> (lineage <lineage id>): present in <matched scenario id>"
-            - "AC <ac id> (lineage <lineage id>): not present"
+            Context: emit one line.
+              - "AC <ac id> (lineage <lineage id>): present in <matched scenario id>"
+              - "AC <ac id> (lineage <lineage id>): not present"
         rationale: "Every refined-story AC must be reflected as a tracked scenario in the registry."
         docs:
           - architecture_yaml
@@ -80,21 +81,22 @@ sections:
             5. Preserve existing file ordering and indentation. Do not
                touch any other entry.
 
-      - Q: |
-          Does the registry contain duplicate entries for this acceptance
-          criterion?
+      - Q:
+          prompt: |
+            Does the registry contain duplicate entries for this acceptance
+            criterion?
 
-          Two entries are duplicates when both reference the subject's
-          lineage scenario id in their `user_stories[]` list, OR their
-          `merged_steps` describe the same observable behavior with the
-          same service.
+            Two entries are duplicates when both reference the subject's
+            lineage scenario id in their `user_stories[]` list, OR their
+            `merged_steps` describe the same observable behavior with the
+            same service.
 
-          Pass when exactly one entry references this AC.
-          Fail when two or more entries reference it.
+            Pass when exactly one entry references this AC.
+            Fail when two or more entries reference it.
 
-          Context: emit one line per matching entry, then a verdict.
-            - "match: <scenario id> — '<short description>'"
-            - "Verdict: unique / duplicate (<N> entries)"
+            Context: emit one line per matching entry, then a verdict.
+              - "match: <scenario id> — '<short description>'"
+              - "Verdict: unique / duplicate (<N> entries)"
         rationale: "Each AC must map to a single registry entry; duplicates pollute the registry and break lineage."
         F: |
           Collapse the duplicate entries into a single one.

@@ -41,6 +41,7 @@ summary: "<one-line summary>"
 - Edit the scratch file directly during this turn — the confirmation
   block is informational only.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -74,39 +75,46 @@ Then:
 Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 
 ## Context gathered
-- The registry currently holds exactly one scenario, `E2E-960`, whose only `user_stories[]` entry points at `docs/product/stories/90.2-unrelated.yaml` / `90.2-001`. No entry references story path `docs/product/stories/95.2-relocated-registry.yaml` with lineage id `95.2-001-health-ok`, so the AC is genuinely absent and must be added as a NEW scenario.
-- `docs/architecture/architecture.yaml` declares exactly ONE service: `services[].name: mcp`. Therefore `service:` must be `"mcp"`. (Do NOT copy `"web-service"` from `E2E-960`; that name is not declared by the architecture. Leave that entry alone regardless.)
-- No existing scenario carries a `path:` key, so there is no existing generated test file to reuse. Invent the family file for the health behaviour under the declared service's suite: `tests/mcp/health_test.go`.
-- Today's date is `2026-10-31`; use it for both `last_updated:` and `merge_date:`.
+- The registry currently holds exactly one scenario, `E2E-960`, whose `user_stories[]` references `docs/product/stories/90.2-unrelated.yaml` / `90.2-001`. No entry references `docs/product/stories/95.2-relocated-registry.yaml` with lineage id `95.2-001-health-ok`, so the AC is not present and must be added as a new entry.
+- `docs/architecture/architecture.yaml` declares exactly one service: `services[].name: mcp`. Therefore `service: "mcp"` is the only valid value (the existing `web-service` value on `E2E-960` is fixture noise and must not be copied or touched).
+- No existing scenario has a `path:` of the health/`mcp` family (the only existing entry has no `path:` at all), so a new test file path is created for the `mcp` suite: `tests/mcp/health_test.go`.
 
 ## Required Changes
 
-### Change #1: Append the new scenario `95.2-001-health-ok` under `scenarios:`
+### Change #1: Add scenario `95.2-001-health-ok` under `scenarios:`
+**Issue:** The acceptance criterion `001-health-ok` of story `docs/product/stories/95.2-relocated-registry.yaml` has no scenario in the registry — no entry under `scenarios:` has a `user_stories[]` element carrying both that story path and the lineage scenario id `95.2-001-health-ok`.
 
-**Issue:** The acceptance criterion `001-health-ok` of story 95.2 (lineage id `95.2-001-health-ok`) does not appear anywhere under `scenarios:` — no entry's `user_stories[]` list contains both the story path `docs/product/stories/95.2-relocated-registry.yaml` and the lineage scenario id `95.2-001-health-ok`. The `us-apply/merge` check therefore reports "not present".
-
-**Action:** Use the Edit tool on `tmp/{{RUN_DIR}}/scenarios.yaml` with the exact `old_string` and `new_string` below. This matches the last two lines of the file (the tail of the `E2E-960` entry) and appends the new entry after it, preserving existing ordering and 2-space indentation. Do not modify the `metadata:` block and do not touch the `E2E-960` entry's own fields.
+**Action:** Use the Edit tool on `tmp/{{RUN_DIR}}/scenarios.yaml` with the exact `old_string` and `new_string` below. This appends the new entry after the existing `E2E-960` entry, leaving `metadata:` and `E2E-960` byte-for-byte unchanged.
 
 **old_string:**
 ```
+    merged_steps:
+      given:
+        - "the web app is running"
+      when:
+        - "the Claude User opens the settings page"
       then:
         - "the settings page renders the account section"
 ```
 
 **new_string:**
 ```
+    merged_steps:
+      given:
+        - "the web app is running"
+      when:
+        - "the Claude User opens the settings page"
       then:
         - "the settings page renders the account section"
-
   "95.2-001-health-ok":
-    description: "The /health endpoint returns HTTP 200 with a JSON body reporting the service as healthy"
+    description: "GET /health returns HTTP 200 with a body reporting the service as healthy"
     service: "mcp"
     path: "tests/mcp/health_test.go"
-    last_updated: "2026-10-31"
+    last_updated: "2026-11-07"
     user_stories:
       - story: "docs/product/stories/95.2-relocated-registry.yaml"
         scenario_id: "95.2-001-health-ok"
-        merge_date: "2026-10-31"
+        merge_date: "2026-11-07"
     merged_steps:
       given:
         - "the MCP server is running on its configured port"
@@ -118,14 +126,17 @@ Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
         - "and the response body reports the service status as healthy"
 ```
 
-## Verification
-After the edit, re-read the file and confirm:
-1. The scenario key is exactly `95.2-001-health-ok` (the subject's lineage scenario id, verbatim) — not a renumbered or invented id.
-2. Its `user_stories[]` contains one entry with `story: "docs/product/stories/95.2-relocated-registry.yaml"` AND `scenario_id: "95.2-001-health-ok"`, so the merge check now emits: `AC 001-health-ok (lineage 95.2-001-health-ok): present in 95.2-001-health-ok`.
-3. `service:` is `"mcp"`, the only name declared in `docs/architecture/architecture.yaml`.
-4. The `metadata:` block and the `E2E-960` entry are byte-for-byte unchanged.
-5. The `merged_steps.given` / `.when` / `.then` lists reproduce the AC's steps verbatim, including the leading `and ` on the final `then` step.
-6. The file is still valid YAML with consistent 2-space indentation under `scenarios:`.
+## Constraints the applier must respect
+1. The registry key is the lineage scenario id verbatim — `95.2-001-health-ok`. Do not renumber it, do not invent an `E2E-###` style id, and do not drop the `-health-ok` suffix.
+2. `service:` must be `mcp` — the single service name declared in `docs/architecture/architecture.yaml`. Never leave it empty and never reuse `web-service`, which the architecture does not declare.
+3. Keep the step strings verbatim from the AC, including the leading `and ` in `"and the response body reports the service status as healthy"`.
+4. Preserve the existing two-space indentation for scenario keys and four-space indentation for their fields; make no change to `metadata:` or to the `E2E-960` entry.
+5. The file ends with a single trailing newline after the last line; keep it that way.
+
+## Verification after applying
+- The file still parses as YAML.
+- `scenarios` contains both `E2E-960` and `95.2-001-health-ok`.
+- `scenarios["95.2-001-health-ok"].user_stories` has an element with `story: docs/product/stories/95.2-relocated-registry.yaml` and `scenario_id: 95.2-001-health-ok`, which is what the `us-apply/merge` check looks for. Expected check line: `AC 001-health-ok (lineage 95.2-001-health-ok): present in 95.2-001-health-ok`.
 
 ---
 

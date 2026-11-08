@@ -186,3 +186,47 @@ func TestLoadKeepsEverySuite(t *testing.T) {
 		t.Errorf("ServicePath(web) = %q, %v", path, ok)
 	}
 }
+
+func TestLoadTestkitDeclaration(t *testing.T) {
+	t.Parallel()
+
+	for _, declaration := range []string{"", "    testkit: {}\n",
+		"    testkit:\n      repo_layer: [resources]\n      fixture_step: 'fixture (.+)'\n",
+	} {
+		t.Run(declaration, func(t *testing.T) {
+			t.Parallel()
+
+			arch, err := architecture.Load(writeSpec(t, specWith(allThreeCommands+declaration)))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if declaration == "" {
+				if arch.Testing.Testkit != nil {
+					t.Fatal("undeclared harness enabled")
+				}
+
+				return
+			}
+
+			if arch.Testing.Testkit == nil {
+				t.Fatal("harness declaration lost")
+			}
+
+			if strings.Contains(declaration, "repo_layer") &&
+				(strings.Join(arch.Testing.Testkit.RepoLayer, ",") != "resources" ||
+					arch.Testing.Testkit.FixtureStep != "fixture (.+)") {
+				t.Fatalf("fixture declarations lost: %+v", arch.Testing.Testkit)
+			}
+		})
+	}
+}
+
+func TestLoadRefusesRetiredAIClis(t *testing.T) {
+	t.Parallel()
+
+	_, err := architecture.Load(writeSpec(t, specWith(allThreeCommands+"    testkit:\n      ai_clis: [claude]\n")))
+	if err == nil || !strings.Contains(err.Error(), "ai_clis is retired") {
+		t.Fatalf("retired declaration: %v", err)
+	}
+}

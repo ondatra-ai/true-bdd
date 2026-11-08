@@ -1,8 +1,6 @@
-Changed `double` to print `value + value`, preserving argument validation. The declared test command was attempted, but `TestCalc001Double` could not run because sandbox permissions blocked access to `pkg/testkit/bddgo`.
-
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===
 applied: true
 impossible: []
-target: "services/calc/calc.go"
-summary: "Changed double to print twice its operand. No failing-set tests were observed passing: TestCalc001Double was blocked during setup by sandbox denial of the bddgo dependency."
+target: "services/calc"
+summary: "Changed calc.go to print value + value. Attempted TestCalc001Double with the permitted command; setup failed because sandbox permissions block the harness dependency referenced by go.mod. No tests were observed passing."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===

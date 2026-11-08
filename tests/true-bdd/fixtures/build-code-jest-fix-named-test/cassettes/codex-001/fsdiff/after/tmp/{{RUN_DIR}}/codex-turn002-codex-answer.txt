@@ -2,5 +2,5 @@
 applied: true
 impossible: []
 target: "services/greeter"
-summary: "Updated greeting.js to default omitted names to world and removed the obsolete defect comment. Preserved named greetings and CommonJS exports. The sole failing-set test, greet greets the world when no name is given, passed using the granted Jest selection command."
+summary: "Added the 'world' default to greet and removed the outdated defect comment. Supplied-name behavior and CommonJS exports are preserved. The sole failing-set test, 'greet greets the world when no name is given', passed using the granted Jest selection command."
 === FILE_END: tmp/{{RUN_DIR}}/apply--jest-jest-tests.unit.greeting.test.js-greet_greets_the_world_when_no_name_is_given-iter1-result.yaml ===

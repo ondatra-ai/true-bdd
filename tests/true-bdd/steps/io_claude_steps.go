@@ -1,14 +1,13 @@
 package steps
 
 import (
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
 )
 
-func registerIOClaudeSteps(suite *bddgo.Suite[State]) {
+func registerIOClaudeSteps(suite testkit.StepRegistrar[State]) {
 	suite.Step(`^the engine uses an observed fixture Claude CLI$`, observeFixtureClaude)
 }
 
@@ -23,15 +22,15 @@ func observeFixtureClaude(state *State, _ []string) error {
 
 	childPath := os.Getenv("PATH")
 
-	for _, entry := range state.Proxy.Env {
+	for _, entry := range state.Environment() {
 		if strings.HasPrefix(entry, "PATH=") {
 			childPath = strings.TrimPrefix(entry, "PATH=")
 		}
 	}
 
-	state.Proxy.Env = append(state.Proxy.Env,
+	state.SetEnv(
 		"PATH="+filepath.Join(fixture, "claude-only")+string(os.PathListSeparator)+childPath,
-		"CLAUDE_CONFIG_DIR="+filepath.Join(state.Harness.SessionRoot, state.Fixture.Name, "tmp/claude-state"),
+		"CLAUDE_CONFIG_DIR="+filepath.Join(state.WorkingDirectory(), "tmp/claude-state"),
 		"TRUE_BDD_IO_FIXTURE="+fixture, "CLAUDECODE=fixture-parent-session", "CLAUDE_HISTORY_ROLE=inherited-parent-role",
 		"CLAUDE_CODE_SAFE_MODE=1", "CLAUDE_CODE_SIMPLE=1", "CLAUDE_RELAUNCH_SESSION_ADD_DIRS=/outside/inherited",
 		"CLAUDE_CODE_DISABLE_ADVISOR_TOOL=0")

@@ -19,16 +19,30 @@ Findings:
 This is the Product Owner's word repair. Propose ONLY a product glossary plus
 concept terms change, or a reworded means. No Story, Scenario or architecture
 change belongs to this fix; a Word mapping is a later System Architect menu.
+Each glossary entry's means must be one paragraph of at most three sentences, each at most 25 words.
 {{ end }}
 Required repair policy:
 {{.FailedCheck.FixPrompt}}
-{{ with .UserAnswers }}User answers: {{. | toYaml}}{{ end }}
+{{ with .UserAnswers }}Owner's settled answers to propose from:
+{{. | toYaml}}{{ end }}
+Propose from these answers; ask only for meaning or operations they and the Specification do not give.
 Return the exact proposed changes in fix_prompt for review at the menu.
 Do not apply them. Preserve unaffected steps and concepts. A new variation
 widens an existing concept of that item and use; add one only for a new item or use.
-Return JSON with fix_prompt and questions. Exactly one carries content:
-a complete proposal with questions: [], or questions with fix_prompt: "".
-Never return both a proposal and questions. If no schema is supplied, put the proposed fix between these markers:
+**ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END
+and QUESTIONS_START/QUESTIONS_END instructions above.** Your final message
+must be a single JSON object with all three keys present:
+
+- `fix_prompt`: the fix instructions, or `""` otherwise.
+- `questions`: an array of `{id, question, context, options}` objects, or
+  `[]` otherwise.
+- `cannot_fix`: null unless this F cannot fix what its Q found; otherwise
+  `{reason, correction}`, stating why and what a person must correct. When set,
+  `fix_prompt` is `""` and `questions` is `[]`.
+
+Exactly one of the three carries content. Do not emit any markers, and do not
+wrap the object in markdown fences. Reasoning before the object is ignored.
+If no schema is supplied, put the proposed fix between these markers:
 === FILE_START: {{.ResultPath}} ===
 <exact proposed changes>
 === FILE_END: {{.ResultPath}} ===
@@ -54,9 +68,10 @@ Description: {{.Subject.Description}}
 {{ end }}
 ## Fix template
 {{.FailedCheck.FixPrompt}}
-## Clarification answers
+## Owner's settled answers to propose from:
 {{ range $key, $answer := .UserAnswers }}{{ $key }}: {{ $answer }}
 {{ end }}
+Propose from these answers; ask only for meaning or operations they and the Specification do not give.
 If no clarification answers have arrived, ask the System Architect what this service
 offers. Once answered, propose exact YAML for architecture.services[].public_interface,
 using only what the answer and Specification declare. Edit the architecture document's
@@ -64,9 +79,19 @@ working copy, and an existing interface document's where the answers say it lack
 service offers; never a Scenario or the product document. For ui, list elements with page
 or region, role and accessible name; for cli/http name an existing document. Do not choose the service's Public interface on the Architect's behalf.
 {{ if .Structured }}
-Return exactly one JSON object with fix_prompt (string) and questions (array of
-{id, question, context, options}). Exactly one carries content. When clarification is
-needed return fix_prompt: ""; when proposing return questions: [].
+**ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END
+and QUESTIONS_START/QUESTIONS_END instructions above.** Your final message
+must be a single JSON object with all three keys present:
+
+- `fix_prompt`: the fix instructions, or `""` otherwise.
+- `questions`: an array of `{id, question, context, options}` objects, or
+  `[]` otherwise.
+- `cannot_fix`: null unless this F cannot fix what its Q found; otherwise
+  `{reason, correction}`, stating why and what a person must correct. When set,
+  `fix_prompt` is `""` and `questions` is `[]`.
+
+Exactly one of the three carries content. Do not emit any markers, and do not
+wrap the object in markdown fences. Reasoning before the object is ignored.
 {{ else }}
 Return QUESTIONS_START/QUESTIONS_END for questions, or FILE_START/FILE_END carrying
 the fix prompt at {{.ResultPath}}. Never both.
@@ -229,13 +254,16 @@ questions:
 {{ if .Structured }}
 **ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END
 and QUESTIONS_START/QUESTIONS_END instructions above.** Your final message
-must be a single JSON object with both keys present:
+must be a single JSON object with all three keys present:
 
-- `fix_prompt`: the fix instructions, or `""` when you need clarification.
+- `fix_prompt`: the fix instructions, or `""` otherwise.
 - `questions`: an array of `{id, question, context, options}` objects, or
-  `[]` when you are returning a fix prompt.
+  `[]` otherwise.
+- `cannot_fix`: null unless this F cannot fix what its Q found; otherwise
+  `{reason, correction}`, stating why and what a person must correct. When set,
+  `fix_prompt` is `""` and `questions` is `[]`.
 
-Exactly one of the two carries content. Do not emit any markers, and do not
+Exactly one of the three carries content. Do not emit any markers, and do not
 wrap the object in markdown fences. Reasoning before the object is ignored.
 {{ end }}
 {{ else -}}
@@ -251,18 +279,29 @@ Check: {{.FailedCheck.Check}}
 {{ range .FailedCheck.Context }}- {{.}}
 {{ end }}
 Fix instruction: {{.FailedCheck.FixPrompt}}
+Owner's settled answers to propose from:
 {{ range $key, $answer := .UserAnswers }}{{ $key }}: {{ $answer }}
 {{ end }}
-Ask for the missing meaning or operation before proposing exact YAML to the owner.
+Propose from these answers; ask only for meaning or operations they and the Specification do not give.
 Fix the product glossary, architecture.terms or architecture.concepts as the check names.
 Bindings use the product's verbatim concept name and block, and their own service.
 Every binding reference must be declared in that service's Public interface. For a missing
 declaration, also propose its addition to the named Public interface document.
 Never propose rewriting a Scenario to repair a concept, term or binding.
 {{ if .Structured }}
-Return exactly one JSON object with fix_prompt (string) and questions (array of
-{id, question, context, options}). Exactly one carries content. When clarification is
-needed return fix_prompt: ""; when proposing return questions: [].
+**ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END
+and QUESTIONS_START/QUESTIONS_END instructions above.** Your final message
+must be a single JSON object with all three keys present:
+
+- `fix_prompt`: the fix instructions, or `""` otherwise.
+- `questions`: an array of `{id, question, context, options}` objects, or
+  `[]` otherwise.
+- `cannot_fix`: null unless this F cannot fix what its Q found; otherwise
+  `{reason, correction}`, stating why and what a person must correct. When set,
+  `fix_prompt` is `""` and `questions` is `[]`.
+
+Exactly one of the three carries content. Do not emit any markers, and do not
+wrap the object in markdown fences. Reasoning before the object is ignored.
 {{ else }}
 Return QUESTIONS_START/QUESTIONS_END for questions, or FILE_START/FILE_END carrying
 the fix prompt at {{.ResultPath}}. Never both.
@@ -270,3 +309,7 @@ the fix prompt at {{.ResultPath}}. Never both.
 {{ end -}}
 {{ end -}}
 {{ end -}}
+{{if .StepArguments}}
+## Step arguments
+
+{{.StepArguments}}{{end}}

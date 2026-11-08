@@ -2,11 +2,11 @@ package steps
 
 import (
 	"fmt"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 	"path/filepath"
 	"regexp"
 	"strings"
 
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"gopkg.in/yaml.v3"
 )
 
@@ -44,7 +44,7 @@ func (s *State) readMatchedStory(glob, match string) ([]byte, error) {
 		return nil, err
 	}
 
-	data, err := disk.Read(full)
+	data, err := testkit.Read(full)
 	if err != nil {
 		return nil, s.fail("reading story %q: %w", glob, err)
 	}

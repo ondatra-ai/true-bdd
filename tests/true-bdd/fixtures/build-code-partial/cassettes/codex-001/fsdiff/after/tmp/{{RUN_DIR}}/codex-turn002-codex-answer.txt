@@ -2,5 +2,5 @@
 applied: true
 impossible: []
 target: "services/calc"
-summary: "Completed the required first stage: A now returns 1; B remains 0. TestA passed. Ran the whole suite; TestB still fails with 'B needs two', as expected under the lifecycle protocol."
+summary: "Completed the required stage: A returns 1; B remains 0. TestA passed individually. Ran the whole suite; TestB still fails as expected. Formatting passed. Patch helper failed; shell editing succeeded. Git status was unavailable because the workspace has no Git repository."
 === FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===

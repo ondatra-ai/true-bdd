@@ -1,0 +1,130 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You apply the approved bodies of one concept's step definitions in one suite.
+Preserve the engine's registrations, patterns, signatures and //truebdd:concept
+records. Modify those bodies, the suite's shared state and helpers/. Use the declared
+Public interface and the concept's binding; never implement the product's
+operation inside a step definition.
+
+**Output Requirements:**
+- After your Write/Edit calls succeed, output a YAML confirmation
+  inside FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other content in the target file — only write the
+  selected body and extend shared State as needed.
+
+**Output Format:**
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply-given-installation-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-given-installation-iter1-result.yaml ===
+```
+
+If the declared Public interface cannot set up or observe the concept, stop without
+inventing an operation. Return the same confirmation markers with:
+```yaml
+applied: false
+interface_cannot_serve:
+  concept: "given concept \"installation\""
+  lacks: "<what the interface offers no way to set up or observe>"
+```
+
+Author solely from the supplied Specification and the suite's state and helpers.
+Do not read service implementation code. Do not execute Scenarios, replay the
+suite against the target, or require a Scenario to pass: the target may be absent
+or not built yet. The engine owns compilation and the whole-suite checks. If you
+compile the steps package while writing, preserve the inherited Go cache and
+temporary-directory environment; never create a separate build cache.
+
+Put code the steps share in tests/<suite>/helpers/, beside the steps/ directory
+named by Suite. Write the helper functions, constants and types the bodies need
+there; helpers are generated with the bodies and need no separate declaration.
+Only selected bodies, their imports and shared State may change inside steps/.
+Helpers must obey the same binding and meaning as their callers, and never
+compute the product's answer. The critique judges their complete source too.
+
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
+
+### TASK
+
+# Apply step definition bodies
+
+Suite: tests/calc/steps
+Service: calc
+Concept: installation (given)
+Meaning: The calculator program is built from its source and ready for the Owner to run.
+
+Read the listed Scenario keys from the Registry path and inspect their fixture
+input directories under fixture_root as needed (exclude cassettes/). Read the definitions, State,
+helpers and architecture-declared test libraries. These paths carry the complete
+evidence; no digest or summary replaces it. Never read service implementation.
+
+## Concept context and evidence paths
+concept:
+    concept: installation
+    block: given
+    means: The calculator program is built from its source and ready for the Owner to run.
+    terms: []
+binding:
+    concept: installation
+    block: given
+    service: calc
+    references:
+        - command: double
+    does: Build the declared calculator command as a program under the host's tmp directory and keep its path for the When.
+glossary: []
+word_mapping: []
+public_interface:
+    kind: cli
+    document: docs/architecture/calc-cli.yaml
+interface_document: |
+    opencli: 0.1
+    info: {title: Calculator CLI, version: '1.0'}
+    commands:
+      double:
+        description: The calculator program, built with go build from ./services/calc at the host root and run from the host root; calc double VALUE prints the doubled integer and a newline.
+        parameters:
+          - {name: value, in: argument, required: true, schema: {type: integer}}
+        responses:
+          '0': {description: Doubled integer on stdout}
+          '1': {description: Invalid arguments}
+definitions:
+    - function: conceptbef0930c9a09dec2b565c664833e27eb5e85810f2e50d51372923cf970aa997c
+      file: tests/calc/steps/conceptbef0930c9a09dec2b565c664833e27eb5e85810f2e50d51372923cf970aa997c.go
+      pattern: ^the calculator (?:is|has been) installed$
+      serves: 'Serves the whole does clause — "Build the declared calculator command as a program under the host''s tmp directory and keep its path for the When". The command to build (double) is declared in the binding''s references and the destination is the host''s tmp directory, so nothing in the step text varies: the definition takes no arguments. The words "calculator" and "installed" are stated literally so the pattern is this concept and not any text, and the only generalisation is the non-capturing "(?:is|has been)" voice variant, which changes nothing the body does.'
+      steps:
+        - text: the calculator is installed
+          captures: []
+registry: ./docs/scenarios.yaml
+scenarios:
+    - calc-001-double
+    - calc-002-double
+
+
+Write the preserved definition conceptbef0930c9a09dec2b565c664833e27eb5e85810f2e50d51372923cf970aa997c.
+
+Read existing state and helpers first. Write only the bodies of the definitions the
+context lists, shared state and code they share in tests/<suite>/helpers/. Preserve the engine's patterns, registrations,
+signatures and //truebdd:concept records. Reach the service through its declared
+Public interface. Preserve generated tests, the
+Specification and service code. Report the changes in the confirmation below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-given-installation-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path of the file you wrote/edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-given-installation-iter1-result.yaml ===
+
+If the declared Public interface cannot set up or observe the concept, stop without
+inventing an operation. Return the same confirmation markers with:
+```yaml
+applied: false
+interface_cannot_serve:
+  concept: "given concept \"installation\""
+  lacks: "<what the interface offers no way to set up or observe>"
+```

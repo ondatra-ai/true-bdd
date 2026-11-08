@@ -65,6 +65,7 @@ acceptance_criteria:
 - The `description` must NEVER contain Given/When/Then — those belong
   in `steps`.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -105,12 +106,14 @@ Apply the following changes to the acceptance criteria for this story.
 
 ## Required Changes
 
-The failed check (`us-refine/acceptance_criteria`) faults only the absence of a happy-path AC. All three existing ACs cover the zero-divisor failure mode and are correct as they stand, so they are reproduced word for word below — no description or step text is altered. The only change is the addition of one new AC covering the primary success path.
+Change ONLY what the failed check requires. The failed check is `us-refine/acceptance_criteria`: no AC describes the happy path. All three existing ACs cover the zero-divisor failure mode only, and each is a real failure case that must be preserved exactly — same description, same steps, word for word. Do not renumber, reword, merge or "improve" them. Preserve all unaffected Story fields (id, feature, title, as_a, i_want, so_that, status) as they stand.
 
-### Change #1: NEW AC 004-division (add)
-**Before:** (no AC describes the happy path — every existing AC asserts the zero-divisor error)
-**Issue:** The check requires at least one AC describing the primary success scenario, where the division succeeds and the calculator prints a quotient. 001/002/003 all assert the failure branch of the `outcome` concept (exit 1 with stderr "Cannot divide by zero"); none assert the success branch (exit 0 with the result on stdout, per the architecture's CLI contract for `calculator divide <dividend> <divisor>`).
-**After (description):** The calculator must print "3" as the quotient when dividing 6 by 2.
+The only change is the addition of one new AC for the primary success path, per the Product Owner's answers: one AC (004-division) covering 6 / 2 = 3 only — the minimum the check requires — with a single Then step naming only the printed value, matching the shape of the existing failure ACs.
+
+### Change #1: 004-division (NEW AC — added)
+**Before:** (did not exist — no AC described the happy path)
+**Issue:** The Story's primary success scenario was undocumented. The product document declares the successes 6 / 2 = 3, 9 / 3 = 3 and 0 / 2 = 0, and the architecture document states that a successful divide exits 0 and prints the result on stdout, but no AC captured any of this, so the check found zero happy-path ACs (need ≥1).
+**After (description):** The calculator must print the quotient "3" and exit 0 when dividing 6 by 2.
 **After (steps):**
 ```yaml
 - given:
@@ -122,10 +125,13 @@ The failed check (`us-refine/acceptance_criteria`) faults only the absence of a 
     - "the result is \"3\""
 ```
 
-The inputs come from the product document's stated successes (6 / 2 = 3). Each `given` step is an instance of the `operand supplied` concept (a stated, already validated integer as dividend or divisor); the `when` step is an instance of the `division` concept (the Calculator User runs the divide command once with the supplied dividend and divisor); the `then` step is an instance of the `outcome` concept's success branch (exits 0 and prints exactly a stated integer on stdout). The role wording "Calculator User" matches the Story's as_a clause exactly.
+Concept conformance (product document `concepts`):
+- Both Given steps are instances of the `operand supplied` concept — the calculator is supplied a stated, already validated integer as its dividend ("6") and as its divisor ("2").
+- The When step is an instance of the `division` concept — the Calculator User runs the calculator's divide command once with the supplied dividend and divisor.
+- The Then step is an instance of the `outcome` concept, success variation — the divide command exits 0 and prints exactly the stated integer "3" on stdout. Per the Product Owner's answer to q2, the step names only the printed value, exactly as the existing failure ACs name only the message.
+- The role used in the steps is the Story's exact role, Calculator User.
 
-### Unchanged: 001-division, 002-division, 003-division
-Preserve these three ACs exactly — same ids, same descriptions, same Given/When/Then step text. Do not reword, reorder, merge, or "tighten" them. Also preserve all other Story fields (id, title, as_a, i_want, so_that) unchanged.
+No other AC changes. 001-division, 002-division and 003-division are reproduced byte for byte.
 
 ## Complete Fixed Acceptance Criteria
 
@@ -164,7 +170,7 @@ Preserve these three ACs exactly — same ids, same descriptions, same Given/Whe
         - "the error is \"Cannot divide by zero\""
 
 - ac_id: 004-division
-  description: "The calculator must print \"3\" as the quotient when dividing 6 by 2."
+  description: "The calculator must print the quotient \"3\" and exit 0 when dividing 6 by 2."
   steps:
     - given:
         - "the dividend is \"6\""
@@ -175,15 +181,9 @@ Preserve these three ACs exactly — same ids, same descriptions, same Given/Whe
         - "the result is \"3\""
 ```
 
-## Expected Check Result After Fix
+After this change: 004-division is the happy path; 001-division, 002-division and 003-division remain not-happy-path failure cases. Total happy path ACs: 1 (need ≥1) — the check passes.
 
-```
-001-division: not happy path
-002-division: not happy path
-003-division: not happy path
-004-division: happy path — 'dividing 6 by 2 prints the quotient "3"'
-Total happy path ACs: 1 (need ≥1)
-```
+Present this proposal at the fix menu; apply it only after the Product Owner answers apply.
 
 ---
 

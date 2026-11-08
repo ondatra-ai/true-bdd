@@ -25,13 +25,11 @@ type UserInputCollector struct {
 
 // NewUserInputCollector creates a new UserInputCollector reading console.In().
 func NewUserInputCollector() *UserInputCollector {
-	return newUserInputCollector(console.In())
+	return NewUserInputCollectorFrom(console.In())
 }
 
-// newUserInputCollector builds a collector over an arbitrary reader so the
-// line-based prompt parsing (choice enum, numeric-to-text clarify mapping,
-// multiline freetext termination) is unit-testable without a real terminal.
-func newUserInputCollector(reader io.Reader) *UserInputCollector {
+// NewUserInputCollectorFrom reads interactive answers from the supplied stream.
+func NewUserInputCollectorFrom(reader io.Reader) *UserInputCollector {
 	return &UserInputCollector{
 		reader: bufio.NewReader(reader),
 	}

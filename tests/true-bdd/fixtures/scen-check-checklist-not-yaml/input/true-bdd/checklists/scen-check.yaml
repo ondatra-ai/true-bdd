@@ -1,7 +1,7 @@
 # Fixture checklist for `scen-check-checklist-not-yaml`.
 #
-# DELIBERATELY NOT YAML: the second Prompt's `rationale:` sits one
-# column left of its `D:`, which no YAML reader accepts. The engine
+# DELIBERATELY NOT YAML: the second Checklist item's `rationale:` sits one
+# column left of its `Q:`, which no YAML reader accepts. The engine
 # must refuse to start, naming this file and the line its reader
 # stopped at.
 
@@ -13,11 +13,13 @@ sections:
     name: "Term Closure"
     description: "Every term a declared concept relies on must be defined in the product glossary and mapped in the architecture."
     validation_prompts:
-      - D: declared-terms
+      - Q:
+          code: declared-terms
         rationale: "A concept relying on an undefined word has no stated meaning."
         docs:
           - product
-      - D: term-mappings
+      - Q:
+          code: term-mappings
        rationale: "A concept relying on an unmapped word says nothing of how a step definition builds it."
         docs:
           - product

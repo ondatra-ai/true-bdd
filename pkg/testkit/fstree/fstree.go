@@ -1,6 +1,6 @@
 // Package fstree provides content snapshots and structural diffs of
 // directory trees. Extracted from the BDD runner so the harness and the
-// aiproxy record/replay shim (pkg/testkit/aiproxy) share one diff algorithm:
+// aiproxy record/replay shim (utilities/cliproxy) share one diff algorithm:
 // the runner diffs a fixture's whole tmpdir around the CLI run, the
 // shim diffs the same tree around a single AI-CLI call.
 package fstree

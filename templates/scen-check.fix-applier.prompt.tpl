@@ -190,3 +190,7 @@ summary: "<one-line summary of what changed>"
 {{ end -}}
 {{ end -}}
 {{ end -}}
+{{if .StepArguments}}
+## Step arguments
+
+{{.StepArguments}}{{end}}

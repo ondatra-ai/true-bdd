@@ -6,6 +6,7 @@ Write only inside the edit roots in the request. Never modify tests, *_test.go, 
 
 Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, impossible, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -47,91 +48,39 @@ Tests: /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArgument
 
 ## Diagnosis
 
-The failing set has exactly one member and exactly one cause. The test asserts
-the contract of the production helper:
+`tests/suite/add_test.go` calls `calc.Add(2, 3)` and requires the result to be `5`. The run reports `Add(2, 3) = -1, want 5`. `-1` is exactly `2 - 3`, so the production implementation subtracts where the contract says it must add. The defect is entirely in production source; the assertion is correct and is the specification.
 
-- `tests/suite/add_test.go` calls `calc.Add(2, 3)` and requires the result to be
-  `5`, failing with `Add(2, 3) = -1, want 5` otherwise.
-- `services/calc/calc.go` declares `func Add(a, b int) int` with the doc comment
-  "Add returns the sum of a and b", but the body returns `a - b`.
+Confirmed source of the defect — `services/calc/calc.go`:
 
-`-1` is exactly `2 - 3`, so the observed failure output is produced entirely by
-that one expression. The doc comment, the function name, and the test all agree
-on the intended contract (sum); only the operator disagrees. This is a defect in
-production source, not in the test, and the test's assertion must stay exactly
-as written.
+- `package calc` declares `func Add(a, b int) int` whose doc comment states "Add returns the sum of a and b" and then explicitly notes that the operator is wrong on purpose.
+- The body returns `a - b`.
 
-Scope check: `docs/architecture/architecture.yaml` declares service `calc` with
-`path: services/calc`, which is the one writable production tree. The whole
-repair fits inside it — no undeclared file, no test file, and no document needs
-to change.
+This file is inside the only declared edit root (`services/calc`, per `docs/architecture/architecture.yaml` → `services[0].path`), so the repair is fully permitted. No undeclared path is needed.
 
-## Part 1 — Correct the `Add` operator (the only change)
+## Part 1 — correct the `Add` operator
 
-**File:** `services/calc/calc.go`
+**File:** `services/calc/calc.go` (the only file to change; this is the whole repair)
 
-**Contract to implement:** `Add(a, b int) int` returns the arithmetic sum of its
-two arguments — `Add(2, 3) == 5`, `Add(0, 0) == 0`, `Add(-1, 4) == 3` — matching
-the function's name and its existing "returns the sum of a and b" doc sentence.
+**Contract to implement:** `Add(a, b int) int` returns the integer sum of its two arguments. Keep the exported identifier, the parameter list `(a, b int)`, the single `int` return and the `calc` package name exactly as they are — `tests/suite/add_test.go` imports `fixture/buildcodefix/services/calc` and calls `calc.Add(2, 3)` positionally, so any change to the name, arity, parameter types or return type would break compilation of the suite.
 
-**Intended implementation:** replace the subtraction in the function body with
-addition, so the single return expression evaluates to `a + b` instead of
-`a - b`. Keep everything else about the declaration stable:
+**Intended implementation:** replace the subtraction in the body of `Add` with addition, so the function returns `a + b`. Nothing else in the function needs to change; there is no error path, no overflow handling expected by the suite, and no other call site in the repo.
 
-- same package (`package calc`) and same exported name `Add`;
-- same signature `func Add(a, b int) int` — do not change parameter names,
-  order, types, arity, or the return type, because `tests/suite/add_test.go`
-  imports `fixture/buildcodefix/services/calc` and calls `calc.Add(2, 3)`
-  positionally with untyped int constants;
-- no new imports, no new files, no new exported symbols; the fix is a
-  one-expression change and should stay that way.
-
-**Comment hygiene:** the comment block above `Add` currently documents the
-planted defect — the sentences stating that the function "does not" return the
-sum, that "the operator is wrong, deliberately", and that this is "the planted
-defect the fix loop has to correct". Once the operator is right those sentences
-are false, so delete that defect narration and leave a short, accurate doc
-comment for the function (the existing first line, "Add returns the sum of a and
-b", is already correct and sufficient). Do not touch the package-level comment
-at the top of the file that describes the tree as the fixture's production
-source and the fix loop's write root — that remains true.
+**Doc comment:** the comment block above `Add` currently contains the planted-defect narrative ("It does not: the operator is wrong, deliberately..." and the paragraph about the fix loop). That prose becomes false the moment the operator is corrected, so reduce the comment to a truthful one-line description of the function (that `Add` returns the sum of `a` and `b`). This is a comment-only edit inside the permitted write root; it changes no behaviour. Leave the file's `package calc` header comment about the fixture write root intact.
 
 **Tests this part serves:**
-`/go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments` —
-the only member of the failing set. With `a + b`, `calc.Add(2, 3)` returns `5`,
-the `got != 5` guard is not taken, `t.Fatalf` is never reached, and the test
-passes.
 
-## Explicitly out of scope
+- `/go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments` — the subject of this failing set. With `a + b`, `calc.Add(2, 3)` evaluates to `5`, the `got != 5` guard is not taken, `t.Fatalf` is never reached and the test passes.
 
-- **Do not modify `tests/suite/add_test.go`** or any `*_test.go` file. The
-  assertion `got != 5` is the specification; weakening, skipping, relaxing, or
-  deleting it is forbidden, as is renaming the test or adding build tags/skips.
-- **Do not modify `tests/suite/canary_test.go`.** It is not in this failing set;
-  it appends to `tests/suite/suite-runs.log` and passes already. It only needs
-  the package to compile, which the operator change preserves.
-- **Do not modify `tests/suite/suite-runs.log`.** It is harness-owned run
-  evidence written by the canary; leave whatever the runs put there.
-- **Do not modify `docs/architecture/architecture.yaml`, `CLAUDE.md`, `go.mod`,
-  anything under `true-bdd/` or `templates/`, or anything under `tmp/`.** None
-  is required: the module path, the import path, the suite commands, and the
-  Go version all already work — the suite compiles and runs today and reports a
-  genuine assertion failure rather than a build error.
-- **Do not add tests, benchmarks, table cases, or extra helper functions** to
-  the service tree. The set's single test fully covers the corrected contract,
-  and new production surface would be unjustified by any test here.
+## What must NOT change
 
-## Verification
+- Do not touch `tests/suite/add_test.go`, `tests/suite/canary_test.go`, or anything else under `tests/`. The `got != 5` assertion stays verbatim; it is the specification being satisfied.
+- Do not touch `docs/architecture/architecture.yaml`, `true-bdd/`, `templates/`, `go.mod`, `CLAUDE.md`, or `tests/suite/suite-runs.log`. In particular do not add build tags, skips, or any mechanism that would stop the suite or the canary test from executing.
+- Do not add new files, packages or indirection layers. A one-token operator correction plus the stale-comment cleanup in `services/calc/calc.go` is the complete and minimal repair; anything larger is unnecessary risk in a single-function package.
+- `TestCanaryRecordsEachSuiteRun` in the same package only appends to `suite-runs.log` and must keep compiling and running as it does today; it is unaffected by this change and needs no accommodation.
 
-Run the suite command from the architecture document at the fixture root:
+## Verification the writer should expect
 
-    go test -json -count=1 ./tests/suite/...
-
-Expect `TestAddSumsItsArguments` to pass and `TestCanaryRecordsEachSuiteRun` to
-keep passing, with no compile diagnostics. An isolated rerun
-(`go test -json -count=1 -run 'TestAddSumsItsArguments' ./tests/suite/...`)
-should also pass. The only file in the diff must be
-`services/calc/calc.go`.
+The suite command from the architecture document is `go test -json -count=1 ./tests/suite/...` run from the fixture root. After the edit, `TestAddSumsItsArguments` should report `--- PASS`, and `TestCanaryRecordsEachSuiteRun` should continue to pass and append its line as before. No other test in the repo depends on `calc.Add`, so there is no wider blast radius.
 
 ## Edit roots
 

@@ -17,9 +17,7 @@
       {
         "concept": "halve",
         "means": "Halve the entered number once with the supplied idempotency key.",
-        "terms": [
-          "idempotency key"
-        ]
+        "terms": ["idempotency key"]
       }
     ],
     "then": [
@@ -38,7 +36,7 @@
   "glossary": [
     {
       "term": "idempotency key",
-      "means": "The label a caller supplies with a request so that repeating the same request with the same label changes the number only once."
+      "means": "An idempotency key is the request label a user supplies with a request. Repeating a request with the same key changes the number only once."
     }
   ],
   "description": "A calculator accepts a number and a request label. Repeating a request with the same label changes the number only once.",

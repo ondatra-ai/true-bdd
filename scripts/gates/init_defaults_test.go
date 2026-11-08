@@ -17,7 +17,7 @@ const initCopies = "../../services/true-bdd/internal/infrastructure/initializati
 func TestInitDefaultsMatchProjectFiles(t *testing.T) {
 	t.Parallel()
 
-	for _, tree := range []string{"true-bdd/checklists", "templates"} {
+	for _, tree := range []string{"true-bdd/checklists", "true-bdd/models", "templates"} {
 		t.Run(tree, func(t *testing.T) {
 			t.Parallel()
 			source := defaultTree(t, filepath.Join("../..", tree))

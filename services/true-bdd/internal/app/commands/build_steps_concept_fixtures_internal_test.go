@@ -40,24 +40,25 @@ func TestConceptContextHoldsBoundScenariosFixtureInputs(t *testing.T) {
 		fixtureScenario("calc-002", `the toolchain is the "other" fixture's`, "the Owner doubles 6"),
 		fixtureScenario("calc-003", `the toolchain is the "missing" fixture's`, "the Owner halves 7"),
 	}
-	item := &BuildStepsItem{Suite: "tests/calc/steps", Service: repairService, Concept: &BuildStepsConcept{
+	item := &BuildStepsItem{Suite: repairSuite, Service: repairService, Concept: &BuildStepsConcept{
 		Block: catalogue.BlockWhen, Name: repairConcept, Steps: []string{halveSix, "the Owner halves 7"},
 	}}
 
 	err := describeConceptItem(item, &architecture.Architecture{}, conceptSpecification{},
-		&conceptDiscovery{scenarios: scenarios})
+		&conceptDiscovery{scenarios: scenarios, registryFile: conceptRegistry})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	for _, want := range []string{"fixture_inputs:", "fixture: tests/calc/fixtures/offline", "- calc-001",
-		"path: tests/calc/fixtures/offline/bin/go", `exec "$CALC_REAL_GO" "$@"`, "Offline toolchain."} {
+	for _, want := range []string{"fixture_inputs:", "fixture_root: tests/calc/fixtures", "fixture: offline", "- calc-001",
+		"registry: docs/scenarios.yaml", "- calc-003"} {
 		if !strings.Contains(item.Context, want) {
 			t.Errorf("context lacks %q:\n%s", want, item.Context)
 		}
 	}
 
-	for _, unwanted := range []string{"a recording", "another Scenario's fixture", "fixtures/missing"} {
+	for _, unwanted := range []string{"a recording", "another Scenario's fixture", "fixtures/missing",
+		"CALC_REAL_GO", "Offline toolchain.", "the toolchain is"} {
 		if strings.Contains(item.Context, unwanted) {
 			t.Errorf("context holds %q:\n%s", unwanted, item.Context)
 		}

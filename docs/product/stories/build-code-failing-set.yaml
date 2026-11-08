@@ -83,12 +83,16 @@ story:
       - the System Architect runs "build code --fix"
     - then:
       - the command exits with code 1
-      - stdout matches gave up after 2 applied fix
-      - the engine dispatched 2 apply AI turns to "codex"
-      - the engine spawned exactly 3 test runners
-      - the file "services/calc/attempted.txt" matches attempted
-      - every file matching "tmp/*/*fix-iter1-user.txt" matches TestB
-      - every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA
+      - the engine dispatched 1 apply AI turn to "codex"
+      - the engine spawned exactly 2 test runners
+      - the file "services/calc/calc.go" is modified
+      - the engine spawned exactly 1 test runner with arguments matching -run \^TestA\$\|\^TestB\$
+      - the engine spawned exactly no test runners with arguments matching -run \^TestB\$
+      - 'stdout matches (?s)Fix applied; re-running the failing set.*Check answered.*tests-pass.*TestB.*gave up after 1 applied fix'
+      - every file matching "tmp/*/*checklist-build-code-test-passes-result.yaml" matches ::TestB
+      - every file matching "tmp/*/*checklist-build-code-test-passes-result.yaml" does not match ::TestA
+      - stdout matches gave up after 1 applied fix
+      - the engine dispatched 1 fix AI turn to "claude"
   - id: 006-no-test-files
     description: A missing service is repaired once for a test package and a helper package without tests
     steps:

@@ -20,17 +20,17 @@
     "stream-json",
     "--verbose",
     "--json-schema",
-    "{\"additionalProperties\":false,\"properties\":{\"assignments\":{\"items\":{\"additionalProperties\":false,\"properties\":{\"concept\":{\"enum\":[\"running\"],\"type\":\"string\"},\"index\":{\"type\":\"integer\"},\"runner_up\":{\"type\":\"null\"},\"runner_up_score\":{\"maximum\":10,\"minimum\":0,\"type\":\"integer\"},\"score\":{\"maximum\":10,\"minimum\":0,\"type\":\"integer\"}},\"required\":[\"concept\",\"index\",\"runner_up\",\"runner_up_score\",\"score\"],\"type\":\"object\"},\"type\":\"array\"}},\"required\":[\"assignments\"],\"type\":\"object\"}",
+    "{\"additionalProperties\":false,\"properties\":{\"assignments\":{\"items\":{\"additionalProperties\":false,\"properties\":{\"concept\":{\"enum\":[\"running\"],\"type\":\"string\"},\"index\":{\"type\":\"integer\"},\"runner_up\":{\"type\":\"null\"},\"runner_up_score\":{\"type\":\"integer\"},\"score\":{\"type\":\"integer\"}},\"required\":[\"concept\",\"index\",\"runner_up\",\"runner_up_score\",\"score\"],\"type\":\"object\"},\"type\":\"array\"}},\"required\":[\"assignments\"],\"type\":\"object\"}",
     "-p",
     "{\n  \"suite\": \"tests/calc-when-1\",\n  \"service\": \"calc\",\n  \"product\": \"roles:\\n  - name: Owner\\n    description: Uses the calculator.\\nconcepts:\\n  given:\\n    - concept: installation\\n      means: The calculator program is built from its source and ready for the Owner to run.\\n      terms: []\\n  when:\\n    - concept: running\\n      means: The Owner runs the calculator command the step names on a whole number.\\n      terms: [number]\\n  then:\\n    - concept: result\\n      means: The calculator prints the whole number the command produced.\\n      terms: [number]\\nglossary:\\n  - term: number\\n    means: An integer operand whose double is its sum with itself.\\n\",\n  \"steps\": [\n    {\n      \"key\": \"1\",\n      \"block\": \"when\",\n      \"text\": \"the Owner runs \\\"double\\\" on 3\"\n    }\n  ]\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 6121,
-  "request_hash": "sha256:5efd4d3648929f14d98f81dd220a4a045d0b7e8dbfc5d77b43a1d7bf25e2e987",
+  "duration_ms": 3896,
+  "request_hash": "sha256:9b3863d1a78e36459541ab9b53b75897331c6ca7549efe9f03638942e734e240",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-10-31T09:32:04Z"
+  "recorded_at": "2026-11-07T19:52:22Z"
 }

@@ -5,9 +5,9 @@
     {
       "path": "docs/product/product.yaml",
       "kind": "modified",
-      "size": 977,
-      "sha256": "81883db30a5d55238fd5a152156912682c156db7a10e02dcf3ae1f983526c988",
-      "text": "title: Integer calculator\ndescription:\n  summary: 'The halve-negative Story halves an already validated negative integer and rounds toward zero. It has no failure mode of its own: missing and non-integer inputs belong to the separate calculator-input\n    Story. Negative inputs -6, -7 and -1 produce -3, -3 and 0 respectively.'\nroles:\n- name: Calculator User\n  definition: A person using the calculator CLI\nvocabulary:\n  forbidden_qualifiers:\n  - properly\n  - correctly\n  - appropriate\n  - fast\n  forbidden_actions: []\nglossary: []\nconcepts:\n  given:\n    - concept: number supplied\n      means: The calculator is supplied a stated, already validated integer.\n      terms: []\n  when:\n    - concept: halve invoked\n      means: The Calculator User invokes the calculator's halve command on the supplied number.\n      terms: []\n  then:\n    - concept: result\n      means: The halve command succeeds and prints exactly a stated integer, the half rounded toward zero.\n      terms: []\n"
+      "size": 1049,
+      "sha256": "5b15a196e6898e64f61ce1fa2a7f27a11e33dec19a575964f495c4229241827a",
+      "text": "title: Integer calculator\ndescription:\n  summary: 'The halve-negative Story halves an already validated negative integer and rounds toward zero. It has no failure mode of its own: missing and non-integer inputs belong to the separate calculator-input\n    Story. Negative inputs -6, -7 and -1 produce -3, -3 and 0 respectively.'\nroles:\n- name: Calculator User\n  definition: A person using the calculator CLI\nvocabulary:\n  forbidden_qualifiers:\n  - properly\n  - correctly\n  - appropriate\n  - fast\n  forbidden_actions: []\nglossary: []\nconcepts:\n  given:\n    - concept: number supplied\n      means: The calculator is supplied a stated, already validated integer.\n      terms: []\n  when:\n    - concept: halve requested\n      means: The Calculator User asks the calculator to halve the number it was supplied, whatever that number is, and the calculator halves it rounding toward zero.\n      terms: []\n  then:\n    - concept: result\n      means: The halve command succeeds and prints exactly a stated integer, the half rounded toward zero.\n      terms: []\n"
     },
     {
       "path": "docs/product/stories/halve-negative-cases.yaml",

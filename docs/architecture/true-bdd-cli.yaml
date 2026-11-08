@@ -31,8 +31,8 @@ commands:
     description: >-
       Walks the Story whose id is the argument (the one <story-id>-*.yaml file
       in paths.stories_dir that declares it) against the us-refine checklist,
-      and saves it in place when every Prompt passes. With --fix, a failed
-      Prompt's proposal is applied to the Story or the product document only
+      and saves it in place when every Checklist item passes. With --fix, a failed
+      Checklist item's proposal is applied to the Story or the product document only
       after apply is answered on stdin at its fix menu.
     parameters:
       - {name: story-id, in: argument, required: true, schema: {type: string}}
@@ -43,13 +43,13 @@ commands:
         schema: {type: string}
     responses:
       '0': {description: 'The walk ended, passing or failing: a failing walk logs its verdict and skips the save (architecture.terms[exit code]).'}
-      '1': {description: A refusal before the walk, an unusable answer, or end of stdin at a question or a fix menu.}
+      '1': {description: A refusal before the walk, an unusable answer, end of stdin at a question or a fix menu, or an F that cannot fix.}
   us apply:
     description: >-
       Walks every Acceptance Criterion of the Story whose id is the argument
       against the us-apply checklist. With --fix, applied fixes edit a scratch
       copy of the Registry, which replaces the Registry only when every
-      Acceptance Criterion passes every Prompt and every Scenario claiming one
+      Acceptance Criterion passes every Checklist item and every Scenario claiming one
       of them is keyed by its lineage id and has a service the architecture
       document declares.
     parameters:
@@ -58,14 +58,21 @@ commands:
       - {name: model, in: option, description: 'Repeatable <tier>=<cli>:<model> override.', schema: {type: string}}
     responses:
       '0': {description: The walk ended, passing or failing; a failing walk leaves the Registry untouched.}
-      '1': {description: 'A refusal before the walk, an unusable answer, end of stdin at a question or a fix menu, or a passing walk whose Registry it refuses to write: a Scenario claiming a criterion keyed apart from its lineage id, or naming an empty service or one the architecture does not declare.'}
+      '1': {description: 'A refusal before the walk, an unusable answer, end of stdin at a question or a fix menu, an F that cannot fix, or a passing walk whose Registry it refuses to write: a Scenario claiming a criterion keyed apart from its lineage id, or naming an empty service or one the architecture does not declare.'}
   scen check:
     description: >-
       Walks the Registry's Scenarios against the scen-check checklist, one cell
-      per (Scenario, Prompt); its D: Prompts are built-in checks with no AI
-      turn, run before any Q: Prompt. With --fix, a failed check's fix writes
+      per (Scenario, Checklist item), in written order. A Q has exactly one
+      prompt or code option; a code Q is answered without an AI turn. No
+      failure skips a later checklist item without --fix. With --fix, a failed check's fix writes
       the product or the architecture document, or the Scenario's own Registry
-      entry, after apply at its fix menu.
+      entry, after apply at its fix menu. Each apply reruns the same Q until
+      it passes within max_apply_attempts, then restarts the Item's checklist;
+      a walk applying a fix is followed by a walk of all Items. Any F may
+      report cannot_fix at proposal, clarification or apply: the run stops
+      naming its section and index, reason and what a person must correct, without asking for an Earlier step.
+      An F fixes only what its Q found; it receives the question, answer, context lines and item's F text.
+      A problem its Q did not find is neither its work nor a reason for cannot_fix; a person who has not decided qualifies.
     parameters:
       - {name: scenario-id, in: argument, description: Narrows the walk to these Scenarios; repeatable.}
       - {name: fix, in: flag, schema: {type: boolean}}
@@ -73,32 +80,72 @@ commands:
       - {name: model, in: option, description: 'Repeatable <tier>=<cli>:<model> override.', schema: {type: string}}
     responses:
       '0': {description: Every walked Scenario passes every check.}
-      '1': {description: A Scenario fails a check, or a refusal.}
+      '1': {description: A Scenario fails a check, an F cannot fix, or a refusal.}
   build tests:
     description: >-
-      Renders the generated test files from the Registry, deterministically:
-      no AI turn, fix menu or test runner. Without --fix a stale file refuses
-      the start; with --fix it is written.
+      Requires the suite's Steps package first, naming build steps --fix when
+      it is missing. Renders each Scenario test and main_test.go in one
+      deterministic pass, with TestMain, the suite and New(t, id) in that main
+      file; no intermediate package, AI turn, fix menu or test runner.
+      Marked files refresh and unmarked files are preserved. Without --fix
+      stale generated files refuse startup; --fix writes them. For every host,
+      each Scenario has exactly one generated test in its Registry path and
+      no test names a missing Scenario; every fixture tree is named by a Scenario.
     parameters:
       - {name: fix, in: flag, schema: {type: boolean}}
       - {name: architecture, in: option, description: Path to the architecture document (default documents.architecture_yaml)., schema: {type: string}}
       - {name: requirements, in: option, description: Path to the Registry (default documents.scenarios_yaml)., schema: {type: string}}
     responses:
       '0': {description: Every generated test file is current or written; stdout ends with BUILD TESTS COMPLETE.}
-      '1': {description: A refusal before rendering, or a stale file without --fix.}
+      '1': {description: A missing Steps package, an invalid Registry or path, stale files without --fix, or a failed host folder check.}
   build steps:
     description: >-
-      Groups the distinct texts no step definition binds, per go-test suite and
-      block, into concept Items and rejudges their service bindings; without
-      --fix it lists the Items and checks Step coverage. A host declaring no
-      concepts has no Item. With --fix it writes every skeleton, then each
-      Item's bodies through the Fix loop, and checks compilation, binding,
-      coverage, the test list and that every Scenario is red without the target. With
-      --fix each Item's patterns are proposed and checked against every suite step
-      before any skeleton, a refusal going back with the findings within the
-      configured attempts; skeletons record their concept and pending ones are
-      resumed. Missing or ambiguous concepts and bindings stop before any skeleton;
-      malformed grouping or proposal answers and output caps crash.
+      Groups distinct unbound texts per go-test suite and block into concept
+      Items and rejudges their service bindings. Preparation creates the Items
+      without proposing patterns or writing skeletons. The pattern-bindings
+      code Checklist item precedes step-coverage and checks each Item's registered
+      patterns against every deterministic suite step: each pattern compiles,
+      names one capture per group, binds only its Item's steps and binds some
+      step; every owned step binds exactly once. A fresh Item fails it.
+      Its F holds the original concept-patterns proposal prompt verbatim,
+      proposes with Previous and the Q's findings, then rewrites skeletons,
+      removing dropped registrations. The F makes no pass/fail decision.
+      The same code Q reruns after apply, then the checklist starts again.
+      max_apply_attempts bounds applies; exhaustion names the Checklist item
+      and concept with FIX_LOOP_NOT_CONVERGING. Without --fix the code Q reports
+      its findings and runs no F, leaving registrations unchanged. A correct
+      resumed capturing registration takes its capture count from its regex
+      and passes without a proposal; fresh proposals retain their named-capture
+      comparison. Invalid registrations still refuse startup before any AI turn.
+      With --fix it writes only the Steps package: each Item's skeletons,
+      State, Register and bodies, with no test or main file required. It compiles
+      each Item's Steps package and checks Step coverage, one binding per step,
+      written bodies and step-verification. It never lists or runs tests or writes
+      their main file. Missing or ambiguous concepts and bindings stop before
+      skeletons; malformed answers and output caps crash. A host declaring no
+      concepts has no Item. When testing.testkit is declared, State embeds
+      testkit.ScenarioRun while keeping definition-owned fields; before any AI turn
+      the engine resolves the pkg/testkit root and pkg/proxy/cli against the host
+      module graph and saves each complete go doc -all output under host tmp.
+      Body proposals and both applications name those files and may read them,
+      while withholding the runtime module's source directory and archive even
+      when testing.libraries names it directly or transitively; other libraries
+      and version metadata keep their grants, and build code's grants are unchanged.
+      The step-verification prompt Checklist item follows step-coverage and asks one concept Item whether its definitions
+      match their steps under the Concept and binding. Its evidence is tool-less and selected by reference: complete
+      called source dependencies, semantic core, the complete architecture step_arguments section when declared,
+      referenced Public interface entries, referenced runtime go doc declarations and distinct step forms with complete
+      examples. No fixture file is supplied; host-specific facts belong in the architecture binding. Its one F fixes
+      only its findings, preparing a new pattern when needed and writing its body for the new captures. Pattern plans
+      change no files before the apply choice; the engine rewrites skeletons before the body writer. The same Q runs
+      after apply; once verification passes, the checklist restarts and the
+      pattern-bindings code Q judges any new pattern. The verification F uses
+      the same proposal and skeleton rewrite without an independent pattern
+      check. A walk applying a fix walks every Item again before completion.
+      Categories remain pattern_captures, pattern_scope, concept_binding,
+      concept_meaning and computes_assertion in a typed pass/fail answer. Standard prompt/fix/apply tier precedence applies.
+      Documentation failures refuse startup naming the package and error. Oversized verification refuses distinctly
+      at engine.max_prompt_bytes. The body turns still read saved complete runtime documentation by path.
     parameters:
       - {name: fix, in: flag, schema: {type: boolean}}
       - {name: architecture, in: option, description: Path to the architecture document., schema: {type: string}}
@@ -109,19 +156,29 @@ commands:
       '1': {description: A missing definition or concept Item without --fix, a failed check, a concept the Public interface cannot serve, a proposal still refused after the configured attempts, or an incomplete walk.}
   build code:
     description: >-
-      Runs the architecture's declared replay command, walks the failing set,
-      and with --fix has a writer change only the services' paths and their
-      writable entries until the tests pass.
+      For Go suites with a Steps package, before any AI turn when a service has
+      no source it lists every Scenario test and runs the suite once. Each
+      Scenario of a service without code must fail at an executed definition;
+      a green Scenario stops distinctly, naming it, with no fix path. Compilation,
+      bring-up, skipped and missing results are distinct Red without the target
+      failures. A service has source when any regular file under its path or
+      writable paths ends in its language's source extension: go .go, typescript
+      .ts or .tsx, javascript .js, .jsx, .mjs or .cjs. Manifests and lockfiles do
+      not count for these languages; for an unlisted language any regular file
+      counts. With source present the Red check is skipped. Jest and Playwright
+      retain their declared replay behavior. It then runs the declared replay
+      command, walks the Failing set and with --fix writes only service paths
+      and writable entries until the tests pass.
     parameters:
       - {name: fix, in: flag, schema: {type: boolean}}
       - {name: architecture, in: option, description: Path to the architecture document., schema: {type: string}}
       - {name: model, in: option, description: 'Repeatable <tier>=<cli>:<model> override.', schema: {type: string}}
     responses:
       '0': {description: No test fails; under --fix stdout ends with BUILD CODE COMPLETE.}
-      '1': {description: A test still fails after the walk, an impossible repair, or a refusal.}
+      '1': {description: A test still fails after the walk, an F cannot fix including an impossible repair, or a refusal.}
   init:
     description: >-
-      Writes the missing configuration, checklists, prompt templates and product,
+      Writes the missing configuration, checklists, prompt templates, Model schemes and product,
       architecture and Registry schemas into
       the directory it runs in, leaving every existing file untouched, and
       reports each path with a Created or Left existing record. It reads no
@@ -157,11 +214,15 @@ extensions:
       access: read-write
     checklists:
       path: true-bdd/checklists/<command>.yaml
-      format: "YAML checklist per command, its sections of Q:, D: and F: Prompts. init writes the missing ones."
+      format: "YAML checklist per command, its sections of validation_prompts entries with Q: {prompt: text} or Q: {code: check}, rationale, docs, with and optional F. Legacy D, scalar Q, both or neither option refuse at startup naming both replacement forms. init writes missing checklists."
       access: read-write
     prompt-templates:
       path: templates/*.tpl
-      format: Go text/template files with Sprig; their inputs are architecture.prompt_data. init writes the missing ones.
+      format: Go text/template files with Sprig; checklist inputs are service Models, other inputs are architecture.prompt_data. init writes the missing ones.
+      access: read-write
+    model-schemes:
+      path: true-bdd/models/<model>.schema.yaml
+      format: JSON Schema in YAML; fields and types only. init writes missing schemes; templates.schemes overrides runtime paths.
       access: read-write
     product-document:
       path: docs/product/product.yaml
@@ -169,7 +230,7 @@ extensions:
       access: read-write
     stories:
       path: docs/product/stories/<story-id>-*.yaml
-      format: One Story per file (paths.stories_dir); us refine saves it in place.
+      format: One Story per file (paths.stories_dir); us refine saves it in place. Acceptance Criterion steps admit only given, when and then keys; and and but are modifiers inside their statement lists. Any other step key is refused, naming it and its Acceptance Criterion; an unparseable writer Story body is a fix not taken and its refusal reaches the next F.
       access: read-write
     architecture-document:
       path: docs/architecture/architecture.yaml
@@ -186,6 +247,10 @@ extensions:
     generated-tests:
       path: the path of each Registry Scenario
       format: Go test files marked "Code generated by `true-bdd build tests`. DO NOT EDIT.", one test per Scenario named after its key.
+      access: read-write
+    tests-main:
+      path: <suite>/main_test.go
+      format: 'Marked "// Code generated by `true-bdd build tests`. DO NOT EDIT."; build tests renders TestMain, the suite and New(t, id), refreshing marked files and preserving unmarked files. One bddgo suite per process registers steps.Register once with fresh steps.State per Scenario; testing.testkit instead selects testkit.NewSuite and its lifecycle. Tests call New(t, id) directly.'
       access: read-write
     step-definitions:
       path: <suite>/steps/*.go
@@ -226,7 +291,7 @@ extensions:
       format: ERROR with command and error, before any Item, test run or AI turn.
     dispatching-ai-turn:
       message: Dispatching AI turn
-      format: One record per AI turn before its CLI is spawned, with turn, label, role, cli and model (architecture.terms[AI turn] and [AI CLI]).
+      format: One record per AI turn before its CLI is spawned, with turn, label, role, cli, model, system_length, user_length, prompt_bytes and prompt_limit_bytes (architecture.terms[AI turn] and [AI CLI]). prompt_bytes counts dispatched UTF-8 system/user bytes, including Codex assembly headings; a prompt above engine.max_prompt_bytes is refused before dispatch with turn, size and limit.
     spawning-test-runner:
       message: Spawning test runner
       format: One record per test runner start, with binary, args and dir (architecture.terms[test runner]).
@@ -238,10 +303,13 @@ extensions:
       format: INFO per checklist cell with check, subjectID, promptIndex, answer and context.
     cell-validation-started:
       message: Cell validation started
-      format: INFO before a model Cell is evaluated, with subjectID and promptIndex. Different Scenarios may overlap; Prompts within a Scenario stay ordered.
+      format: INFO before a model Cell is evaluated, with subjectID and promptIndex. Different Scenarios may overlap; Checklist items within a Scenario stay ordered.
     cell-validation-finished:
       message: Cell validation finished
       format: INFO after the model Cell returns, including an error, with subjectID and promptIndex.
+    fix-action:
+      message: User chose fix action
+      format: INFO with rawInput and action (apply, refine or exit), recording the person's fix-menu choice.
     applying-fix:
       message: Applying fix prompt
       format: INFO with subjectID and iteration after the person answers apply at the fix menu. Concurrent scen check validation has joined before any fix menu.
@@ -253,7 +321,7 @@ extensions:
       format: INFO with document, after an applied fix is written to the product or the architecture document.
     fix-not-committed:
       message: Fix not committed
-      format: WARN with subjectID, promptIndex and reason, after an applied fix whose working copy did not read as its document; no document of that fix is written, and the same Prompt is asked again with the reason among its findings.
+      format: WARN with subjectID, promptIndex and reason, after an applied fix whose working copy did not read as its document; no document of that fix is written, and the same Checklist item is asked again with the reason among its findings.
     file-created:
       message: Created
       format: INFO with path, for each file init writes.
@@ -272,4 +340,4 @@ extensions:
       arguments: ['split by shell quoting rules, with the failing set''s selector (architecture.terms[test runner])']
     go-toolchain:
       command: go
-      arguments: ['test -list and compile-only runs of a go-test suite for build steps; mod download -json all of an isolated exact manifest (architecture.services[true-bdd].patterns.owned_io)']
+      arguments: ['build of the Steps package for build steps; test -list and suite runs for build code; mod download -json all of an isolated exact manifest (architecture.services[true-bdd].patterns.owned_io)']

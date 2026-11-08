@@ -3,13 +3,6 @@
   "fixture": "build-code-not-applied-bound",
   "files": [
     {
-      "path": "services/calc/calc.go",
-      "kind": "modified",
-      "size": 54,
-      "sha256": "52bdb4c72d9c331b8dd9a795523584a00613e1d42ef305e72dc44cdcdf2700ab",
-      "text": "package calc\n\nfunc Add(a, b int) int { return a + b }\n"
-    },
-    {
       "path": "services/calc/prepared-first.txt",
       "kind": "created",
       "size": 9,

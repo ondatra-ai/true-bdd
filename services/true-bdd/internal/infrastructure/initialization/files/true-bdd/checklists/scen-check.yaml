@@ -6,9 +6,9 @@
 # prompt carries an `F:`, so `--fix` walks the whole checklist.
 #
 # term_closure holds a scenario's words to the documents that define
-# them. Its five `D:` prompts are answered by the engine's own checks,
-# with no AI turn, before any `Q:`; a scenario failing one skips its
-# `Q:` prompts until it is fixed. Their fixes write the product or the
+# them. Its five code Qs are answered by the engine's own checks,
+# with no AI turn, in their written positions. A failure skips nothing.
+# Their fixes write the product or the
 # architecture document, never the scenario. The four concept checks
 # pass every scenario of a host whose product document declares no
 # concepts as "not checked". The public-interface check holds every
@@ -28,198 +28,68 @@ sections:
     name: "Term Closure"
     description: "Every concept's words must be defined and mapped, every binding must name a declared concept and its service's Public interface, and every step a step definition binds must bind exactly one, recording a declared concept of its block; a step no definition binds yet waits for build steps."
     validation_prompts:
-      - D: declared-terms
+      - Q:
+          code: declared-terms
         rationale: "A concept whose meaning relies on an undefined word still has no stated meaning, so no step definition follows from the spec."
         docs:
           - product
         F: "Propose one glossary entry (term, means) for each undefined term, asking what it means first. Write it to the product document's glossary, never to the Scenario."
 
-      - D: term-mappings
+      - Q:
+          code: term-mappings
         rationale: "A product word the architecture never maps says nothing of how a step definition builds or observes it, so the definition cannot follow from the spec."
         docs:
           - product
           - architecture_yaml
         F: "Propose one architecture.terms entry (term, technical, observed_by) for each unmapped term, asking how it is built and observed first. Write it to the architecture document, never to the Scenario."
 
-      - D: step-definitions
+      - Q:
+          code: step-definitions
         rationale: "A step bound to two step definitions, or to one recording no declared concept of its block, leaves what runs for it to chance, so no step definition follows from the spec."
         docs:
           - product
         F: "Ask what each named step means first, then propose the concept of its block that its one step definition records, declared in the product document's concepts. Write it to the product document, never to the Scenario or a step definition; a step bound to two definitions is the suite's to repair."
 
-      - D: public-interface
+      - Q:
+          code: public-interface
         rationale: "A Scenario must observe what its service offers across a process boundary, declared before the code is built."
         docs:
           - architecture_yaml
         F: "Ask the System Architect what this service offers across its process boundary, then propose its public_interface declaration in the architecture document: cli names an OpenCLI-like document with named extensions, http names an OpenAPI 3 document, ui lists elements by role and accessible name within a page or region. Write the architecture document, and a document it names where the answers say it lacks what the service offers, never the Scenario."
 
-      - D: concept-bindings
+      - Q:
+          code: concept-bindings
         rationale: "A binding naming no declared concept, bound twice, or referencing what its service's Public interface does not declare leaves its step definitions to invent what to do."
         docs:
           - product
           - architecture_yaml
         F: "Ask the System Architect what a step of the concept does through the service's Public interface, by block: a when calls an operation, a given sets up state, a then observes and compares. Propose architecture.concepts with the declared concept name and block, service, references and does, or intent for a UI service, and add to the Public interface document what the answers name that it does not declare yet. Write the architecture and that document only after apply, never the Scenario."
 
-  - id: scenario_quality
-    name: "Scenario Quality"
-    description: "Every registry scenario must read as one testable behaviour, in the product's vocabulary."
-    validation_prompts:
-      - Q: |
-          Decide whether this scenario's description follows the
-          rule-based format. A violation is any of:
-          - missing the keyword "must" or "should"
-          - exceeds one sentence
-          - contains Gherkin Given/When/Then text (Gherkin belongs in the
-            steps, not the description)
-
-          Pass when the description follows the rule-based format.
-          Fail when it violates any of the above.
-
-          Context: emit one line.
-            - "<scenario id>: ok"
-            - "<scenario id>: <violation> — <quoted offending phrase>"
-        rationale: "A description is the one sentence a reader sees first; a rule states what must hold, where prose only gestures at it."
-        F: "Rewrite this Scenario's description, in its registry entry, as one sentence stating the rule it pins, with must or should and no Given/When/Then text. Keep what it specifies; change no step."
-
-      - Q: |
-          Decide whether this scenario's steps carry all three
-          Given/When/Then kinds. A violation is any of:
-          - no given step
-          - no when step
-          - no then step
-
-          Pass when the scenario has at least one step of each kind.
-          Fail when any kind is missing.
-
-          Context: emit one line.
-            - "<scenario id>: ok"
-            - "<scenario id>: missing <given|when|then> step"
-        rationale: "A scenario missing a kind cannot be executed as written: no precondition, no action, or nothing asserted."
-        F: "Add the missing given, when or then step to this Scenario's registry entry, saying what its description already pins, and asking what the step should set up, do or observe first when the description does not say. Change no other step and not the description."
-
-      - Q: |
-          Decide whether this scenario's description contains a vague word
-          from the forbidden_qualifiers list in the product document
-          (properly, correctly, appropriate, user-friendly, fast, etc.).
-
-          Pass when the description contains no forbidden qualifier.
-          Fail when it contains one or more.
-
-          Context: emit one line.
-            - "<scenario id>: ok"
-            - "<scenario id>: contains '<word>'[, '<word2>'...]"
-        rationale: "A vague qualifier cannot be tested objectively, so a scenario carrying one asserts nothing a run can settle."
-        docs:
-          - product
-        F: "Replace each forbidden qualifier in this Scenario's description, in its registry entry, with the measurable criterion it stands for, taken from the Scenario's steps, asking for that criterion first when the steps do not state it. Change no step."
-
-      - Q: |
-          Decide whether any of this scenario's steps contains a vague
-          word from the forbidden_qualifiers list in the product document
-          (properly, correctly, appropriate, user-friendly, fast, etc.).
-          Check the given, when and then steps.
-
-          Pass when no step contains a forbidden qualifier.
-          Fail when one or more steps contain them.
-
-          Context: emit one line.
-            - "<scenario id>: ok"
-            - "<scenario id>: contains '<word>'[, '<word2>'...] in <given|when|then>"
-        rationale: "A step definition binds to wording; a vague qualifier in it makes the binding a matter of taste."
-        docs:
-          - product
-        F: "Replace each forbidden qualifier in this Scenario's steps, in its registry entry, with the measurable criterion it stands for, taken from the Scenario's description, asking for that criterion first when the description does not state it. Change nothing else."
-
-      - Q: |
-          Decide whether any of this scenario's steps uses an action verb
-          from the forbidden_actions list in the product document.
-
-          Pass when no step uses a forbidden action verb.
-          Fail when one or more do.
-
-          Context: emit one line.
-            - "<scenario id>: ok"
-            - "<scenario id>: forbidden verb '<verb>' in <given|when|then>"
-        rationale: "A verb from that list names an intent rather than an interaction, and no step definition can be written against an intent."
-        docs:
-          - product
-        F: "Rewrite each step using a forbidden action verb, in this Scenario's registry entry, with the observable action the product document gives as that verb's replacement, keeping what the step asserts. Change nothing else."
-
-      - Q: |
-          Decide whether this scenario describes observable behaviour
-          rather than implementation (endpoint created, database updated,
-          schema migrated, function called, struct added).
-
-          A command-line program's observable behaviour INCLUDES its exit
-          code, what it writes to stdout, the files it creates or changes,
-          and the subprocesses it spawns. "The engine spawned exactly 1
-          test runner" is behaviour, not implementation, because a person
-          can watch it happen from outside the program.
-
-          Pass when the scenario describes observable behaviour.
-          Fail when it describes implementation.
-
-          Context: emit one line.
-            - "<scenario id>: ok"
-            - "<scenario id>: implementation — '<quoted phrase>'"
-        rationale: "A scenario naming an internal detail is rewritten every time that detail is, and stops being a specification of anything."
-        docs:
-          - product
-        F: "Rewrite the description and the steps that name implementation, in this Scenario's registry entry, as what a person observes from outside the product, dropping a step whose only content is an internal detail the other steps already observe, and asking what is observed first when the Scenario does not say. Keep the behaviour."
-
-      - Q: |
-          Decide whether this scenario includes at least one specific
-          measurable criterion — a status code, an exact message, a
-          timeout, an error code, a named field, a count.
-
-          Pass when at least one such criterion appears in the description
-          or in a step.
-          Fail when none does.
-
-          Context: emit one line.
-            - "<scenario id>: measurable — '<criterion>'"
-            - "<scenario id>: not measurable"
-        rationale: "A measurable criterion is what a step definition asserts on; without one the test can only re-state the prose."
-        F: "Add one measurable criterion (an exact message, a count, a code or a threshold) to the step of this Scenario's registry entry that asserts its outcome, asking which criterion first. Keep the behaviour, and change no other step."
-
-      - Q: |
-          Decide whether this scenario has a binary pass/fail outcome —
-          whether a reviewer can decide pass or fail without subjective
-          judgement, with no ambiguity about what counts as correct.
-
-          Pass when the outcome is binary.
-          Fail when it is subjective.
-
-          Context: emit one line.
-            - "<scenario id>: binary"
-            - "<scenario id>: subjective — '<reason>'"
-        rationale: "A scenario a reviewer must interpret is a scenario two runs can disagree about while both being right."
-        F: "Rewrite the subjective outcome in this Scenario's registry entry, in its description and the step that asserts it, as one a reviewer decides without judgement, asking what counts as correct first. Keep the behaviour."
-
   - id: concept_link
     name: "Concept Link"
     description: "Every free-text step links to exactly one concept of its own block."
     validation_prompts:
-      - Q: |
-          Link every step of this Item to a product concept of its own block.
-          Given is a state before the behaviour, When an action or event,
-          Then an observable outcome. A concept is one Public interface item
-          and kind of use, as the wording fixes it; an argument's target
-          does not change the concept. Read the product roles and glossary.
-          Score EVERY concept of the step's block, from 0 to 10:
-          10: a plain instance; 9: an instance in other words without doubt;
-          7 or 8: related but partly outside its meaning, or another fits as well;
-          1 to 6: not this concept; 0: unrelated.
-          Read means as CLOSED: it admits only the variations its prose states,
-          never everything in the same area. An unstated variation scores at most 8.
-          A step of the wrong kind for its block scores at most 4 for every
-          concept of that block. Name the other block's concept it is an instance
-          of in other_block_concept, or null if none. For a right-kind step use null.
-          Give a reason for the highest score, or why none fits.
-          judge: clauses are unlinked: omit them from the answer.
-          llm: steps link by their intent; strip the prefix when judging meaning.
-          Answer steps by their supplied keys, with every concept a required
-          key of scores, a reason and other_block_concept. Change nothing.
+      - Q:
+          prompt: |
+            Link every step of this Item to a product concept of its own block.
+            Given is a state before the behaviour, When an action or event,
+            Then an observable outcome. A concept is one Public interface item
+            and kind of use, as the wording fixes it; an argument's target
+            does not change the concept. Read the product roles and glossary.
+            Score EVERY concept of the step's block, from 0 to 10:
+            10: a plain instance; 9: an instance in other words without doubt;
+            7 or 8: related but partly outside its meaning, or another fits as well;
+            1 to 6: not this concept; 0: unrelated.
+            Read means as CLOSED: it admits only the variations its prose states,
+            never everything in the same area. An unstated variation scores at most 8.
+            A step of the wrong kind for its block scores at most 4 for every
+            concept of that block. Name the other block's concept it is an instance
+            of in other_block_concept, or null if none. For a right-kind step use null.
+            Give a reason for the highest score, or why none fits.
+            judge: clauses are unlinked: omit them from the answer.
+            llm: steps link by their intent; strip the prefix when judging meaning.
+            Answer steps by their supplied keys, with every concept a required
+            key of scores, a reason and other_block_concept. Change nothing.
         with:
           concepts: link
           threshold: 9
@@ -234,22 +104,169 @@ sections:
           Apply concept changes only to the product document and a rewrite only
           to the Item. Show the exact change at the menu and wait for apply.
 
+  - id: scenario_quality
+    name: "Scenario Quality"
+    description: "Every registry scenario must read as one testable behaviour, in the product's vocabulary."
+    validation_prompts:
+      - Q:
+          prompt: |
+            Decide whether this scenario's description follows the
+            rule-based format. A violation is any of:
+            - missing the keyword "must" or "should"
+            - exceeds one sentence
+            - contains Gherkin Given/When/Then text (Gherkin belongs in the
+              steps, not the description)
+
+            Pass when the description follows the rule-based format.
+            Fail when it violates any of the above.
+
+            Context: emit one line.
+              - "<scenario id>: ok"
+              - "<scenario id>: <violation> — <quoted offending phrase>"
+        rationale: "A description is the one sentence a reader sees first; a rule states what must hold, where prose only gestures at it."
+        F: "Rewrite this Scenario's description, in its registry entry, as one sentence stating the rule it pins, with must or should and no Given/When/Then text. Keep what it specifies; change no step."
+
+      - Q:
+          prompt: |
+            Decide whether this scenario's steps carry all three
+            Given/When/Then kinds. A violation is any of:
+            - no given step
+            - no when step
+            - no then step
+
+            Pass when the scenario has at least one step of each kind.
+            Fail when any kind is missing.
+
+            Context: emit one line.
+              - "<scenario id>: ok"
+              - "<scenario id>: missing <given|when|then> step"
+        rationale: "A scenario missing a kind cannot be executed as written: no precondition, no action, or nothing asserted."
+        F: "Add the missing given, when or then step to this Scenario's registry entry, saying what its description already pins, and asking what the step should set up, do or observe first when the description does not say. Change no other step and not the description."
+
+      - Q:
+          prompt: |
+            Decide whether this scenario's description contains a vague word
+            from the forbidden_qualifiers list in the product document
+            (properly, correctly, appropriate, user-friendly, fast, etc.).
+
+            Pass when the description contains no forbidden qualifier.
+            Fail when it contains one or more.
+
+            Context: emit one line.
+              - "<scenario id>: ok"
+              - "<scenario id>: contains '<word>'[, '<word2>'...]"
+        rationale: "A vague qualifier cannot be tested objectively, so a scenario carrying one asserts nothing a run can settle."
+        docs:
+          - product
+        F: "Replace each forbidden qualifier in this Scenario's description, in its registry entry, with the measurable criterion it stands for, taken from the Scenario's steps, asking for that criterion first when the steps do not state it. Change no step."
+
+      - Q:
+          prompt: |
+            Decide whether any of this scenario's steps contains a vague
+            word from the forbidden_qualifiers list in the product document
+            (properly, correctly, appropriate, user-friendly, fast, etc.).
+            Check the given, when and then steps.
+
+            Pass when no step contains a forbidden qualifier.
+            Fail when one or more steps contain them.
+
+            Context: emit one line.
+              - "<scenario id>: ok"
+              - "<scenario id>: contains '<word>'[, '<word2>'...] in <given|when|then>"
+        rationale: "A step definition binds to wording; a vague qualifier in it makes the binding a matter of taste."
+        docs:
+          - product
+        F: "Replace each forbidden qualifier in this Scenario's steps, in its registry entry, with the measurable criterion it stands for, taken from the Scenario's description, asking for that criterion first when the description does not state it. Change nothing else."
+
+      - Q:
+          prompt: |
+            Decide whether any of this scenario's steps uses an action verb
+            from the forbidden_actions list in the product document.
+
+            Pass when no step uses a forbidden action verb.
+            Fail when one or more do.
+
+            Context: emit one line.
+              - "<scenario id>: ok"
+              - "<scenario id>: forbidden verb '<verb>' in <given|when|then>"
+        rationale: "A verb from that list names an intent rather than an interaction, and no step definition can be written against an intent."
+        docs:
+          - product
+        F: "Rewrite each step using a forbidden action verb, in this Scenario's registry entry, with the observable action the product document gives as that verb's replacement, keeping what the step asserts. Change nothing else."
+
+      - Q:
+          prompt: |
+            Decide whether this scenario describes observable behaviour
+            rather than implementation (endpoint created, database updated,
+            schema migrated, function called, struct added).
+
+            A command-line program's observable behaviour INCLUDES its exit
+            code, what it writes to stdout, the files it creates or changes,
+            and the subprocesses it spawns. "The engine spawned exactly 1
+            test runner" is behaviour, not implementation, because a person
+            can watch it happen from outside the program.
+
+            Pass when the scenario describes observable behaviour.
+            Fail when it describes implementation.
+
+            Context: emit one line.
+              - "<scenario id>: ok"
+              - "<scenario id>: implementation — '<quoted phrase>'"
+        rationale: "A scenario naming an internal detail is rewritten every time that detail is, and stops being a specification of anything."
+        docs:
+          - product
+        F: "Rewrite the description and the steps that name implementation, in this Scenario's registry entry, as what a person observes from outside the product, dropping a step whose only content is an internal detail the other steps already observe, and asking what is observed first when the Scenario does not say. Keep the behaviour."
+
+      - Q:
+          prompt: |
+            Decide whether this scenario includes at least one specific
+            measurable criterion — a status code, an exact message, a
+            timeout, an error code, a named field, a count.
+
+            Pass when at least one such criterion appears in the description
+            or in a step.
+            Fail when none does.
+
+            Context: emit one line.
+              - "<scenario id>: measurable — '<criterion>'"
+              - "<scenario id>: not measurable"
+        rationale: "A measurable criterion is what a step definition asserts on; without one the test can only re-state the prose."
+        F: "Add one measurable criterion (an exact message, a count, a code or a threshold) to the step of this Scenario's registry entry that asserts its outcome, asking which criterion first. Keep the behaviour, and change no other step."
+
+      - Q:
+          prompt: |
+            Decide whether this scenario has a binary pass/fail outcome —
+            whether a reviewer can decide pass or fail without subjective
+            judgement, with no ambiguity about what counts as correct.
+
+            Pass when the outcome is binary.
+            Fail when it is subjective.
+
+            Context: emit one line.
+              - "<scenario id>: binary"
+              - "<scenario id>: subjective — '<reason>'"
+        rationale: "A scenario a reviewer must interpret is a scenario two runs can disagree about while both being right."
+        F: "Rewrite the subjective outcome in this Scenario's registry entry, in its description and the step that asserts it, as one a reviewer decides without judgement, asking what counts as correct first. Keep the behaviour."
+
   - id: concept_bindings
     name: "Concept Bindings"
     description: "Every concept linked by this Scenario is bound for its service and unambiguous."
     validation_prompts:
-      - Q: |
-          Judge every supplied linked concept's binding for this Scenario's service.
-          Given its closed means, the binding's does, its references and the
-          complete declared Public interface, is it unambiguous enough for an
-          LLM to write a step definition from? A Given puts the state in place;
-          a When calls; a Then observes and compares. All admitted variations
-          need explicit instructions, inputs and an objective observable result.
-          An intent binding must say the intent an llm: step performs through
-          the UI, with no guessed behaviour or hidden implementation dependency.
-          Answer every binding by its supplied key with unambiguous (boolean)
-          and a reason. Never infer absent instructions or silently pass an
-          ambiguous binding. Change nothing.
+      - Q:
+          prompt: |
+            Judge every supplied linked concept's binding for this Scenario's service.
+            Read the complete product document at product_path with your read tools;
+            its roles, glossary and concepts are evidence for this judgement.
+            Given its closed means, the binding's does, its references and the
+            complete declared Public interface, is it unambiguous enough for an
+            LLM to write a step definition from? A Given puts the state in place;
+            a When calls; a Then observes and compares. All admitted variations
+            need explicit instructions, inputs and an objective observable result.
+            An intent binding must say the intent an llm: step performs through
+            the UI, with no guessed behaviour or hidden implementation dependency.
+            Answer every binding by its supplied key with unambiguous (boolean)
+            and a reason. Never infer absent instructions or silently pass an
+            ambiguous binding. Change nothing.
         with:
           concepts: bindings
         rationale: "A linked meaning needs one usable implementation contract for its service."
@@ -267,23 +284,24 @@ sections:
     name: "Concept Words"
     description: "Linked meanings rely only on declared terms and plain English."
     validation_prompts:
-      - Q: |
-          Judge the means of EVERY supplied linked concept, using the product
-          document's glossary for its declared terms. Name every domain word
-          or expression its means relies on that is neither declared in THAT
-          concept's terms nor readable as plain English in that means's context.
-          A glossary entry alone does not declare a term for a concept.
-          Plain English that already defines the word in this context passes;
-          do not demand glossary entries for ordinary words or infer a special
-          domain meaning without evidence. Judge means, not the concept's name,
-          steps, bindings or unrelated concepts. Trust no earlier judgement.
-          Judge each concept independently. Every word in undeclared_words
-          must occur in THAT concept's means; never carry a word from another
-          verdict. Keep the list consistent with the reason: if none is
-          undeclared, return exactly an empty array.
-          For every supplied concept key return undeclared_words (the exact
-          words, or an empty array when none) and a nonempty reason explaining
-          the verdict. Omit no concept. Change nothing.
+      - Q:
+          prompt: |
+            Judge the means of EVERY supplied linked concept, using the product
+            document's glossary for its declared terms. Name every domain word
+            or expression its means relies on that is neither declared in THAT
+            concept's terms nor readable as plain English in that means's context.
+            A glossary entry alone does not declare a term for a concept.
+            Plain English that already defines the word in this context passes;
+            do not demand glossary entries for ordinary words or infer a special
+            domain meaning without evidence. Judge means, not the concept's name,
+            steps, bindings or unrelated concepts. Trust no earlier judgement.
+            Judge each concept independently. Every word in undeclared_words
+            must occur in THAT concept's means; never carry a word from another
+            verdict. Keep the list consistent with the reason: if none is
+            undeclared, return exactly an empty array.
+            For every supplied concept key return undeclared_words (the exact
+            words, or an empty array when none) and a nonempty reason explaining
+            the verdict. Omit no concept. Change nothing.
         with:
           concepts: words
         rationale: "An undeclared domain word leaves a linked meaning open to interpretation."

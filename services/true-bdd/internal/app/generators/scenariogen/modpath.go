@@ -11,18 +11,13 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/disk"
 )
 
-// scenariosPkgDir is the directory, inside a suite, holding the shim
-// that binds bddgo's generics to that suite's state. Hand-written once
-// per suite; a generated file imports it and calls nothing else.
-const scenariosPkgDir = "scenarios"
-
-// scenariosImportPath computes the import path of a suite's scenarios shim
+// suiteImportPath computes the import path of the suite itself
 // by walking up to the nearest go.mod — not assumed, since a sentinel module
 // (every fixture tree) gives a suite inside it an unrelated module path.
-func scenariosImportPath(repoRoot, suitePath string) (string, error) {
+func suiteImportPath(repoRoot, suitePath string) (string, error) {
 	suiteDir := filepath.Join(repoRoot, filepath.FromSlash(suitePath))
 
-	moduleDir, modulePath, err := findModule(suiteDir)
+	moduleDir, modulePath, err := FindModule(suiteDir)
 	if err != nil {
 		return "", err
 	}
@@ -32,12 +27,12 @@ func scenariosImportPath(repoRoot, suitePath string) (string, error) {
 		return "", fmt.Errorf("locate %s inside %s: %w", suiteDir, moduleDir, err)
 	}
 
-	return path.Join(modulePath, filepath.ToSlash(relative), scenariosPkgDir), nil
+	return path.Join(modulePath, filepath.ToSlash(relative)), nil
 }
 
-// findModule returns the nearest directory at or above dir holding a
+// FindModule returns the nearest directory at or above dir holding a
 // go.mod, and that file's module path.
-func findModule(dir string) (string, string, error) {
+func FindModule(dir string) (string, string, error) {
 	for current := dir; ; current = filepath.Dir(current) {
 		modulePath, found, err := readModulePath(filepath.Join(current, "go.mod"))
 		if err != nil {

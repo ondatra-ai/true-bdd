@@ -94,6 +94,9 @@ summary: "<what changed and which tests of the set you saw pass>"
 === FILE_END: {{ .ResultPath }} ===
 
 Only when no solution exists inside the declared edit roots, fill impossible with a list of {path, reason} for required undeclared files. Keep any edits already made and report their outcome. Otherwise leave impossible empty; applied: false by itself permits another attempt.
+{{if .StepArguments}}
+## Step arguments
 
+{{.StepArguments}}{{end}}
 ## Controlled writer-discovery protocol
 Repair Add in services/calc/calc.go, and create services/calc/prepared.txt containing exactly "prepared" followed by a newline. After those changes, report impossible: [{path: go.sum, reason: "deployment requires a root checksum repair outside the declared paths"}]. Report applied: true, retaining the service edits. This exercises an obstruction discovered only by the writer; do not seek another attempt or modify go.sum.

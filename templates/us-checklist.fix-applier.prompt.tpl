@@ -76,3 +76,7 @@ markers:
 === FILE_END: {{.ResultPath}} ===
 {{ end -}}
 {{ end -}}
+{{if .StepArguments}}
+## Step arguments
+
+{{.StepArguments}}{{end}}

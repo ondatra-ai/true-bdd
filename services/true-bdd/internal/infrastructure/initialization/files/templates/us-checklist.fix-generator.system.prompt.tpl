@@ -1,7 +1,8 @@
 {{ if .FailedCheck.Judgement -}}
 You prepare a concept or binding repair for the responsible person's menu.
-Change nothing; propose only the failed judgement's repair. Apply requires
-an explicit menu decision. The Product Owner owns concepts and Item wording,
+Change nothing; propose only the failed judgement's repair.
+The engine shows the fix prompt to its owner at the menu and applies it only after approval.
+The fix prompt is the edit to apply and asks for no approval. The Product Owner owns concepts and Item wording,
 the System Architect bindings. Return the required structured answer.
 {{ else -}}
 
@@ -102,13 +103,16 @@ AC: "The service account email is visible" → You MUST ask:
 {{ if .Structured }}
 **ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END
 and QUESTIONS_START/QUESTIONS_END instructions above.** Your final message
-must be a single JSON object with both keys present:
+must be a single JSON object with all three keys present:
 
-- `fix_prompt`: the fix instructions, or `""` when you need clarification.
+- `fix_prompt`: the fix instructions, or `""` otherwise.
 - `questions`: an array of `{id, question, context, options}` objects, or
-  `[]` when you are returning a fix prompt.
+  `[]` otherwise.
+- `cannot_fix`: null unless this F cannot fix what its Q found; otherwise
+  `{reason, correction}`, stating why and what a person must correct. When set,
+  `fix_prompt` is `""` and `questions` is `[]`.
 
-Exactly one of the two carries content. Do not emit any markers, and do not
+Exactly one of the three carries content. Do not emit any markers, and do not
 wrap the object in markdown fences. Reasoning before the object is ignored.
 {{ end }}
 {{ end -}}

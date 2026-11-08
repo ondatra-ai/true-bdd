@@ -1,17 +1,17 @@
 package steps
 
 import (
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 	"os"
 	"path/filepath"
-	"strings"
 
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
+	proxycli "github.com/ondatra-ai/true-bdd/pkg/proxy/cli"
 )
 
-func registerWriterLifecycleSteps(suite *bddgo.Suite[State]) {
+func registerWriterLifecycleSteps(suite testkit.StepRegistrar[State]) {
 	suite.Step(`^the codex writer uses fixture-controlled authentication and CLIs$`, useFixtureWriter)
+	suite.Step(`^the codex writer started with private fixture authentication, `+
+		`protected homes, an empty edit root and private shell scratch$`, assertWriterSpawn)
 	suite.Step(`^the codex writer provisioned and removed its fixture authentication$`, assertWriterLifecycle)
 }
 
@@ -26,40 +26,25 @@ func useFixtureWriter(state *State, _ []string) error {
 		return state.fail("resolve writer fixture: %w", err)
 	}
 
-	if state.Harness.Modes.Services == runner.ProxyModeLive {
-		run := runner.RunDir(state.Harness.SessionRoot, state.Fixture.Name)
-		state.Proxy.StateDir = filepath.Join(run, "tmp", "aiproxy-state")
-		state.Proxy.Env = runner.AIProxyEnv("observe", state.Harness.Shims.Services,
-			fixture, state.Proxy.StateDir, state.Harness.Shims.All())
-	}
+	state.ObserveServices(fixture)
+	proxycli.FallbackPath(state, filepath.Join(fixture, "cli"))
+	state.SetEnv("CODEX_HOME=" + filepath.Join(fixture, "auth"))
+	homeRoot := state.WorkingDirectory()
 
-	for index, entry := range state.Proxy.Env {
-		if strings.HasPrefix(entry, "PATH=") {
-			shim, rest, _ := strings.Cut(strings.TrimPrefix(entry, "PATH="), string(os.PathListSeparator))
-			state.Proxy.Env[index] = "PATH=" + strings.Join(
-				[]string{shim, filepath.Join(fixture, "cli"), rest}, string(os.PathListSeparator))
-		}
-	}
-
-	state.Proxy.Env = append(state.Proxy.Env, "CODEX_HOME="+filepath.Join(fixture, "auth"),
-		"TRUE_BDD_AIPROXY_WRITER_FIXTURE="+fixture)
-
-	return nil
+	return proxycli.Observe(state, "codex", []proxycli.PathSpec{
+		{Path: filepath.Join(fixture, "auth", "auth.json"), Contents: true, ContentRoot: fixture},
+		{Path: "$CODEX_HOME"},
+		{Path: "$CODEX_HOME/auth.json", Contents: true, ContentRoot: homeRoot},
+		{Path: "$CODEX_HOME/config.toml", Contents: true, ContentRoot: homeRoot},
+		{Path: "services/calc"},
+		{Path: "tmp/codex-shell-home"}, {Path: "tmp/codex-tmp"}, {Path: "tmp/codex-go-build"},
+	})
 }
 
 //truebdd:concept then "AI CLI observations"
 func assertWriterLifecycle(state *State, _ []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
-	}
-
-	receipt, err := disk.Read(filepath.Join(state.Proxy.StateDir, "writer-spawn.txt"))
-	if err != nil {
-		return state.fail("writer spawn was not verified: %w", err)
-	}
-
-	if string(receipt) != "fixture authentication and edit roots verified\n" {
-		return state.fail("unexpected writer spawn receipt")
 	}
 
 	homes, err := filepath.Glob(filepath.Join(state.Result.TmpDir, "tmp/codex-homes/*/*-codex-home"))

@@ -1,0 +1,23 @@
+---
+scenarios:
+  E2E-001:
+    description: The greeter must print the configured greeting followed by the name
+      it is given, and exit with code 0
+    service: greeter
+    path: tests/greeter/greet_test.go
+    user_stories:
+    - story: docs/product/stories/z-greeting.yaml
+      scenario_id: z-greeting-002-name
+      merge_date: '2026-10-21'
+    - story: docs/product/stories/a-greeting.yaml
+      scenario_id: a-greeting-001-name
+      merge_date: '2026-11-02'
+    merged_steps:
+      given:
+      - the greeting is configured as "Hello"
+      when:
+      - the Operator runs "greet Ada"
+      then:
+      - the command exits with code 0
+      - and: stdout matches ^Hello Ada$
+      - but: stderr has no lines

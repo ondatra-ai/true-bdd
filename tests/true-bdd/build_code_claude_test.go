@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // build-code-claude-001-selection: Claude hook allows selection
 func TestBuildCodeClaude001Selection(t *testing.T) {
-	s := scenarios.New(t, "build-code-claude-001-selection")
+	s := New(t, "build-code-claude-001-selection")
 	s.Given(`the "claude-guard-selection" project tree`)
 	s.And(`claude's write policy grants the test command "go test ./..." with selector "-run" in "."`)
 	s.And(`the tool call is a "foreground" shell call in directory "." with command go test ./... -run '^TestOne$'`)
@@ -35,7 +33,7 @@ func TestBuildCodeClaude001Selection(t *testing.T) {
 
 // build-code-claude-002-noncanonical: Claude hook denies noncanonical
 func TestBuildCodeClaude002Noncanonical(t *testing.T) {
-	s := scenarios.New(t, "build-code-claude-002-noncanonical")
+	s := New(t, "build-code-claude-002-noncanonical")
 	s.Given(`the "claude-guard-noncanonical" project tree`)
 	s.And(`claude's write policy grants the test command "go test ./..." with selector "-run" in "."`)
 	s.And(`the tool call is a "foreground" shell call in directory "." with command go test ./...; pwd`)
@@ -47,7 +45,7 @@ func TestBuildCodeClaude002Noncanonical(t *testing.T) {
 
 // build-code-claude-003-background: Claude hook denies background
 func TestBuildCodeClaude003Background(t *testing.T) {
-	s := scenarios.New(t, "build-code-claude-003-background")
+	s := New(t, "build-code-claude-003-background")
 	s.Given(`the "claude-guard-background" project tree`)
 	s.And(`claude's write policy grants the test command "go test ./..." with selector "-run" in "."`)
 	s.And(`the tool call is a "background" shell call in directory "." with command go test ./...`)
@@ -59,7 +57,7 @@ func TestBuildCodeClaude003Background(t *testing.T) {
 
 // build-code-claude-004-directory: Claude hook denies directory
 func TestBuildCodeClaude004Directory(t *testing.T) {
-	s := scenarios.New(t, "build-code-claude-004-directory")
+	s := New(t, "build-code-claude-004-directory")
 	s.Given(`the "claude-guard-directory" project tree`)
 	s.And(`claude's write policy grants the test command "go test ./..." with selector "-run" in "."`)
 	s.And(`the tool call is a "foreground" shell call in directory "../other" with command go test ./...`)
@@ -71,7 +69,7 @@ func TestBuildCodeClaude004Directory(t *testing.T) {
 
 // build-code-claude-005-replay: A Claude writer runs a granted selection and the engine reruns the set to convergence
 func TestBuildCodeClaude005Replay(t *testing.T) {
-	s := scenarios.New(t, "build-code-claude-005-replay")
+	s := New(t, "build-code-claude-005-replay")
 	s.Given(`the "build-code-claude-replay" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -90,7 +88,7 @@ func TestBuildCodeClaude005Replay(t *testing.T) {
 
 // build-code-claude-006-failure: A Claude writer keeps its repair after a started failure and the engine reruns the set to convergence
 func TestBuildCodeClaude006Failure(t *testing.T) {
-	s := scenarios.New(t, "build-code-claude-006-failure")
+	s := New(t, "build-code-claude-006-failure")
 	s.Given(`the "build-code-claude-failure" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -111,7 +109,7 @@ func TestBuildCodeClaude006Failure(t *testing.T) {
 
 // build-code-claude-007-unrepresentable: A replay argument containing a single quote withholds the writer grant with one warning
 func TestBuildCodeClaude007Unrepresentable(t *testing.T) {
-	s := scenarios.New(t, "build-code-claude-007-unrepresentable")
+	s := New(t, "build-code-claude-007-unrepresentable")
 	s.Given(`the "build-code-unrepresentable-replay" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)

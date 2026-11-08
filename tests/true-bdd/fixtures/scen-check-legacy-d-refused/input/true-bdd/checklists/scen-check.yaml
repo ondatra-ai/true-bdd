@@ -1,0 +1,5 @@
+version: "1.0"
+sections:
+  - id: scenario_quality
+    validation_prompts:
+      - D: given-when-then

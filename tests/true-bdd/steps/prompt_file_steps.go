@@ -1,9 +1,8 @@
 package steps
 
 import (
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 	"path/filepath"
-
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // Saved rendered prompts count, scratch artifacts the outcome diff omits included; no match fails.
@@ -39,7 +38,7 @@ func assertEveryFileMatches(state *State, args []string) error {
 			return err
 		}
 
-		content, readErr := disk.Read(resolved)
+		content, readErr := testkit.Read(resolved)
 		if readErr != nil {
 			return state.fail("read %s: %v", file, readErr)
 		}

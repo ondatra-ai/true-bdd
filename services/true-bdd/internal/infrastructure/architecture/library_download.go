@@ -18,6 +18,15 @@ var ErrLibraryDownload = errors.New("library download failed")
 
 // DownloadLibraries prepares the declared graph and returns only its source and version metadata roots.
 func (a *Architecture) DownloadLibraries(ctx context.Context, host string) ([]string, error) {
+	return a.downloadLibraries(ctx, host, "")
+}
+
+// DownloadStepLibraries withholds the Test runtime's source and archive from body turns.
+func (a *Architecture) DownloadStepLibraries(ctx context.Context, host string) ([]string, error) {
+	return a.downloadLibraries(ctx, host, "github.com/ondatra-ai/true-bdd/pkg")
+}
+
+func (a *Architecture) downloadLibraries(ctx context.Context, host, excludedSource string) ([]string, error) {
 	libraries := a.libraries()
 	if len(libraries) == 0 {
 		return nil, nil
@@ -63,7 +72,7 @@ func (a *Architecture) DownloadLibraries(ctx context.Context, host string) ([]st
 		return nil, fmt.Errorf("%w (%s): %w", ErrLibraryDownload, strings.Join(names, ", "), err)
 	}
 
-	roots, err := libraryReadRoots(modules, libraries)
+	roots, err := libraryReadRoots(modules, libraries, excludedSource)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +82,7 @@ func (a *Architecture) DownloadLibraries(ctx context.Context, host string) ([]st
 	return roots, nil
 }
 
-func libraryReadRoots(modules []gotool.Module, libraries []Library) ([]string, error) {
+func libraryReadRoots(modules []gotool.Module, libraries []Library, excludedSource string) ([]string, error) {
 	roots := []string{}
 	versions := make(map[string]string)
 
@@ -84,7 +93,11 @@ func libraryReadRoots(modules []gotool.Module, libraries []Library) ([]string, e
 		}
 
 		versions[module.Path] = module.Version
-		roots = append(roots, module.Dir, module.GoMod, module.Info, module.Zip, module.Zip+"hash")
+
+		roots = append(roots, module.GoMod, module.Info, module.Zip+"hash")
+		if module.Path != excludedSource {
+			roots = append(roots, module.Dir, module.Zip)
+		}
 	}
 
 	for _, library := range libraries {

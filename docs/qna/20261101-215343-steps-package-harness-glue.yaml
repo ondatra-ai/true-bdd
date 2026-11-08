@@ -1,0 +1,784 @@
+# Q&A log of the grilling that triages #249, the first ticket of #276's triage.
+
+intent: |
+  Triage #249: decide where the steps package's harness glue comes from when
+  cut B of #276's drill deletes `tests/true-bdd/steps/`, so that `build steps`
+  can rebuild a steps package the kept harness compiles against, and the
+  ticket can be shaped for `/mpc_implement`. The Owner chose #249 first among
+  #276's tickets and answered "да" to starting its grilling (1 November).
+
+log:
+  - decision_trace:
+      research:
+        - |
+          Confirmed: the kept `tests/true-bdd/scenarios/scenarios.go`, built
+          with a steps package holding only the engine's skeleton (an empty
+          `State` and `Register`), fails on `steps.Harness` (lines 84, 226),
+          `steps.Options` (115), `steps.FixtureName` (157, 280) and
+          `steps.NewState` (238), at `3274518d`.
+        - |
+          `tests/true-bdd/steps/` holds about 1,000 lines that are no step
+          definition: harness.go (227), state.go (375), contained.go,
+          file_pattern.go, io_engine_run.go, number_slot.go and
+          validation_observation.go. `State` holds `Harness`, `Fixture`,
+          `Proxy`, `Result` and `Recorder`, implements `bddgo.Judgeable` and
+          records the outcome in its cleanup.
+        - |
+          The calculator hosts already have the target shape: their
+          `scenarios.go` references only `steps.State` and `steps.Register`
+          and builds `&steps.State{}` itself
+          (tests/true-bdd/fixtures/build-steps-bringup/input/tests/calc/scenarios/scenarios.go).
+        - |
+          Cucumber keeps step definitions apart from support code (World,
+          hooks): https://github.com/cucumber/cucumber-js/blob/main/docs/support_files/world.md;
+          godog keeps its scenario and suite initializers apart from step
+          definitions: https://github.com/cucumber/godog.
+        - |
+          ADR-0035: the engine keeps the skeleton and the writer changes only
+          bodies, imports and State (stepskeleton/shape.go).
+      recommendation: |
+        (a): `steps/` holds step definitions only; everything else moves to the
+        kept harness, as on the calculator host, and cut B deletes only what
+        `build steps` rebuilds. It keeps ADR-0035's line, matches the
+        calculator host and Cucumber; (b) puts harness design into the
+        Specification and (c) lets the model invent the harness in cut B.
+      settled: |
+        The steps package holds step definitions only. Every other
+        declaration in `tests/true-bdd/steps/` (the harness, its options,
+        fixture naming, state construction, judging, recording and helpers)
+        moves to the kept harness, and cut B deletes only what `build steps`
+        rebuilds.
+    question: |
+      Q1 - What may the steps package hold: which principle takes the glue
+      out of `steps/` when cut B deletes it? (a) `steps/` is step
+      definitions only, all other code moves to the kept harness; (b) the
+      engine writes the glue from what the architecture or the harness
+      declares; (c) the writer may add any top-level declaration the kept
+      tests reference, checked only by compilation.
+    answer: |
+      lets try with A)
+  - decision_trace:
+      research:
+        - |
+          bddgo builds a `World` (T, Scenario, Suite) per Scenario, hands it to
+          the constructor `suite.Init` registers, and passes only `*State` to
+          a definition (pkg/testkit/bddgo/suite.go:99,106); it never inspects
+          State except for the optional `Judgeable` and `Actor`
+          (suite.go:288,316).
+        - |
+          `build steps --fix` compiles the suite right after writing its
+          skeletons, before any AI turn, so whatever the harness needs of
+          `State` the skeleton must already provide; `ensureState` writes
+          `type State struct{}` only when the package has no State
+          (stepskeleton/package.go).
+      recommendation: |
+        (1): the harness puts its per-Scenario world into bddgo's World, the
+        engine's skeleton always embeds that World in State, and the harness
+        registers the judge on the suite. bddgo already builds the World and
+        is kept in every cut; the Specification stays free of harness design;
+        the skeleton stays one standard shape for every Go host.
+      settled: |
+        Not answered. The Owner did not know what State is; Claude explained
+        it and asked again. The Owner then reopened Q1 with a brainstorm: the
+        whole suite folder, harness and utilities included, is generated from
+        the Specification by `build steps --fix`; generated tests see only the
+        packages the architecture declares; pkg/testkit and bddgo are pulled
+        in separately as libraries; and the tests might run through a TrueBDD
+        command (`true-bdd tests run`) rather than `go test`. The Owner asked
+        Claude to analyse the idea and how it changes Q1, Q2 and the design.
+    question: |
+      Q2 - How do definitions reach the harness's per-Scenario world, once
+      State is no longer the harness? (1) Through bddgo's World: the harness
+      puts its world in a slot of it, the engine's skeleton embeds the World
+      in State, the harness registers the judge on the suite. (2) The harness
+      owns the state type: `steps.State` is an alias of a harness type the
+      architecture's testing section names, and the writer adds no fields.
+      Asked again in plain words after the Owner's first reply, with an
+      explanation of State and the same two options.
+    answer: |
+      Сейчас, подожди, я не могу ответить на этот вопрос. Я не очень понимаю, что такое state
+
+      Слушай, у меня здесь нету хорошего ответа. Я вообще не понимаю, про что вопрос. Я пересмотрел папочку. Я пересмотрел папочку. со степсами. И смотри, какое дело. Вообще, получается так, что степсы, они же генерируются из вот этих трех документов на шаге build steps минус минус fix, правильно? И вообще все, что необходимо для этих степсов, там всякие дополнительные utilities и так далее, и так далее, это все должно быть сгенерировано вместе с ними. То есть на текущий момент выглядит так, что папочка BDD tests, ее по идее можно было бы удалить, и она должна была бы быть перегенерирована с нуля. Вот. И она не должна видеть дополнительных пакеджей, судя по всему. Она все, что ей необходимо, там, я не знаю, harness, что угодно, да, все, что ей необходимо сейчас для работы, должна сгенерировать, основываясь на информации, вот архитектура, то есть в архитектуре надо указать, какими пакеджами тесты тоже могут пользоваться, да, там, то есть какой-то такой момент получается. А вот эти state, не state. Вот. Сам пакет-тест кит и BDDGo. Они, ну, их надо отдельно подтягивать. То есть, вот пускай будет package-test-kit, который как-то будет ранить эти тесты. Вообще, по идее, нам нужно ранить тесты через какую-то, возможно, даже команду, типа TrueBDD tests run. Вот тест build, а потом тест run. Да, то есть тогда он должен будет вот заранить тесты не через команду, через которую он ранит сейчас, а через TrueBDD. Ну, то есть, возможно, как-то так это вообще надо сделать. Это сейчас на этапе брейншторма. Я хотел бы скорее, чтобы ты разобрал вот эту мою идею, посмотрел, как бы тогда нужно пересмотреть ответ на первый вопрос, ответ на этот вопрос, и вообще посмотреть, как должна работать эта вещь.
+  - decision_trace:
+      research:
+        - |
+          The architecture already has `testing.libraries`; TrueBDD's declares
+          only gopkg.in/yaml.v3 and znkr.io/diff
+          (docs/architecture/architecture.yaml:623), while the suite imports
+          nine packages of github.com/ondatra-ai/true-bdd/pkg (testkit/bddgo,
+          testkit/runner, disk, cli, cli/gotool, cli/spec, testkit/reporter,
+          logging, enginelog), none declared.
+        - |
+          ADR-0028 already holds writers to the host and the libraries the
+          architecture names; GLOSSARY's Library says a rebuild may use
+          nothing else.
+        - |
+          Hand-written in tests/true-bdd/: main_test.go, coverage_test.go
+          (the guards), scenarios/scenarios.go (463 lines) and about 1,000
+          lines of steps/; the other 33 test files are already `build tests`
+          output.
+      recommendation: |
+        (A): everything in `tests/<suite>/` but its fixtures is generated
+        content, recovered from the Specification; everything else the tests
+        use is a library `testing.libraries` declares. It is #276's goal,
+        continues ADR-0028, and the calculator host is nearly there; its cost
+        is the open branches, the heaviest being where the harness's
+        behaviour is stated.
+      settled: |
+        A suite's folder, `tests/<suite>/`, holds only content generated from
+        the Specification, its fixtures apart: step definitions, the wiring,
+        utilities, the entry point and the guards. Everything else its tests
+        use is a library the architecture declares under `testing.libraries`,
+        read and never generated. Overrides Q1: no hand-written harness stays
+        in the suite's folder.
+    question: |
+      Q3 - Where does a suite's boundary run, in place of Q1? (A) Everything
+      in `tests/<suite>/` but its fixtures is generated content recovered
+      from the Specification (definitions, wiring, utilities, entry point,
+      guards); everything else the tests use is a library the architecture
+      declares in `testing.libraries`; Q1's (a) is withdrawn. (B) Keep Q1's
+      (a): the suite's harness is hand-written and kept in the cuts, and only
+      step definitions are regenerated.
+    answer: |
+      (A). Это прямо цель #276: Specification — единственный источник. Каждый оставленный рукописный файл в tests/ — утечка, которой в Specification нет.
+  - decision_trace:
+      research:
+        - |
+          TrueBDD's harness lives in two places: the library
+          pkg/testkit/runner (about 4,650 lines in 18 files, beside aiproxy,
+          bddgo, fstree, materializer and reporter) and about 1,800
+          hand-written lines in the suite: scenarios/scenarios.go (463:
+          harness bring-up, per-caller modes, the claude and codex shims, the
+          lazy engine build, -engine-bin, required CLIs), steps/ outside its
+          definitions (about 1,000) and coverage_test.go (385).
+        - |
+          #212 and #276 already accept pkg/ as a leak kept in every cut
+          ("pkg/, which holds the IO layer and the harness").
+        - |
+          In Cucumber the library supplies the runner and the project writes
+          its World and hooks:
+          https://github.com/cucumber/cucumber-js/blob/main/docs/support_files/world.md.
+      recommendation: |
+        (1): every harness mechanism, including what scenarios.go and steps/
+        outside its definitions do now, moves into pkg/testkit behind an API;
+        the architecture declares pkg/testkit in `testing.libraries` and states
+        the suite's own choices (which external CLIs are recorded, in which
+        modes); the generated suite only wires it. Most of it is already
+        there, pkg/ is already an accepted leak, and (2) would make the
+        architecture a test-bench description.
+      settled: |
+        The harness's behaviour lives in the library: pkg/testkit holds every
+        mechanism (modes, record and replay of AI CLIs, cassettes, golden,
+        judge, run records, bring-up), the architecture declares it under
+        `testing.libraries` and states the suite's own choices, and the
+        generated suite only wires it.
+    question: |
+      Q4 - Where does the harness's behaviour live (modes, record and replay
+      of AI CLIs, cassettes, golden, judge, run records, bring-up)? (1) In
+      the library: every mechanism moves into pkg/testkit behind an API, the
+      architecture declares it in `testing.libraries` and states the suite's
+      own choices, and the generated suite only wires it. (2) In the
+      Specification: the architecture describes the harness's behaviour
+      whole, and the generated suite implements it over thin libraries.
+    answer: |
+      1)
+  - decision_trace:
+      research:
+        - |
+          `build tests` already renders against the suite package's API: each
+          generated test calls `scenarios.New(t, "<id>")`, then
+          `s.Given/When/Then(...)` and `s.Done()`
+          (services/true-bdd/internal/app/generators/scenariogen/go_test.go.tmpl).
+        - |
+          ADR-0031: `build tests` is deterministic with no AI and verifies by
+          regenerate-and-compare.
+        - |
+          The calculator host's scenarios.go is fully set by the suite name
+          and the Registry and architecture paths; after Q4 TrueBDD's wiring
+          becomes as thin.
+      recommendation: |
+        (1): `build tests` renders the wiring (the TestMain entry point, the
+        `scenarios` package creating the suite and hooking the pkg/testkit
+        harness, registration) deterministically from the architecture's
+        declarations, as it renders the test files; `build steps` writes only
+        definitions and State. No judgement lives in the wiring, the engine
+        already holds the `scenarios` API's shape, and regenerate-and-compare
+        then covers it.
+      settled: |
+        `build tests` renders the suite's wiring deterministically from the
+        architecture's declarations, beside the test files it renders now;
+        no AI turn writes it.
+    question: |
+      Q5 - Who writes the suite's wiring: the entry point (TestMain), the
+      `scenarios` package (creating the suite and hooking the pkg/testkit
+      harness), the registration of definitions? (1) `build tests`,
+      deterministically from the architecture's declarations, as it renders
+      the test files now, with the same staleness check; `build steps` writes
+      only definitions and State. (2) The `build steps` writer, checked by
+      compilation and the critique.
+    answer: |
+      У меня такое предположение, что это должен билд-тест детерминированно делать. То есть, ну, это как будто вообще какой-то совершенно детерминированный файл, вот, который из степсов. И, ну, короче, по-моему, это должен делать билд-тест. Давай попробуем.
+  - decision_trace:
+      research:
+        - |
+          `build tests` runs before `build steps` and reads no step
+          definitions (ADR-0031); in cut B no definition exists when it runs.
+        - |
+          Registration is already deterministic: the engine's skeleton in
+          `build steps` adds one `suite.Step(pattern, function)` line to
+          `Register` per definition (stepskeleton/package.go), and the shape
+          check keeps the writer off it.
+        - |
+          Go finds no function without explicit registration; self-registration
+          through `init()` is refused by `gochecknoinits`.
+      recommendation: |
+        (1): the engine in `build steps` keeps writing `Register`
+        deterministically, one line per skeleton; the wiring `build tests`
+        renders calls `steps.Register(suite)`; the pipeline order and the
+        rule that `build tests` reads no definitions stay.
+      settled: |
+        Registration stays with the engine in `build steps`: each skeleton
+        adds its line to the steps package's `Register`, with no AI; the
+        wiring `build tests` renders calls it. The pipeline order is
+        unchanged.
+    question: |
+      Q6 - Who writes the registration of definitions (`Register`), the one
+      part of the wiring that depends on the definitions themselves? (1) The
+      engine in `build steps`, as now: each skeleton adds its line to
+      `Register` with no AI, and the wiring from `build tests` calls
+      `steps.Register(suite)`; the pipeline order stays. (2) `build tests`,
+      from the definitions: it reads the steps package and renders the
+      registration, so it must read definitions and run again after `build
+      steps`, changing the pipeline order.
+    answer: |
+      1)
+  - decision_trace:
+      research:
+        - |
+          A definition receives only `state *State` and its captures; all it
+          needs it reaches through State. TrueBDD's `runEngine`
+          (tests/true-bdd/steps/cli_steps.go:313) reads both what an earlier
+          step put there (`state.Fixture`) and what the harness supplies
+          (`state.Harness.Modes`, `CassetteDir`, `Shims`, cli_steps.go:202-245).
+        - |
+          The wiring `build tests` renders (Q5) exists before the writer adds
+          any field to State, so it can rely only on what the engine's
+          skeleton guarantees; `ensureState` now writes an empty State, and
+          only when none exists.
+      recommendation: |
+        (1): the engine's skeleton always writes one field in State holding
+        the library's per-Scenario world, the wiring fills it when it builds
+        State, and the writer adds the definitions' own fields beside it. A
+        mistyped field then fails compilation, not a run, and the wiring
+        needs exactly the one field the engine guarantees.
+      settled: |
+        State always holds one field the engine's skeleton writes, carrying
+        the library's per-Scenario world (mode, recordings, judge, the built
+        engine); the wiring fills it when it builds State, and the writer adds
+        the definitions' own typed fields beside it. This also answers Q2,
+        with its option (1).
+    question: |
+      Q7 - How does a step get the harness from the library (mode,
+      recordings, judge, the built engine)? (1) One field the engine always
+      writes: the skeleton gives State one field for the library, a step
+      reads `state.World.Modes` where it reads `state.Harness.Modes` now, the
+      wiring fills it, and the writer adds the other fields. (2) No struct of
+      our own: a step receives the library's object directly and stores its
+      own data in it by name (`state.Set("fixture", f)`). Asked first with
+      the words envelope and notebook, then again on TrueBDD's own code.
+    answer: |
+      Что такое конверт библиотеки? Что такое блокнот? Как это? Я вообще не знаю.
+
+      Давай пойдет с 1) проверь ложиться ли это на ответы предыдущие.
+  - decision_trace:
+      research:
+        - |
+          `build tests --fix` overwrites only a file carrying `// Code
+          generated … DO NOT EDIT.` and refuses one without it
+          (services/true-bdd/internal/app/generators/scenariogen/write.go:141).
+        - |
+          The retired template form is refused at startup naming its
+          replacement, never rewritten (the Owner's decision of 30 October;
+          `concepts-002`, `concepts-006`).
+        - |
+          No engine command writes scenarios/scenarios.go, steps/harness.go,
+          steps/state.go, main_test.go or coverage_test.go: none carries the
+          generated marker; they came in PRs #68 (16 August) and #70
+          (18 August) and changed in 8 to 12 ordinary commits since.
+          `build steps` came in #253 (29 October), when every Registry step
+          already bound, so it never wrote TrueBDD's own steps. 29 fixture
+          hosts ship a `scenarios.go` written when the fixture was designed.
+      recommendation: |
+        (2): a host whose wiring or State the pipeline did not write is
+        refused at startup, naming the file to delete so the pipeline writes
+        it again; `build tests` keeps never overwriting a file it did not
+        write, as the template form was retired.
+      settled: |
+        Principle, for this stage: nothing in a suite's folder (fixtures
+        apart) is written by anything but TrueBDD; the Owner expects the rule
+        to change later. Today's files that TrueBDD did not write are a state
+        of this stage that ends when the pipeline writes them. Neither option
+        was picked; whether the engine checks the rule is asked next.
+    question: |
+      Q8 - What happens to a host whose wiring and State were not written by
+      the pipeline? (1) The pipeline converts it: `build tests --fix`
+      replaces the wiring once and refuses without `--fix`, naming the file;
+      `build steps` adds the engine's field to the existing State. (2) A
+      refusal with a hint: the engine refuses at startup, names the file and
+      says to delete it so the pipeline writes it again. Asked first with
+      "hand-written"; the Owner asked where that came from, and Claude showed
+      the evidence and asked again as "not written by the pipeline".
+    answer: |
+      Как так получилось что что-то написано руками? Откуда ты взял это?
+
+      Ничего не может дать написано не truebdd. На этом этапе это так а потом изменится.
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        Q8's (2), a refusal naming the file, as recommended before the
+        Owner's two messages below arrived.
+      settled: |
+        Q8 resolved: whatever in a suite's folder (fixtures apart) TrueBDD did
+        not write may and must be overwritten; there is no refusal and no
+        conversion protecting it, and `build tests` stops guarding a file
+        without its marker there. Claude's recommendation (2) is not taken.
+        The goal, #276's, decides it: the Specification is the only source,
+        so the whole folder is regenerated.
+    question: |
+      Q8, continued - The Owner's messages sent while Claude logged Q8.
+    answer: |
+      Все можно и гужнозатереть
+
+      Ты помнишь цель?
+  - decision_trace:
+      research:
+        - |
+          tests/true-bdd/steps/ holds about 416 lines of utilities outside
+          any definition: contained.go (133), file_pattern.go (98),
+          io_engine_run.go (117), number_slot.go (21) and
+          validation_observation.go (47); the writer may change only bodies,
+          imports and State (stepskeleton/shape.go).
+      recommendation: |
+        The utilities the definitions use are written by the `build steps`
+        writer; what is a harness mechanism (running the engine under the
+        proxy, as io_engine_run.go does) goes to pkg/testkit under Q4.
+      settled: |
+        Forced by Q3 (utilities are generated content), Q4 (harness
+        mechanisms live in the library) and Q5 (`build tests` renders only
+        what the architecture's declarations fix): the utilities the
+        definitions share are written by the `build steps` writer beside the
+        bodies, so its shape check widens to admit them, and the critique and
+        the red-without-target check cover them as they cover bodies, since
+        a utility can do the product's work as a body can (ADR-0031). A
+        harness mechanism among today's utilities moves to pkg/testkit.
+    question: |
+      Who writes the utilities the step definitions share (contained.go,
+      file_pattern.go, number_slot.go, validation_observation.go)?
+    answer: |
+      Claude, no question asked: the `build steps` writer, as Q3, Q4 and Q5
+      force; a harness mechanism among them moves to pkg/testkit.
+  - decision_trace:
+      research:
+        - |
+          tests/true-bdd/coverage_test.go holds four guards:
+          TestScenarioCoverage and TestFixtureTreesArePaired call bddgo's
+          `Suite.CheckCoverage` and `CheckFixtureTrees`
+          (pkg/testkit/bddgo/coverage.go:149,317); TestFixtureTemplateOverlays
+          and TestFixtureCommentsNameNoVerdict carry about 330 lines of their
+          own, over TrueBDD's own fixtures.
+        - |
+          They are hand-written so that the generator cannot silence them by
+          regenerating (.claude/rules/bdd-harness.md); the gates run them.
+      recommendation: |
+        (2): the two Scenario guards as library functions the wiring calls;
+        the two fixture guards move to scripts/gates, as repository hygiene
+        no Story describes.
+      settled: |
+        Not answered. The Owner directs an experiment in place of more
+        questions: delete all the existing code, then try to build the steps,
+        the tests and the code, and see where the pipeline breaks. The
+        grilling pauses; its remaining frontier (the guards, which pkg/
+        packages tests may use, `true-bdd tests run`, the ticket split, the
+        engine field's type) waits for the experiment's result.
+    question: |
+      Q9 - Where do the guard checks come from, now that the pipeline writes
+      the whole suite folder? (1) Their logic in the library, the wiring
+      calling it; (2) the Scenario guards as in (1), the fixture guards moved
+      to scripts/gates; (3) `build tests` generates them whole.
+    answer: |
+      Тебе надо взять и удалить весь код которые есть а потом попробовать сбилдить шаги, тесты, код
+  - decision_trace:
+      research:
+        - |
+          The four checks in tests/true-bdd/coverage_test.go test the suite,
+          not the product: one generated test per Scenario and none for a
+          removed one; every fixture tree named by a Scenario and every named
+          tree present; a fixture's template override keeps the shipped
+          template's text; no fixture document comment tells the model a
+          verdict (#259).
+      recommendation: |
+        As for Q9: the two Scenario checks as library calls, the two fixture
+        checks to scripts/gates, or dropped if the Owner judges them not
+        worth keeping.
+      settled: |
+        Not answered: the Owner asked what the guard is and why it is needed;
+        Claude explained the four checks. Q9 waits for the experiment.
+    question: |
+      Q9, continued - The Owner's questions about the guards, sent while
+      Claude started the experiment.
+    answer: |
+      Какой страж?
+
+      Зачем он нужен?
+  - decision_trace:
+      research:
+        - |
+          The experiment (cut B per Q3, base 3274518d): `build tests --fix`
+          exit 0 in under a second, 33 test files, no AI; `build steps --fix`
+          exit 1 after 36 minutes and 42 claude-opus-5 turns: grouping, 19
+          Items, the binding judgements and the pattern proposals (22
+          accepted, 3 refused and proposed again) passed, the engine wrote 66
+          skeleton files, and the suite's compilation failed: "no required
+          module provides package
+          github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios". The audit
+          found no read outside the cut; its 30 "outside" entries are
+          path-like text inside StructuredOutput answers.
+        - |
+          Every generated test calls `scenarios.New(t, "<id>")` and states
+          its Scenario's steps literally; `Done()` checks them against the
+          Registry and runs them. tests/true-bdd/scenarios/scenarios.go (463
+          lines) holds the test binary's flags (-mode, -engine-bin), Main
+          (the suite created over `steps.Options`, `steps.Register`,
+          teardowns), New, the two coverage calls, and the harness bring-up
+          (required CLIs, the aiproxy shims, the judge, the session root, the
+          lazy engine build, `steps.Harness`, `suite.Init(steps.NewState(...))`).
+      recommendation: |
+        Show the package and reconcile the Owner's view with Q5.
+      settled: |
+        Not settled: the Owner questioned why the tests import `scenarios`,
+        looked at a generated test, and now holds that the whole `scenarios`
+        package should be generated at `build steps`, which reopens Q5.
+    question: |
+      The Owner's questions about the `scenarios` package, after the
+      experiment.
+    answer: |
+      Зачем тесты импортируют scenarios? Что это за пакет?
+
+      Стой подожди. Это совсем не правильно же
+
+      Посмотри ааа сейчас написан тест какой нибудь
+
+      Такое впечатление что весь пакт scenarios должен Батт сгенерирован на шаге build steps. Покажи что внутри этого пакета
+  - decision_trace:
+      research:
+        - |
+          After Q4, the suite's `scenarios` package keeps Main, New and the
+          two coverage calls, about 70 lines, which name only `steps.State`,
+          `steps.Register` and the suite's options; State and Register are
+          already written by the engine in `build steps`, with no AI (Q6,
+          Q7). `build tests` reads no definitions and renders one test per
+          Scenario.
+      recommendation: |
+        (1): the engine in `build steps` writes the `scenarios` wiring
+        deterministically, with no AI, beside the skeletons, State and
+        Register; `build tests` stays one test per Scenario. One command then
+        writes the steps package and what hooks it up, so they compile as one.
+      settled: |
+        The engine in `build steps` writes the suite's wiring (the
+        `scenarios` package) deterministically, with no AI, together with the
+        skeletons, State and Register. `build tests` renders only the
+        Scenarios' test files. Overrides Q5 for the wiring.
+    question: |
+      Q10 - Who writes the `scenarios` wiring package, in place of Q5? (1)
+      The engine in `build steps`, deterministically and with no AI, with the
+      skeletons, State and Register; `build tests` stays one test per
+      Scenario; Q5's wiring part is withdrawn. (2) `build tests`, as Q5
+      decided.
+    answer: |
+      1)
+  - decision_trace:
+      research:
+        - |
+          The suite's TestMain lives in tests/true-bdd/main_test.go and only
+          returns `scenarios.Main(m)`; it belongs to the wiring, not to any
+          Scenario's test.
+      recommendation: |
+        The file holding TestMain is written with the wiring.
+      settled: |
+        Forced by Q10 (one command writes the wiring, so the steps package
+        and its hookup compile as one): the TestMain file is written by the
+        engine in `build steps` with the `scenarios` package.
+    question: |
+      Who writes the suite's TestMain file?
+    answer: |
+      Claude, no question asked: the engine in `build steps`, with the
+      wiring, as Q10 forces.
+  - decision_trace:
+      research:
+        - |
+          The gate "BDD cli coverage guards" runs the four checks in a second
+          (scripts/gates/table.go:131); no gate runs `true-bdd build tests`,
+          whose run without --fix regenerates and compares and refuses a
+          stale file. TestScenarioCoverage and TestFixtureTreesArePaired call
+          bddgo (pkg/testkit/bddgo/coverage.go:149,317); the two fixture
+          checks hold about 330 lines over TrueBDD's own fixtures.
+        - |
+          The fixtures stay hand-designed after Q3; the template-overlay
+          check keeps a fixture from testing a stale prompt copy, and the
+          comment check keeps a hint from becoming a recorded verdict (#259).
+      recommendation: |
+        (1): drop TestScenarioCoverage and let a gate run `true-bdd build
+        tests` without --fix; move the three fixture checks to scripts/gates,
+        beside the Recordings gate.
+      settled: |
+        TestScenarioCoverage goes; a gate runs `true-bdd build tests` without
+        --fix in its place, so the product checks its own generated tests. The
+        three fixture checks (pairing, template overlays, comments naming a
+        verdict) become deterministic `D:` checks in `scen check`'s
+        checklist, not gates. Claude's recommendation for the fixture checks
+        (scripts/gates) is not taken.
+    question: |
+      Q11 - What happens to the suite's four checks, now that the pipeline
+      writes the whole folder? (1) Drop TestScenarioCoverage, a gate runs
+      `true-bdd build tests` without --fix instead, and the three fixture
+      checks move to scripts/gates beside Recordings; (2) drop all four; (3)
+      the Scenario checks as bddgo calls from the wiring, the fixture checks
+      to the gates. Asked first as Q9, then again after the Owner asked what
+      is lost without them.
+    answer: |
+      Что будет если этих проверок не будет совсем? Такое впечатление как будто они нужны пока у нас есть код. А поскольку кода нет а есть только сами сценарии то мне не понятно что мы проверяем?
+
+      TestScenarioCoverage убираем, а гейт вместо неё запускает true-bdd build tests без --fix а Три проверки фикстур уезжают  в Scen check как шаги а чек листе детерминированные
+
+      Так будет работать?
+  - decision_trace:
+      research:
+        - |
+          `scen check` takes Scenario ids, --fix, --requirements and --model
+          (docs/architecture/true-bdd-cli.yaml:62); it has no way to walk only
+          its D: Prompts, and a whole-Registry walk costs about 25 minutes
+          and 383 model turns (#259). `concept-definitions-closure` walks
+          only `D: step-definitions` through a fixture's own narrowed
+          checklist.
+      recommendation: |
+        (1): `scen check` gains a deterministic-only walk, and a gate runs it
+        over the whole Registry in seconds.
+      settled: |
+        Overtaken: the Owner moved the checks out of `scen check` and into
+        the engine's own deterministic command, so CI runs them through the
+        gate Q11 set; no deterministic-only walk is needed for them.
+    question: |
+      Q12 - How does CI check the fixtures, once their checks are in `scen
+      check`? (1) `scen check` learns to walk only its deterministic checks
+      and a gate runs it; (2) no gate, the fixtures are checked whenever
+      `scen check` runs whole.
+    answer: |
+      Вообще наверно все 4 перенести в build tests? Или может сделать отданную команду? Но ты понял к чему я клоню - иметь это в самом движке
+  - decision_trace:
+      research:
+        - |
+          `build tests` is deterministic, needs no AI and takes under a
+          second; without --fix it regenerates and compares and refuses a
+          disagreement with the Registry; Q11's gate runs it. The engine
+          already finds a Scenario's fixtures from its quoted step values
+          (services/true-bdd/internal/app/commands/build_steps_concept_fixtures.go:73).
+          The four checks now live in tests/true-bdd/coverage_test.go and
+          the gate "BDD cli coverage guards" runs them.
+      recommendation: |
+        (1): all four in `build tests`: without --fix it checks the test
+        files against the Registry, the Scenario-fixture pairs, the
+        fixtures' template copies and their comments, and refuses any
+        disagreement; with --fix it rewrites stale tests and still refuses a
+        fixture problem, which rendering cannot fix. They are deterministic
+        checks of the folder `build tests` owns, and Q11's gate already runs
+        it, so no command and no gate is added.
+      settled: |
+        All four checks move into `build tests`: without --fix it refuses
+        when the test files disagree with the Registry, a Scenario names a
+        fixture that does not exist, a fixture no Scenario names, a
+        fixture's copy of a shipped template departs from it, or a fixture
+        document's comment names a Scenario beside an outcome; with --fix it
+        rewrites stale tests and still refuses a fixture problem. Q11's gate
+        runs it. Overrides Q11's placement of the fixture checks in `scen
+        check`. At the Owner's request the reasons are recorded in ADR-0038.
+    question: |
+      Q13 - Where in the engine do all four checks go, in place of Q11's `D:`
+      checks in `scen check`? (1) Into `build tests`: without --fix it checks
+      the tests against the Registry, the Scenario-fixture pairs, the
+      fixtures' template copies and comments, and refuses any
+      disagreement; with --fix it rewrites stale tests and still refuses
+      fixture problems; Q11's gate covers it. (2) Into a separate command
+      (`true-bdd tests check` or similar) with its own gate.
+    answer: |
+      1) только давай запомним почему мы так решили а то я потом забуду.
+  - decision_trace:
+      research:
+        - |
+          The suite imports nine packages of the module
+          github.com/ondatra-ai/true-bdd/pkg (testkit/bddgo, testkit/runner,
+          testkit/reporter, disk, cli, cli/gotool, cli/spec, logging,
+          enginelog). The architecture declares libraries as whole modules,
+          `{module, version}` (GLOSSARY, Library), so it cannot name
+          `testkit` alone inside `pkg`. Hosts already take `pkg` as one
+          module at the release's commit.
+      recommendation: |
+        (1): declare the whole `pkg` module in `testing.libraries`; the tests
+        may use any of its packages, as now. A separate `testkit` module
+        would move code and release two modules for no decision of this
+        session.
+      settled: |
+        The architecture declares the whole module
+        github.com/ondatra-ai/true-bdd/pkg in `testing.libraries`, and the
+        suite's tests may use any of its packages.
+    question: |
+      Q14 - What of `pkg/` may the tests use? (1) The whole `pkg` module,
+      declared in `testing.libraries`, any of its packages as now; (2) only
+      the test library: `pkg/testkit` becomes its own module, declared alone,
+      and `disk`, `cli` and `logging` are closed to the tests unless they
+      join `testkit`.
+    answer: |
+      1)
+  - decision_trace:
+      research:
+        - |
+          Cut B runs `build tests`, `build steps` and `build code`, and the
+          engine already runs the tests itself through the architecture's
+          `testing.commands` (the red-without-target check, the replay in
+          `build code`). No decision of Q3 to Q14 needs a new command: the
+          wiring (Q10), the harness in the library (Q4) and the checks in
+          `build tests` (Q13) clear cut B's blocker.
+      recommendation: |
+        (1): a separate ticket under #276, `needs-triage`, carrying the
+        Owner's idea and the questions it raises; #249's work unblocks cut B
+        without it.
+      settled: |
+        `true-bdd tests run` is not part of #249's work; it becomes a ticket
+        of its own under #276, labelled `needs-triage`, with the Owner's idea
+        and its open questions.
+    question: |
+      Q15 - Is `true-bdd tests run` part of this work? (1) No: a separate
+      ticket under #276, `needs-triage`; #249's work unblocks cut B without
+      it. (2) Yes: the wiring, the harness in the library and `tests run`
+      are designed and built as one piece of work.
+    answer: |
+      1)
+  - decision_trace:
+      research:
+        - |
+          bddgo's World holds T, the Scenario and the suite
+          (pkg/testkit/bddgo/world.go:8); the harness is pkg/testkit/runner,
+          and neither imports the other. TrueBDD's definitions take T from
+          `testing`, the Scenario from bddgo, and Fixture, Proxy, Result,
+          Recorder and the harness from runner.
+      recommendation: |
+        First (1), bddgo's World carrying the harness's part; changed to (2)
+        after the Owner's question: the field is the harness's own
+        per-Scenario type from pkg/testkit, holding T and the Scenario, so
+        bddgo stays a generic runner and definitions get a typed harness
+        object; a host without the harness gets bddgo's World.
+      settled: |
+        State's engine-written field has TrueBDD's own per-Scenario type from
+        pkg/testkit. The Owner adds: the generated code (tests, step
+        definitions and what `build steps` writes) imports pkg/testkit and
+        nothing else of the repository, and the aiproxy and the other parts
+        come in with it. This narrows Q14: the whole pkg module stays the
+        declared library, but the generated code imports only testkit.
+    question: |
+      Q16 - What type is State's field? (1) Always bddgo's World, carrying
+      the harness's part, the same skeleton for every Go host; (2) the
+      harness's per-Scenario type from pkg/testkit, written when the
+      architecture declares that the suite uses the testkit harness, bddgo's
+      World otherwise. Asked again after the Owner asked what the tests use
+      from testkit and whether to use it rather than bddgo.
+    answer: |
+      А если мы на используем state из testing то что мы оттуда используем? Может нам наоборот надо использовать testing package а не bddgo?
+
+      2) Скорее, все-таки хорошо было бы иметь наш собственный тип. Пусть мы его будем брать из тест-кит. То есть тесты должны, единственное, что они должны импортить, это тест-кит. Как будто вот так. То есть тесты и то, что мы называем степами, да, вот этот, то, что генерится в build steps, чтобы единственное, что они могли импортить, это вот этот тест-кит. И там Airflow, вот эти вещи, да, то есть должны импортиться вместе с ним сразу, как часть.
+  - decision_trace:
+      research:
+        - |
+          The suite now imports the standard library (path/filepath in 29
+          files, os in 20, strings, fmt, errors, regexp, time, encoding/json
+          and more), gopkg.in/yaml.v3 (4 files, declared in
+          `testing.libraries`) and, from pkg, testkit/bddgo (17), disk (16),
+          testkit/runner (15), cli, cli/gotool, testkit/reporter, logging and
+          enginelog. The repository's lint keeps file reads and writes to
+          pkg/disk (forbidigo). Packages under pkg/testkit/internal/ can be
+          imported only from pkg/testkit, so the compiler can hold the rule.
+      recommendation: |
+        (1): the standard library and the one package pkg/testkit; bddgo,
+        runner, aiproxy and fstree move under pkg/testkit/internal/, and what
+        definitions need of disk, cli and yaml.v3 comes through testkit's
+        API.
+      settled: |
+        The generated code imports the standard library, pkg/testkit and the
+        libraries the architecture lists in `testing.libraries`, nothing
+        else. pkg/testkit is loaded by default: the engine supplies it to
+        every host's tests without a declaration, and bddgo, runner, aiproxy
+        and fstree come in as its parts. Overrides Q14: pkg is no longer
+        declared in `testing.libraries`, which lists only the other
+        libraries.
+    question: |
+      Q17 - What exactly may the generated code import? (1) The standard
+      library and the one package pkg/testkit, its parts moved under
+      pkg/testkit/internal/, disk, cli and yaml.v3 reached through testkit's
+      API; (2) as (1), and the third-party libraries declared in
+      `testing.libraries` directly too; (3) any package under pkg/testkit/
+      and the standard library, the rest of pkg closed.
+    answer: |
+      2) Смотри, тут тест-кит должен раниться по умолчанию, точнее загружаться по умолчанию, а все остальное из списка в architecture YAML.
+  - decision_trace:
+      research:
+        - |
+          #249 describes the original problem: `build steps` cannot rebuild a
+          steps package whose harness glue the kept tests need. Each ticket
+          gets a Codex plan-read before publication (CLAUDE.md); Codex's
+          weekly limit stands at 90%, reset on 5 November. The drill's cut B
+          change is local and uncommitted; two drill unit tests pin the old
+          cut.
+      recommendation: |
+        Five tickets under #276 at once: testkit as the tests' one door;
+        `build steps` writes the wiring (#249 rewritten); `build tests`
+        checks the suite folder; the drill's cut B; `true-bdd tests run`
+        (`needs-triage`); each through a plan-read now.
+      settled: |
+        Not taken. The Owner sets the method: the drill drives the tickets.
+        Fix the failure the run stopped at, delete the code again, run
+        again, see where it fails next, and look which ticket (an existing
+        one, or one ADR-0038 plans) fixes that failure. The first ticket is
+        the one the experiment showed: the missing `scenarios` package. Once
+        the runs get through, the planned refactorings follow, the checks
+        moving into `build tests` among them. The decisions of Q3 to Q17 and
+        ADR-0038 stand as the design; they are filed as tickets when a
+        failure calls for them. The Owner judges that the grilling theorised
+        more than the goal (delete the code and restore it) needed.
+    question: |
+      Q18 - How is the work cut into tickets? Five sub-issues of #276: (1)
+      testkit as the tests' one door; (2) `build steps` writes the wiring,
+      #249 rewritten, after 1; (3) `build tests` checks the suite folder; (4)
+      the drill's cut B deletes the whole suite folder but its fixtures; (5)
+      `true-bdd tests run`, `needs-triage`; all through a plan-read now.
+    answer: |
+      Смотри, я хотел бы, чтобы ты подумал об тикетах приблизительно таким образом. Давай мы сделаем, то есть удалим еще раз код и посмотрим, что не хватает. То есть сейчас мы знаем, что не хватает сценариус. Оно упало прямо на сценариус. Все отлично. Значит, делаем задачу, которая связана со сценариями. После этого берем, еще раз запускаем. Смотрим, работает или не работает. То есть еще раз удаляем, еще раз запускаем. Смотрим, на чем упало дальше. И вообще, вот тут смотрим, что из текущих тикетов будет фиксить следующее падение. То есть, мне кажется, мы неправильно пошли к гриллингу этой задачи, потому что мы много натеоретизировали, как это должно быть, но оно не приводит к конечной цели удаления кода и его восстановления. Вот. Хотя все рефакторинги, которые мы здесь задумали, они нужны. В целом, я бы видел план такой, что мы сперва фиксим сценарий, потом запускаем, смотрим, чего еще не хватает. Если все отлично, то переносим вот эти все проверки в куда мы договорились, build tests и так далее.
+  - decision_trace:
+      research:
+        - |
+          ADR-0038 and #278 call the code "the suite's wiring"; the engine's
+          code calls the package "the suite's scenarios shim"
+          (services/true-bdd/internal/app/generators/scenariogen/plan.go:55);
+          Cucumber names such code support code, godog its suite and scenario
+          initializers. GLOSSARY.md had no term for it.
+      recommendation: |
+        Add **Suite wiring** to GLOSSARY.md, avoiding glue, shim, bootstrap
+        and harness.
+      settled: |
+        GLOSSARY.md defines **Suite wiring**. AGENTS.md (CLAUDE.md links to
+        it) now asks for the glossary's English terms in replies in any
+        language.
+    question: |
+      What is "обвязка" (the wiring), and is there an English term for it?
+    answer: |
+      что такое обвязка? Есть ли термин на англ?
+
+      да! давай добавим. и наишем использовать термини из Glossary на англ даже в русских ответах?

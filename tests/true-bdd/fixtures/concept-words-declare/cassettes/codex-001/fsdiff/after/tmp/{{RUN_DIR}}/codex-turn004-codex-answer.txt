@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
 applied: true
 target: "product"
-summary: "Declared idempotency key in halve terms and added its glossary entry; all other content preserved."
+summary: "Declared idempotency key in the glossary using term and means, and added it to halve's terms. Verified all other text is unchanged. Sandbox blocked search access and Python cache creation; the edit and verification succeeded."
 === FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===

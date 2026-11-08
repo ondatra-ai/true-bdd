@@ -46,7 +46,7 @@ func TestArchitectureClaudeTemplateMatchesScenario(t *testing.T) {
 			}
 
 			state := runAt(root)
-			state.Harness = &Harness{BinPath: invoked}
+			state.Result.ServiceBinary = invoked
 
 			for _, executable := range []string{invoked, resolved} {
 				settings := strings.ReplaceAll(template, "{guard_command}", jsonGuardCommand(t, executable))

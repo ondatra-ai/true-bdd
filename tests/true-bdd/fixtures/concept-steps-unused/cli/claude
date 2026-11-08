@@ -1,0 +1,41 @@
+#!/bin/sh
+set -eu
+mkdir -p tmp
+input=$(mktemp tmp/concept-steps-unused-stdin.XXXXXX)
+trap 'rm -f "$input"' EXIT HUP INT TERM
+cat > "$input"
+proposal=false
+for argument do
+  case "$argument" in
+    *'Propose the step definition patterns of one concept for one suite,'*) proposal=true ;;
+  esac
+done
+if grep -q 'Propose the step definition patterns of one concept for one suite,' "$input"; then
+  proposal=true
+fi
+marker=tmp/concept-steps-unused-first-proposal
+if [ "$proposal" = true ] && [ ! -e "$marker" ]; then
+  touch "$marker"
+  printf '%s\n' '{"type":"result","subtype":"success","is_error":false,"result":"","structured_output":{"patterns":[{"pattern":"^the Owner halves\\x{00a0}(-?\\d+)$","captures":[{"name":"operand","means":"The integer to halve."}],"serves":"Halving the supplied integer."},{"pattern":"^the Owner halves an unused operand$","captures":[],"serves":"An unused halving form."}]},"total_cost_usd":0,"usage":{"input_tokens":0,"output_tokens":0}}'
+  exit 0
+fi
+
+own=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+previous_ifs=$IFS
+IFS=:
+for directory in $PATH; do
+  [ -n "$directory" ] || continue
+  absolute=$(CDPATH= cd -- "$directory" 2>/dev/null && pwd) || continue
+  case ":${TRUE_BDD_AIPROXY_KNOWN_SHIMS:-}:${TRUE_BDD_AIPROXY_DIR:-}:$own:" in
+    *":$absolute:"*) continue ;;
+  esac
+  if [ -x "$absolute/claude" ] && [ ! -d "$absolute/claude" ]; then
+    IFS=$previous_ifs
+    exec 3< "$input"
+    rm -f "$input"
+    trap - EXIT HUP INT TERM
+    exec "$absolute/claude" "$@" <&3 3<&-
+  fi
+done
+printf '%s\n' 'concept-steps-unused: no downstream claude outside the fixture and proxy directories' >&2
+exit 127

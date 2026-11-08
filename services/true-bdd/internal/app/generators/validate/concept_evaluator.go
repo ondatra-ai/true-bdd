@@ -81,7 +81,7 @@ func (e *ChecklistEvaluator) conceptTurn(ctx context.Context, prompt checklist.P
 		return "", fmt.Errorf("resolve concept model: %w", err)
 	}
 
-	encoded, err := json.MarshalIndent(payload, "", "  ")
+	encoded, err := e.conceptPayload(payload)
 	if err != nil {
 		return "", fmt.Errorf("encode concept context: %w", err)
 	}

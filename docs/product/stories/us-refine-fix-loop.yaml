@@ -134,6 +134,9 @@ story:
             - when:
                 - the Product Owner runs "us refine doc-summary --fix"
             - then:
+                - and: "the us_refine_checklist prompt embeds the Story without a wrapper and keeps its Feature"
+                - and: "the us_refine_checklist prompt has no story wrapper"
+                - and: "the us_refine_checklist prompt holds the checklist's question and fix verbatim"
                 - the command exits with code 0
                 - stdout matches msg="Fix applied; re-running validation"
                 - stdout matches ALL CHECKS PASSED!

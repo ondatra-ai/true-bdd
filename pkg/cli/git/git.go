@@ -41,7 +41,7 @@ func ChangedAgainst(base string) ([]string, error) {
 }
 
 // StagedPaths lists the hook's pending commit, deletions included.
-// Only this query keeps GIT_INDEX_FILE, which may name a partial commit's index.
+// Like IndexFiles, it keeps GIT_INDEX_FILE, which may name a partial commit's index.
 func StagedPaths() ([]string, error) {
 	opt := defaults()
 	if index, exists := os.LookupEnv("GIT_INDEX_FILE"); exists {

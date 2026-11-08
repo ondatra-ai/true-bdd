@@ -6,6 +6,7 @@ Write only inside the edit roots in the request. Never modify tests, *_test.go, 
 
 Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, impossible, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -48,60 +49,52 @@ Received: "Hello, undefined!"
 
 ## Diagnosis
 
-The failure is a genuine production defect, exactly as the fixture documents it.
+One production defect, one file. `services/greeter/greeting.js` declares:
 
-- `tests/unit/greeting.test.js` requires `../../services/greeter/greeting` and asserts `expect(greet()).toBe('Hello, world!')` — i.e. the function is called with **no argument**.
-- `services/greeter/greeting.js` currently implements:
-  ```
-  function greet(name) {
-    return 'Hello, ' + name + '!';
-  }
-  ```
-  With no argument, `name` is `undefined`, string concatenation stringifies it, and the result is `"Hello, undefined!"` — matching the reported failure at `greeting.test.js:7`.
-- The file's own header comment states the contract ("greet greets a person by name, and the world when no name is given") and that the missing default is the planted defect in production source. `CLAUDE.md` confirms `services/greeter/` is the only editable tree and that the failing assertion is the specification.
+```
+function greet(name) {
+  return 'Hello, ' + name + '!';
+}
+```
 
-So the whole failing set (a single test) is caused by one missing behaviour: no default subject when the caller supplies none.
+The file's own header comment states the contract: *"greet greets a person by name, and the world when no name is given. It does not do the second: the missing default is the planted defect, in PRODUCTION source."* When `greet()` is called with no argument, `name` is `undefined`, string concatenation stringifies it, and the function returns `"Hello, undefined!"`. `tests/unit/greeting.test.js:7` asserts `greet()` is `"Hello, world!"`, so the test fails exactly as reported. Nothing in the harness, the Jest config (`tests/jest.config.js`), or `docs/architecture/architecture.yaml` is implicated — the architecture names `services/greeter` as both the service path and the only writable root, and the whole repair fits inside it.
 
 ## Scope
 
-One part, one file, entirely inside the declared edit root `services/greeter`.
+- **Edit exactly one file:** `services/greeter/greeting.js` (inside the declared edit root `services/greeter`).
+- **Do not touch** `tests/unit/greeting.test.js`, `tests/unit/canary.test.js`, `tests/jest.config.js`, `tests/stack-frames.js`, `docs/architecture/architecture.yaml`, `CLAUDE.md`, or anything under `true-bdd/`. No assertion may be weakened, skipped or removed.
+- `services/greeter/greeting.js` is the only file in the service tree, and `greet` has no other callers in the repository, so there is no ripple to manage.
 
-### Part 1 — give `greet` a default subject of `world`
+## Part 1 — give `greet` its documented default (serves the whole failing set)
 
-**File:** `services/greeter/greeting.js` (the only file to change)
+**File:** `services/greeter/greeting.js`
 
 **Contract to implement:**
 
-1. Called with no argument — `greet()` — the function returns the string `Hello, world!` exactly: the same `'Hello, ' … '!'` shape as today, with `world` (lowercase, no punctuation changes) as the subject.
-2. Called with a name — e.g. `greet('Ada')` — behaviour is unchanged: `Hello, Ada!`. Do not alter, reformat or re-escape the named path; the existing greeting shape is part of the contract.
-3. The module keeps its current CommonJS shape: a named `greet` function exported via `module.exports = { greet }`. The test imports by destructuring `{ greet }` from the module path `services/greeter/greeting`, so the file name, its location, the export style and the export key must all stay as they are. Do not convert the file to ESM, do not add a default export, do not move the file, and do not introduce new runtime dependencies — the Jest config (`tests/jest.config.js`) runs with `transform: {}` in the `node` environment, so the source must remain plain, transform-free CommonJS that Node can load directly.
+- `greet()` — called with no argument — returns `"Hello, world!"`. The default subject is the lowercase word `world`; the greeting keeps the existing `"Hello, " + subject + "!"` shape, including the comma, the single space and the trailing exclamation mark. Case and punctuation matter: the assertion is an exact `toBe` string comparison.
+- `greet(name)` with a supplied name keeps its current behaviour unchanged: `greet('Ada')` must still yield `"Hello, Ada!"`. The defect is the *missing* default, not the named path, so the named path must not change shape.
+- Keep the module's public surface identical: a named function `greet` exported via `module.exports = { greet }`, CommonJS, no new dependencies. `tests/unit/greeting.test.js:1` destructures `greet` from `require('../../services/greeter/greeting')`, and `tests/jest.config.js` sets `transform: {}` with `testEnvironment: 'node'` — so no ESM syntax, no transpile-only features, plain CommonJS that Node can load as-is.
 
-**Intended implementation:** make the absence of a caller-supplied name resolve to `'world'` before the greeting is composed. The idiomatic, transform-free way is an ES default parameter (`function greet(name = 'world')`), which substitutes the default precisely when the argument is omitted or `undefined`. An explicit guard inside the body that falls back to `'world'` when no name was provided is equally acceptable. Either way, the greeting is composed once from the resolved subject — do not duplicate the `'Hello, ' + … + '!'` expression into two branches.
+**Intended implementation:** supply the default for the absent argument at the parameter, e.g. a default parameter value of `'world'` on `name`, so an omitted (or explicitly `undefined`) argument resolves to the world greeting while any supplied name flows through untouched. An equivalent explicit guard inside the body that substitutes the default when no name was given is acceptable; either way the substitution must happen before the string is built, and the returned template must stay byte-identical apart from the substituted subject.
 
-**Latitude on other falsy inputs:** no test in this set passes `null`, `''` or any other falsy value, so the required behaviour is only the two cases above. If the writer chooses a broader guard that also treats `null` or an empty/blank string as "no name given", that is permissible and arguably truer to the documented intent, but it must not change case 2: any non-empty supplied name must still be interpolated verbatim. Pick one approach and keep the function small and readable.
+**Notes on edge cases:** the failing set only exercises the no-argument call, so do not invent extra behaviour for `null`, `''`, or non-string inputs — a default parameter naturally covers only the omitted/`undefined` case, which is precisely what the specification comment describes. Resist adding validation, normalisation, trimming, logging or new exports: anything beyond the default is unrequested scope.
 
-**Documentation inside the file:** the leading comment currently describes the defect ("It does not do the second: the missing default is the planted defect…"). That sentence becomes false once the fix lands. Update that comment in `services/greeter/greeting.js` so it states the implemented contract — greets a person by name, and the world when no name is given — rather than describing a defect. This is production source inside the declared root, so editing its comment is in scope.
+**Housekeeping in the same file:** the header comment currently asserts the defect is still present ("It does not do the second: the missing default is the planted defect…"). After the fix that sentence is false, so update the comment to describe the implemented behaviour — `greet` greets a person by name, and the world when no name is given. This is a production source comment inside the declared edit root, not a test or a specification document.
 
-**Tests this part serves:**
+## Tests each part serves
 
-- `tests/unit/greeting.test.js::greet greets the world when no name is given` — the sole member of the failing set. Satisfied by contract point 1; points 2 and 3 keep it reachable (import shape) and prevent regressions in the named path.
-- `tests/unit/canary.test.js::canary records each suite run` — not a subject of this repair and must stay untouched; it only appends to a log and is unaffected by this change. Do not touch it or its log file.
-
-## Explicit non-goals / guardrails
-
-- Do **not** edit anything under `tests/` — not `tests/unit/greeting.test.js`, not `tests/unit/canary.test.js`, not `tests/jest.config.js`, not `tests/stack-frames.js`, not `tests/package.json`. The assertion `toBe('Hello, world!')` is the specification and must remain exactly as written; never weaken, skip, relax or delete it.
-- Do **not** edit `docs/architecture/architecture.yaml`, `CLAUDE.md`, anything under `true-bdd/` or `templates/`, or any other file outside `services/greeter`.
-- Do not add new files, config, build steps or dependencies; the repair is a one-file source change.
+- **Part 1 → `tests/unit/greeting.test.js::greet greets the world when no name is given`** (the sole member of the failing set). With the default in place, `greet()` returns `"Hello, world!"` and the `toBe` assertion at line 7 passes.
+- **Regression guard → `tests/unit/canary.test.js::canary records each suite run`.** This test only appends to `tests/unit/suite-runs.log` and does not import the service, so the change must leave it passing; the isolated rerun is expected to select only the named failing test and leave the canary unexecuted. Do not create, delete or edit `tests/unit/suite-runs.log` by hand — the canary owns it.
 
 ## Verification
 
-From the directory holding the Jest config (`tests/`, per `architecture.yaml`), run the configured command:
+Run the suite the way the architecture declares it, from the directory holding the config so `npx` resolves the Jest install under `tests/node_modules`:
 
 ```
 cd tests && npx jest --json --config jest.config.js
 ```
 
-Expect `greet greets the world when no name is given` to pass and the canary test to remain passing, with no source or test file other than `services/greeter/greeting.js` modified in the working tree.
+Expect `tests/unit/greeting.test.js` green and `tests/unit/canary.test.js` green, with no change to the number of tests collected. A targeted check of the isolated case is `cd tests && npx jest --json --config jest.config.js -t 'greets the world when no name is given'`. If you ran the full suite during verification and it appended to `tests/unit/suite-runs.log`, leave that file exactly as the run left it — do not revert or tidy it.
 
 ## Edit roots
 

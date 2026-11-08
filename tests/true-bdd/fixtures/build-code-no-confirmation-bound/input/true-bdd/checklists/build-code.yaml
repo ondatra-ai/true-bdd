@@ -11,7 +11,8 @@ sections:
     name: "Test Passes"
     description: "Every member of the failing set must pass its latest run."
     validation_prompts:
-      - D: tests-pass
+      - Q:
+          code: tests-pass
         rationale: "A production repair succeeds when every member of the failing set passes its latest run."
         docs:
           - architecture_yaml

@@ -1,0 +1,72 @@
+[
+  {
+    "id": "concept-bodies-cases-claude-011",
+    "block": "then",
+    "concept": "output",
+    "definition": {
+      "function": "concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e",
+      "file": "tests/calc/steps/concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e.go",
+      "pattern": "^the calculator's output (matches|does not match) (.+)$",
+      "captures": [
+        {
+          "name": "polarity",
+          "means": "The literal word used by the step, either \"matches\" or \"does not match\": it selects whether the body requires a match of the pattern against the kept stdout or requires that there be no match."
+        },
+        {
+          "name": "pattern",
+          "means": "The regular expression taken as the rest of the step, verbatim and unquoted, which the body compiles and matches against the kept stdout with its trailing newline removed."
+        }
+      ],
+      "serves": "The whole of the binding's does clause: \"Match the step's pattern, a regular expression taken as the rest of the step, against the kept stdout without its trailing newline, and require a match or, when the step says does not match, no match.\" \u2014 the second capture supplies the pattern that is the rest of the step, and the first capture supplies the required/negated alternative that decides whether a match or no match is demanded.",
+      "steps": [
+        {
+          "text": "the calculator's output matches ^3$",
+          "captures": [
+            "matches",
+            "^3$"
+          ]
+        },
+        {
+          "text": "the calculator's output matches ^12$",
+          "captures": [
+            "matches",
+            "^12$"
+          ]
+        },
+        {
+          "text": "the calculator's output does not match \\.",
+          "captures": [
+            "does not match",
+            "\\."
+          ]
+        },
+        {
+          "text": "the calculator's output matches ^3\\.5$",
+          "captures": [
+            "matches",
+            "^3\\.5$"
+          ]
+        }
+      ]
+    },
+    "pattern": {
+      "pattern": "^the calculator's output (matches|does not match) (.+)$",
+      "captures": [
+        {
+          "name": "polarity",
+          "means": "The literal word used by the step, either \"matches\" or \"does not match\": it selects whether the body requires a match of the pattern against the kept stdout or requires that there be no match."
+        },
+        {
+          "name": "pattern",
+          "means": "The regular expression taken as the rest of the step, verbatim and unquoted, which the body compiles and matches against the kept stdout with its trailing newline removed."
+        }
+      ],
+      "serves": "The whole of the binding's does clause: \"Match the step's pattern, a regular expression taken as the rest of the step, against the kept stdout without its trailing newline, and require a match or, when the step says does not match, no match.\" \u2014 the second capture supplies the pattern that is the rest of the step, and the first capture supplies the required/negated alternative that decides whether a match or no match is demanded."
+    },
+    "source": "package steps\n\nimport \"fixture/conceptbodiescases/tests/calc/helpers\"\n\n//truebdd:concept then \"output\"\nfunc concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e(state *State, args []string) error {\n\t// What the step asked, read off its captures: the regular expression\n\t// taken as the rest of the step, and whether the step's wording demands\n\t// a match of it or demands that there be none.\n\tpattern, wantMatch, err := helpers.OutputExpectationFromStep(args)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\t// What the calculator printed for the operation, kept by the when step,\n\t// without the trailing newline its declaration prints after the value.\n\tprinted, err := helpers.PrintedOutput(state.Output)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\t// Observe and compare only: the calculator already decided what to\n\t// print, and this step neither halves nor doubles anything to check it.\n\treturn helpers.CheckOutputMatch(printed, pattern, wantMatch)\n}\n\n",
+    "historical_verdict": "pass",
+    "expected_verdict": "pass",
+    "category": "",
+    "reason": "The Then observes the kept output; matches and does not match stay distinct."
+  }
+]

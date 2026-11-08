@@ -8,21 +8,3 @@ func fixLimit(configured int) int {
 
 	return configured
 }
-
-// isGate reports whether a failure of the query skips the item's others.
-func isGate[Q any](gate func(Q) bool, query Q) bool {
-	return gate != nil && gate(query)
-}
-
-// skippedByGate reports a query an earlier failed gate skips, telling onSkip of it.
-func skippedByGate[I, Q any](gateFailed bool, gate func(Q) bool, onSkip func(I, Q), item I, query Q) bool {
-	if !gateFailed || isGate(gate, query) {
-		return false
-	}
-
-	if onSkip != nil {
-		onSkip(item, query)
-	}
-
-	return true
-}

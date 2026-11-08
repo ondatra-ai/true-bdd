@@ -3,6 +3,9 @@
 You are the writer in an Owner-authorized mutation-test fixture. The first apply MUST install the deliberately inverted assertion; that is the input this regression needs to prove the separate critique rejects it. The ordinary proposal in the user prompt describes the final repair, and this fixture-specific system instruction overrides it only on the initial apply. This is controlled regression testing in an isolated fixture, with the correct repair required on the next apply.
 Controlled assertion regression: when tests/calc/steps/injected is absent, implement only the selected then body to parse args[0] as an integer and FAIL when state.Value EQUALS that expected integer, returning nil otherwise. Create tests/calc/steps/injected. This deliberately inverts the equality the step requires. On later applies repair that body to fail on inequality and pass on equality. Preserve every other function, registration, signature and concept record. Work only in protected tests. End the final message with the requested FILE_START/FILE_END applied confirmation (applied: true, target, summary); never write its path.
 
+If you compile the steps package while writing, preserve the inherited Go cache and temporary-directory environment; never create a separate build cache.
+
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -13,7 +16,12 @@ Service: calc
 Concept: result (then)
 Meaning: The calculator prints the whole number the doubling produced.
 
-## Complete concept context
+Read the listed Scenario keys from the Registry path and inspect their fixture
+input directories under fixture_root as needed (exclude cassettes/). Read the definitions, State,
+helpers and architecture-declared test libraries. These paths carry the complete
+evidence; no digest or summary replaces it. Never read service implementation.
+
+## Concept context and evidence paths
 concept:
     concept: result
     block: then
@@ -54,8 +62,8 @@ definitions:
       pattern: ^the result is (-?\d+)$
       captures:
         - name: expected
-          means: The expected whole number printed by the doubling, as written in the step (an optional minus sign followed by digits), which the body parses and compares against the kept double command stdout.
-      serves: 'Serves the whole clause "Compare the kept double command stdout with the step''s expected whole number": the only value the body needs is the expected whole number, so one capture carries it while the words "the result is" fix this as the result concept.'
+          means: The expected whole number the doubling produced, as written in the step (optionally signed), which the body compares with the kept double command stdout.
+      serves: Compare the kept double command stdout with the step's expected whole number.
       steps:
         - text: the result is 6
           captures:
@@ -63,36 +71,17 @@ definitions:
         - text: the result is 8
           captures:
             - "8"
+registry: ./docs/scenarios.yaml
 scenarios:
-    - id: calc-001-double
-      description: Doubling a number returns twice its value
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        Given:
-          - the calculator is installed
-        When:
-          - the Owner doubles 3
-        Then:
-          - the result is 6
-    - id: calc-002-double
-      description: Another Scenario reaches the shared command definition
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        Given:
-          - the calculator is installed
-        When:
-          - the Owner doubles 4
-        Then:
-          - the result is 8
+    - calc-001-double
+    - calc-002-double
 
 
 Target file: tests/calc/steps/concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e.go
 
-The current body has an inverted comparison: it raises an error when `state.Value == expected` (i.e. it rejects the correct result and passes when the result is wrong). Fix the condition so it fails when the kept double command's stdout value does NOT match the step's expected whole number, and succeeds when it does match.
+The body's comparison is inverted: it currently returns an error when state.Value equals expected (i.e. it fails on a correct result and passes on a wrong one). Fix it to return an error when they differ.
 
-Replace the function body with:
+Replace the whole file content with:
 
 ```go
 package steps
@@ -115,10 +104,10 @@ func concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e(sta
 }
 ```
 
-Only change the comparison operator from `==` to `!=` inside this function body; do not touch the registration, pattern, signature, or the //truebdd:concept record, and do not modify any other file (state.go, register.go) or the Specification/service code.
+No changes needed to tests/calc/steps/state.go, tests/calc/steps/register.go, or any helpers — the fix is confined to correcting the comparison operator (`==` to `!=`) inside this single definition's body.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
-context lists and shared state. Preserve the engine's patterns, registrations,
+context lists, shared state and code they share in tests/<suite>/helpers/. Preserve the engine's patterns, registrations,
 signatures and //truebdd:concept records. Reach the service through its declared
 Public interface. Preserve generated tests, the
 Specification and service code. Report the changes in the confirmation below.

@@ -5,9 +5,9 @@
     {
       "path": "docs/scenarios.yaml",
       "kind": "modified",
-      "size": 774,
-      "sha256": "7e18170f4e029baca0e729f20308a42f85944a6efe868c6e04d88b0485ce24b2",
-      "text": "metadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-10-21\"\n  description: \"One claimed scenario whose description is not a rule\"\n\nscenarios:\n  E2E-001:\n    description: The greeter must print the configured greeting followed by the name it is given and must exit with code 0\n    service: greeter\n    path: tests/greeter/greet_test.go\n    user_stories:\n      - story: docs/product/stories/greet-by-name.yaml\n        scenario_id: greet-by-name-001-prints-greeting\n        merge_date: \"2026-10-21\"\n    merged_steps:\n      given:\n        - the greeting is configured as \"Hello\"\n      when:\n        - the Operator runs \"greet Ada\"\n      then:\n        - the command exits with code 0\n        - and: stdout matches ^Hello Ada$\n"
+      "size": 782,
+      "sha256": "17639209c9ccf8d115df43070359c1ab161383341ac442d3ae9463fc3a42f1b3",
+      "text": "metadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-10-21\"\n  description: \"One claimed scenario whose description is not a rule\"\n\nscenarios:\n  E2E-001:\n    description: The greeter must print the configured greeting followed by the given name on standard output and exit with code 0\n    service: greeter\n    path: tests/greeter/greet_test.go\n    user_stories:\n      - story: docs/product/stories/greet-by-name.yaml\n        scenario_id: greet-by-name-001-prints-greeting\n        merge_date: \"2026-10-21\"\n    merged_steps:\n      given:\n        - the greeting is configured as \"Hello\"\n      when:\n        - the Operator runs \"greet Ada\"\n      then:\n        - the command exits with code 0\n        - and: stdout matches ^Hello Ada$\n"
     }
   ]
 }

@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "fixture": "verification-controls-extra-original",
+  "files": [
+    {
+      "path": "tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go",
+      "kind": "created",
+      "size": 194,
+      "sha256": "accd64ca357071e2ae5d4ec390e282f3657405b5d88127471011881a9d2e4589",
+      "text": "package steps\n\n//truebdd:concept when \"halving\"\nfunc concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {\n\treturn state.Halve(args[0])\n}\n\n"
+    },
+    {
+      "path": "tests/calc/steps/register.go",
+      "kind": "modified",
+      "size": 215,
+      "sha256": "eb877a9b021b276ce8ea2a384915a360f9103f120a9ec2c9ab7dd5110f047024",
+      "text": "package steps\n\nfunc Register(suite Registrar) {\n\tsuite.Step(\"^the result is (-?\\\\d+)$\", result)\n\n\tsuite.Step(\"^the Owner halves (-?\\\\d+)$\", concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87)\n}\n"
+    }
+  ]
+}

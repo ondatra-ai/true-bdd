@@ -31,7 +31,7 @@ func DownloadModulesInCache(ctx context.Context, dir, cache string) ([]Module, e
 }
 
 func downloadModules(ctx context.Context, dir string, env shell.Env) ([]Module, error) {
-	result, err := shell.Run(ctx, []string{Bin, modVerb, "download", "-json", "all"}, shell.Options{
+	result, err := shell.Run(ctx, []string{Bin, modVerb, "download", jsonOutputFlag, "all"}, shell.Options{
 		Dir: dir, Group: true, Env: env.Strip("GOFLAGS").Set("GOWORK=off", "GOTOOLCHAIN=local"),
 	})
 	if err != nil {

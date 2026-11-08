@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // engine-model-001-dispatch: A run overriding its validation tier dispatches the turn to that model and logs the change once
 func TestEngineModel001Dispatch(t *testing.T) {
-	s := scenarios.New(t, "engine-model-001-dispatch")
+	s := New(t, "engine-model-001-dispatch")
 	s.Given(`the "engine-model-dispatch" project tree`)
 	s.And(`the "scen-check" checklist is narrowed to its "whether this scenario's description follows the rule-based format" prompt`)
 	s.When(`the System Architect runs "scen check E2E-001 --model high=claude:claude-sonnet-5-5"`)
@@ -41,7 +39,7 @@ func TestEngineModel001Dispatch(t *testing.T) {
 
 // engine-model-002-undeclared: An override of a tier absent from the loaded configuration is refused before any AI turn
 func TestEngineModel002Undeclared(t *testing.T) {
-	s := scenarios.New(t, "engine-model-002-undeclared")
+	s := New(t, "engine-model-002-undeclared")
 	s.Given(`the "engine-model-undeclared" project tree`)
 	s.When(`the System Architect runs "build steps --model coder=claude:claude-sonnet-5-5"`)
 	s.Then(`the command exits with code 1`)
@@ -56,7 +54,7 @@ func TestEngineModel002Undeclared(t *testing.T) {
 
 // engine-model-003-no-colon: An override whose reference has no colon is refused before any AI turn
 func TestEngineModel003NoColon(t *testing.T) {
-	s := scenarios.New(t, "engine-model-003-no-colon")
+	s := New(t, "engine-model-003-no-colon")
 	s.Given(`the "engine-model-no-colon" project tree`)
 	s.When(`the System Architect runs "us refine unused --model high=claude"`)
 	s.Then(`the command exits with code 1`)
@@ -71,7 +69,7 @@ func TestEngineModel003NoColon(t *testing.T) {
 
 // engine-model-004-empty-model: An override whose model is empty is refused before any AI turn
 func TestEngineModel004EmptyModel(t *testing.T) {
-	s := scenarios.New(t, "engine-model-004-empty-model")
+	s := New(t, "engine-model-004-empty-model")
 	s.Given(`the "engine-model-empty-model" project tree`)
 	s.When(`the System Architect runs "us apply unused --model high=claude:"`)
 	s.Then(`the command exits with code 1`)
@@ -86,7 +84,7 @@ func TestEngineModel004EmptyModel(t *testing.T) {
 
 // engine-model-005-unknown-cli: An override naming an unknown AI CLI is refused before any AI turn
 func TestEngineModel005UnknownCli(t *testing.T) {
-	s := scenarios.New(t, "engine-model-005-unknown-cli")
+	s := New(t, "engine-model-005-unknown-cli")
 	s.Given(`the "engine-model-unknown-cli" project tree`)
 	s.When(`the System Architect runs "build code --model high=aider:model"`)
 	s.Then(`the command exits with code 1`)

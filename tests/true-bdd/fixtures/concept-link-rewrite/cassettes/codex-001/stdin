@@ -5,57 +5,47 @@ Edit only the listed working copies. Preserve every unaffected entry.
 For a Story step rewrite, return the complete Story YAML instead of editing
 a document. For document edits return the requested confirmation markers.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
 The Product Owner chose apply at the menu for Story host.
 Approved fix:
-Repair for failed judgement — Item: host (Story), AC-1 "when" step.
+Rewrite the failed when step in the Story so it names the operation the Story and the product actually offer. The product offers one operation, Halve, and states it has no Square operation, so no concept is widened and no concept is added; `docs/product/product.yaml` is left unchanged.
 
-OWNER: Product Owner (Story wording rewrite only). No concept change, no binding change.
+Apply this single edit to `docs/product/stories/host-story.yaml` — in acceptance criterion AC-1, in the `when` block, replace the step text `square six` with `halve six`:
 
-WHY A REWRITE, NOT A CONCEPT CHANGE
-The only failing step is the "when" step "square six". Its kind of use is correct (an action step in the when block), but the operation named is squaring. The product document states: "The calculator offers one operation, Halve, which displays half the entered number. It has no Square operation." So squaring is not an item of the Public interface at all, and the existing concept "halve" ("Halve the entered number once.") must not be widened to admit it, nor may a new "square" concept be added for an operation the product does not offer. Everything else in the Story already describes halving: title "Halve a number", i_want "to halve a number", so_that "I can read its half", AC-1 "The number must be halved", given "six is entered", then "three is displayed" (three is half of six). The step text is the defect; the Story's intent is halving.
+```
+          {
+            "when": [
+              "halve six"
+            ]
+          },
+```
 
-EXACT CHANGE — apply only to the Item (Story `host`), AC-1, when block
+The whole AC-1 steps block after the edit:
 
-File: the Story `host` (no change to ./docs/product/product.yaml)
+```
+        "steps": [
+          {
+            "given": [
+              "six is entered"
+            ]
+          },
+          {
+            "when": [
+              "halve six"
+            ]
+          },
+          {
+            "then": [
+              "three is displayed"
+            ]
+          }
+        ]
+```
 
-Replace:
-        - when:
-            - square six
-
-With:
-        - when:
-            - halve six
-
-Resulting Story after apply (unaffected fields and steps preserved verbatim):
-
-id: host
-title: Halve a number
-as_a: Product Owner
-i_want: to halve a number
-so_that: I can read its half
-status: DRAFT
-acceptance_criteria:
-    - id: AC-1
-      description: The number must be halved
-      steps:
-        - given:
-            - six is entered
-        - when:
-            - halve six
-        - then:
-            - three is displayed
-
-EFFECT ON JUDGEMENT
-- AC-1 given "six is entered" — unchanged; stays linked to "number ready".
-- AC-1 when "halve six" — becomes a plain instance of the existing concept "halve" ("Halve the entered number once."): a single halving of the entered number, scoring at or above the threshold of 9.
-- AC-1 then "three is displayed" — unchanged; stays linked to "number result".
-
-CONCEPTS: unchanged. ./docs/product/product.yaml is not modified — "number ready", "halve" and "number result" keep their current concept, means and terms.
-
-Nothing has been applied. Awaiting an explicit menu decision from the Product Owner.
+Change nothing else: the given step `six is entered` keeps its link to concept `number ready`, the then step `three is displayed` keeps its link to concept `number result`, and the Story's id, title, as_a, i_want, so_that, status and the AC-1 description `The number must be halved` all stay as they are. After the edit the when step `halve six` is a plain instance of the `when` concept `halve` ("Halve the entered number once."), and the step now agrees with the Story's title `Halve a number`, its i_want `to halve a number`, the AC-1 description `The number must be halved`, and the then step, since three is half of six.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

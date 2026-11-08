@@ -56,7 +56,7 @@ func TestScenarioRegistryPullsTheBDDGates(t *testing.T) {
 
 	got := names(gates.Select([]string{registry}))
 
-	for _, want := range []string{"BDD cli coverage guards", lintGate} {
+	for _, want := range []string{"Generated BDD suite", lintGate} {
 		if !slices.Contains(got, want) {
 			t.Errorf("a diff to the registry did not select %q; got %v", want, got)
 		}

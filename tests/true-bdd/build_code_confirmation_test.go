@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // build-code-confirmation-001-passes: A completed writer response without confirmation preserves its repair, warns once and reruns the set to convergence
 func TestBuildCodeConfirmation001Passes(t *testing.T) {
-	s := scenarios.New(t, "build-code-confirmation-001-passes")
+	s := New(t, "build-code-confirmation-001-passes")
 	s.Given(`the "build-code-no-confirmation-passes" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -45,7 +43,7 @@ func TestBuildCodeConfirmation001Passes(t *testing.T) {
 
 // build-code-confirmation-002-retries: A missing confirmation with failures remaining replans only the remaining tests
 func TestBuildCodeConfirmation002Retries(t *testing.T) {
-	s := scenarios.New(t, "build-code-confirmation-002-retries")
+	s := New(t, "build-code-confirmation-002-retries")
 	s.Given(`the "build-code-no-confirmation-retries" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -66,25 +64,25 @@ func TestBuildCodeConfirmation002Retries(t *testing.T) {
 	s.Done()
 }
 
-// build-code-confirmation-003-bound: Missing confirmations consume the same allowance and rerun the terminal repair before the non-converging bound even when it passes
+// build-code-confirmation-003-bound: Missing confirmations consume the configured allowance and a failed final rerun stops before another fix
 func TestBuildCodeConfirmation003Bound(t *testing.T) {
-	s := scenarios.New(t, "build-code-confirmation-003-bound")
+	s := New(t, "build-code-confirmation-003-bound")
 	s.Given(`the "build-code-no-confirmation-bound" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=WARN msg="Writer confirmation missing".*apply-failing-set-iter1-result.yaml`)
-	s.And(`the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "level":"WARN","msg":"Writer confirmation missing"`)
+	s.And(`the file matching "tmp/true-bdd.log.json" has exactly 2 matches for "level":"WARN","msg":"Writer confirmation missing"`)
 	s.And(`the engine dispatched no validation AI turns to "claude"`)
-	s.And(`the engine dispatched 3 fix AI turns to "claude"`)
-	s.And(`the engine dispatched 3 apply AI turns to "codex"`)
-	s.And(`the engine spawned exactly 4 test runners`)
+	s.And(`the engine dispatched 2 fix AI turns to "claude"`)
+	s.And(`the engine dispatched 2 apply AI turns to "codex"`)
+	s.And(`the engine spawned exactly 3 test runners`)
 	s.And(`the file "services/calc/calc.go" is modified`)
 	s.And(`the file "tests/suite/calc_test.go" is unchanged`)
-	s.And(`stdout matches level=ERROR msg="Walk stopped".*gave up after 3 applied fix`)
+	s.And(`stdout matches level=ERROR msg="Walk stopped".*gave up after 2 applied fix`)
 	s.And(`the file "services/calc/prepared.txt" matches ^prepared`)
 	s.And(`every file matching "tmp/*/*fix-iter1-user.txt" matches TestB`)
 	s.And(`every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA`)
-	s.And(`the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0`)
+	s.And(`the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 1`)
 	s.Done()
 }

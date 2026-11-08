@@ -1,1 +1,0 @@
-Updated only services/calc/calc.go so B returns 2. A still returns 1, and prepared.txt remains unchanged.

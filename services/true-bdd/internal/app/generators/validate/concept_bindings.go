@@ -112,7 +112,7 @@ func bindingSchema(linked map[string]linkedBinding) (string, error) {
 	properties := answerSchema{}
 	for key := range linked {
 		properties[key] = requiredObject(answerSchema{"unambiguous": answerSchema{schemaType: "boolean"},
-			schemaReason: answerSchema{schemaType: schemaString, schemaMinLength: 1}})
+			schemaReason: answerSchema{schemaType: schemaString}})
 	}
 
 	encoded, err := json.Marshal(requiredObject(answerSchema{"bindings": requiredObject(properties)}))

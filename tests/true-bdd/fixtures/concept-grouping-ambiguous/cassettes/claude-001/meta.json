@@ -20,17 +20,17 @@
     "stream-json",
     "--verbose",
     "--json-schema",
-    "{\"additionalProperties\":false,\"properties\":{\"assignments\":{\"items\":{\"additionalProperties\":false,\"properties\":{\"concept\":{\"enum\":[\"halve\",\"cut\"],\"type\":\"string\"},\"index\":{\"type\":\"integer\"},\"runner_up\":{\"enum\":[\"halve\",\"cut\"],\"type\":\"string\"},\"runner_up_score\":{\"maximum\":10,\"minimum\":0,\"type\":\"integer\"},\"score\":{\"maximum\":10,\"minimum\":0,\"type\":\"integer\"}},\"required\":[\"concept\",\"index\",\"runner_up\",\"runner_up_score\",\"score\"],\"type\":\"object\"},\"type\":\"array\"}},\"required\":[\"assignments\"],\"type\":\"object\"}",
+    "{\"additionalProperties\":false,\"properties\":{\"assignments\":{\"items\":{\"additionalProperties\":false,\"properties\":{\"concept\":{\"enum\":[\"halve\",\"cut\"],\"type\":\"string\"},\"index\":{\"type\":\"integer\"},\"runner_up\":{\"enum\":[\"halve\",\"cut\"],\"type\":\"string\"},\"runner_up_score\":{\"type\":\"integer\"},\"score\":{\"type\":\"integer\"}},\"required\":[\"concept\",\"index\",\"runner_up\",\"runner_up_score\",\"score\"],\"type\":\"object\"},\"type\":\"array\"}},\"required\":[\"assignments\"],\"type\":\"object\"}",
     "-p",
     "{\n  \"suite\": \"tests/calc-when-1\",\n  \"service\": \"calc\",\n  \"product\": \"{\\n  \\\"roles\\\": [\\n    {\\n      \\\"name\\\": \\\"Owner\\\",\\n      \\\"description\\\": \\\"Uses the calculator.\\\"\\n    }\\n  ],\\n  \\\"concepts\\\": {\\n    \\\"when\\\": [\\n      {\\n        \\\"concept\\\": \\\"halve\\\",\\n        \\\"means\\\": \\\"Press Halve once to halve the entered number.\\\",\\n        \\\"terms\\\": []\\n      },\\n      {\\n        \\\"concept\\\": \\\"cut\\\",\\n        \\\"means\\\": \\\"Press Halve once to halve the entered number.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ]\\n  },\\n  \\\"glossary\\\": []\\n}\\n\",\n  \"steps\": [\n    {\n      \"key\": \"1\",\n      \"block\": \"when\",\n      \"text\": \"Press Halve once to halve the entered number.\"\n    }\n  ]\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 5878,
-  "request_hash": "sha256:6b08efe2b6bc5af406ab1f6dedc376b4baac63d0b7285164080b7ce35f58a86e",
+  "duration_ms": 6086,
+  "request_hash": "sha256:1e11432125dfa8a6fe272142a987bbd11d0a212978e950e4ad7201207c596ba1",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-10-30T01:12:38Z"
+  "recorded_at": "2026-11-05T16:51:53Z"
 }

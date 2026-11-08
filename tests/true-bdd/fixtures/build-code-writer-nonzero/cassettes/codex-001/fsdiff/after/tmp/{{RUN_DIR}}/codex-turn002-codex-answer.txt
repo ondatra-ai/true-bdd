@@ -1,1 +1,1 @@
-Updated only `services/calc/calc.go`: `A()` returns undefined `closureGlossary`, and `B()` returns `0`. The file is gofmt-clean and intentionally retains the required build failure.
+Updated only `services/calc/calc.go`: `A()` returns undefined `closureGlossary`, and `B()` remains `0`, as required for this stage. The patch tool failed; the shell edit succeeded and was verified.

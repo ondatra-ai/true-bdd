@@ -2,17 +2,14 @@ package steps
 
 import (
 	"errors"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 	"os"
 	"path/filepath"
 	"syscall"
 	"time"
-
-	"github.com/ondatra-ai/true-bdd/pkg/cli"
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
 )
 
-func registerIOHoldSteps(suite *bddgo.Suite[State]) {
+func registerIOHoldSteps(suite testkit.StepRegistrar[State]) {
 	suite.Step(
 		`^the System Architect runs "([^"]+)" while a "(exclusive|shared)" hold blocks "([^"]+)" beyond its wait limit$`,
 		runWithHoldExpiry)
@@ -63,7 +60,7 @@ func runWithHold(state *State, args []string) error {
 			return state.fail("take hold: %w", err)
 		}
 
-		err = disk.Write(filepath.Join(root, "tmp/hold-continue"), []byte("continue\n"), disk.Shared)
+		err = testkit.Write(filepath.Join(root, "tmp/hold-continue"), []byte("continue\n"), testkit.Shared)
 		if err != nil {
 			return state.fail("release launch barrier: %w", err)
 		}
@@ -101,12 +98,12 @@ func observeHold(state *State, ended <-chan struct{}, effect string) error {
 
 //truebdd:concept given "machine environment"
 func poisonGitEnvironment(state *State, _ []string) error {
-	realGo, err := cli.Find("go")
+	realGo, err := testkit.FindCLI("go")
 	if err != nil {
 		return state.fail("find genuine Go: %w", err)
 	}
 
-	state.Proxy.Env = append(state.Proxy.Env,
+	state.SetEnv(
 		"GIT_DIR=/outside/nonexistent-git", "GIT_INDEX_FILE=/outside/index", "TRUE_BDD_REAL_GO="+realGo)
 
 	return nil

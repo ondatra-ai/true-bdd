@@ -12,7 +12,7 @@ architecture:
     service: calc
     references:
     - command: halve
-    does: Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result.
+    does: Run go run ./services/calc halve VALUE from the host root, passing the step's whole number as the single value argument, including its leading minus sign for a negative number (for example, -7); no -- separator is needed. Keep its integer stdout as the result.
   - concept: result
     block: then
     service: calc

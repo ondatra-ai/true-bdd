@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===
 applied: true
 target: "product"
-summary: "Added the halving printing variation to result, preserving its means and every unaffected entry."
+summary: "Added the halving outcome to result.variations, preserving means and all other content exactly. Verification passed; file discovery and tool cache operations reported sandbox errors."
 === FILE_END: tmp/{{RUN_DIR}}/apply-host-iter1-result.yaml ===

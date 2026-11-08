@@ -1,6 +1,7 @@
 package story
 
 import (
+	"errors"
 	"fmt"
 
 	"gopkg.in/yaml.v3"
@@ -76,6 +77,9 @@ func (s StepStatement) MarshalYAML() (interface{}, error) {
 	}, nil
 }
 
+// ErrUnknownStoryStepKey refuses a step outside the three Story blocks.
+var ErrUnknownStoryStepKey = errors.New("unknown Story step key")
+
 // ScenarioStep represents a single step in a Gherkin scenario
 // Each Given/When/Then is an array of statements.
 type ScenarioStep struct {
@@ -90,6 +94,13 @@ type ScenarioStep struct {
 func (s *ScenarioStep) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind == yaml.MappingNode {
 		for index := 1; index < len(node.Content); index += yamlMappingNodeContentSize {
+			key := node.Content[index-1].Value
+			switch key {
+			case "given", "when", "then":
+			default:
+				return fmt.Errorf("%w: %s (expected given, when or then)", ErrUnknownStoryStepKey, key)
+			}
+
 			value := node.Content[index]
 			if value.Kind == yaml.SequenceNode || value.Tag == "!!null" {
 				continue

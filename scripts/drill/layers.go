@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
@@ -23,7 +22,8 @@ func kept(path string, documents map[string]bool) bool {
 		return true
 	}
 
-	for _, root := range []string{"docs/product/", "true-bdd/", "templates/", "pkg/", "scripts/", "tests/true-bdd/"} {
+	for _, root := range []string{"docs/product/", "true-bdd/", "templates/", "pkg/", "utilities/",
+		"scripts/", "tests/true-bdd/"} {
 		if strings.HasPrefix(path, root) {
 			return true
 		}
@@ -42,11 +42,11 @@ func kept(path string, documents map[string]bool) bool {
 	return false
 }
 
-func keptInCut(cut, path string, data []byte, documents map[string]bool) bool {
-	return documents[path] || (kept(path, documents) && !removed(cut, path, data))
+func keptInCut(cut, path string, documents map[string]bool) bool {
+	return documents[path] || (kept(path, documents) && !removed(cut, path))
 }
 
-func removed(cut, path string, data []byte) bool {
+func removed(cut, path string) bool {
 	if strings.HasPrefix(path, "services/true-bdd/") {
 		return true
 	}
@@ -55,12 +55,7 @@ func removed(cut, path string, data []byte) bool {
 		return false
 	}
 
-	if strings.HasPrefix(path, "tests/true-bdd/steps/") {
-		return true
-	}
-
-	if filepath.Dir(path) == "tests/true-bdd" && strings.HasSuffix(path,
-		"_test.go") && regexp.MustCompile(`(?m)^// Code generated[^\n]*`).Match(data) {
+	if strings.HasPrefix(path, "tests/true-bdd/") && !strings.HasPrefix(path, "tests/true-bdd/fixtures/") {
 		return true
 	}
 
@@ -124,7 +119,7 @@ func exportEntry(directory, cut string, header *tar.Header, reader io.Reader, do
 		return fmt.Errorf("reading archive entry: %w", err)
 	}
 
-	if cut != "" && !keptInCut(cut, header.Name, data, documents) {
+	if cut != "" && !keptInCut(cut, header.Name, documents) {
 		return nil
 	}
 

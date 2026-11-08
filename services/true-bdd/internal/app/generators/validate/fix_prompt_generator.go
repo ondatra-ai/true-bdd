@@ -24,24 +24,39 @@ import (
 
 // FixPromptData represents data needed for fix prompt generation templates.
 type FixPromptData struct {
-	WriteRoots  []string
-	Subject     any
-	SubjectID   string
-	FailedCheck checklist.ValidationResult
-	ResultPath  string
-	UserAnswers map[string]string // Answers from user (nil if first iteration)
-	Iteration   int               // Current iteration number
-	DocPaths    map[string]string // Maps doc key to file path (e.g., "product" -> "docs/product/product.yaml")
+	StepArguments string
+	WriteRoots    []string
+	Subject       any
+	SubjectID     string
+	FailedCheck   checklist.ValidationResult
+	ResultPath    string
+	UserAnswers   map[string]string // Answers from user (nil if first iteration)
+	Iteration     int               // Current iteration number
+	DocPaths      map[string]string // Maps doc key to file path (e.g., "product" -> "docs/product/product.yaml")
 	// Structured is true when the resolved CLI enforces a result schema.
 	Structured bool
 }
 
-// fixResultSchema mirrors checklist.GenerateResult: exactly one of the two
-// branches carries content, which the engine re-checks after decoding.
+// fixResultSchema offers a plan, clarification questions or a cannot-fix outcome.
 const fixResultSchema = `{
   "type": "object",
   "properties": {
     "fix_prompt": {"type": "string"},
+    "cannot_fix": {
+      "type": ["object", "null"],
+      "description": "Fix only what the failed check found; ` +
+	`a problem it did not find is neither yours to fix nor a reason for cannot_fix. ` +
+	`Null when fixable; only if the Specification and your permitted paths leave no way to make this fix, ` +
+	`change nothing and return cannot_fix with nonblank reason (why) and correction (what a person must correct), ` +
+	`fix_prompt empty and questions []; a failure of your own tools, sandbox or test run is no reason for cannot_fix: ` +
+	`make the fix and report that failure in summary.",
+      "properties": {
+        "reason": {"type":"string"},
+        "correction": {"type":"string"}
+      },
+      "required": ["reason", "correction"],
+      "additionalProperties": false
+    },
     "questions": {
       "type": "array",
       "items": {
@@ -57,7 +72,7 @@ const fixResultSchema = `{
       }
     }
   },
-  "required": ["fix_prompt", "questions"],
+  "required": ["fix_prompt", "questions", "cannot_fix"],
   "additionalProperties": false
 }`
 
@@ -73,7 +88,11 @@ type GenerateParams struct {
 
 // FixPromptGenerator generates complete, actionable fix prompts for failed checklist validations.
 type FixPromptGenerator struct {
+	stepArgumentSource
+
 	impossibleReport bool
+	readRoots        []string
+	libraryReadRoots []string
 	writeRoots       []string
 	aiClient         ports.AIPort
 	config           *config.ViperConfig
@@ -114,13 +133,18 @@ func NewFixPromptGeneratorWithPaths(
 	}
 }
 
+// UseEvidenceReadRoots confines body proposals to Specification, suite and declared libraries.
+func (g *FixPromptGenerator) UseEvidenceReadRoots(roots, libraries []string) {
+	g.readRoots, g.libraryReadRoots = roots, libraries
+}
+
 // UseImpossibleReport enables the build-code impossibility verdict.
 func (g *FixPromptGenerator) UseImpossibleReport(roots []string) {
 	g.impossibleReport = true
 	g.writeRoots = roots
 }
 
-// Generate returns a plan or questions, or stops on a build-code impossibility verdict.
+// Generate returns a plan or questions, or stops on a cannot-fix outcome.
 func (g *FixPromptGenerator) Generate(
 	ctx context.Context,
 	params GenerateParams,
@@ -222,6 +246,16 @@ func (g *FixPromptGenerator) executeAIGeneration(
 
 	promptData.Structured = ai.SupportsResultSchema(model.CLI)
 
+	reference := promptData.DocPaths[docs.KeyArchitectureYAML]
+	if reference == "" {
+		reference = specificationArchitectureReference(promptData.Subject)
+	}
+
+	promptData.StepArguments, err = g.evidence(g.config, reference)
+	if err != nil {
+		return "", false, err
+	}
+
 	systemPrompt, err := g.systemLoader.LoadTemplate(promptData)
 	if err != nil {
 		return "", false, pkgerrors.ErrLoadChecklistSystemPromptFailed(err)
@@ -232,11 +266,17 @@ func (g *FixPromptGenerator) executeAIGeneration(
 		return "", false, pkgerrors.ErrLoadChecklistUserPromptFailed(err)
 	}
 
+	if !promptData.Structured {
+		systemPrompt += cannotFixInstruction
+	}
+
 	suffix := fmt.Sprintf("fix-iter%d", iteration)
 	g.savePromptFile(params.TmpDir, params.SubjectID, promptIndex, suffix+"-system", systemPrompt)
 	g.savePromptFile(params.TmpDir, params.SubjectID, promptIndex, suffix+"-user", userPrompt)
 
 	mode := g.modeFactory.GetThinkMode()
+	mode.ReadRoots = g.readRoots
+	mode.LibraryReadRoots = g.libraryReadRoots
 
 	schema := ""
 	if promptData.Structured {
@@ -260,6 +300,13 @@ func (g *FixPromptGenerator) parseAndSaveResponse(
 ) (checklist.GenerateResult, error) {
 	if structured {
 		return g.decodeStructuredResult(response, resultPath)
+	}
+
+	outcomeErr := cannotFixFromContent(g.extractFixPrompt(response, resultPath), g.impossibleReport)
+	if outcomeErr != nil {
+		g.saveFixPrompt(resultPath, response)
+
+		return checklist.GenerateResult{}, outcomeErr
 	}
 
 	if g.hasQuestions(response) {
@@ -299,7 +346,7 @@ func (g *FixPromptGenerator) saveFixPrompt(resultPath, fixPrompt string) {
 	}
 }
 
-// decodeStructuredResult reads a plan, questions or build-code impossibility verdict.
+// decodeStructuredResult reads all F outcomes, including build-code impossibility.
 func (g *FixPromptGenerator) decodeStructuredResult(
 	response, resultPath string,
 ) (checklist.GenerateResult, error) {
@@ -316,10 +363,23 @@ func (g *FixPromptGenerator) decodeStructuredResult(
 		return checklist.GenerateResult{}, pkgerrors.ErrFixGeneratorQuestionsDidNotParse(err)
 	}
 
+	outcomeErr := cannotFixFromContent(response, g.impossibleReport)
+	if errors.Is(outcomeErr, pkgerrors.ErrCannotFixMalformed) {
+		g.saveFixPrompt(resultPath, response)
+
+		return checklist.GenerateResult{}, outcomeErr
+	}
+
 	if g.impossibleReport && len(decoded.Impossible) > 0 {
 		g.saveFixPrompt(resultPath, response)
 
-		return checklist.GenerateResult{}, pkgerrors.ImpossibleWork(decoded.Impossible)
+		return checklist.GenerateResult{}, errors.Join(pkgerrors.ImpossibleWork(decoded.Impossible), outcomeErr)
+	}
+
+	if outcomeErr != nil {
+		g.saveFixPrompt(resultPath, response)
+
+		return checklist.GenerateResult{}, outcomeErr
 	}
 
 	fixPrompt := strings.TrimSpace(decoded.FixPrompt)
@@ -433,6 +493,6 @@ func (g *FixPromptGenerator) resultSchema() string {
 
 	schema := strings.Replace(fixResultSchema, `"fix_prompt": {"type": "string"},`, impossibleProperty, 1)
 
-	return strings.Replace(schema, `"required": ["fix_prompt", "questions"]`,
-		`"required": ["fix_prompt", "questions", "impossible"]`, 1)
+	return strings.Replace(schema, `"required": ["fix_prompt", "questions", "cannot_fix"]`,
+		`"required": ["fix_prompt", "questions", "cannot_fix", "impossible"]`, 1)
 }

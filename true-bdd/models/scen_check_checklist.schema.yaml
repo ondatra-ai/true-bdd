@@ -1,0 +1,79 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+type: object
+properties:
+  Question: &id001
+    type: string
+  StepArguments: *id001
+  Rationale: *id001
+  ResultPath: *id001
+  FixTemplate: *id001
+  Docs:
+    type: object
+    additionalProperties:
+      $ref: '#/$defs/doc'
+  Structured:
+    type: boolean
+  Subject:
+    type: object
+    properties:
+      ID: *id001
+      Description: *id001
+      Service: *id001
+      Path: *id001
+      Steps:
+        $ref: '#/$defs/merged_steps'
+      UserStories:
+        type: array
+        items:
+          $ref: '#/$defs/story_ref'
+    required:
+    - ID
+    - Description
+    - Service
+    - Path
+    - Steps
+    - UserStories
+    additionalProperties: false
+required:
+- Question
+- Rationale
+- ResultPath
+- FixTemplate
+- Docs
+- Structured
+- Subject
+additionalProperties: false
+$defs:
+  doc:
+    type: object
+    properties:
+      FilePath: *id001
+    required:
+    - FilePath
+    additionalProperties: false
+  merged_steps:
+    type: object
+    properties:
+      Given:
+        type: array
+        items: *id001
+      When:
+        type: array
+        items: *id001
+      Then:
+        type: array
+        items: *id001
+    required:
+    - Given
+    - When
+    - Then
+    additionalProperties: false
+  story_ref:
+    type: object
+    properties:
+      Story: *id001
+      ScenarioID: *id001
+    required:
+    - Story
+    - ScenarioID
+    additionalProperties: false

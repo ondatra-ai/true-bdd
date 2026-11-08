@@ -38,7 +38,7 @@ story:
                 - but: stdout does not match Hit max apply attempts
                 - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
                 - and: 'the file "docs/scenarios.yaml" matches (?m)^      then:$'
-                - and: the engine dispatched 5 AI turns
+                - and: the engine dispatched 6 AI turns
         - id: 002-description-qualifier-replaced
           description: '`scen check --fix` must replace a forbidden qualifier in a Scenario''s description with the measurable criterion its steps state, in that Scenario''s entry in the Registry, and pass the re-walk'
           steps:
@@ -57,7 +57,7 @@ story:
                 - but: stdout does not match Hit max apply attempts
                 - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
                 - and: 'the file "docs/scenarios.yaml" matches (?m)^    description: [^\n]*\b100\b'
-                - and: the engine dispatched 5 AI turns
+                - and: the engine dispatched 6 AI turns
         - id: 003-step-qualifier-replaced
           description: '`scen check --fix` must replace a forbidden qualifier in a Scenario''s step with the measurable criterion its description states, in that Scenario''s entry in the Registry, and pass the re-walk'
           steps:
@@ -76,7 +76,7 @@ story:
                 - but: stdout does not match Hit max apply attempts
                 - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
                 - and: 'the file "docs/scenarios.yaml" matches (?m)^ +- [^\n]*exits with code 0[^\n]*\b100\b'
-                - and: the engine dispatched 5 AI turns
+                - and: the engine dispatched 6 AI turns
         - id: 004-forbidden-verb-replaced
           description: '`scen check --fix` must rewrite a Scenario''s step that uses a forbidden action verb with the observable action the product document gives in its place, in that Scenario''s entry in the Registry, and pass the re-walk'
           steps:
@@ -94,7 +94,7 @@ story:
                 - and: stdout matches ALL CHECKS PASSED
                 - but: stdout does not match Hit max apply attempts
                 - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
-                - and: the engine dispatched 5 AI turns
+                - and: the engine dispatched 6 AI turns
         - id: 005-implementation-step-rewritten
           description: '`scen check --fix` must rewrite a Scenario''s step that names an implementation detail as the output a user observes, in that Scenario''s entry in the Registry, and pass the re-walk'
           steps:
@@ -112,7 +112,7 @@ story:
                 - and: stdout matches ALL CHECKS PASSED
                 - but: stdout does not match Hit max apply attempts
                 - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
-                - and: the engine dispatched 5 AI turns
+                - and: the engine dispatched 6 AI turns
         - id: 006-measurable-criterion-added
           description: '`scen check --fix` must ask which measurable criterion a Scenario lacking one asserts, add the criterion the user picks to that Scenario''s entry in the Registry, and pass the re-walk'
           steps:
@@ -131,7 +131,7 @@ story:
                 - and: stdout matches ALL CHECKS PASSED
                 - but: stdout does not match Hit max apply attempts
                 - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
-                - and: the engine dispatched 6 AI turns
+                - and: the engine dispatched 7 AI turns
         - id: 007-subjective-outcome-rewritten
           description: '`scen check --fix` must ask what counts as correct for a Scenario whose outcome is a matter of taste, rewrite the outcome as one a reviewer decides without judgement in that Scenario''s entry in the Registry, and pass the re-walk'
           steps:
@@ -150,4 +150,4 @@ story:
                 - and: stdout matches ALL CHECKS PASSED
                 - but: stdout does not match Hit max apply attempts
                 - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
-                - and: the engine dispatched 6 AI turns
+                - and: the engine dispatched 7 AI turns

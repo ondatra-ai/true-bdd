@@ -5,55 +5,29 @@ Edit only the listed working copies. Preserve every unaffected entry.
 For a Story step rewrite, return the complete Story YAML instead of editing
 a document. For document edits return the requested confirmation markers.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
 The responsible person chose apply at the menu for Scenario alpha.
 Approved fix:
-## Proposed repair for Item `alpha` — widen the `when` concept `halve`
+Owner: Product Owner (concept meaning in the product document).
 
-**Failed judgement:** when step `activate the Halve button once with the keyboard to halve six` reached no concept (score `{"halve": 5}`, threshold 9), because the means of `halve` closes the kind of use to pointer activation only.
+Widen the existing `when` concept `halve` so its means states every variation of use it admits, in closed prose. The public interface item (the single Halve control) and the kind of use (invoking it once to replace the entered number with its half) already exist; keyboard activation is a variation of that same use, and the product description already states that a pointer click and a keyboard activation of this same control must invoke the same halving operation once. Therefore widen `halve` rather than adding a new concept, and leave the Item wording of `alpha` unchanged.
 
-**Owner of this change:** Product Owner (concept wording in the product document).
+Apply this single edit to `./docs/product/product.yaml`, in `concepts.when`, to the concept whose `concept` is `halve`.
 
-**Why widen rather than add a concept or rewrite the step:**
-The Public interface item (the single Halve control) and the kind of use (invoke it once to replace the entered number with its half) already exist in `halve`. The product description states: "The calculator has a single Halve control. A pointer click and a keyboard activation of this same control must invoke the same halving operation once." Keyboard activation is therefore a new *variation* of an existing item and use, not a new item or use. Per policy, a new variation widens the existing concept; the step wording is correct and stays as written.
+Replace this line:
 
-### Exact change — one file only: `docs/product/product.yaml`
-
-Under `concepts` → `when`, in the concept `halve`, replace the `means` value. Nothing else in the file changes: `concept` stays `halve`, `terms` stays `[]`, and the concepts `number ready` (given) and `number result` (then), the `roles`, `glossary` and `description` are untouched.
-
-Before:
-
-```json
-      {
-        "concept": "halve",
         "means": "Invoke the Halve control once by activating its button with a pointer, replacing the entered number with its half.",
-        "terms": []
-      }
-```
 
-After:
+with this line:
 
-```json
-      {
-        "concept": "halve",
-        "means": "Invoke the Halve control once, replacing the entered number with its half. The control is invoked either by activating its button with a pointer or by activating its button with the keyboard; both are the same single invocation of this one control and admit no other way of invoking it.",
-        "terms": []
-      }
-```
+        "means": "Invoke the Halve control once, by activating its button with a pointer or by activating that same button with the keyboard, replacing the entered number with its half. Both ways of activating it invoke one and the same single halving operation.",
 
-### Effect on Item `alpha`
+Change nothing else: keep the concept's `concept` and `terms` as they are, and leave the `given` concept `number ready`, the `then` concept `number result`, the roles, glossary and description untouched.
 
-No change to the Story or Scenario. All three steps stay exactly as written:
-
-- Given: `six is entered` — stays linked to `number ready` (unaffected).
-- When: `activate the Halve button once with the keyboard to halve six` — now an instance of the widened `halve`, since the closed prose admits keyboard activation of the same control as the same single use.
-- Then: `three is displayed` — stays linked to `number result` (unaffected).
-
-### Apply
-
-Nothing has been changed. Apply only on an explicit menu decision by the Product Owner; applying means editing the single `means` string in `docs/product/product.yaml` shown above and leaving the Item untouched.
+After this edit, the when step "activate the Halve button once with the keyboard to halve six" is a plain instance of `halve`, and the given and then steps keep their existing links to `number ready` and `number result`.
 Working copies (edit only the approved target):
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

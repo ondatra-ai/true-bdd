@@ -100,6 +100,24 @@ const AdvisorOff = "CLAUDE_CODE_DISABLE_ADVISOR_TOOL=1"
 
 // Args is the argv this turn spawns, exported so a caller can assert on it.
 func (o Options) Args(prompt string) []string {
+	args, _ := o.command(prompt)
+
+	return args
+}
+
+// Env stamps the history role on and removes CLAUDECODE — removed, not
+// blanked as the other wrappers do, because a nested `claude -p` must look
+// entirely unlaunched-from-a-session.
+func (o Options) Env() shell.Env {
+	env := shell.Inherit().Strip("CLAUDECODE", roleKey).Set(roleKey+"="+o.Role, AdvisorOff)
+	if o.Writer != nil {
+		return writerEnv(env)
+	}
+
+	return env
+}
+
+func (o Options) args() []string {
 	args := make([]string, 0, 18) //nolint:mnd // the longest form: isolation, 7 flag pairs and -p.
 	args = append(args, o.isolationArgs()...)
 
@@ -138,19 +156,7 @@ func (o Options) Args(prompt string) []string {
 
 	// Last, always: everything above has to precede -p or the prompt is read
 	// as the preceding flag's argument.
-	return append(args, "-p", prompt)
-}
-
-// Env stamps the history role on and removes CLAUDECODE — removed, not
-// blanked as the other wrappers do, because a nested `claude -p` must look
-// entirely unlaunched-from-a-session.
-func (o Options) Env() shell.Env {
-	env := shell.Inherit().Strip("CLAUDECODE", roleKey).Set(roleKey+"="+o.Role, AdvisorOff)
-	if o.Writer != nil {
-		return writerEnv(env)
-	}
-
-	return env
+	return append(args, "-p")
 }
 
 // diagnosticLimit is how much of a failed turn's output is quoted back.
@@ -158,11 +164,9 @@ const diagnosticLimit = 600
 
 // Run performs one headless turn and returns its stdout.
 func Run(prompt string, opts Options) (string, error) {
-	result, err := shell.Run(context.Background(), append([]string{Bin}, opts.Args(prompt)...), shell.Options{
-		Dir:     opts.Dir,
-		Env:     opts.Env(),
-		Timeout: opts.Timeout,
-	})
+	args, options := opts.command(prompt)
+
+	result, err := shell.Run(context.Background(), append([]string{Bin}, args...), options)
 	if err != nil {
 		if errors.Is(err, shell.ErrTimeout) {
 			return "", fmt.Errorf("%w after %s", ErrTimeout, opts.Timeout)

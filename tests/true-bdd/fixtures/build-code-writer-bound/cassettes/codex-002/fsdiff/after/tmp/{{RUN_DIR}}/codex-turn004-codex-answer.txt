@@ -1,1 +1,3 @@
-Created services/calc/prepared.txt containing `prepared` followed by a newline. Left calc.go unchanged: A returns 1 and B returns 0, completing only the required preparation stage.
+Created services/calc/prepared.txt containing `prepared` followed by a newline. Left calc.go unchanged: A returns 1 and B returns 0.
+
+Verified the file contents. The patch tool failed, so I used a shell write; Git status was unavailable.

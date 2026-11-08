@@ -4,10 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 	"path/filepath"
 	"strings"
-
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
 )
 
 // guardDenyExitCode is claude's hook contract: 0 lets the tool run, 2
@@ -21,7 +20,7 @@ const unreadablePolicy = "write_roots: tests"
 // whose own path lies outside the project tree.
 var ErrLinkEscapesTree = errors.New("the link must be a path inside the project tree")
 
-func registerGuardSteps(suite *bddgo.Suite[State]) {
+func registerGuardSteps(suite testkit.StepRegistrar[State]) {
 	suite.Step(`^the project tree's "([^"]+)" is a symbolic link to "([^"]+)"$`, plantLink)
 	suite.Step(`^the guard allows the tool call$`, assertGuardAllows)
 	suite.Step(`^the guard denies the tool call$`, assertGuardDenies)

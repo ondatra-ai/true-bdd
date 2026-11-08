@@ -48,12 +48,15 @@ type PlannedScenario struct {
 
 // PlannedFile is one generated file and everything it needs to render.
 type PlannedFile struct {
+	Source []byte
+	// Service selects the architecture service whose Scenarios the suite runs.
+	Service string
 	// Path is repo-relative, as the scenarios' `path:` states it.
 	Path string
 	// Package is the file's package clause, derived from the suite name.
 	Package string
-	// ScenariosPkg is the import path of the suite's scenarios shim.
-	ScenariosPkg string
+	// SuiteImportPath is the import path of the tests' own suite package.
+	SuiteImportPath string
 	// RegistryPath is quoted into the header so a reader of a generated
 	// file knows which document to edit.
 	RegistryPath string
@@ -63,7 +66,10 @@ type PlannedFile struct {
 
 // Plan is every file one registry renders into, in path order.
 type Plan struct {
-	Files []PlannedFile
+	RecordExclude []string
+	Services      []architecture.Service
+	Testkit       *architecture.Testkit
+	Files         []PlannedFile
 }
 
 // BuildPlan groups scenarios by `path:`, resolves each one's owning suite,
@@ -107,7 +113,10 @@ func BuildPlan(
 
 	sort.Strings(order)
 
-	plan := &Plan{Files: make([]PlannedFile, 0, len(order))}
+	plan := &Plan{
+		RecordExclude: arch.Testing.Commands.RecordExclude, Services: arch.Services,
+		Testkit: arch.Testing.Testkit, Files: make([]PlannedFile, 0, len(order)),
+	}
 
 	for _, filePath := range order {
 		file, fileErr := planFile(filePath, grouped[filePath], arch, repoRoot, registryPath)
@@ -165,7 +174,7 @@ func planFile(
 	// It was a suite field; the scenario has always carried the same value.
 	suiteRoot := path.Dir(filepath.ToSlash(filePath))
 
-	scenariosPkg, err := scenariosImportPath(repoRoot, suiteRoot)
+	suiteImport, err := suiteImportPath(repoRoot, suiteRoot)
 	if err != nil {
 		return PlannedFile{}, fmt.Errorf("%s: %w", filePath, err)
 	}
@@ -193,11 +202,12 @@ func planFile(
 	}
 
 	return PlannedFile{
-		Path:         filePath,
-		Package:      pkg,
-		ScenariosPkg: scenariosPkg,
-		RegistryPath: headerRegistryPath(repoRoot, registryPath),
-		Scenarios:    planned,
+		Service:         scenarios[0].Service,
+		Path:            filePath,
+		Package:         pkg,
+		SuiteImportPath: suiteImport,
+		RegistryPath:    headerRegistryPath(repoRoot, registryPath),
+		Scenarios:       planned,
 	}, nil
 }
 
@@ -290,7 +300,7 @@ func checkPath(scenario *registry.RegistryScenario) error {
 }
 
 // checkOneRootPerService refuses a service whose scenarios span two
-// directories: the package clause and scenarios import derive from that
+// directories: the package clause and suite import derive from that
 // directory, so two roots is two packages claiming one service's state.
 func checkOneRootPerService(scenarios []*registry.RegistryScenario) error {
 	roots := map[string]*registry.RegistryScenario{}

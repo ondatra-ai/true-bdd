@@ -20,17 +20,17 @@
     "stream-json",
     "--verbose",
     "--json-schema",
-    "{\"additionalProperties\":false,\"properties\":{\"concepts\":{\"additionalProperties\":false,\"properties\":{\"then:number result\":{\"additionalProperties\":false,\"properties\":{\"reason\":{\"minLength\":1,\"type\":\"string\"},\"undeclared_words\":{\"items\":{\"minLength\":1,\"type\":\"string\"},\"type\":\"array\",\"uniqueItems\":true}},\"required\":[\"reason\",\"undeclared_words\"],\"type\":\"object\"}},\"required\":[\"then:number result\"],\"type\":\"object\"}},\"required\":[\"concepts\"],\"type\":\"object\"}",
+    "{\"additionalProperties\":false,\"properties\":{\"concepts\":{\"additionalProperties\":false,\"properties\":{\"then:number result\":{\"additionalProperties\":false,\"properties\":{\"reason\":{\"type\":\"string\"},\"undeclared_words\":{\"items\":{\"type\":\"string\"},\"type\":\"array\"}},\"required\":[\"reason\",\"undeclared_words\"],\"type\":\"object\"}},\"required\":[\"then:number result\"],\"type\":\"object\"}},\"required\":[\"concepts\"],\"type\":\"object\"}",
     "-p",
     "{\n  \"product\": \"{\\n  \\\"roles\\\": [\\n    {\\n      \\\"name\\\": \\\"Product Owner\\\",\\n      \\\"description\\\": \\\"Owns meanings.\\\"\\n    }\\n  ],\\n  \\\"concepts\\\": {\\n    \\\"given\\\": [\\n      {\\n        \\\"concept\\\": \\\"number ready\\\",\\n        \\\"means\\\": \\\"An even whole number, written using digits, is entered before the action.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ],\\n    \\\"when\\\": [\\n      {\\n        \\\"concept\\\": \\\"halve\\\",\\n        \\\"means\\\": \\\"Halve the entered number once.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ],\\n    \\\"then\\\": [\\n      {\\n        \\\"concept\\\": \\\"number result\\\",\\n        \\\"means\\\": \\\"Compare the displayed number with an expected value written using digits.\\\",\\n        \\\"terms\\\": []\\n      }\\n    ]\\n  },\\n  \\\"glossary\\\": [],\\n  \\\"description\\\": \\\"This calculator accepts only even whole numbers. Halve divides the entered number by two and displays its integer half in Number.\\\"\\n}\\n\",\n  \"concepts\": {\n    \"then:number result\": {\n      \"Name\": \"number result\",\n      \"Means\": \"Compare the displayed number with an expected value written using digits.\",\n      \"Terms\": [],\n      \"Block\": \"then\"\n    }\n  }\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 8738,
-  "request_hash": "sha256:bff6b3a80cdc5c1037e152ee8d3a473a1aab868521d45ad6b0ff3d11917efd1a",
+  "duration_ms": 6800,
+  "request_hash": "sha256:f578f2fea547b49897a974ea2ceeb2175a5235bcf31bd29ccd1b95f3ff6c5f2a",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-10-31T23:49:34Z"
+  "recorded_at": "2026-11-05T17:03:50Z"
 }

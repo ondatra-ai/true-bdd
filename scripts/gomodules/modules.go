@@ -14,8 +14,8 @@ import (
 
 const allPackages = "./..."
 
-// Directories are the three modules checked locally and in CI.
-func Directories() []string { return []string{".", "pkg", "services/true-bdd"} }
+// Directories are the four modules checked locally and in CI.
+func Directories() []string { return []string{".", "pkg", "services/true-bdd", "utilities"} }
 
 // Owner resolves a directory to its repository module; sentinel modules select nothing.
 func Owner(dir string) (string, string, bool) {

@@ -16,7 +16,7 @@
 //
 // TWO TIERS. Run covers the ~30 sites that spawn, wait and read. Start returns
 // a Process for the one that cannot: a byte-exact stdio proxy
-// (pkg/testkit/aiproxy). Its needs are single-site and documented where they
+// (utilities/cliproxy). Its needs are single-site and documented where they
 // are declared.
 //
 // THE ENV DISTINCTION IS LOAD-BEARING. Blank sets a key to empty; Strip

@@ -2,6 +2,7 @@ package steps
 
 import (
 	"fmt"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -10,8 +11,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
 )
 
 // Zero patterns is unbound and two are ambiguous, read from the steps' Go source.
@@ -31,7 +30,7 @@ func assertScenarioStepsMatched(state *State, args []string) error {
 		return err
 	}
 
-	scenarios, err := bddgo.LoadRegistry(registryPath)
+	scenarios, err := testkit.LoadRegistry(registryPath)
 	if err != nil {
 		return state.fail("reading registry %q: %w", registryRel, err)
 	}
@@ -64,11 +63,11 @@ func assertScenarioStepsMatched(state *State, args []string) error {
 // unresolvedSteps reports steps that fail to resolve to exactly one
 // pattern (zero: unbound; many: ambiguous). A model-run (`llm:`/`judge:`)
 // step binds by construction, so it is skipped rather than needing a pattern.
-func unresolvedSteps(scenario bddgo.Scenario, patterns []*regexp.Regexp) []string {
+func unresolvedSteps(scenario testkit.Scenario, patterns []*regexp.Regexp) []string {
 	var unresolved []string
 
 	for _, step := range scenario.Steps {
-		if step.Mode != bddgo.ModeDeterministic {
+		if step.Mode != testkit.ModeDeterministic {
 			continue
 		}
 
@@ -96,14 +95,14 @@ func unresolvedSteps(scenario bddgo.Scenario, patterns []*regexp.Regexp) []strin
 // findScenario returns the scenario with the given id, and whether the
 // registry declared one — an absent scenario is a different failure than
 // one present with an unbound step.
-func findScenario(scenarios []bddgo.Scenario, id string) (bddgo.Scenario, bool) {
+func findScenario(scenarios []testkit.Scenario, id string) (testkit.Scenario, bool) {
 	for _, scenario := range scenarios {
 		if scenario.ID == id {
 			return scenario, true
 		}
 	}
 
-	return bddgo.Scenario{}, false
+	return testkit.Scenario{}, false
 }
 
 // extractStepPatterns reads each `.Step(…)` call's string-literal pattern

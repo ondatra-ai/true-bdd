@@ -9,11 +9,13 @@ import (
 
 // ClaudeGuardPolicy confines the writer's tools; Replay reuses #193's exact check.
 type ClaudeGuardPolicy struct {
-	LibraryCache   string       `json:"library_cache,omitempty"`
-	ProtectedRoots []string     `json:"protected_roots"`
-	Replay         ReplayPolicy `json:"replay"`
-	ReadRoots      []string     `json:"read_roots"`
-	ExcludedRoots  []string     `json:"excluded_roots"`
+	AllowStructuredOutput bool         `json:"allow_structured_output,omitempty"`
+	EvidenceRoots         []string     `json:"evidence_roots,omitempty"`
+	LibraryCache          string       `json:"library_cache,omitempty"`
+	ProtectedRoots        []string     `json:"protected_roots"`
+	Replay                ReplayPolicy `json:"replay"`
+	ReadRoots             []string     `json:"read_roots"`
+	ExcludedRoots         []string     `json:"excluded_roots"`
 }
 
 // DecidePayload judges Claude Code's PreToolUse payload, failing closed.
@@ -31,6 +33,10 @@ func (p ClaudeGuardPolicy) DecidePayload(raw []byte) (bool, string) {
 	}
 	if json.Unmarshal(raw, &payload) != nil || !filepath.IsAbs(p.Replay.ReadRoot) {
 		return false, "invalid claude guard payload or policy"
+	}
+
+	if payload.ToolName == "StructuredOutput" && p.AllowStructuredOutput {
+		return true, ""
 	}
 
 	if payload.ToolName == "Bash" {
@@ -94,7 +100,7 @@ func (p ClaudeGuardPolicy) allowsRead(target string) (bool, string) {
 	}
 
 	// The host remains readable when it is itself inside a module cache.
-	if claudePathWithinRoot(resolved, resolveThroughSymlinks(p.Replay.ReadRoot)) {
+	if len(p.EvidenceRoots) == 0 && claudePathWithinRoot(resolved, resolveThroughSymlinks(p.Replay.ReadRoot)) {
 		return true, ""
 	}
 
@@ -104,7 +110,7 @@ func (p ClaudeGuardPolicy) allowsRead(target string) (bool, string) {
 		}
 	}
 
-	for _, root := range p.ReadRoots {
+	for _, root := range append(append([]string{}, p.ReadRoots...), p.EvidenceRoots...) {
 		if claudePathWithinRoot(resolved, resolveThroughSymlinks(root)) {
 			return true, ""
 		}

@@ -8,15 +8,15 @@ import (
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/pkg/errors"
 )
 
-// ConcurrentWalker validates items in parallel, then repairs in item order.
-// Each apply discards outstanding verdicts and rejudges every item.
+// ConcurrentWalker walks Items concurrently in written order, pausing each at
+// its first fixable failure and repairing in Item order before restarting.
 type ConcurrentWalker[I, Q any] struct {
 	Limit    int
 	MaxFixes int
 	CellFor  func(I, Q) *CellHandler[I, Q]
-	Gate     func(Q) bool
-	OnSkip   func(I, Q)
-	// Waits marks a query that starts only once every item has answered every query before it.
+	// BeforeRecheck invalidates shared verdicts after each apply, keeping the current links.
+	BeforeRecheck func()
+	// Waits marks a query whose predecessors every Item must finish before it starts.
 	Waits func(Q) bool
 	// OnValidate, if non-nil, is told each validation round's items before its first cell.
 	OnValidate func([]I)
@@ -29,10 +29,10 @@ type pendingCell[I, Q any] struct {
 }
 
 type validationRun[I, Q any] struct {
-	run        ItemRun[I]
-	failed     []pendingCell[I, Q]
-	err        error
-	gateFailed bool
+	next   int
+	run    ItemRun[I]
+	failed []pendingCell[I, Q]
+	err    error
 }
 
 func (w *ConcurrentWalker[I, Q]) Walk(ctx context.Context, item I, queries []Q) (ItemRun[I], error) {
@@ -51,14 +51,7 @@ func (w *ConcurrentWalker[I, Q]) WalkItems(
 
 	applied := make([]bool, len(items))
 	for {
-		validated := w.validateItems(ctx, items, queries, onStart)
-
-		err := validationError(validated)
-		if err != nil {
-			return nil, err
-		}
-
-		runs, changed, err := w.repairItems(ctx, validated, counts)
+		runs, changed, err := w.walkRound(ctx, items, queries, onStart, counts)
 		if err != nil {
 			return nil, err
 		}
@@ -113,9 +106,10 @@ func (w *ConcurrentWalker[I, Q]) repairItems(
 	return runs, false, nil
 }
 
-func (w *ConcurrentWalker[I, Q]) validateItems(
-	ctx context.Context, items []I, queries []Q, onStart func(int, int),
-) []validationRun[I, Q] {
+// walkRound retains barriers for shared judgements while allowing independent Item progress.
+func (w *ConcurrentWalker[I, Q]) walkRound(
+	ctx context.Context, items []I, queries []Q, onStart func(int, int), counts map[[2]int]int,
+) ([]ItemRun[I], bool, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -124,30 +118,76 @@ func (w *ConcurrentWalker[I, Q]) validateItems(
 	}
 
 	results := make([]validationRun[I, Q], len(items))
+
+	runs := make([]ItemRun[I], len(items))
 	for index, item := range items {
-		results[index] = validationRun[I, Q]{run: ItemRun[I]{Item: item, Passed: true}}
+		runs[index] = ItemRun[I]{Item: item, Passed: true}
+		results[index].run = runs[index]
 	}
 
-	for number, stage := range w.stages(queries) {
-		if validationError(results) != nil {
-			break
+	for _, stage := range w.stages(queries) {
+		var (
+			changed bool
+			err     error
+		)
+
+		runs, changed, err = w.walkStage(ctx, cancel, items, queries[:stage[1]], stage[0], results, onStart, counts)
+		if err != nil || changed {
+			return runs, changed, err
 		}
 
-		if number > 0 {
-			onStart = nil
+		for _, run := range runs {
+			if run.UserExited {
+				return runs, false, nil
+			}
 		}
 
-		w.validateStage(ctx, cancel, items, queries[:stage[1]], stage[0], results, onStart)
+		onStart = nil
 	}
 
-	return results
+	return runs, false, nil
+}
+
+func (w *ConcurrentWalker[I, Q]) walkStage(
+	ctx context.Context, cancel context.CancelFunc, items []I, queries []Q, begin int,
+	results []validationRun[I, Q], onStart func(int, int), counts map[[2]int]int,
+) ([]ItemRun[I], bool, error) {
+	for {
+		w.validateStage(ctx, cancel, items, queries, begin, results, onStart)
+		onStart = nil
+
+		err := validationError(results)
+		if err != nil {
+			return nil, false, err
+		}
+
+		runs, changed, err := w.repairItems(ctx, results, counts)
+		if err != nil || changed {
+			return runs, changed, err
+		}
+
+		more := false
+
+		for index, run := range runs {
+			if run.UserExited {
+				return runs, false, nil
+			}
+
+			results[index].run, results[index].failed = run, nil
+			more = more || results[index].next < len(queries)
+		}
+
+		if !more {
+			return runs, false, nil
+		}
+	}
 }
 
 // stages splits the queries before every waiting one, as [begin, end) ranges.
 func (w *ConcurrentWalker[I, Q]) stages(queries []Q) [][2]int {
 	stages := make([][2]int, 0, 1)
-	begin := 0
 
+	begin := 0
 	for index, query := range queries {
 		if index > begin && w.Waits != nil && w.Waits(query) {
 			stages = append(stages, [2]int{begin, index})
@@ -192,14 +232,8 @@ func (w *ConcurrentWalker[I, Q]) validateStage(
 func (w *ConcurrentWalker[I, Q]) validate(
 	ctx context.Context, item I, queries []Q, begin int, result *validationRun[I, Q],
 ) {
-	for index := begin; index < len(queries); index++ {
+	for index := max(begin, result.next); index < len(queries); index++ {
 		query := queries[index]
-
-		if skippedByGate(result.gateFailed, w.Gate, w.OnSkip, item, query) {
-			continue
-		}
-
-		gate := isGate(w.Gate, query)
 
 		contextErr := ctx.Err()
 		if contextErr != nil {
@@ -217,11 +251,15 @@ func (w *ConcurrentWalker[I, Q]) validate(
 			return
 		}
 
+		result.next = index + 1
+
 		if !passed {
 			result.run.Passed = false
-			result.gateFailed = result.gateFailed || gate
 
 			result.failed = append(result.failed, pendingCell[I, Q]{index: index, query: query, handler: handler})
+			if handler.FixMode {
+				return
+			}
 		}
 	}
 }
@@ -235,31 +273,57 @@ func (w *ConcurrentWalker[I, Q]) repair(
 			continue
 		}
 
+		var err error
+
+		run, err = w.repairCell(ctx, run, cell, index, counts)
+		if err != nil || run.FixApplied || run.UserExited {
+			return run, err
+		}
+	}
+
+	return run, nil
+}
+
+// repairCell retries the failed Q immediately, then returns to the checklist's start on success.
+func (w *ConcurrentWalker[I, Q]) repairCell(
+	ctx context.Context, run ItemRun[I], cell pendingCell[I, Q], index int, counts map[[2]int]int,
+) (ItemRun[I], error) {
+	key := [2]int{index, cell.index}
+
+	for {
+		if counts[key] >= fixLimit(w.MaxFixes) {
+			return run, pkgerrors.ErrFixLoopNotConverging(counts[key])
+		}
+
 		result, err := cell.handler.runFixLoop(ctx, run.Item, cell.query)
 		if err != nil {
 			return run, err
 		}
 
-		if result.Outcome == CellFixed {
-			key := [2]int{index, cell.index}
+		switch result.Outcome {
+		case CellFixed:
 			counts[key]++
 
-			if counts[key] > fixLimit(w.MaxFixes) {
-				return run, pkgerrors.ErrFixLoopNotConverging(counts[key])
+			run.Item, run.FixApplied = result.Item, true
+
+			if w.BeforeRecheck != nil {
+				w.BeforeRecheck()
 			}
 
-			run.Item = result.Item
-			run.FixApplied = true
+			passed, queryErr := cell.handler.Query(ctx, run.Item, cell.query)
+			if queryErr != nil {
+				return run, queryErr
+			}
 
-			return run, nil
-		}
-
-		if result.Outcome == CellUserExited {
+			if passed {
+				return run, nil
+			}
+		case CellUserExited:
 			run.UserExited = true
 
 			return run, nil
+		case CellPassed, CellFailedNoFix:
+			return run, nil
 		}
 	}
-
-	return run, nil
 }

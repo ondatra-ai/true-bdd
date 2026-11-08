@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // libraries-003-test-only-import-refused: Production code importing a library named only for tests is refused before running tests
 func TestLibraries003TestOnlyImportRefused(t *testing.T) {
-	s := scenarios.New(t, "libraries-003-test-only-import-refused")
+	s := New(t, "libraries-003-test-only-import-refused")
 	s.Given(`the "library-test-only" project tree`)
 	s.When(`the System Architect runs "build code"`)
 	s.Then(`the command exits with code 1`)
@@ -37,7 +35,7 @@ func TestLibraries003TestOnlyImportRefused(t *testing.T) {
 
 // libraries-004-download-fails-before-writer: A failed named library download stops the run before any writer or test runner
 func TestLibraries004DownloadFailsBeforeWriter(t *testing.T) {
-	s := scenarios.New(t, "libraries-004-download-fails-before-writer")
+	s := New(t, "libraries-004-download-fails-before-writer")
 	s.Given(`the "library-download-failed" project tree`)
 	s.And(`library downloads use an empty offline proxy`)
 	s.When(`the System Architect runs "build code --fix"`)

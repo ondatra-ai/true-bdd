@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // public-interface-001-missing: scen check fails a service without a Public interface, naming it without an AI turn
 func TestPublicInterface001Missing(t *testing.T) {
-	s := scenarios.New(t, "public-interface-001-missing")
+	s := New(t, "public-interface-001-missing")
 	s.Given(`the "public-interface-missing" project tree`)
 	s.When(`the System Architect runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -37,7 +35,7 @@ func TestPublicInterface001Missing(t *testing.T) {
 
 // public-interface-002-missing-document: A missing CLI interface document refuses startup before any Scenario or AI turn
 func TestPublicInterface002MissingDocument(t *testing.T) {
-	s := scenarios.New(t, "public-interface-002-missing-document")
+	s := New(t, "public-interface-002-missing-document")
 	s.Given(`the "public-interface-missing-document" project tree`)
 	s.When(`the System Architect runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -51,7 +49,7 @@ func TestPublicInterface002MissingDocument(t *testing.T) {
 
 // public-interface-003-malformed-document: An unparseable CLI interface document refuses startup with its filename and parse error
 func TestPublicInterface003MalformedDocument(t *testing.T) {
-	s := scenarios.New(t, "public-interface-003-malformed-document")
+	s := New(t, "public-interface-003-malformed-document")
 	s.Given(`the "public-interface-malformed-document" project tree`)
 	s.When(`the System Architect runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -67,7 +65,7 @@ func TestPublicInterface003MalformedDocument(t *testing.T) {
 
 // public-interface-004-valid: CLI with named file, log and outgoing call extensions, HTTP and scoped UI declarations pass without AI
 func TestPublicInterface004Valid(t *testing.T) {
-	s := scenarios.New(t, "public-interface-004-valid")
+	s := New(t, "public-interface-004-valid")
 	s.Given(`the "public-interface-valid" project tree`)
 	s.When(`the System Architect runs "scen check"`)
 	s.Then(`the command exits with code 0`)
@@ -81,7 +79,7 @@ func TestPublicInterface004Valid(t *testing.T) {
 
 // public-interface-005-unsupported: Unsupported process kinds are named as not supported yet, and a library is excluded
 func TestPublicInterface005Unsupported(t *testing.T) {
-	s := scenarios.New(t, "public-interface-005-unsupported")
+	s := New(t, "public-interface-005-unsupported")
 	s.Given(`the "public-interface-unsupported" project tree`)
 	s.When(`the System Architect runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -94,7 +92,7 @@ func TestPublicInterface005Unsupported(t *testing.T) {
 
 // public-interface-006-fix: The Public interface fix asks the System Architect and writes only the architecture, preserving the Scenario
 func TestPublicInterface006Fix(t *testing.T) {
-	s := scenarios.New(t, "public-interface-006-fix")
+	s := New(t, "public-interface-006-fix")
 	s.Given(`the "public-interface-fix" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "scen check --fix"`)

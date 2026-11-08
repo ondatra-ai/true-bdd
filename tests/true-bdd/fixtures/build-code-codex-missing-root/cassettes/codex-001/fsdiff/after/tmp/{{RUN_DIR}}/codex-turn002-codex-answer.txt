@@ -1,4 +1,4 @@
-Implemented `A()` returning `1` and `B()` returning `2` in `services/calc/calc.go`. Both tests pass, and formatting is clean.
+Implemented `A()` returning `1` and `B()` returning `2`. The granted test selection passed; formatting is clean. Initial inspection and patch-tool failures were recovered.
 
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-build--iter1-result.yaml ===
 applied: true

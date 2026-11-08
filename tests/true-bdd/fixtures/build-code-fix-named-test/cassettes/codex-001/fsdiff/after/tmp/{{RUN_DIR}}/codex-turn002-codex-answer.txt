@@ -2,5 +2,5 @@
 applied: true
 impossible: []
 target: "services/calc"
-summary: "Changed Add to return a + b and removed obsolete defect commentary. TestAddSumsItsArguments passed using go test -count=1 ./tests/suite/... -run '^TestAddSumsItsArguments$'."
+summary: "Changed Add to return a + b and removed its stale defect comment. TestAddSumsItsArguments passed using the permitted selection command. Patch helper failed; applied the edit directly and verified the source. Git diff was unavailable because the directory is not a Git repository."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===

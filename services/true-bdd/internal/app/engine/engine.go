@@ -163,7 +163,7 @@ func (e *Engine[I, P, Q]) completedWalk(ctx context.Context, summary walkSummary
 	if summary.allPassed && !summary.exit && e.CheckConvergence != nil {
 		passed, err := e.CheckConvergence(ctx, items)
 
-		return Result[I]{Items: items, AllPassed: passed, Reason: Converged}, passed, err
+		return Result[I]{Items: items, AllPassed: passed, Reason: Converged}, passed && !summary.anyFixApplied, err
 	}
 
 	done := terminalResult(summary, items)

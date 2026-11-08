@@ -5,9 +5,9 @@
     {
       "path": "tests/calc/steps/concept08bdc8ba20fbc17f8cbea598ca6da5bdbc121817e637f18277eb83c75896fcf3.go",
       "kind": "created",
-      "size": 614,
-      "sha256": "221d923993ed851030a8783695ceb7556aadfa6e8b7ce44bd5ae257f2619b445",
-      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"os/exec\"\n\t\"path/filepath\"\n)\n\n//truebdd:concept given \"installation\"\nfunc concept08bdc8ba20fbc17f8cbea598ca6da5bdbc121817e637f18277eb83c75896fcf3(state *State, args []string) error {\n\tprogram, err := filepath.Abs(\"../../tmp/calc-program/calc\")\n\tif err != nil {\n\t\treturn fmt.Errorf(\"resolve calculator program path: %w\", err)\n\t}\n\n\tbuild := exec.Command(\"go\", \"build\", \"-o\", program, \"./services/calc\")\n\tbuild.Dir = \"../..\"\n\toutput, err := build.CombinedOutput()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"build calculator: %w: %s\", err, output)\n\t}\n\n\tstate.Program = program\n\treturn nil\n}\n"
+      "size": 380,
+      "sha256": "cbc54abfd798e1d64a3d145b831f9797382f6b4440d04aed0765f84c67f72228",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\n\t\"fixture/stepsrun/tests/calc/helpers\"\n)\n\n//truebdd:concept given \"installation\"\nfunc concept08bdc8ba20fbc17f8cbea598ca6da5bdbc121817e637f18277eb83c75896fcf3(state *State, args []string) error {\n\tprogram, err := helpers.BuildCalculator()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"install calculator: %w\", err)\n\t}\n\tstate.Program = program\n\treturn nil\n}\n"
     },
     {
       "path": "tests/calc/steps/register.go",

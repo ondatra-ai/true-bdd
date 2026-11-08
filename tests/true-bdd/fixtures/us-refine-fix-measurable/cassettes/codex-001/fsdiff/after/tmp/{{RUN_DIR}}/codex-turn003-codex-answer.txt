@@ -1,5 +1,6 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-summary-views-iter1-result.yaml ===
 id: "summary-views"
+feature: "calculator"
 title: "Read summary views"
 as_a: "Calculator User"
 i_want: "a concise summary in each view"
@@ -12,7 +13,7 @@ acceptance_criteria:
       - given:
           - "a shared document is selected"
       - when:
-          - "the Calculator User requests the \"brief\" view"
+          - 'the Calculator User requests the "brief" view'
       - then:
           - "the displayed summary contains at most 150 words"
   - id: "002-overview"
@@ -21,7 +22,7 @@ acceptance_criteria:
       - given:
           - "a shared document is selected"
       - when:
-          - "the Calculator User requests the \"overview\" view"
+          - 'the Calculator User requests the "overview" view'
       - then:
           - "the displayed summary contains at most 150 words"
   - id: "003-preview"
@@ -30,7 +31,7 @@ acceptance_criteria:
       - given:
           - "a shared document is selected"
       - when:
-          - "the Calculator User requests the \"preview\" view"
+          - 'the Calculator User requests the "preview" view'
       - then:
           - "the displayed summary contains at most 150 words"
 === FILE_END: tmp/{{RUN_DIR}}/apply-summary-views-iter1-result.yaml ===

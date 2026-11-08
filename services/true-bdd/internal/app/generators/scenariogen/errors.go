@@ -74,10 +74,10 @@ var ErrScenarioHasNoSteps = errors.New("scenario has no steps, so its test would
 var ErrWouldClobberHandWritten = errors.New("refusing to overwrite a file that is not marked generated")
 
 // ErrNoModuleForSuite signals a suite with no go.mod above it, so the
-// import path of its scenarios package cannot be computed.
+// import path of its suite package cannot be computed.
 var ErrNoModuleForSuite = errors.New("no go.mod above the suite's directory")
 
 // ErrNoModuleDirective signals that the nearest go.mod above a suite
 // declares no `module`, so the same import path cannot follow from it.
 var ErrNoModuleDirective = errors.New(
-	"no module directive, so no import path follows for the suite's scenarios package")
+	"no module directive, so no import path follows for the suite's package")

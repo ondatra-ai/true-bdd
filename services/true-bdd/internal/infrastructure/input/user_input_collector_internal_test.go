@@ -33,7 +33,7 @@ func TestAskApplyRefineOrExitMapping(t *testing.T) {
 		t.Run(testCase.input, func(t *testing.T) {
 			t.Parallel()
 
-			collector := newUserInputCollector(strings.NewReader(testCase.input + "\n"))
+			collector := NewUserInputCollectorFrom(strings.NewReader(testCase.input + "\n"))
 
 			got, err := collector.AskApplyRefineOrExit()
 			if err != nil {
@@ -69,7 +69,7 @@ func TestAskQuestionsMapsNumberToOptionText(t *testing.T) {
 		t.Run(testCase.input, func(t *testing.T) {
 			t.Parallel()
 
-			collector := newUserInputCollector(strings.NewReader(testCase.input + "\n"))
+			collector := NewUserInputCollectorFrom(strings.NewReader(testCase.input + "\n"))
 
 			answers, err := collector.AskQuestions([]checklist.ClarifyQuestion{
 				{ID: "q1", Question: "Which duplicate wins?", Options: options},
@@ -91,7 +91,7 @@ func TestAskQuestionsMapsNumberToOptionText(t *testing.T) {
 func TestAskRefinementFeedbackMultiline(t *testing.T) {
 	t.Parallel()
 
-	collector := newUserInputCollector(strings.NewReader("first line\nsecond line\n\nignored trailing line\n"))
+	collector := NewUserInputCollectorFrom(strings.NewReader("first line\nsecond line\n\nignored trailing line\n"))
 
 	feedback, err := collector.AskRefinementFeedback()
 	if err != nil {
@@ -117,7 +117,7 @@ func TestReadUserInputDistinguishesEndOfInput(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			collector := newUserInputCollector(strings.NewReader(testCase.input))
+			collector := NewUserInputCollectorFrom(strings.NewReader(testCase.input))
 
 			got, err := collector.readUserInput()
 			if got != testCase.want || !errors.Is(err, testCase.err) {

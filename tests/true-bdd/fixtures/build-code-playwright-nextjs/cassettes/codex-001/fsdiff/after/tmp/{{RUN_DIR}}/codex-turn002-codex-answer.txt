@@ -1,6 +1,6 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply--playwright-playwright-startup--iter1-result.yaml ===
-applied: false
+applied: true
 impossible: []
 target: "services/frontend"
-summary: "Created the Next.js frontend, TypeScript configuration, and Docker build serving one Hello world heading on port 3000. Ran the granted integration command; no tests passed because Playwright could not delete read-only tests/test-results/.last-run.json. Docker Compose is also unavailable. Service edits are preserved."
+summary: "Added the Next.js frontend, TypeScript configuration, Dockerfile, and single Hello world heading; startup binds to 0.0.0.0:3000. Registry DNS failure prevented dependency installation and lockfile generation, so Docker uses npm install. Ran the granted Playwright command; startup aborted with EPERM removing tests/test-results/.last-run.json. No tests were observed passing."
 === FILE_END: tmp/{{RUN_DIR}}/apply--playwright-playwright-startup--iter1-result.yaml ===

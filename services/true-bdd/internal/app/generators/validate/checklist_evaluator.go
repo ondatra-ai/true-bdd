@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"path/filepath"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -16,6 +17,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/disk"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/enginelog"
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/promptmodel"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/template"
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/pkg/errors"
 )
@@ -24,14 +26,16 @@ const ()
 
 // ChecklistPromptData represents data needed for checklist validation prompts.
 type ChecklistPromptData struct {
-	Subject      any
-	SubjectID    string
-	SubjectTitle string
-	Question     string
-	Rationale    string
-	ResultPath   string
-	Docs         map[string]*docs.ArchitectureDoc
-	FixTemplate  string // Template for generating fix prompt when validation fails
+	StepArguments string
+	Judgement     checklist.ConceptJudgement
+	Subject       any
+	SubjectID     string
+	SubjectTitle  string
+	Question      string
+	Rationale     string
+	ResultPath    string
+	Docs          map[string]*docs.ArchitectureDoc
+	FixTemplate   string // Template for generating fix prompt when validation fails
 	// Structured is true when the resolved CLI enforces a result schema,
 	// so the template asks for a JSON object instead of a FILE block.
 	Structured bool
@@ -58,6 +62,8 @@ const checklistResultSchema = `{
 
 // ChecklistEvaluator evaluates subjects against validation prompts using AI.
 type ChecklistEvaluator struct {
+	stepArgumentSource
+
 	aiClient      ports.AIPort
 	config        *config.ViperConfig
 	models        *provider.Registry
@@ -69,6 +75,7 @@ type ChecklistEvaluator struct {
 	subjectID     string
 	artifactLabel string
 	sharing       *conceptSharing
+	model         *promptmodel.Validator
 }
 
 // NewChecklistEvaluator creates a new checklist evaluator with config-based template paths.
@@ -80,7 +87,9 @@ func NewChecklistEvaluator(
 	systemTemplatePath := cfg.GetString("templates.prompts.checklist_system")
 	userTemplatePath := cfg.GetString("templates.prompts.checklist")
 
-	return NewChecklistEvaluatorWithPaths(aiClient, cfg, models, systemTemplatePath, userTemplatePath)
+	return NewChecklistEvaluatorWithPaths(
+		aiClient, cfg, models, systemTemplatePath, userTemplatePath, "us_refine_checklist",
+	)
 }
 
 // NewChecklistEvaluatorWithPaths creates a new checklist evaluator with explicit template paths.
@@ -89,8 +98,9 @@ func NewChecklistEvaluatorWithPaths(
 	cfg *config.ViperConfig,
 	models *provider.Registry,
 	systemPath, userPath string,
+	modelName ...string,
 ) *ChecklistEvaluator {
-	return &ChecklistEvaluator{
+	evaluator := &ChecklistEvaluator{
 		aiClient:     aiClient,
 		config:       cfg,
 		models:       models,
@@ -100,6 +110,19 @@ func NewChecklistEvaluatorWithPaths(
 		userLoader:   template.NewTemplateLoader[ChecklistPromptData](userPath),
 		sharing:      newConceptSharing(),
 	}
+
+	if len(modelName) > 0 && modelName[0] != "" {
+		name := modelName[0]
+
+		path := cfg.GetString("templates.schemes." + name)
+		if path == "" {
+			path = filepath.Join("true-bdd", "models", name+".schema.yaml")
+		}
+
+		evaluator.model = promptmodel.New(name, path)
+	}
+
+	return evaluator
 }
 
 // EvaluateOne evaluates a single prompt against the subject and returns the
@@ -165,7 +188,7 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 		Structured:  ai.SupportsResultSchema(model.CLI),
 	}
 
-	systemPrompt, userPrompt, err := e.renderChecklistPrompts(promptCtx, promptData)
+	systemPrompt, userPrompt, err := e.renderChecklistPrompts(promptCtx, &promptData)
 	if err != nil {
 		return checklist.ValidationResult{}, err
 	}
@@ -207,6 +230,7 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 	return checklist.ValidationResult{
 		SectionPath:  promptCtx.GetFullSectionPath(),
 		Question:     promptData.Question,
+		Judgement:    promptData.Judgement,
 		ActualAnswer: parsedResult.Answer,
 		Context:      parsedResult.Context,
 		Status:       status,
@@ -226,6 +250,13 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 // template used to render from a zero value, which would now hide the
 // answer contract from half the prompt.
 func (e *ChecklistEvaluator) renderPrompts(data ChecklistPromptData) (string, string, error) {
+	if e.model != nil {
+		err := e.model.Validate(data.modelView())
+		if err != nil {
+			return "", "", err
+		}
+	}
+
 	systemPrompt, err := e.systemLoader.LoadTemplate(data)
 	if err != nil {
 		return "", "", pkgerrors.ErrLoadChecklistSystemPromptFailed(err)

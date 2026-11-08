@@ -41,6 +41,7 @@ func (d *conceptDiscovery) collect(suites []*template.ScenarioCheckData,
 				order = addConceptStep(items, order, suite, dir, entry, concept, definitions)
 			} else if definition, resumed := pendingBinding(bound.Bind(step.Text), definitions); resumed {
 				entry.Bound = definition.Pattern
+ entry.Item = catalogue.ConceptKey(definition.Block, definition.Concept)
 				order = resumeConceptStep(items, order, suite, dir, entry, definition, definitions)
 			} else if found := bound.Bind(step.Text); len(found) == 1 {
 				entry.Bound = found[0].Pattern
@@ -108,6 +109,9 @@ func newConceptItem(suite *template.ScenarioCheckData, dir string, block catalog
 	for _, definition := range definitions {
 		if definition.Block == block && definition.Concept == concept {
 			item.Concept.Existing = append(item.Concept.Existing, definition.Pattern)
+   if definition.Pending() {
+    item.Concept.Definitions = append(item.Concept.Definitions, definition.Definition)
+   }
 		}
 	}
 

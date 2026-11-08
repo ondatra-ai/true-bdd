@@ -11,8 +11,8 @@ Codex takes the code work and readings Claude would otherwise spend its subscrip
 
 - **code**: a ticket or described change, through green checks and a local commit, in a new worktree on its own branch. `mpc_implement-spec`'s implementers are code runs.
 - **fix**: accepted review findings, failing checks or a merge conflict on a code run's branch, in that run's worktree.
-- **plan-read**: a spec draft before publication, a diagnosis before its fix, or a delegated decision whose mistake would be costly.
-- **review**: a diff along one axis. `mpc_code-review`'s standards and spec reviewers are two review runs, started together.
+- **plan-read**: a spec draft before publication, a diagnosis before its fix, or a delegated decision whose mistake would be costly. A ticket draft gets two plan-reads before publication, as separate runs: one for its logic, one for its architecture fit alone.
+- **review**: a diff along one axis. `mpc_code-review`'s reviewers are three review runs, started together: standards, spec, and architecture (whether each part of the change fits the generation architecture).
 - **research**: one precise question about the code or public sources; use `--search` when it needs the web.
 
 Readers (plan-read, review, research) run read-only without network. Writers (code, fix) have full access at high reasoning effort by default in worktrees the command owns. There is no complexity exception: Claude takes a code task itself when Codex is unavailable or after two failed attempts. An edit or question Claude settles in two or three calls on files already held stays with Claude; a handover costs more.
@@ -21,7 +21,7 @@ Claude keeps the conversation with the Owner, decisions, specs and tickets, brie
 
 ## Brief and start
 
-Copy the relevant template to `tmp/codex-briefs/<run>.md`: [code](briefs/code.md), [fix](briefs/fix.md), [plan-read](briefs/plan-read.md), [review](briefs/review.md), or [research](briefs/research.md). Fill every `{{…}}` placeholder. Name documents by path, issue number or command instead of pasting them; give a criterion of done and the report's shape.
+Copy the relevant template to `tmp/codex-briefs/<run>.md`: [code](briefs/code.md), [fix](briefs/fix.md), [plan-read](briefs/plan-read.md), [architecture read](briefs/architecture-read.md) (a ticket's second plan-read), [review](briefs/review.md), [architecture review](briefs/architecture-review.md) (the review's third run), or [research](briefs/research.md). Fill every `{{…}}` placeholder. Name documents by path, issue number or command instead of pasting them; give a criterion of done and the report's shape.
 
 From the repository root, start the command as a background Bash task with `run_in_background: true` and `timeout: 7200000`, so the session's task list wakes you at its end:
 
@@ -32,7 +32,7 @@ go run ./scripts/cmd/codex start --kind <kind> --name <run> \
 
 Choose `--model gpt-6-astra --effort xhigh` for a reading the Owner wants on the largest model; effort accepts `low`, `medium`, `high`, `xhigh`, `max` or `ultra`, and omitting either flag keeps its existing default.
 
-For **code**, add `--branch impl/<n>-<slug> --base <branch-or-commit>`. The new checkout is `tmp/codex-worktrees/<run>/`, containing the whole repository. For **fix**, add `--branch <code-run-branch>` and no `--base`: the command requires a code run's record of that branch and checkout, and fixes must add a commit beyond the tip at which they start. Writers never run in Claude's checkout or an unrelated worktree. At most four writers run at once; a worktree is held by one running command.
+For **code**, add `--branch impl/<n>-<slug> --base <branch-or-commit>`. The new checkout is `tmp/codex-worktrees/<run>/`, containing the whole repository. For **fix**, add `--branch <code-run-branch>` and no `--base`: the command requires a code run's record of that branch and checkout, and fixes must add a commit beyond the tip at which they start. Writers never run in Claude's checkout or an unrelated worktree. One writer runs at a time and readers up to three at once (`AGENTS.md`); a worktree is held by one running command.
 
 `--name` is new, 1–64 lowercase letters, digits, dots, underscores or dashes, starting with a letter or digit. Repeat `--issue` for every issue the brief names. Before starting the agent, the command saves issue bodies, labels and comments under the run folder and appends their paths to the brief. Readers cannot call `gh` themselves.
 
@@ -40,7 +40,7 @@ The command checks sign-in and reports weekly usage before every attempt. It fin
 
 ## Wait, read, retry
 
-Wait for the task notification; runs started together are waited for together. Read the single closing summary: status, reason, agent, weekly limit and UTC reset, Codex availability when relevant, attempt, exit code, session id, writer branch and worktree, current log, and final message.
+Wait for the task notification; runs started together are waited for together, and the next writer starts only after the previous ticket is merged. Read the single closing summary: status, reason, agent, weekly limit and UTC reset, Codex availability when relevant, attempt, exit code, session id, writer branch and worktree, current log, and final message.
 
 - `done`: weigh the report. For a writer, also read `git diff <base>...<branch>` and its check evidence; Git completion alone cannot prove it meets the brief.
 - `incomplete`: an agent left a report, but Git could not prove a clean checkout on the recorded branch, retaining the starting commit with at least one new commit. Treat it as failure.
@@ -67,4 +67,4 @@ Writers pass `TRUE_BDD_CODEX_RUN=<name>:<attempt>:<sha256-of-checkout-root>` to 
 
 ## Implementing a spec
 
-Keep `mpc_implement-spec`'s flow: one code run per ticket on the frontier, cut from the integration branch. Claude merges a completed branch with `git merge` when authorized. On conflict, abort and start a fix run on the ticket branch to merge the integration branch in, resolve and re-check; then merge again. Resolve conflicts on ticket branches. The closing review is two review runs. Once finished and authorized, remove worktrees with `git worktree remove tmp/codex-worktrees/<run>`.
+Keep `mpc_implement-spec`'s flow one ticket at a time, in order: its code run, cut from the integration branch, then its three review runs and their fixes, then its merge, before the next ticket's code run starts. Claude merges a completed branch with `git merge` when authorized. On conflict, abort and start a fix run on the ticket branch to merge the integration branch in, resolve and re-check; then merge again. Resolve conflicts on ticket branches. The closing review is the same three review runs. Once finished and authorized, remove worktrees with `git worktree remove tmp/codex-worktrees/<run>`.

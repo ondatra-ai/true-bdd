@@ -3,18 +3,25 @@
   "fixture": "concept-steps-unused",
   "files": [
     {
-      "path": "tests/calc/steps/conceptec8b881314b929394828fe6c21c7db729a95bc1a93ad8abf8ec578b93a9e83f2.go",
+      "path": "tests/calc/helpers/calc.go",
       "kind": "created",
-      "size": 906,
-      "sha256": "42f4156674af7eb3af4e1084364134b0e51d41348ef1a1db5aa6c54a496ee028",
-      "text": "package steps\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"halving\"\nfunc conceptec8b881314b929394828fe6c21c7db729a95bc1a93ad8abf8ec578b93a9e83f2(state *State, args []string) error {\n\tconst (\n\t\thostRoot    = \"../..\"\n\t\tpackagePath = \"./services/calc\"\n\t\tcommand     = \"halve\"\n\t)\n\tnumber := args[0]\n\tcmd := exec.Command(\"go\", \"run\", packagePath, command, number)\n\tcmd.Dir = hostRoot\n\tstdout, err := cmd.Output()\n\tif err != nil {\n\t\tvar exit *exec.ExitError\n\t\tif errors.As(err, \u0026exit) {\n\t\t\treturn fmt.Errorf(\"%s %s: %w: %s\", command, number, err, strings.TrimSpace(string(exit.Stderr)))\n\t\t}\n\t\treturn fmt.Errorf(\"%s %s: %w\", command, number, err)\n\t}\n\thalved, err := strconv.Atoi(strings.TrimSpace(string(stdout)))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"%s %s: stdout %q is not an integer: %w\", command, number, string(stdout), err)\n\t}\n\tstate.Result = halved\n\treturn nil\n}\n"
+      "size": 1305,
+      "sha256": "a76fbdf451df6ced9fa7fe54dfec311ac3d8743c52dc3c6fc404a6852da3abd3",
+      "text": "package helpers\n\nimport (\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n// HostRoot is the host root the calculator CLI is run from, relative to a\n// suite test's working directory (tests/calc) — the same relative base the\n// suite already uses for ../../docs/scenarios.yaml.\nconst HostRoot = \"../..\"\n\n// Halve runs the declared `halve` command as a process with value as its\n// value argument and returns the integer the command wrote on stdout.\n//\n// It never halves anything itself: the product's stdout is the only source of\n// the returned number. Per docs/architecture/calc-cli.yaml, halve is run as\n// `go run ./services/calc halve VALUE` from the host root, exit 0 prints the\n// halved integer and a newline, exit 1 means invalid arguments.\nfunc Halve(value int) (int, error) {\n\tcmd := exec.Command(\"go\", \"run\", \"./services/calc\", \"halve\", strconv.Itoa(value))\n\tcmd.Dir = HostRoot\n\n\tvar stdout, stderr strings.Builder\n\tcmd.Stdout = \u0026stdout\n\tcmd.Stderr = \u0026stderr\n\n\tif err := cmd.Run(); err != nil {\n\t\treturn 0, fmt.Errorf(\"halve %d: %w: %s\", value, err, strings.TrimSpace(stderr.String()))\n\t}\n\n\tout := strings.TrimSpace(stdout.String())\n\tresult, err := strconv.Atoi(out)\n\tif err != nil {\n\t\treturn 0, fmt.Errorf(\"halve %d: stdout %q is not an integer: %w\", value, out, err)\n\t}\n\n\treturn result, nil\n}\n"
+    },
+    {
+      "path": "tests/calc/steps/conceptce5cc5e8e32829d67d0e502e346fe2bf4a35eb0a459485307a7a2a66aab73f49.go",
+      "kind": "created",
+      "size": 481,
+      "sha256": "27b0c7b471190789633b280701f739a844e62626ad0371669ea72f2faaea6ce8",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"strconv\"\n\n\t\"fixture/conceptsteps/tests/calc/helpers\"\n)\n\n//truebdd:concept when \"halving\"\nfunc conceptce5cc5e8e32829d67d0e502e346fe2bf4a35eb0a459485307a7a2a66aab73f49(state *State, args []string) error {\n\toperand, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn fmt.Errorf(\"operand %q is not a whole number: %w\", args[0], err)\n\t}\n\n\tresult, err := helpers.Halve(operand)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tstate.Result = result\n\n\treturn nil\n}\n"
     },
     {
       "path": "tests/calc/steps/register.go",
       "kind": "modified",
-      "size": 225,
-      "sha256": "41923fcf05407123bb5361670ba23bad51f449d7d72ec7e184913f8f995fc03a",
-      "text": "package steps\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the result is (-?\\d+)$`, result)\n\n\tsuite.Step(\"^the Owner halves[ \\\\x{00A0}](-?\\\\d+)$\", conceptec8b881314b929394828fe6c21c7db729a95bc1a93ad8abf8ec578b93a9e83f2)\n}\n"
+      "size": 223,
+      "sha256": "2e3ece27992bca3888c914afc780ac95c44d60d87a042d87a040736b8f925247",
+      "text": "package steps\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the result is (-?\\d+)$`, result)\n\n\tsuite.Step(\"^the Owner halves\\\\x{00a0}(-?\\\\d+)$\", conceptce5cc5e8e32829d67d0e502e346fe2bf4a35eb0a459485307a7a2a66aab73f49)\n\n}\n"
     }
   ]
 }

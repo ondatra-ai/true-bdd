@@ -155,3 +155,11 @@ func rekeyedSteps(unique map[string]conceptStep) []conceptStep {
 
 	return ordered
 }
+
+// invalidate discards verdicts after an apply without dropping the links the immediate Q needs.
+func (s *conceptSharing) invalidate() {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	s.entries = make(map[string]*sharedVerdict)
+}

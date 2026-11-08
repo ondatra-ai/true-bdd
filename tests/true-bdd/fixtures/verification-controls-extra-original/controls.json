@@ -1,0 +1,41 @@
+[
+  {
+    "id": "concept-bodies-extra-claude-003",
+    "block": "when",
+    "concept": "halving",
+    "definition": {
+      "function": "concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87",
+      "file": "tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go",
+      "pattern": "^the Owner halves (-?\\d+)$",
+      "steps": [
+        {
+          "text": "the Owner halves 6",
+          "captures": [
+            "6"
+          ]
+        },
+        {
+          "text": "the Owner halves -7",
+          "captures": [
+            "-7"
+          ]
+        }
+      ]
+    },
+    "pattern": {
+      "pattern": "^the Owner halves (-?\\d+)$",
+      "captures": [
+        {
+          "name": "argument1",
+          "means": "The value captured from the step text."
+        }
+      ],
+      "serves": "Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result."
+    },
+    "source": "package steps\n\n//truebdd:concept when \"halving\"\nfunc concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {\n\treturn state.Halve(args[0])\n}\n\n",
+    "historical_verdict": "fail",
+    "expected_verdict": "fail",
+    "category": "concept_binding",
+    "reason": "State.Halve requires CALC_LICENCE, absent from the closed binding and Public interface."
+  }
+]

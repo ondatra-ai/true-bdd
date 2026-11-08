@@ -17,9 +17,8 @@ import (
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/pkg/errors"
 )
 
-// renderPrompt is the engine's GenerateQFn for every command: the Prompt
-// itself, whose Index is its file position, not its walk position — `D:`
-// prompts walk first, and a Cell's artifacts must not move with them.
+// renderPrompt preserves the Checklist item and its selected written-order
+// Index, which names the Cell's artifacts as well as its walk position.
 func renderPrompt(_ int, prompt checklistmodels.PromptWithContext) *checklistmodels.PromptWithContext {
 	return &prompt
 }
@@ -49,8 +48,8 @@ type Spec[I any] struct {
 	DeferCompletion bool
 	// RecoverWriterFailures lets build code rerun files left by a failed writer.
 	RecoverWriterFailures bool
-	// OmitConceptJudgements walks no concept judgement: build steps answers
-	// its grouping and proposals before the walk, on Items of their own.
+	// OmitConceptJudgements walks no concept judgement: build steps groups
+ // before the walk and invokes the proposal protocol from a failed code Q's F.
 	OmitConceptJudgements bool
 	// PromptsLogged means LoadItems logged the run's one "Loaded prompts"
 	// record, which the coverage census reads as the start of a run's log.
@@ -71,6 +70,16 @@ type Spec[I any] struct {
 	CheckConvergence func(context.Context, []I) (bool, error)
 	// BeforeEvaluate refreshes execution evidence; true skips a passing Cell.
 	BeforeEvaluate func(ctx context.Context, item I) (bool, error)
+	// AnswerPrompt lets a command supply its prompt Q's evidence and answer protocol.
+	AnswerPrompt func(context.Context, I, *checklistmodels.PromptWithContext) (checklistmodels.ValidationResult, error)
+	// GenerateFix and ApplyFix supply a command's specialized F; nil uses the model writer.
+	GenerateFix func(context.Context, I, checklistmodels.ValidationResult,
+  map[string]string, int) (engine.FixResult, bool, error)
+	ApplyFix    func(context.Context, I, checklistmodels.ValidationResult, engine.FixDecision) (bool, error)
+	// FixSubject supplies the definitions a failed Q named, without applying edits.
+	FixSubject func(context.Context, I, checklistmodels.ValidationResult) (I, error)
+	// BeforeApply commits engine-owned parts of a prepared fix after the menu's apply choice.
+	BeforeApply func(context.Context, I, checklistmodels.ValidationResult) error
 	// PostNotApplied counts a completed not-applied turn for code commands.
 	// Document commands leave it nil so their commit hooks cannot run.
 	PostNotApplied func(ctx context.Context, item I) (I, error)
@@ -86,7 +95,7 @@ type Spec[I any] struct {
 		ctx context.Context, item I, result checklistmodels.ValidationResult,
 	) (checklistmodels.ValidationResult, error)
 	// PostCheckFix, if non-nil, runs in PostFix's place after the fix of a
-	// failed `D:` Prompt, named by check: us refine's applier then edits a
+	// failed Q.code Prompt, named by check: us refine's applier then edits a
 	// term document, not the Story, so the Story stays as it reads.
 	PostCheckFix func(ctx context.Context, item I, check string) (I, error)
 	// Finalize handles the post-walk write: us refine updates the story
@@ -101,8 +110,8 @@ type Spec[I any] struct {
 	// commands have one item and typically leave it nil.
 	OnItemStart func(idx, total int, item I)
 
-	// Checks is the built-in checks this command's `D:` prompts may name;
-	// nil leaves it none, so any `D:` is refused at startup.
+	// Checks is the built-in checks this command's Checklist items with Q.code may name;
+	// nil leaves it empty, so any Q.code is refused at startup.
 	Checks checks.Set[I]
 
 	// Evaluator / FixGenerator / FixApplier form the generator triple: us
@@ -160,7 +169,7 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 	builder := newReportBuilder()
 	eng := buildSpecEngine(spec, builder, items, maxAttempts)
 
-	result, err := eng.Run(ctx, items, walkOrder(prompts))
+	result, err := eng.Run(ctx, items, prompts)
 	if err != nil {
 		// Logged here: cobra prints the error only to stderr, which no
 		// `stdout matches` step reads (#168).
@@ -311,8 +320,11 @@ func buildSpecEngine[I any](
 	walker := &engine.SequentialWalker[I, *checklistmodels.PromptWithContext]{
 		Cell:     cell,
 		MaxFixes: maxAttempts,
-		Gate:     isCheckQuery,
-		OnSkip:   recordSkip(spec, builder),
+		CellLabel: func(item I, query *checklistmodels.PromptWithContext) string {
+			_, title := spec.GetSubject(item)
+
+			return fmt.Sprintf("checklist item %s/%s #%d for %s", query.SectionID, query.CriterionID, query.Index, title)
+		},
 	}
 
 	var selected engine.Walker[I, *checklistmodels.PromptWithContext] = walker
@@ -359,8 +371,7 @@ func concurrentWalker[I any](
 	}
 
 	walker := &engine.ConcurrentWalker[I, *checklistmodels.PromptWithContext]{
-		Limit: max(1, spec.ValidationConcurrency), MaxFixes: maxAttempts, Gate: isCheckQuery,
-		OnSkip: recordSkip(spec, builder),
+		Limit: max(1, spec.ValidationConcurrency), MaxFixes: maxAttempts,
 		CellFor: func(_ I, _ *checklistmodels.PromptWithContext) *engine.CellHandler[I, *checklistmodels.PromptWithContext] {
 			var result checklistmodels.ValidationResult
 
@@ -373,6 +384,7 @@ func concurrentWalker[I any](
 
 	if spec.ShareConceptJudgements {
 		walker.Waits = judgesBindings
+		walker.BeforeRecheck = spec.Evaluator.InvalidateJudgements
 		walker.OnValidate = func([]I) { spec.Evaluator.StartWalk() }
 	}
 
@@ -473,22 +485,35 @@ func buildGenFixClosure[I any](
 			displayFailureInfo(latestResult)
 		}
 
+		if spec.GenerateFix != nil {
+			result, handled, err := spec.GenerateFix(ctx, item, *latestResult, userAnswers, iteration)
+			if handled || err != nil {
+				return result, locateCannotFix(latestResult, err)
+			}
+		}
+
 		subjectID, _ := spec.GetSubject(item)
+
+		subject, err := prepareFixSubject(ctx, spec, item, *latestResult)
+		if err != nil {
+			return engine.FixResult{}, locateCannotFix(latestResult, err)
+		}
 
 		result, err := runFixPromptGeneration(ctx, fixPromptGenInput{
 			generator:   spec.FixGenerator,
-			subject:     item,
+			subject:     subject,
 			subjectID:   subjectID,
 			failedCheck: *latestResult,
 			tmpDir:      spec.TmpDir,
 			userAnswers: userAnswers,
 			iteration:   iteration,
 		})
-		if errors.Is(err, pkgerrors.ErrImpossibleWork) && spec.StopImpossible != nil {
-			return result, spec.StopImpossible(ctx, item, err)
+		if (errors.Is(err, pkgerrors.ErrImpossibleWork) || errors.Is(err, pkgerrors.ErrCannotFix)) &&
+			spec.StopImpossible != nil {
+			err = spec.StopImpossible(ctx, item, err)
 		}
 
-		return result, err
+		return result, locateCannotFix(latestResult, err)
 	}
 }
 
@@ -509,11 +534,21 @@ func buildFixClosure[I any](
 		item I,
 		decision engine.FixDecision,
 	) (I, error) {
+  handled, specializedErr := applySpecializedFix(ctx, spec, item, *latestResult, decision)
+  if handled || specializedErr != nil {
+   return item, locateCannotFix(latestResult, specializedErr)
+  }
+
 		*fixCount++
 		subjectID, _ := spec.GetSubject(item)
 
+		subject, err := prepareApplySubject(ctx, spec, item, *latestResult)
+		if err != nil {
+			return item, locateCannotFix(latestResult, err)
+		}
+
 		content, err := spec.FixApplier.Apply(ctx, validate.ApplyParams{
-			Subject:      item,
+			Subject:      subject,
 			SubjectID:    subjectID,
 			FixPrompt:    decision.FixPrompt,
 			Check:        latestResult.Check,
@@ -524,11 +559,11 @@ func buildFixClosure[I any](
 			ClaudeWriter: spec.claudeWriter(),
 			CodexWriter:  spec.RecoverWriterFailures,
 		})
-		if err != nil {
-			if errors.Is(err, pkgerrors.ErrImpossibleWork) && spec.StopImpossible != nil {
-				return item, spec.StopImpossible(ctx, item, err)
-			}
+		if cannotFix(err) {
+			return item, stopCannotFix(ctx, spec, item, latestResult, err)
+		}
 
+		if err != nil {
 			if spec.PostNotApplied != nil && recoverWriterFailure(spec.RecoverWriterFailures, err) {
 				return spec.PostNotApplied(ctx, item)
 			}
@@ -592,7 +627,7 @@ func headerLine(name, storyID string) string {
 
 // flattenChecklistPrompts walks a Checklist's sections and emits the
 // non-skipped prompts in file order, each with its section context and
-// its position; pkg/testkit/cmd/coverage mirrors this loop for its census.
+// its position; scripts/cmd/coverage mirrors this loop for its census.
 func flattenChecklistPrompts(
 	doc *checklistmodels.Checklist,
 	commandName string,
@@ -601,7 +636,7 @@ func flattenChecklistPrompts(
 
 	for _, section := range doc.Sections {
 		for _, prompt := range section.ValidationPrompts {
-			if prompt.ShouldSkip() {
+			if prompt.ShouldSkip() && prompt.ShapeError() == nil {
 				continue
 			}
 
@@ -624,6 +659,10 @@ func flattenChecklistPrompts(
 func evaluateModelCell[I any](
 	ctx context.Context, spec Spec[I], item I, subjectID string, query *checklistmodels.PromptWithContext,
 ) (checklistmodels.ValidationResult, error) {
+	if spec.AnswerPrompt != nil {
+		return spec.AnswerPrompt(ctx, item, query)
+	}
+
 	if spec.ValidationConcurrency > 1 {
 		label := fmt.Sprintf("validation-%02d-%x", query.Index, sha256.Sum256([]byte(subjectID)))
 

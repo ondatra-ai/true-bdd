@@ -2,7 +2,7 @@
 
 You apply the approved bodies of one concept's step definitions in one suite.
 Preserve the engine's registrations, patterns, signatures and //truebdd:concept
-records. Modify only those bodies and the suite's shared state. Use the declared
+records. Modify those bodies, the suite's shared state and helpers/. Use the declared
 Public interface and the concept's binding; never implement the product's
 operation inside a step definition.
 
@@ -17,11 +17,11 @@ operation inside a step definition.
 
 **Output Format:**
 ```
-=== FILE_START: tmp/{{RUN_DIR}}/apply-then-output-iter2-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply-when-operation-iter2-result.yaml ===
 applied: true
 target: "<repo-relative path>"
 summary: "<one-line summary>"
-=== FILE_END: tmp/{{RUN_DIR}}/apply-then-output-iter2-result.yaml ===
+=== FILE_END: tmp/{{RUN_DIR}}/apply-when-operation-iter2-result.yaml ===
 ```
 
 If the declared Public interface cannot set up or observe the concept, stop without
@@ -29,7 +29,7 @@ inventing an operation. Return the same confirmation markers with:
 ```yaml
 applied: false
 interface_cannot_serve:
-  concept: "then concept \"output\""
+  concept: "when concept \"operation\""
   lacks: "<what the interface offers no way to set up or observe>"
 ```
 
@@ -40,10 +40,14 @@ or not built yet. The engine owns compilation and the whole-suite checks. If you
 compile the steps package while writing, preserve the inherited Go cache and
 temporary-directory environment; never create a separate build cache.
 
-Keep every new constant and local helper value inside the selected function body.
-Do not add package-level constants, variables, helper functions or types; only
-shared State fields and the selected file's imports may change outside that body.
+Put code the steps share in tests/<suite>/helpers/, beside the steps/ directory
+named by Suite. Write the helper functions, constants and types the bodies need
+there; helpers are generated with the bodies and need no separate declaration.
+Only selected bodies, their imports and shared State may change inside steps/.
+Helpers must obey the same binding and meaning as their callers, and never
+compute the product's answer. The critique judges their complete source too.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -51,31 +55,36 @@ shared State fields and the selected file's imports may change outside that body
 
 Suite: tests/calc/steps
 Service: calc
-Concept: output (then)
-Meaning: What the calculator printed for the operation has, or has no, match for a pattern.
+Concept: operation (when)
+Meaning: The Owner halves or doubles a whole number, positive, zero or negative, with the calculator. Halving rounds an odd number's half toward zero, unless the Owner halves exactly, which keeps the half.
 
-## Complete concept context
+Read the listed Scenario keys from the Registry path and inspect their fixture
+input directories under fixture_root as needed (exclude cassettes/). Read the definitions, State,
+helpers and architecture-declared test libraries. These paths carry the complete
+evidence; no digest or summary replaces it. Never read service implementation.
+
+## Concept context and evidence paths
 concept:
-    concept: output
-    block: then
-    means: What the calculator printed for the operation has, or has no, match for a pattern.
+    concept: operation
+    block: when
+    means: The Owner halves or doubles a whole number, positive, zero or negative, with the calculator. Halving rounds an odd number's half toward zero, unless the Owner halves exactly, which keeps the half.
     terms:
-        - pattern
+        - number
 binding:
-    concept: output
-    block: then
+    concept: operation
+    block: when
     service: calc
     references:
         - command: halve
         - command: double
-    does: Match the step's pattern, a regular expression taken as the rest of the step, against the kept stdout without its trailing newline, and require a match or, when the step says does not match, no match.
+    does: Run the declared halve or double command, as the step names the operation, as a process with the step's whole number, passing --exact to halve when the step says exactly, and keep its stdout as the output.
 glossary:
-    - term: pattern
-      means: A regular expression a printed text is matched against.
+    - term: number
+      means: A whole number, positive, zero or negative.
 word_mapping:
-    - term: pattern
-      technical: A Go regular expression matched against the command's stdout.
-      observed_by: The step matches it against the kept stdout.
+    - term: number
+      technical: The integer argument of the calculator's halve and double commands.
+      observed_by: The step passes it to the command it runs as a process.
 public_interface:
     kind: cli
     document: docs/architecture/calc-cli.yaml
@@ -120,143 +129,207 @@ interface_document: |
           '1':
             description: Invalid arguments
 definitions:
-    - function: concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e
-      file: tests/calc/steps/concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e.go
-      pattern: ^the calculator's output (matches|does not match) (.+)$
+    - function: conceptcc0034864638b337019c005041b6023fc84395f3cfcb85aa7757c1b208c55d6e
+      file: tests/calc/steps/conceptcc0034864638b337019c005041b6023fc84395f3cfcb85aa7757c1b208c55d6e.go
+      pattern: ^the Owner ((?:exactly )?halves|doubles) (-?\d+)$
       captures:
-        - name: comparison
-          means: 'Which outcome the step requires: the literal "matches" (a match is required) or "does not match" (no match is required). Captured because it is the alternative that changes what the body asserts.'
-        - name: pattern
-          means: The regular expression taken as the rest of the step, free text running to the end of the step, which the body matches against the kept stdout stripped of its trailing newline.
-      serves: 'Serves the whole of "Match the step''s pattern, a regular expression taken as the rest of the step, against the kept stdout without its trailing newline, and require a match or, when the step says does not match, no match": the second capture is the pattern clause, the first capture is the "require a match or ... no match" clause.'
+        - name: operation
+          means: 'The operation the step names, as one of the three phrases the concept states: "halves", "exactly halves" or "doubles". The "exactly " prefix is admitted only in front of "halves", so no step form outside the concept''s means can bind. It serves two clauses of the does at once: "Run the declared halve or double command, as the step names the operation" — the body selects the declared halve command when the phrase ends in "halves" and the declared double command when it is "doubles" — and "passing --exact to halve when the step says exactly" — the body adds the --exact flag exactly when the phrase begins with "exactly".'
+        - name: number
+          means: The step's whole number as written, positive, zero or negative; serves the clause "as a process with the step's whole number", so the body passes it as the command's VALUE argument.
+      serves: 'The single thing the binding says the definition does: run the declared halve or double command named by the step as a process with the step''s whole number, passing --exact to halve when the step says exactly, and keep its stdout as the output. Both alternatives that change what the body must run — which command, and whether the halving is exact — vary together inside one operation capture, because the concept''s means and the declared CLI give exactness to halving only ("unless the Owner halves exactly, which keeps the half"; --exact is a parameter of halve alone). Binding "exactly" to the halves branch of the alternation keeps the pattern from admitting an exact doubling, which has no stated meaning. Nothing else in the step text varies.'
       steps:
-        - text: the calculator's output matches ^3$
+        - text: the Owner halves 6
           captures:
-            - matches
-            - ^3$
-        - text: the calculator's output matches ^12$
+            - halves
+            - "6"
+        - text: the Owner doubles 6
           captures:
-            - matches
-            - ^12$
-        - text: the calculator's output does not match \.
+            - doubles
+            - "6"
+        - text: the Owner halves 7
           captures:
-            - does not match
-            - \.
-        - text: the calculator's output matches ^3\.5$
+            - halves
+            - "7"
+        - text: the Owner exactly halves 7
           captures:
-            - matches
-            - ^3\.5$
+            - exactly halves
+            - "7"
+registry: ./docs/scenarios.yaml
 scenarios:
-    - id: calc-001-halve
-      description: Halving an even number
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        When:
-          - the Owner halves 6
-        Then:
-          - the calculator's output matches ^3$
-    - id: calc-002-double
-      description: Doubling a number
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        When:
-          - the Owner doubles 6
-        Then:
-          - the calculator's output matches ^12$
-    - id: calc-003-halve-odd
-      description: Halving an odd number prints a whole number
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        When:
-          - the Owner halves 7
-        Then:
-          - the calculator's output does not match \.
-    - id: calc-004-exact
-      description: Halving an odd number exactly keeps its half
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        When:
-          - the Owner exactly halves 7
-        Then:
-          - the calculator's output matches ^3\.5$
+    - calc-001-halve
+    - calc-002-double
+    - calc-003-halve-odd
+    - calc-004-exact
 
+
+# Fix Prompt for Item when-operation: when concept "operation"
 
 ## Target
-`tests/calc/steps/concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e.go`
+tests/calc/steps
 
-## Scope
-Only this file's body and import block change. Do not touch `tests/calc/steps/state.go` (the existing `State.Output` field is the kept stdout and is sufficient — no shared-state change is needed), `tests/calc/steps/register.go`, the other concept file, the generated test, the Specification or service code. Preserve the `//truebdd:concept then "output"` record, the function name and the signature exactly as they are.
+## Finding addressed
+`pattern_scope` on the retired definition
+`concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba`: its
+pattern `^the Owner (?:(exactly) )?(halves|doubles) (-?\d+)$` put the optional
+`exactly` group in front of the whole `(halves|doubles)` alternation, so it also
+bound "the Owner exactly doubles 6" — a step form with no stated meaning — and
+the body only rejected it with an error.
+
+The repaired, engine-owned pattern binds exactness to the halving branch alone:
+
+    ^the Owner ((?:exactly )?halves|doubles) (-?\d+)$
+
+with captures `operation` ("halves" | "exactly halves" | "doubles") and
+`number`, served by
+`conceptcc0034864638b337019c005041b6023fc84395f3cfcb85aa7757c1b208c55d6e` in
+`tests/calc/steps/conceptcc0034864638b337019c005041b6023fc84395f3cfcb85aa7757c1b208c55d6e.go`.
+The engine writes that registration, signature and `//truebdd:concept` record,
+and retires the old skeleton — do not hand-write `tests/calc/steps/register.go`.
 
 ## Required Changes
-Replace the whole contents of `tests/calc/steps/concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e.go` with:
+
+### 1. Body of the re-proposed definition
+
+Write the body of the engine's planned skeleton at
+`tests/calc/steps/conceptcc0034864638b337019c005041b6023fc84395f3cfcb85aa7757c1b208c55d6e.go`.
+Keep the `//truebdd:concept when "operation"` record, the function name and the
+`func(state *State, args []string) error` signature exactly as the engine wrote
+them; replace only the body and the import block. Full intended file:
 
 ```go
 package steps
 
 import (
-	"fmt"
-	"regexp"
-	"strings"
+	"fixture/conceptbodiescases/tests/calc/helpers"
 )
 
-//truebdd:concept then "output"
-func concept95123e5878d35715c67b1f901cd0d6e1fcafc896021616abdece460efff6ed7e(state *State, args []string) error {
-	comparison, pattern := args[0], args[1]
+//truebdd:concept when "operation"
+func conceptcc0034864638b337019c005041b6023fc84395f3cfcb85aa7757c1b208c55d6e(state *State, args []string) error {
+	operation, number := args[0], args[1]
 
-	// The When step kept the command's stdout; drop a trailing newline here too so
-	// the pattern is matched against the printed value alone, as the binding says.
-	output := strings.TrimRight(state.Output, "\r\n")
-
-	expression, err := regexp.Compile(pattern)
+	// The step's operation phrase names which declared command to run and
+	// whether the declared halve command gets its --exact flag; the phrase
+	// "exactly doubles" can no longer reach here, so no body-side rejection
+	// of an unmeant step form remains.
+	command, flags, err := helpers.Operation(operation)
 	if err != nil {
-		return fmt.Errorf("the step's pattern %q is no Go regular expression: %w", pattern, err)
+		return err
 	}
 
-	matched := expression.MatchString(output)
-
-	switch comparison {
-	case "matches":
-		if !matched {
-			return fmt.Errorf("the calculator's output %q has no match for %q", output, pattern)
-		}
-	case "does not match":
-		if matched {
-			return fmt.Errorf("the calculator's output %q has a match for %q", output, pattern)
-		}
-	default:
-		return fmt.Errorf("the step names no declared comparison: %q", comparison)
+	// Run the named command as a process with the step's whole number as its
+	// VALUE argument and keep its stdout as the output. The calculator alone
+	// halves or doubles; the body neither computes nor interprets the result.
+	output, err := helpers.Run(command, append(flags, number)...)
+	if err != nil {
+		return err
 	}
 
+	state.Output = output
 	return nil
 }
 ```
 
-## Why this serves the binding
-- `args[0]` is the `comparison` capture and `args[1]` is the `pattern` capture, in the order the definition's captures name them.
-- The body compiles the step's pattern as a Go regular expression and matches it against the kept stdout stripped of its trailing newline, requiring a match for `matches` and no match for `does not match` — exactly the binding's observation.
-- Nothing is computed about halving or doubling: the body only observes `state.Output`, which the `when "operation"` definition filled from the declared CLI's stdout.
+Notes for the applier:
+- `fmt` is no longer imported by this file: the only `fmt` use in the old body
+  was the "takes no --exact flag" rejection of "exactly doubles", which the
+  repaired pattern makes unreachable.
+- `args[0]` is the whole operation phrase (including any `exactly ` prefix) and
+  `args[1]` the number as written, sign included; pass the number through
+  verbatim, with no parsing or normalisation.
+
+### 2. Retire the superseded skeleton
+
+Delete `tests/calc/steps/concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba.go`
+if the engine's pattern repair leaves it behind. It is the same `when`
+"operation" definition under the retired pattern, it is no longer registered,
+and it calls `helpers.Command`, which step 3 replaces — leaving it would keep
+the unmeant-step rejection in the suite and break the build.
+
+### 3. Shared helpers: `tests/calc/helpers/calc.go`
+
+Replace the `Command` helper with an `Operation` helper that translates the
+step's whole operation phrase into the declared command plus the flags that
+command declares. Nothing else in the file changes (`ServicePackage`,
+`ExactFlag`, `HalveCommand`, `DoubleCommand`, `HostRoot`, `Run` stay as they
+are). Replace exactly this block:
+
+```go
+// Command returns the declared CLI command for the operation word a step
+// names. It only translates the step's word into the declared command name;
+// the calculator alone works out what the command prints.
+func Command(operation string) (string, error) {
+	switch operation {
+	case "halves":
+		return HalveCommand, nil
+	case "doubles":
+		return DoubleCommand, nil
+	default:
+		return "", fmt.Errorf("the declared calculator CLI has no command for the operation %q", operation)
+	}
+}
+```
+
+with:
+
+```go
+// Operation returns the declared CLI command, and the flags that command
+// declares, for the operation phrase a step names. "halves" and "exactly
+// halves" both name the declared halve command, the second with the --exact
+// flag halve alone declares; "doubles" names the declared double command,
+// which declares no flag. The helper only translates the step's phrase into
+// the declared invocation; the calculator alone works out what it prints.
+func Operation(operation string) (string, []string, error) {
+	switch operation {
+	case "halves":
+		return HalveCommand, nil, nil
+	case "exactly halves":
+		return HalveCommand, []string{ExactFlag}, nil
+	case "doubles":
+		return DoubleCommand, nil, nil
+	default:
+		return "", nil, fmt.Errorf("the declared calculator CLI has no command for the operation %q", operation)
+	}
+}
+```
+
+Keep the `fmt` import in `tests/calc/helpers/calc.go`: `Operation` and `Run`
+still use it. `Operation` returns a freshly built flag slice on every call, so
+the caller's `append(flags, number)` cannot alias a shared array.
+
+### 4. Shared state
+
+`tests/calc/steps/state.go` is unchanged: `State{Output string}` already holds
+the stdout this `when` keeps for the `then` concept to observe.
+
+## Binding check
+- Runs the declared `halve` or `double` command named by the step as a process,
+  from the host root via `go run ./services/calc <command> ...`, exactly as
+  `docs/architecture/calc-cli.yaml` declares.
+- Adds `--exact` precisely when the step's phrase is "exactly halves"; the
+  repaired pattern admits the flag only on the halving branch, matching both
+  the concept's means and the CLI, which declares `exact` under `halve` only.
+- Passes the step's whole number as the command's `VALUE` argument, as written.
+- Keeps stdout verbatim in `state.Output`; the body never halves, doubles,
+  rounds or compares anything itself.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
-context lists and shared state. Preserve the engine's patterns, registrations,
+context lists, shared state and code they share in tests/<suite>/helpers/. Preserve the engine's patterns, registrations,
 signatures and //truebdd:concept records. Reach the service through its declared
 Public interface. Preserve generated tests, the
 Specification and service code. Report the changes in the confirmation below.
 
-=== FILE_START: tmp/{{RUN_DIR}}/apply-then-output-iter2-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply-when-operation-iter2-result.yaml ===
 applied: true
 target: "<repo-relative path of the file you wrote/edited>"
 summary: "<one-line summary of what changed>"
-=== FILE_END: tmp/{{RUN_DIR}}/apply-then-output-iter2-result.yaml ===
+=== FILE_END: tmp/{{RUN_DIR}}/apply-when-operation-iter2-result.yaml ===
 
 If the declared Public interface cannot set up or observe the concept, stop without
 inventing an operation. Return the same confirmation markers with:
 ```yaml
 applied: false
 interface_cannot_serve:
-  concept: "then concept \"output\""
+  concept: "when concept \"operation\""
   lacks: "<what the interface offers no way to set up or observe>"
 ```

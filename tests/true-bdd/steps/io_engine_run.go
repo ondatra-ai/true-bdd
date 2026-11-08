@@ -1,14 +1,11 @@
 package steps
 
 import (
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 	"os"
 	"path/filepath"
 	"syscall"
 	"time"
-
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
 )
 
 const ioLaunchScript = `#!/bin/sh
@@ -26,38 +23,30 @@ exec "$TRUE_BDD_IO_ENGINE" "$@"
 func runObservedIO(
 	state *State, command, barrier string, env []string, observe func(string, <-chan struct{}) error,
 ) error {
-	original := state.Harness
-
-	engineErr := original.RequireEngine()
+	binary, engineErr := state.ServiceBinary()
 	if engineErr != nil {
 		return state.fail("%w", engineErr)
 	}
 
-	wrapper := filepath.Join(original.SessionRoot, state.Fixture.Name+"-engine")
+	wrapper := filepath.Join(filepath.Dir(state.WorkingDirectory()), state.Fixture.Name+"-engine")
 
-	err := disk.Write(wrapper, []byte(ioLaunchScript), disk.Private)
+	err := testkit.Write(wrapper, []byte(ioLaunchScript), testkit.Private)
 	if err != nil {
 		return state.fail("write IO launcher: %w", err)
 	}
 
-	err = disk.Executable(wrapper)
+	err = testkit.Executable(wrapper)
 	if err != nil {
 		return state.fail("make IO launcher executable: %w", err)
 	}
 
-	harness := *original
-	harness.BinPath = wrapper
-
-	state.Harness = &harness
-	defer func() { state.Harness = original }()
-
-	env = append(env, "TRUE_BDD_IO_ENGINE="+original.BinPath, "TRUE_BDD_IO_BARRIER="+barrier)
-	root := runner.RunDir(original.SessionRoot, state.Fixture.Name)
+	env = append(env, "TRUE_BDD_IO_ENGINE="+binary, "TRUE_BDD_IO_BARRIER="+barrier)
+	root := state.WorkingDirectory()
 	ended := make(chan struct{})
 
 	var runErr error
 	go func() {
-		runErr = runEngine(state, command, env...)
+		runErr = executeEngine(state, command, wrapper, env...)
 
 		close(ended)
 	}()
@@ -109,7 +98,7 @@ func awaitIOFile(path string) error {
 	return os.ErrDeadlineExceeded
 }
 
-func registerIOSteps(suite *bddgo.Suite[State]) {
+func registerIOSteps(suite testkit.StepRegistrar[State]) {
 	registerIOHoldSteps(suite)
 	registerIOClaudeSteps(suite)
 	registerIOAtomicSteps(suite)

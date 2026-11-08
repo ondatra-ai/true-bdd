@@ -2,5 +2,5 @@
 applied: true
 impossible: []
 target: "services/calc"
-summary: "Created calc.go with Double(int) int returning value + value. Ran go test -count=1 ./tests/... successfully: both failing packages compiled, and TestDouble passed."
+summary: "Added calc.go with Double(value int) int returning value + value. go test -count=1 ./tests/... passed: calc/helper built and calc's TestDouble passed. gofmt reported no formatting issues. The patch tool failed; the file was successfully written through the shell."
 === FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===

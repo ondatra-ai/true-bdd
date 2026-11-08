@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "fixture": "verification-controls-extra-repair",
+  "files": [
+    {
+      "path": "tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go",
+      "kind": "created",
+      "size": 437,
+      "sha256": "d9a13e72f271b321ddc29c97a961c3e031d3732042ad5c0b00e1e5264af4fe5b",
+      "text": "package steps\n\nimport (\n\t\"os/exec\"\n\t\"strconv\"\n\t\"strings\"\n)\n\n//truebdd:concept when \"halving\"\nfunc concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {\n\tcmd := exec.Command(\"go\", \"run\", \"./services/calc\", \"halve\", args[0])\n\tcmd.Dir = \"../..\"\n\tout, err := cmd.Output()\n\tif err != nil {\n\t\treturn err\n\t}\n\tstate.Result, err = strconv.Atoi(strings.TrimSpace(string(out)))\n\treturn err\n}\n\n"
+    },
+    {
+      "path": "tests/calc/steps/register.go",
+      "kind": "modified",
+      "size": 215,
+      "sha256": "eb877a9b021b276ce8ea2a384915a360f9103f120a9ec2c9ab7dd5110f047024",
+      "text": "package steps\n\nfunc Register(suite Registrar) {\n\tsuite.Step(\"^the result is (-?\\\\d+)$\", result)\n\n\tsuite.Step(\"^the Owner halves (-?\\\\d+)$\", concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87)\n}\n"
+    }
+  ]
+}

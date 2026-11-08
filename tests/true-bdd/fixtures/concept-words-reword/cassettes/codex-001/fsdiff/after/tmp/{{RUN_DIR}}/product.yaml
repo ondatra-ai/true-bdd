@@ -16,7 +16,7 @@
     "when": [
       {
         "concept": "halve",
-        "means": "Halve the entered number once for the given request label, so that repeating the same label does not halve it again.",
+        "means": "Halve the entered number once, using the request label sent with it. Repeating the request with the same label changes the number only once.",
         "terms": []
       }
     ],

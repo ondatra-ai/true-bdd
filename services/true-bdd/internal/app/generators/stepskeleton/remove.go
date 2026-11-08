@@ -56,8 +56,10 @@ func skeletonDeclaration(declaration ast.Decl, function string) bool {
 	return ok && general.Tok == token.IMPORT
 }
 
-// unregister drops the literal registration of the definition's pattern and function.
+// unregister drops the registration of the definition's pattern and function.
 func unregister(files []sourceFile, definition Definition) error {
+	resolver := patternResolver(files)
+
 	for _, file := range files {
 		for _, fun := range packageFunctions([]sourceFile{file}) {
 			if fun.Name.Name != registerFunction || fun.Body == nil {
@@ -70,7 +72,7 @@ func unregister(files []sourceFile, definition Definition) error {
 					continue
 				}
 
-				pattern, function, isStep := stepCall(expression.X)
+				pattern, function, isStep := stepCall(expression.X, resolver)
 				if !isStep || pattern != definition.Pattern || function != definition.Function {
 					continue
 				}

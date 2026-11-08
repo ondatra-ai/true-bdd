@@ -1,6 +1,8 @@
 package stepskeleton_test
 
 import (
+	"errors"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -9,6 +11,81 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/disk"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/stepcoverage"
 )
+
+func TestConceptRecordsResolveTheSamePatternsAsStepCoverage(t *testing.T) {
+	t.Parallel()
+
+	const guardPattern = "^the guard allows the tool call$"
+
+	cases := []struct {
+		name, expression, want string
+	}{
+		{"literal", "`^the guard allows the tool call$`", guardPattern},
+		{"concatenated literals", "`^the guard ` + `allows the tool call$`", guardPattern},
+		{"parenthesised concatenation", "(`^the guard ` + `allows the tool call$`)", guardPattern},
+		{"sibling constants", "prefix + action + action + `$`", "^the guard allowsallows$"},
+		{"variable", "variable", ""},
+		{"call", "pattern()", ""},
+		{"unknown identifier", "missing", ""},
+		{"constant cycle", "cycle", ""},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			dir := filepath.Join(t.TempDir(), "steps")
+			source := fmt.Sprintf("package steps\n"+
+				"func Register(suite *Suite) { suite.Step(%s, allows) }\n"+
+				"//truebdd:concept then \"guard answer\"\n"+
+				"func allows(*State, []string) error { return nil }\n", testCase.expression)
+
+			constants := "package steps\nconst prefix = `^the guard `\nconst action = verb\n" +
+				"const verb = `allows`\nvar variable = `^the guard allows$`\nconst cycle = cycle\n"
+			for name, body := range map[string]string{"steps.go": source, "constants.go": constants} {
+				err := disk.Write(filepath.Join(dir, name), []byte(body), disk.Shared)
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			found, err := stepskeleton.Concepts(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			want := stepskeleton.ConceptDefinition{Block: "then", Concept: "guard answer",
+				Definition: stepskeleton.Definition{File: filepath.Join(dir, "steps.go"),
+					Function: "allows", Pattern: testCase.want}}
+			if len(found) != 1 || found[0] != want {
+				t.Fatalf("concept records: %+v, want %+v", found, want)
+			}
+
+			requirePatternCoverage(t, dir, testCase.want)
+		})
+	}
+}
+
+func requirePatternCoverage(t *testing.T, dir, want string) {
+	t.Helper()
+
+	suite, err := stepcoverage.LoadSuite(dir)
+	if want == "" {
+		if !errors.Is(err, stepcoverage.ErrPatternNotConstant) {
+			t.Fatalf("unresolved pattern: %v", err)
+		}
+
+		return
+	}
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if bound := suite.Bind(strings.Trim(want, "^$")); len(bound) != 1 || bound[0].Pattern != want {
+		t.Fatalf("step bindings: %+v, want %q", bound, want)
+	}
+}
 
 const negativePattern = `^the Owner halves (-?\d+)$`
 

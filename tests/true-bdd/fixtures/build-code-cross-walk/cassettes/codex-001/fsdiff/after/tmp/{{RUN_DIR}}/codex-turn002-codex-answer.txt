@@ -2,5 +2,5 @@
 applied: true
 impossible: []
 target: "services/calc/calc.go"
-summary: "Applied migration stage 1: changed only Version() from 1 to 2; Compatible() remains false. TestAVersion passed using the granted selection command."
+summary: "Applied migration stage 1: Version returns 2; Compatible remains false. TestAVersion passed. apply_patch failed due to sandbox restrictions; the edit succeeded through the shell."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAVersion-iter1-result.yaml ===

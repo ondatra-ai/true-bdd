@@ -69,6 +69,7 @@ rules:
         - "tests/**"
         - "scripts/**"
         - "pkg/**"
+        - "utilities/**"
     message: >-
       Go outside the four roots. Move it into the one that owns it:
       services/<name>/ product code, tests/<name>/ what exercises it,
@@ -111,6 +112,7 @@ rules:
         - "pkg/claude/**"
         - "pkg/alint/**"
         - "pkg/testkit/**"
+        - "pkg/proxy/**"
     message: >-
       A new package under pkg/. pkg/ is shared by tests and tooling; the engine owns its IO. It is not
       somewhere to park code: it holds the four IO channels, pkg/cli's typed

@@ -1,7 +1,7 @@
 # Story `engine-checklists`: a checklist the engine cannot read.
 #
 # A host edits its checklists by hand. A command whose checklist is not
-# where `paths.checklists_dir` says, is not valid YAML, or passes a `D:`
+# where `paths.checklists_dir` says, is not valid YAML, or passes a code Q
 # check a `with:` that is not a mapping, is refused at startup, naming
 # the file, before it walks anything. A checklist the engine reads but
 # whose Prompts it cannot walk is the Story checklist-checks; a Prompt
@@ -49,7 +49,7 @@ story:
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns
         - id: 003-check-with-not-a-mapping-refused
-          description: A command must be refused at startup when a `D:` Prompt of its checklist passes its check a `with:` that is not a mapping, naming the checklist file, the Prompt, what its `with:` is and that `with:` takes a mapping, rather than run the check without the parameters it was given
+          description: A command must be refused at startup when a code Q of its checklist passes its check a `with:` that is not a mapping, naming the checklist file, the Checklist item, what its `with:` is and that `with:` takes a mapping, rather than run the check without the parameters it was given
           steps:
             - given:
                 - the "scen-check-check-with-not-a-mapping" project tree
@@ -58,7 +58,7 @@ story:
             - then:
                 - the command exits with code 1
                 - stdout matches level=ERROR msg="Refusing to start" command="scen check"
-                - and: 'stdout matches checklist true-bdd/checklists/scen-check\.yaml: D: declared-terms carries a with: that is a list, but with: takes a mapping of check parameters'
+                - and: 'stdout matches checklist true-bdd/checklists/scen-check\.yaml: Q code: declared-terms carries a with: that is a list, but with: takes a mapping of check parameters'
                 - but: stdout does not match interface
                 - and: stdout does not match SCEN CHECK
                 - and: no file outside "tmp" changed

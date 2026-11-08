@@ -17,10 +17,6 @@ func (p ClaudeGuardPolicy) allowsGlob(base, pattern string) (bool, string) {
 		return false, "parent traversal in glob patterns is denied"
 	}
 
-	if allowed, reason := p.allowsSearch(base); !allowed {
-		return false, reason
-	}
-
 	fixed := pattern
 	if index := strings.IndexAny(fixed, "*?[{"); index >= 0 {
 		fixed = fixed[:index]
@@ -49,7 +45,7 @@ func (p ClaudeGuardPolicy) allowsSearch(target string) (bool, string) {
 		return false, "search root contains the module cache; choose a declared library or narrower host directory"
 	}
 
-	if claudePathWithinRoot(resolved, resolveThroughSymlinks(p.Replay.ReadRoot)) {
+	if len(p.EvidenceRoots) == 0 && claudePathWithinRoot(resolved, resolveThroughSymlinks(p.Replay.ReadRoot)) {
 		return true, ""
 	}
 

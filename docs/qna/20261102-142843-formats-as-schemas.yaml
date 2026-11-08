@@ -1,0 +1,367 @@
+intent: |
+  Decide what replaces `architecture.prompt_data` (133 KB of prose describing
+  every prompt template's input fields) and, beyond it, how the formats of the
+  files and data the engine reads and writes are declared: the fields a
+  Scenario reads should follow from the Scenarios, and a format the
+  architecture must declare should be a reference to a structured schema, not
+  prose. The Owner, 2 November:
+
+  «И еще один вопрос. Смотри, нужно подумать, вот я там обсуждал в соседнем,
+  а зачем нам нужны вот эти вообще prompt data, да, вот какие-то такие вещи.
+  Мне кажется, что это у нас, смотри, у нас основная часть информации должна
+  быть зашита в сценариях. То есть то, какие поля должны быть в тех или иных
+  вещах, они должны как будто вытекать из сценариев. То есть сценарий должен
+  как бы просто где-то говорить, что вот мы что-то читаем из такого поля,
+  что-то читаем из такого поля, что-то читаем из такого поля. Да, там. Ну, то
+  есть вот каким-то таким способом это делать. И тогда то, какая структура
+  YAML-файла, да, она должна будет задаваться сценарием, либо она должна
+  задаваться будет, если мы хотим какую-то сделать это в... Это невозможно
+  сделать в архитектуре, потому что мы, например, его читаем, и это модель,
+  да, помнишь, мы говорили, что модели, они на самом деле описываются в
+  архитектуре. Тогда это прям должно быть не текст, а прям, ну, например,
+  YAML, ну, то есть отсылка, что типа, вот, это прям YAML, вещь. Ну, то есть,
+  как бы, тогда мы формат каждого файла задаем в архитектуре с помощью просто
+  вот ссылки, что такой endpoint или это как бы такая команда читает файл
+  такого типа.»
+
+  «Хорошо, давай, я согласен с твоим планом.» (the plan: #287 resumed without
+  prompt_data, this grilling run beside #286 and #287, round 5 after both.)
+
+log:
+  - decision_trace:
+      research:
+        - |
+          architecture.prompt_data has 32 entries, one per template under
+          templates/, each with `rendering` prose and `fields`: the Go template
+          access paths a template reads, each explained in prose (for example
+          "Judgement: The failed structured Q protocol, carried unchanged to
+          the approved applier").
+        - |
+          Every drill cut keeps templates/, and `init` writes them into every
+          host, where they may be overridden; a rebuilt engine must feed the
+          kept templates the same fields with the same meaning.
+        - |
+          The Registry already observes prompt contents in 128 steps such as
+          `every file matching "tmp/*/critique-*-user.txt" matches binding:`.
+        - |
+          Three schemas exist, in Yamale: true-bdd/product-schema.yaml,
+          architecture_yaml-schema.yaml and scenarios_yaml-schema.yaml; the
+          engine does not read them, a host runs them in its own lint step.
+      recommendation: |
+        (2): one structured schema per template (for example
+        true-bdd/prompt-data/<template>.schema.yaml, Yamale): field, type and a
+        one-line meaning; true-bdd-cli.yaml's prompt-templates entry points at
+        them instead of prose; prompt_data's prose goes.
+      settled: |
+        (2), with the Owner's addition: the service in the architecture gets a
+        `models` key mapping a model name to its schema file, for example
+        `xxx_checklist: true-bdd/prompt-data/<template>.schema.yaml`, under
+        `services: - name: true-bdd`.
+    question: |
+      Q1 - Where does the contract "which fields the engine hands a template"
+      live? (1) Nowhere apart: the templates name the fields they read, the
+      Scenarios fix what matters; prompt_data is deleted. (2) A structured
+      schema per template (true-bdd/prompt-data/<template>.schema.yaml,
+      Yamale: field, type, one-line meaning), referenced from
+      true-bdd-cli.yaml's prompt-templates instead of prose; prompt_data's
+      prose deleted. (3) Keep prompt_data in the architecture, compacted to
+      "field → one line".
+    answer: |
+      2. я бы добавил поле models. в сервисе и там говорил типа "xxx_checklist": "rue-bdd/prompt-data/<шаблон>.schema.yaml" ...   services:
+          - name: true-bdd Подтверди что ты понял мою идею
+
+  - decision_trace:
+      research:
+        - |
+          true-bdd-cli.yaml carries 33 `format:` fields, all prose (for example
+          the configuration's "YAML; engine models, template paths, paths and
+          documents", or the write policy's list of keys). The three existing
+          Yamale schemas (product, architecture, Registry) are referenced from
+          no `models` entry.
+        - |
+          `models` is already a key of true-bdd.yaml, where it names AI models
+          (`high: claude:claude-opus-5`); GLOSSARY.md defines Persistent data
+          model as data a service keeps between runs.
+        - |
+          The Owner asked what "template data" and "a file's format" mean;
+          Claude showed build-steps.critique.prompt.tpl with its
+          {{.Definition}}, {{.Context}} and {{.Sources}}, their prose in
+          prompt_data and the same as a Yamale schema, and the write policy's
+          prose format beside its schema, and agreed that "template data" was
+          imprecise: it is the data the engine fills a template with.
+      recommendation: |
+        (1): `models` covers both the data the engine fills each template with
+        and the format of every file the engine reads or writes; the three
+        existing schemas move under it and true-bdd-cli.yaml's prose
+        `format:` becomes a reference to a model by name.
+      settled: |
+        For now `models` covers only the prompt templates: each model pairs a
+        `template` (the template file) with a `scheme` (a path to the schema
+        file, or the schema itself inline). The formats of files on disk are
+        not part of this step.
+    question: |
+      Q2 - What goes into `models`: only the data the engine fills the
+      templates with, or every file's format too? (1) Everything: every
+      template's data and every file the engine reads or writes, the three
+      existing schemas moved under `models`, true-bdd-cli.yaml's prose
+      `format:` replaced by a reference to a model. (2) Only the templates'
+      data, replacing prompt_data. (3) Templates now, files later.
+    answer: |
+      Что значит данные шаблонов? Для меня данные и шаблон - это не сопостовымые вещи? что значит формат каждого файла? покажи примеры певого и второго
+
+      I suspect we need a scheme and template for now. model: template:  <euther file>, scheme: <path to cheme or scheme at all>
+
+  - decision_trace:
+      research:
+        - |
+          The engine hands a role's system and user templates the same data,
+          but they read different fields: the critique's user template reads
+          Definition, Context and Sources, its system template none; the
+          checklist's user template reads 8 fields, its system template 1.
+          There are 32 templates for 16 roles.
+        - |
+          The templates render through Go text/template with the Sprig
+          function map and the engine's toYaml override
+          (architecture.prompt_data, `rendering`).
+      recommendation: |
+        (1): one model per template file; `scheme` is the path to a schema
+        file, and a model whose template reads no field has no `scheme`.
+      settled: |
+        One model per template: `template` is the real .tpl file (Go
+        text/template with Sprig), `scheme` is a YAML schema of the fields it
+        reads, by path. Whether a model whose template reads nothing omits
+        `scheme` is still open.
+    question: |
+      Q3 - One model per template file, and what may `scheme` be? (1) A path
+      to a schema file, no `scheme` when the template reads no field. (2) A
+      path or the schema inline in the architecture. (3) Always a path, even
+      to an empty schema.
+    answer: |
+      scheme yamal scheme. template it real tpl file, I don;t renmemr what template engine we use. Do yo het this?
+
+  - decision_trace:
+      research:
+        - |
+          A Go template can be parsed (text/template/parse) to list the fields
+          it reads, without running the engine; the data a template gets lives
+          only in the engine's memory; prompt_data is checked by nothing today.
+        - |
+          After the Owner's answer, how the check works now: yamale runs only
+          in the repository's schema lint, scripts/lint/schemas.go, which
+          spawns the `yamale` command line (pkg/cli/yamale, `pip install
+          yamale`) on each `true-bdd/<key>-schema.yaml` against
+          `documents.<key>`. The engine checks nothing against a schema. No Go
+          port of Yamale turned up
+          (https://pkg.go.dev/github.com/Yakwilik/go-yamlvalidator and
+          https://pkg.go.dev/github.com/neilpa/yajsv validate JSON Schema).
+      recommendation: |
+        (1): a deterministic check on the template's text, every field the .tpl
+        reads declared in its scheme and every scheme field read, in the gates.
+      settled: |
+        None of the options. The scheme checks the result: after the template
+        engine has rendered the template with everything filled in, the
+        rendered prompt is validated against the scheme. The check works like
+        today's schema lint, but in process instead of calling the yamale
+        command line.
+    question: |
+      Q4 - What checks that template, scheme and engine agree? (1) A
+      deterministic check on the template's text: every field the .tpl reads
+      is in its scheme and every scheme field is read, in the gates. (2) The
+      same plus an engine test rendering each template with real data and
+      validating that data with Yamale. (3) Nothing.
+    answer: |
+      схкма проверяет результат не то какие поля бубу вставлены а уже после того template engine отпроцессил шаблон и вставил туда все что надо. и потом проверили что получилось! так что это не похоже ни на одно из опций. налр посмотреть как это работает сейчас только провеку стоит перенести из вызова yamal  из консоли в in-process call
+
+  - decision_trace:
+      research:
+        - |
+          A rendered prompt is mostly text with inserts, not a YAML document:
+          the critique is a sentence, a YAML block of context and Go sources;
+          the binding judgement is a system instruction and a JSON user
+          prompt. A YAML schema can read JSON, not prose mixed with YAML.
+        - |
+          Rewriting the 32 templates to render YAML would change every prompt,
+          staling the 880 recorded turns of 348 fixtures (about $78 of claude
+          spend recorded, codex beside it); a check that only reads a prompt
+          stales nothing.
+      recommendation: |
+        (2): the scheme checks the structured part of a rendered prompt (the
+        judgements' JSON payloads and YAML blocks a template marks), the prose
+        around it free, no prompt text changed and no recording staled.
+      settled: |
+        A template is not always a YAML document; a scheme exists only where
+        the rendered output must be wholly YAML, and not always then. Schemas
+        are left alone entirely for now: no scheme is written or checked in
+        this step.
+    question: |
+      Q5 - What in a rendered prompt does the scheme check? (1) The whole
+      prompt, every template rewritten to render a YAML document, every
+      recording re-recorded. (2) The structured part: the judgements' JSON
+      payloads and YAML blocks a template marks, the prose free, no recording
+      staled. (3) For now only the turns whose prompt is already structured.
+    answer: |
+      не всегда шаблом - это ямл документ. соответсвенно схема она есть только в случаях когда должен 100% получится yaml и то не всегда.. В целом пока про схему можнр не трогать вообще.
+
+  - decision_trace:
+      research:
+        - |
+          prompt_data holds 65,037 bytes of rendering prose, four distinct
+          texts repeated through YAML aliases, and 60,841 bytes of field prose,
+          one line per Go template field; the templates name their fields.
+        - |
+          Some of its rules decide prompt bytes ("no final trim", map ranges
+          sort keys, toYaml through yaml.v3). Cut A's oracle replays the
+          original suite against the rebuilt engine, and recordings match by
+          prompt text, so a rebuilt engine must render prompts byte for byte.
+        - |
+          `models` would sit on the service in the architecture, while
+          true-bdd.yaml has its own `models` for AI models.
+      recommendation: |
+        (1): prompt_data moves into `models` and is shrunk: each model is a
+        `template:` and its fields, one short line each; the shared rendering
+        rules once; every piece checked as #287 checks (deleted when it
+        affects nothing, compacted otherwise), the byte-deciding rules kept.
+      settled: |
+        prompt_data moves into the service's `models`, each model a template
+        and its fields in one short line each, the shared rendering rules
+        stated once, every piece kept only for the code it affects, the
+        byte-deciding rendering rules kept.
+    question: |
+      Q6 - What happens to prompt_data in this step? (1) It moves into
+      `models` and shrinks: `template:` plus one short line per field, shared
+      rendering rules once, every piece checked as #287 checks, the
+      byte-deciding rules kept. (2) `models` only names templates and
+      prompt_data is deleted. (3) Nothing for now.
+    answer: |
+      1
+
+  - decision_trace:
+      research:
+        - |
+          Q5 leaves schemas aside for now; the Owner's opening idea, that the
+          fields a Scenario reads follow from the Scenarios, rests on them.
+      recommendation: |
+        Deferred with the schemas.
+      settled: |
+        Forced by Q5: Scenarios naming the fields they read waits with the
+        schemas; this step does not touch the Registry for it.
+    question: |
+      Do Scenarios state the fields they read in this step?
+    answer: |
+      Claude, no question asked: no; it rests on the schemas, which Q5 leaves
+      aside for now.
+
+  - decision_trace:
+      research:
+        - |
+          Only 4 of the 32 templates call toYaml or toJson, and none renders a
+          whole YAML document; the concept judgements' JSON user prompts are
+          built outside the templates (validate/concept_evaluator.go,
+          json.MarshalIndent). The data the engine fills a template with is a
+          structure, which serialises to YAML.
+      recommendation: |
+        Q6's option (1) stood: each model a template and one short prose line
+        per field.
+      settled: |
+        Revisits Q5 and Q6 for models: a model is the data a template is
+        filled with, and a model is always YAML, so a model needs only a
+        scheme, with no prose lines for its fields. Claude reads this as the
+        scheme describing the data the engine fills the template with, checked
+        on the actual data once the engine has produced it (Q4's "the result"),
+        not on the rendered text; asked to confirm in Q7.
+    question: |
+      Q6, revisited - The Owner's messages while Claude logged Q6.
+    answer: |
+      я кстати не уверен потому что если єто ямл то я б делал scheme
+
+      потому что єто модоль!
+
+      В модели всегда ямл
+
+      там нужна только схема
+
+  - decision_trace:
+      research:
+        - |
+          The engine fills templates from a few Go structures
+          (services/true-bdd/internal/app/generators/validate/):
+          ChecklistPromptData, FixPromptData, FixApplierData and
+          StepCritiqueData, for 32 templates; FixPromptData fills every
+          command's fix generator and its system twin; a role's user and system
+          templates get the same data. prompt_data describes 30 fields for
+          FixPromptData.
+      recommendation: |
+        (1): one model per data structure (about four), each with its scheme
+        and the list of templates it fills.
+      settled: |
+        Scope narrowed to checklists only: their prompt data are models for
+        certain; fix generators, appliers and the critique stay untouched for
+        now. The Owner offers to take the idea and implement it, since edge
+        cases and variants will show up, or first to work out the cases and
+        how to meet each.
+    question: |
+      Q7 - One model per data structure (about four, each with a scheme and
+      the templates it fills) or one per template (32, many sharing a
+      scheme)?
+    answer: |
+      Слушай, попробуй взять это как идею и реализовать. Потому что там есть edge cases и ращніе варианты! Я говорю только про checklists. они точто являются моделями давай остальные пока не трогать. или прдумать какие там есть кейсы и как с ними подойти?
+
+  - decision_trace:
+      research:
+        - |
+          ChecklistPromptData fills the checklist templates of four commands
+          with four Subject shapes: us refine a Story (8 fields read), us apply
+          an Acceptance Criterion (14), scen check a Scenario (13), build steps
+          an Item (7); build code's template reads none; every system twin
+          reads only Structured or nothing. The concept judgements' payloads
+          (group, link, binding, words, propose) bypass the templates as JSON
+          built in code. No Go port of Yamale exists.
+      recommendation: |
+        Four checklist models, one per command, each listing its user and
+        system templates with a scheme of its Subject; checked in process on
+        the data before rendering, refusing like the size check; schemas
+        shipped by init; byte-deciding rendering rules kept as text. Open: (A)
+        the judgement payloads as models now; (B) a Go validator of the Yamale
+        subset or JSON Schema in YAML.
+      settled: |
+        Not answered as asked: the Owner wants real experiments on how the idea
+        looks in practice and how far the architecture can be compacted
+        without losing quality.
+    question: |
+      The checklist models' cases, and (A) the judgement payloads as models
+      now, (B) the in-process validator.
+    answer: |
+      слушай, давай проведем реальные эксперименты как маоя идея может выглядеть в реальности и наскольйо удаться скомпактить architecture не теряя при этом качества
+
+  - decision_trace:
+      research:
+        - |
+          #288 (docs/research/2026-11-02-checklist-models-experiments.md): with
+          only the Subject's source every variant rebuilt 0 of 3 prompts; with
+          every call input, V0 prose 3/3, V1 Yamale 2/3, V2 JSON Schema in YAML
+          2/3 and 11/11 once a construction rule sat at the scheme's root, V3
+          templates only 0/3; both validators accepted the real data and
+          rejected 311 mutations. A type-only scheme dropped an `and` modifier.
+        - |
+          The engine saves every prompt under tmp/<run>/, part of the Public
+          interface; the Registry already observes prompts in 128 steps, and a
+          recording matches a prompt byte for byte.
+      recommendation: |
+        Keep the construction rule out of the scheme and pin it in Scenarios on
+        the saved prompt, with fixtures recorded through the declared command;
+        the schemes stay type-only.
+      settled: |
+        The construction rules are described by Scenarios: end-to-end tests on
+        the saved prompts that fail when a rule breaks (#289, done: seven rules
+        in six Scenarios, every one of 19 deliberate breaks caught at its rule's
+        Then step). A scheme then holds fields and types only. Still open: one
+        model per user and system pair, or one per template.
+    question: |
+      After #288: accept a construction rule at the scheme's root, and one
+      model per user and system pair or per template?
+    answer: |
+      А не может ли информация про правило сборки в корне, быть частью сценария? Что если мы будем стараться как система доджна себя вести через тесты и сценарии в том числе и о том как собирать промпты
+
+      моэно ли мы добавить несколько тестов e2e которые бы падали когда что-то не так идет
+
+      в общем попробуй описать сценариями

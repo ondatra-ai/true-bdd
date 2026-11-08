@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // concept-bodies-001-three-cases: A suite whose steps include matches and does not match, a set of operations and an optional word with meaning under their concepts gets patterns capturing each alternative and bodies that tell them apart
 func TestConceptBodies001ThreeCases(t *testing.T) {
-	s := scenarios.New(t, "concept-bodies-001-three-cases")
+	s := New(t, "concept-bodies-001-three-cases")
 	s.Given(`the "concept-bodies-cases" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
@@ -38,63 +36,71 @@ func TestConceptBodies001ThreeCases(t *testing.T) {
 	s.Done()
 }
 
-// concept-bodies-002-fixture-prompt: The body turn's saved prompts hold the fixture input of a Scenario the pattern binds
+// concept-bodies-002-fixture-prompt: The body turns' saved prompts should name the Registry, Scenario keys and fixture paths
 func TestConceptBodies002FixturePrompt(t *testing.T) {
-	s := scenarios.New(t, "concept-bodies-002-fixture-prompt")
+	s := New(t, "concept-bodies-002-fixture-prompt")
 	s.Given(`the "concept-bodies-prompt" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 0`)
-	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches CALC_REAL_GO must name the real go`)
-	s.And(`every file matching "tmp/*/apply-*-user.txt" matches CALC_REAL_GO must name the real go`)
-	s.And(`every file matching "tmp/*/apply-*-user.txt" matches fixture: tests/calc/fixtures/offline`)
+	s.And(`every file matching "tmp/*/*fix-iter1-user.txt" matches registry: ./docs/scenarios.yaml`)
+	s.And(`every file matching "tmp/*/*fix-iter1-user.txt" matches fixture_root: tests/calc/fixtures`)
+	s.And(`every file matching "tmp/*/*fix-iter1-user.txt" matches fixture: offline`)
+	s.And(`every file matching "tmp/*/*fix-iter1-user.txt" matches calc-001-halve`)
+	s.And(`every file matching "tmp/*/*fix-iter1-user.txt" does not match CALC_REAL_GO must name the real go`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches fixture_root: tests/calc/fixtures`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches fixture: offline`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches calc-001-halve`)
 	s.And(`stdout matches BUILD STEPS COMPLETE`)
 	s.And(`no file outside "tmp" and "tests" changed`)
 	s.Done()
 }
 
-// concept-bodies-003-fixture-contract: The critique passes a body that meets a contract a bound Scenario's fixture input states and its binding does not
+// concept-bodies-003-fixture-contract: The step-verification Checklist item passes a body that supplies CALC_REAL_GO as the host's toolchain binding declares
 func TestConceptBodies003FixtureContract(t *testing.T) {
-	s := scenarios.New(t, "concept-bodies-003-fixture-contract")
+	s := New(t, "concept-bodies-003-fixture-contract")
 	s.Given(`the "concept-bodies-contract" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches Step definition critiqued.*findings=\[\]`)
-	s.And(`every file matching "tests/calc/steps/concept*.go" matches CALC_REAL_GO`)
+	s.And(`stdout matches Step definition verified.*findings=\[\]`)
+	s.And(`some file matching "tests/calc/steps/*.go" or "tests/calc/helpers/*.go" matches CALC_REAL_GO`)
+	s.And(`every file matching "tmp/*/*checklist-build-steps-step-verification-user.txt" matches CALC_REAL_GO`)
+	s.And(`every file matching "tmp/*/*checklist-build-steps-step-verification-user.txt" does not match fixture_inputs:`)
 	s.And(`stdout matches BUILD STEPS COMPLETE`)
 	s.And(`no file outside "tmp" and "tests" changed`)
 	s.And(`the shell command "go test -tags bdd -count=1 ./tests/calc/..." run in "." exits with code 0`)
 	s.Done()
 }
 
-// concept-bodies-004-extra-requirement: The critique fails a body that requires more than its binding and its fixture inputs state, and the body goes back to its writer
+// concept-bodies-004-extra-requirement: The verification Checklist item fails a body requiring an undeclared prerequisite, and its F rewrites that body
 func TestConceptBodies004ExtraRequirement(t *testing.T) {
-	s := scenarios.New(t, "concept-bodies-004-extra-requirement")
+	s := New(t, "concept-bodies-004-extra-requirement")
 	s.Given(`the "concept-bodies-extra" project tree`)
+	s.And(`the codex writer is controlled to reuse the shipped State.Halve on its first apply`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches Step definition critiqued.*concept_binding`)
-	s.And(`stdout matches Step definition critiqued.*findings=\[\]`)
-	s.And(`stdout does not match Critique sent the patterns back`)
-	s.And(`every file matching "tests/calc/steps/concept*.go" does not match CALC_LICENCE|\.Halve\(`)
+	s.And(`stdout matches Step definition verified.*concept_binding`)
+	s.And(`stdout matches Step definition verified.*findings=\[\]`)
+	s.And(`stdout does not match Verification sent the patterns back`)
+	s.And(`every file matching "tests/calc/steps/concept*.go" does not match CALC_LICENCE|state\.Halve\(`)
 	s.And(`stdout matches BUILD STEPS COMPLETE`)
 	s.And(`no file outside "tmp" and "tests" changed`)
 	s.And(`the shell command "go test -tags bdd -count=1 ./tests/calc/..." run in "." exits with code 0`)
 	s.Done()
 }
 
-// concept-bodies-005-wrong-capture: The critique fails a pattern that captures the wrong part of a step, and the Item is repaired through a new proposal the engine checks before rewriting its skeleton
+// concept-bodies-005-wrong-capture: The verification Checklist item finds a wrong capture; its F proposes the pattern and writes the body, then its Q and the restarted pattern-bindings Q judge it
 func TestConceptBodies005WrongCapture(t *testing.T) {
-	s := scenarios.New(t, "concept-bodies-005-wrong-capture")
+	s := New(t, "concept-bodies-005-wrong-capture")
 	s.Given(`the "concept-bodies-capture" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build steps --fix"`)
 	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches Step definition critiqued.*pattern_captures`)
-	s.And(`stdout matches Critique sent the patterns back to the proposal`)
-	s.And(`stdout matches Pattern proposal accepted`)
+	s.And(`stdout matches Step definition verified.*pattern_captures`)
+	s.And(`stdout matches Verification sent the patterns back to the proposal`)
+	s.And(`stdout matches Check answered.*check=pattern-bindings.*answer=pass`)
 	s.And(`stdout matches Concept skeletons rewritten.*removed=1`)
 	s.And(`stdout matches Concept pattern binds.*step="the Owner halves 64" captures=64`)
 	s.And(`stdout matches BUILD STEPS COMPLETE`)

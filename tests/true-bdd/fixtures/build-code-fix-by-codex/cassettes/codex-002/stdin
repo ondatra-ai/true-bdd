@@ -6,6 +6,7 @@ Write only inside the edit roots in the request. Never modify tests, *_test.go, 
 
 Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, impossible, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -43,13 +44,9 @@ Tests: /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArgument
 
 
 ## Proposed repair plan
-Repair `services/calc/calc.go`: `Add(a, b int)` promises the sum of its arguments but currently returns `a - b`. Change the return expression to `a + b`, preserving the function signature. Remove the stale production comment describing the deliberate defect while retaining the sum contract.
+In services/calc/calc.go, change calc.Add to return a + b instead of a - b, preserving its public signature. Its contract is integer addition; TestAddSumsItsArguments calls Add(2, 3) and requires 5, whereas subtraction currently returns -1. Update the adjacent comment that describes the deliberately broken operator so it reflects the repaired implementation.
 
-This repairs the entire failing set: `TestAddSumsItsArguments` calls `Add(2, 3)` and requires 5.
-
-Validate with `go test -json -count=1 ./tests/suite/... -run '^TestAddSumsItsArguments$'`. Keep the exact test filter because the unrelated canary writes to `tests/suite/suite-runs.log` when executed.
-
-Restrict edits to `services/calc`; do not modify tests, assertions, documents, configuration, or logs.
+This production change serves the failing TestAddSumsItsArguments. Verify with go test -json -count=1 ./tests/suite/... -run '^TestAddSumsItsArguments$', using the suite path declared by the architecture harness. Make no changes to tests, assertions, documents, or true-bdd/.
 
 ## Edit roots
 

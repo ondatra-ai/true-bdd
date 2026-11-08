@@ -25,6 +25,10 @@ Every ticket's acceptance criteria carry one item of their own: the change is ch
 
 Each divergence found is closed in the same change, in the code or in the Specification. The check holds whether the ticket changes the engine, a Story, the Registry or a document.
 
+## Architecture fit
+
+Every ticket fits the generation architecture: `docs/adr/generation-architecture.md`, with its rules in `.claude/rules/generation.md` and its decisions in ADR-0040, ADR-0041 and ADR-0042. The ticket names where each change sits in that picture (the command that writes it, the checklist, runtime package or Specification document that holds it), and every change keeps the rule's invariants. Work goes checklist first: a ticket that adds logic deciding whether something passes to engine code says why a checklist item, a `Q` by prompt or by code with its `F`, cannot do that work. A ticket that changes the architecture itself says so and names the ADR it amends. Before publication a Codex architecture read checks this alone, apart from the ticket's plan-read for its logic (`.claude/skills/common-codex/`).
+
 ## Pull requests as a triage surface
 
 **PRs as a request surface: no.** _(Set to `yes` if this repo treats external PRs as feature requests; `/mpc_triage` reads this flag.)_

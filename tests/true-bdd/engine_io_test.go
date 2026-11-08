@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // engine-io-001-read-hold: The engine waits for a conflicting exclusive parent-directory hold before accessing a file, then completes after release
 func TestEngineIo001ReadHold(t *testing.T) {
-	s := scenarios.New(t, "engine-io-001-read-hold")
+	s := New(t, "engine-io-001-read-hold")
 	s.Given(`the "engine-io-read-hold" project tree`)
 	s.When(`the System Architect runs "build tests" while a "exclusive" hold blocks "docs"`)
 	s.Then(`the command exits with code 1`)
@@ -35,7 +33,7 @@ func TestEngineIo001ReadHold(t *testing.T) {
 
 // engine-io-002-write-hold: The engine waits for a conflicting shared parent-directory hold before accessing a file, then completes after release
 func TestEngineIo002WriteHold(t *testing.T) {
-	s := scenarios.New(t, "engine-io-002-write-hold")
+	s := New(t, "engine-io-002-write-hold")
 	s.Given(`the "engine-io-write-hold" project tree`)
 	s.And(`the project tree has no "true-bdd/true-bdd.yaml"`)
 	s.When(`the System Architect runs "init" while a "shared" hold blocks "true-bdd"`)
@@ -47,7 +45,7 @@ func TestEngineIo002WriteHold(t *testing.T) {
 
 // engine-io-003-events: Engine IO preserves stream events, usage and refusal targets with stable log keys and scrubs Git hook variables for Go tools
 func TestEngineIo003Events(t *testing.T) {
-	s := scenarios.New(t, "engine-io-003-events")
+	s := New(t, "engine-io-003-events")
 	s.Given(`the "engine-io-events" project tree`)
 	s.And(`the codex writer uses fixture-controlled authentication and CLIs`)
 	s.And(`the engine uses an observed fixture Claude CLI`)
@@ -55,6 +53,7 @@ func TestEngineIo003Events(t *testing.T) {
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
+	s.And(`the codex writer started with private fixture authentication, protected homes, an empty edit root and private shell scratch`)
 	s.And(`the codex writer provisioned and removed its fixture authentication`)
 	s.And(`the file matching "tmp/true-bdd.log.json" has exactly 2 matches for "msg":"AssistantMessage received"`)
 	s.And(`every file matching "tmp/true-bdd.log.json" matches "msg":"AssistantMessage received","content_blocks":1`)
@@ -67,7 +66,7 @@ func TestEngineIo003Events(t *testing.T) {
 	s.And(`every file matching "tmp/true-bdd.log.json" does not match "tool":|"run":`)
 	s.And(`every file matching "tmp/*/*codex.log" matches fixture writer stderr sentinel`)
 	s.And(`every file matching "tmp/*/*codex-events.jsonl" does not match fixture writer stderr sentinel`)
-	s.And(`every file matching "tmp/true-bdd.log.json" matches "msg":"Dispatching AI turn","turn":1,"label":"claude-turn001","role":"fix","cli":"claude","model":"claude-opus-5","system_length":[0-9]+,"user_length":[0-9]+`)
+	s.And(`every file matching "tmp/true-bdd.log.json" matches "msg":"Dispatching AI turn","turn":1,"label":"claude-turn001","role":"fix","cli":"claude","model":"claude-opus-5","system_length":[0-9]+,"user_length":[0-9]+,"prompt_bytes":[0-9]+,"prompt_limit_bytes":150000`)
 	s.And(`every file matching "tmp/true-bdd.log.json" matches "msg":"AI turn returned","turn":1,"label":"claude-turn001","role":"fix","cli":"claude","model":"claude-opus-5","duration_ms":[0-9]+,"length":125`)
 	s.And(`every file matching "tmp/true-bdd.log.json" matches "msg":"CLI transcript saved","file":"tmp/[^"\n]+/codex-turn002-codex-events.jsonl"`)
 	s.And(`the file "services/calc/calc.go" is created`)
@@ -76,7 +75,7 @@ func TestEngineIo003Events(t *testing.T) {
 
 // engine-io-004-cancellation: Cancelling the engine stops an active Claude turn and its descendants and ends the run as a failure
 func TestEngineIo004Cancellation(t *testing.T) {
-	s := scenarios.New(t, "engine-io-004-cancellation")
+	s := New(t, "engine-io-004-cancellation")
 	s.Given(`the "engine-io-cancel" project tree`)
 	s.When(`the System Architect cancels "build code --fix" after a CLI descendant starts`)
 	s.Then(`the command exits with code 1`)
@@ -87,7 +86,7 @@ func TestEngineIo004Cancellation(t *testing.T) {
 
 // engine-io-005-stream-bytes: The engine captures the declared suite's stdout and stderr byte for byte, retaining whitespace and an absent final newline
 func TestEngineIo005StreamBytes(t *testing.T) {
-	s := scenarios.New(t, "engine-io-005-stream-bytes")
+	s := New(t, "engine-io-005-stream-bytes")
 	s.Given(`the "engine-io-streams" project tree`)
 	s.When(`the System Architect runs "build code"`)
 	s.Then(`the command exits with code 0`)
@@ -100,7 +99,7 @@ func TestEngineIo005StreamBytes(t *testing.T) {
 
 // engine-io-006-codex-cancellation: Cancelling the engine stops an active codex turn and its descendants and ends the run as a failure
 func TestEngineIo006CodexCancellation(t *testing.T) {
-	s := scenarios.New(t, "engine-io-006-codex-cancellation")
+	s := New(t, "engine-io-006-codex-cancellation")
 	s.Given(`the "engine-io-cancel-codex" project tree`)
 	s.When(`the System Architect cancels "build code --fix" after a CLI descendant starts`)
 	s.Then(`the command exits with code 1`)
@@ -111,7 +110,7 @@ func TestEngineIo006CodexCancellation(t *testing.T) {
 
 // engine-io-007-atomic-write: Rewriting a generated file replaces its inode atomically, preserves existing permissions and does not follow a stale staging symlink
 func TestEngineIo007AtomicWrite(t *testing.T) {
-	s := scenarios.New(t, "engine-io-007-atomic-write")
+	s := New(t, "engine-io-007-atomic-write")
 	s.Given(`the "engine-io-atomic" project tree`)
 	s.And(`the project tree holds atomic replacement probes`)
 	s.When(`the System Architect runs "build tests --fix" after planting a stale staging symlink`)
@@ -125,7 +124,7 @@ func TestEngineIo007AtomicWrite(t *testing.T) {
 
 // engine-io-008-shared-read: Reading the Registry document coexists with another shared parent-directory hold
 func TestEngineIo008SharedRead(t *testing.T) {
-	s := scenarios.New(t, "engine-io-008-shared-read")
+	s := New(t, "engine-io-008-shared-read")
 	s.Given(`the "engine-io-shared-read" project tree`)
 	s.When(`the System Architect runs "build tests" while a "shared" hold permits "docs"`)
 	s.Then(`the command exits with code 1`)
@@ -135,7 +134,7 @@ func TestEngineIo008SharedRead(t *testing.T) {
 
 // engine-io-009-claude-writer-environment: The Claude CLI receives its role and isolation environment at spawn in every mode, including replay
 func TestEngineIo009ClaudeWriterEnvironment(t *testing.T) {
-	s := scenarios.New(t, "engine-io-009-claude-writer-environment")
+	s := New(t, "engine-io-009-claude-writer-environment")
 	s.Given(`the "engine-io-claude-writer" project tree`)
 	s.And(`the engine uses an observed fixture Claude CLI`)
 	s.And(`the System Architect's answer to every question is "1"`)
@@ -150,7 +149,7 @@ func TestEngineIo009ClaudeWriterEnvironment(t *testing.T) {
 
 // engine-io-010-hold-timeout: An unreleased parent-directory hold stops Registry reading after its ten-second wait, naming the held parent
 func TestEngineIo010HoldTimeout(t *testing.T) {
-	s := scenarios.New(t, "engine-io-010-hold-timeout")
+	s := New(t, "engine-io-010-hold-timeout")
 	s.Given(`the "engine-io-hold-timeout" project tree`)
 	s.When(`the System Architect runs "build tests" while a "exclusive" hold blocks "docs" beyond its wait limit`)
 	s.Then(`the command exits with code 1`)

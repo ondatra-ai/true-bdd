@@ -5,42 +5,31 @@ Edit only the listed working copies. Preserve every unaffected entry.
 For a Story step rewrite, return the complete Story YAML instead of editing
 a document. For document edits return the requested confirmation markers.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
 The Product Owner chose apply at the menu for Story host.
 Approved fix:
-Proposed repair for Item `host`, AC-1 then step "the calculator prints 3" — widen the existing `then` concept `result`.
+In `./docs/product/product.yaml`, widen the existing `then` concept `result` so its means states every variation it admits — the number printed after doubling and the number printed after halving — in closed prose. Do not add a `variations:` key or any other key: a concept holds only `concept`, `means` and `terms`.
 
-Why widen rather than add: the Public interface item (the whole number the calculator prints) and the kind of use (`then` — the observable outcome) already exist as `result`. The step is only a variation of that same item and use: the printed number comes from the halving instead of the doubling. A new variation widens the existing concept of that item and use, so no new concept is added.
-
-Owner of the change: the System Architect owns concept bindings; the Product Owner owns the concept prose below. The Story `host` is NOT changed — its wording, status and all steps stay exactly as they are.
-
-Single change, to `./docs/product/product.yaml` only, line 18 — rewrite the `means` of concept `result` and nothing else. A concept holds only `concept`, `means` and `terms`; no `variations` key is introduced (that is what made the previous attempt unreadable). Every variation is stated inside the `means` prose, closed.
-
-BEFORE (lines 16-19):
+Replace these three lines (lines 17-19, under `concepts:` → `then:`):
 
 ```yaml
-  then:
     - concept: result
       means: The calculator prints the whole number the doubling produced.
       terms: []
 ```
 
-AFTER (lines 16-19):
+with:
 
 ```yaml
-  then:
     - concept: result
-      means: The calculator prints the whole number it computed, which is either the whole number the doubling produced or the whole number the halving produced, and no other number.
+      means: The calculator prints the whole number it computed from the number the Owner gave it, whether that number is the double the doubling produced or the half the halving produced.
       terms: []
 ```
 
-Unaffected and left byte-for-byte unchanged: `roles`, the `given` concept `installation`, the `when` concepts `doubling` and `halving`, `glossary`, `description`, and the whole Story `host` including AC-1's given, when and then steps.
-
-Effect once applied: AC-1's then step "the calculator prints 3" is a plain instance of the widened `result` — the printed whole number is the one the halving produced — so it reaches the threshold of 9 and the Item passes.
-
-Do not apply yet; await an explicit menu decision.
+Change nothing else: leave `roles`, the `given` concept `installation`, the `when` concepts `doubling` and `halving`, `glossary` and `description` exactly as they are, and leave the Story `host` and all of its acceptance criteria and steps unchanged.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

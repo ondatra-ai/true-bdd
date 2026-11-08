@@ -146,3 +146,18 @@ story:
                 - and: the file "docs/product/stories/scen-check-verifier.yaml" is unchanged
                 - and: the file "docs/product/stories/scen-check-phrases-tag.yaml" is unchanged
                 - and: the engine dispatched no AI turns
+        - id: 008-unknown-step-key-refused
+          description: A Story with a step key other than given, when or then must be refused before any AI turn, naming the key and Acceptance Criterion and leaving the Story unchanged
+          steps:
+            - given:
+                - the "us-refine-unknown-step-key" project tree
+            - when:
+                - the Product Owner runs "us refine summary"
+            - then:
+                - the command exits with code 1
+                - 'stdout matches acceptance criterion 001-summary: unknown Story step key: and'
+                - stdout matches expected given, when or then
+                - stdout matches level=ERROR msg="Refusing to start" command="us refine"
+                - the file "docs/product/stories/summary-story.yaml" is unchanged
+                - no file outside "tmp" changed
+                - the engine dispatched no AI turns

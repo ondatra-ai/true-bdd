@@ -2,5 +2,5 @@
 applied: true
 impossible: []
 target: "services/calc"
-summary: "Changed calc.Mode() from returning 1 to unconditionally returning 2. TestA and TestB passed with go test -count=1 ./tests/suite/.... Formatting check passed."
+summary: "Changed Mode() from 1 to 2. TestA and TestB passed with go test -count=1 ./tests/suite/.... Patch helper failed; fallback edit succeeded. Git diff was unavailable because this directory is not a Git repository; source was verified directly."
 === FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter2-result.yaml ===

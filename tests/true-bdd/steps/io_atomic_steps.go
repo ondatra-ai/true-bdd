@@ -2,14 +2,12 @@ package steps
 
 import (
 	"bytes"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 	"os"
 	"path/filepath"
-
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
 )
 
-func registerIOAtomicSteps(suite *bddgo.Suite[State]) {
+func registerIOAtomicSteps(suite testkit.StepRegistrar[State]) {
 	suite.Step(`^the System Architect runs "([^"]+)" after planting a stale staging symlink$`, runWithStagingSymlink)
 	suite.Step(`^the project tree holds atomic replacement probes$`, prepareAtomicProbes)
 	suite.Step(`^the rewritten file "([^"]+)" keeps private permissions and replaces its old hard link "([^"]+)"$`,
@@ -35,12 +33,12 @@ func assertAtomicReplacement(state *State, args []string) error {
 		return state.fail("rewritten file must retain mode 0600 and have a new inode")
 	}
 
-	now, err := disk.Read(target)
+	now, err := testkit.Read(target)
 	if err != nil {
 		return state.fail("read rewritten file: %w", err)
 	}
 
-	old, err := disk.Read(original)
+	old, err := testkit.Read(original)
 	if err != nil {
 		return state.fail("read original hard link: %w", err)
 	}
@@ -79,7 +77,7 @@ func runWithStagingSymlink(state *State, args []string) error {
 			return state.fail("plant staging symlink: %w", err)
 		}
 
-		err = disk.Write(filepath.Join(root, "tmp/hold-continue"), []byte("continue\n"), disk.Shared)
+		err = testkit.Write(filepath.Join(root, "tmp/hold-continue"), []byte("continue\n"), testkit.Shared)
 		if err != nil {
 			return state.fail("release staging barrier: %w", err)
 		}

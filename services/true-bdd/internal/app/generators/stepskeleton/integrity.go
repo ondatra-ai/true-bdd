@@ -7,13 +7,14 @@ import (
 	"go/ast"
 	"go/format"
 	"go/token"
-	"strconv"
+
+	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/stepcoverage"
 )
 
 // ErrSkeletonChanged refuses a changed registration or function signature.
 var ErrSkeletonChanged = errors.New("preserve the engine's registration and function signature")
 
-// Intact checks the selected function's signature and its literal registration.
+// Intact checks the selected function's signature and its registration.
 func (d Definition) Intact(dir string) error {
 	files, err := readPackage(dir)
 	if err != nil {
@@ -21,6 +22,7 @@ func (d Definition) Intact(dir string) error {
 	}
 
 	signature, registered := false, false
+	resolver := patternResolver(files)
 
 	for _, fun := range packageFunctions(files) {
 		if fun.Name.Name == d.Function {
@@ -31,7 +33,7 @@ func (d Definition) Intact(dir string) error {
 		}
 
 		if fun.Name.Name == registerFunction {
-			registered = registered || d.registered(fun)
+			registered = registered || d.registered(fun, resolver)
 		}
 	}
 
@@ -42,11 +44,11 @@ func (d Definition) Intact(dir string) error {
 	return nil
 }
 
-func (d Definition) registered(fun *ast.FuncDecl) bool {
+func (d Definition) registered(fun *ast.FuncDecl, resolver stepcoverage.PatternResolver) bool {
 	found := false
 
 	ast.Inspect(fun.Body, func(node ast.Node) bool {
-		literal, function, isStep := stepCall(node)
+		literal, function, isStep := stepCall(node, resolver)
 		found = found || (isStep && literal == d.Pattern && function == d.Function)
 
 		return true
@@ -55,8 +57,8 @@ func (d Definition) registered(fun *ast.FuncDecl) bool {
 	return found
 }
 
-// stepCall reads a literal `suite.Step(pattern, function)` registration.
-func stepCall(node ast.Node) (string, string, bool) {
+// stepCall reads a constant `suite.Step(pattern, function)` registration.
+func stepCall(node ast.Node, resolver stepcoverage.PatternResolver) (string, string, bool) {
 	call, isCall := node.(*ast.CallExpr)
 	if !isCall || len(call.Args) != 2 {
 		return "", "", false
@@ -67,8 +69,8 @@ func stepCall(node ast.Node) (string, string, bool) {
 		return "", "", false
 	}
 
-	pattern, isPattern := call.Args[0].(*ast.BasicLit)
-	if !isPattern || pattern.Kind != token.STRING {
+	_, isReceiver := selector.X.(*ast.Ident)
+	if !isReceiver {
 		return "", "", false
 	}
 
@@ -77,12 +79,21 @@ func stepCall(node ast.Node) (string, string, bool) {
 		return "", "", false
 	}
 
-	literal, err := strconv.Unquote(pattern.Value)
-	if err != nil {
+	literal, resolved := resolver.Resolve(call.Args[0])
+	if !resolved {
 		return "", "", false
 	}
 
 	return literal, function.Name, true
+}
+
+func patternResolver(files []sourceFile) stepcoverage.PatternResolver {
+	trees := make([]*ast.File, 0, len(files))
+	for _, file := range files {
+		trees = append(trees, file.tree)
+	}
+
+	return stepcoverage.NewPatternResolver(trees)
 }
 
 func intactSignature(signature *ast.FuncType) (bool, error) {

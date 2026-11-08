@@ -5,9 +5,9 @@
     {
       "path": "docs/scenarios.yaml",
       "kind": "modified",
-      "size": 570,
-      "sha256": "74407bb812cb854c6bd42210c83d5067c2337c6bde2f3b8bbe239daa274db935",
-      "text": "metadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-10-21\"\n  description: \"One scenario with no measurable criterion\"\n\nscenarios:\n  E2E-001:\n    description: The greeter must greet the person whose name it is given\n    service: greeter\n    path: tests/greeter/greet_test.go\n    user_stories: []\n    merged_steps:\n      given:\n        - the greeting is configured\n      when:\n        - the Operator runs the greeter with a name\n      then:\n        - the greeter's standard output has a line matching `^Hello, Alice$`\n"
+      "size": 576,
+      "sha256": "82092bb2f53f1c6f0a07f4905d2531963353b70e143cd8c0a25492fe1429d8b9",
+      "text": "metadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-10-21\"\n  description: \"One scenario with no measurable criterion\"\n\nscenarios:\n  E2E-001:\n    description: The greeter must greet the person whose name it is given\n    service: greeter\n    path: tests/greeter/greet_test.go\n    user_stories: []\n    merged_steps:\n      given:\n        - the greeting is configured\n      when:\n        - the Operator runs the greeter with a name\n      then:\n        - \"the greeter printed a line on standard output matching `^Hello Alice$`\"\n"
     }
   ]
 }

@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // build-code-writer-001-nonzero: A non-zero writer preserves its files, reruns a build failure and replans from the new evidence to convergence
 func TestBuildCodeWriter001Nonzero(t *testing.T) {
-	s := scenarios.New(t, "build-code-writer-001-nonzero")
+	s := New(t, "build-code-writer-001-nonzero")
 	s.Given(`the "build-code-writer-nonzero" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -47,7 +45,7 @@ func TestBuildCodeWriter001Nonzero(t *testing.T) {
 
 // build-code-writer-002-empty: An empty writer answer preserves its repair, warns once and reruns the set to convergence
 func TestBuildCodeWriter002Empty(t *testing.T) {
-	s := scenarios.New(t, "build-code-writer-002-empty")
+	s := New(t, "build-code-writer-002-empty")
 	s.Given(`the "build-code-writer-empty" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -66,25 +64,25 @@ func TestBuildCodeWriter002Empty(t *testing.T) {
 	s.Done()
 }
 
-// build-code-writer-003-bound: Failed writers consume the existing allowance and rerun the terminal repair before the bound even when it passes
+// build-code-writer-003-bound: Failed writers consume the configured allowance and a failed final rerun stops before another fix
 func TestBuildCodeWriter003Bound(t *testing.T) {
-	s := scenarios.New(t, "build-code-writer-003-bound")
+	s := New(t, "build-code-writer-003-bound")
 	s.Given(`the "build-code-writer-bound" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=WARN msg="Writer turn failed" outcome="non-zero exit"`)
-	s.And(`the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "level":"WARN","msg":"Writer turn failed"`)
+	s.And(`the file matching "tmp/true-bdd.log.json" has exactly 2 matches for "level":"WARN","msg":"Writer turn failed"`)
 	s.And(`the engine dispatched no validation AI turns to "claude"`)
-	s.And(`the engine dispatched 3 fix AI turns to "claude"`)
-	s.And(`the engine dispatched 3 apply AI turns to "codex"`)
-	s.And(`the engine spawned exactly 4 test runners`)
+	s.And(`the engine dispatched 2 fix AI turns to "claude"`)
+	s.And(`the engine dispatched 2 apply AI turns to "codex"`)
+	s.And(`the engine spawned exactly 3 test runners`)
 	s.And(`the file "services/calc/calc.go" is modified`)
 	s.And(`the file "tests/suite/calc_test.go" is unchanged`)
-	s.And(`stdout matches level=ERROR msg="Walk stopped".*gave up after 3 applied fix`)
+	s.And(`stdout matches level=ERROR msg="Walk stopped".*gave up after 2 applied fix`)
 	s.And(`the file "services/calc/prepared.txt" matches ^prepared`)
 	s.And(`every file matching "tmp/*/*fix-iter1-user.txt" matches TestB`)
 	s.And(`every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA`)
-	s.And(`the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0`)
+	s.And(`the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 1`)
 	s.Done()
 }

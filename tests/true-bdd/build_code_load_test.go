@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // build-code-frameworks-010-jest-load-fixed: A Jest file that cannot load its missing service is one load member; build code plans and applies a repair, reruns the file by path and ends green
 func TestBuildCodeFrameworks010JestLoadFixed(t *testing.T) {
-	s := scenarios.New(t, "build-code-frameworks-010-jest-load-fixed")
+	s := New(t, "build-code-frameworks-010-jest-load-fixed")
 	s.Given(`the "build-code-jest-load" project tree`)
 	s.And(`the project's test dependencies are installed`)
 	s.And(`the System Architect's answer to every question is "1"`)
@@ -46,7 +44,7 @@ func TestBuildCodeFrameworks010JestLoadFixed(t *testing.T) {
 
 // build-code-frameworks-011-command-fails-without-member: A failing Jest command with no tests to name stops build code before any AI turn, naming the command and exit code without a completion banner
 func TestBuildCodeFrameworks011CommandFailsWithoutMember(t *testing.T) {
-	s := scenarios.New(t, "build-code-frameworks-011-command-fails-without-member")
+	s := New(t, "build-code-frameworks-011-command-fails-without-member")
 	s.Given(`the "build-code-jest-no-tests" project tree`)
 	s.And(`the project's test dependencies are installed`)
 	s.When(`the System Architect runs "build code --fix"`)

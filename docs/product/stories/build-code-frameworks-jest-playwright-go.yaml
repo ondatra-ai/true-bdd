@@ -129,7 +129,7 @@ story:
       - but: the file "tests/suite/calc_test.go" is unchanged
       - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   - id: 006-not-applied-hits-fix-bound
-    description: Not-applied turns in build code --fix must consume the configured per-set fix allowance and stop at the unchanged
+    description: Not-applied turns in build code --fix must consume the configured per-set fix allowance and stop after the last allowed apply at the
       non-converging fix bound
     steps:
     - given:
@@ -141,12 +141,12 @@ story:
       - the command exits with code 1
       - but: stdout does not match BUILD CODE COMPLETE
       - and: stdout matches level=WARN msg="Fix was NOT applied"
-      - and: stdout matches level=ERROR msg="Walk stopped".*gave up after 3 applied fix
+      - and: stdout matches level=ERROR msg="Walk stopped".*gave up after 2 applied fix
       - and: the engine dispatched no validation AI turns to "claude"
-      - and: the engine dispatched 3 fix AI turns to "claude"
-      - and: the engine dispatched 3 apply AI turns to "codex"
-      - and: the engine dispatched 6 AI turns
-      - and: the engine spawned exactly 4 test runners
+      - and: the engine dispatched 2 fix AI turns to "claude"
+      - and: the engine dispatched 2 apply AI turns to "codex"
+      - and: the engine dispatched 4 AI turns
+      - and: the engine spawned exactly 3 test runners
       - and: the file "services/calc/prepared-first.txt" matches ^prepared
       - and: the file "services/calc/prepared-second.txt" matches ^prepared
       - but: the file "tests/suite/calc_test.go" is unchanged

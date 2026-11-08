@@ -16,9 +16,10 @@ import (
 // It is the sole implementation of the domain's AIPort, so changing which
 // CLI runs a checklist role is a config edit, not a code change.
 type Router struct {
-	providers map[provider.CLI]Provider
-	workDir   string
-	tmpDir    string
+	providers   map[provider.CLI]Provider
+	workDir     string
+	tmpDir      string
+	promptLimit int
 	// turns numbers each dispatched turn so subprocess providers can
 	// archive transcripts without overwriting each other.
 	turns atomic.Uint64
@@ -27,13 +28,18 @@ type Router struct {
 // NewRouter registers every supported provider. workDir is the host
 // project root the turns run in; tmpDir is the run's artifact
 // directory, where providers drop generated configs and transcripts.
-func NewRouter(workDir, tmpDir string) *Router {
+func NewRouter(workDir, tmpDir string, limits ...int) *Router {
 	providers := map[provider.CLI]Provider{
 		provider.CLIClaude: NewClaudeProvider(),
 		provider.CLICodex:  NewCodexProvider(),
 	}
 
-	return &Router{providers: providers, workDir: workDir, tmpDir: tmpDir}
+	limit := DefaultPromptLimit
+	if len(limits) > 0 && limits[0] > 0 {
+		limit = limits[0]
+	}
+
+	return &Router{providers: providers, workDir: workDir, tmpDir: tmpDir, promptLimit: limit}
 }
 
 // ExecutePromptWithSystem satisfies ports.AIPort: ModelRef picks the binary
@@ -61,15 +67,10 @@ func (r *Router) ExecutePromptWithSystem(
 		label = options[0].ArtifactLabel
 	}
 
-	slog.Info(enginelog.MsgDispatch,
-		"turn", turn,
-		"label", label,
-		"role", string(role),
-		"cli", string(model.CLI),
-		"model", model.Model,
-		"system_length", len(systemPrompt),
-		"user_length", len(userPrompt),
-	)
+	err := r.dispatchPrompt(turn, label, role, model, systemPrompt, userPrompt)
+	if err != nil {
+		return "", err
+	}
 
 	turnOptions := writerOptions(role, model.CLI, options)
 
@@ -128,4 +129,35 @@ func writerOptions(role provider.Role, cli provider.CLI, options []provider.Turn
 		ClaudeWriter: cli == provider.CLIClaude && options[0].ClaudeWriter,
 		CodexWriter:  cli == provider.CLICodex && options[0].CodexWriter,
 	}
+}
+
+func (r *Router) dispatchPrompt(turn uint64, label string, role provider.Role,
+	model provider.ModelRef, systemPrompt, userPrompt string,
+) error {
+	size := len(systemPrompt) + len(userPrompt)
+	if model.CLI == provider.CLICodex {
+		size = len(composePrompt(Request{SystemPrompt: systemPrompt, UserPrompt: userPrompt}))
+	}
+
+	limit := r.promptLimit
+	if limit == 0 {
+		limit = DefaultPromptLimit
+	}
+
+	if size > limit {
+		return &PromptLimitError{Turn: label + " " + string(role), Size: size, Limit: limit}
+	}
+
+	slog.Info(enginelog.MsgDispatch,
+		"turn", turn,
+		"label", label,
+		"role", string(role),
+		"cli", string(model.CLI),
+		"model", model.Model,
+		"system_length", len(systemPrompt),
+		"user_length", len(userPrompt),
+		"prompt_bytes", size, "prompt_limit_bytes", limit,
+	)
+
+	return nil
 }

@@ -4,9 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
 
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
+	proxycli "github.com/ondatra-ai/true-bdd/pkg/proxy/cli"
 )
 
 // The recording proxy stays first, so the schema-breaking CLI's replies are recorded normally.
@@ -34,6 +33,24 @@ func useCannotServeWriter(state *State, _ []string) error {
 	return useFixtureCLI(state, "cli", "codex")
 }
 
+//truebdd:concept given "fixture AI CLIs"
+func useShippedHalveWriter(state *State, _ []string) error {
+	if state.Fixture.Name != "concept-bodies-extra" {
+		return state.fail("a controlled shipped-Halve writer is not sanctioned for %q", state.Fixture.Name)
+	}
+
+	return useFixtureCLI(state, "cli", "codex")
+}
+
+//truebdd:concept given "fixture AI CLIs"
+func useUnusedPatternProposal(state *State, _ []string) error {
+	if state.Fixture.Name != "concept-steps-unused" {
+		return state.fail("an unused-pattern proposal is not sanctioned for %q", state.Fixture.Name)
+	}
+
+	return useFixtureCLI(state, "cli", "claude")
+}
+
 // useFixtureCLI puts the fixture's directory holding program right behind the suite's
 // programs, or before every PATH entry in live mode.
 func useFixtureCLI(state *State, dir, program string) error {
@@ -47,20 +64,7 @@ func useFixtureCLI(state *State, dir, program string) error {
 		return state.fail("stat fixture CLI: %w", err)
 	}
 
-	if state.Harness.Modes.Services == runner.ProxyModeLive {
-		state.Proxy.Env = []string{"PATH=" + directory + string(os.PathListSeparator) + os.Getenv("PATH")}
-
-		return nil
-	}
-
-	for index, entry := range state.Proxy.Env {
-		if !strings.HasPrefix(entry, "PATH=") {
-			continue
-		}
-
-		shim, rest, _ := strings.Cut(strings.TrimPrefix(entry, "PATH="), string(os.PathListSeparator))
-		state.Proxy.Env[index] = "PATH=" + strings.Join([]string{shim, directory, rest}, string(os.PathListSeparator))
-	}
+	proxycli.FallbackPath(state, directory)
 
 	return nil
 }

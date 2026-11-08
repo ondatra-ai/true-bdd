@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // claude-guard-001-read-only-tool-allowed: A tool call to a tool that only reads must be allowed for any file inside the project, inside the turn's write roots or not
 func TestClaudeGuard001ReadOnlyToolAllowed(t *testing.T) {
-	s := scenarios.New(t, "claude-guard-001-read-only-tool-allowed")
+	s := New(t, "claude-guard-001-read-only-tool-allowed")
 	s.Given(`the "claude-guard-read-only-tool" project tree`)
 	s.And(`claude's write policy lets the turn write under "tests"`)
 	s.And(`the tool call names the tool "Read"`)
@@ -36,7 +34,7 @@ func TestClaudeGuard001ReadOnlyToolAllowed(t *testing.T) {
 
 // claude-guard-002-shell-denied-without-grant: A tool call to the shell must be denied when the turn's write policy does not let the turn run it, since a shell command can write anywhere
 func TestClaudeGuard002ShellDeniedWithoutGrant(t *testing.T) {
-	s := scenarios.New(t, "claude-guard-002-shell-denied-without-grant")
+	s := New(t, "claude-guard-002-shell-denied-without-grant")
 	s.Given(`the "claude-guard-shell-denied" project tree`)
 	s.And(`claude's write policy lets the turn write under "tests"`)
 	s.And(`the tool call names the tool "Bash"`)
@@ -48,7 +46,7 @@ func TestClaudeGuard002ShellDeniedWithoutGrant(t *testing.T) {
 
 // claude-guard-004-unknown-tool-denied: A tool call to a tool the guard does not know must be denied as a writer, even when it targets a file inside a write root
 func TestClaudeGuard004UnknownToolDenied(t *testing.T) {
-	s := scenarios.New(t, "claude-guard-004-unknown-tool-denied")
+	s := New(t, "claude-guard-004-unknown-tool-denied")
 	s.Given(`the "claude-guard-unknown-tool" project tree`)
 	s.And(`claude's write policy lets the turn write under "tests"`)
 	s.And(`the tool call names the tool "rename"`)
@@ -61,7 +59,7 @@ func TestClaudeGuard004UnknownToolDenied(t *testing.T) {
 
 // claude-guard-005-missing-policy-denied: A tool call must be denied when claude hands the guard no write policy, even one to a tool that only reads
 func TestClaudeGuard005MissingPolicyDenied(t *testing.T) {
-	s := scenarios.New(t, "claude-guard-005-missing-policy-denied")
+	s := New(t, "claude-guard-005-missing-policy-denied")
 	s.Given(`the "claude-guard-missing-policy" project tree`)
 	s.And(`claude's write policy is missing`)
 	s.And(`the tool call names the tool "Read"`)
@@ -74,7 +72,7 @@ func TestClaudeGuard005MissingPolicyDenied(t *testing.T) {
 
 // claude-guard-006-unreadable-policy-denied: A tool call must be denied when the guard cannot read the write policy claude hands it, even one to a tool that only reads
 func TestClaudeGuard006UnreadablePolicyDenied(t *testing.T) {
-	s := scenarios.New(t, "claude-guard-006-unreadable-policy-denied")
+	s := New(t, "claude-guard-006-unreadable-policy-denied")
 	s.Given(`the "claude-guard-unreadable-policy" project tree`)
 	s.And(`claude's write policy is unreadable`)
 	s.And(`the tool call names the tool "Read"`)
@@ -87,7 +85,7 @@ func TestClaudeGuard006UnreadablePolicyDenied(t *testing.T) {
 
 // claude-guard-007-payload-names-the-call: When claude names neither the tool nor its file but in the hook payload, the guard must judge the tool call the payload names
 func TestClaudeGuard007PayloadNamesTheCall(t *testing.T) {
-	s := scenarios.New(t, "claude-guard-007-payload-names-the-call")
+	s := New(t, "claude-guard-007-payload-names-the-call")
 	s.Given(`the "claude-guard-hook-payload" project tree`)
 	s.And(`claude's write policy lets the turn write under "tests"`)
 	s.And(`the hook payload names the tool "Write" and the file "tests/notes.md"`)
@@ -98,7 +96,7 @@ func TestClaudeGuard007PayloadNamesTheCall(t *testing.T) {
 
 // claude-guard-reads-001-outside-project-denied: A Read of an absolute path outside the project must be denied, naming the path and the read root
 func TestClaudeGuardReads001OutsideProjectDenied(t *testing.T) {
-	s := scenarios.New(t, "claude-guard-reads-001-outside-project-denied")
+	s := New(t, "claude-guard-reads-001-outside-project-denied")
 	s.Given(`the "claude-guard-read-outside" project tree`)
 	s.And(`claude's write policy lets the turn write under "tests"`)
 	s.And(`the tool call names the tool "Read"`)
@@ -111,7 +109,7 @@ func TestClaudeGuardReads001OutsideProjectDenied(t *testing.T) {
 
 // claude-guard-reads-002-relative-escape-denied: A glob whose path leaves the project through ../ must be denied
 func TestClaudeGuardReads002RelativeEscapeDenied(t *testing.T) {
-	s := scenarios.New(t, "claude-guard-reads-002-relative-escape-denied")
+	s := New(t, "claude-guard-reads-002-relative-escape-denied")
 	s.Given(`the "claude-guard-read-relative-escape" project tree`)
 	s.And(`claude's write policy lets the turn write under "tests"`)
 	s.And(`the hook payload names the tool "Glob" and the path "../neighbour"`)
@@ -123,7 +121,7 @@ func TestClaudeGuardReads002RelativeEscapeDenied(t *testing.T) {
 
 // claude-guard-reads-003-symlink-escape-denied: A read through a symbolic link inside the project pointing outside it must be denied
 func TestClaudeGuardReads003SymlinkEscapeDenied(t *testing.T) {
-	s := scenarios.New(t, "claude-guard-reads-003-symlink-escape-denied")
+	s := New(t, "claude-guard-reads-003-symlink-escape-denied")
 	s.Given(`the "claude-guard-read-symlink-escape" project tree`)
 	s.And(`claude's write policy lets the turn write under "tests"`)
 	s.And(`the project tree's "node_modules/shared" is a symbolic link to "../../"`)
@@ -137,7 +135,7 @@ func TestClaudeGuardReads003SymlinkEscapeDenied(t *testing.T) {
 
 // claude-guard-reads-004-unnamed-path-allowed: A Read call naming no path must be allowed to read the project
 func TestClaudeGuardReads004UnnamedPathAllowed(t *testing.T) {
-	s := scenarios.New(t, "claude-guard-reads-004-unnamed-path-allowed")
+	s := New(t, "claude-guard-reads-004-unnamed-path-allowed")
 	s.Given(`the "claude-guard-read-unnamed-path" project tree`)
 	s.And(`claude's write policy lets the turn write under "tests"`)
 	s.And(`the tool call names the tool "Read"`)
@@ -148,7 +146,7 @@ func TestClaudeGuardReads004UnnamedPathAllowed(t *testing.T) {
 
 // claude-guard-reads-005-missing-read-root-denied: A tool call must be denied when claude hands the guard a write policy with no read root, naming what is missing
 func TestClaudeGuardReads005MissingReadRootDenied(t *testing.T) {
-	s := scenarios.New(t, "claude-guard-reads-005-missing-read-root-denied")
+	s := New(t, "claude-guard-reads-005-missing-read-root-denied")
 	s.Given(`the "claude-guard-read-missing-root" project tree`)
 	s.And(`claude's write policy lets the turn write under "tests"`)
 	s.And(`claude's write policy names no directory to read`)
@@ -162,7 +160,7 @@ func TestClaudeGuardReads005MissingReadRootDenied(t *testing.T) {
 
 // claude-guard-reads-006-relative-path-allowed: A relative read path inside the project must be allowed outside every write root
 func TestClaudeGuardReads006RelativePathAllowed(t *testing.T) {
-	s := scenarios.New(t, "claude-guard-reads-006-relative-path-allowed")
+	s := New(t, "claude-guard-reads-006-relative-path-allowed")
 	s.Given(`the "claude-guard-read-relative-path" project tree`)
 	s.And(`claude's write policy lets the turn write under "tests"`)
 	s.And(`the tool call names the tool "Read"`)
@@ -174,7 +172,7 @@ func TestClaudeGuardReads006RelativePathAllowed(t *testing.T) {
 
 // claude-guard-writes-001-write-inside-root-allowed: A write to a file inside one of the turn's write roots must be allowed, even when the file does not exist yet
 func TestClaudeGuardWrites001WriteInsideRootAllowed(t *testing.T) {
-	s := scenarios.New(t, "claude-guard-writes-001-write-inside-root-allowed")
+	s := New(t, "claude-guard-writes-001-write-inside-root-allowed")
 	s.Given(`the "claude-guard-write-inside-root" project tree`)
 	s.And(`claude's write policy lets the turn write under "tests"`)
 	s.And(`the tool call names the tool "Write"`)
@@ -186,7 +184,7 @@ func TestClaudeGuardWrites001WriteInsideRootAllowed(t *testing.T) {
 
 // claude-guard-writes-002-write-outside-roots-denied: A write to a file outside every one of the turn's write roots must be denied, naming the file and the roots
 func TestClaudeGuardWrites002WriteOutsideRootsDenied(t *testing.T) {
-	s := scenarios.New(t, "claude-guard-writes-002-write-outside-roots-denied")
+	s := New(t, "claude-guard-writes-002-write-outside-roots-denied")
 	s.Given(`the "claude-guard-write-outside-roots" project tree`)
 	s.And(`claude's write policy lets the turn write under "tests"`)
 	s.And(`claude's write policy lets the turn write under "services"`)
@@ -200,7 +198,7 @@ func TestClaudeGuardWrites002WriteOutsideRootsDenied(t *testing.T) {
 
 // claude-guard-writes-003-symlink-escape-denied: A write through a symbolic link inside a write root that points out of it must be denied, judged by where the link leads rather than by the path claude names
 func TestClaudeGuardWrites003SymlinkEscapeDenied(t *testing.T) {
-	s := scenarios.New(t, "claude-guard-writes-003-symlink-escape-denied")
+	s := New(t, "claude-guard-writes-003-symlink-escape-denied")
 	s.Given(`the "claude-guard-symlink-escape" project tree`)
 	s.And(`the project tree's "tests/node_modules/shared" is a symbolic link to "../../docs"`)
 	s.And(`claude's write policy lets the turn write under "tests"`)
@@ -214,7 +212,7 @@ func TestClaudeGuardWrites003SymlinkEscapeDenied(t *testing.T) {
 
 // claude-guard-writes-004-shared-prefix-denied: A write to a sibling directory whose name starts with a write root's name must be denied
 func TestClaudeGuardWrites004SharedPrefixDenied(t *testing.T) {
-	s := scenarios.New(t, "claude-guard-writes-004-shared-prefix-denied")
+	s := New(t, "claude-guard-writes-004-shared-prefix-denied")
 	s.Given(`the "claude-guard-shared-prefix" project tree`)
 	s.And(`claude's write policy lets the turn write under "tests"`)
 	s.And(`the tool call names the tool "Write"`)
@@ -227,7 +225,7 @@ func TestClaudeGuardWrites004SharedPrefixDenied(t *testing.T) {
 
 // claude-guard-writes-006-unnamed-path-denied: A Write naming no target defaults to the working directory, which is denied outside its write roots
 func TestClaudeGuardWrites006UnnamedPathDenied(t *testing.T) {
-	s := scenarios.New(t, "claude-guard-writes-006-unnamed-path-denied")
+	s := New(t, "claude-guard-writes-006-unnamed-path-denied")
 	s.Given(`the "claude-guard-unnamed-path" project tree`)
 	s.And(`claude's write policy lets the turn write under "tests"`)
 	s.And(`the tool call names the tool "Write"`)

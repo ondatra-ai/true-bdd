@@ -45,14 +45,13 @@ func AssessRedRun(payload []byte, identities []string) RedRun {
 	return verdict
 }
 
-// RedScenarios runs the selected suite once; ordinary test failures are verdict evidence.
+// RedScenarios runs the suite once and assesses the required Scenarios; test failures are verdict evidence.
 func (r *GoTestRunner) RedScenarios(cfg Config, identities []string) (RedRun, error) {
 	argv, err := cfg.argv()
 	if err != nil {
 		return RedRun{}, err
 	}
 
-	argv = appendGoScenarioFilter(argv, identities)
 	argv = append(argv, "-count=1")
 	stdout, stderr, runErr := r.exec(CommandDir(cfg), "red-without-target", argv)
 

@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // build-code-writable-001-manifests: An exact writable go.sum grant lets the writer repair a missing checksum
 func TestBuildCodeWritable001Manifests(t *testing.T) {
-	s := scenarios.New(t, "build-code-writable-001-manifests")
+	s := New(t, "build-code-writable-001-manifests")
 	s.Given(`the "build-code-writable-allowed" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -43,7 +41,7 @@ func TestBuildCodeWritable001Manifests(t *testing.T) {
 
 // build-code-writable-002-plan-impossible: A plan that needs undeclared go.sum stops before the writer
 func TestBuildCodeWritable002PlanImpossible(t *testing.T) {
-	s := scenarios.New(t, "build-code-writable-002-plan-impossible")
+	s := New(t, "build-code-writable-002-plan-impossible")
 	s.Given(`the "build-code-writable-plan" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -61,7 +59,7 @@ func TestBuildCodeWritable002PlanImpossible(t *testing.T) {
 
 // build-code-writable-003-writer-impossible: A writer impossibility verdict stops at once and keeps its completed edits
 func TestBuildCodeWritable003WriterImpossible(t *testing.T) {
-	s := scenarios.New(t, "build-code-writable-003-writer-impossible")
+	s := New(t, "build-code-writable-003-writer-impossible")
 	s.Given(`the "build-code-writable-writer" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -82,7 +80,7 @@ func TestBuildCodeWritable003WriterImpossible(t *testing.T) {
 
 // build-code-writable-005-tests-refused: A writable grant over tests is refused before any runner or AI turn
 func TestBuildCodeWritable005TestsRefused(t *testing.T) {
-	s := scenarios.New(t, "build-code-writable-005-tests-refused")
+	s := New(t, "build-code-writable-005-tests-refused")
 	s.Given(`the "build-code-writable-refused" project tree`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 1`)

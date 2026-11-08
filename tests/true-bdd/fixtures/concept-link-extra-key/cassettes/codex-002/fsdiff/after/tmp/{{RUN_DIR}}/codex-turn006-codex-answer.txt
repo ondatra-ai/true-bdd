@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-host-iter2-result.yaml ===
 applied: true
 target: "product"
-summary: "Widened only result.means to include exactly the whole number produced by doubling or halving. All other bytes remain unchanged."
+summary: "Widened result means exactly as approved to cover doubling and halving. Verified all other bytes unchanged. Sandbox restrictions caused search and cache diagnostics; the edit and verification succeeded."
 === FILE_END: tmp/{{RUN_DIR}}/apply-host-iter2-result.yaml ===

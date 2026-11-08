@@ -9,7 +9,7 @@ import (
 	checklistmodels "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/checklist"
 )
 
-// answerCheck answers a `D:` Cell with the built-in check its prompt
+// answerCheck answers a Cell with Q.code with the built-in check its prompt
 // names, reading the documents the prompt cites; it never dispatches a turn.
 func answerCheck[I any](
 	spec Spec[I],
@@ -57,23 +57,7 @@ func answerCheck[I any](
 	return result, nil
 }
 
-// recordSkip reports a `Q:` Cell a failed check spared as SKIP, so the
-// report still shows every prompt the item was held to.
-func recordSkip[I any](spec Spec[I], builder *reportBuilder) func(item I, query *checklistmodels.PromptWithContext) {
-	return func(item I, query *checklistmodels.PromptWithContext) {
-		subjectID, subjectTitle := spec.GetSubject(item)
-
-		slog.Info("Prompt skipped after a failed check",
-			"subjectID", subjectID,
-			"promptIndex", query.Index,
-		)
-
-		builder.Add(subjectID, subjectTitle, validate.SkippedResult(*query))
-	}
-}
-
-// isCheckQuery marks a `D:` Cell as the walker's gate: its failure skips
-// the item's model Cells until a fix restarts the item.
+// isCheckQuery reports a Q answered by the engine rather than a model.
 func isCheckQuery(query *checklistmodels.PromptWithContext) bool {
 	return query.Prompt.IsCheck()
 }

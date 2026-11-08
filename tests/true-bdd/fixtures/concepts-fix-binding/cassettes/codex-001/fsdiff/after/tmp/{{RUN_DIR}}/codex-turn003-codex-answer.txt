@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/architecture_yaml.yaml"
-summary: "Added the approved request greeting/when binding for greeter between the existing Given and Then bindings. All existing content preserved."
+summary: "Added exactly the approved request greeting binding between the existing greeting bindings. Verified all other content and working copies unchanged. Tool emitted sandbox cache warnings; edit and verification succeeded."
 === FILE_END: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===

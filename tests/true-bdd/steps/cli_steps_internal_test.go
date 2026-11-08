@@ -1,10 +1,9 @@
 package steps
 
 import (
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 	"strings"
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
 )
 
 // The exit-code and stdout steps note what the run was held to on the tree
@@ -12,7 +11,9 @@ import (
 func TestExitCodeAndStdoutStepsGradeARunWithoutAFixture(t *testing.T) {
 	t.Parallel()
 
-	state := &State{T: t, Result: &runner.RunResult{ExitCode: 1, Stdout: "REFINE COMPLETE"}}
+	state := &State{ScenarioRun: &testkit.ScenarioRun{
+		T: t, Result: &testkit.RunResult{ExitCode: 1, Stdout: "REFINE COMPLETE"},
+	}}
 
 	err := assertExitCode(state, []string{"1"})
 	if err != nil {
@@ -34,7 +35,9 @@ func TestTheDependenciesStepNamesTheDependenciesItStates(t *testing.T) {
 		{capture: "", wording: "the project's test dependencies are installed"},
 		{capture: "browser ", wording: "the project's browser test dependencies are installed"},
 	} {
-		err := assertDependenciesInstalled(&State{T: t, Fixture: &runner.Fixture{}}, []string{step.capture})
+		state := &State{ScenarioRun: &testkit.ScenarioRun{T: t, Fixture: &testkit.Fixture{}}}
+
+		err := assertDependenciesInstalled(state, []string{step.capture})
 		if err == nil {
 			t.Fatalf("%q on a tree with no prep: want an error", step.wording)
 		}

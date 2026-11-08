@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // build-code-set-001-partial-repair: A partial repair removes the passing member from the next plan
 func TestBuildCodeSet001PartialRepair(t *testing.T) {
-	s := scenarios.New(t, "build-code-set-001-partial-repair")
+	s := New(t, "build-code-set-001-partial-repair")
 	s.Given(`the "build-code-partial" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -42,7 +40,7 @@ func TestBuildCodeSet001PartialRepair(t *testing.T) {
 
 // build-code-set-002-shared-evidence: Shared failure output is shown once with both ids in the set request
 func TestBuildCodeSet002SharedEvidence(t *testing.T) {
-	s := scenarios.New(t, "build-code-set-002-shared-evidence")
+	s := New(t, "build-code-set-002-shared-evidence")
 	s.Given(`the "build-code-grouped" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -59,7 +57,7 @@ func TestBuildCodeSet002SharedEvidence(t *testing.T) {
 
 // build-code-set-003-mixed-synthetic: A build failure and a named test form one set whose rerun is unfiltered
 func TestBuildCodeSet003MixedSynthetic(t *testing.T) {
-	s := scenarios.New(t, "build-code-set-003-mixed-synthetic")
+	s := New(t, "build-code-set-003-mixed-synthetic")
 	s.Given(`the "build-code-mixed-build" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -75,7 +73,7 @@ func TestBuildCodeSet003MixedSynthetic(t *testing.T) {
 
 // build-code-set-004-missing-result: A skipped selected member stays failing until its own passing result
 func TestBuildCodeSet004MissingResult(t *testing.T) {
-	s := scenarios.New(t, "build-code-set-004-missing-result")
+	s := New(t, "build-code-set-004-missing-result")
 	s.Given(`the "build-code-missing-member" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
@@ -90,23 +88,27 @@ func TestBuildCodeSet004MissingResult(t *testing.T) {
 
 // build-code-set-005-shrinking-counter: Shrinking the set does not reset its existing attempt counter and the last apply is rerun
 func TestBuildCodeSet005ShrinkingCounter(t *testing.T) {
-	s := scenarios.New(t, "build-code-set-005-shrinking-counter")
+	s := New(t, "build-code-set-005-shrinking-counter")
 	s.Given(`the "build-code-shrinking-bound" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches gave up after 2 applied fix`)
-	s.And(`the engine dispatched 2 apply AI turns to "codex"`)
-	s.And(`the engine spawned exactly 3 test runners`)
-	s.And(`the file "services/calc/attempted.txt" matches attempted`)
-	s.And(`every file matching "tmp/*/*fix-iter1-user.txt" matches TestB`)
-	s.And(`every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA`)
+	s.And(`the engine dispatched 1 apply AI turn to "codex"`)
+	s.And(`the engine spawned exactly 2 test runners`)
+	s.And(`the file "services/calc/calc.go" is modified`)
+	s.And(`the engine spawned exactly 1 test runner with arguments matching -run \^TestA\$\|\^TestB\$`)
+	s.And(`the engine spawned exactly no test runners with arguments matching -run \^TestB\$`)
+	s.And(`stdout matches (?s)Fix applied; re-running the failing set.*Check answered.*tests-pass.*TestB.*gave up after 1 applied fix`)
+	s.And(`every file matching "tmp/*/*checklist-build-code-test-passes-result.yaml" matches ::TestB`)
+	s.And(`every file matching "tmp/*/*checklist-build-code-test-passes-result.yaml" does not match ::TestA`)
+	s.And(`stdout matches gave up after 1 applied fix`)
+	s.And(`the engine dispatched 1 fix AI turn to "claude"`)
 	s.Done()
 }
 
 // build-code-set-006-no-test-files: A missing service is repaired once for a test package and a helper package without tests
 func TestBuildCodeSet006NoTestFiles(t *testing.T) {
-	s := scenarios.New(t, "build-code-set-006-no-test-files")
+	s := New(t, "build-code-set-006-no-test-files")
 	s.Given(`the "build-code-no-test-files" project tree`)
 	s.And(`the System Architect's answer to every question is "1"`)
 	s.When(`the System Architect runs "build code --fix"`)

@@ -4,6 +4,9 @@ You are a Term Document Editor applying an approved fix to the working
 copy of one term document: the product document's glossary or
 concepts.
 
+The user has already chosen Apply at the engine menu, authorizing this turn.
+Menu reminders inside the approved fix are satisfied; apply it without asking again.
+
 **Your Task:**
 1. Read the working copy the fix names.
 2. Read the fix prompt instructions.
@@ -28,6 +31,7 @@ concepts.
   - `target:` — the working copy you edited (QUOTED)
   - `summary:` — one line on what changed
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -49,27 +53,16 @@ Then:
 
 ## Fix Prompt to Apply
 
-Proposal for the Product Owner — add one glossary entry to the product document.
-
-Context: Scenario E2E-001, service mcp-service, check `declared-terms`. The then concept `reply time` (docs/product/product.yaml, `concepts.then`) declares the term `latency`, but the product glossary defines only `mcp service` and `reply`. The missing meaning is a product meaning, so it belongs in the glossary of the product document, owned by the Product Owner. No Scenario, generated test or step definition is touched, and no concept, binding or architecture.terms mapping changes.
-
-Per the refinement, the meaning states that the client clock measures it.
-
-File: docs/product/product.yaml
+Edit `./docs/product/product.yaml` to define the undefined term `latency` in the product glossary. Make exactly one replacement, appending the new entry at the end of the `glossary:` list (after the `reply` entry, before the blank line and `concepts:`). Change nothing else: do not touch `concepts:`, any Scenario, test or step definition.
 
 old_string:
-```
   - term: reply
     means: >-
       What the MCP service sends back for one message, and how long it
       took to arrive. A client waits on it, so its content and its delay
       are both behaviour.
 
-concepts:
-```
-
 new_string:
-```
   - term: reply
     means: >-
       What the MCP service sends back for one message, and how long it
@@ -77,14 +70,11 @@ new_string:
       are both behaviour.
   - term: latency
     means: >-
-      How long a reply takes to arrive, measured by the client clock from
-      the moment the client sends the message to the moment the reply
-      arrives, in milliseconds.
+      The time between a client sending a message and that message's
+      reply arriving back at the client. The client clock measures it, so
+      no other timer decides whether a reply was slow.
 
-concepts:
-```
-
-After this edit the glossary defines `latency`, so every term declared by the then concept `reply time` (`mcp service`, `reply`, `latency`) is declared, and the `declared-terms` check for E2E-001 passes.
+This keeps the entry to one paragraph of two sentences of 19 and 21 words, and it states that the client clock measures the latency, as the owner settled.
 
 ---
 

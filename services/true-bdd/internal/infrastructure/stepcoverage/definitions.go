@@ -53,12 +53,12 @@ func loadDefinitions(dir string) ([]definition, error) {
 		return nil, err
 	}
 
-	table := newConstTable(files)
+	resolver := NewPatternResolver(files)
 
 	var defs []definition
 
 	for _, file := range files {
-		found, defErr := definitionsIn(fset, file, table)
+		found, defErr := definitionsIn(fset, file, resolver)
 		if defErr != nil {
 			return nil, defErr
 		}
@@ -131,7 +131,7 @@ func parseOne(fset *token.FileSet, path string) (*ast.File, error) {
 
 // definitionsIn collects one file's registrations, stopping at the first
 // pattern it cannot fold.
-func definitionsIn(fset *token.FileSet, file *ast.File, table constTable) ([]definition, error) {
+func definitionsIn(fset *token.FileSet, file *ast.File, resolver PatternResolver) ([]definition, error) {
 	var (
 		defs []definition
 		err  error
@@ -147,7 +147,7 @@ func definitionsIn(fset *token.FileSet, file *ast.File, table constTable) ([]def
 			return true
 		}
 
-		def, defErr := newDefinition(fset, expr, table)
+		def, defErr := newDefinition(fset, expr, resolver)
 		if defErr != nil {
 			err = defErr
 
@@ -185,11 +185,11 @@ func stepPatternArg(node ast.Node) (ast.Expr, bool) {
 }
 
 // newDefinition folds one pattern argument and compiles it.
-func newDefinition(fset *token.FileSet, expr ast.Expr, table constTable) (definition, error) {
+func newDefinition(fset *token.FileSet, expr ast.Expr, resolver PatternResolver) (definition, error) {
 	position := fset.Position(expr.Pos())
 	where := position.String()
 
-	source, folded := table.fold(expr, map[string]bool{})
+	source, folded := resolver.Resolve(expr)
 	if !folded {
 		return definition{}, fmt.Errorf("%s: %w: %s",
 			where, ErrPatternNotConstant, render(fset, expr))

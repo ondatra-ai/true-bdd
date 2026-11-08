@@ -1,0 +1,12 @@
+package steps
+
+type State struct {
+	Program string
+	Value   int
+	Input int
+}
+type Registrar interface {
+	Step(string, func(*State, []string) error)
+}
+
+

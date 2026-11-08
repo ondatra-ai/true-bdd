@@ -5,123 +5,43 @@ Edit only the listed working copies. Preserve every unaffected entry.
 For a Story step rewrite, return the complete Story YAML instead of editing
 a document. For document edits return the requested confirmation markers.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
 The Product Owner chose apply at the menu. Apply this approved word repair:
-PROPOSED REPAIR — Product Owner word repair for Item host-001 (not applied)
+Apply this repair to `docs/product/product.yaml` only. Do not touch the Story, the Scenario, or the architecture document. The declared-term route is the one to take here: the product's `language_policy` requires keeping the exact domain name "idempotency key" in the product meanings and declaring it when used, so the `when: halve` means is left word-for-word as it is and the word is declared instead.
 
-Failed judgement: `when:halve` — undeclared domain word "idempotency key".
+Two edits, both inside `docs/product/product.yaml`. Keep the file's existing 2-space JSON-style formatting.
 
-Chosen option: declare the term. The product's `language_policy` says "The request label
-is presented to users as an idempotency key. Keep this exact domain name in the product
-meanings and declare it when needed." So the domain name stays in the means, and is
-declared by a glossary entry plus the word in the affected concept's `terms`.
-Rewording the means to drop "idempotency key" is rejected: it would contradict the
-language policy.
+1. Declare the word on the affected concept. In `concepts.when`, in the entry whose `concept` is `halve` (lines 17-21), replace the empty `terms` list with the word as a string. The `concept` and `means` fields stay exactly as they are:
 
-Scope: `docs/product/product.yaml` only. No Story, Scenario or architecture change.
-The `means` text of every concept is unchanged, so all meanings are preserved.
-`given:number ready`, `then:number result` and `then:unused` are untouched.
-No new variation is added: this widens no concept and adds no item or use.
-
-Two edits, both in docs/product/product.yaml, keeping the document's existing
-JSON-style (JSON is valid YAML) and the document's schema (glossary entries use
-`term` and `means`; never a `meaning` field).
-
---- EDIT 1 of 2: add "idempotency key" to the terms of the when:halve concept ---
-
-Before:
-
-  "when": [
-    {
-      "concept": "halve",
-      "means": "Halve the entered number once with the supplied idempotency key.",
-      "terms": []
-    }
-  ],
-
-After:
-
-  "when": [
-    {
-      "concept": "halve",
-      "means": "Halve the entered number once with the supplied idempotency key.",
-      "terms": ["idempotency key"]
-    }
-  ],
-
---- EDIT 2 of 2: add the glossary entry ---
-
-Before:
-
-  "glossary": [],
-
-After:
-
-  "glossary": [
-    {
-      "term": "idempotency key",
-      "means": "The request label supplied with a halving. Repeating a halving with the same idempotency key changes the number only once."
-    }
-  ],
-
---- Resulting document (docs/product/product.yaml) in full, for review ---
-
-{
-  "roles": [
-    {
-      "name": "Product Owner",
-      "description": "Owns meanings."
-    }
-  ],
-  "concepts": {
-    "given": [
-      {
-        "concept": "number ready",
-        "means": "A number is entered before the action.",
-        "terms": []
-      }
-    ],
-    "when": [
+```yaml
       {
         "concept": "halve",
         "means": "Halve the entered number once with the supplied idempotency key.",
-        "terms": ["idempotency key"]
+        "terms": [
+          "idempotency key"
+        ]
       }
-    ],
-    "then": [
-      {
-        "concept": "number result",
-        "means": "Compare the displayed number with an expected value.",
-        "terms": []
-      },
-      {
-        "concept": "unused",
-        "means": "The settlement ledger has a reconciled nostro balance.",
-        "terms": []
-      }
-    ]
-  },
+```
+
+2. Add the glossary entry. Replace the empty glossary on line 36, `"glossary": [],`, with:
+
+```yaml
   "glossary": [
     {
       "term": "idempotency key",
-      "means": "The request label supplied with a halving. Repeating a halving with the same idempotency key changes the number only once."
+      "means": "An idempotency key is the request label a caller supplies with a request. Repeating a request with the same key changes the number only once."
     }
   ],
-  "description": "A calculator accepts a number and a request label. Repeating a request with the same label changes the number only once.",
-  "language_policy": "The request label is presented to users as an idempotency key. Keep this exact domain name in the product meanings and declare it when needed."
-}
+```
 
-Why this clears the judgement: "Halve", "entered number" and "once" stay ordinary
-English; "idempotency key" is now declared in the terms of the very concept that uses
-it, and the glossary gives its means, so the reader can recover it in this context.
+Nothing else changes. `given: number ready`, `then: number result`, and `then: unused` keep their current `means` and empty `terms`; `roles`, `description`, and `language_policy` are untouched; no `meaning` field is introduced anywhere — glossary entries use `term` and `means`, as the product document's schema requires.
 
-Follow-up, not part of this fix: the newly declared term "idempotency key" needs a Word
-mapping from the System Architect, through scen check's D: term-mappings. Refinement
-does not wait for it.
+The glossary means is one paragraph of two sentences, 14 and 15 words, within the three-sentence and 25-word-per-sentence limits. It states the word in the product's own words: the description already establishes that the calculator accepts a number and a request label and that repeating a request with the same label changes the number only once.
 
-Nothing has been changed. Apply only on an explicit menu decision to apply.
+The Word mapping for the newly declared "idempotency key" is the System Architect's later work through `scen check` D: term-mappings; refinement does not wait for it.
 Edit ONLY the product working copy below, adding the glossary entry AND the
 concept's terms (a string list), or rewording its means. Glossary entries
 have term and means fields. Preserve unrelated product content.

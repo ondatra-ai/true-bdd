@@ -8,6 +8,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	storymodels "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/domain/models/story"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/config"
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/template"
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/true-bdd/internal/pkg/errors"
@@ -106,6 +107,29 @@ type rawAC struct {
 	ID          string      `yaml:"id"`
 	Description string      `yaml:"description"`
 	Steps       []rawACStep `yaml:"steps"`
+}
+
+// UnmarshalYAML shares the Story reader's step-key refusal before flattening.
+func (c *rawAC) UnmarshalYAML(node *yaml.Node) error {
+	var criterion storymodels.AcceptanceCriterion
+
+	err := node.Decode(&criterion)
+	if err != nil {
+		return fmt.Errorf("read Story criterion: %w", err)
+	}
+
+	type plain rawAC
+
+	var raw plain
+
+	err = node.Decode(&raw)
+	if err != nil {
+		return fmt.Errorf("acceptance criterion %s: %w", criterion.ID, err)
+	}
+
+	*c = rawAC(raw)
+
+	return nil
 }
 
 type rawStoryFile struct {

@@ -65,6 +65,7 @@ acceptance_criteria:
 - The `description` must NEVER contain Given/When/Then — those belong
   in `steps`.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -99,13 +100,10 @@ Claude must list every section heading of a shared Google Doc in the conversatio
 
 ## Fix Prompt to Apply
 
-=== FILE_START: tmp/{{RUN_DIR}}/01-96.5-fix-prompts.md ===
 # Fix Prompt for Story 96.5: Document Summary On Demand
 
 ## Instructions
 Apply the following changes to the acceptance criteria for this story.
-
-Only AC-2 is faulted by the failed check (`us-refine/acceptance_criteria`: missing steps field). AC-1, AC-3, AC-4 and AC-5 already have a given, a when and a then step and MUST be reproduced byte for byte — do not reword their descriptions, do not re-order or re-phrase their steps.
 
 ## Original Acceptance Criteria
 1. AC-1: Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc. [has steps]
@@ -116,27 +114,26 @@ Only AC-2 is faulted by the failed check (`us-refine/acceptance_criteria`: missi
 
 ## Required Changes
 
+Only AC-2 is faulted by the failed check (`us-refine/acceptance_criteria`): it has no `steps` field, so it has no Given, When or Then step. AC-1, AC-3, AC-4 and AC-5 already carry complete Given/When/Then steps and must be reproduced exactly as they stand — same description, same steps, word for word. Do not reword, split, merge or "improve" them, and do not add new ACs.
+
 ### Change #1: AC-2
-**Before:** Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access. (steps field missing — no given, no when, no then)
-**Issue:** The steps field is absent, so the criterion carries no executable Given/When/Then structure. The description itself is already a one-line rule-based statement in third person using the exact story role "Claude User", contains no forbidden qualifiers and no forbidden actions, so it stays unchanged.
-**After (description):** Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access.
+**Before:** Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access.
+**Issue:** The `steps` field is missing entirely — the AC has no Given precondition, no When action and no Then outcome, so it is not executable as a scenario.
+**After (description):** Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access. (unchanged — only the steps field is added)
 **After (steps):**
 ```yaml
-- given:
-    - "a Google Doc is not shared with the Claude User's account"
-- when:
-    - "the Claude User asks Claude to summarize that Google Doc"
-- then:
-    - "Claude displays the message 'This document is not shared with your account'"
+- given: ["a Google Doc is not shared with the Claude User's account"]
+- when: ["the Claude User asks Claude to summarize that document"]
+- then: ["Claude displays the message 'This document is not shared with your account'"]
 ```
-Notes on the added steps: third person with the exact role "Claude User", active voice ("Claude displays"), observable outcome in the conversation (an exact message string), each step under 120 characters, no forbidden qualifier (properly, correctly, appropriate, appropriately, user-friendly, fast, quickly, easily, seamless, intuitive) and no forbidden action verb (handle, process, parse).
 
-### No other changes
-- AC-1: unchanged (given + when + then present).
-- AC-3: unchanged (two given steps + when + then present; keep both given steps).
-- AC-4: unchanged (given + when + two then steps present; keep the `and:` form on the second then step).
-- AC-5: unchanged (given + when + then present).
-- No new ACs are added and no ACs are merged or removed. AC-1 (summary of 150 words or fewer) and AC-5 (listing every section heading in original order) describe different user requests and different observable outputs, so they are not duplicates.
+Notes on the new steps:
+- Third person, using the exact role from the story's `as_a:` field — "Claude User" (never "User").
+- Active voice and an observable verb from the product vocabulary ("displays"); no forbidden actions (handle, process, parse) and no vague qualifiers (properly, correctly, clear, appropriate, seamless, fast, quickly, easily, intuitive).
+- The Then step quotes the exact message string from the description so the outcome is verifiable in the conversation.
+- Each step is under 120 characters.
+
+No new ACs are added: the inaccessible-document case (AC-2), the timeout case (AC-3), the oversize-document case (AC-4) and the outline case (AC-5) each remain a distinct scenario, and none of them duplicate another.
 
 ## Complete Fixed Acceptance Criteria
 
@@ -151,12 +148,9 @@ Notes on the added steps: third person with the exact role "Claude User", active
 - ac_id: AC-2
   description: "Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access."
   steps:
-    - given:
-        - "a Google Doc is not shared with the Claude User's account"
-    - when:
-        - "the Claude User asks Claude to summarize that Google Doc"
-    - then:
-        - "Claude displays the message 'This document is not shared with your account'"
+    - given: ["a Google Doc is not shared with the Claude User's account"]
+    - when: ["the Claude User asks Claude to summarize that document"]
+    - then: ["Claude displays the message 'This document is not shared with your account'"]
 
 - ac_id: AC-3
   description: "Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds."
@@ -172,8 +166,7 @@ Notes on the added steps: third person with the exact role "Claude User", active
     - given: "a Google Doc with more than 10000 words is shared with the Claude User's account"
     - when: "the Claude User asks Claude to summarize the document"
     - then: "Claude displays a summary of the first 10000 words"
-    - then:
-        and: "Claude states that only the first 10000 words were summarized"
+    - and: "Claude states that only the first 10000 words were summarized"
 
 - ac_id: AC-5
   description: "Claude must list every section heading of a shared Google Doc in the conversation when the Claude User asks for the document outline."
@@ -182,16 +175,6 @@ Notes on the added steps: third person with the exact role "Claude User", active
     - when: "the Claude User asks Claude for the document outline"
     - then: "Claude displays each section heading in its original order"
 ```
-
-## Verification
-After applying, every AC must emit "ok" for the `us-refine/acceptance_criteria` check:
-- AC-1: ok (given, when, then)
-- AC-2: ok (given, when, then) — repaired
-- AC-3: ok (given, given, when, then)
-- AC-4: ok (given, when, then, then)
-- AC-5: ok (given, when, then)
-
-=== FILE_END: tmp/{{RUN_DIR}}/01-96.5-fix-prompts.md ===
 
 ---
 

@@ -119,8 +119,8 @@ story:
       - and: the file "docs/product/stories/96.1-document-summary-refined.yaml" is unchanged
       - and: the engine dispatched no AI turns
   - id: 006-check-without-fix-refused
-    description: A `--fix` run must be refused at startup when a `D:` Prompt it would walk carries no `F:`, naming that Prompt
-      by its check, as it is for a `Q:` Prompt
+    description: A `--fix` run must be refused at startup when a code Q it would walk carries no `F:`, naming that checklist item
+      by its check, as it is for a prompt Q
     steps:
     - given:
       - the "scen-check-fix-check-without-f" project tree
@@ -130,7 +130,7 @@ story:
       - the command exits with code 1
       - stdout matches level=ERROR msg="Refusing to start" command="scen check"
       - stdout matches checklist has prompts with no F fix template, so --fix has nothing to apply
-      - 'stdout matches scen-check has 1 of 2 — scen-check/scenario_quality #2 D: given-when-then"'
+      - 'stdout matches scen-check has 1 of 2 — scen-check/scenario_quality #2 Q code: given-when-then"'
       - but: stdout does not match SCEN CHECK
       - and: no file outside "tmp" changed
       - and: the engine dispatched no AI turns

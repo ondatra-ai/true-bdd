@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-halve-negative-iter1-result.yaml ===
 applied: true
 target: "product"
-summary: "Added the approved when concept 'halve invoked' with its exact means and empty terms; preserved all existing content."
+summary: "Added the approved halve requested when concept between given and then. All existing bytes remain unchanged. Verification passed despite sandbox-related search and cache errors."
 === FILE_END: tmp/{{RUN_DIR}}/apply-halve-negative-iter1-result.yaml ===

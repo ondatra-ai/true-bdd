@@ -33,10 +33,10 @@ func writeInterfaceFixHost(t *testing.T, editedDocument string) (template.FixDoc
 	t.Chdir(t.TempDir())
 
 	for path, content := range map[string]string{
-		"docs/architecture/architecture.yaml": interfaceFixArchitecture,
-		interfaceFixPath:                      interfaceFixDocument,
-		"tmp/architecture_yaml.yaml":          interfaceFixArchitecture,
-		"tmp/interface-1-calc-cli.yaml":       editedDocument,
+		repairArchitecture:              interfaceFixArchitecture,
+		interfaceFixPath:                interfaceFixDocument,
+		"tmp/architecture_yaml.yaml":    interfaceFixArchitecture,
+		"tmp/interface-1-calc-cli.yaml": editedDocument,
 	} {
 		err := os.MkdirAll(filepath.Dir(path), 0o750)
 		if err != nil {

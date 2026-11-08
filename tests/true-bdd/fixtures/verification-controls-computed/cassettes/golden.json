@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "fixture": "verification-controls-computed",
+  "files": [
+    {
+      "path": "tests/calc/steps/concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e.go",
+      "kind": "created",
+      "size": 448,
+      "sha256": "34ba2e2d2b8f5e7fcfd35d11a5d49ca84fc596bc25b6392685a16931014c52c0",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"strconv\"\n)\n\n//truebdd:concept then \"result\"\nfunc concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e(state *State, args []string) error {\n\texpected, err := strconv.Atoi(args[0])\n\tif err != nil {\n\t\treturn fmt.Errorf(\"parse expected result: %w\", err)\n\t}\n\tactual := state.Input * 2\n\tif actual != expected {\n\t\treturn fmt.Errorf(\"expected result %d, got %d\", expected, state.Value)\n\t}\n\treturn nil\n}\n\n"
+    },
+    {
+      "path": "tests/calc/steps/register.go",
+      "kind": "modified",
+      "size": 1374,
+      "sha256": "5aeb3ea9b955c5e7a35610fa289dedecf957beff62225e41bc70c53e9040ef8a",
+      "text": "package steps\n\nimport (\n\t\"fmt\"\n\t\"os\"\n\t\"os/exec\"\n\t\"path/filepath\"\n\t\"strconv\"\n\t\"strings\"\n)\n\nfunc Register(suite Registrar) {\n\tsuite.Step(`^the calculator is installed$`, installed)\n\tsuite.Step(`^the Owner doubles (-?\\d+)$`, doubling)\n\n\tsuite.Step(\"^the result is (-?\\\\d+)$\", concepted1de9371d2a7b37ce77d82464ab6737cf25f6c86f592518873001398dd1313e)\n}\n\n//truebdd:concept given \"installation\"\nfunc installed(state *State, _ []string) error {\n\tprogram, err := filepath.Abs(\"../../tmp/calc-program/calc\")\n\tif err != nil {\n\t\treturn err\n\t}\n\tif err = os.MkdirAll(filepath.Dir(program), 0o755); err != nil {\n\t\treturn err\n\t}\n\tcommand := exec.Command(\"go\", \"build\", \"-o\", program, \"./services/calc\")\n\tcommand.Dir = \"../..\"\n\tif output, err := command.CombinedOutput(); err != nil {\n\t\treturn fmt.Errorf(\"install the calculator: %w: %s\", err, output)\n\t}\n\tstate.Program = program\n\treturn nil\n}\n\n//truebdd:concept when \"doubling\"\nfunc doubling(state *State, args []string) error {\n\tstate.Input, _ = strconv.Atoi(args[0])\n\tif state.Program == \"\" {\n\t\treturn fmt.Errorf(\"the calculator is not installed\")\n\t}\n\tcommand := exec.Command(state.Program, \"double\", args[0])\n\tcommand.Dir = \"../..\"\n\toutput, err := command.CombinedOutput()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"calculator double: %w: %s\", err, output)\n\t}\n\tstate.Value, err = strconv.Atoi(strings.TrimSpace(string(output)))\n\treturn err\n}\n"
+    }
+  ]
+}

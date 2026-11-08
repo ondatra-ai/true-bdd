@@ -13,7 +13,6 @@ const schemaNull = "null"
 const schemaInteger = "integer"
 const schemaType = "type"
 const schemaString = "string"
-const schemaMinLength = "minLength"
 const schemaReason = "reason"
 const maxConceptScore = 10
 const defaultLinkThreshold = 9
@@ -40,12 +39,12 @@ func linkSchema(steps []conceptStep, concepts []product.Concept) (string, error)
 
 		for _, concept := range concepts {
 			if concept.Block == step.Block {
-				scores[concept.Name] = answerSchema{schemaType: schemaInteger, "minimum": 0, "maximum": maxConceptScore}
+				scores[concept.Name] = answerSchema{schemaType: schemaInteger}
 			}
 		}
 
 		properties[step.Key] = requiredObject(answerSchema{
-			"scores": requiredObject(scores), schemaReason: answerSchema{schemaType: schemaString, schemaMinLength: 1},
+			"scores": requiredObject(scores), schemaReason: answerSchema{schemaType: schemaString},
 			"other_block_concept": answerSchema{schemaType: []string{schemaString, schemaNull}},
 		})
 	}

@@ -1,7 +1,11 @@
-Critique these applied definitions of one concept: {{.Definition}}
+{{if .Question}}{{.Question}}
 
-Complete concept context (meaning, binding, term glossary entries and Word mappings, Public interface declaration and whole document, each definition's pattern, captures and bound steps, every suite Scenario using its steps, and the fixture inputs those Scenarios name):
+{{end}}Verification evidence for one Concept Item. The YAML contains the Concept, its binding, declared terms' glossary entries, Word mappings, the Public interface kind and document path with the referenced entries, the definitions to judge, and runtime_api declarations when used:
 {{.Context}}
 
-Whole steps package, including registrations, imports and shared State:
+Selected Steps package source declarations, with origin file paths and imports:
 {{.Sources}}
+{{if .StepArguments}}
+## Step arguments
+
+{{.StepArguments}}{{end}}

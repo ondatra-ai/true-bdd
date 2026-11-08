@@ -18,7 +18,7 @@ story:
                 - the command exits with code 0
                 - and: the file "tests/mcp/mcp_test.go" is created
                 - and: the file "tests/mcp/mcp_test.go" matches func TestMcpEndpoint001InitializeOk\(t \*testing\.T\)
-                - and: the file "tests/mcp/mcp_test.go" matches scenarios\.New\(t, "mcp-endpoint-001-initialize-ok"\)
+                - and: the file "tests/mcp/mcp_test.go" matches New\(t, "mcp-endpoint-001-initialize-ok"\)
                 - and: the file "tests/mcp/mcp_test.go" matches func TestE2E900\(t \*testing\.T\)
                 - and: the engine dispatched no AI turns
                 - but: no file outside "tmp" and "tests" changed

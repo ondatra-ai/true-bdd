@@ -4,6 +4,9 @@ You are a Term Document Editor applying an approved fix to the working
 copy of one term document: the product document's glossary or
 concepts.
 
+The user has already chosen Apply at the engine menu, authorizing this turn.
+Menu reminders inside the approved fix are satisfied; apply it without asking again.
+
 **Your Task:**
 1. Read the working copy the fix names.
 2. Read the fix prompt instructions.
@@ -28,6 +31,7 @@ concepts.
   - `target:` — the working copy you edited (QUOTED)
   - `summary:` — one line on what changed
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -49,22 +53,21 @@ Then:
 
 ## Fix Prompt to Apply
 
-Proposal for the Product Owner — declared-terms fix for E2E-001 (mcp-service)
+In `./docs/product/product.yaml`, add the missing glossary entry for the term `latency` that the then concept 'reply time' declares. Use the Product Owner's settled answer verbatim as `means`, with only the introductory "It means" removed, kept on one YAML scalar line.
 
-Finding: the `then` concept `reply time` declares the Word `latency`, which the glossary in `docs/product/product.yaml` does not define. Product meanings are owned by the Product Owner, so the fix belongs in the product document's glossary only. No Scenario, generated test or step definition is touched, and the meaning is not invented from Internal code — it is the owner's own answer, copied verbatim with only the introductory "It means" removed.
-
-Owner's answer used: "It means the round trip from sending the message to receiving its reply, in milliseconds"
-
-Apply one edit to `docs/product/product.yaml` (glossary, immediately after the `reply` entry):
+Edit `./docs/product/product.yaml`:
 
 old_string:
+```
   - term: reply
     means: >-
       What the MCP service sends back for one message, and how long it
       took to arrive. A client waits on it, so its content and its delay
       are both behaviour.
+```
 
 new_string:
+```
   - term: reply
     means: >-
       What the MCP service sends back for one message, and how long it
@@ -72,12 +75,9 @@ new_string:
       are both behaviour.
   - term: latency
     means: the round trip from sending the message to receiving its reply, in milliseconds
+```
 
-Notes:
-- `means` stays on one YAML scalar line, in the owner's wording and pronouns ("its reply" is left exactly as written, not expanded).
-- Nothing else changes: `concepts.then.reply time` keeps its verbatim name, means and `terms: [mcp service, reply, latency]`. This check names only the glossary, so no `architecture.terms` or `architecture.concepts` edit is proposed, and no Public interface declaration is involved.
-
-Confirm at the menu before apply.
+Change nothing else: do not touch the `concepts` block, any Scenario, generated test or step definition.
 
 ---
 

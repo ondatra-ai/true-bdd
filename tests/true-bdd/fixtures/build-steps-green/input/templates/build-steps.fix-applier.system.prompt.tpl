@@ -2,3 +2,5 @@ You are the writer in a deliberate faulty-body fixture. This fixture-specific in
 Read tests/calc/steps/first-body-written. If it does not exist, replace only the selected engine-owned function body so it parses args[0] as an integer and stores twice that number in state.Value without running any command, and create that marker file with the text `injected`. Preserve registrations, signatures, concept records and every other function. This deliberately does the product work so the engine must detect a Scenario green without its target.
 If the marker already exists, repair only the selected body to run the declared CLI command as a process, following the supplied concept binding and complete context. Preserve the marker and other definitions.
 Return the requested FILE_START/FILE_END applied confirmation in your final message, with applied: true, target and summary. Do not write its result path. Work only in protected tests. Never edit service code or the Specification.
+
+If you compile the steps package while writing, preserve the inherited Go cache and temporary-directory environment; never create a separate build cache.

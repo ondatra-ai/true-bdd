@@ -72,3 +72,47 @@ func TestCodexStrictSchemaRefusesANonJSONSchema(t *testing.T) {
 		t.Fatal("codexStrictSchema accepted a schema that is not JSON")
 	}
 }
+
+func TestCodexStrictSchemaKeepsOptionalPropertiesNullable(t *testing.T) {
+	t.Parallel()
+
+	strict, err := codexStrictSchema(`{"type":"object","additionalProperties":false,
+ "required":["answer"],"properties":{"answer":{"type":"string"},
+ "details":{"type":"object","additionalProperties":false,"properties":{
+ "action":{"type":"string","enum":["build steps","scen check"]}}}}}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type schemaNode struct {
+		Type       any                   `json:"type"`
+		Enum       []any                 `json:"enum"`
+		Properties map[string]schemaNode `json:"properties"`
+	}
+
+	var node schemaNode
+
+	err = json.Unmarshal([]byte(strict), &node)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	properties := node.Properties
+	details := properties["details"]
+
+	action := details.Properties["action"]
+	for name, property := range map[string]schemaNode{"details": details, "action": action} {
+		types, _ := property.Type.([]any)
+		if !slices.Contains(types, any("null")) {
+			t.Errorf("%s was optional, now cannot be null: %s", name, strict)
+		}
+	}
+
+	if !slices.Contains(action.Enum, nil) {
+		t.Error("nullable enum excludes null")
+	}
+
+	if properties["answer"].Type != "string" {
+		t.Error("required answer became nullable")
+	}
+}

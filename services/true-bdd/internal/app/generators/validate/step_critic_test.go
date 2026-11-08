@@ -83,13 +83,13 @@ func checkCriticRoute(t *testing.T, models *provider.Registry, tier, want string
 
 // The critique judges each AI-proposed pattern as well as the body, against
 // the concept's binding and the fixture inputs, and names no template form.
-func TestConceptCritiqueJudgesPatternsAndFixtureContracts(t *testing.T) {
+func TestConceptVerificationJudgesPatternsWithNoFixtureContracts(t *testing.T) {
 	t.Parallel()
 
 	concept := critiqueRequest(t)
-	requireTerms(t, concept.system, "pattern_captures", "pattern_scope", "fixture inputs")
+	requireTerms(t, concept.system, "pattern_captures", "pattern_scope", "Fixture file contents are not supplied.")
 	requireTerms(t, concept.schema, "pattern_captures", "pattern_scope")
-	requireTerms(t, concept.user, "fixture inputs")
+	requireTerms(t, concept.user, "Selected Steps package source declarations")
 
 	for _, leak := range []string{"Catalogue", "Phrase mapping", "template", "phrase_", "Never judge them"} {
 		if strings.Contains(concept.system+concept.user+concept.schema, leak) {

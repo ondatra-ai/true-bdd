@@ -2,7 +2,8 @@
 #
 # Path from `documents.scenarios_yaml` in true-bdd/true-bdd.yaml.
 #
-# `build tests` renders it deterministically; `build steps` resolves its steps.
+# `build steps` writes the Steps package first; `build tests` renders its tests
+# and main file; `build code` checks Red without the target before writing code.
 # pkg/testkit/bddgo then RUNS it: one Go subtest per scenario, steps
 # bound by regexp to the definitions under that suite's path.
 #
@@ -583,6 +584,7 @@ scenarios:
       when:
         - the Product Owner runs "us apply 95.1 --fix"
       then:
+        - and: "the us_apply_checklist prompt keeps the and modifier of the criterion's steps"
         - the command exits with code 0
         - 'stdout matches msg=AC index=1 total=1'
         - 'stdout matches msg="RE-WALK \(fixes applied, verifying\)" attempt=2'
@@ -1075,6 +1077,9 @@ scenarios:
       when:
         - the Product Owner runs "us refine doc-summary --fix"
       then:
+        - and: "the us_refine_checklist prompt embeds the Story without a wrapper and keeps its Feature"
+        - and: "the us_refine_checklist prompt has no story wrapper"
+        - and: "the us_refine_checklist prompt holds the checklist's question and fix verbatim"
         - the command exits with code 0
         - stdout matches msg="Fix applied; re-running validation"
         - stdout matches ALL CHECKS PASSED!
@@ -1189,7 +1194,7 @@ scenarios:
         - the command exits with code 0
         - and: the file "tests/mcp/mcp_test.go" is created
         - and: the file "tests/mcp/mcp_test.go" matches func TestMcpEndpoint001InitializeOk\(t \*testing\.T\)
-        - and: the file "tests/mcp/mcp_test.go" matches scenarios\.New\(t, "mcp-endpoint-001-initialize-ok"\)
+        - and: the file "tests/mcp/mcp_test.go" matches New\(t, "mcp-endpoint-001-initialize-ok"\)
         - and: the file "tests/mcp/mcp_test.go" matches func TestE2E900\(t \*testing\.T\)
         - and: the engine dispatched no AI turns
         - but: no file outside "tmp" and "tests" changed
@@ -1230,6 +1235,9 @@ scenarios:
       when:
         - the Product Owner runs "us apply mcp-endpoint --fix"
       then:
+        - and: "the us_apply_checklist prompt selects the criterion by id and sets lineage to StoryID-ACID"
+        - and: "the us_apply_checklist prompt holds the checklist's question and fix verbatim"
+        - and: "the us_apply_checklist prompt keeps the other criterion's id, lineage and description"
         - the command exits with code 0
         - 'stdout matches msg=AC index=1 total=2 description="The MCP server must respond with HTTP 405'
         - stdout matches ALL CHECKS PASSED!
@@ -1315,7 +1323,7 @@ scenarios:
         - and: no file outside "tmp" changed
         - and: the engine dispatched 2 AI turns
   checklist-checks-002-check-and-question-refused:
-    description: A checklist Prompt carrying both `D:` and `Q:` must be refused at startup, naming the Prompt, because a built-in check or a model answers a Prompt and never both
+    description: A checklist item carrying both Q options, prompt and code must be refused at startup, naming the checklist item, because a Q has only one answering option
     service: true-bdd
     path: tests/true-bdd/scen_check_test.go
     user_stories:
@@ -1330,12 +1338,12 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches level=ERROR msg="Refusing to start" command="scen check"
-        - 'stdout matches scen-check/scenario_quality #2 carries both D: and Q:'
+        - 'stdout matches scen-check/scenario_quality #2 carries both Q options'
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
   checklist-checks-003-neither-check-nor-question-refused:
-    description: A checklist Prompt carrying neither `D:` nor `Q:` must be refused at startup, naming the Prompt, because nothing would answer it
+    description: A checklist item carrying neither Q option, prompt nor code must be refused at startup, naming the checklist item, because nothing would answer it
     service: true-bdd
     path: tests/true-bdd/scen_check_test.go
     user_stories:
@@ -1350,12 +1358,12 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches level=ERROR msg="Refusing to start" command="scen check"
-        - 'stdout matches scen-check/scenario_quality #1 carries neither D: nor Q:'
+        - 'stdout matches scen-check/scenario_quality #1 carries neither Q option'
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
   checklist-checks-004-unknown-check-refused:
-    description: A `D:` Prompt naming a check the engine does not hold must be refused at startup, naming the Prompt and the checks the command has
+    description: A code Q naming a check the engine does not hold must be refused at startup, naming the checklist item and the checks the command has
     service: true-bdd
     path: tests/true-bdd/scen_check_test.go
     user_stories:
@@ -1370,12 +1378,12 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches level=ERROR msg="Refusing to start" command="scen check"
-        - 'stdout matches scen-check/scenario_quality #1 D: steps-are-present names no built-in check of scen check, which has concept-bindings, declared-terms, given-when-then, public-interface, step-definitions, term-mappings'
+        - 'stdout matches scen-check/scenario_quality #1 Q code: steps-are-present names no built-in check of scen check, which has concept-bindings, declared-terms, given-when-then, public-interface, step-definitions, term-mappings'
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
   checklist-checks-005-model-on-check-refused:
-    description: A `D:` Prompt carrying `model:` must be refused at startup, naming the Prompt, because no model answers a built-in check
+    description: A code Q carrying `model:` must be refused at startup, naming the checklist item, because no model answers a built-in check
     service: true-bdd
     path: tests/true-bdd/scen_check_test.go
     user_stories:
@@ -1390,12 +1398,12 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches level=ERROR msg="Refusing to start" command="scen check"
-        - 'stdout matches scen-check/scenario_quality #1 D: given-when-then carries model:, but no model answers a built-in check'
+        - 'stdout matches scen-check/scenario_quality #1 Q code: given-when-then carries model:, but no model answers a built-in check'
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
   checklist-checks-006-unread-parameter-refused:
-    description: A `D:` Prompt passing its check a `with:` parameter the check does not read must be refused at startup, naming the parameter, rather than run the check as though it were honoured
+    description: A code Q passing its check a `with:` parameter the check does not read must be refused at startup, naming the parameter, rather than run the check as though it were honoured
     service: true-bdd
     path: tests/true-bdd/scen_check_test.go
     user_stories:
@@ -1410,12 +1418,12 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches level=ERROR msg="Refusing to start" command="scen check"
-        - 'stdout matches scen-check/scenario_quality #1 D: given-when-then has no with: parameter min_steps; it takes none'
+        - 'stdout matches scen-check/scenario_quality #1 Q code: given-when-then has no with: parameter min_steps; it takes none'
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
   engine-006-check-without-fix-refused:
-    description: A `--fix` run must be refused at startup when a `D:` Prompt it would walk carries no `F:`, naming that Prompt by its check, as it is for a `Q:` Prompt
+    description: A `--fix` run must be refused at startup when a code Q it would walk carries no `F:`, naming that checklist item by its check, as it is for a prompt Q
     service: true-bdd
     path: tests/true-bdd/scen_check_test.go
     user_stories:
@@ -1431,12 +1439,12 @@ scenarios:
         - the command exits with code 1
         - stdout matches level=ERROR msg="Refusing to start" command="scen check"
         - stdout matches checklist has prompts with no F fix template, so --fix has nothing to apply
-        - 'stdout matches scen-check has 1 of 2 — scen-check/scenario_quality #2 D: given-when-then"'
+        - 'stdout matches scen-check has 1 of 2 — scen-check/scenario_quality #2 Q code: given-when-then"'
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
   checklist-checks-001-checks-run-before-questions:
-    description: Within a Scenario every `D:` Prompt must run before any `Q:` Prompt, whatever the file order, and a Scenario failing one must be reported failed with its `Q:` Prompts skipped and no AI turn spent on it, while a Scenario passing it walks its `Q:` Prompts
+    description: Checklist items must run in their written order without skipping a prompt Q after a failed code Q
     service: true-bdd
     path: tests/true-bdd/scen_check_test.go
     user_stories:
@@ -1452,17 +1460,15 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches SCEN CHECK
-        - and: stdout matches msg="Check answered" check=given-when-then subjectID=E2E-001 promptIndex=2 answer=pass
-        - and: 'stdout matches msg="Check answered" check=given-when-then subjectID=E2E-002 promptIndex=2 answer=fail context="\[E2E-002: missing then step\]"'
-        - and: stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=1
-        - and: 'stdout matches scen-check/scenario_quality +D: given-when-then +fail +FAIL'
-        - and: 'stdout matches SKIP: 1\n'
-        - and: stdout matches Validation failed
+        - 'stdout matches (?s)Cell validation started.*subjectID=E2E-001 promptIndex=1.*Check answered.*subjectID=E2E-001 promptIndex=2'
+        - 'stdout matches (?s)Check answered.*subjectID=E2E-002 promptIndex=2 answer=fail.*Cell validation started.*subjectID=E2E-002 promptIndex=3'
+        - stdout does not match Prompt skipped after a failed check
+        - stdout matches Validation failed
         - but: stdout does not match ALL CHECKS PASSED
-        - and: the engine dispatched 1 AI turn
+        - and: the engine dispatched 4 AI turns
         - and: no file outside "tmp" changed
   checklist-checks-007-unlisted-document-refused:
-    description: A `D:` Prompt naming a check that reads a document must be refused at startup when its `docs:` does not list that document, because the check would otherwise read no product document and pass every Scenario unchecked
+    description: A code Q naming a check that reads a document must be refused at startup when its `docs:` does not list that document, because the check would otherwise read no product document and pass every Scenario unchecked
     service: true-bdd
     path: tests/true-bdd/scen_check_test.go
     user_stories:
@@ -1477,7 +1483,7 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches level=ERROR msg="Refusing to start" command="scen check"
-        - 'stdout matches scen-check/term_closure #1 D: declared-terms reads the product document, so its docs: must list product'
+        - 'stdout matches scen-check/term_closure #1 Q code: declared-terms reads the product document, so its docs: must list product'
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
@@ -1724,7 +1730,7 @@ scenarios:
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
         - and: 'the file "docs/scenarios.yaml" matches (?m)^      then:$'
-        - and: the engine dispatched 5 AI turns
+        - and: the engine dispatched 6 AI turns
   scen-check-quality-fix-002-description-qualifier-replaced:
     description: '`scen check --fix` must replace a forbidden qualifier in a Scenario''s description with the measurable criterion its steps state, in that Scenario''s entry in the Registry, and pass the re-walk'
     service: true-bdd
@@ -1750,7 +1756,7 @@ scenarios:
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
         - and: 'the file "docs/scenarios.yaml" matches (?m)^    description: [^\n]*\b100\b'
-        - and: the engine dispatched 5 AI turns
+        - and: the engine dispatched 6 AI turns
   scen-check-quality-fix-003-step-qualifier-replaced:
     description: '`scen check --fix` must replace a forbidden qualifier in a Scenario''s step with the measurable criterion its description states, in that Scenario''s entry in the Registry, and pass the re-walk'
     service: true-bdd
@@ -1776,7 +1782,7 @@ scenarios:
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
         - and: 'the file "docs/scenarios.yaml" matches (?m)^ +- [^\n]*exits with code 0[^\n]*\b100\b'
-        - and: the engine dispatched 5 AI turns
+        - and: the engine dispatched 6 AI turns
   scen-check-quality-fix-004-forbidden-verb-replaced:
     description: '`scen check --fix` must rewrite a Scenario''s step that uses a forbidden action verb with the observable action the product document gives in its place, in that Scenario''s entry in the Registry, and pass the re-walk'
     service: true-bdd
@@ -1801,7 +1807,7 @@ scenarios:
         - and: stdout matches ALL CHECKS PASSED
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
-        - and: the engine dispatched 5 AI turns
+        - and: the engine dispatched 6 AI turns
   scen-check-quality-fix-005-implementation-step-rewritten:
     description: '`scen check --fix` must rewrite a Scenario''s step that names an implementation detail as the output a user observes, in that Scenario''s entry in the Registry, and pass the re-walk'
     service: true-bdd
@@ -1826,7 +1832,7 @@ scenarios:
         - and: stdout matches ALL CHECKS PASSED
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
-        - and: the engine dispatched 5 AI turns
+        - and: the engine dispatched 6 AI turns
   scen-check-quality-fix-006-measurable-criterion-added:
     description: '`scen check --fix` must ask which measurable criterion a Scenario lacking one asserts, add the criterion the user picks to that Scenario''s entry in the Registry, and pass the re-walk'
     service: true-bdd
@@ -1852,7 +1858,7 @@ scenarios:
         - and: stdout matches ALL CHECKS PASSED
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
-        - and: the engine dispatched 6 AI turns
+        - and: the engine dispatched 7 AI turns
   scen-check-quality-fix-007-subjective-outcome-rewritten:
     description: '`scen check --fix` must ask what counts as correct for a Scenario whose outcome is a matter of taste, rewrite the outcome as one a reviewer decides without judgement in that Scenario''s entry in the Registry, and pass the re-walk'
     service: true-bdd
@@ -1878,7 +1884,7 @@ scenarios:
         - and: stdout matches ALL CHECKS PASSED
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
-        - and: the engine dispatched 6 AI turns
+        - and: the engine dispatched 7 AI turns
   build-tests-steps-007-unreadable-catalogue-refused:
     description: '`build tests --fix` must refuse a product document whose concepts it cannot read, before it writes a generated test and before any AI turn, rather than author steps blind to the spec the host declared'
     service: true-bdd
@@ -1988,12 +1994,15 @@ scenarios:
       when:
         - the Quality Engineer runs "scen check"
       then:
+        - and: "the scen_check_checklist prompt keeps the Scenario's Registry key and fields"
+        - and: "the scen_check_checklist prompt keeps the Scenario's and modifier and lineage"
+        - and: "the scen_check_checklist prompt does not mention merge_date"
         - the command exits with code 0
         - stdout matches SCEN CHECK
         - and: stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=pass
         - and: stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=2 answer=pass
         - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=3 answer=pass
-        - and: stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=14 judgement=link answer=pass
+        - and: stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=6 judgement=link answer=pass
         - and: stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=15 judgement=bindings answer=pass
         - and: stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=16 judgement=words answer=pass
         - and: 'stdout matches PASS: 16 '
@@ -2021,12 +2030,12 @@ scenarios:
         - stdout matches SCEN CHECK
         - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=3 answer=pass
         - and: 'stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=3 answer=fail context="\[E2E-002: then step \\"the greeter prints \\\\\\"Hello Ada\\\\\\" on one line\\" binds to the step definition \^the greeter prints \\"\(\[\^\\"\]\+\)\\" on one line\$ \(greet_steps\.go:23\), which records no concept\]"'
-        - and: stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=14 judgement=link answer=fail
-        - and: stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=12
-        - and: 'stdout matches SKIP: 11\n'
+        - and: stdout matches msg="Concept judgement answered" subjectID=E2E-001 promptIndex=6 judgement=link answer=fail
+        - and: stdout matches msg="Cell validation finished" subjectID=E2E-002 promptIndex=14
+        - and: stdout does not match Prompt skipped after a failed check
         - and: stdout matches Validation failed
         - but: stdout does not match ALL CHECKS PASSED
-        - and: the engine dispatched 9 AI turns
+        - and: the engine dispatched 18 AI turns
         - and: no file outside "tmp" changed
 
   scen-check-fix-007-whole-checklist-fixes-description:
@@ -2595,7 +2604,7 @@ scenarios:
         - and: the engine dispatched no AI turns
 
   checklist-skip-001-skipped-prompt-not-walked:
-    description: 'A checklist Prompt carrying `skip: true` must not be walked and must cost no AI turn, while the checklist''s other Prompts, with `skip: false` or no `skip:`, are walked as before'
+    description: 'A checklist item carrying `skip: true` must not be walked and must cost no AI turn, while the checklist''s other Prompts, with `skip: false` or no `skip:`, are walked as before'
     service: true-bdd
     path: tests/true-bdd/scen_check_test.go
     user_stories:
@@ -2619,7 +2628,7 @@ scenarios:
         - and: no file outside "tmp" changed
 
   checklist-skip-002-non-boolean-skip-refused:
-    description: A checklist Prompt whose `skip:` is not a boolean, such as the string "false", must be refused at startup, naming the Prompt, with no AI turn, rather than skipped or walked on a guess at what it meant
+    description: A checklist item whose `skip:` is not a boolean, such as the string "false", must be refused at startup, naming the checklist item, with no AI turn, rather than skipped or walked on a guess at what it meant
     service: true-bdd
     path: tests/true-bdd/scen_check_test.go
     user_stories:
@@ -3093,10 +3102,10 @@ scenarios:
         - and: 'stdout does not match msg="Story saved"'
         - and: the file "docs/product/stories/97.2-document-summary-attempts.yaml" is unchanged
         - and: no file outside "tmp" changed
-        - and: the engine dispatched 4 AI turns
+        - and: the engine dispatched 5 AI turns
 
   fix-loop-bounds-002-refixed-prompt-stops-walk:
-    description: A `us refine --fix` run whose checklist allows one fix per Prompt must stop with exit code 1 when the same Prompt still fails after its fix and needs a second, leaving the Story file as it was
+    description: A `us refine --fix` run whose checklist allows one apply per Checklist item must stop with exit code 1 when the same Q still fails after its one allowed apply, before another fix prompt or apply, leaving the Story file as it was
     service: true-bdd
     path: tests/true-bdd/us_refine_test.go
     user_stories:
@@ -3113,15 +3122,15 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches level=ERROR msg="Walk stopped" command="us refine"
-        - and: stdout matches gave up after 2 applied fix\(es\) that never made the check pass
-        - and: stdout matches (?s)(msg="User chose fix action" rawInput=1 action=apply.*){2}
+        - and: stdout matches gave up after 1 applied fix\(es\) that never made the check pass
+        - and: stdout matches (?s)(msg="User chose fix action" rawInput=1 action=apply.*){1}
         - but: stdout does not match REFINE COMPLETE
         - and: the file "docs/product/stories/97.3-document-summary-refix.yaml" is unchanged
         - and: no file outside "tmp" changed
-        - and: the engine dispatched 6 AI turns
+        - and: the engine dispatched 4 AI turns
 
   fix-loop-bounds-003-unsettled-questions-keep-story:
-    description: A `us refine --fix` run whose clarifying questions the person never settles must give up after five rounds of questions with no fix proposed, saying no fix was applied, and leave the Story file as it was
+    description: A `us refine --fix` run whose person has not decided must log the undecided answer and leave the Story file as it was, whether the F reports cannot-fix or reaches the clarification bound
     service: true-bdd
     path: tests/true-bdd/us_refine_test.go
     user_stories:
@@ -3136,17 +3145,10 @@ scenarios:
       when:
         - the Product Owner runs "us refine 97.4 --fix"
       then:
-        - the command exits with code 0
         - stdout matches msg="User answered clarification question" .* answer="I have not decided yet"
-        - and: stdout matches msg="Generating fix prompt" .* iteration=5 hasUserAnswers=true
-        - but: stdout does not match iteration=6
-        - and: stdout matches Validation failed\. No fix was applied\.
-        - and: stdout matches REFINE COMPLETE
-        - but: stdout does not match FIX PROMPT GENERATED
         - and: 'stdout does not match msg="Story saved"'
         - and: the file "docs/product/stories/97.4-document-summary-unsettled.yaml" is unchanged
         - and: no file outside "tmp" changed
-        - and: the engine dispatched 6 AI turns
 
   engine-routes-001-codex-sandbox-per-turn:
     description: '`build code --fix` with every tier naming codex sends the plan turn to its read-only sandbox and the writer to its confined profile with replay forms, without a validation turn'
@@ -3196,13 +3198,13 @@ scenarios:
       then:
       - the command exits with code 0
       - stdout matches ALL CHECKS PASSED
-      - and: the engine dispatched 3 validation AI turns to "codex"
+      - and: the engine dispatched 4 validation AI turns to "codex"
       - and: the engine dispatched 1 fix AI turn to "codex"
       - and: the engine dispatched 1 apply AI turn to "claude"
       - but: the engine dispatched no validation AI turns to "claude"
       - and: the engine dispatched no fix AI turns to "claude"
       - and: the engine dispatched no apply AI turns to "codex"
-      - and: the engine dispatched 5 AI turns
+      - and: the engine dispatched 6 AI turns
       - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
   engine-routes-004-failed-claude-turn-stops-run:
     description: A validation turn whose claude CLI exits non-zero, here on a model id the CLI does not know, must stop `scen check` with exit code 1, a log record naming the turn, its AI CLI and its model, and the error on stderr after the command's name alone, before any verdict is reported
@@ -3319,7 +3321,7 @@ scenarios:
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
   engine-config-004-prompt-tier-unconfigured-refused:
-    description: A command must be refused at startup, before it asks any Prompt, when a Prompt's own `model:` names a tier that `engine.models` does not configure, naming that Prompt, the tier and the tiers the table does configure, even when the Prompt is not the first the walk would ask
+    description: A command must be refused at startup, before it asks any Prompt, when a Prompt's own `model:` names a tier that `engine.models` does not configure, naming that checklist item, the tier and the tiers the table does configure, even when the Prompt is not the first the walk would ask
     service: true-bdd
     path: tests/true-bdd/scen_check_test.go
     user_stories:
@@ -3355,8 +3357,8 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches level=ERROR msg="Refusing to start" command="build code"
-        - and: 'stdout matches build-code/test-passes #1 D: tests-pass: fix turn: model tier is not configured under engine\.models: \\"high\\" \(configured: xhigh, quick\)'
-        - and: 'stdout matches build-code/test-passes #1 D: tests-pass: apply turn: model tier is not configured under engine\.models: \\"coder\\" \(configured: xhigh, quick\)'
+        - and: 'stdout matches build-code/test-passes #1 Q code: tests-pass: fix turn: model tier is not configured under engine\.models: \\"high\\" \(configured: xhigh, quick\)'
+        - and: 'stdout matches build-code/test-passes #1 Q code: tests-pass: apply turn: model tier is not configured under engine\.models: \\"coder\\" \(configured: xhigh, quick\)'
         - but: no file outside "tmp" changed
         - and: the engine spawned no test runner
         - and: the engine dispatched no AI turns
@@ -3401,7 +3403,7 @@ scenarios:
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
   engine-checklists-003-check-with-not-a-mapping-refused:
-    description: A command must be refused at startup when a `D:` Prompt of its checklist passes its check a `with:` that is not a mapping, naming the checklist file, the Prompt, what its `with:` is and that `with:` takes a mapping, rather than run the check without the parameters it was given
+    description: A command must be refused at startup when a code Q of its checklist passes its check a `with:` that is not a mapping, naming the checklist file, the Prompt, what its `with:` is and that `with:` takes a mapping, rather than run the check without the parameters it was given
     service: true-bdd
     path: tests/true-bdd/scen_check_test.go
     user_stories:
@@ -3416,7 +3418,7 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches level=ERROR msg="Refusing to start" command="scen check"
-        - and: 'stdout matches checklist true-bdd/checklists/scen-check\.yaml: D: declared-terms carries a with: that is a list, but with: takes a mapping of check parameters'
+        - and: 'stdout matches checklist true-bdd/checklists/scen-check\.yaml: Q code: declared-terms carries a with: that is a list, but with: takes a mapping of check parameters'
         - but: stdout does not match interface
         - and: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
@@ -3614,7 +3616,7 @@ scenarios:
       - but: the file "tests/suite/calc_test.go" is unchanged
       - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   build-code-frameworks-006-not-applied-hits-fix-bound:
-    description: Not-applied turns in build code --fix must consume the configured per-set fix allowance and stop at the unchanged
+    description: Not-applied turns in build code --fix must consume the configured per-set fix allowance and stop after the last allowed apply at the
       non-converging fix bound
     service: true-bdd
     path: tests/true-bdd/build_code_test.go
@@ -3633,12 +3635,12 @@ scenarios:
       - the command exits with code 1
       - but: stdout does not match BUILD CODE COMPLETE
       - and: stdout matches level=WARN msg="Fix was NOT applied"
-      - and: stdout matches level=ERROR msg="Walk stopped".*gave up after 3 applied fix
+      - and: stdout matches level=ERROR msg="Walk stopped".*gave up after 2 applied fix
       - and: the engine dispatched no validation AI turns to "claude"
-      - and: the engine dispatched 3 fix AI turns to "claude"
-      - and: the engine dispatched 3 apply AI turns to "codex"
-      - and: the engine dispatched 6 AI turns
-      - and: the engine spawned exactly 4 test runners
+      - and: the engine dispatched 2 fix AI turns to "claude"
+      - and: the engine dispatched 2 apply AI turns to "codex"
+      - and: the engine dispatched 4 AI turns
+      - and: the engine spawned exactly 3 test runners
       - and: the file "services/calc/prepared-first.txt" matches ^prepared
       - and: the file "services/calc/prepared-second.txt" matches ^prepared
       - but: the file "tests/suite/calc_test.go" is unchanged
@@ -3883,12 +3885,16 @@ scenarios:
       - the System Architect runs "build code --fix"
       then:
       - the command exits with code 1
-      - stdout matches gave up after 2 applied fix
-      - the engine dispatched 2 apply AI turns to "codex"
-      - the engine spawned exactly 3 test runners
-      - the file "services/calc/attempted.txt" matches attempted
-      - every file matching "tmp/*/*fix-iter1-user.txt" matches TestB
-      - every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA
+      - the engine dispatched 1 apply AI turn to "codex"
+      - the engine spawned exactly 2 test runners
+      - the file "services/calc/calc.go" is modified
+      - the engine spawned exactly 1 test runner with arguments matching -run \^TestA\$\|\^TestB\$
+      - the engine spawned exactly no test runners with arguments matching -run \^TestB\$
+      - 'stdout matches (?s)Fix applied; re-running the failing set.*Check answered.*tests-pass.*TestB.*gave up after 1 applied fix'
+      - every file matching "tmp/*/*checklist-build-code-test-passes-result.yaml" matches ::TestB
+      - every file matching "tmp/*/*checklist-build-code-test-passes-result.yaml" does not match ::TestA
+      - stdout matches gave up after 1 applied fix
+      - the engine dispatched 1 fix AI turn to "claude"
   build-code-confirmation-001-passes:
     description: A completed writer response without confirmation preserves its repair, warns once and reruns the set to convergence
     service: true-bdd
@@ -3948,8 +3954,7 @@ scenarios:
       - every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA
       - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   build-code-confirmation-003-bound:
-    description: Missing confirmations consume the same allowance and rerun the terminal repair before the non-converging bound
-      even when it passes
+    description: Missing confirmations consume the configured allowance and a failed final rerun stops before another fix
     service: true-bdd
     path: tests/true-bdd/build_code_confirmation_test.go
     user_stories:
@@ -3966,18 +3971,18 @@ scenarios:
       then:
       - the command exits with code 1
       - stdout matches level=WARN msg="Writer confirmation missing".*apply-failing-set-iter1-result.yaml
-      - the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "level":"WARN","msg":"Writer confirmation missing"
+      - the file matching "tmp/true-bdd.log.json" has exactly 2 matches for "level":"WARN","msg":"Writer confirmation missing"
       - the engine dispatched no validation AI turns to "claude"
-      - the engine dispatched 3 fix AI turns to "claude"
-      - the engine dispatched 3 apply AI turns to "codex"
-      - the engine spawned exactly 4 test runners
+      - the engine dispatched 2 fix AI turns to "claude"
+      - the engine dispatched 2 apply AI turns to "codex"
+      - the engine spawned exactly 3 test runners
       - the file "services/calc/calc.go" is modified
       - the file "tests/suite/calc_test.go" is unchanged
-      - stdout matches level=ERROR msg="Walk stopped".*gave up after 3 applied fix
+      - stdout matches level=ERROR msg="Walk stopped".*gave up after 2 applied fix
       - the file "services/calc/prepared.txt" matches ^prepared
       - every file matching "tmp/*/*fix-iter1-user.txt" matches TestB
       - every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA
-      - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
+      - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 1
   build-code-writer-001-nonzero:
     description: A non-zero writer preserves its files, reruns a build failure and replans from the new evidence to convergence
     service: true-bdd
@@ -4037,7 +4042,7 @@ scenarios:
       - stdout does not match msg="Walk stopped"
       - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   build-code-writer-003-bound:
-    description: Failed writers consume the existing allowance and rerun the terminal repair before the bound even when it passes
+    description: Failed writers consume the configured allowance and a failed final rerun stops before another fix
     service: true-bdd
     path: tests/true-bdd/build_code_writer_test.go
     user_stories:
@@ -4054,18 +4059,18 @@ scenarios:
       then:
       - the command exits with code 1
       - stdout matches level=WARN msg="Writer turn failed" outcome="non-zero exit"
-      - the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "level":"WARN","msg":"Writer turn failed"
+      - the file matching "tmp/true-bdd.log.json" has exactly 2 matches for "level":"WARN","msg":"Writer turn failed"
       - the engine dispatched no validation AI turns to "claude"
-      - the engine dispatched 3 fix AI turns to "claude"
-      - the engine dispatched 3 apply AI turns to "codex"
-      - the engine spawned exactly 4 test runners
+      - the engine dispatched 2 fix AI turns to "claude"
+      - the engine dispatched 2 apply AI turns to "codex"
+      - the engine spawned exactly 3 test runners
       - the file "services/calc/calc.go" is modified
       - the file "tests/suite/calc_test.go" is unchanged
-      - stdout matches level=ERROR msg="Walk stopped".*gave up after 3 applied fix
+      - stdout matches level=ERROR msg="Walk stopped".*gave up after 2 applied fix
       - the file "services/calc/prepared.txt" matches ^prepared
       - every file matching "tmp/*/*fix-iter1-user.txt" matches TestB
       - every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA
-      - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
+      - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 1
   build-code-claude-001-selection:
     description: Claude hook allows selection
     service: true-bdd
@@ -4960,7 +4965,7 @@ scenarios:
       then:
       - the command exits with code 0
       - the engine dispatched 1 apply AI turn to "codex"
-      - every file matching "tmp/codex-homes/*/*-codex-home/config.toml" matches ^default_permissions = "writer"\napproval_policy = "never"\nmodel_reasoning_effort = "high"\nmodel_context_window = 1050000\nweb_search = "disabled"\nproject_doc_max_bytes = 0\nallow_login_shell = false\ncli_auth_credentials_store = "file"\n\[history\]\npersistence = "none"\n\[features\]\napps = false\nplugins = false\nmulti_agent = false\nmemories = false\nshell_snapshot = false\nskip_host_skill_discovery = true\n\n\[permissions\.writer\.filesystem\]\n(?:#[^\n]*\n)*":minimal" = "read"\n"{{CWD}}" = "read"\n"{{GOROOT}}" = "read"\n"{{GOMODCACHE}}" = "deny"\n"{{GOMODCACHE}}/cache/download/github.com/google/uuid/@v/v1\.6\.0\.info" = "read"\n"{{GOMODCACHE}}/cache/download/github.com/google/uuid/@v/v1\.6\.0\.mod" = "read"\n"{{GOMODCACHE}}/cache/download/github.com/google/uuid/@v/v1\.6\.0\.zip" = "read"\n"{{GOMODCACHE}}/cache/download/github.com/google/uuid/@v/v1\.6\.0\.ziphash" = "read"\n"{{GOMODCACHE}}/github.com/google/uuid@v1\.6\.0" = "read"\n(?:"/[^"\n]+" = "read"\n)*"{{CWD}}/tmp" = "write"\n"{{CWD}}/services/calc" = "write"\n"{{CWD}}/tmp/library-download" = "deny"\n"{{CWD}}/tmp/codex-homes" = "deny"\n"/private/tmp" = "deny"\n"/private/var/tmp" = "deny"\n"{{GOMODCACHE}}/cache/vcs" = "deny"\n\n\[permissions\.writer\.network\]\nenabled = false\n\[shell_environment_policy\]\ninherit = "none"\n\[shell_environment_policy\.set\]\nCGO_ENABLED = "0"\nDOCKER_CONFIG = "{{CWD}}/tmp/codex-shell-home/\.docker"\nGOCACHE = "{{CWD}}/tmp/codex-go-build"\nGOFLAGS = "-trimpath -buildvcs=false"\nGOMODCACHE = "{{GOMODCACHE}}"\nGOPROXY = "off"\nGOROOT = "{{GOROOT}}"\nGOSUMDB = "off"\nGOTELEMETRY = "off"\nGOTOOLCHAIN = "local"\nHOME = "{{CWD}}/tmp/codex-shell-home"\nOPENSSL_CONF = "/dev/null"\nPATH = "{{GOROOT}}/bin:/usr/bin:/bin:/usr/sbin:/sbin:{{CWD}}/tmp/codex-shell-home/runtime-bin"\nTMPDIR = "{{CWD}}/tmp/codex-tmp"\nnpm_config_cache = "{{CWD}}/tmp/codex-shell-home/npm-cache"\nnpm_config_offline = "true"\nnpm_config_userconfig = "{{CWD}}/tmp/codex-shell-home/\.npmrc"\n$
+      - every file matching "tmp/codex-homes/*/*-codex-home/config.toml" matches ^default_permissions = "writer"\napproval_policy = "never"\nmodel_reasoning_effort = "high"\nmodel_context_window = 1050000\nweb_search = "disabled"\nproject_doc_max_bytes = 0\nallow_login_shell = false\ncli_auth_credentials_store = "file"\n\[history\]\npersistence = "none"\n\[features\]\napps = false\nplugins = false\nmulti_agent = false\nmemories = false\nshell_snapshot = false\nskip_host_skill_discovery = true\n\n\[permissions\.writer\.filesystem\]\n(?:#[^\n]*\n)*":minimal" = "read"\n"{{CWD}}" = "read"\n"{{GOROOT}}" = "read"\n"{{GOMODCACHE}}" = "deny"\n"{{GOMODCACHE}}/cache/download/github.com/google/uuid/@v/v1\.6\.0\.info" = "read"\n"{{GOMODCACHE}}/cache/download/github.com/google/uuid/@v/v1\.6\.0\.mod" = "read"\n"{{GOMODCACHE}}/cache/download/github.com/google/uuid/@v/v1\.6\.0\.zip" = "read"\n"{{GOMODCACHE}}/cache/download/github.com/google/uuid/@v/v1\.6\.0\.ziphash" = "read"\n"{{GOMODCACHE}}/github.com/google/uuid@v1\.6\.0" = "read"\n(?:"/[^"\n]+" = "read"\n)*"{{CWD}}/tmp" = "write"\n"{{CWD}}/services/calc" = "write"\n"{{CWD}}/tmp/library-download" = "deny"\n"{{CWD}}/tmp/codex-homes" = "deny"\n"/private/tmp" = "deny"\n"/private/var/tmp" = "deny"\n"{{GOMODCACHE}}/cache/vcs" = "deny"\n\n\[permissions\.writer\.network\]\nenabled = false\n\[shell_environment_policy\]\ninherit = "none"\n\[shell_environment_policy\.set\]\nCGO_ENABLED = "0"\nDOCKER_CONFIG = "{{CWD}}/tmp/codex-shell-home/\.docker"\nGOCACHE = "{{CWD}}/tmp/codex-go-build"\nGOFLAGS = "-trimpath -buildvcs=false"\nGOMODCACHE = "{{GOMODCACHE}}"\nGOPROXY = "off"\nGOROOT = "{{GOROOT}}"\nGOSUMDB = "off"\nGOTELEMETRY = "off"\nGOTOOLCHAIN = "local"\nHOME = "{{CWD}}/tmp/codex-shell-home"\nOPENSSL_CONF = "/dev/null"\nPATH = "{{GOROOT}}/bin:/usr/bin:/bin:/usr/sbin:/sbin:{{CWD}}/tmp/codex-shell-home/runtime-bin"\nTMPDIR = "{{CWD}}/tmp/codex-tmp"\nTMPPREFIX = "{{CWD}}/tmp/codex-tmp/zsh"\nnpm_config_cache = "{{CWD}}/tmp/codex-shell-home/npm-cache"\nnpm_config_offline = "true"\nnpm_config_userconfig = "{{CWD}}/tmp/codex-shell-home/\.npmrc"\n$
       - the file "tests/suite/calc_test.go" is unchanged
       - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   writer-config-002-claude:
@@ -5003,6 +5008,7 @@ scenarios:
       - the System Architect runs "build code --fix"
       then:
       - the command exits with code 0
+      - the codex writer started with private fixture authentication, protected homes, an empty edit root and private shell scratch
       - the codex writer provisioned and removed its fixture authentication
       - every file matching "tmp/*/*codex-events.jsonl" matches ^\{"type":"item.completed","item":\{"type":"command_execution","command":"fixture writer sentinel","exit_code":0\}\}\n$
       - every file matching "tmp/*/*codex.log" matches "command":"fixture writer sentinel"
@@ -5030,6 +5036,7 @@ scenarios:
       - the command exits with code 0
       - stdout matches level=WARN msg="Writer turn failed" outcome="non-zero exit"
       - the engine dispatched 1 apply AI turn to "codex"
+      - the codex writer started with private fixture authentication, protected homes, an empty edit root and private shell scratch
       - the codex writer provisioned and removed its fixture authentication
       - every file matching "tmp/*/*codex-events.jsonl" matches ^\{"type":"item.completed","item":\{"type":"command_execution","command":"fixture writer sentinel","exit_code":0\}\}\n$
       - every file matching "tmp/*/*codex.log" matches "command":"fixture writer sentinel"
@@ -5039,7 +5046,7 @@ scenarios:
       - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
 
   init-001-empty-folder:
-    description: Init creates the host configuration without scripts, every checklist, every prompt template and three document schemas without needing configuration or Specification documents
+    description: Init creates the host configuration without scripts, every checklist, every prompt template, four Model schemes and three document schemas without needing configuration or Specification documents
     service: true-bdd
     path: tests/true-bdd/init_test.go
     user_stories:
@@ -5061,6 +5068,10 @@ scenarios:
         - and: exactly 5 files matching "true-bdd/checklists/*.yaml" are created
         - and: exactly 32 files matching "templates/*.tpl" are created
         - and: exactly 3 files matching "true-bdd/*schema.yaml" are created
+        - and: the us_refine_checklist Model scheme is shipped
+        - and: the us_apply_checklist Model scheme is shipped
+        - and: the scen_check_checklist Model scheme is shipped
+        - and: the build_steps_checklist Model scheme is shipped
         - and: 'every file matching "true-bdd/true-bdd.yaml" does not match (?m)^scripts:'
         - and: no file matching "docs/**" is created
 
@@ -5087,6 +5098,7 @@ scenarios:
         - and: the file "true-bdd/true-bdd.yaml" is unchanged
         - and: the file "true-bdd/checklists/build-code.yaml" is unchanged
         - and: the file "templates/build-code.fix-generator.prompt.tpl" is unchanged
+        - and: the file "true-bdd/models/us_apply_checklist.schema.yaml" is unchanged
         - and: the file "templates/build-code.fix-applier.prompt.tpl" is created
 
   start-001-missing-template:
@@ -5541,6 +5553,7 @@ scenarios:
       - the System Architect runs "build code --fix"
       then:
       - the command exits with code 0
+      - the codex writer started with private fixture authentication, protected homes, an empty edit root and private shell scratch
       - the codex writer provisioned and removed its fixture authentication
       - 'the file matching "tmp/true-bdd.log.json" has exactly 2 matches for "msg":"AssistantMessage received"'
       - 'every file matching "tmp/true-bdd.log.json" matches "msg":"AssistantMessage received","content_blocks":1'
@@ -5553,7 +5566,7 @@ scenarios:
       - 'every file matching "tmp/true-bdd.log.json" does not match "tool":|"run":'
       - every file matching "tmp/*/*codex.log" matches fixture writer stderr sentinel
       - every file matching "tmp/*/*codex-events.jsonl" does not match fixture writer stderr sentinel
-      - 'every file matching "tmp/true-bdd.log.json" matches "msg":"Dispatching AI turn","turn":1,"label":"claude-turn001","role":"fix","cli":"claude","model":"claude-opus-5","system_length":[0-9]+,"user_length":[0-9]+'
+      - 'every file matching "tmp/true-bdd.log.json" matches "msg":"Dispatching AI turn","turn":1,"label":"claude-turn001","role":"fix","cli":"claude","model":"claude-opus-5","system_length":[0-9]+,"user_length":[0-9]+,"prompt_bytes":[0-9]+,"prompt_limit_bytes":150000'
       - 'every file matching "tmp/true-bdd.log.json" matches "msg":"AI turn returned","turn":1,"label":"claude-turn001","role":"fix","cli":"claude","model":"claude-opus-5","duration_ms":[0-9]+,"length":125'
       - 'every file matching "tmp/true-bdd.log.json" matches "msg":"CLI transcript saved","file":"tmp/[^"\n]+/codex-turn002-codex-events.jsonl"'
       - the file "services/calc/calc.go" is created
@@ -6067,7 +6080,7 @@ scenarios:
       - and: 'judge: The menu proposal adds a product concept for the existing halving action. The Story keeps all of its original descriptions and step words; no substitute action, error criterion or new
           Story field is introduced.'
   build-tests-render-001-renders-only:
-    description: build tests --fix renders the Registry tests without definitions, AI turns or test runs
+    description: "build tests renders the tests and main file over the existing Steps package without AI or a test runner"
     service: true-bdd
     path: tests/true-bdd/build_tests_test.go
     user_stories:
@@ -6076,18 +6089,19 @@ scenarios:
       merge_date: '2026-10-29'
     merged_steps:
       given:
-      - the "build-tests-render-only" project tree
+      - "the \"build-tests-render-only\" project tree"
       when:
-      - the System Architect runs "build tests --fix"
+      - "the System Architect runs \"build tests --fix\""
       then:
-      - the command exits with code 0
-      - and: the file "tests/mcp/mcp_test.go" is created
-      - and: the file "tests/mcp/mcp_test.go" matches // Code generated by `true-bdd build tests`\. DO NOT EDIT\.
-      - and: exactly 0 files matching "tests/mcp/steps/*.go" are created
-      - and: stdout matches BUILD TESTS COMPLETE
-      - and: the engine dispatched no AI turns
-      - and: the engine spawned no test runners
-      - and: no file outside "tmp" and "tests" changed
+      - "the command exits with code 0"
+      - "the file \"tests/mcp/mcp_test.go\" is created"
+      - "the file \"tests/mcp/main_test.go\" is created"
+      - "the file \"tests/mcp/mcp_test.go\" matches New\\(t, \"INT-900\"\\)"
+      - "exactly 0 files matching \"tests/mcp/steps/*.go\" are created"
+      - "stdout matches BUILD TESTS COMPLETE"
+      - "the engine dispatched no AI turns"
+      - "the engine spawned no test runners"
+      - "no file outside \"tmp\" and \"tests\" changed"
   build-steps-coverage-001-covered-in-process:
     description: build steps resolves every Scenario in-process without a coverage command, test run or AI turn
     service: true-bdd
@@ -6149,8 +6163,7 @@ scenarios:
       - but: no file outside "tmp" changed
       - and: the engine dispatched no AI turns
   build-steps-coverage-004-invalid-step-pattern-refused:
-    description: A step definition whose pattern is not a valid regular expression must refuse `build steps`, naming its file, line and column, before any generated
-      test file is compared with the Registry
+    description: A step definition whose pattern is not a valid regular expression must refuse `build steps`, naming its file, line and column, before any AI turn
     service: true-bdd
     path: tests/true-bdd/build_steps_test.go
     user_stories:
@@ -6171,8 +6184,7 @@ scenarios:
       - and: no file outside "tmp" changed
       - and: the engine dispatched no AI turns
   build-steps-coverage-005-step-file-not-go-refused:
-    description: A step definition file that is not valid Go must refuse `build steps`, naming the file, line and column where Go stops reading it, before any generated
-      test file is compared with the Registry
+    description: A step definition file that is not valid Go must refuse `build steps`, naming the file, line and column where Go stops reading it, before any AI turn
     service: true-bdd
     path: tests/true-bdd/build_steps_test.go
     user_stories:
@@ -6212,7 +6224,7 @@ scenarios:
       - and: no file outside "tmp" changed
       - and: the engine dispatched no AI turns
   build-steps-writing-001-new-body:
-    description: A missing concept's steps get an engine skeleton from the proposed pattern and an AI body that executes the declared CLI command
+    description: "A missing concept gets its Steps package before any generated test or main file exists"
     service: true-bdd
     path: tests/true-bdd/build_steps_test.go
     user_stories:
@@ -6222,28 +6234,25 @@ scenarios:
     timeout: 15m
     merged_steps:
       given:
-      - the "build-steps-new" project tree
-      - the System Architect's answer to every question is "1"
+      - "the \"build-steps-new\" project tree"
+      - "the System Architect's answer to every question is \"1\""
       when:
-      - the System Architect runs "build steps --fix"
+      - "the System Architect runs \"build steps --fix\""
       then:
-      - the command exits with code 0
-      - stdout matches BUILD STEPS COMPLETE
-      - stdout matches Step coverage passed
-      - stdout matches Scenario list passed
-      - stdout matches Scenario red without target.*scenario=calc-001-double
-      - stdout matches Scenario red without target.*scenario=calc-002-double
-      - stdout matches Red without target passed.*scenarios=2
-      - the engine spawned exactly 1 test runner with arguments matching -count=1$
-      - no file outside "tmp" and "tests" changed
-      - the engine dispatched 4 validation AI turns to "claude"
-      - the engine spawned exactly 1 test runner with arguments matching -list \.
-      - 'every file matching "tmp/*/*fix-iter*-user.txt" matches binding:'
-      - 'every file matching "tmp/*/apply-*-user.txt" matches interface_document:'
-      - every file matching "tmp/*/apply-*-user.txt" matches calc-001-double
-      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+      - "the command exits with code 0"
+      - "stdout matches BUILD STEPS COMPLETE"
+      - "stdout matches Step coverage passed"
+      - "the engine spawned exactly 0 test runners with arguments matching -list"
+      - "the engine spawned exactly 0 test runners with arguments matching ^test\\b"
+      - "exactly 0 files matching \"tests/calc/*_test.go\" are created"
+      - "exactly 0 files matching \"tests/calc/scenarios/*.go\" are created"
+      - "no file outside \"tmp\" and \"tests/calc\" changed"
+      - "the engine dispatched 5 validation AI turns to \"claude\""
+      - "every file matching \"tmp/*/*fix-iter*-user.txt\" matches binding:"
+      - "every file matching \"tmp/*/apply-*-user.txt\" matches interface_document:"
+      - "every file matching \"tmp/*/apply-*-user.txt\" matches calc-001-double"
   build-steps-writing-002-all-skeletons-first:
-    description: Every missing concept's skeletons compile before the first body turn and each body is written in one walk; whole-suite checks run once
+    description: Each concept Item's pattern F writes its skeletons before its body F, and a completed fix walk rechecks every Item
     service: true-bdd
     path: tests/true-bdd/build_steps_test.go
     user_stories:
@@ -6261,12 +6270,9 @@ scenarios:
       - the command exits with code 0
       - stdout matches BUILD STEPS COMPLETE
       - stdout matches Step coverage passed
-      - stdout matches Scenario list passed
       - no file outside "tmp" and "tests" changed
-      - stdout matches All step skeletons written.*items=3
-      - the engine dispatched 12 validation AI turns to "claude"
-      - the engine spawned exactly 1 test runner with arguments matching -list \.
-      - the engine spawned exactly 1 test runner with arguments matching -run \^\(Test
+      - stdout matches Concept skeletons rewritten
+      - the engine dispatched 15 validation AI turns to "claude"
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   build-steps-writing-003-slot-order:
     description: The quoted command and the number are passed to the written definition in the proposed pattern's capture order
@@ -6287,10 +6293,8 @@ scenarios:
       - the command exits with code 0
       - stdout matches BUILD STEPS COMPLETE
       - stdout matches Step coverage passed
-      - stdout matches Scenario list passed
       - no file outside "tmp" and "tests" changed
-      - the engine dispatched 4 validation AI turns to "claude"
-      - the engine spawned exactly 1 test runner with arguments matching -list \.
+      - the engine dispatched 5 validation AI turns to "claude"
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   build-steps-writing-004-interface-cannot-serve:
     description: A writer's verdict that the Public interface cannot serve its concept stops the walk distinctly after that one writer turn, naming the concept and what the interface lacks
@@ -6316,7 +6320,7 @@ scenarios:
       - the engine dispatched 1 apply AI turn to "codex"
       - no file outside "tmp" and "tests" changed
   fix-loop-choices-006-exit-fails-build-steps:
-    description: Exiting the body-writing Fix loop ends build steps non-zero with no COMPLETE banner
+    description: Exiting the pattern-bindings Fix loop ends build steps non-zero with no COMPLETE banner
     service: true-bdd
     path: tests/true-bdd/build_steps_test.go
     user_stories:
@@ -6334,8 +6338,8 @@ scenarios:
       - the command exits with code 1
       - stdout matches action=exit
       - stdout does not match BUILD STEPS COMPLETE
-      - the engine dispatched 4 AI turns
-      - no file outside "tmp" and "tests" changed
+      - the engine dispatched 3 AI turns
+      - no file outside "tmp" changed
   engine-term-documents-005-glossary-not-a-list-refuses-build-steps-fix:
     description: The body writer refuses a malformed term list before skeletons, runners or AI
     service: true-bdd
@@ -6395,11 +6399,12 @@ scenarios:
       - the command exits with code 0
       - stdout matches BUILD STEPS COMPLETE
       - stdout matches Step coverage passed
-      - stdout matches Scenario list passed
-      - the engine spawned exactly 1 test runner with arguments matching -list \.
       - no file outside "tmp" and "tests" changed
       - stdout matches msg="Codex turn sandboxed" label=codex-turn[0-9]+ sandbox=writer
-      - the engine dispatched 4 validation AI turns to "claude"
+      - the engine dispatched 5 validation AI turns to "claude"
+      - 'every file matching "tmp/codex-homes/*/*/config.toml" matches (?m)^PWD = "{{CWD}}"$'
+      - 'every file matching "tmp/codex-homes/*/*/config.toml" matches (?m)^"{{CWD}}/tests/calc/steps" = "write"$'
+      - 'every file matching "tmp/codex-homes/*/*/config.toml" does not match (?m)^"{{CWD}}/tests(?:/calc)?" = "write"$'
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   build-steps-writing-005-outside-tests-refused:
     description: The confined body writer refuses writes to the service and Specification while completing the test body
@@ -6420,16 +6425,14 @@ scenarios:
       - the command exits with code 0
       - stdout matches BUILD STEPS COMPLETE
       - stdout matches Step coverage passed
-      - stdout matches Scenario list passed
-      - the engine spawned exactly 1 test runner with arguments matching -list \.
       - no file outside "tmp" and "tests" changed
       - stdout matches msg="Tool calls were denied; this turn did less than it was asked to".*role=apply
-      - the engine dispatched 4 validation AI turns to "claude"
+      - the engine dispatched 5 validation AI turns to "claude"
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   build-steps-writing-006-bringup-is-not-red:
-    description: Harness bring-up failure without the target fails the red check and names the Scenario
+    description: "build code refuses a bring-up failure as Red without the target"
     service: true-bdd
-    path: tests/true-bdd/build_steps_test.go
+    path: tests/true-bdd/build_code_test.go
     user_stories:
     - story: docs/product/stories/build-steps-writing.yaml
       scenario_id: build-steps-writing-006-bringup-is-not-red
@@ -6437,20 +6440,20 @@ scenarios:
     timeout: 20m
     merged_steps:
       given:
-      - the "build-steps-bringup" project tree
+      - "the \"build-steps-bringup\" project tree"
       when:
-      - the System Architect runs "build steps --fix"
+      - "the System Architect runs \"build code\""
       then:
-      - the command exits with code 1
-      - stdout matches Red without target check failed
-      - stderr matches red without target check failed.*TestCalc001Double
-      - stdout does not match BUILD STEPS COMPLETE
-      - the engine dispatched no AI turns
-      - no file outside "tmp" and "tests" changed
+      - "the command exits with code 1"
+      - "stdout matches Red without target check failed"
+      - "stderr matches red without target check failed.*calc-001-double"
+      - "stdout does not match BUILD CODE COMPLETE"
+      - "the engine dispatched no AI turns"
+      - "no file outside \"tmp\" changed"
   build-steps-writing-007-green-body-repaired:
-    description: A written body doing the product work goes back to the Fix loop with the green-without-target finding
+    description: "build code stops on a green Scenario without service code and offers no fix"
     service: true-bdd
-    path: tests/true-bdd/build_steps_test.go
+    path: tests/true-bdd/build_code_test.go
     user_stories:
     - story: docs/product/stories/build-steps-writing.yaml
       scenario_id: build-steps-writing-007-green-body-repaired
@@ -6458,21 +6461,70 @@ scenarios:
     timeout: 20m
     merged_steps:
       given:
-      - the "build-steps-green" project tree
-      - the System Architect's answer to every question is "1"
+      - "the \"build-steps-green\" project tree"
       when:
-      - the System Architect runs "build steps --fix"
+      - "the System Architect runs \"build code\""
       then:
-      - the command exits with code 0
-      - stdout matches Scenario green without target.*TestCalc001Double
-      - stdout matches Red without target passed
-      - stdout matches BUILD STEPS COMPLETE
-      - the engine dispatched 9 AI turns
-      - no file outside "tmp" and "tests" changed
-      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
-
+      - "the command exits with code 1"
+      - "stdout matches Scenario list passed"
+      - "stdout matches Scenario green without target.*calc-001-double"
+      - "stderr matches scenario green without target.*calc-001-double"
+      - "stdout does not match BUILD CODE COMPLETE"
+      - "the engine dispatched no AI turns"
+      - "the engine spawned exactly 1 test runner with arguments matching -list \\."
+      - "no file outside \"tmp\" changed"
+  build-steps-writing-008-suite-wiring:
+    description: "build tests writes the plain bddgo main file beside the Scenario tests"
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
+    user_stories:
+    - story: docs/product/stories/build-steps-writing.yaml
+      scenario_id: build-steps-writing-008-suite-wiring
+      merge_date: '2026-11-02'
+    merged_steps:
+      given:
+      - "the \"build-steps-wiring\" project tree"
+      when:
+      - "the System Architect runs \"build tests --fix\""
+      then:
+      - "the command exits with code 0"
+      - "the file \"tests/calc/main_test.go\" is created"
+      - "the file \"tests/calc/main_test.go\" matches // Code generated by `true-bdd build tests`\\. DO NOT EDIT\\."
+      - "the file \"tests/calc/main_test.go\" matches func New\\(t \\*testing.T"
+      - "exactly 0 files matching \"tests/calc/scenarios/*.go\" are created"
+      - "stdout matches BUILD TESTS COMPLETE"
+      - "the engine dispatched no AI turns"
+      - "the engine spawned no test runners"
+      - "no file outside \"tmp\" and \"tests\" changed"
+      - "the shell command \"go test -tags bdd -json -count=1 ./tests/calc/...\" run in \".\" exits with code 0"
+  build-steps-writing-009-harness-wiring:
+    description: "build tests writes the testkit main file beside the Scenario tests"
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
+    user_stories:
+    - story: docs/product/stories/build-steps-writing.yaml
+      scenario_id: build-steps-writing-009-harness-wiring
+      merge_date: '2026-11-02'
+    merged_steps:
+      given:
+      - "the \"build-steps-harness-wiring\" project tree"
+      when:
+      - "the System Architect runs \"build tests --fix\""
+      then:
+      - "the command exits with code 0"
+      - "the file \"tests/calc/main_test.go\" is created"
+      - "the file \"tests/calc/main_test.go\" matches // Code generated by `true-bdd build tests`\\. DO NOT EDIT\\."
+      - "the file \"tests/calc/main_test.go\" matches func New\\(t \\*testing.T"
+      - "exactly 0 files matching \"tests/calc/scenarios/*.go\" are created"
+      - "stdout matches BUILD TESTS COMPLETE"
+      - "the engine dispatched no AI turns"
+      - "the engine spawned no test runners"
+      - "no file outside \"tmp\" and \"tests\" changed"
+      - "the file \"tests/calc/main_test.go\" matches testkit.NewSuite"
+      - "the file \"tests/calc/steps/state.go\" matches \\*testkit.ScenarioRun"
+      - "the shell command \"go test -tags bdd -json -count=1 ./tests/calc/... -mode=services:replay,tests:replay\" run in \".\" exits with code 0"
   build-steps-critique-001-operation:
-    description: A when omitting its bound operation fails critique and returns to the Fix loop
+    description: A when omitting its bound operation fails step-verification and returns to the Fix loop
     service: true-bdd
     path: tests/true-bdd/build_steps_critique_test.go
     user_stories:
@@ -6489,17 +6541,18 @@ scenarios:
       then:
       - the command exits with code 0
       - stdout matches BUILD STEPS COMPLETE
-      - stdout matches Step definition critiqued
+      - stdout matches Step definition verified
       - stdout matches concept_binding.*does not call the bound double operation
-      - the engine dispatched 9 AI turns
-      - the engine dispatched 5 validation AI turns to "claude"
+      - the engine dispatched 11 AI turns
+      - the engine dispatched 7 validation AI turns to "claude"
       - no file outside "tmp" and "tests" changed
-      - 'every file matching "tmp/*/critique-*-user.txt" matches binding:'
-      - 'every file matching "tmp/*/critique-*-user.txt" matches interface_document:'
-      - every file matching "tmp/*/critique-*-user.txt" matches calc-002-double
+      - 'every file matching "tmp/*/*checklist-build-steps-step-verification-user.txt" matches binding:'
+      - 'every file matching "tmp/*/*checklist-build-steps-step-verification-user.txt" matches interface_document:'
+      - 'every file matching "tmp/*/*checklist-build-steps-step-verification-user.txt" does not match (?m)^fixture_inputs:'
+      - every file matching "tmp/*/*checklist-build-steps-step-verification-user.txt" does not match calc-002-double
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   build-steps-critique-002-assertion:
-    description: An assertion contradicting the step's concept fails critique and returns to the Fix loop
+    description: An assertion contradicting the step's concept fails step-verification and returns to the Fix loop
     service: true-bdd
     path: tests/true-bdd/build_steps_critique_test.go
     user_stories:
@@ -6516,17 +6569,18 @@ scenarios:
       then:
       - the command exits with code 0
       - stdout matches BUILD STEPS COMPLETE
-      - stdout matches Step definition critiqued
+      - stdout matches Step definition verified
       - stdout matches concept_meaning.*assertion contradicts the step
-      - the engine dispatched 9 AI turns
-      - the engine dispatched 5 validation AI turns to "claude"
+      - the engine dispatched 11 AI turns
+      - the engine dispatched 7 validation AI turns to "claude"
       - no file outside "tmp" and "tests" changed
-      - 'every file matching "tmp/*/critique-*-user.txt" matches binding:'
-      - 'every file matching "tmp/*/critique-*-user.txt" matches interface_document:'
-      - every file matching "tmp/*/critique-*-user.txt" matches calc-002-double
+      - 'every file matching "tmp/*/*checklist-build-steps-step-verification-user.txt" matches binding:'
+      - 'every file matching "tmp/*/*checklist-build-steps-step-verification-user.txt" matches interface_document:'
+      - 'every file matching "tmp/*/*checklist-build-steps-step-verification-user.txt" does not match (?m)^fixture_inputs:'
+      - every file matching "tmp/*/*checklist-build-steps-step-verification-user.txt" does not match calc-002-double
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   build-steps-critique-003-correct:
-    description: A correct given that puts its state in place passes critique and completes
+    description: A correct given that puts its state in place passes step-verification and completes
     service: true-bdd
     path: tests/true-bdd/build_steps_critique_test.go
     user_stories:
@@ -6543,14 +6597,15 @@ scenarios:
       then:
       - the command exits with code 0
       - stdout matches BUILD STEPS COMPLETE
-      - stdout matches Step definition critiqued
-      - the engine dispatched 6 AI turns
-      - the engine dispatched 4 validation AI turns to "claude"
+      - stdout matches Step definition verified
+      - the engine dispatched 7 AI turns
+      - the engine dispatched 5 validation AI turns to "claude"
       - stdout matches role=prompt cli=claude model=claude-sonnet-5
       - no file outside "tmp" and "tests" changed
-      - 'every file matching "tmp/*/critique-*-user.txt" matches binding:'
-      - 'every file matching "tmp/*/critique-*-user.txt" matches interface_document:'
-      - every file matching "tmp/*/critique-*-user.txt" matches calc-002-double
+      - 'every file matching "tmp/*/*checklist-build-steps-step-verification-user.txt" matches binding:'
+      - 'every file matching "tmp/*/*checklist-build-steps-step-verification-user.txt" matches interface_document:'
+      - 'every file matching "tmp/*/*checklist-build-steps-step-verification-user.txt" does not match (?m)^fixture_inputs:'
+      - every file matching "tmp/*/*checklist-build-steps-step-verification-user.txt" does not match calc-002-double
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   concepts-001-loads:
     description: A product document with concepts must load and validate its terms and bindings without AI
@@ -6731,7 +6786,7 @@ scenarios:
       - the engine dispatched 0 AI turns
       - no file outside "tmp" changed
   scen-check-speed-001-overlapping-validation:
-    description: Concurrent validation preserves each Scenario gate and Prompt order and serializes fixes in Scenario order
+    description: Concurrent validation must preserve written checklist order and serialize fixes in Scenario order
     service: true-bdd
     path: tests/true-bdd/scen_check_speed_test.go
     user_stories:
@@ -6747,7 +6802,7 @@ scenarios:
         - "the Quality Engineer runs \"scen check --fix\""
       then:
         - "the command exits with code 1"
-        - "Scenario validation overlaps with ordered gates and fix menus"
+        - "Scenario validation overlaps with ordered checklist items and fix menus"
         - 'stdout matches Exiting\.'
         - 'stdout does not match Walk stopped'
   scen-check-speed-002-reverse-request-replay:
@@ -6767,7 +6822,7 @@ scenarios:
         - "the Quality Engineer runs \"scen check --fix\""
       then:
         - "the command exits with code 1"
-        - "Scenario validation overlaps with ordered gates and fix menus"
+        - "Scenario validation overlaps with ordered checklist items and fix menus"
         - 'stdout matches Exiting\.'
         - 'stdout does not match Walk stopped'
         - "replay consumes the recorded validation requests in reverse order"
@@ -6874,8 +6929,9 @@ scenarios:
       - the command exits with code 0
       - stdout matches action=apply
       - stdout matches judgement=bindings answer=pass
-      - the only file changed outside "tmp" is "docs/architecture/architecture.yaml"
+      - no file outside "tmp" and "docs" changed
       - the file "docs/scenarios.yaml" is unchanged
+      - the file "docs/product/stories/host-story.yaml" is unchanged
   concept-link-005-wrong-block:
     description: An action written as Then must fail naming its When concept
     service: true-bdd
@@ -6951,7 +7007,7 @@ scenarios:
       - the command exits with code 0
       - stdout matches action=apply
       - the file "docs/product/product.yaml" matches means.*(pointer.*keyboard|keyboard.*pointer)
-      - the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "msg":"Cell validation started","subjectID":"alpha","promptIndex":1
+      - the file matching "tmp/true-bdd.log.json" has exactly 4 matches for "msg":"Cell validation started","subjectID":"alpha","promptIndex":1
       - the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "msg":"Cell validation started","subjectID":"beta","promptIndex":1
   concept-link-009-threshold-nine:
     description: A real-model near miss scored seven fails at threshold nine; the engine threshold test pins the same-answer boundary
@@ -7212,7 +7268,7 @@ scenarios:
       - stdout matches msg="Concept judgement answered" subjectID=host promptIndex=1 judgement=link answer=pass
       - every file matching "docs/product/product.yaml" does not match variations
       - the file "docs/product/stories/host-story.yaml" is unchanged
-      - 'judge: the product document''s result concept states in its means that the calculator prints the whole number the halving produced as well as the one the doubling produced, and every concept holds only concept, means and terms'
+      - 'judge: the product document''s result concept states in its means that the printed whole number may be the one the halving produced or the one the doubling produced, and every concept holds only concept, means and terms'
 
   concept-words-001-declare:
     description: A word repair must declare a glossary term and concept term through the refinement menu
@@ -7492,6 +7548,8 @@ scenarios:
       - stdout matches batch=1 texts=3
       - stdout matches batch=2 texts=2
       - stdout matches step definitions are missing
+      - stdout matches Check answered.*check=pattern-bindings.*answer=fail.*no pattern binds
+      - stdout does not match Concept judgement answered.*judgement=propose
       - no file outside "tmp" changed
       - the engine spawned no test runners
   concept-grouping-008-changed-binding:
@@ -7628,8 +7686,8 @@ scenarios:
       - the System Architect runs "build steps --fix"
       then:
       - the command exits with code 0
-      - stdout matches Pattern proposal refused.*attempt=1.*also binds when step
-      - stdout matches Pattern proposal accepted.*attempt=2
+      - stdout matches Check answered.*check=pattern-bindings.*answer=fail.*also binds when step
+      - stdout matches Check answered.*check=pattern-bindings.*answer=pass
       - stdout matches BUILD STEPS COMPLETE
       - the file "tests/calc/steps/definitions.go" is unchanged
       - no file outside "tmp" and "tests" changed
@@ -7645,13 +7703,14 @@ scenarios:
     merged_steps:
       given:
       - the "concept-steps-unused" project tree
+      - the first pattern proposal is controlled to include an unused pattern
       - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build steps --fix"
       then:
       - the command exits with code 0
-      - stdout matches Pattern proposal refused.*binds no step of the suite
-      - stdout matches Pattern proposal accepted
+      - stdout matches Check answered.*check=pattern-bindings.*answer=fail.*binds no step of the suite
+      - stdout matches Check answered.*check=pattern-bindings.*answer=pass
       - stdout matches BUILD STEPS COMPLETE
       - no file outside "tmp" and "tests" changed
   concept-steps-003-negative-operand:
@@ -7693,9 +7752,9 @@ scenarios:
       - the System Architect runs "build steps --fix"
       then:
       - the command exits with code 0
-      - stdout matches Concept Item resumed.*halving
+      - stdout matches Check answered.*check=pattern-bindings.*answer=pass
       - stdout does not match Grouping batch
-      - stdout does not match Pattern proposal
+      - stdout does not match Concept judgement answered.*judgement=propose
       - stdout matches BUILD STEPS COMPLETE
       - the file "tests/calc/steps/register.go" is unchanged
       - the file "tests/calc/steps/definitions.go" is unchanged
@@ -7751,7 +7810,7 @@ scenarios:
       - no file outside "tmp" and "tests" changed
       - the shell command "go test -tags bdd -count=1 ./tests/calc/..." run in "." exits with code 0
   concept-bodies-002-fixture-prompt:
-    description: The body turn's saved prompts hold the fixture input of a Scenario the pattern binds
+    description: The body turns' saved prompts should name the Registry, Scenario keys and fixture paths
     service: true-bdd
     path: tests/true-bdd/concept_bodies_test.go
     timeout: 15m
@@ -7767,14 +7826,18 @@ scenarios:
       - the System Architect runs "build steps --fix"
       then:
       - the command exits with code 0
-      - every file matching "tmp/*/*fix-iter*-user.txt" matches CALC_REAL_GO must name the real go
-      - every file matching "tmp/*/apply-*-user.txt" matches CALC_REAL_GO must name the real go
-      - 'every file matching "tmp/*/apply-*-user.txt" matches fixture: tests/calc/fixtures/offline'
+      - 'every file matching "tmp/*/*fix-iter1-user.txt" matches registry: ./docs/scenarios.yaml'
+      - 'every file matching "tmp/*/*fix-iter1-user.txt" matches fixture_root: tests/calc/fixtures'
+      - 'every file matching "tmp/*/*fix-iter1-user.txt" matches fixture: offline'
+      - every file matching "tmp/*/*fix-iter1-user.txt" matches calc-001-halve
+      - every file matching "tmp/*/*fix-iter1-user.txt" does not match CALC_REAL_GO must name the real go
+      - 'every file matching "tmp/*/apply-*-user.txt" matches fixture_root: tests/calc/fixtures'
+      - 'every file matching "tmp/*/apply-*-user.txt" matches fixture: offline'
+      - every file matching "tmp/*/apply-*-user.txt" matches calc-001-halve
       - stdout matches BUILD STEPS COMPLETE
       - no file outside "tmp" and "tests" changed
   concept-bodies-003-fixture-contract:
-    description: The critique passes a body that meets a contract a bound Scenario's fixture input states
-      and its binding does not
+    description: The step-verification Checklist item passes a body that supplies CALC_REAL_GO as the host's toolchain binding declares
     service: true-bdd
     path: tests/true-bdd/concept_bodies_test.go
     timeout: 15m
@@ -7790,14 +7853,15 @@ scenarios:
       - the System Architect runs "build steps --fix"
       then:
       - the command exits with code 0
-      - stdout matches Step definition critiqued.*findings=\[\]
-      - every file matching "tests/calc/steps/concept*.go" matches CALC_REAL_GO
+      - stdout matches Step definition verified.*findings=\[\]
+      - some file matching "tests/calc/steps/*.go" or "tests/calc/helpers/*.go" matches CALC_REAL_GO
+      - every file matching "tmp/*/*checklist-build-steps-step-verification-user.txt" matches CALC_REAL_GO
+      - 'every file matching "tmp/*/*checklist-build-steps-step-verification-user.txt" does not match fixture_inputs:'
       - stdout matches BUILD STEPS COMPLETE
       - no file outside "tmp" and "tests" changed
       - the shell command "go test -tags bdd -count=1 ./tests/calc/..." run in "." exits with code 0
   concept-bodies-004-extra-requirement:
-    description: The critique fails a body that requires more than its binding and its fixture inputs state,
-      and the body goes back to its writer
+    description: The verification Checklist item fails a body requiring an undeclared prerequisite, and its F rewrites that body
     service: true-bdd
     path: tests/true-bdd/concept_bodies_test.go
     timeout: 20m
@@ -7808,21 +7872,21 @@ scenarios:
     merged_steps:
       given:
       - the "concept-bodies-extra" project tree
+      - the codex writer is controlled to reuse the shipped State.Halve on its first apply
       - the System Architect's answer to every question is "1"
       when:
       - the System Architect runs "build steps --fix"
       then:
       - the command exits with code 0
-      - stdout matches Step definition critiqued.*concept_binding
-      - stdout matches Step definition critiqued.*findings=\[\]
-      - stdout does not match Critique sent the patterns back
-      - every file matching "tests/calc/steps/concept*.go" does not match CALC_LICENCE|\.Halve\(
+      - stdout matches Step definition verified.*concept_binding
+      - stdout matches Step definition verified.*findings=\[\]
+      - stdout does not match Verification sent the patterns back
+      - every file matching "tests/calc/steps/concept*.go" does not match CALC_LICENCE|state\.Halve\(
       - stdout matches BUILD STEPS COMPLETE
       - no file outside "tmp" and "tests" changed
       - the shell command "go test -tags bdd -count=1 ./tests/calc/..." run in "." exits with code 0
   concept-bodies-005-wrong-capture:
-    description: The critique fails a pattern that captures the wrong part of a step, and the Item is repaired
-      through a new proposal the engine checks before rewriting its skeleton
+    description: The verification Checklist item finds a wrong capture; its F proposes the pattern and writes the body, then its Q and the restarted pattern-bindings Q judge it
     service: true-bdd
     path: tests/true-bdd/concept_bodies_test.go
     timeout: 20m
@@ -7838,9 +7902,9 @@ scenarios:
       - the System Architect runs "build steps --fix"
       then:
       - the command exits with code 0
-      - stdout matches Step definition critiqued.*pattern_captures
-      - stdout matches Critique sent the patterns back to the proposal
-      - stdout matches Pattern proposal accepted
+      - stdout matches Step definition verified.*pattern_captures
+      - stdout matches Verification sent the patterns back to the proposal
+      - stdout matches Check answered.*check=pattern-bindings.*answer=pass
       - stdout matches Concept skeletons rewritten.*removed=1
       - stdout matches Concept pattern binds.*step="the Owner halves 64" captures=64
       - stdout matches BUILD STEPS COMPLETE
@@ -7872,3 +7936,539 @@ scenarios:
       - stdout matches check=step-definitions subjectID=calc-003-double promptIndex=1 answer=pass
       - the engine dispatched no AI turns
       - no file outside "tmp" changed
+  glossary-form-001-startup-refused:
+    description: A glossary meaning exceeding three sentences and 25 words per sentence must refuse startup with its term, counts and rule before any AI turn
+    service: true-bdd
+    path: tests/true-bdd/glossary_form_test.go
+    user_stories: []
+    merged_steps:
+      given:
+      - the "glossary-form-refused" project tree
+      when:
+      - the System Architect runs "scen check"
+      then:
+      - the command exits with code 1
+      - stdout matches Refusing to start.*glossary term .*greeting.*4 sentences, longest sentence 26 words, 1 paragraphs.*one paragraph of at most 3 sentences, each at most 25 words
+      - the engine dispatched 0 AI turns
+      - no file outside "tmp" changed
+  us-apply-007-prompt-step-order:
+    description: The apply checklist prompt must group steps as Given, When, Then, preserving
+      every block's order and every and or but modifier from the selected Acceptance
+      Criterion
+    service: true-bdd
+    path: tests/true-bdd/us_apply_test.go
+    user_stories:
+    - story: docs/product/stories/us-apply-registry-merge.yaml
+      scenario_id: us-apply-007-prompt-step-order
+      merge_date: '2026-11-02'
+    merged_steps:
+      given:
+      - the "us-apply-prompt-order" project tree
+      when:
+      - the Product Owner runs "us apply mcp-endpoint"
+      then:
+      - and: "the us_apply_checklist prompt groups Given, When, Then in source order with and/but modifiers"
+      - the command exits with code 0
+      - the engine dispatched 2 AI turns
+      - no file outside "tmp" changed
+  scen-check-007-prompt-lineage-order:
+    description: The Scenario checklist prompt must identify the Registry key, keep
+      and or but modifiers, reproduce lineage in source order without merge_date, and
+      preserve the multiline Q and F text
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
+    user_stories:
+    - story: docs/product/stories/scen-check-verifier.yaml
+      scenario_id: scen-check-007-prompt-lineage-order
+      merge_date: '2026-11-02'
+    merged_steps:
+      given:
+      - the "scen-check-prompt-lineage" project tree
+      when:
+      - the Quality Engineer runs "scen check E2E-001"
+      then:
+      - and: "the scen_check_checklist prompt uses the Scenario's Registry key"
+      - and: "the scen_check_checklist prompt keeps Scenario modifiers and lineage in source order"
+      - and: "the scen_check_checklist prompt does not mention merge_date"
+      - and: "the scen_check_checklist prompt holds the checklist's question and fix verbatim"
+      - the command exits with code 0
+      - the engine dispatched 1 AI turns
+      - no file outside "tmp" changed
+
+  checklist-models-001-declarations-pass:
+    description: Model declarations must name existing templates and a valid scheme
+      and occur in a Scenario step.
+    service: true-bdd
+    path: tests/true-bdd/checklist_models_test.go
+    user_stories:
+    - story: docs/product/stories/checklist-models.yaml
+      scenario_id: checklist-models-001-declarations-pass
+      merge_date: '2026-11-02'
+    merged_steps:
+      given:
+      - the "model-declarations-valid" project tree
+      when:
+      - the Quality Engineer runs "scen check"
+      then:
+      - the command exits with code 0
+      - stdout matches SCEN CHECK COMPLETE
+      - the engine dispatched no AI turns
+      - no file outside "tmp" changed
+  checklist-models-002-unreferenced-refused:
+    description: Scen check must refuse a declared Model no Scenario step of its service
+      names before any AI turn.
+    service: true-bdd
+    path: tests/true-bdd/checklist_models_test.go
+    user_stories:
+    - story: docs/product/stories/checklist-models.yaml
+      scenario_id: checklist-models-002-unreferenced-refused
+      merge_date: '2026-11-02'
+    merged_steps:
+      given:
+      - the "model-declarations-unreferenced" project tree
+      when:
+      - the Quality Engineer runs "scen check"
+      then:
+      - the command exits with code 1
+      - stdout matches invalid Model declaration.*Model scen_check_checklist.*no Scenario
+        step names this Model
+      - the engine dispatched no AI turns
+      - no file outside "tmp" changed
+  "checklist-models-003-scheme-missing-refused":
+    description: "Scen check must refuse a declared Model whose scheme file is absent before any AI turn."
+    service: true-bdd
+    path: tests/true-bdd/checklist_models_test.go
+    user_stories:
+    - story: docs/product/stories/checklist-models.yaml
+      scenario_id: "checklist-models-003-scheme-missing-refused"
+      merge_date: '2026-11-02'
+    merged_steps:
+      given:
+      - the "model-declarations-missing-scheme" project tree
+      - "the project tree has no \"true-bdd/models/scen_check_checklist.schema.yaml\""
+      when:
+      - the Quality Engineer runs "scen check"
+      then:
+      - the command exits with code 1
+      - "stdout matches invalid Model declaration.*Model scen_check_checklist.*scen_check_checklist\\.schema\\.yaml"
+      - the engine dispatched no AI turns
+      - no file outside "tmp" changed
+  build-tests-render-002-no-steps:
+    description: "build tests refuses before rendering when the Steps package is missing"
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
+    user_stories:
+    - story: docs/product/stories/build-tests-render.yaml
+      scenario_id: build-tests-render-002-no-steps
+      merge_date: '2026-11-03'
+    merged_steps:
+      given:
+      - "the \"build-tests-no-steps\" project tree"
+      when:
+      - "the System Architect runs \"build tests --fix\""
+      then:
+      - "the command exits with code 1"
+      - "stdout matches steps package is missing.*build steps --fix"
+      - "exactly 0 files matching \"tests/mcp/*_test.go\" are created"
+      - "the engine dispatched no AI turns"
+      - "the engine spawned no test runners"
+      - "no file outside \"tmp\" changed"
+  build-tests-render-003-orphan-fixture:
+    description: "build tests refuses a fixture tree no Scenario names"
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
+    user_stories:
+    - story: docs/product/stories/build-tests-render.yaml
+      scenario_id: build-tests-render-003-orphan-fixture
+      merge_date: '2026-11-03'
+    merged_steps:
+      given:
+      - "the \"build-tests-orphan-fixture\" project tree"
+      when:
+      - "the System Architect runs \"build tests --fix\""
+      then:
+      - "the command exits with code 1"
+      - "stdout matches fixture tree .*unused has no Scenario"
+      - "the engine dispatched no AI turns"
+      - "the engine spawned no test runners"
+      - "stdout does not match BUILD TESTS COMPLETE"
+  build-code-red-001-executed-definition:
+    description: "With no source build code lists every Scenario and accepts an executed definition failure as red"
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-red.yaml
+      scenario_id: build-code-red-001-executed-definition
+      merge_date: '2026-11-03'
+    merged_steps:
+      given:
+      - "the \"build-code-no-code-red\" project tree"
+      when:
+      - "the System Architect runs \"build code\""
+      then:
+      - "the command exits with code 1"
+      - "stdout matches Scenario list passed"
+      - "stdout matches Scenario red without target.*scenario=calc-001-double"
+      - "stdout matches Red without target passed.*scenarios=1"
+      - "the engine dispatched no AI turns"
+      - "the engine spawned exactly 1 test runner with arguments matching -list \\."
+      - "no file outside \"tmp\" changed"
+  build-code-red-002-existing-source:
+    description: "With partly written source build code skips Red without the target and accepts green discovery"
+    service: true-bdd
+    path: tests/true-bdd/build_code_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-red.yaml
+      scenario_id: build-code-red-002-existing-source
+      merge_date: '2026-11-03'
+    merged_steps:
+      given:
+      - "the \"build-code-existing-source\" project tree"
+      when:
+      - "the System Architect runs \"build code\""
+      then:
+      - "the command exits with code 0"
+      - "stdout matches BUILD CODE COMPLETE"
+      - "stdout does not match Red without target"
+      - "the engine spawned exactly 0 test runners with arguments matching -list"
+      - "the engine dispatched no AI turns"
+      - "no file outside \"tmp\" changed"
+  checklist-checks-008-legacy-d-refused:
+    description: A checklist still declaring D must be refused at startup with both replacement Q forms before any AI turn
+    service: true-bdd
+    path: tests/true-bdd/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/checklist-checks-deterministic-prompts.yaml
+        scenario_id: checklist-checks-008-legacy-d-refused
+        merge_date: '2026-11-05'
+    merged_steps:
+      given:
+        - the "scen-check-legacy-d-refused" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="scen check"
+        - 'stdout matches scen-check/scenario_quality #1 retired D:'
+        - 'stdout matches Q: .prompt: .* or Q: .code:'
+        - but: stdout does not match SCEN CHECK
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+
+  us-refine-refusals-008-unknown-step-key-refused:
+    description: A Story with a step key other than given, when or then must be refused before any AI turn, naming the key and Acceptance Criterion and leaving the Story unchanged
+    service: true-bdd
+    path: tests/true-bdd/us_refine_test.go
+    user_stories:
+      - story: docs/product/stories/us-refine-refusals-unwalkable-story.yaml
+        scenario_id: us-refine-refusals-008-unknown-step-key-refused
+        merge_date: '2026-11-06'
+    merged_steps:
+      given:
+        - the "us-refine-unknown-step-key" project tree
+      when:
+        - the Product Owner runs "us refine summary"
+      then:
+        - the command exits with code 1
+        - 'stdout matches acceptance criterion 001-summary: unknown Story step key: and'
+        - stdout matches expected given, when or then
+        - stdout matches level=ERROR msg="Refusing to start" command="us refine"
+        - the file "docs/product/stories/summary-story.yaml" is unchanged
+        - no file outside "tmp" changed
+        - the engine dispatched no AI turns
+
+  step-arguments-001-whole-section:
+    description: The scen_check_checklist Model must carry the complete step_arguments
+      section, using the same StepArguments construction as us_refine_checklist, us_apply_checklist
+      and build_steps_checklist.
+    service: true-bdd
+    path: tests/true-bdd/step_arguments_test.go
+    user_stories:
+    - story: docs/product/stories/step-arguments.yaml
+      scenario_id: step-arguments-001-whole-section
+      merge_date: '2026-11-06'
+    merged_steps:
+      given:
+      - the "step-arguments-present" project tree
+      - the "scen-check" checklist is narrowed to its "whether this scenario's description follows the rule-based format" prompt
+      when:
+      - the Quality Engineer runs "scen check E2E-001"
+      then:
+      - the scen_check_checklist prompt carries the complete step arguments from its
+        Model
+      - the command exits with code 0
+      - the engine dispatched 1 AI turns
+      - no file outside "tmp" changed
+  step-arguments-002-absent-unchanged:
+    description: A host without step_arguments must retain every prompt byte under the
+      shared optional-field construction of the us_refine_checklist, us_apply_checklist,
+      scen_check_checklist and build_steps_checklist Models.
+    service: true-bdd
+    path: tests/true-bdd/step_arguments_test.go
+    user_stories:
+    - story: docs/product/stories/step-arguments.yaml
+      scenario_id: step-arguments-002-absent-unchanged
+      merge_date: '2026-11-06'
+    merged_steps:
+      given:
+      - the "step-arguments-absent" project tree
+      - the "scen-check" checklist is narrowed to its "whether this scenario's description follows the rule-based format" prompt
+      when:
+      - the Quality Engineer runs "scen check E2E-001"
+      then:
+      - the scen_check_checklist prompt is byte-identical when step arguments are absent
+      - the scen_check_checklist prompt keeps its system bytes when step arguments are
+        absent
+      - the command exits with code 0
+      - the engine dispatched 1 AI turns
+      - no file outside "tmp" changed
+  build-tests-render-004-record-exclude:
+    description: 'build tests passes the record command exclusions into the tests main file alongside dependency recording rules'
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
+    user_stories:
+    - story: docs/product/stories/build-tests-render.yaml
+      scenario_id: build-tests-render-004-record-exclude
+      merge_date: '2026-11-07'
+    merged_steps:
+      given:
+      - 'the "build-tests-record-exclude" project tree'
+      when:
+      - 'the System Architect runs "build tests --fix"'
+      then:
+      - 'the command exits with code 0'
+      - 'the file "tests/mcp/main_test.go" is created'
+      - 'the file "tests/mcp/main_test.go" matches RecordExclude: \[\]string\{"cache/\*\*", "\*\*/private/\*\*"\}'
+      - 'the file "tests/mcp/main_test.go" matches Unread: \[\]string\{"vendor-private/\*\*"\}'
+      - 'stdout matches BUILD TESTS COMPLETE'
+      - 'the engine dispatched no AI turns'
+      - 'the engine spawned no test runners'
+      - 'no file outside "tmp" and "tests" changed'
+  build-tests-render-005-record-malformed:
+    description: 'build tests refuses a malformed record command before rendering'
+    service: true-bdd
+    path: tests/true-bdd/build_tests_test.go
+    user_stories:
+    - story: docs/product/stories/build-tests-render.yaml
+      scenario_id: build-tests-render-005-record-malformed
+      merge_date: '2026-11-07'
+    merged_steps:
+      given:
+      - 'the "build-tests-record-malformed" project tree'
+      when:
+      - 'the System Architect runs "build tests --fix"'
+      then:
+      - 'the command exits with code 1'
+      - 'stdout matches testing.commands.record must be a string or'
+      - 'exactly 0 files matching "tests/mcp/*_test.go" are created'
+      - 'the engine dispatched no AI turns'
+      - 'the engine spawned no test runners'
+      - 'stdout does not match BUILD TESTS COMPLETE'
+      - 'no file outside "tmp" changed'
+
+
+  verification-controls-001-assertion-original:
+    description: The step-verification Q returns the preserved verdicts for build-steps-critique-assertion-claude-005
+    service: true-bdd
+    path: tests/true-bdd/verification_controls_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/step-verification-controls.yaml
+      scenario_id: verification-controls-001-assertion-original
+      merge_date: '2026-11-07'
+    merged_steps:
+      given:
+      - the "verification-controls-assertion-original" project tree
+      - the verification controls in "verification-controls-assertion-original" use preserved pattern proposals and
+        bodies
+      - the System Architect's answers are "1/1/3" line by line
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 1
+      - no file outside "tmp" and "tests" changed
+  verification-controls-002-assertion-repair:
+    description: The step-verification Q returns the preserved verdicts for build-steps-critique-assertion-claude-007,
+      build-steps-critique-correct-claude-006
+    service: true-bdd
+    path: tests/true-bdd/verification_controls_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/step-verification-controls.yaml
+      scenario_id: verification-controls-002-assertion-repair
+      merge_date: '2026-11-07'
+    merged_steps:
+      given:
+      - the "verification-controls-assertion-repair" project tree
+      - the verification controls in "verification-controls-assertion-repair" use preserved pattern proposals and
+        bodies
+      - the System Architect's answers are "1/1/1/1" line by line
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 0
+      - no file outside "tmp" and "tests" changed
+  verification-controls-003-capture-original:
+    description: The step-verification Q returns the preserved verdicts for concept-bodies-capture-claude-004
+    service: true-bdd
+    path: tests/true-bdd/verification_controls_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/step-verification-controls.yaml
+      scenario_id: verification-controls-003-capture-original
+      merge_date: '2026-11-07'
+    merged_steps:
+      given:
+      - the "verification-controls-capture-original" project tree
+      - the verification controls in "verification-controls-capture-original" use preserved pattern proposals and
+        bodies
+      - the System Architect's answers are "1/1/3" line by line
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 1
+      - no file outside "tmp" and "tests" changed
+  verification-controls-004-capture-repair:
+    description: The step-verification Q returns the preserved verdicts for concept-bodies-capture-claude-008
+    service: true-bdd
+    path: tests/true-bdd/verification_controls_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/step-verification-controls.yaml
+      scenario_id: verification-controls-004-capture-repair
+      merge_date: '2026-11-07'
+    merged_steps:
+      given:
+      - the "verification-controls-capture-repair" project tree
+      - the verification controls in "verification-controls-capture-repair" use preserved pattern proposals and bodies
+      - the System Architect's answers are "1/1" line by line
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 0
+      - no file outside "tmp" and "tests" changed
+  verification-controls-005-computed:
+    description: The step-verification Q returns the preserved verdicts for computed-assertion-control
+    service: true-bdd
+    path: tests/true-bdd/verification_controls_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/step-verification-controls.yaml
+      scenario_id: verification-controls-005-computed
+      merge_date: '2026-11-07'
+    merged_steps:
+      given:
+      - the "verification-controls-computed" project tree
+      - the verification controls in "verification-controls-computed" use preserved pattern proposals and bodies
+      - the System Architect's answers are "1/1/3" line by line
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 1
+      - no file outside "tmp" and "tests" changed
+  verification-controls-006-extra-original:
+    description: The step-verification Q returns the preserved verdicts for concept-bodies-extra-claude-003
+    service: true-bdd
+    path: tests/true-bdd/verification_controls_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/step-verification-controls.yaml
+      scenario_id: verification-controls-006-extra-original
+      merge_date: '2026-11-07'
+    merged_steps:
+      given:
+      - the "verification-controls-extra-original" project tree
+      - the verification controls in "verification-controls-extra-original" use preserved pattern proposals and bodies
+      - the System Architect's answers are "1/1/3" line by line
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 1
+      - no file outside "tmp" and "tests" changed
+  verification-controls-007-extra-repair:
+    description: The step-verification Q returns the preserved verdicts for concept-bodies-extra-claude-005
+    service: true-bdd
+    path: tests/true-bdd/verification_controls_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/step-verification-controls.yaml
+      scenario_id: verification-controls-007-extra-repair
+      merge_date: '2026-11-07'
+    merged_steps:
+      given:
+      - the "verification-controls-extra-repair" project tree
+      - the verification controls in "verification-controls-extra-repair" use preserved pattern proposals and bodies
+      - the System Architect's answers are "1/1" line by line
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 0
+      - no file outside "tmp" and "tests" changed
+  verification-controls-008-operation:
+    description: The step-verification Q returns the preserved verdicts for concept-bodies-cases-claude-009
+    service: true-bdd
+    path: tests/true-bdd/verification_controls_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/step-verification-controls.yaml
+      scenario_id: verification-controls-008-operation
+      merge_date: '2026-11-07'
+    merged_steps:
+      given:
+      - the "verification-controls-operation" project tree
+      - the verification controls in "verification-controls-operation" use preserved pattern proposals and bodies
+      - the System Architect's answers are "1/1/3" line by line
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 1
+      - no file outside "tmp" and "tests" changed
+  verification-controls-009-output:
+    description: The step-verification Q returns the preserved verdicts for concept-bodies-cases-claude-011
+    service: true-bdd
+    path: tests/true-bdd/verification_controls_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/step-verification-controls.yaml
+      scenario_id: verification-controls-009-output
+      merge_date: '2026-11-07'
+    merged_steps:
+      given:
+      - the "verification-controls-output" project tree
+      - the verification controls in "verification-controls-output" use preserved pattern proposals and bodies
+      - the System Architect's answers are "1/1" line by line
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 0
+      - no file outside "tmp" and "tests" changed
+  verification-controls-010-toolchain:
+    description: The step-verification Q returns the preserved verdicts for concept-bodies-contract-claude-003
+    service: true-bdd
+    path: tests/true-bdd/verification_controls_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/step-verification-controls.yaml
+      scenario_id: verification-controls-010-toolchain
+      merge_date: '2026-11-07'
+    merged_steps:
+      given:
+      - the "verification-controls-toolchain" project tree
+      - the project's test dependencies are installed
+      - the verification controls in "verification-controls-toolchain" use preserved pattern proposals and bodies
+      - the System Architect's answers are "1/1" line by line
+      when:
+      - the System Architect runs "build steps --fix"
+      then:
+      - every preserved control has its expected step-verification verdict
+      - the command exits with code 0
+      - no file outside "tmp" and "tests" changed

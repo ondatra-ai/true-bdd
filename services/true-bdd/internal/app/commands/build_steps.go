@@ -21,7 +21,8 @@ import (
 var ErrMissingStepDefinitions = errors.New("step definitions are missing")
 
 // ErrBuildStepsChecklist identifies a checklist this deterministic command cannot answer.
-var ErrBuildStepsChecklist = errors.New("build steps checklist must ask D: step-coverage without parameters")
+var ErrBuildStepsChecklist = errors.New(
+ "build steps checklist supports pattern-bindings, step-coverage and step-verification without parameters")
 
 // ErrBuildStepsFramework identifies a host whose suites build steps cannot write.
 var ErrBuildStepsFramework = errors.New("build steps writes go-test suites only")
@@ -43,6 +44,18 @@ type BuildStepsDeps struct {
 // RunBuildSteps lists the concept Items still to write, or writes their
 // definitions, then checks every Registry step.
 func RunBuildSteps(ctx context.Context, deps BuildStepsDeps, registryFile, architectureFile string, fix bool) error {
+	if deps.Evaluator != nil {
+		deps.Evaluator.UseStepArgumentArchitecture(architectureFile)
+	}
+
+	if deps.FixGenerator != nil {
+		deps.FixGenerator.UseStepArgumentArchitecture(architectureFile)
+	}
+
+	if deps.FixApplier != nil {
+		deps.FixApplier.UseStepArgumentArchitecture(architectureFile)
+	}
+
 	_, err := product.Load(productDocument(deps.DocResolver))
 	if err != nil {
 		return runner.RefuseStartup("build steps", err)

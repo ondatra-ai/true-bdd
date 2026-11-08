@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // engine-001-help-prints-command-tree: --help must print the command tree and change nothing on disk
 func TestEngine001HelpPrintsCommandTree(t *testing.T) {
-	s := scenarios.New(t, "engine-001-help-prints-command-tree")
+	s := New(t, "engine-001-help-prints-command-tree")
 	s.Given(`the "help-flag" project tree`)
 	s.When(`the System Architect runs "--help"`)
 	s.Then(`the command exits with code 0`)
@@ -41,7 +39,7 @@ func TestEngine001HelpPrintsCommandTree(t *testing.T) {
 
 // engine-002-us-help-lists-story-commands: `us --help` must list the Story commands the pipeline has, which start at `us refine`, and no `us create`
 func TestEngine002UsHelpListsStoryCommands(t *testing.T) {
-	s := scenarios.New(t, "engine-002-us-help-lists-story-commands")
+	s := New(t, "engine-002-us-help-lists-story-commands")
 	s.Given(`the "us-help-flag" project tree`)
 	s.When(`the Product Owner runs "us --help"`)
 	s.Then(`the command exits with code 0`)
@@ -55,7 +53,7 @@ func TestEngine002UsHelpListsStoryCommands(t *testing.T) {
 
 // engine-entry-001-version-runs-without-config: The `version` command must print `true-bdd version` followed by the engine's build version and commit and exit 0 in a project tree that holds no `true-bdd/true-bdd.yaml`, because it reads no configuration
 func TestEngineEntry001VersionRunsWithoutConfig(t *testing.T) {
-	s := scenarios.New(t, "engine-entry-001-version-runs-without-config")
+	s := New(t, "engine-entry-001-version-runs-without-config")
 	s.Given(`the "version-without-config" project tree`)
 	s.And(`the project tree has no "true-bdd/true-bdd.yaml"`)
 	s.When(`the System Architect runs "version"`)
@@ -67,7 +65,7 @@ func TestEngineEntry001VersionRunsWithoutConfig(t *testing.T) {
 
 // engine-entry-005-version-reports-build: The version command prints only the build version and commit answer, without reading configuration, installing a log or changing any file
 func TestEngineEntry005VersionReportsBuild(t *testing.T) {
-	s := scenarios.New(t, "engine-entry-005-version-reports-build")
+	s := New(t, "engine-entry-005-version-reports-build")
 	s.Given(`the "version-reports-build" project tree`)
 	s.And(`the project tree has no "true-bdd/true-bdd.yaml"`)
 	s.When(`the System Architect runs "version"`)

@@ -13,24 +13,26 @@
     "--model",
     "claude-sonnet-5-5",
     "--system-prompt",
-    "Apply the approved Public interface declaration to the architecture working copy, and\nany change it makes to a named document to that document's working copy. Do not edit any\nother file, including the Registry, product, tests or step definitions. Read each working\ncopy and replace the exact text the fix provides.\n",
+    "Apply the approved Public interface declaration to the architecture working copy, and\nany change it makes to a named document to that document's working copy. Do not edit any\nother file, including the Registry, product, tests or step definitions. Read each working\ncopy and replace the exact text the fix provides.\n\nFix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: \u003cwhy\u003e, correction: \u003cwhat a person must correct\u003e}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.",
     "--permission-mode",
     "acceptEdits",
     "--output-format",
     "stream-json",
     "--verbose",
     "-p",
-    "Service: greeter\nApproved fix:\nThe System Architect's answers settle the Public interface of service `greeter`: it is offered across the process boundary as a command-line program (`kind: cli`), declared by the existing OpenCLI-like document `docs/greeter-cli.yaml`, whose coverage the Architect confirmed Complete — it already declares every command (`greet`), flag (`loud`), argument (`person`), file (`greeting-config`), log record (`greeted`) and outgoing call (`notify`) that greeter offers. `ui_elements` is Not applicable for kind `cli`. Therefore change only the architecture document's working copy; make no edit to `docs/greeter-cli.yaml`, no edit to `docs/scenarios.yaml`, and no edit to `docs/product/product.yaml`.\n\nApply exactly one edit, to `docs/architecture/architecture.yaml`:\n\nold_string:\n```yaml\n  - name: greeter\n    path: services/greeter\n    language: go\n```\n\nnew_string:\n```yaml\n  - name: greeter\n    path: services/greeter\n    language: go\n    public_interface:\n      kind: cli\n      document: docs/greeter-cli.yaml\n```\n\nThis adds `public_interface` to the `greeter` entry in `architecture.services` and changes nothing else: `name`, `path` and `language` keep their existing values and order, no other service or top-level key is touched, and `elements` is omitted because it applies only to kind `ui`. The document path is given relative to the Host project root and names an existing document.\nArchitecture working copy:\n\nEdit `tmp/{{RUN_DIR}}/architecture_yaml.yaml`, the working copy of `./docs/architecture/architecture.yaml`.\n\nAfter editing, return:\n=== FILE_START: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===\napplied: true\ntarget: \"\u003carchitecture working copy\u003e\"\nsummary: \"Declared the service's Public interface\"\n=== FILE_END: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===\n"
+    "Service: greeter\nApproved fix:\nApply exactly one edit, to the working copy of `docs/architecture/architecture.yaml`. Change nothing else: do not touch `docs/greeter-cli.yaml`, `docs/scenarios.yaml`, or `docs/product/product.yaml`.\n\nThe System Architect's settled answers are: the greeter service offers a **cli** across its process boundary — a command line the host runs, described by the existing document `docs/greeter-cli.yaml`; that document is complete as written (`greet` with `person` and `loud`, exits 0 and 1 is the whole CLI offer); and its three named extensions (`files.greeting-config`, `log_records.greeted`, `outgoing_calls.notify`) are correct as written and must be left unchanged. Because the named document already carries everything the answers say the service offers, no interface-document edit is required.\n\nEdit 1 — file `docs/architecture/architecture.yaml`:\n\nold_string:\n```\n  - name: greeter\n    path: services/greeter\n    language: go\n```\n\nnew_string:\n```\n  - name: greeter\n    path: services/greeter\n    language: go\n    public_interface:\n      kind: cli\n      document: docs/greeter-cli.yaml\n```\n\nKeep the two-space list indentation and the four-space key indentation exactly as shown; `document` is a path relative to the Host project root and must name the existing `docs/greeter-cli.yaml`. Do not add any other kind, any `http` or `ui` entry, or any further keys under `public_interface`.\nArchitecture working copy:\n\nEdit `tmp/{{RUN_DIR}}/architecture_yaml.yaml`, the working copy of `./docs/architecture/architecture.yaml`.\n\nAfter editing, return:\n=== FILE_START: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===\napplied: true\ntarget: \"\u003carchitecture working copy\u003e\"\nsummary: \"Declared the service's Public interface\"\n=== FILE_END: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===\n"
   ],
   "exit_code": 0,
-  "duration_ms": 14873,
-  "request_hash": "sha256:fd2be5f32a424360e0f45d8d9d99a3fbf084207e08c89e7bddc80a1a4359640b",
+  "duration_ms": 17176,
+  "request_hash": "sha256:453b96098fb88927a9d249aab3a89ca2c518054c7a0aa93c4e25f838b0d68335",
   "fsdiff": {
-    "created": [],
+    "created": [
+      "tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml"
+    ],
     "modified": [
       "tmp/{{RUN_DIR}}/architecture_yaml.yaml"
     ],
     "deleted": []
   },
-  "recorded_at": "2026-10-30T17:32:04Z"
+  "recorded_at": "2026-11-07T13:32:47Z"
 }

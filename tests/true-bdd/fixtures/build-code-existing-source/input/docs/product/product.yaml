@@ -1,0 +1,15 @@
+roles:
+  - name: Owner
+    description: Uses the calculator.
+concepts:
+  when:
+    - concept: doubling
+      means: The Owner doubles a whole number with the calculator.
+      terms: [number]
+  then:
+    - concept: result
+      means: The calculator prints the whole number the doubling produced.
+      terms: [number]
+glossary:
+  - term: number
+    means: An integer operand whose double is its sum with itself.

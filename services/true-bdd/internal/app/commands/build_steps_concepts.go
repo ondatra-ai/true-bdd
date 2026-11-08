@@ -45,10 +45,11 @@ func runConceptBuildSteps(ctx context.Context, deps BuildStepsDeps, registryFile
 // conceptDiscovery is what a concept walk starts from: the Registry, its
 // unbound steps, and one Item per concept and suite, grouped or resumed.
 type conceptDiscovery struct {
-	scenarios []*registry.RegistryScenario
-	answer    *stepcoverage.Answer
-	items     []*BuildStepsItem
-	steps     map[string][]catalogue.SuiteStep
+	registryFile string
+	scenarios    []*registry.RegistryScenario
+	answer       *stepcoverage.Answer
+	items        []*BuildStepsItem
+	steps        map[string][]catalogue.SuiteStep
 }
 
 func discoverConceptItems(ctx context.Context, deps BuildStepsDeps, registryFile, architectureFile string,
@@ -73,7 +74,7 @@ func discoverConceptItems(ctx context.Context, deps BuildStepsDeps, registryFile
 		return nil, err
 	}
 
-	discovery := &conceptDiscovery{scenarios: scenarios, answer: answer}
+	discovery := &conceptDiscovery{scenarios: scenarios, answer: answer, registryFile: registryFile}
 
 	err = discovery.collect(suites, groups)
 	if err != nil {
@@ -84,6 +85,8 @@ func discoverConceptItems(ctx context.Context, deps BuildStepsDeps, registryFile
 	if err != nil {
 		return nil, err
 	}
+
+	nameConceptItems(discovery.items)
 
 	return discovery, nil
 }
@@ -382,9 +385,17 @@ func listConceptItems(deps BuildStepsDeps, discovery *conceptDiscovery) error {
 	}
 
 	// Grouping logged this run's one "Loaded prompts" record already.
-	err = recordStepCoverage(deps.TmpDir, prompts, findings, len(discovery.items), false)
-	if err != nil {
-		return err
+	for _, prompt := range prompts {
+		switch prompt.Prompt.Check {
+		case patternBindingsID:
+			err = recordBarePatternBindings(deps, discovery, prompt)
+		case stepCoverageID:
+			err = recordStepCoverage(deps.TmpDir, prompt, findings, len(discovery.items))
+		}
+
+		if err != nil {
+			return err
+		}
 	}
 
 	if len(discovery.items) > 0 || len(findings) > 0 {

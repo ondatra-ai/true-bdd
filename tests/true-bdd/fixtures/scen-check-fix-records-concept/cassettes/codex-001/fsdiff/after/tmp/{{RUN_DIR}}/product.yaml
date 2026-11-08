@@ -31,5 +31,5 @@ concepts:
       means: The MCP service's reply to the message is exactly a stated text.
       terms: []
     - concept: log line
-      means: The MCP service wrote a log line whose text is exactly the stated text.
+      means: The MCP service writes a log line for the message, and its text is exactly a stated text.
       terms: []

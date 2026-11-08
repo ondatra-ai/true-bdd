@@ -64,6 +64,25 @@ func (a *Architecture) TestWritableRoots(host string, suites, documents []string
 		return nil, err
 	}
 
+	return a.testWritableRoots(host, tests, documents)
+}
+
+// StepsWritableRoots grants only the Steps packages, preserving the service and Specification boundary.
+func (a *Architecture) StepsWritableRoots(host string, suites, documents []string) ([]WritableRoot, error) {
+	paths := make([]string, 0, len(suites))
+	for _, suite := range suites {
+		paths = append(paths, filepath.Join(suite, "steps"), filepath.Join(suite, "helpers"))
+	}
+
+	return a.testWritableRoots(host, paths, documents)
+}
+
+func (a *Architecture) testWritableRoots(host string, tests, documents []string) ([]WritableRoot, error) {
+	host, err := filepath.EvalSymlinks(host)
+	if err != nil {
+		return nil, fmt.Errorf("resolve host: %w", err)
+	}
+
 	protected := make([]string, 0, len(documents)+len(a.Services))
 	for _, document := range documents {
 		if document == "" {

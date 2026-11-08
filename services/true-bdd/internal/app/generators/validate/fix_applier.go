@@ -22,17 +22,18 @@ import (
 
 // FixApplierData represents data needed for fix applier templates.
 type FixApplierData struct {
-	ClaudeWriter bool
-	WriteRoots   []string
-	TestCommand  *provider.TestCommand
-	CodexWriter  bool
+	StepArguments string
+	ClaudeWriter  bool
+	WriteRoots    []string
+	TestCommand   *provider.TestCommand
+	CodexWriter   bool
 
 	Subject    any    // Current subject to modify (e.g., *story.Story or *ScenarioApplyData)
 	SubjectID  string // Subject identifier
 	FixPrompt  string // The fix prompt to apply
 	ResultPath string // Path for FILE_START/FILE_END output
 	Judgement  checklist.ConceptJudgement
-	// Check names the `D:` check whose finding the fix closes; empty for
+	// Check names the Q.code check whose finding the fix closes; empty for
 	// a model's `Q:`, so a template can tell the two kinds of fix apart.
 	Check string
 }
@@ -45,7 +46,7 @@ type ApplyParams struct {
 	SubjectID    string // Subject identifier
 	FixPrompt    string // The concrete fix prompt to apply
 	Judgement    checklist.ConceptJudgement
-	Check        string // The failed `D:` check's name; "" for a `Q:` prompt
+	Check        string // The failed Q.code check's name; "" for a `Q:` prompt
 	TmpDir       string // Run artifact directory
 	Iteration    int    // 1-based apply counter, for file naming
 	// ModelTier names the tier that writes the fix. Resolved by the
@@ -58,7 +59,10 @@ type ApplyParams struct {
 
 // FixApplier applies fix prompts to stories using AI.
 type FixApplier struct {
+	stepArgumentSource
+
 	libraryReadRoots []string
+	readRoots        []string
 	testCommand      *provider.TestCommand
 	aiClient         ports.AIPort
 	config           *config.ViperConfig
@@ -106,6 +110,9 @@ func NewFixApplierWithPaths(
 		userLoader:   template.NewTemplateLoader[FixApplierData](userPath),
 	}
 }
+
+// UseEvidenceReadRoots limits reads without extending the writer's grants.
+func (a *FixApplier) UseEvidenceReadRoots(roots []string) { a.readRoots = roots }
 
 // UseEditMode configures this applier to allow the Edit and MultiEdit tools
 // against the scratch path on each Apply call — required for the us-apply
@@ -160,6 +167,7 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 	}
 
 	// Save prompts for debugging
+	systemPrompt += cannotFixInstruction
 	a.savePromptFile(params.SubjectID, params.Iteration, "system", systemPrompt)
 	a.savePromptFile(params.SubjectID, params.Iteration, "user", userPrompt)
 
@@ -239,8 +247,17 @@ func (v *interfaceCannotServeYAML) nonempty() bool {
 // that it wrote nothing. Content it cannot parse is passed through: several
 // appliers return a document body rather than a confirmation block.
 func checkFixApplied(content string) error {
+	outcomeErr := cannotFixFromContent(content, true)
+	if errors.Is(outcomeErr, pkgerrors.ErrCannotFixMalformed) {
+		return outcomeErr
+	}
+
 	result, ok := parseApplyResult(content)
 	if !ok {
+		if outcomeErr != nil {
+			return outcomeErr
+		}
+
 		// The block did not decode — before concluding "not a confirmation block",
 		// scan for a literal `applied:` line: an unquoted `": "` in `target:` makes
 		// invalid YAML, and reading that as pass-through would turn a refusal into "Fix applied successfully".
@@ -248,11 +265,17 @@ func checkFixApplied(content string) error {
 	}
 
 	if result.InterfaceCannotServe.nonempty() {
-		return pkgerrors.InterfaceCannotServe(result.InterfaceCannotServe.Concept, result.InterfaceCannotServe.Lacks)
+		return errors.Join(
+			pkgerrors.InterfaceCannotServe(result.InterfaceCannotServe.Concept, result.InterfaceCannotServe.Lacks), outcomeErr,
+		)
 	}
 
 	if len(result.Impossible) > 0 {
-		return pkgerrors.ImpossibleWork(result.Impossible)
+		return errors.Join(pkgerrors.ImpossibleWork(result.Impossible), outcomeErr)
+	}
+
+	if outcomeErr != nil {
+		return outcomeErr
 	}
 
 	// Three ways to have no objection: the content is not a
@@ -374,6 +397,7 @@ func (a *FixApplier) execute(ctx context.Context, model provider.ModelRef, syste
 	options provider.TurnOptions) (string, error) {
 	mode := a.selectMode()
 	mode.LibraryReadRoots = a.libraryReadRoots
+	mode.ReadRoots = a.readRoots
 	options.CodexWriter = model.CLI == provider.CLICodex && options.CodexWriter
 
 	options.ClaudeWriter = options.ClaudeWriter && model.CLI == provider.CLIClaude
@@ -407,6 +431,13 @@ func (a *FixApplier) writerData(params ApplyParams, model provider.ModelRef, res
 }
 
 func (a *FixApplier) writerPrompts(data FixApplierData) (string, string, error) {
+	evidence, err := a.evidence(a.config, applierArchitectureReference(data))
+	if err != nil {
+		return "", "", err
+	}
+
+	data.StepArguments = evidence
+
 	system, err := a.systemLoader.LoadTemplate(data)
 	if err != nil {
 		return "", "", pkgerrors.ErrLoadChecklistSystemPromptFailed(err)

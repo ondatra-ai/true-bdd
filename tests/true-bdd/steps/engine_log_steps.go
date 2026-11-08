@@ -3,12 +3,10 @@ package steps
 import (
 	"encoding/json"
 	"errors"
-	"github.com/ondatra-ai/true-bdd/pkg/enginelog"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 	"path/filepath"
 	"regexp"
 	"strings"
-
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // engineLogRelPath is where the CLI writes its structured log, relative
@@ -21,22 +19,24 @@ const engineLogRelPath = "tmp/true-bdd.log.json"
 // every model turn — the engine's own vocabulary, not a stdout phrasing.
 const (
 	engineMsgSpawnTestRunner = "Spawning test runner"
-	engineMsgDispatchAITurn  = enginelog.MsgDispatch
+	engineMsgDispatchAITurn  = "Dispatching AI turn"
 )
 
 // engineLogRecord is the slice of one slog JSON line these assertions
 // need: the message, a test-runner spawn's binary and args, an AI-turn
 // dispatch's role and CLI. Timings, byte counts and cost stay undecoded.
 type engineLogRecord struct {
-	SubjectID string   `json:"subjectID"` //nolint:tagliatelle // Engine log wire contract.
-	Level     string   `json:"level"`
-	Version   string   `json:"version"`
-	Commit    string   `json:"commit"`
-	Msg       string   `json:"msg"`
-	Binary    string   `json:"binary"`
-	Args      []string `json:"args"`
-	Role      string   `json:"role"`
-	CLI       string   `json:"cli"`
+	Action      string   `json:"action"`
+	PromptIndex int      `json:"promptIndex"` //nolint:tagliatelle // Engine log wire contract.
+	SubjectID   string   `json:"subjectID"`   //nolint:tagliatelle // Engine log wire contract.
+	Level       string   `json:"level"`
+	Version     string   `json:"version"`
+	Commit      string   `json:"commit"`
+	Msg         string   `json:"msg"`
+	Binary      string   `json:"binary"`
+	Args        []string `json:"args"`
+	Role        string   `json:"role"`
+	CLI         string   `json:"cli"`
 }
 
 // turnRoles maps the kind of turn a step names to the `role` the engine
@@ -60,7 +60,7 @@ func readEngineLog(state *State) ([]engineLogRecord, error) {
 
 	path := filepath.Join(state.Result.TmpDir, engineLogRelPath)
 
-	data, err := disk.Read(path)
+	data, err := testkit.Read(path)
 	if err != nil {
 		return nil, state.fail("%w: %s: %v", ErrNoEngineLog, path, err)
 	}

@@ -98,6 +98,8 @@ story:
       - stdout matches batch=1 texts=3
       - stdout matches batch=2 texts=2
       - stdout matches step definitions are missing
+      - stdout matches Check answered.*check=pattern-bindings.*answer=fail.*no pattern binds
+      - stdout does not match Concept judgement answered.*judgement=propose
       - no file outside "tmp" changed
       - the engine spawned no test runners
   - id: 008-changed-binding

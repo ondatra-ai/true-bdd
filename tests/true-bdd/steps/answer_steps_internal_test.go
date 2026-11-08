@@ -1,9 +1,8 @@
 package steps
 
 import (
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
 )
 
 // A refine answers "2", types its feedback, ends it with an empty line and
@@ -11,7 +10,7 @@ import (
 func TestAnswersLineByLineFeedsEachPieceInTurn(t *testing.T) {
 	t.Parallel()
 
-	state := &State{T: t, Fixture: &runner.Fixture{}}
+	state := &State{ScenarioRun: &testkit.ScenarioRun{T: t, Fixture: &testkit.Fixture{}}}
 
 	err := answerLineByLine(state, []string{"Quality Engineer", "2 / Name the slot limit / / 1"})
 	if err != nil {
@@ -28,7 +27,7 @@ func TestAnswersLineByLineFeedsEachPieceInTurn(t *testing.T) {
 func TestAnswersLineByLineNeedsATree(t *testing.T) {
 	t.Parallel()
 
-	err := answerLineByLine(&State{T: t}, []string{"Quality Engineer", "1"})
+	err := answerLineByLine(&State{ScenarioRun: &testkit.ScenarioRun{T: t}}, []string{"Quality Engineer", "1"})
 	if err == nil {
 		t.Fatal("answers line by line without a tree: want an error")
 	}

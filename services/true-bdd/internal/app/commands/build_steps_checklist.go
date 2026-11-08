@@ -12,6 +12,8 @@ import (
 )
 
 const buildStepsChecklistName = "build-steps"
+const stepVerificationID = "step-verification"
+const stepCoverageID = "step-coverage"
 
 // scenCheckChecklistName is the checklist whose bindings Prompt build steps judges bindings with.
 const scenCheckChecklistName = "scen-check"
@@ -37,7 +39,7 @@ func buildStepsPrompts(
 				continue
 			}
 
-			if prompt.Check != "step-coverage" || len(prompt.With) > 0 {
+			if !walkableStepPrompt(section.ID, prompt) {
 				return nil, ErrBuildStepsChecklist
 			}
 
@@ -61,24 +63,19 @@ func buildStepsPrompts(
 }
 
 func recordStepCoverage(
-	tmpDir string, prompts []checklistmodels.PromptWithContext, findings []string, missing int, logPrompts bool,
+	tmpDir string, prompt checklistmodels.PromptWithContext, findings []string, missing int,
 ) error {
-	if logPrompts {
-		slog.Info("Loaded prompts", "command", "build steps", "items", 1, "prompts", len(prompts))
-	}
-
 	context := append([]string{fmt.Sprintf("%d concept Item(s) without step definitions", missing)}, findings...)
 
 	verdict := checks.Verdict{Pass: missing == 0 && len(findings) == 0, Context: context}
-	for _, prompt := range prompts {
-		result := validate.CheckResult(prompt, verdict)
-		slog.Info("Check answered", "check", prompt.Prompt.Check, "subjectID", "registry",
-			"promptIndex", prompt.Index, "answer", result.ActualAnswer, "context", result.Context)
 
-		err := validate.SaveCheckVerdict(tmpDir, "registry", result)
-		if err != nil {
-			return fmt.Errorf("save Step coverage: %w", err)
-		}
+	result := validate.CheckResult(prompt, verdict)
+	slog.Info("Check answered", "check", prompt.Prompt.Check, "subjectID", "registry",
+		"promptIndex", prompt.Index, "answer", result.ActualAnswer, "context", result.Context)
+
+	err := validate.SaveCheckVerdict(tmpDir, "registry", result)
+	if err != nil {
+		return fmt.Errorf("save Step coverage: %w", err)
 	}
 
 	return nil
@@ -98,4 +95,13 @@ func resolveStepCoverageDocs(prompts []checklistmodels.PromptWithContext, resolv
 func skipBuildStepPrompt(prompt checklistmodels.Prompt) bool {
 	return prompt.ShouldSkip() || prompt.Judgement() == checklistmodels.JudgementGroup ||
 		prompt.Judgement() == checklistmodels.JudgementPropose
+}
+
+func walkableStepPrompt(section string, prompt checklistmodels.Prompt) bool {
+	if len(prompt.With) > 0 {
+		return false
+	}
+
+	return prompt.Check == stepCoverageID || prompt.Check == patternBindingsID ||
+  (!prompt.IsCheck() && section == stepVerificationID)
 }

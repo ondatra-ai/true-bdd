@@ -2,13 +2,11 @@ package steps
 
 import (
 	"encoding/json"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 	"path/filepath"
-
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
 )
 
-func registerClaudeGuardSteps(suite *bddgo.Suite[State]) {
+func registerClaudeGuardSteps(suite testkit.StepRegistrar[State]) {
 	suite.Step(`^claude's write policy lets the turn write under "([^"]+)"$`, grantWriteRoot)
 	suite.Step(`^claude's write policy is missing$`, withholdPolicy)
 	suite.Step(`^claude's write policy is unreadable$`, garblePolicy)
@@ -41,7 +39,7 @@ func askClaudeGuard(state *State, _ []string) error {
 		return state.fail("%w", ErrNoTreePrepared)
 	}
 
-	dir := runner.RunDir(state.Harness.SessionRoot, state.Fixture.Name)
+	dir := state.WorkingDirectory()
 	call := state.guard()
 
 	replay, err := call.policy(dir)

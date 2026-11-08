@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ondatra-ai/true-bdd/pkg/testkit/reporter"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit"
 )
 
 // ErrPathEscapesRun is returned when a step's path resolves outside the
@@ -21,7 +21,7 @@ func (s *State) containedPath(rel string) (string, error) {
 		return "", s.fail("%w: %q must be relative to the run directory", ErrPathEscapesRun, rel)
 	}
 
-	resolved, ok := reporter.ContainedFile(s.Result.TmpDir, rel)
+	resolved, ok := testkit.ContainedFile(s.Result.TmpDir, rel)
 	if ok {
 		return resolved, nil
 	}
@@ -74,7 +74,7 @@ func within(root, resolved string) bool {
 }
 
 // containedDir is containedPath for a directory, which
-// reporter.ContainedFile refuses by design — it admits only regular
+// testkit.ContainedFile refuses by design — it admits only regular
 // files, because a report reading a FIFO would block forever.
 func (s *State) containedDir(rel string) (string, error) {
 	if rel == "" || filepath.IsAbs(rel) || climbsOut(rel) {

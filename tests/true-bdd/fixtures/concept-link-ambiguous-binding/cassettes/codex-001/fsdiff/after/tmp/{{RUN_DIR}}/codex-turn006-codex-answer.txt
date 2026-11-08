@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===
+applied: true
+target: "tmp/{{RUN_DIR}}/architecture_yaml.yaml"
+summary: "Replaced only the halve intent with the approved references and does binding. Verified valid JSON and byte-for-byte preservation outside the replacement; product and scenarios unchanged. Initial discovery and Python cache operations encountered sandbox restrictions; edit and verification succeeded."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-host-001-iter1-result.yaml ===

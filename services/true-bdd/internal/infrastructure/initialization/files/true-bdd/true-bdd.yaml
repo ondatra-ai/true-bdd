@@ -1,4 +1,5 @@
 engine:
+  max_prompt_bytes: 150000
   scen_check_concurrency: 1
   # "<cli>:<model>", split on the FIRST colon only. cli is claude |
   # codex and must be on $PATH; model passes through verbatim to that CLI's
@@ -20,6 +21,11 @@ engine:
   default_apply_model: coder
 
 templates:
+  schemes:
+    us_refine_checklist: "./true-bdd/models/us_refine_checklist.schema.yaml"
+    us_apply_checklist: "./true-bdd/models/us_apply_checklist.schema.yaml"
+    scen_check_checklist: "./true-bdd/models/scen_check_checklist.schema.yaml"
+    build_steps_checklist: "./true-bdd/models/build_steps_checklist.schema.yaml"
   prompts:
     checklist: "./templates/us-checklist.prompt.tpl"
     checklist_system: "./templates/us-checklist.system.prompt.tpl"

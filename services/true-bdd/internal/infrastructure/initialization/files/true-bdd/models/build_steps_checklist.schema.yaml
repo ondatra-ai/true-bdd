@@ -1,0 +1,49 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+type: object
+properties:
+  Question: &id001
+    type: string
+  StepArguments: *id001
+  Rationale: *id001
+  ResultPath: *id001
+  FixTemplate: *id001
+  Subject:
+    type: object
+    properties:
+      Suite: *id001
+      Label: *id001
+      Concept:
+        type: object
+        properties:
+          Means: *id001
+        required:
+        - Means
+        additionalProperties: false
+    required:
+    - Suite
+    - Label
+    - Concept
+    additionalProperties: false
+  Docs:
+    type: object
+    additionalProperties:
+      $ref: '#/$defs/doc'
+  Structured:
+    type: boolean
+required:
+- Question
+- Rationale
+- ResultPath
+- FixTemplate
+- Subject
+- Docs
+- Structured
+additionalProperties: false
+$defs:
+  doc:
+    type: object
+    properties:
+      FilePath: *id001
+    required:
+    - FilePath
+    additionalProperties: false

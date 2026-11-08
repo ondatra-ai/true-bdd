@@ -12,7 +12,7 @@ import (
 )
 
 // Process is a started command the caller drives itself. It exists for what
-// Run cannot express: a byte-exact stdio proxy (pkg/testkit/aiproxy).
+// Run cannot express: a byte-exact stdio proxy (utilities/cliproxy).
 type Process struct {
 	// Stdin, Stdout and Stderr are the pipes Options.Output asked for, and
 	// are nil for a stream the sink sent somewhere else.
@@ -103,7 +103,7 @@ func (p *Process) Pid() int {
 }
 
 // ForwardSignals relays the named signals to the child until the returned
-// stop is called. pkg/testkit/aiproxy stands in for the real CLI, so a
+// stop is called. utilities/cliproxy stands in for the real CLI, so a
 // SIGTERM meant for that CLI has to arrive there.
 func (p *Process) ForwardSignals(signals ...os.Signal) func() {
 	inbox := make(chan os.Signal, 1)

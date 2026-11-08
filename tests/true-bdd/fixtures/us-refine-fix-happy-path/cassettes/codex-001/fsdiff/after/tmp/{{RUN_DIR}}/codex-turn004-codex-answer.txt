@@ -37,7 +37,7 @@ acceptance_criteria:
       - then:
           - "the error is \"Cannot divide by zero\""
   - id: "004-division"
-    description: "The calculator must print \"3\" as the quotient when dividing 6 by 2."
+    description: "The calculator must print the quotient \"3\" and exit 0 when dividing 6 by 2."
     steps:
       - given:
           - "the dividend is \"6\""

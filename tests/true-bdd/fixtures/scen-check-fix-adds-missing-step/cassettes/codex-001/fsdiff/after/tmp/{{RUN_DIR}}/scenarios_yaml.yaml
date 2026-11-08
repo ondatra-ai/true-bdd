@@ -16,5 +16,5 @@ scenarios:
       when:
         - the Operator runs "greet Ada"
       then:
-        - the standard output has a line matching "Hello Ada"
+        - standard output has a line matching "^Hello Ada$"
         - the command exits with code 0

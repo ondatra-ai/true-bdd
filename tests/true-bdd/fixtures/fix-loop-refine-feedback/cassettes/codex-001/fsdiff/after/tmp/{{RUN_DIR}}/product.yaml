@@ -3,7 +3,8 @@ title: "Fixture host project"
 description:
   summary: >-
     A single MCP service, used by the true-bdd fixtures as the host
-    project a scenario registry describes.
+    project a scenario registry describes. Glossary meanings use at most
+    three sentences, each at most 25 words, in one paragraph.
 
 roles:
   - name: Operator
@@ -23,9 +24,9 @@ glossary:
       are both behaviour.
   - term: latency
     means: >-
-      How long a reply takes to arrive, measured by the client clock from
-      the moment the client sends the message to the moment the reply
-      arrives, in milliseconds.
+      The time between a client sending a message and that message's
+      reply arriving back at the client. The client clock measures it, so
+      no other timer decides whether a reply was slow.
 
 concepts:
   given:

@@ -1,0 +1,89 @@
+# Architectural spec for the greeter, the host project of the
+# scen-check fixtures that walk the shipped checklist.
+#
+# The word mapping says how each product word the concepts declare is
+# built, and how a step definition sets it up or observes it; the
+# Concept bindings say what each concept's steps do through the
+# greeter's Public interface.
+
+architecture:
+  testing:
+    framework: go-test
+    commands:
+      record: go test -json -count=1 ./tests/greeter/... -mode=record
+      replay: go test -json -count=1 ./tests/greeter/... -mode=replay
+      live: go test -json -count=1 ./tests/greeter/...
+  services:
+    - name: greeter
+      path: services/greeter
+      language: go
+      public_interface:
+        kind: cli
+        document: docs/greeter-cli.yaml
+  terms:
+    - term: greeting
+      technical: >-
+        The `greeting:` key of greeter.yaml in the project directory, a
+        plain string the binary reads at start.
+      observed_by: >-
+        Write greeter.yaml into the run directory with the greeting set
+        before the command runs.
+    - term: command
+      technical: >-
+        One spawn of the greeter binary with the arguments the line
+        carries, in the run directory.
+      observed_by: >-
+        Split the quoted line into arguments, run the binary with them in
+        the run directory, and keep its exit code and standard output for
+        the steps after.
+    - term: exit code
+      technical: >-
+        The process exit status of the greeter binary.
+      observed_by: >-
+        Compare the kept exit status with the number the step names.
+    - term: standard output
+      technical: >-
+        What the greeter binary writes to file descriptor 1: its answer
+        line, then its log records in logfmt, one per line.
+      observed_by: >-
+        Hold the kept standard output, line by line, against the step's
+        regular expression; any matching line passes.
+
+  concepts:
+    - concept: configured greeting
+      block: given
+      service: greeter
+      references:
+      - file: greeting-config
+      does: >-
+        Write the declared greeting configuration file, greeter.yaml in
+        the run directory, as a YAML mapping whose greeting is the step's
+        quoted text, before the command runs.
+    - concept: a role runs a command
+      block: when
+      service: greeter
+      references:
+      - command: greet
+      does: >-
+        Run the declared greet command as a process once in the run
+        directory, with the words of the step's quoted command line after
+        its first word, greet, as its arguments, and keep its exit code
+        and its standard output lines.
+    - concept: exit code
+      block: then
+      service: greeter
+      references:
+      - command: greet
+      does: >-
+        Compare the kept exit code of the greet command with the step's
+        whole number.
+    - concept: standard output
+      block: then
+      service: greeter
+      references:
+      - command: greet
+      does: >-
+        Match the step's pattern, a regular expression taken as the rest
+        of the step after "stdout matches", against each kept standard
+        output line of the greet command; the step passes when any line
+        matches.

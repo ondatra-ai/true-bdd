@@ -1,29 +1,16 @@
-# Story `checklist-checks`: a checklist's built-in checks, run ahead of
-# the model's questions and refused at startup when misdeclared.
-#
-# A checklist Prompt is `D: <check>`, answered by one of the engine's
-# built-in checks, or `Q: <question>`, answered by a model (ADR 0015).
-# These criteria hold the order a walk takes and the startup refusals of
-# a misdeclared `D:` Prompt. Each Scenario drives them through
-# `scen check`, the command whose checklist has built-in checks. The
-# `--fix` refusal of a `D:` Prompt without `F:` belongs to the `engine`
-# Story, beside the same refusal for a `Q:` Prompt.
-#
-# Each criterion's id is the second half of its Scenario's Registry key,
-# `checklist-checks-<id>` (ADR 0014), and its steps are that Scenario's
-# steps.
+# Story `checklist-checks`: written checklist order and startup format refusals (ADR-0042).
 
 story:
     id: checklist-checks
     feature: engine
-    title: Run a checklist's built-in checks ahead of its model questions, and refuse a misdeclared check before the walk
+    title: Walk checklist items in written order and refuse malformed Q options before the walk
     as_a: Quality Engineer
-    i_want: every `D:` Prompt of a checklist answered by the engine's own check before any `Q:` Prompt of the same Scenario, and a checklist Prompt that misdeclares its check refused at startup, naming the Prompt
-    so_that: a misdeclared checklist costs no AI turn, and no AI turn is spent on a Scenario that a built-in check has already failed
+    i_want: each checklist item to have one Q by prompt or code and its optional F, walked in written order without skipping after a failure
+    so_that: the checklist shows what the command verifies and fixes, and malformed questions cost no AI turn
     status: IMPLEMENTED
     acceptance_criteria:
         - id: 001-checks-run-before-questions
-          description: Within a Scenario every `D:` Prompt must run before any `Q:` Prompt, whatever the file order, and a Scenario failing one must be reported failed with its `Q:` Prompts skipped and no AI turn spent on it, while a Scenario passing it walks its `Q:` Prompts
+          description: Checklist items must run in their written order without skipping a prompt Q after a failed code Q
           steps:
             - given:
                 - the "scen-check-failed-check-skips-questions" project tree
@@ -32,17 +19,15 @@ story:
             - then:
                 - the command exits with code 1
                 - stdout matches SCEN CHECK
-                - and: stdout matches msg="Check answered" check=given-when-then subjectID=E2E-001 promptIndex=2 answer=pass
-                - and: 'stdout matches msg="Check answered" check=given-when-then subjectID=E2E-002 promptIndex=2 answer=fail context="\[E2E-002: missing then step\]"'
-                - and: stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=1
-                - and: 'stdout matches scen-check/scenario_quality +D: given-when-then +fail +FAIL'
-                - and: 'stdout matches SKIP: 1\n'
-                - and: stdout matches Validation failed
+                - 'stdout matches (?s)Cell validation started.*subjectID=E2E-001 promptIndex=1.*Check answered.*subjectID=E2E-001 promptIndex=2'
+                - 'stdout matches (?s)Check answered.*subjectID=E2E-002 promptIndex=2 answer=fail.*Cell validation started.*subjectID=E2E-002 promptIndex=3'
+                - stdout does not match Prompt skipped after a failed check
+                - stdout matches Validation failed
                 - but: stdout does not match ALL CHECKS PASSED
-                - and: the engine dispatched 1 AI turn
+                - and: the engine dispatched 4 AI turns
                 - and: no file outside "tmp" changed
         - id: 002-check-and-question-refused
-          description: A checklist Prompt carrying both `D:` and `Q:` must be refused at startup, naming the Prompt, because a built-in check or a model answers a Prompt and never both
+          description: A checklist item carrying both Q options, prompt and code must be refused at startup, naming the checklist item, because a Q has only one answering option
           steps:
             - given:
                 - the "scen-check-prompt-with-both-kinds" project tree
@@ -51,12 +36,12 @@ story:
             - then:
                 - the command exits with code 1
                 - stdout matches level=ERROR msg="Refusing to start" command="scen check"
-                - 'stdout matches scen-check/scenario_quality #2 carries both D: and Q:'
+                - 'stdout matches scen-check/scenario_quality #2 carries both Q options'
                 - but: stdout does not match SCEN CHECK
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns
         - id: 003-neither-check-nor-question-refused
-          description: A checklist Prompt carrying neither `D:` nor `Q:` must be refused at startup, naming the Prompt, because nothing would answer it
+          description: A checklist item carrying neither Q option, prompt nor code must be refused at startup, naming the checklist item, because nothing would answer it
           steps:
             - given:
                 - the "scen-check-prompt-with-no-kind" project tree
@@ -65,12 +50,12 @@ story:
             - then:
                 - the command exits with code 1
                 - stdout matches level=ERROR msg="Refusing to start" command="scen check"
-                - 'stdout matches scen-check/scenario_quality #1 carries neither D: nor Q:'
+                - 'stdout matches scen-check/scenario_quality #1 carries neither Q option'
                 - but: stdout does not match SCEN CHECK
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns
         - id: 004-unknown-check-refused
-          description: A `D:` Prompt naming a check the engine does not hold must be refused at startup, naming the Prompt and the checks the command has
+          description: A code Q naming a check the engine does not hold must be refused at startup, naming the checklist item and the checks the command has
           steps:
             - given:
                 - the "scen-check-unknown-check" project tree
@@ -79,12 +64,12 @@ story:
             - then:
                 - the command exits with code 1
                 - stdout matches level=ERROR msg="Refusing to start" command="scen check"
-                - 'stdout matches scen-check/scenario_quality #1 D: steps-are-present names no built-in check of scen check, which has concept-bindings, declared-terms, given-when-then, public-interface, step-definitions, term-mappings'
+                - 'stdout matches scen-check/scenario_quality #1 Q code: steps-are-present names no built-in check of scen check, which has concept-bindings, declared-terms, given-when-then, public-interface, step-definitions, term-mappings'
                 - but: stdout does not match SCEN CHECK
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns
         - id: 005-model-on-check-refused
-          description: A `D:` Prompt carrying `model:` must be refused at startup, naming the Prompt, because no model answers a built-in check
+          description: A code Q carrying `model:` must be refused at startup, naming the checklist item, because no model answers a built-in check
           steps:
             - given:
                 - the "scen-check-model-on-check" project tree
@@ -93,12 +78,12 @@ story:
             - then:
                 - the command exits with code 1
                 - stdout matches level=ERROR msg="Refusing to start" command="scen check"
-                - 'stdout matches scen-check/scenario_quality #1 D: given-when-then carries model:, but no model answers a built-in check'
+                - 'stdout matches scen-check/scenario_quality #1 Q code: given-when-then carries model:, but no model answers a built-in check'
                 - but: stdout does not match SCEN CHECK
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns
         - id: 006-unread-parameter-refused
-          description: A `D:` Prompt passing its check a `with:` parameter the check does not read must be refused at startup, naming the parameter, rather than run the check as though it were honoured
+          description: A code Q passing its check a `with:` parameter the check does not read must be refused at startup, naming the parameter, rather than run the check as though it were honoured
           steps:
             - given:
                 - the "scen-check-unknown-check-parameter" project tree
@@ -107,12 +92,12 @@ story:
             - then:
                 - the command exits with code 1
                 - stdout matches level=ERROR msg="Refusing to start" command="scen check"
-                - 'stdout matches scen-check/scenario_quality #1 D: given-when-then has no with: parameter min_steps; it takes none'
+                - 'stdout matches scen-check/scenario_quality #1 Q code: given-when-then has no with: parameter min_steps; it takes none'
                 - but: stdout does not match SCEN CHECK
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns
         - id: 007-unlisted-document-refused
-          description: A `D:` Prompt naming a check that reads a document must be refused at startup when its `docs:` does not list that document, because the check would otherwise read no product document and pass every Scenario unchecked
+          description: A code Q naming a check that reads a document must be refused at startup when its `docs:` does not list that document, because the check would otherwise read no product document and pass every Scenario unchecked
           steps:
             - given:
                 - the "scen-check-phrase-docs-unlisted" project tree
@@ -121,7 +106,22 @@ story:
             - then:
                 - the command exits with code 1
                 - stdout matches level=ERROR msg="Refusing to start" command="scen check"
-                - 'stdout matches scen-check/term_closure #1 D: declared-terms reads the product document, so its docs: must list product'
+                - 'stdout matches scen-check/term_closure #1 Q code: declared-terms reads the product document, so its docs: must list product'
+                - but: stdout does not match SCEN CHECK
+                - and: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
+        - id: 008-legacy-d-refused
+          description: A checklist still declaring D must be refused at startup with both replacement Q forms before any AI turn
+          steps:
+            - given:
+                - the "scen-check-legacy-d-refused" project tree
+            - when:
+                - the Quality Engineer runs "scen check"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="scen check"
+                - 'stdout matches scen-check/scenario_quality #1 retired D:'
+                - 'stdout matches Q: .prompt: .* or Q: .code:'
                 - but: stdout does not match SCEN CHECK
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns

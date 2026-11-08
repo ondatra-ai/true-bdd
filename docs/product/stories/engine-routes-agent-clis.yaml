@@ -45,13 +45,13 @@ story:
     - then:
       - the command exits with code 0
       - stdout matches ALL CHECKS PASSED
-      - and: the engine dispatched 3 validation AI turns to "codex"
+      - and: the engine dispatched 4 validation AI turns to "codex"
       - and: the engine dispatched 1 fix AI turn to "codex"
       - and: the engine dispatched 1 apply AI turn to "claude"
       - but: the engine dispatched no validation AI turns to "claude"
       - and: the engine dispatched no fix AI turns to "claude"
       - and: the engine dispatched no apply AI turns to "codex"
-      - and: the engine dispatched 5 AI turns
+      - and: the engine dispatched 6 AI turns
       - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
   - id: 004-failed-claude-turn-stops-run
     description: A validation turn whose claude CLI exits non-zero, here on a model id the CLI does not know, must stop `scen

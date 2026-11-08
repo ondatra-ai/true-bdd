@@ -10,19 +10,59 @@ version: "1.0"
 last_updated: "2026-10-28"
 
 sections:
+  - id: concept_link
+    name: "Concept Link"
+    description: "Every free-text step links to exactly one concept of its own block."
+    validation_prompts:
+      - Q:
+          prompt: |
+            Link every step of this Item to a product concept of its own block.
+            Given is a state before the behaviour, When an action or event,
+            Then an observable outcome. A concept is one Public interface item
+            and kind of use, as the wording fixes it; an argument's target
+            does not change the concept. Read the product roles and glossary.
+            Score EVERY concept of the step's block, from 0 to 10:
+            10: a plain instance; 9: an instance in other words without doubt;
+            7 or 8: related but partly outside its meaning, or another fits as well;
+            1 to 6: not this concept; 0: unrelated.
+            Read means as CLOSED: it admits only the variations its prose states,
+            never everything in the same area. An unstated variation scores at most 8.
+            A step of the wrong kind for its block scores at most 4 for every
+            concept of that block. Name the other block's concept it is an instance
+            of in other_block_concept, or null if none. For a right-kind step use null.
+            Give a reason for the highest score, or why none fits.
+            judge: clauses are unlinked: omit them from the answer.
+            llm: steps link by their intent; strip the prefix when judging meaning.
+            Answer steps by their supplied keys, with every concept a required
+            key of scores, a reason and other_block_concept. Change nothing.
+        with:
+          concepts: link
+          threshold: 9
+        rationale: "A step without one closed meaning cannot yield an unambiguous definition."
+        docs: [product]
+        F: |
+          Offer the Product Owner a rewritten step applied to the Story or
+          Scenario, a wider concept when its Public interface item and kind of
+          use already exist, or else a new concept for the new item or use.
+          Widen a concept by rewriting its means to state every variation it
+          admits, in closed prose; a concept holds only concept, means and terms.
+          Apply concept changes only to the product document and a rewrite only
+          to the Item. Show the exact change at the menu and wait for apply.
+
   - id: acceptance_criteria
     name: "Acceptance Criteria Quality"
     description: "Testable conditions that define 'done' (incorporates Ron Jeffries' Confirmation)"
     source: "https://www.altexsoft.com/blog/acceptance-criteria-purposes-formats-and-best-practices/"
     validation_prompts:
-      - Q: |
-          Count the total number of acceptance criteria in the story.
+      - Q:
+          prompt: |
+            Count the total number of acceptance criteria in the story.
 
-          Pass when the count is between 3 and 7 inclusive.
-          Fail when the count is outside that range.
+            Pass when the count is between 3 and 7 inclusive.
+            Fail when the count is outside that range.
 
-          Context: emit a single line stating the count.
-            - "Total ACs: <N>"
+            Context: emit a single line stating the count.
+              - "Total ACs: <N>"
         rationale: "<3: underspecified. >7: likely an epic that should be split."
         docs:
           - product
@@ -42,22 +82,23 @@ sections:
           Present the proposal at the fix menu; apply it only after the
           Product Owner answers apply.
 
-      - Q: |
-          For every AC, decide whether its description field follows the
-          rule-based format. A violation is any of:
-          - missing the keyword "must" or "should"
-          - exceeds one sentence
-          - contains Gherkin Given/When/Then text (Gherkin belongs in the
-            steps field, not the description)
+      - Q:
+          prompt: |
+            For every AC, decide whether its description field follows the
+            rule-based format. A violation is any of:
+            - missing the keyword "must" or "should"
+            - exceeds one sentence
+            - contains Gherkin Given/When/Then text (Gherkin belongs in the
+              steps field, not the description)
 
-          Pass when every AC's description follows the rule-based format.
-          Fail when one or more AC descriptions violate it.
+            Pass when every AC's description follows the rule-based format.
+            Fail when one or more AC descriptions violate it.
 
-          Context: emit one line per AC.
-            - "<AC-id>: ok"
-            - "<AC-id>: <violation> — <quoted offending phrase>"
-              (e.g. "AC-2: missing must/should — 'Claude responds...'"
-               or "AC-3: contains GWT — 'Given a user has shared...'")
+            Context: emit one line per AC.
+              - "<AC-id>: ok"
+              - "<AC-id>: <violation> — <quoted offending phrase>"
+                (e.g. "AC-2: missing must/should — 'Claude responds...'"
+                 or "AC-3: contains GWT — 'Given a user has shared...'")
         rationale: "AC descriptions must be one-sentence rule statements with must/should keywords; Gherkin steps belong in the steps field."
         docs:
           - product
@@ -85,22 +126,23 @@ sections:
             rewritten: "<one-line rule-based statement with must/should>"
           ```
 
-      - Q: |
-          For every AC, decide whether its steps field follows the
-          Given/When/Then format. A violation is any of:
-          - steps field is missing or empty
-          - steps field does not have at least one Given step
-          - steps field does not have at least one When step
-          - steps field does not have at least one Then step
+      - Q:
+          prompt: |
+            For every AC, decide whether its steps field follows the
+            Given/When/Then format. A violation is any of:
+            - steps field is missing or empty
+            - steps field does not have at least one Given step
+            - steps field does not have at least one When step
+            - steps field does not have at least one Then step
 
-          Pass when every AC has a steps field with all three GWT step types.
-          Fail when one or more ACs have a missing or malformed steps field.
+            Pass when every AC has a steps field with all three GWT step types.
+            Fail when one or more ACs have a missing or malformed steps field.
 
-          Context: emit one line per AC.
-            - "<AC-id>: ok"
-            - "<AC-id>: missing steps field"
-            - "<AC-id>: missing <given|when|then> step"
-            - "<AC-id>: <other malformation> — <short note>"
+            Context: emit one line per AC.
+              - "<AC-id>: ok"
+              - "<AC-id>: missing steps field"
+              - "<AC-id>: missing <given|when|then> step"
+              - "<AC-id>: <other malformation> — <short note>"
         rationale: "Every AC must have testable Gherkin steps in Given/When/Then format."
         docs:
           - product
@@ -141,18 +183,19 @@ sections:
               - then: ["<observable outcome>"]
           ```
 
-      - Q: |
-          For every AC, decide whether its description field contains a vague
-          word from the forbidden_qualifiers list of the product document's
-          vocabulary (properly, correctly, appropriate, user-friendly, fast,
-          etc.).
+      - Q:
+          prompt: |
+            For every AC, decide whether its description field contains a vague
+            word from the forbidden_qualifiers list of the product document's
+            vocabulary (properly, correctly, appropriate, user-friendly, fast,
+            etc.).
 
-          Pass when no AC description contains forbidden qualifiers.
-          Fail when one or more AC descriptions contain them.
+            Pass when no AC description contains forbidden qualifiers.
+            Fail when one or more AC descriptions contain them.
 
-          Context: emit one line per AC.
-            - "<AC-id>: ok"
-            - "<AC-id>: contains '<word>'[, '<word2>'...]"
+            Context: emit one line per AC.
+              - "<AC-id>: ok"
+              - "<AC-id>: contains '<word>'[, '<word2>'...]"
         rationale: "Vague words in AC descriptions cannot be tested objectively."
         docs:
           - product
@@ -164,18 +207,19 @@ sections:
           vocabulary. Replace each forbidden qualifier with specific,
           measurable criteria.
 
-      - Q: |
-          For every AC, decide whether its steps field contains a vague word
-          from the forbidden_qualifiers list of the product document's
-          vocabulary (properly, correctly, appropriate, user-friendly, fast,
-          etc.). Check Given, When, and Then steps.
+      - Q:
+          prompt: |
+            For every AC, decide whether its steps field contains a vague word
+            from the forbidden_qualifiers list of the product document's
+            vocabulary (properly, correctly, appropriate, user-friendly, fast,
+            etc.). Check Given, When, and Then steps.
 
-          Pass when no AC's steps contain forbidden qualifiers.
-          Fail when one or more ACs have steps containing them.
+            Pass when no AC's steps contain forbidden qualifiers.
+            Fail when one or more ACs have steps containing them.
 
-          Context: emit one line per AC.
-            - "<AC-id>: ok"
-            - "<AC-id>: contains '<word>'[, '<word2>'...] in <given|when|then>"
+            Context: emit one line per AC.
+              - "<AC-id>: ok"
+              - "<AC-id>: contains '<word>'[, '<word2>'...] in <given|when|then>"
         rationale: "Vague words in AC steps cannot be tested objectively."
         docs:
           - product
@@ -187,18 +231,19 @@ sections:
           vocabulary. Replace each forbidden qualifier with concrete,
           observable criteria.
 
-      - Q: |
-          For every AC, decide whether its Given/When/Then steps use action
-          verbs from the forbidden_actions list of the product document's
-          vocabulary.
+      - Q:
+          prompt: |
+            For every AC, decide whether its Given/When/Then steps use action
+            verbs from the forbidden_actions list of the product document's
+            vocabulary.
 
-          Pass when no AC uses forbidden action verbs in its steps.
-          Fail when one or more ACs use forbidden action verbs.
+            Pass when no AC uses forbidden action verbs in its steps.
+            Fail when one or more ACs use forbidden action verbs.
 
-          Context: emit one line per AC.
-            - "<AC-id>: ok"
-            - "<AC-id>: forbidden verb '<verb>' in <given|when|then>"
-              (e.g. "AC-2: forbidden verb 'parse' in then")
+            Context: emit one line per AC.
+              - "<AC-id>: ok"
+              - "<AC-id>: forbidden verb '<verb>' in <given|when|then>"
+                (e.g. "AC-2: forbidden verb 'parse' in then")
         rationale: "Every step must use concrete, reproducible action verbs. Verbs in the forbidden_actions list do not specify the interaction mechanism and cannot be automated."
         docs:
           - product
@@ -210,19 +255,20 @@ sections:
           the forbidden action's `replacement`, and, when the product
           document declares `concepts:`, a concept of the step's block.
 
-      - Q: |
-          For every AC, decide whether it describes implementation (endpoint
-          created, database updated, schema migrated, etc.) instead of
-          observable behavior in the product's own words: the concepts of the
-          product document, when it declares them.
+      - Q:
+          prompt: |
+            For every AC, decide whether it describes implementation (endpoint
+            created, database updated, schema migrated, etc.) instead of
+            observable behavior in the product's own words: the concepts of the
+            product document, when it declares them.
 
-          Pass when every AC describes observable behavior.
-          Fail when one or more ACs describe implementation.
+            Pass when every AC describes observable behavior.
+            Fail when one or more ACs describe implementation.
 
-          Context: emit one line per AC.
-            - "<AC-id>: ok"
-            - "<AC-id>: implementation — '<quoted phrase>'"
-              (e.g. "AC-2: implementation — 'POST /docs endpoint returns 201'")
+            Context: emit one line per AC.
+              - "<AC-id>: ok"
+              - "<AC-id>: implementation — '<quoted phrase>'"
+                (e.g. "AC-2: implementation — 'POST /docs endpoint returns 201'")
         rationale: "ACs describe observable behavior, not technical implementation."
         docs:
           - product
@@ -242,17 +288,18 @@ sections:
           Present the proposal at the fix menu; apply it only after the
           Product Owner answers apply.
 
-      - Q: |
-          For every AC, decide whether it describes the happy path (the primary
-          success scenario where the system behaves as intended without errors).
+      - Q:
+          prompt: |
+            For every AC, decide whether it describes the happy path (the primary
+            success scenario where the system behaves as intended without errors).
 
-          Pass when at least one AC describes the happy path.
-          Fail when no AC describes the happy path.
+            Pass when at least one AC describes the happy path.
+            Fail when no AC describes the happy path.
 
-          Context: emit one line per AC, then a totals line.
-            - "<AC-id>: happy path — '<short summary>'"
-            - "<AC-id>: not happy path"
-            - "Total happy path ACs: <N> (need ≥1)"
+            Context: emit one line per AC, then a totals line.
+              - "<AC-id>: happy path — '<short summary>'"
+              - "<AC-id>: not happy path"
+              - "Total happy path ACs: <N> (need ≥1)"
         rationale: "Every story needs a documented success path."
         docs:
           - product
@@ -272,23 +319,24 @@ sections:
           Present the proposal at the fix menu; apply it only after the
           Product Owner answers apply.
 
-      - Q: |
-          Identify every failure mode the Story's behaviour meets, using the
-          Story, product document and architecture to establish its scope.
-          For every AC, decide whether it describes an error scenario for
-          one of those real failure modes.
+      - Q:
+          prompt: |
+            Identify every failure mode the Story's behaviour meets, using the
+            Story, product document and architecture to establish its scope.
+            For every AC, decide whether it describes an error scenario for
+            one of those real failure modes.
 
-          Pass when every failure mode the Story's behaviour meets has its
-          own AC. Fail when any such failure mode lacks its own AC.
-          A Story with no failure mode of its own passes with a context line
-          saying why, for example that its input errors belong to another
-          Story. Do not invent errors or copy another Story's error ACs.
+            Pass when every failure mode the Story's behaviour meets has its
+            own AC. Fail when any such failure mode lacks its own AC.
+            A Story with no failure mode of its own passes with a context line
+            saying why, for example that its input errors belong to another
+            Story. Do not invent errors or copy another Story's error ACs.
 
-          Context: emit one line per failure mode, naming its AC or gap.
-            - "Failure mode: <mode> — covered by <AC-id>"
-            - "Failure mode: <mode> — missing AC"
-          When there are none, emit:
-            - "No failure mode of its own: <reason>"
+            Context: emit one line per failure mode, naming its AC or gap.
+              - "Failure mode: <mode> — covered by <AC-id>"
+              - "Failure mode: <mode> — missing AC"
+            When there are none, emit:
+              - "No failure mode of its own: <reason>"
         rationale: "Every real failure mode needs coverage; a Story with none must not invent error scenarios to meet a count."
         docs:
           - product
@@ -310,18 +358,19 @@ sections:
           Present the proposal at the fix menu; apply it only after the
           Product Owner answers apply.
 
-      - Q: |
-          For every AC, decide whether it includes specific measurable criteria
-          (status codes, exact messages, timeouts in ms, error codes, named
-          fields, etc.).
+      - Q:
+          prompt: |
+            For every AC, decide whether it includes specific measurable criteria
+            (status codes, exact messages, timeouts in ms, error codes, named
+            fields, etc.).
 
-          Pass when at least half (50%) of ACs include measurable criteria.
-          Fail when fewer than half do.
+            Pass when at least half (50%) of ACs include measurable criteria.
+            Fail when fewer than half do.
 
-          Context: emit one line per AC, then a totals line.
-            - "<AC-id>: measurable — '<criterion>'"
-            - "<AC-id>: not measurable"
-            - "Totals: <measurable_count>/<total> = <percentage>%"
+            Context: emit one line per AC, then a totals line.
+              - "<AC-id>: measurable — '<criterion>'"
+              - "<AC-id>: not measurable"
+              - "Totals: <measurable_count>/<total> = <percentage>%"
         rationale: "Measurable criteria enable automated testing."
         docs:
           - product
@@ -342,18 +391,19 @@ sections:
           Present the proposal at the fix menu; apply it only after the
           Product Owner answers apply.
 
-      - Q: |
-          For every AC, decide whether it has a binary pass/fail outcome —
-          i.e., a reviewer can decide pass or fail without subjective
-          judgement, with no ambiguity about what counts as "correct".
+      - Q:
+          prompt: |
+            For every AC, decide whether it has a binary pass/fail outcome —
+            i.e., a reviewer can decide pass or fail without subjective
+            judgement, with no ambiguity about what counts as "correct".
 
-          Pass when every AC has a binary outcome.
-          Fail when one or more ACs have subjective outcomes.
+            Pass when every AC has a binary outcome.
+            Fail when one or more ACs have subjective outcomes.
 
-          Context: emit one line per AC.
-            - "<AC-id>: binary"
-            - "<AC-id>: subjective — '<reason>'"
-              (e.g. "AC-2: subjective — 'response is helpful' has no objective threshold")
+            Context: emit one line per AC.
+              - "<AC-id>: binary"
+              - "<AC-id>: subjective — '<reason>'"
+                (e.g. "AC-2: subjective — 'response is helpful' has no objective threshold")
         rationale: "Every AC must be objectively testable."
         docs:
           - product
@@ -376,52 +426,53 @@ sections:
 
       - with:
           concepts: sketch
-        Q: |
-          For every AC, attempt to draft a runnable test sketch that would
-          verify the AC.
+        Q:
+          prompt: |
+            For every AC, attempt to draft a runnable test sketch that would
+            verify the AC.
 
-          READ docs/architecture/architecture.yaml CAREFULLY. It is the single
-          source of truth for both:
-          - the test framework per service and per layer (e2e / integration)
-          - the test helpers available per layer (e.g. McpClient, page fixtures)
+            READ docs/architecture/architecture.yaml CAREFULLY. It is the single
+            source of truth for both:
+            - the test framework per service and per layer (e2e / integration)
+            - the test helpers available per layer (e.g. McpClient, page fixtures)
 
-          Pick the framework whose service+layer best matches what the AC
-          tests, and use the helpers declared for that layer. Do NOT invent
-          helpers; use only what is declared in architecture.yaml. Do NOT
-          discover the framework from code, package manifests, or other docs.
+            Pick the framework whose service+layer best matches what the AC
+            tests, and use the helpers declared for that layer. Do NOT invent
+            helpers; use only what is declared in architecture.yaml. Do NOT
+            discover the framework from code, package manifests, or other docs.
 
-          An AC is convertible if you can write a concrete test sketch
-          with explicit inputs, actions, and assertions whose pass/fail
-          can be decided without human judgement.
+            An AC is convertible if you can write a concrete test sketch
+            with explicit inputs, actions, and assertions whose pass/fail
+            can be decided without human judgement.
 
-          An AC is NOT convertible if the assertion would require human
-          taste or interpretation (e.g. "response is helpful", "UX feels
-          right") or has no objective oracle.
+            An AC is NOT convertible if the assertion would require human
+            taste or interpretation (e.g. "response is helpful", "UX feels
+            right") or has no objective oracle.
 
-          Pass when at least 80% of ACs are convertible.
-          Fail when fewer than 80% are convertible.
+            Pass when at least 80% of ACs are convertible.
+            Fail when fewer than 80% are convertible.
 
-          Context: emit a discovery line FIRST, then one item per AC, then
-          a totals line.
+            Context: emit a discovery line FIRST, then one item per AC, then
+            a totals line.
 
-          First context line MUST state the framework AND helpers you picked,
-          each with its exact YAML path in docs/architecture/architecture.yaml:
-            - "Discovered: framework <name> (architecture.yaml <yaml path>); helpers <names> (architecture.yaml <yaml path>)"
+            First context line MUST state the framework AND helpers you picked,
+            each with its exact YAML path in docs/architecture/architecture.yaml:
+              - "Discovered: framework <name> (architecture.yaml <yaml path>); helpers <names> (architecture.yaml <yaml path>)"
 
-          For convertible ACs, prefer a single-line form:
-            - "<AC-id>: convertible (framework: <name>) -- <one-line sketch using declared helpers>"
+            For convertible ACs, prefer a single-line form:
+              - "<AC-id>: convertible (framework: <name>) -- <one-line sketch using declared helpers>"
 
-          If the sketch needs setup that exceeds 200 chars, use a YAML
-          literal block:
-            - |
-                <AC-id>: convertible (framework: <name>)
-                <multi-line sketch using declared helpers>
+            If the sketch needs setup that exceeds 200 chars, use a YAML
+            literal block:
+              - |
+                  <AC-id>: convertible (framework: <name>)
+                  <multi-line sketch using declared helpers>
 
-          For non-convertible ACs:
-            - "<AC-id>: not convertible -- '<short reason>'"
+            For non-convertible ACs:
+              - "<AC-id>: not convertible -- '<short reason>'"
 
-          Final line:
-            - "Totals: <convertible_count>/<total> = <percentage>%"
+            Final line:
+              - "Totals: <convertible_count>/<total> = <percentage>%"
         rationale: "Drafting the actual test reveals hidden ambiguity and proves the AC is testable, not just claims to be."
         docs:
           - product
@@ -443,65 +494,28 @@ sections:
           Present the proposal at the fix menu; apply it only after the
           Product Owner answers apply.
 
-  - id: concept_link
-    name: "Concept Link"
-    description: "Every free-text step links to exactly one concept of its own block."
-    validation_prompts:
-      - Q: |
-          Link every step of this Item to a product concept of its own block.
-          Given is a state before the behaviour, When an action or event,
-          Then an observable outcome. A concept is one Public interface item
-          and kind of use, as the wording fixes it; an argument's target
-          does not change the concept. Read the product roles and glossary.
-          Score EVERY concept of the step's block, from 0 to 10:
-          10: a plain instance; 9: an instance in other words without doubt;
-          7 or 8: related but partly outside its meaning, or another fits as well;
-          1 to 6: not this concept; 0: unrelated.
-          Read means as CLOSED: it admits only the variations its prose states,
-          never everything in the same area. An unstated variation scores at most 8.
-          A step of the wrong kind for its block scores at most 4 for every
-          concept of that block. Name the other block's concept it is an instance
-          of in other_block_concept, or null if none. For a right-kind step use null.
-          Give a reason for the highest score, or why none fits.
-          judge: clauses are unlinked: omit them from the answer.
-          llm: steps link by their intent; strip the prefix when judging meaning.
-          Answer steps by their supplied keys, with every concept a required
-          key of scores, a reason and other_block_concept. Change nothing.
-        with:
-          concepts: link
-          threshold: 9
-        rationale: "A step without one closed meaning cannot yield an unambiguous definition."
-        docs: [product]
-        F: |
-          Offer the Product Owner a rewritten step applied to the Story or
-          Scenario, a wider concept when its Public interface item and kind of
-          use already exist, or else a new concept for the new item or use.
-          Widen a concept by rewriting its means to state every variation it
-          admits, in closed prose; a concept holds only concept, means and terms.
-          Apply concept changes only to the product document and a rewrite only
-          to the Item. Show the exact change at the menu and wait for apply.
-
   - id: concept_words
     name: "Concept Words"
     description: "Linked meanings rely only on declared terms and plain English."
     validation_prompts:
-      - Q: |
-          Judge the means of EVERY supplied linked concept, using the product
-          document's glossary for its declared terms. Name every domain word
-          or expression its means relies on that is neither declared in THAT
-          concept's terms nor readable as plain English in that means's context.
-          A glossary entry alone does not declare a term for a concept.
-          Plain English that already defines the word in this context passes;
-          do not demand glossary entries for ordinary words or infer a special
-          domain meaning without evidence. Judge means, not the concept's name,
-          steps, bindings or unrelated concepts. Trust no earlier judgement.
-          Judge each concept independently. Every word in undeclared_words
-          must occur in THAT concept's means; never carry a word from another
-          verdict. Keep the list consistent with the reason: if none is
-          undeclared, return exactly an empty array.
-          For every supplied concept key return undeclared_words (the exact
-          words, or an empty array when none) and a nonempty reason explaining
-          the verdict. Omit no concept. Change nothing.
+      - Q:
+          prompt: |
+            Judge the means of EVERY supplied linked concept, using the product
+            document's glossary for its declared terms. Name every domain word
+            or expression its means relies on that is neither declared in THAT
+            concept's terms nor readable as plain English in that means's context.
+            A glossary entry alone does not declare a term for a concept.
+            Plain English that already defines the word in this context passes;
+            do not demand glossary entries for ordinary words or infer a special
+            domain meaning without evidence. Judge means, not the concept's name,
+            steps, bindings or unrelated concepts. Trust no earlier judgement.
+            Judge each concept independently. Every word in undeclared_words
+            must occur in THAT concept's means; never carry a word from another
+            verdict. Keep the list consistent with the reason: if none is
+            undeclared, return exactly an empty array.
+            For every supplied concept key return undeclared_words (the exact
+            words, or an empty array when none) and a nonempty reason explaining
+            the verdict. Omit no concept. Change nothing.
         with:
           concepts: words
         rationale: "An undeclared domain word leaves a linked meaning open to interpretation."

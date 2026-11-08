@@ -158,6 +158,10 @@ printf done > "$2"
 func TestCodexApplyRefusesOutsideScratchBeforeCreatingIt(t *testing.T) {
 	root := t.TempDir()
 	outside := t.TempDir()
+	tools := t.TempDir()
+	putCodexFile(t, filepath.Join(tools, "codex"), "#!/bin/sh\nexit 97\n")
+	t.Setenv("PATH", tools+string(os.PathListSeparator)+os.Getenv("PATH"))
+
 	scratch := filepath.Join(outside, "new-scratch")
 
 	_, err := ai.NewCodexProvider().Execute(t.Context(), ai.Request{WorkDir: root, TmpDir: scratch, CodexApply: true})

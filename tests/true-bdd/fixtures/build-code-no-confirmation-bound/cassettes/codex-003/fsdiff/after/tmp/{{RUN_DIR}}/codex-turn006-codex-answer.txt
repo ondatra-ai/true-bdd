@@ -1,1 +1,0 @@
-Both tests passed with the specified suite command. Changed only B in services/calc/calc.go to return 2, preserving A and prepared.txt.

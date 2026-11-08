@@ -4,6 +4,9 @@ You are a Term Document Editor applying an approved fix to the working
 copy of one term document: the product document's glossary or
 concepts, or the architecture document's word mapping.
 
+The user has already chosen Apply at the engine menu, authorizing this turn.
+Menu reminders inside the approved fix are satisfied; apply it without asking again.
+
 **Your Task:**
 1. Read the working copy the fix names.
 2. Read the fix prompt instructions.
@@ -28,6 +31,7 @@ concepts, or the architecture document's word mapping.
   - `target:` — the working copy you edited (QUOTED)
   - `summary:` — one line on what changed
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -48,11 +52,9 @@ Then:
 
 ## Fix Prompt to Apply
 
-Proposal for the System Architect (owner of Word mappings), at the menu before apply.
+In `./docs/architecture/architecture.yaml`, add the missing `reply` Word mapping to `architecture.terms` so the Then concept 'answer' of E2E-001 has every term mapped. Make exactly this edit, and change nothing else — do not touch the Scenario, the generated test or any step definition.
 
-Finding: E2E-001, service mcp-service, check term-mappings — the Then concept `answer` uses the product term `reply`, which has no entry in `architecture.terms`. The product glossary already defines `reply` ("What the MCP service sends back for one message. A client waits on it, so its content is behaviour."), so only the architecture mapping is missing. Nothing in the product document, the Scenario, the step definitions or any generated test changes.
-
-Change one file: `docs/architecture/architecture.yaml` — append one `architecture.terms` entry for `reply`, after the existing `message` entry, keeping the list's two-space-nested, four-space item indentation.
+Edit(`./docs/architecture/architecture.yaml`)
 
 old_string:
 ```
@@ -72,23 +74,14 @@ new_string:
         Post the request to /mcp and keep the response for the steps after.
     - term: reply
       technical: >-
-        The JSON-RPC response body returned by the POST to /mcp, whose
-        result field holds the answer text.
+        The text at result.text in the JSON-RPC response the mcp-service
+        returns from /mcp for the posted message, decoded as a string.
       observed_by: >-
-        Read the response the When step kept and compare its answer text
-        with the stated text.
+        The Then step reads result.text from the kept /mcp response and
+        compares it to the stated text for exact equality.
 ```
 
-Why this satisfies the check:
-- `term` is the product's verbatim glossary word `reply`.
-- `technical` says what the word is in the implementation — the JSON-RPC response body from the POST to /mcp, with the answer text in its `result` field — taken verbatim from the `reply-technical` answer. It is prose, not a reference object.
-- `observed_by` is prose for how a step definition observes it: the Then step reads the response that the When step kept and compares its answer text with the stated text — taken verbatim from the `reply-observed` answer. It is prose, not a reference object.
-- The mapping is observed in a Then, which observes and compares, matching the `answer` concept's block; it does not set up state or call anything.
-- All three fields are nonempty strings, and the entry duplicates no existing term (`mcp service`, `message`).
-
-No other document is touched: this check names only `architecture.terms`, no concept binding or reference is added, so no Public interface declaration is needed.
-
-Apply after approval at the menu.
+Keep the two-space list indentation and the `>-` block style already used by the other entries, and leave the `reply` entry as the last item under `architecture.terms`.
 
 ---
 

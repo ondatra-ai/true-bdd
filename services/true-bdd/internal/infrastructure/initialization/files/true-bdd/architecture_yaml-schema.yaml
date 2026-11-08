@@ -9,7 +9,7 @@
 #
 #   yamale -s true-bdd/architecture_yaml-schema.yaml docs/architecture/architecture.yaml
 #
-# The engine decodes only `testing:`, `services[].{name,path,language,writable,libraries,public_interface}`
+# The engine decodes only `testing:`, `services[].{name,path,language,writable,libraries,public_interface,models}`
 # and, for closure checks, `terms:` and `concepts:`; everything else here is
 # spec a host writes for its own readers and for the checklists' prompts.
 # Which is exactly why it needs a schema: nothing else would notice a typo
@@ -19,6 +19,7 @@
 # adding a block to its architectural spec adds it here too.
 
 architecture: include('architecture')
+step_arguments: list(include('step_argument'), required=False)
 # No `vocabulary:` here: the product document holds it and its concepts,
 # which `us refine` cites; this document maps words (`terms:`) and binds
 # concepts (`concepts:`). The engine refuses the retired `architecture.phrases`.
@@ -32,6 +33,8 @@ architecture:
   services: list(include('service'), min=1)
   terms: list(include('term_mapping'), required=False)
   concepts: list(include('concept_binding'), required=False)
+  model_rendering: str(required=False)
+  concept_protocols: str(required=False)
   prompt_data: map(include('prompt_data'), required=False)
 
 ---
@@ -40,13 +43,14 @@ architecture:
 term_mapping:
   term: str()
   technical: str()
-  observed_by: str()
+  observed_by: str(required=False)
 
 ---
 # How this repository's tests run. `framework` routes to a runner and
 # decides what `build tests` renders; `commands` is how each mode is
 # invoked. Declaring neither describes a project nothing can build.
 testing:
+  testkit: include('testkit', required=False)
   libraries: list(include('library'), required=False)
   framework: enum('go-test', 'jest', 'playwright')
   # Framework config file. Its containing directory is the working
@@ -56,12 +60,18 @@ testing:
   commands: include('commands')
 
 ---
+testkit:
+  repo_layer: list(str(), required=False)
+  fixture_step: str(required=False)
+
+---
 library:
   module: str()
   version: str(matches='^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+incompatible)?$')
 
 ---
 service:
+  models: map(include('model'), required=False)
   libraries: list(include('library'), required=False)
   name: str()
   path: str()
@@ -91,6 +101,7 @@ dependency:
   # How the service spawns a `protocol: cli` dependency, when a rebuild must
   # send exactly the same request: replay hashes argv and stdin.
   invocation: include('invocation', required=False)
+  recording: include('recording', required=False)
 
 ---
 # One spawn of a CLI dependency, stated byte for byte. A `{name}` token
@@ -148,7 +159,7 @@ code_gate:
 # the machine-readable flag (-json/--json/--reporter=json) — without it the runner parses prose, finds no failures, and the walk goes falsely green.
 commands:
   # Real AI CLIs, recording their calls for later replay.
-  record: str()
+  record: any(str(), include('record-command'))
   # Recorded calls served back. MUST reach no model and cost nothing —
   # `build code` runs it in its fix loop, where a paid call would bill a
   # walk per attempt. Every AI caller in the run replays, not just some.
@@ -198,3 +209,39 @@ concept_binding:
   does: str(required=False)
   references: list(include('interface_reference'), min=1, required=False)
   intent: str(required=False)
+
+---
+model:
+  templates: include('model_templates')
+  scheme: str()
+
+---
+model_templates:
+  system: str()
+  user: str()
+
+---
+recording:
+  placeholders: list(include('recording_placeholder'), required=False)
+  unrecorded: list(str(), required=False)
+  unread: list(str(), required=False)
+  read_only_when: map(str(), required=False)
+
+---
+recording_placeholder:
+  token: str()
+  pattern: str()
+  directory: str()
+
+---
+step_argument:
+  name: str()
+  read: str()
+  applies: str()
+  escaping: str()
+
+---
+# A recording's shared unread paths, relative to its run's Host project root.
+record-command:
+  command: str()
+  exclude: list(str(), required=False, none=False)

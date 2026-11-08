@@ -1,8 +1,6 @@
-Updated `services/calc/calc.go` to print twice the parsed integer. Verification remains incomplete: the granted test command failed during setup because sandbox permissions blocked the harness dependency.
-
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===
-applied: false
+applied: true
 impossible: []
-target: "services/calc"
-summary: "Changed calc.go to print value * 2, preserving argument validation. No failing-set tests were observed passing: TestCalc001Double could not execute because access to pkg/testkit/bddgo was denied. The source change remains applied."
+target: "services/calc/calc.go"
+summary: "Changed the printed value to value + value, preserving argument handling. Attempted TestCalc001Double with the permitted command; setup failed because the sandbox denied access to pkg/testkit/bddgo. No tests were observed passing."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===

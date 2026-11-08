@@ -5,77 +5,32 @@ Edit only the listed working copies. Preserve every unaffected entry.
 For a Story step rewrite, return the complete Story YAML instead of editing
 a document. For document edits return the requested confirmation markers.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
 The Product Owner chose apply at the menu for Story host.
 Approved fix:
-PROPOSED REPAIR — Item: host (AC-1 when step "square six")
+Apply this single change to `docs/product/product.yaml`. Do not change the Story `host`, any other concept, the glossary, or the description.
 
-Owner of this change: Product Owner (concept + means wording).
-Change nothing until an explicit menu apply decision.
+In `concepts.when`, add one new concept for the Square control after the existing `halve` concept, so that the `when` list reads exactly:
 
-## Failed judgement
+```
+    "when": [
+      {
+        "concept": "halve",
+        "means": "Halve the entered number once.",
+        "terms": []
+      },
+      {
+        "concept": "square",
+        "means": "Square the entered number once by multiplying it by itself.",
+        "terms": []
+      }
+    ],
+```
 
-Only one judgement failed: AC-1 when step "square six" reached no concept of
-the `when` block (best score: "halve" = 2, threshold 9). The two other steps
-passed and stay untouched:
-  - given "six is entered"       -> number ready (10)  — unchanged
-  - then  "thirty-six is displayed" -> number result (10) — unchanged
-
-## Why a new concept, not a widening, and not a rewrite
-
-The product description states: "The calculator offers separate Halve and
-Square controls. Halve divides the entered number by two; Square multiplies
-the entered number by itself." Square is a separate Public interface item from
-Halve, so squaring is not a variation of the `halve` concept and widening
-`halve`'s means would misstate the interface. The Story step is faithful to
-the described Square control, so no rewrite of the Item is warranted. Policy
-therefore calls for a new concept for the new item.
-
-## Exact change — one file: docs/product/product.yaml
-
-Add one concept to the `when` block, after the existing "halve" concept.
-Nothing else in the file changes (roles, given, then, glossary, description
-all stay byte-identical; "halve" keeps its current means).
-
-Before (lines 16-22):
-
-      "when": [
-        {
-          "concept": "halve",
-          "means": "Halve the entered number once.",
-          "terms": []
-        }
-      ],
-
-After:
-
-      "when": [
-        {
-          "concept": "halve",
-          "means": "Halve the entered number once.",
-          "terms": []
-        },
-        {
-          "concept": "square",
-          "means": "Square the entered number once, multiplying it by itself.",
-          "terms": []
-        }
-      ],
-
-## Change to the Item: none
-
-Story `host` and AC-1 are unchanged — id, title, as_a, i_want, so_that,
-status and all three steps ("six is entered", "square six",
-"thirty-six is displayed") stay exactly as written.
-
-## Expected effect after apply
-
-AC-1 when step "square six" links to the new `when` concept "square": a
-when-kind step naming an action on the entered number, a plain instance of
-squaring the entered number once, which should score at or above the
-threshold of 9.
+Rationale for the menu: AC-1's when step "square six" uses the Square control, which the product description states is a control separate from Halve. Because this is a new Public interface item rather than a variation of halving, the closed `halve` concept must not be widened; a new `when` concept named `square` is added for it. The given step "six is entered" (number ready) and the then step "thirty-six is displayed" (number result) already link above threshold and stay unchanged.
 Product working copy:
 
 - `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`

@@ -1,0 +1,84 @@
+[
+  {
+    "id": "concept-bodies-cases-claude-009",
+    "block": "when",
+    "concept": "operation",
+    "definition": {
+      "function": "concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba",
+      "file": "tests/calc/steps/concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba.go",
+      "pattern": "^the Owner (?:(exactly) )?(halves|doubles) (-?\\d+)$",
+      "captures": [
+        {
+          "name": "exactly",
+          "means": "The literal word \"exactly\" when the step says the Owner halves exactly, and the empty string when it does not; it tells the body whether to pass --exact to the halve command, so an odd number's half keeps its half instead of being rounded toward zero."
+        },
+        {
+          "name": "operation",
+          "means": "The operation the step names, either \"halves\" or \"doubles\", selecting which declared command of the calculator CLI the body runs: halve or double."
+        },
+        {
+          "name": "number",
+          "means": "The step's whole number, with an optional leading minus sign so positive, zero and negative numbers are all captured; it is passed as the VALUE argument of the command."
+        }
+      ],
+      "serves": "The single clause of the Does: \"Run the declared halve or double command, as the step names the operation, as a process with the step's whole number, passing --exact to halve when the step says exactly, and keep its stdout as the output.\" The operation capture serves \"as the step names the operation\", the number capture serves \"with the step's whole number\", and the exactly capture serves \"passing --exact to halve when the step says exactly\". The verb's plural s is part of the required wording \"halves\"/\"doubles\" that makes the step this concept, and the space before the operation is wrapped in a non-capturing group (?:...) because the presence of \"exactly\" alone, not its spacing, changes what the body does.",
+      "steps": [
+        {
+          "text": "the Owner halves 6",
+          "captures": [
+            "",
+            "halves",
+            "6"
+          ]
+        },
+        {
+          "text": "the Owner doubles 6",
+          "captures": [
+            "",
+            "doubles",
+            "6"
+          ]
+        },
+        {
+          "text": "the Owner halves 7",
+          "captures": [
+            "",
+            "halves",
+            "7"
+          ]
+        },
+        {
+          "text": "the Owner exactly halves 7",
+          "captures": [
+            "exactly",
+            "halves",
+            "7"
+          ]
+        }
+      ]
+    },
+    "pattern": {
+      "pattern": "^the Owner (?:(exactly) )?(halves|doubles) (-?\\d+)$",
+      "captures": [
+        {
+          "name": "exactly",
+          "means": "The literal word \"exactly\" when the step says the Owner halves exactly, and the empty string when it does not; it tells the body whether to pass --exact to the halve command, so an odd number's half keeps its half instead of being rounded toward zero."
+        },
+        {
+          "name": "operation",
+          "means": "The operation the step names, either \"halves\" or \"doubles\", selecting which declared command of the calculator CLI the body runs: halve or double."
+        },
+        {
+          "name": "number",
+          "means": "The step's whole number, with an optional leading minus sign so positive, zero and negative numbers are all captured; it is passed as the VALUE argument of the command."
+        }
+      ],
+      "serves": "The single clause of the Does: \"Run the declared halve or double command, as the step names the operation, as a process with the step's whole number, passing --exact to halve when the step says exactly, and keep its stdout as the output.\" The operation capture serves \"as the step names the operation\", the number capture serves \"with the step's whole number\", and the exactly capture serves \"passing --exact to halve when the step says exactly\". The verb's plural s is part of the required wording \"halves\"/\"doubles\" that makes the step this concept, and the space before the operation is wrapped in a non-capturing group (?:...) because the presence of \"exactly\" alone, not its spacing, changes what the body does."
+    },
+    "source": "package steps\n\nimport \"fixture/conceptbodiescases/tests/calc/helpers\"\n\n//truebdd:concept when \"operation\"\nfunc concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba(state *State, args []string) error {\n\t// What the step named, read off its captures: the declared command for\n\t// \"halves\" or \"doubles\", whether --exact goes with it because the step\n\t// says the Owner halves exactly, and the whole number to pass as VALUE.\n\tcommand, exact, number, err := helpers.OperationFromStep(args)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\t// The calculator halves or doubles; this step only runs the declared\n\t// command as a process and keeps what it printed.\n\toutput, err := helpers.RunCalc(command, exact, number)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tstate.Output = output\n\n\treturn nil\n}\n\n",
+    "historical_verdict": "pass",
+    "expected_verdict": "fail",
+    "category": "pattern_scope",
+    "reason": "The regex admits the Owner exactly doubles 6; OperationFromStep selects double and exact=true, then RunCalc returns ErrExactNotDeclared. Exact doubling is outside the closed Concept and declared double interface."
+  }
+]

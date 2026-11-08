@@ -26,7 +26,7 @@ var generatedMarker = regexp.MustCompile(`^// Code generated .* DO NOT EDIT\.$`)
 // generated marker — a generated test someone started hand-editing.
 var ErrNotGenerated = errors.New("file declares a scenario but is not marked generated")
 
-// ScenarioCall is one `scenarios.New(t, "<ID>")` site, as found by
+// ScenarioCall is one package-qualified New(t, "<ID>") site, as found by
 // parsing a package's source.
 type ScenarioCall struct {
 	// File is repo-relative when CheckCoverage found it, and as given to

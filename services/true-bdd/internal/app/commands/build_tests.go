@@ -69,7 +69,22 @@ func (p *buildTestsPrep) run(loader *registry.RegistryLoader) error {
 		return err
 	}
 
-	return p.renderTests()
+	err = scenariogen.RequireSteps(p.plan, p.repoRoot)
+	if err != nil {
+		return err
+	}
+
+	err = scenariogen.AddMainFiles(p.plan, p.repoRoot, p.registryFile, p.architectureFile)
+	if err != nil {
+		return err
+	}
+
+	err = p.renderTests()
+	if err != nil {
+		return err
+	}
+
+	return scenariogen.CheckFolder(scenarios, p.repoRoot)
 }
 
 // renderTests writes the generated files under --fix, and refuses a run
@@ -86,7 +101,7 @@ func (p *buildTestsPrep) renderTests() error {
 				"count", len(written), "files", strings.Join(written, " "))
 		}
 
-		return nil
+		return scenariogen.RemoveLegacyWiring(p.plan, p.repoRoot)
 	}
 
 	drifted, err := scenariogen.Verify(p.plan, p.repoRoot)

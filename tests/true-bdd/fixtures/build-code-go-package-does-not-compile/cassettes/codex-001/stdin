@@ -6,6 +6,7 @@ Write only inside the edit roots in the request. Never modify tests, *_test.go, 
 
 Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, impossible, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -47,105 +48,66 @@ FAIL	fixture/buildcodecompile/tests/suite [build failed]
 
 ## Diagnosis
 
-The failing set is a **package build failure**, not an assertion failure:
+The suite does not fail an assertion — the test binary never gets built:
 
 ```
 tests/suite/multiply_test.go:13:14: undefined: calc.Multiply
 FAIL	fixture/buildcodecompile/tests/suite [build failed]
 ```
 
-The external test package `suite_test` (under `tests/suite/`) imports
-`fixture/buildcodecompile/services/calc` and calls `calc.Multiply(2, 3)`.
-Production source `services/calc/calc.go` declares only `Add`; it carries an
-explicit comment stating that `Multiply` is the deliberately missing
-declaration. Because Go compiles a test package as one unit, the single
-undefined identifier takes down the whole package: `TestAddSumsItsArguments`
-and `TestCanaryRecordsEachSuiteRun` never run either, which is why the harness
-reports one `::<build>` failure for the suite rather than per-test failures.
+`tests/suite/multiply_test.go` imports `fixture/buildcodecompile/services/calc` and calls `calc.Multiply(2, 3)`. The production package `services/calc/calc.go` declares only `Add`; it carries a comment stating outright that `Multiply` is the planted, missing production declaration. Because Go reports a non-compiling test package as one package-level failure, every test in `package suite_test` is blocked by this one missing symbol — `TestAddSumsItsArguments` and `TestCanaryRecordsEachSuiteRun` are correct as written and will run the moment the package compiles.
 
-So exactly one thing is missing, and it is missing in production source inside
-the declared edit root `services/calc`. No undeclared path is needed.
+The repair is therefore purely additive production code, entirely inside the declared edit root `services/calc`. No test, step definition, document, or `go.mod` change is needed: the module path `fixture/buildcodecompile` already resolves `services/calc`, and the compiler's message is `undefined: calc.Multiply` (symbol missing) rather than a package-resolution error, confirming the import itself is sound.
 
-## Contract the tests require
+## Part 1 — Declare `Multiply` in the `calc` package
 
-From `tests/suite/multiply_test.go` (specification — do not edit, do not
-weaken):
+**File:** `services/calc/calc.go` (the only file to change)
 
-- Identifier: exported `Multiply`, resolved as `calc.Multiply` from the
-  importable package `fixture/buildcodecompile/services/calc`.
-- Signature: callable as `Multiply(2, 3)` with untyped integer constants and
-  the single result compared against the `int` literal `6` via
-  `got != 6`, where `got := calc.Multiply(2, 3)`. That means exactly two
-  value parameters assignable from untyped int constants and exactly one
-  return value — concretely `func Multiply(a, b int) int`.
-- Semantics: arithmetic product. `Multiply(2, 3)` must equal `6`.
+Add one new exported function to the existing `package calc`, alongside `Add`. Do not alter, rename, or re-signature `Add` — `tests/suite/add_test.go` depends on its current behaviour and signature.
 
-From `tests/suite/add_test.go`: `calc.Add(2, 3) == 5` must keep working, so
-`Add` must be left exactly as it is.
+### Contract
 
-## What to change
+```
+Multiply(a, b int) int
+```
 
-### Part 1 — declare `Multiply` in the `calc` package
+- **Name:** exactly `Multiply` — exported, capital `M`. This is what the test's selector `calc.Multiply` resolves to.
+- **Parameters:** exactly two, both `int`, in that order. The call site passes the untyped integer constants `2` and `3`, which default to `int`; any other parameter type (e.g. `int64`, `float64`) or any other arity would leave the package uncompilable.
+- **Result:** exactly one value of type `int`. The test does `got := calc.Multiply(2, 3)` and then `if got != 6`, comparing against an untyped integer constant — so a single `int` return is required. Returning a second value (such as an `error`) would break the single-value assignment and keep the build red.
+- **Behaviour:** return the arithmetic product of the two arguments, i.e. `a * b`. Nothing more: no error path, no clamping, no overflow guard, no logging, no package-level state. For the asserted input the result must be `Multiply(2, 3) == 6`, and the implementation must be the general product rather than a value special-cased to the test's inputs.
+- **Purity:** the function must be deterministic and side-effect free, consistent with `Add` in the same file.
 
-**File:** `services/calc/calc.go` (inside the declared root `services/calc`;
-alternatively a new sibling file such as `services/calc/multiply.go` in the
-same `package calc` — either is acceptable, a single file is simplest and
-matches the existing layout).
+### Style requirements for the writer
 
-Intended implementation:
+- Keep the implementation to the direct expression `return a * b`. Resist adding helpers, generics, or a second multiply variant; the specification asks for one symbol.
+- Give the function a doc comment in the same house style as the existing `Add` comment (`// Add returns the sum of a and b.`), e.g. a single sentence beginning `// Multiply returns the product of a and b.` so `go vet`/lint conventions for exported identifiers are satisfied.
+- The trailing comment block in `calc.go` that currently explains that `Multiply` is deliberately undeclared is now factually wrong once the function exists. Replace or remove that stale narration so the file does not contradict itself. Do not delete the package doc comment at the top of the file, and do not touch the `package calc` clause.
+- Keep the file `gofmt`-clean (tabs for indentation, single blank line between top-level declarations).
 
-- Keep `package calc` and the existing `Add` function untouched.
-- Add an exported function `Multiply` taking two `int` parameters and
-  returning their product as an `int`. Straight `a * b`; no clamping, no
-  overflow handling, no error return — the call site consumes a single value,
-  so any second return value or non-`int` result would re-break the build.
-- Give it a doc comment in the style of the existing `Add` comment (e.g.
-  "Multiply returns the product of a and b.").
-- Keep the file gofmt-clean: tabs for indentation, exported doc comment
-  starting with the identifier name, trailing newline.
+## Tests each part serves
 
-**Tests this part serves:**
-- `TestMultiplyMultipliesItsArguments` — directly: provides the missing
-  identifier and the value `6`.
-- `TestAddSumsItsArguments` and `TestCanaryRecordsEachSuiteRun` — indirectly:
-  they are in the same test package and only become executable once the
-  package compiles. The reported failing unit
-  `fixture/buildcodecompile/tests/suite::<build>` clears only when the whole
-  package builds, so all three must run green.
+Part 1 is the whole repair and serves the entire failing set, which is the single package-build unit `/go-test/go-test:fixture.buildcodecompile.tests.suite::<build>`:
 
-### Part 2 — correct the now-stale comment in production source
+- **`TestMultiplyMultipliesItsArguments`** (`tests/suite/multiply_test.go`) — directly served. Declaring `Multiply(a, b int) int` resolves the `undefined: calc.Multiply` compile error, and returning `a * b` makes `Multiply(2, 3)` yield `6`, satisfying the assertion `if got != 6 { t.Fatalf(...) }`.
+- **`TestAddSumsItsArguments`** (`tests/suite/add_test.go`) — unblocked. It is already correct against the untouched `Add`; it only fails today because it shares the non-compiling package. It must continue to pass, which is why `Add` stays exactly as it is.
+- **`TestCanaryRecordsEachSuiteRun`** (`tests/suite/canary_test.go`) — unblocked. Once the package compiles it executes and appends to `suite-runs.log`; the repair introduces no file or working-directory behaviour that could interfere with it.
 
-**File:** `services/calc/calc.go`
+## Out of scope / prohibitions
 
-The trailing comment block currently asserts that `Multiply` "is not
-declared: that is the planted defect". Once Part 1 lands that statement is
-false and misleading. Replace or remove that stale block so the file
-describes what it actually contains. This is production source inside the
-declared root, not a document and not a test, so editing it is in scope.
-
-**Tests this part serves:** none directly; it keeps the repaired source
-self-consistent for the reviewer.
-
-## Explicitly out of scope
-
-- Do **not** touch anything under `tests/suite/` (`multiply_test.go`,
-  `add_test.go`, `canary_test.go`) — the tests are the specification.
-- Do **not** touch `docs/architecture/architecture.yaml`, `true-bdd/`,
-  `templates/`, `go.mod`, or the `tmp/` artefacts.
-- Do not add build tags, stubs that panic, or `t.Skip`-enabling shims; the
-  assertion `got != 6` must be satisfied by real arithmetic.
+- Do **not** edit anything under `tests/`, any `*_test.go` file, `docs/architecture/architecture.yaml`, `true-bdd/`, `templates/`, or `CLAUDE.md`.
+- Do **not** weaken, skip, delete, or rewrite any assertion; do not add build tags, `t.Skip`, or stub the test out.
+- Do **not** modify `go.mod` — the module path and Go version are already correct and the import resolves.
+- Do **not** add new files or new packages under `services/calc`; one function appended to the existing `calc.go` is sufficient and is the minimal change that turns the set green.
 
 ## Verification
 
-Run the suite command from `docs/architecture/architecture.yaml`:
+From the fixture root, run the architecture's configured command:
 
 ```
 go test -json -count=1 ./tests/suite/...
 ```
 
-Expect the package to compile and all three tests to pass, which clears the
-`::<build>` unit for `fixture/buildcodecompile/tests/suite`. `gofmt -l
-services/calc` and `go vet ./services/...` should be clean.
+Expect the build-failure event to disappear and all three tests in `fixture/buildcodecompile/tests/suite` to report `pass`.
 
 ## Edit roots
 

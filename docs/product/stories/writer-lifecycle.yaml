@@ -18,6 +18,7 @@ story:
       - the System Architect runs "build code --fix"
     - then:
       - the command exits with code 0
+      - the codex writer started with private fixture authentication, protected homes, an empty edit root and private shell scratch
       - the codex writer provisioned and removed its fixture authentication
       - every file matching "tmp/*/*codex-events.jsonl" matches ^\{"type":"item.completed","item":\{"type":"command_execution","command":"fixture writer sentinel","exit_code":0\}\}\n$
       - every file matching "tmp/*/*codex.log" matches fixture writer stderr sentinel
@@ -37,6 +38,7 @@ story:
       - the command exits with code 0
       - stdout matches level=WARN msg="Writer turn failed" outcome="non-zero exit"
       - the engine dispatched 1 apply AI turn to "codex"
+      - the codex writer started with private fixture authentication, protected homes, an empty edit root and private shell scratch
       - the codex writer provisioned and removed its fixture authentication
       - every file matching "tmp/*/*codex-events.jsonl" matches ^\{"type":"item.completed","item":\{"type":"command_execution","command":"fixture writer sentinel","exit_code":0\}\}\n$
       - every file matching "tmp/*/*codex.log" matches fixture writer stderr sentinel

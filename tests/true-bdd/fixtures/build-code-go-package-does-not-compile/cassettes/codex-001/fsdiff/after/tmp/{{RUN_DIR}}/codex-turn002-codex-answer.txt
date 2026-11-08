@@ -2,5 +2,5 @@
 applied: true
 impossible: []
 target: "services/calc"
-summary: "Added Multiply(a, b int) int returning a * b and replaced the stale comment; Add remains unchanged. TestAddSumsItsArguments and TestMultiplyMultipliesItsArguments passed. The full suite compiled and ran, but TestCanaryRecordsEachSuiteRun failed because the sandbox denies writing suite-runs.log. Formatting is clean."
+summary: "Added Multiply returning a * b and replaced the stale missing-function comment. The package compiles; TestAddSumsItsArguments and TestMultiplyMultipliesItsArguments passed. Ran the full suite; TestCanaryRecordsEachSuiteRun failed because the sandbox denied its log write."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodecompile.tests.suite-build--iter1-result.yaml ===

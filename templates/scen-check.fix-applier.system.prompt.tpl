@@ -56,6 +56,9 @@ copy of one term document: the product document's glossary or
 concepts.
 {{- end }}
 
+The user has already chosen Apply at the engine menu, authorizing this turn.
+Menu reminders inside the approved fix are satisfied; apply it without asking again.
+
 **Your Task:**
 1. Read the working copy the fix names.
 2. Read the fix prompt instructions.

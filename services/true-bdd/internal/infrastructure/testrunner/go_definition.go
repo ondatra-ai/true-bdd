@@ -3,16 +3,27 @@ package testrunner
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/services/true-bdd/internal/infrastructure/testrunner/dto"
 )
 
-// CompileDefinitions compiles the declared Go suite without running any test.
-func (r *GoTestRunner) CompileDefinitions(cfg Config) error {
-	_, err := r.definitionCommand(cfg, "compile-steps", "^$")
+// CompileDefinitions builds only the Steps packages, before any test exists.
+func (r *GoTestRunner) CompileDefinitions(suites []string) error {
+	for _, suite := range suites {
+		absolute, err := filepath.Abs(suite)
+		if err != nil {
+			return fmt.Errorf("locate Steps package: %w", err)
+		}
 
-	return err
+		stdout, stderr, err := r.exec(absolute, "compile-steps", []string{"go", "build", "-tags", "bdd", "./..."})
+		if err != nil {
+			return fmt.Errorf("compile Steps package: %w\n%s%s", err, stdout.String(), stderr.String())
+		}
+	}
+
+	return nil
 }
 
 // ListScenarios requires each package-qualified generated test in one listing.

@@ -18,13 +18,11 @@ package mcp_test
 
 import (
 	"testing"
-
-	"fixture/buildtests/tests/mcp/scenarios"
 )
 
 // INT-901: A Claude User opening a session at the MCP server is granted a ticket promptly
 func TestINT901(t *testing.T) {
-	s := scenarios.New(t, "INT-901")
+	s := New(t, "INT-901")
 	s.Given(`the MCP server is running`)
 	s.When(`the Claude User opens a session`)
 	s.Then(`the session is granted a ticket within 2 seconds`)

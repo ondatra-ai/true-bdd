@@ -1,0 +1,14 @@
+architecture:
+  services:
+  - name: greeter
+    path: services/greeter
+    language: go
+    public_interface:
+      kind: cli
+      document: docs/greeter-cli.yaml
+    models:
+      scen_check_checklist:
+        templates:
+          system: templates/scen-check.checklist.system.prompt.tpl
+          user: templates/scen-check.checklist.prompt.tpl
+        scheme: true-bdd/models/scen_check_checklist.schema.yaml

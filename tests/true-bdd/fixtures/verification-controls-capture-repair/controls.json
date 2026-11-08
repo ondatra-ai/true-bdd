@@ -1,0 +1,54 @@
+[
+  {
+    "id": "concept-bodies-capture-claude-008",
+    "block": "when",
+    "concept": "halving",
+    "definition": {
+      "function": "concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87",
+      "file": "tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go",
+      "pattern": "^the Owner halves (-?\\d+)$",
+      "captures": [
+        {
+          "name": "number",
+          "means": "The whole number the Owner halves, in full: an optional leading minus sign followed by every one of its digits, so \"6\", \"64\" and \"-7\" are captured as \"6\", \"64\" and \"-7\" and never truncated to a first digit."
+        }
+      ],
+      "serves": "Serves \"Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result\": the capture is the whole number passed as the value argument of the declared halve command, and it is the only thing the body needs, since the command name and the keeping of its integer stdout come from the binding and the declaration.",
+      "steps": [
+        {
+          "text": "the Owner halves 6",
+          "captures": [
+            "6"
+          ]
+        },
+        {
+          "text": "the Owner halves 64",
+          "captures": [
+            "64"
+          ]
+        },
+        {
+          "text": "the Owner halves -7",
+          "captures": [
+            "-7"
+          ]
+        }
+      ]
+    },
+    "pattern": {
+      "pattern": "^the Owner halves (-?\\d+)$",
+      "captures": [
+        {
+          "name": "number",
+          "means": "The whole number the Owner halves, in full: an optional leading minus sign followed by every one of its digits, so \"6\", \"64\" and \"-7\" are captured as \"6\", \"64\" and \"-7\" and never truncated to a first digit."
+        }
+      ],
+      "serves": "Serves \"Run the declared halve command as a process with the step's whole number and keep its integer stdout as the result\": the capture is the whole number passed as the value argument of the declared halve command, and it is the only thing the body needs, since the command name and the keeping of its integer stdout come from the binding and the declaration."
+    },
+    "source": "package steps\n\nimport (\n\t\"fixture/conceptbodiescapture/tests/calc/helpers\"\n)\n\n//truebdd:concept when \"halving\"\nfunc concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {\n\t// args[0] is the whole number the Owner halves, captured in full by\n\t// `(-?\\d+)`: an optional minus sign and every one of its digits, so \"6\"\n\t// arrives as \"6\", \"64\" as \"64\" and \"-7\" as \"-7\", never truncated to a\n\t// first digit.\n\tnumber := args[0]\n\n\t// Pass that number, unchanged, as the `value` argument of the calculator's\n\t// declared halve command, run as a process, and keep the integer it printed\n\t// on stdout as the result. The halving is the calculator's own work; this\n\t// step only carries its answer to the Then step.\n\tresult, err := helpers.Halve(number)\n\tif err != nil {\n\t\treturn err\n\t}\n\tstate.Result = result\n\treturn nil\n}\n\n",
+    "historical_verdict": "pass",
+    "expected_verdict": "pass",
+    "category": "",
+    "reason": "The repaired pattern supplies the complete number, including 64."
+  }
+]

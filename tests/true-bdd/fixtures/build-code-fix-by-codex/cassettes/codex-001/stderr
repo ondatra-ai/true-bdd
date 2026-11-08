@@ -1,4 +1,4 @@
-OpenAI Codex v0.162.1
+OpenAI Codex v0.166.0
 --------
 workdir: {{CWD}}
 model: gpt-6.1-sol
@@ -7,7 +7,7 @@ approval: never
 sandbox: read-only
 reasoning effort: medium
 reasoning summaries: none
-session id: 01a17a22-9212-74b0-976d-5b2444717df9
+session id: 01a1b4d8-9de6-7d21-b06d-7e13365d712c
 --------
 user
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
@@ -17,14 +17,19 @@ You propose one production repair plan for a failing set. Read the Specification
 
 **ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END
 and QUESTIONS_START/QUESTIONS_END instructions above.** Your final message
-must be a single JSON object with all three keys present:
+must be a single JSON object with all four keys present:
 
-- `impossible`: an array of `{path, reason}` objects naming needed undeclared files only when no permitted solution exists, otherwise `[]`.
-- `fix_prompt`: the fix instructions, or `""` when you need clarification.
+- `impossible`: an array of `{path, reason}` objects naming required undeclared
+  files only when no permitted solution exists, otherwise `[]`. When set,
+  `fix_prompt` is `""`, `questions` is `[]` and `cannot_fix` is null.
+- `fix_prompt`: the fix instructions, or `""` otherwise.
 - `questions`: an array of `{id, question, context, options}` objects, or
-  `[]` when you are returning a fix prompt.
+  `[]` otherwise.
+- `cannot_fix`: null unless this F cannot fix what its Q found; otherwise
+  `{reason, correction}`, stating why and what a person must correct. When set,
+  `fix_prompt` is `""`, `questions` is `[]` and `impossible` is `[]`.
 
-Exactly one of the three carries content. For impossible work, fix_prompt is empty and questions is []. Do not emit any markers, and do not
+Exactly one of the four carries content. Do not emit any markers, and do not
 wrap the object in markdown fences. Reasoning before the object is ignored.
 
 
@@ -79,7 +84,7 @@ Tests: /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArgument
 
 
 ## Failed Prompt
-build-code/test-passes: D: tests-pass
+build-code/test-passes: Q code: tests-pass
 **Actual:** fail
 Propose one production repair plan for the whole failing set.
 Read the Specification, harness and service source. Explain what
@@ -102,37 +107,65 @@ If clarification is required, output one QUESTIONS_START/QUESTIONS_END block wit
 
 **ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END
 and QUESTIONS_START/QUESTIONS_END instructions above.** Your final message
-must be a single JSON object with all three keys present:
+must be a single JSON object with all four keys present:
 
-- `impossible`: an array of `{path, reason}` objects naming required undeclared files only when no permitted solution exists, otherwise `[]`.
-- `fix_prompt`: the fix instructions, or `""` when you need clarification.
+- `impossible`: an array of `{path, reason}` objects naming required undeclared
+  files only when no permitted solution exists, otherwise `[]`. When set,
+  `fix_prompt` is `""`, `questions` is `[]` and `cannot_fix` is null.
+- `fix_prompt`: the fix instructions, or `""` otherwise.
 - `questions`: an array of `{id, question, context, options}` objects, or
-  `[]` when you are returning a fix prompt.
+  `[]` otherwise.
+- `cannot_fix`: null unless this F cannot fix what its Q found; otherwise
+  `{reason, correction}`, stating why and what a person must correct. When set,
+  `fix_prompt` is `""`, `questions` is `[]` and `impossible` is `[]`.
 
-Exactly one of the three carries content. For impossible work, fix_prompt is empty and questions is []. Do not emit any markers, and do not
+Exactly one of the four carries content. Do not emit any markers, and do not
 wrap the object in markdown fences. Reasoning before the object is ignored.
 
 
 codex
-I’ll read the specification, test harness, and calculator source to identify a repair within `services/calc`.
+I’ll read the specification, test harness, and calc source, then propose a repair within `services/calc`.
 
 exec
-/bin/zsh -lc "pwd; rg --files -g '"'!tmp/**'"' -g '"'!vendor/**'"' -g '"'!*go.sum'"' -g '"'!AGENTS.md'"' -g '.claude/rules/**' -g 'docs/**' -g 'services/**' -g 'tests/**' -g 'go.mod' -g 'go.work'" in {{CWD}}
+/bin/zsh -lc "pwd; rg --files -g 'AGENTS.md' -g '*.go' -g 'go.mod' -g '*.yaml' -g '.claude/rules/**' -g 'docs/agents/domain.md' -g 'GLOSSARY.md'" in {{CWD}}
  succeeded in 0ms:
 {{CWD}}
 services/calc/calc.go
-docs/architecture/architecture.yaml
-tests/suite/canary_test.go
-tests/suite/suite-runs.log
-tests/suite/add_test.go
+tmp/{{RUN_DIR}}/01--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-checklist-build-code-test-passes-result.yaml
+AGENTS.md
 go.mod
+true-bdd/scenarios_yaml-schema.yaml
+true-bdd/product-schema.yaml
+true-bdd/true-bdd.yaml
+true-bdd/architecture_yaml-schema.yaml
+docs/architecture/architecture.yaml
+tests/suite/add_test.go
+tests/suite/canary_test.go
+true-bdd/checklists/build-steps.yaml
+true-bdd/models/us_refine_checklist.schema.yaml
+true-bdd/models/scen_check_checklist.schema.yaml
+true-bdd/models/build_steps_checklist.schema.yaml
+true-bdd/models/us_apply_checklist.schema.yaml
+true-bdd/checklists/us-refine.yaml
+true-bdd/checklists/scen-check.yaml
+true-bdd/checklists/build-code.yaml
+true-bdd/checklists/us-apply.yaml
 
 exec
-/bin/zsh -lc 'for p in docs/agents/domain.md docs/architecture/architecture.yaml services/calc/calc.go tests/suite/add_test.go tests/suite/canary_test.go go.mod; do if test -f "$p"; then printf '"'\\n%s\\n' \""'$p"; cat "$p"; fi; done
-rg --files --hidden .claude tests services docs' in {{CWD}}
+/bin/zsh -lc 'cat AGENTS.md docs/architecture/architecture.yaml services/calc/calc.go tests/suite/add_test.go go.mod; rg --files --hidden .claude docs/agents 2>/dev/null' in {{CWD}}
  exited 2 in 0ms:
+# Fixture workspace: build-code-fix-by-codex
 
-docs/architecture/architecture.yaml
+Synthetic host project driven by TrueBDD's `build code --fix`. This file
+and the task you are given are the only instructions that apply here;
+ignore any AGENTS.md of a directory above this one.
+
+- Production source lives under `services/calc/`. That is the only tree
+  the fix loop may edit.
+- Executable tests live under `tests/suite/`. **Never** modify a test to
+  make it pass — the failing assertion is the specification, and the
+  production code is what is wrong.
+- Never modify `docs/architecture/architecture.yaml` or `true-bdd/`.
 # One Go service with one e2e suite. All three commands are identical
 # and carry -json, so the suite-command pre-pass passes and the walk
 # actually runs — unlike the build-code-* refusal fixtures, this one is
@@ -153,8 +186,6 @@ architecture:
     - name: calc
       path: services/calc
       language: go
-
-services/calc/calc.go
 // Package calc is the fixture host project's production source. The
 // build-code fix loop is allowed to edit exactly this tree.
 package calc
@@ -168,8 +199,6 @@ package calc
 func Add(a, b int) int {
 	return a - b
 }
-
-tests/suite/add_test.go
 package suite_test
 
 import (
@@ -191,46 +220,6 @@ func TestAddSumsItsArguments(t *testing.T) {
 		t.Fatalf("Add(2, 3) = %d, want 5", got)
 	}
 }
-
-tests/suite/canary_test.go
-package suite_test
-
-import (
-	"os"
-	"testing"
-)
-
-// TestCanaryRecordsEachSuiteRun always passes, so discovery never walks
-// it and the fix loop never targets it. It appends one line every time
-// the WHOLE suite runs.
-//
-// That is the assertion this fixture exists for. After a fix is applied,
-// `build code` must re-run only the test it fixed, narrowed by name. A
-// rerun that dropped the filter would execute this test a second time
-// and leave two lines behind — a difference the golden tree catches
-// byte-for-byte, in replay, with no model involved.
-//
-// Exit code alone cannot see it: an unfiltered rerun would also find the
-// target passing and report success. Without this file the fixture would
-// prove the fix loop converges, not that it narrowed.
-//
-// The file lands next to this package because `go test` runs a test
-// binary with its own package directory as the working directory.
-func TestCanaryRecordsEachSuiteRun(t *testing.T) {
-	file, err := os.OpenFile("suite-runs.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
-	if err != nil {
-		t.Fatalf("open canary log: %v", err)
-	}
-
-	defer func() { _ = file.Close() }()
-
-	_, err = file.WriteString("suite ran\n")
-	if err != nil {
-		t.Fatalf("write canary log: %v", err)
-	}
-}
-
-go.mod
 // Sentinel module for this fixture's own Go sources.
 //
 // Run dirs live under tmp/test_run INSIDE the repo module, so without
@@ -240,14 +229,8 @@ go.mod
 module fixture/buildcodefix
 
 go 1.25.0
-rg: .claude: No such file or directory (os error 2)
-docs/architecture/architecture.yaml
-services/calc/calc.go
-tests/suite/canary_test.go
-tests/suite/suite-runs.log
-tests/suite/add_test.go
 
 codex
-{"fix_prompt":"Repair `services/calc/calc.go`: `Add(a, b int)` promises the sum of its arguments but currently returns `a - b`. Change the return expression to `a + b`, preserving the function signature. Remove the stale production comment describing the deliberate defect while retaining the sum contract.\n\nThis repairs the entire failing set: `TestAddSumsItsArguments` calls `Add(2, 3)` and requires 5.\n\nValidate with `go test -json -count=1 ./tests/suite/... -run '^TestAddSumsItsArguments$'`. Keep the exact test filter because the unrelated canary writes to `tests/suite/suite-runs.log` when executed.\n\nRestrict edits to `services/calc`; do not modify tests, assertions, documents, configuration, or logs.","impossible":[],"questions":[]}
+{"cannot_fix":null,"fix_prompt":"In services/calc/calc.go, change calc.Add to return a + b instead of a - b, preserving its public signature. Its contract is integer addition; TestAddSumsItsArguments calls Add(2, 3) and requires 5, whereas subtraction currently returns -1. Update the adjacent comment that describes the deliberately broken operator so it reflects the repaired implementation.\n\nThis production change serves the failing TestAddSumsItsArguments. Verify with go test -json -count=1 ./tests/suite/... -run '^TestAddSumsItsArguments$', using the suite path declared by the architecture harness. Make no changes to tests, assertions, documents, or true-bdd/.","impossible":[],"questions":[]}
 tokens used
-19,098
+20,738

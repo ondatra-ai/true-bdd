@@ -1,0 +1,49 @@
+story:
+  id: checklist-models
+  feature: host-setup
+  title: Declare and validate checklist Models
+  as_a: System Architect
+  i_want: declared checklist Models checked before rendering
+  so_that: rebuilds preserve the template contracts
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 001-declarations-pass
+    description: Model declarations must name existing templates and a valid scheme
+      and occur in a Scenario step.
+    steps:
+    - given:
+      - the "model-declarations-valid" project tree
+      when:
+      - the Quality Engineer runs "scen check"
+      then:
+      - the command exits with code 0
+      - stdout matches SCEN CHECK COMPLETE
+      - the engine dispatched no AI turns
+      - no file outside "tmp" changed
+  - id: 002-unreferenced-refused
+    description: Scen check must refuse a declared Model no Scenario step of its service
+      names before any AI turn.
+    steps:
+    - given:
+      - the "model-declarations-unreferenced" project tree
+      when:
+      - the Quality Engineer runs "scen check"
+      then:
+      - the command exits with code 1
+      - stdout matches invalid Model declaration.*Model scen_check_checklist.*no Scenario
+        step names this Model
+      - the engine dispatched no AI turns
+      - no file outside "tmp" changed
+  - id: "003-scheme-missing-refused"
+    description: "Scen check must refuse a declared Model whose scheme file is absent before any AI turn."
+    steps:
+    - given:
+      - the "model-declarations-missing-scheme" project tree
+      - "the project tree has no \"true-bdd/models/scen_check_checklist.schema.yaml\""
+      when:
+      - the Quality Engineer runs "scen check"
+      then:
+      - the command exits with code 1
+      - "stdout matches invalid Model declaration.*Model scen_check_checklist.*scen_check_checklist\\.schema\\.yaml"
+      - the engine dispatched no AI turns
+      - no file outside "tmp" changed

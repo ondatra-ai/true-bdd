@@ -16,7 +16,7 @@ scenarios:
       when: [an action happens]
       then: [an outcome appears]
   gamma:
-    description: No When, so Q turns must be skipped
+    description: gamma must describe its outcome
     service: demo
     path: tests/demo/demo_test.go
     merged_steps:

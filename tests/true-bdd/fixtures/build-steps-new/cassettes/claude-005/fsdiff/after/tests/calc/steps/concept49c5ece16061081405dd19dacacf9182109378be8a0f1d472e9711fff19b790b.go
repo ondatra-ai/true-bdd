@@ -1,6 +1,7 @@
 package steps
 
 import (
+	"bytes"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -10,18 +11,20 @@ import (
 //truebdd:concept when "doubling"
 func concept49c5ece16061081405dd19dacacf9182109378be8a0f1d472e9711fff19b790b(state *State, args []string) error {
 	if state.Program == "" {
-		return fmt.Errorf("the calculator is not installed")
+		return fmt.Errorf("double %s: the calculator is not installed", args[0])
 	}
 	command := exec.Command(state.Program, "double", args[0])
 	command.Dir = "../.."
-	output, err := command.Output()
-	if err != nil {
-		return fmt.Errorf("run the calculator double %s: %w", args[0], err)
+	var stdout, stderr bytes.Buffer
+	command.Stdout = &stdout
+	command.Stderr = &stderr
+	if err := command.Run(); err != nil {
+		return fmt.Errorf("run calc double %s: %w: %s", args[0], err, strings.TrimSpace(stderr.String()))
 	}
-	value, err := strconv.Atoi(strings.TrimSpace(string(output)))
+	doubled, err := strconv.Atoi(strings.TrimSpace(stdout.String()))
 	if err != nil {
-		return fmt.Errorf("read the doubled integer from %q: %w", string(output), err)
+		return fmt.Errorf("calc double %s printed %q: %w", args[0], stdout.String(), err)
 	}
-	state.Value = value
+	state.Value = doubled
 	return nil
 }

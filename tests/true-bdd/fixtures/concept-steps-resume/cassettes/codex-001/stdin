@@ -2,7 +2,7 @@
 
 You apply the approved bodies of one concept's step definitions in one suite.
 Preserve the engine's registrations, patterns, signatures and //truebdd:concept
-records. Modify only those bodies and the suite's shared state. Use the declared
+records. Modify those bodies, the suite's shared state and helpers/. Use the declared
 Public interface and the concept's binding; never implement the product's
 operation inside a step definition.
 
@@ -40,10 +40,14 @@ or not built yet. The engine owns compilation and the whole-suite checks. If you
 compile the steps package while writing, preserve the inherited Go cache and
 temporary-directory environment; never create a separate build cache.
 
-Keep every new constant and local helper value inside the selected function body.
-Do not add package-level constants, variables, helper functions or types; only
-shared State fields and the selected file's imports may change outside that body.
+Put code the steps share in tests/<suite>/helpers/, beside the steps/ directory
+named by Suite. Write the helper functions, constants and types the bodies need
+there; helpers are generated with the bodies and need no separate declaration.
+Only selected bodies, their imports and shared State may change inside steps/.
+Helpers must obey the same binding and meaning as their callers, and never
+compute the product's answer. The critique judges their complete source too.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -54,7 +58,12 @@ Service: calc
 Concept: halving (when)
 Meaning: The Owner halves a whole number, positive, zero or negative, with the calculator.
 
-## Complete concept context
+Read the listed Scenario keys from the Registry path and inspect their fixture
+input directories under fixture_root as needed (exclude cassettes/). Read the definitions, State,
+helpers and architecture-declared test libraries. These paths carry the complete
+evidence; no digest or summary replaces it. Never read service implementation.
+
+## Concept context and evidence paths
 concept:
     concept: halving
     block: when
@@ -109,51 +118,29 @@ definitions:
         - text: the Owner halves -7
           captures:
             - "-7"
+registry: ./docs/scenarios.yaml
 scenarios:
-    - id: calc-001-halve
-      description: Halving an even number
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        When:
-          - the Owner halves 6
-        Then:
-          - the result is 3
-    - id: calc-002-halve
-      description: Halving a negative odd number rounds toward zero
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        When:
-          - the Owner halves -7
-        Then:
-          - the result is -3
+    - calc-001-halve
+    - calc-002-halve
 
 
-=== FILE_START: tmp/{{RUN_DIR}}/01-when-halving-fix-prompts.md ===
 # Fix Prompt for Item when-halving: when concept "halving"
 
 ## Target
 tests/calc/steps
 
-## Required Changes
+## Scope
+- Create one new shared helper file: `tests/calc/helpers/calc.go`.
+- Replace only the **body and imports** of `concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87` in `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go`.
+- Do **not** touch `tests/calc/steps/state.go` (`State{ Result int }` already carries what this concept needs and what the existing `then "result"` definition reads), `tests/calc/steps/register.go`, `tests/calc/steps/definitions.go`, `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, the Specification or any service code.
+- Keep the `//truebdd:concept when "halving"` comment, the function name and the `(state *State, args []string) error` signature exactly as they are.
 
-### 1. Shared state: no change
+## Change 1 — new file `tests/calc/helpers/calc.go`
 
-`tests/calc/steps/state.go` already carries everything this concept needs
-(`State.Result int`, which the existing `then "result"` definition observes).
-Do not touch `state.go`, `register.go`, `definitions.go`, the generated
-`tests/calc/calc_test.go`, the Specification or `services/calc`.
-
-### 2. Replace the body of the one listed definition
-
-Overwrite `tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go`
-with exactly this content. The package clause, the `//truebdd:concept when "halving"`
-record and the function name/signature are unchanged; only the import block and the
-function body change.
+Create this file verbatim. It is the shared runner for the declared `calc` CLI: it only starts the documented command as a process and reads its stdout; it never computes a halved value itself.
 
 ```go
-package steps
+package helpers
 
 import (
 	"fmt"
@@ -164,83 +151,111 @@ import (
 	"strings"
 )
 
+// ServicePackage is the Go package of the calculator CLI, named relative to
+// the host root exactly as docs/architecture/calc-cli.yaml names it.
+const ServicePackage = "./services/calc"
+
+// HostRoot walks up from the test's working directory to the directory that
+// holds the calculator service package, so the declared command runs "from
+// the host root" whatever directory the suite is invoked from.
+func HostRoot() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	rel := filepath.FromSlash(strings.TrimPrefix(ServicePackage, "./"))
+	for {
+		if _, err := os.Stat(filepath.Join(dir, rel)); err == nil {
+			return dir, nil
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", fmt.Errorf("host root holding %s not found above the working directory", ServicePackage)
+		}
+		dir = parent
+	}
+}
+
+// RunCalc runs the named calculator command as a process from the host root
+// and returns its stdout with surrounding whitespace removed. A non-zero exit
+// is reported with the command's stderr, which is how the CLI announces
+// invalid arguments.
+func RunCalc(command string, args ...string) (string, error) {
+	root, err := HostRoot()
+	if err != nil {
+		return "", err
+	}
+	argv := append([]string{"run", ServicePackage, command}, args...)
+	cmd := exec.Command("go", argv...)
+	cmd.Dir = root
+	var stdout, stderr strings.Builder
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		detail := strings.TrimSpace(stderr.String())
+		if detail == "" {
+			return "", fmt.Errorf("go %s: %w", strings.Join(argv, " "), err)
+		}
+		return "", fmt.Errorf("go %s: %w: %s", strings.Join(argv, " "), err, detail)
+	}
+	return strings.TrimSpace(stdout.String()), nil
+}
+
+// RunCalcInt runs the named calculator command and reads its stdout as the
+// integer the CLI documents it prints.
+func RunCalcInt(command string, args ...string) (int, error) {
+	out, err := RunCalc(command, args...)
+	if err != nil {
+		return 0, err
+	}
+	value, err := strconv.Atoi(out)
+	if err != nil {
+		return 0, fmt.Errorf("stdout of calculator %s is not an integer: %q", command, out)
+	}
+	return value, nil
+}
+```
+
+## Change 2 — body of the `when "halving"` definition
+
+Replace the whole contents of
+`tests/calc/steps/concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87.go`
+with this file verbatim:
+
+```go
+package steps
+
+import (
+	"fmt"
+	"strconv"
+
+	"fixture/conceptsteps/tests/calc/helpers"
+)
+
 //truebdd:concept when "halving"
 func concept13b4354efb42d97fb2de7c428a7011995700d0f26a06ebb3f9c6eb1c150d5f87(state *State, args []string) error {
-	value := args[0]
-	if _, err := strconv.Atoi(value); err != nil {
-		return fmt.Errorf("the Owner halves %q: not a whole number: %w", value, err)
-	}
-
-	root, err := os.Getwd()
+	number, err := strconv.Atoi(args[0])
 	if err != nil {
-		return fmt.Errorf("the Owner halves %s: working directory: %w", value, err)
+		return fmt.Errorf("the Owner halves a whole number, got %q: %w", args[0], err)
 	}
-	for {
-		if _, statErr := os.Stat(filepath.Join(root, "go.mod")); statErr == nil {
-			break
-		}
-		parent := filepath.Dir(root)
-		if parent == root {
-			return fmt.Errorf("the Owner halves %s: host root with go.mod not found above the working directory", value)
-		}
-		root = parent
-	}
-
-	command := exec.Command("go", "run", "./services/calc", "halve", value)
-	command.Dir = root
-	var stdout, stderr strings.Builder
-	command.Stdout = &stdout
-	command.Stderr = &stderr
-	if runErr := command.Run(); runErr != nil {
-		return fmt.Errorf("the Owner halves %s: %s: %w: %s",
-			value,
-			strings.Join(command.Args, " "),
-			runErr,
-			strings.TrimSpace(stderr.String()),
-		)
-	}
-
-	printed := strings.TrimSpace(stdout.String())
-	halved, err := strconv.Atoi(printed)
+	result, err := helpers.RunCalcInt("halve", strconv.Itoa(number))
 	if err != nil {
-		return fmt.Errorf("the Owner halves %s: stdout %q is not an integer: %w", value, printed, err)
+		return err
 	}
-
-	state.Result = halved
+	state.Result = result
 	return nil
 }
 ```
 
-## Why this body
-
-- **Binding**: "Run the declared halve command as a process with the step's whole
-  number and keep its integer stdout as the result." The body runs
-  `go run ./services/calc halve VALUE` from the host root — the invocation the
-  public interface document (`docs/architecture/calc-cli.yaml`, command `halve`)
-  declares — passing the step's capture `args[0]` verbatim as the single
-  positional `value` argument.
-- **When block**: it only calls the operation and records what the process
-  printed. It never halves the number itself; the halving and the
-  rounding-toward-zero rule stay entirely inside the service, and nothing in the
-  body computes or predicts an expected value.
-- **Host root**: the suite's tests run from `tests/calc`, so the body walks up
-  from the working directory to the nearest directory containing `go.mod` (the
-  module/host root) rather than hard-coding `../..`, and sets it as the process
-  `Dir`.
-- **Stdout as the result**: stdout is trimmed of the declared trailing newline
-  and parsed with `strconv.Atoi`; a non-zero exit (interface response `'1'`,
-  invalid arguments) or non-integer stdout fails the step with the command line
-  and captured stderr, so a broken target reports instead of silently leaving a
-  stale `state.Result`.
-- **Observation stays in Then**: `state.Result` is the only thing written, which
-  is what the existing `^the result is (-?\d+)$` definition compares against for
-  both `calc-001-halve` and `calc-002-halve`.
-- No package-level constants, variables, helpers or types are added; every value
-  is local to the function body.
-=== FILE_END ===
+## Notes for the applier
+- The single capture `args[0]` is the step's whole number (`"6"`, `"-7"`); reading it with `strconv.Atoi` only checks it is a whole number and hands the canonical form to the command's `value` argument.
+- `state.Result` is the one piece of shared state this When writes; the already-written `then "result"` definition in `tests/calc/steps/definitions.go` is the only reader, so no `State` change is required.
+- The import path `fixture/conceptsteps/tests/calc/helpers` matches the module path used by `tests/calc/scenarios/scenarios.go` (`fixture/conceptsteps/tests/calc/steps`).
+- Neither the body nor the helper halves anything or rounds anything: the halved, rounded-toward-zero integer comes only from the command's stdout.
+- No `go.mod` change is needed; the helpers package lives inside the existing module.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
-context lists and shared state. Preserve the engine's patterns, registrations,
+context lists, shared state and code they share in tests/<suite>/helpers/. Preserve the engine's patterns, registrations,
 signatures and //truebdd:concept records. Reach the service through its declared
 Public interface. Preserve generated tests, the
 Specification and service code. Report the changes in the confirmation below.

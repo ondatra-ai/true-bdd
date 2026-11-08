@@ -2,7 +2,7 @@
 
 You apply the approved bodies of one concept's step definitions in one suite.
 Preserve the engine's registrations, patterns, signatures and //truebdd:concept
-records. Modify only those bodies and the suite's shared state. Use the declared
+records. Modify those bodies, the suite's shared state and helpers/. Use the declared
 Public interface and the concept's binding; never implement the product's
 operation inside a step definition.
 
@@ -40,10 +40,14 @@ or not built yet. The engine owns compilation and the whole-suite checks. If you
 compile the steps package while writing, preserve the inherited Go cache and
 temporary-directory environment; never create a separate build cache.
 
-Keep every new constant and local helper value inside the selected function body.
-Do not add package-level constants, variables, helper functions or types; only
-shared State fields and the selected file's imports may change outside that body.
+Put code the steps share in tests/<suite>/helpers/, beside the steps/ directory
+named by Suite. Write the helper functions, constants and types the bodies need
+there; helpers are generated with the bodies and need no separate declaration.
+Only selected bodies, their imports and shared State may change inside steps/.
+Helpers must obey the same binding and meaning as their callers, and never
+compute the product's answer. The critique judges their complete source too.
 
+Fix only what the failed check found; a problem it did not find is neither yours to fix nor a reason for cannot_fix. Only if the Specification and your permitted paths leave no way to make this fix, change nothing and return the result block with cannot_fix: {reason: <why>, correction: <what a person must correct>}. A failure of your own tools, sandbox or test run is no reason for cannot_fix: make the fix and report that failure in summary.
 
 ### TASK
 
@@ -54,7 +58,12 @@ Service: calc
 Concept: operation (when)
 Meaning: The Owner halves or doubles a whole number, positive, zero or negative, with the calculator. Halving rounds an odd number's half toward zero, unless the Owner halves exactly, which keeps the half.
 
-## Complete concept context
+Read the listed Scenario keys from the Registry path and inspect their fixture
+input directories under fixture_root as needed (exclude cassettes/). Read the definitions, State,
+helpers and architecture-declared test libraries. These paths carry the complete
+evidence; no digest or summary replaces it. Never read service implementation.
+
+## Concept context and evidence paths
 concept:
     concept: operation
     block: when
@@ -124,13 +133,13 @@ definitions:
       file: tests/calc/steps/concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba.go
       pattern: ^the Owner (?:(exactly) )?(halves|doubles) (-?\d+)$
       captures:
-        - name: exactly
-          means: The literal word "exactly" when the step asks for an exact halving, empty when the step omits it; the body passes --exact to halve only when this is non-empty, which is what keeps an odd number's half instead of rounding it toward zero.
+        - name: exact
+          means: The word "exactly" when the step asks for an exact halving, and empty otherwise; serves the clause "passing --exact to halve when the step says exactly", so the body adds the --exact flag only when this capture is non-empty.
         - name: operation
-          means: The operation the step names, either "halves" or "doubles"; the body runs the declared halve command for "halves" and the declared double command for "doubles".
+          means: The operation word the step names, either "halves" or "doubles"; serves the clause "Run the declared halve or double command, as the step names the operation", so the body chooses the declared halve or double command from it.
         - name: number
-          means: The step's whole number, with an optional leading minus so positive, zero and negative numbers all bind; the body passes it as the command's VALUE argument.
-      serves: 'The whole of Does: "Run the declared halve or double command, as the step names the operation" is served by the operation capture, "as a process with the step''s whole number" by the number capture, and "passing --exact to halve when the step says exactly" by the exactly capture; "keep its stdout as the output" needs no capture. The words "the Owner", "halves"/"doubles" and "exactly" fix the pattern to this concept, while the plural-only verb forms carry no variant that needs a non-capturing group.'
+          means: The step's whole number, positive, zero or negative, as written; serves the clause "as a process with the step's whole number", so the body passes it as the VALUE argument.
+      serves: 'The single thing the binding says the definition does: run the declared halve or double command named by the step as a process with the step''s whole number, adding --exact when the step says exactly, and keep its stdout as the output. The alternation (halves|doubles) and the optional (exactly) are captured because each changes what the body must run; nothing else in the step text varies.'
       steps:
         - text: the Owner halves 6
           captures:
@@ -152,118 +161,173 @@ definitions:
             - exactly
             - halves
             - "7"
+registry: ./docs/scenarios.yaml
 scenarios:
-    - id: calc-001-halve
-      description: Halving an even number
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        When:
-          - the Owner halves 6
-        Then:
-          - the calculator's output matches ^3$
-    - id: calc-002-double
-      description: Doubling a number
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        When:
-          - the Owner doubles 6
-        Then:
-          - the calculator's output matches ^12$
-    - id: calc-003-halve-odd
-      description: Halving an odd number prints a whole number
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        When:
-          - the Owner halves 7
-        Then:
-          - the calculator's output does not match \.
-    - id: calc-004-exact
-      description: Halving an odd number exactly keeps its half
-      service: calc
-      path: tests/calc/calc_test.go
-      steps: |
-        When:
-          - the Owner exactly halves 7
-        Then:
-          - the calculator's output matches ^3\.5$
+    - calc-001-halve
+    - calc-002-double
+    - calc-003-halve-odd
+    - calc-004-exact
 
 
-## Fix Prompt for Item when-operation: when concept "operation"
+# Fix Prompt for Item when-operation: when concept "operation"
 
-### Target
-`tests/calc/steps/concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba.go`
+## Target
+`tests/calc/steps`
 
-### Shared state
-No change. `State.Output` in `tests/calc/steps/state.go` already carries the calculator's stdout, and the `then "output"` concept reads it. Do not touch `state.go`, `register.go`, the other definition file, the generated test or the Specification.
+## Summary
+The `when` concept "operation" still carries the generated "step not written yet" skeleton. Write its body so it does exactly what the binding says — *"Run the declared halve or double command, as the step names the operation, as a process with the step's whole number, passing `--exact` to halve when the step says exactly, and keep its stdout as the output"* — through the declared CLI in `docs/architecture/calc-cli.yaml` (`go run ./services/calc halve [--exact] VALUE` / `go run ./services/calc double VALUE`, run **from the host root**).
 
-### Required Changes
-Replace the whole contents of `tests/calc/steps/concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba.go` with the code below. The `//truebdd:concept` record, the function name and the signature are preserved exactly; only the body and the import block change.
+The process-running code goes into a new shared helper package `tests/calc/helpers/`; the step body only maps its three captures onto that helper and keeps stdout in `State.Output`.
+
+No change to `State` is required: it already has `Output string`, and the `then` concept "output" is specified to match against "the kept stdout without its trailing newline" — so this body stores stdout **verbatim**, trailing newline included, and trims nothing.
+
+Do not touch `tests/calc/steps/register.go`, `tests/calc/steps/state.go`, `tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, the Specification or any service code. Preserve the function name, signature and the `//truebdd:concept when "operation"` record exactly as generated.
+
+## Change 1 — create the shared helper (new file)
+
+Create `tests/calc/helpers/calc.go` with exactly this content:
+
+```go
+package helpers
+
+import (
+	"errors"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+)
+
+// ServicePackage is the Go package the declared calculator CLI names:
+// "go run ./services/calc <command> ... from the host root".
+const ServicePackage = "./services/calc"
+
+// ExactFlag is the flag the declared halve command takes, the only command
+// of the two that declares it, to keep an odd value's half.
+const ExactFlag = "--exact"
+
+// HalveCommand and DoubleCommand are the two commands the declared CLI has.
+const (
+	HalveCommand  = "halve"
+	DoubleCommand = "double"
+)
+
+// Command returns the declared CLI command for the operation word a step
+// names. It only translates the step's word into the declared command name;
+// the calculator alone works out what the command prints.
+func Command(operation string) (string, error) {
+	switch operation {
+	case "halves":
+		return HalveCommand, nil
+	case "doubles":
+		return DoubleCommand, nil
+	default:
+		return "", fmt.Errorf("the declared calculator CLI has no command for the operation %q", operation)
+	}
+}
+
+// HostRoot is the directory the declared CLI is run from: the root of the
+// host module, found by walking up from the test's working directory to the
+// go.mod that sits beside docs/ and services/.
+func HostRoot() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("locate the host root: %w", err)
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir, nil
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", errors.New("locate the host root: no go.mod at or above the test's working directory")
+		}
+		dir = parent
+	}
+}
+
+// Run runs the declared calculator command as a process from the host root
+// and returns its stdout verbatim, trailing newline included. It carries the
+// step's arguments in and the command's stdout back out; the calculator
+// computes the answer.
+func Run(command string, args ...string) (string, error) {
+	root, err := HostRoot()
+	if err != nil {
+		return "", err
+	}
+	argv := append([]string{"run", ServicePackage, command}, args...)
+	cmd := exec.Command("go", argv...)
+	cmd.Dir = root
+	var stdout, stderr strings.Builder
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("go %s (in %s): %w: %s",
+			strings.Join(argv, " "), root, err, strings.TrimSpace(stderr.String()))
+	}
+	return stdout.String(), nil
+}
+```
+
+Notes for the applier:
+- `cmd.Env` is deliberately left unset so the process inherits the run's Go build cache and temporary-directory environment.
+- `HostRoot` walks up rather than hard-coding `../..` so the helper works from any package under the host module; for this suite it resolves to the module root that holds `docs/` and `services/calc`.
+
+## Change 2 — write the step body
+
+Replace the whole contents of `tests/calc/steps/concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba.go` with exactly this:
 
 ```go
 package steps
 
 import (
-	"bytes"
 	"fmt"
-	"os/exec"
-	"strings"
+
+	"fixture/conceptbodiescases/tests/calc/helpers"
 )
 
 //truebdd:concept when "operation"
 func concept40523ceb26a25e37e78222ac562623f48c38b52711218d94fe5cadea337eebba(state *State, args []string) error {
-	exactly, operation, number := args[0], args[1], args[2]
+	exact, operation, number := args[0], args[1], args[2]
 
-	// The suite's tests run in tests/calc, so the host root the declared CLI
-	// documents its commands from is two directories up.
-	const hostRoot = "../.."
-	const servicePackage = "./services/calc"
-
-	var command string
-	switch operation {
-	case "halves":
-		command = "halve"
-	case "doubles":
-		command = "double"
-	default:
-		return fmt.Errorf("the step names no declared operation: %q", operation)
+	command, err := helpers.Command(operation)
+	if err != nil {
+		return err
 	}
 
-	argv := []string{"run", servicePackage, command}
-	if exactly != "" {
-		if command != "halve" {
-			return fmt.Errorf("the declared %s command takes no --exact flag", command)
+	var flags []string
+	if exact != "" {
+		if command != helpers.HalveCommand {
+			return fmt.Errorf("the declared %s command takes no %s flag", command, helpers.ExactFlag)
 		}
-		argv = append(argv, "--exact")
-	}
-	argv = append(argv, number)
-
-	cmd := exec.Command("go", argv...)
-	cmd.Dir = hostRoot
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("go %s in %s: %w: %s", strings.Join(argv, " "), hostRoot, err, strings.TrimSpace(stderr.String()))
+		flags = append(flags, helpers.ExactFlag)
 	}
 
-	// Keep the command's stdout as the output, without the trailing newline the
-	// declared interface says it prints after the value.
-	state.Output = strings.TrimRight(stdout.String(), "\r\n")
+	output, err := helpers.Run(command, append(flags, number)...)
+	if err != nil {
+		return err
+	}
+
+	state.Output = output
 	return nil
 }
 ```
 
-### Why this body serves the binding
-- It runs the declared command as a process — `go run ./services/calc halve [--exact] VALUE` or `go run ./services/calc double VALUE` from the host root — exactly as the `halve` and `double` entries of `docs/architecture/calc-cli.yaml` document them.
-- `operation` chooses the declared command (`halves` → `halve`, `doubles` → `double`); `number` is passed verbatim as the required `value` argument, so positive, zero and negative integers all pass through unchanged; a non-empty `exactly` adds the declared `exact` flag, and only to `halve`.
-- It never halves or doubles anything itself and never inspects the service's source: the whole result comes from the process's stdout, stored in `state.Output` for the `then "output"` concept to observe.
-- A non-zero exit (the interface's `'1': Invalid arguments`) fails the step with the command line and the process's stderr, rather than leaving a stale or empty output behind.
+How the three captures are used, in the order the pattern names them:
+- `args[0]` (`exact`): `"exactly"` or empty. Non-empty adds `--exact`, which only the declared `halve` command has; with `doubles` the body reports that the declared command has no such flag instead of inventing one.
+- `args[1]` (`operation`): `"halves"` or `"doubles"`, mapped to the declared command name `halve` or `double`.
+- `args[2]` (`number`): passed through unchanged as the required `VALUE` argument, so negative values and zero reach the command exactly as the step wrote them.
+
+The body never halves or doubles anything itself and never inspects or asserts the output — it runs the declared command and keeps its stdout in `State.Output` for the `then` concept "output" to observe.
+
+## Do not change
+- `tests/calc/steps/state.go` (`State.Output` already suffices; keep stdout untrimmed).
+- `tests/calc/steps/register.go`, the pattern string, the function name/signature, or the `//truebdd:concept` comment.
+- Any other step definition, the generated `tests/calc/calc_test.go`, `docs/**`, or `services/**`.
 
 Read existing state and helpers first. Write only the bodies of the definitions the
-context lists and shared state. Preserve the engine's patterns, registrations,
+context lists, shared state and code they share in tests/<suite>/helpers/. Preserve the engine's patterns, registrations,
 signatures and //truebdd:concept records. Reach the service through its declared
 Public interface. Preserve generated tests, the
 Specification and service code. Report the changes in the confirmation below.

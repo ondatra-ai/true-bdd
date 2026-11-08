@@ -18,13 +18,11 @@ package truebdd_test
 
 import (
 	"testing"
-
-	"github.com/ondatra-ai/true-bdd/tests/true-bdd/scenarios"
 )
 
 // concept-words-001-declare: A word repair must declare a glossary term and concept term through the refinement menu
 func TestConceptWords001Declare(t *testing.T) {
-	s := scenarios.New(t, "concept-words-001-declare")
+	s := New(t, "concept-words-001-declare")
 	s.Given(`the "concept-words-declare" project tree`)
 	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine host --fix"`)
@@ -40,7 +38,7 @@ func TestConceptWords001Declare(t *testing.T) {
 
 // concept-words-002-reword: A word repair must reword means in product words without a new term
 func TestConceptWords002Reword(t *testing.T) {
-	s := scenarios.New(t, "concept-words-002-reword")
+	s := New(t, "concept-words-002-reword")
 	s.Given(`the "concept-words-reword" project tree`)
 	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "us refine host --fix"`)
@@ -56,7 +54,7 @@ func TestConceptWords002Reword(t *testing.T) {
 
 // concept-words-003-plain: Declared terms and contextually plain English must pass for claimed and unclaimed Scenarios
 func TestConceptWords003Plain(t *testing.T) {
-	s := scenarios.New(t, "concept-words-003-plain")
+	s := New(t, "concept-words-003-plain")
 	s.Given(`the "concept-words-plain" project tree`)
 	s.When(`the Product Owner runs "scen check"`)
 	s.Then(`the command exits with code 0`)
@@ -72,7 +70,7 @@ func TestConceptWords003Plain(t *testing.T) {
 
 // concept-words-004-scenario-fail: An unclaimed Scenario must fail a fresh word judgement naming the undeclared word
 func TestConceptWords004ScenarioFail(t *testing.T) {
-	s := scenarios.New(t, "concept-words-004-scenario-fail")
+	s := New(t, "concept-words-004-scenario-fail")
 	s.Given(`the "concept-words-scenario-fail" project tree`)
 	s.When(`the Product Owner runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -84,7 +82,7 @@ func TestConceptWords004ScenarioFail(t *testing.T) {
 
 // concept-words-005-mapping: A newly declared concept term must fail term mappings until its menu fix adds a Word mapping
 func TestConceptWords005Mapping(t *testing.T) {
-	s := scenarios.New(t, "concept-words-005-mapping")
+	s := New(t, "concept-words-005-mapping")
 	s.Given(`the "concept-words-mapping" project tree`)
 	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "scen check --fix"`)
@@ -100,7 +98,7 @@ func TestConceptWords005Mapping(t *testing.T) {
 
 // concept-words-006-scenario-fix: A Scenario word repair must update the product through its menu before a separate Word mapping repair
 func TestConceptWords006ScenarioFix(t *testing.T) {
-	s := scenarios.New(t, "concept-words-006-scenario-fix")
+	s := New(t, "concept-words-006-scenario-fix")
 	s.Given(`the "concept-words-scenario-fix" project tree`)
 	s.And(`the Product Owner's answer to every question is "1"`)
 	s.When(`the Product Owner runs "scen check --fix"`)
