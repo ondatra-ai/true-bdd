@@ -11,6 +11,8 @@ import (
 // ConcurrentWalker walks Items concurrently in written order, pausing each at
 // its first fixable failure and repairing in Item order before restarting.
 type ConcurrentWalker[I, Q any] struct {
+	// Asks selects the queries applicable to this Item; nil asks every query.
+	Asks     func(I, Q) bool
 	Limit    int
 	MaxFixes int
 	CellFor  func(I, Q) *CellHandler[I, Q]
@@ -234,6 +236,11 @@ func (w *ConcurrentWalker[I, Q]) validate(
 ) {
 	for index := max(begin, result.next); index < len(queries); index++ {
 		query := queries[index]
+		if w.Asks != nil && !w.Asks(item, query) {
+			result.next = index + 1
+
+			continue
+		}
 
 		contextErr := ctx.Err()
 		if contextErr != nil {

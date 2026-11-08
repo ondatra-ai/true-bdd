@@ -16,6 +16,8 @@ type Walker[I, Q any] interface {
 // SequentialWalker walks written order, rechecking a fixed query before
 // restarting the checklist to detect regressions in earlier queries.
 type SequentialWalker[I, Q any] struct {
+	// Asks selects the queries applicable to this Item; nil asks every query.
+	Asks func(I, Q) bool
 	Cell *CellHandler[I, Q]
 	// MaxFixes bounds applies per Checklist item (0 → defaultMaxApplyAttempts).
 	// Every apply is rechecked, including the last allowed one.
@@ -45,6 +47,11 @@ func (w *SequentialWalker[I, Q]) Walk(
 
 	for walk.idx < len(queries) {
 		query := queries[walk.idx]
+		if w.Asks != nil && !w.Asks(walk.out.Item, query) {
+			walk.idx++
+
+			continue
+		}
 
 		handler := *w.Cell
 		handler.FixMode = w.Cell.FixMode && walk.fixesByQuery[walk.idx] < fixLimit(w.MaxFixes)

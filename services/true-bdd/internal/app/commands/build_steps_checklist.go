@@ -28,8 +28,12 @@ func buildStepsPrompts(
 
 	prompts := make([]checklistmodels.PromptWithContext, 0)
 
+	index := 0
+
 	for _, section := range doc.Sections {
 		for _, prompt := range section.ValidationPrompts {
+			index++
+
 			err = prompt.ShapeError()
 			if err != nil {
 				return nil, err
@@ -44,7 +48,7 @@ func buildStepsPrompts(
 			}
 
 			prompts = append(prompts, checklistmodels.PromptWithContext{
-				SectionID: buildStepsChecklistName, CriterionID: section.ID, Index: len(prompts) + 1,
+				SectionID: buildStepsChecklistName, CriterionID: section.ID, Index: index,
 				Prompt: prompt, DefaultDocs: doc.DefaultDocs, DefaultModels: doc.Engine,
 			})
 		}
@@ -102,6 +106,6 @@ func walkableStepPrompt(section string, prompt checklistmodels.Prompt) bool {
 		return false
 	}
 
-	return prompt.Check == stepCoverageID || prompt.Check == patternBindingsID ||
-  (!prompt.IsCheck() && section == stepVerificationID)
+	return prompt.Check == scenarioRunID || prompt.Check == stepCoverageID || prompt.Check == patternBindingsID ||
+		(!prompt.IsCheck() && section == stepVerificationID)
 }

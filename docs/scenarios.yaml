@@ -6523,6 +6523,67 @@ scenarios:
       - "the file \"tests/calc/main_test.go\" matches testkit.NewSuite"
       - "the file \"tests/calc/steps/state.go\" matches \\*testkit.ScenarioRun"
       - "the shell command \"go test -tags bdd -json -count=1 ./tests/calc/... -mode=services:replay,tests:replay\" run in \".\" exits with code 0"
+  build-steps-writing-010-scenario-run-fix:
+    description: A suite Item adds the Scenario run without rewriting complete definitions or dispatching AI
+    service: true-bdd
+    path: tests/true-bdd/build_steps_scenario_run_test.go
+    user_stories:
+    - story: docs/product/stories/build-steps-writing.yaml
+      scenario_id: build-steps-writing-010-scenario-run-fix
+      merge_date: '2026-11-08'
+    merged_steps:
+      given:
+      - "the \"build-steps-scenario-run-fix\" project tree"
+      - "the System Architect's answer to every question is \"1\""
+      when:
+      - "the System Architect runs \"build steps --fix\""
+      then:
+      - "the command exits with code 0"
+      - "the engine dispatched no AI turns"
+      - "stdout matches BUILD STEPS COMPLETE"
+      - "the file \"tests/calc/steps/state.go\" matches \\*testkit.ScenarioRun"
+      - "the file \"tests/calc/steps/state.go\" matches Program string"
+      - "the file \"tests/calc/steps/state.go\" matches Value\\s+int"
+      - "the file \"tests/calc/steps/state.go\" matches func \\(state \\*State\\) Reset\\(\\)"
+      - "the file \"tests/calc/steps/register.go\" is unchanged"
+      - "no file outside \"tmp\" and \"tests/calc/steps\" changed"
+  build-steps-writing-011-scenario-run-bare:
+    description: A bare run reports a missing Scenario run by suite without changing definitions
+    service: true-bdd
+    path: tests/true-bdd/build_steps_scenario_run_test.go
+    user_stories:
+    - story: docs/product/stories/build-steps-writing.yaml
+      scenario_id: build-steps-writing-011-scenario-run-bare
+      merge_date: '2026-11-08'
+    merged_steps:
+      given:
+      - "the \"build-steps-scenario-run-bare\" project tree"
+      when:
+      - "the System Architect runs \"build steps\""
+      then:
+      - "the command exits with code 1"
+      - "the engine dispatched no AI turns"
+      - "stderr matches tests/calc"
+      - "stdout does not match BUILD STEPS COMPLETE"
+      - "no file outside \"tmp\" changed"
+  build-steps-writing-012-scenario-run-present:
+    description: A suite Item with its Scenario run passes without changing files
+    service: true-bdd
+    path: tests/true-bdd/build_steps_scenario_run_test.go
+    user_stories:
+    - story: docs/product/stories/build-steps-writing.yaml
+      scenario_id: build-steps-writing-012-scenario-run-present
+      merge_date: '2026-11-08'
+    merged_steps:
+      given:
+      - "the \"build-steps-scenario-run-present\" project tree"
+      when:
+      - "the System Architect runs \"build steps\""
+      then:
+      - "the command exits with code 0"
+      - "the engine dispatched no AI turns"
+      - "stdout matches BUILD STEPS COMPLETE"
+      - "no file outside \"tmp\" changed"
   build-steps-critique-001-operation:
     description: A when omitting its bound operation fails step-verification and returns to the Fix loop
     service: true-bdd

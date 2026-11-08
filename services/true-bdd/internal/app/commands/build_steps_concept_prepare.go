@@ -23,22 +23,17 @@ func (e *buildStepsExecution) prepareConcepts(ctx context.Context) ([]*BuildStep
 		return nil, err
 	}
 
-	err = e.prepareRuntimeAPI(ctx, arch)
-	if err != nil {
-		return nil, err
-	}
-
 	discovery, err := discoverConceptItems(ctx, e.deps, e.registryFile, e.architectureFile)
 	if err != nil {
 		return nil, err
 	}
 
-	err = conceptInterfaces(discovery.items, arch)
-	if err != nil {
-		return nil, err
+	suites := discovery.suites
+	if len(discovery.items) == 0 && len(suites) > 0 {
+		return suites, nil
 	}
 
-	err = e.configure(ctx, arch, discovery.scenarios)
+	err = e.prepareConceptEvidence(ctx, arch, discovery)
 	if err != nil {
 		return nil, err
 	}
@@ -57,8 +52,7 @@ func (e *buildStepsExecution) prepareConcepts(ctx context.Context) ([]*BuildStep
 		item.Findings = []string{"step not written yet: " + item.Label()}
 	}
 
-
-	return discovery.items, nil
+	return append(discovery.items, suites...), nil
 }
 
 func conceptInterfaces(items []*BuildStepsItem, arch *architecture.Architecture) error {
@@ -106,4 +100,20 @@ func nameConceptItems(items []*BuildStepsItem) {
 			item.subjectID = item.Suite + "-" + item.subjectID
 		}
 	}
+}
+
+func (e *buildStepsExecution) prepareConceptEvidence(ctx context.Context, arch *architecture.Architecture,
+	discovery *conceptDiscovery,
+) error {
+	err := e.prepareRuntimeAPI(ctx, arch)
+	if err != nil {
+		return err
+	}
+
+	err = conceptInterfaces(discovery.items, arch)
+	if err != nil {
+		return err
+	}
+
+	return e.configure(ctx, arch, discovery.scenarios)
 }
