@@ -17,3 +17,13 @@ The Owner's target window is 250,000 tokens. The #285 ticket reserves 15,000 for
 This amends ADR-0035's body and critique transport and ADR-0037's embedded product transport; their semantics and once-per-walk judgements remain. ADR-0025's unbounded turn lifetime, ADR-0031's external observation and red without the target, and ADR-0038's Suite wiring ownership remain.
 
 Grilling log: `docs/qna/20261102-123606-prompt-size-budget.yaml`, Q1–Q7, Q4 revisited, the hard-check confirmation, and the two post-report decisions rejecting compaction/digests and putting the product document in a file.
+
+## Amendment, 9 November 2026: TrueBDD's own limit is 250,000 bytes, for now
+
+Round 11 of #249 passed grouping and all 19 binding judgements, then refused the body apply turn of `given:project tree` at 158,251 bytes. That concept is every Scenario's Given: the body proposal's user prompt carried every bound step with its captures (56,385 bytes), the whole Public interface document (25,810), the Scenario keys (17,668) and the fixture directories (17,750); the apply adds the 23,165-byte proposal. That turn, built as the decisions above require, exceeds 150,000 bytes, and no construction keeping its required evidence was found that fits.
+
+- **TrueBDD's own `engine.max_prompt_bytes`** (`true-bdd/true-bdd.yaml`) **is 250,000 bytes**, under the 370,000 the derivation allows, so #249's rounds can go on. This is temporary: #311 lowers it back to 150,000 once these turns fit.
+- **The engine's default stays 150,000**, and so does the configuration `init` writes; another host keeps the stricter limit unless it sets its own. The repository gate that holds TrueBDD's configuration equal to `init`'s (`scripts/gates/init_defaults_test.go`) exempts this one value until #311.
+- Everything else above stands: every dispatch is measured and logged, a prompt above the limit is refused before its provider starts, and no compaction or omission of required evidence meets the limit.
+
+Grilling log: `docs/qna/20261109-121449-249-rounds-9-to-11.yaml`, Q2.
