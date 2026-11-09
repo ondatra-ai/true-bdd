@@ -227,7 +227,7 @@ extensions:
       access: read-write
     checklists:
       path: true-bdd/checklists/<command>.yaml
-      format: "YAML checklist per command, its sections of validation_prompts entries with Q: {prompt: text} or Q: {code: check}, rationale, docs, with and optional F. Legacy D, scalar Q, both or neither option refuse at startup naming both replacement forms. init writes missing checklists."
+      format: "YAML checklist per command, its sections of validation_prompts entries with Q: {prompt: text} or Q: {code: check}, rationale, docs, with and optional F. Legacy D, scalar Q, both or neither option refuse at startup naming both replacement forms. init writes missing checklists. An entry marked skip: true is parked: no command walks it. A skip absent, null or false walks the entry, and any other value refuses at startup."
       access: read-write
     prompt-templates:
       path: templates/*.tpl
@@ -313,7 +313,7 @@ extensions:
       format: WARN with label, role and denied (architecture.terms[log record]).
     check-answered:
       message: Check answered
-      format: INFO per checklist cell with check, subjectID, promptIndex, answer and context.
+      format: INFO per checklist cell answered by code (Q.code), with check, subjectID, promptIndex, answer and context.
     cell-validation-started:
       message: Cell validation started
       format: INFO before a model Cell is evaluated, with subjectID and promptIndex. Different Scenarios may overlap; Checklist items within a Scenario stay ordered.
