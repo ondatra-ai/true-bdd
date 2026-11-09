@@ -1521,17 +1521,30 @@ architecture:
     - file: prompt-templates
     - file: staging-files
     does: >-
-      Select the named tests/true-bdd/fixtures/<name>/ as the starting project tree for later steps.
-      A missing-path Given leaves out that existing confined path. A symbolic-link Given creates the
-      stated relative link with its target preserved literally, even outside the tree; the link belongs
-      inside snapshot-excluded node_modules, .git, .next, test-results or playwright-report.
-      A narrowed-checklist Given requires exactly one snippet under the named stem in the selected
-      fixture's checklist-prompts.yaml, equal to the quoted text, and keeps only the checklist questions
-      whose Q.prompt contains it in the starting tree. Apply the selection through testkit's BeforeSnapshot hook
-      after fixture input is present; preserve other checklist content. Refuse a stem not invoked by the
-      command, an input override of that checklist, or a snippet selecting no question or several.
-      Atomic probes require nonblank fixture-root prep.sh; engine-io-atomic's script makes
-      tests/mcp/ticket_test.go mode 0600 and tmp/staging-target.txt contain sentinel plus newline.
+      Select the named tests/true-bdd/fixtures/<name>/ through testkit's PrepareTree; testkit
+      assembles each run fresh from the declared testing.testkit.repo_layer and the fixture's
+      input/. A missing-path Given leaves out that existing confined path; an absent path or one
+      leading out of the run fails. A symbolic-link Given refuses an absolute link path or one
+      climbing out of the tree; otherwise it adds to the fixture's preparation commands one that
+      creates the link's directory and the link, its target preserved literally, even outside the
+      tree. The snapshot refuses a link it walks into, so the link sits inside snapshot-excluded
+      node_modules, .git, .next, test-results or playwright-report. A narrowed-checklist Given reads
+      the selected fixture's root checklist-prompts.yaml, a YAML mapping from checklist stem to a
+      list of snippet strings: the file must exist and declare the named stem, whose list must hold
+      exactly the quoted text. The Given registers a testkit BeforeSnapshot hook. On the assembled
+      tree, before the run's initial snapshot, the hook reads the When's command and, for every stem
+      the file declares, refuses a stem other than that command's leading lowercase words joined by
+      hyphens (scen check E2E-001 gives scen-check), an empty list, a blank snippet, and a fixture
+      whose input/ also ships true-bdd/checklists/<stem>.yaml. It then rewrites the run's
+      true-bdd/checklists/<stem>.yaml, the copy the repo layer brought: with whitespace collapsed in
+      each snippet and each Q.prompt, it keeps only the validation_prompts entries not marked skip:
+      true whose Q.prompt contains a snippet, drops sections left empty and keeps everything else. A
+      snippet matching no entry or several, two snippets matching one entry, a checklist without a
+      sections list, or one using YAML aliases, merge keys or several documents fails. The
+      atomic-probes Given requires the selected fixture's list of preparation commands to be
+      non-empty and checks nothing else. In engine-io-atomic, the one fixture using it, the root
+      prep.sh supplies that list and plants the probes: it sets tests/mcp/ticket_test.go to mode
+      0600 and writes the literal text sentinel and a newline to tmp/staging-target.txt.
   - concept: machine environment
     block: given
     service: true-bdd
@@ -1783,16 +1796,28 @@ architecture:
     - log_record: applying-fix
     - log_record: fix-action
     - outgoing_call: suite-command
-    does: Read tmp/true-bdd.log.json; missing fails. Inspect/count Spawning test runner by binary or regex on space-joined
-      args; count Dispatching AI turn, optionally by CLI and role (validation=prompt, fix=fix, apply=apply); or require
-      the first and sole Engine started record at INFO with nonempty whitespace-free version/commit. For overlap,
-      read the selected scen-check checklist through paths.checklists_dir in true-bdd/true-bdd.yaml; its unparked
-      Checklist items define the consecutive indices starting at 1. Track each subject’s Check answered and Cell
-      validation started indices in that order, starting at the first item. After Applying fix prompt, require that
-      subject’s last Q again immediately, then restart every subject from the first item; another apply requires
-      another recheck of its own Q. Match each model finish to its start, allowing no overlap within a subject.
-      Require two subjects outstanding simultaneously. Applying fix prompt occurs with none outstanding and reads
-      alpha then beta. Missing indices or incomplete rechecks fail; a final checklist may stop early only on a logged exit choice.
+    does: >-
+      Read tmp/true-bdd.log.json; missing fails. Inspect/count Spawning test runner by binary or
+      regex on space-joined args; count Dispatching AI turn, optionally by CLI and role
+      (validation=prompt, fix=fix, apply=apply); or require the first and sole Engine started record
+      at INFO with nonempty whitespace-free version/commit. For overlap, read scen-check.yaml in the
+      paths.checklists_dir that the run's true-bdd/true-bdd.yaml names: its validation_prompts
+      entries not marked skip: true, counted across sections, give N, and item indices run from 1 to
+      N. The engine logs one Check answered for a code Q, and a Cell validation started and later
+      its Cell validation finished for a prompt Q; the observation counts a Check answered or a Cell
+      validation started as its subjectID's answer at its promptIndex, and each Cell validation
+      started must be matched by a Cell validation finished at the same subjectID and promptIndex. A
+      subject's answers follow 1 to N in order, and a subject never answers again before its started
+      record finishes. After an Applying fix prompt, the next answer must be that subject's last
+      index again, and then every subject starts over at 1; each apply needs its own recheck.
+      Require at least once two subjects each with a started Cell validation not yet finished. An
+      Applying fix prompt comes only after its subject has answered, with nothing started and
+      unfinished and no recheck pending, and the subjectIDs of the Applying fix prompt records, in
+      log order, are exactly alpha then beta, the first two Scenario keys of the
+      scen-check-concurrent and scen-check-reverse Registries. At the end nothing may be unfinished
+      or awaiting its recheck, some subject must have answered since the last Applying fix prompt,
+      and every such subject has gone on to N, unless the last User chose fix action record has
+      action exit.
   - concept: after-run shell check
     block: then
     service: true-bdd
