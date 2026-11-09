@@ -1521,26 +1521,26 @@ architecture:
     - file: prompt-templates
     - file: staging-files
     does: >-
-      Select the named tests/true-bdd/fixtures/<name>/ through testkit's PrepareTree; testkit
-      assembles each run fresh from the declared testing.testkit.repo_layer and the fixture's
-      input/. A missing-path Given leaves out that existing confined path; an absent path or one
-      leading out of the run fails. A symbolic-link Given refuses an absolute link path or one
-      climbing out of the tree; otherwise it adds to the fixture's preparation commands one that
-      creates the link's directory and the link, its target preserved literally, even outside the
-      tree. The snapshot refuses a link it walks into, so the link sits inside snapshot-excluded
-      node_modules, .git, .next, test-results or playwright-report. A narrowed-checklist Given reads
-      the selected fixture's root checklist-prompts.yaml, a YAML mapping from checklist stem to a
-      list of snippet strings: the file must exist and declare the named stem, whose list must hold
-      exactly the quoted text. The Given registers a testkit BeforeSnapshot hook. On the assembled
-      tree, before the run's initial snapshot, the hook reads the When's command and, for every stem
-      the file declares, refuses a stem other than that command's leading lowercase words joined by
-      hyphens (scen check E2E-001 gives scen-check), an empty list, a blank snippet, and a fixture
-      whose input/ also ships true-bdd/checklists/<stem>.yaml. It then rewrites the run's
-      true-bdd/checklists/<stem>.yaml, the copy the repo layer brought: with whitespace collapsed in
-      each snippet and each Q.prompt, it keeps only the validation_prompts entries not marked skip:
-      true whose Q.prompt contains a snippet, drops sections left empty and keeps everything else. A
-      snippet matching no entry or several, two snippets matching one entry, a checklist without a
-      sections list, or one using YAML aliases, merge keys or several documents fails. The
+      Select the named tests/true-bdd/fixtures/<name>/ as the starting project tree through
+      testkit's PrepareTree. A missing-path Given leaves out that existing confined path; an
+      absent path or one leading out of the run fails. A symbolic-link Given refuses an absolute
+      link path or one climbing out of the tree; otherwise it adds to the fixture's preparation
+      commands one that creates the link's directory and the link, its target preserved
+      literally, even outside the tree. The link belongs inside snapshot-excluded node_modules,
+      .git, .next, test-results or playwright-report. A narrowed-checklist Given reads the
+      selected fixture's root checklist-prompts.yaml, a YAML mapping from checklist stem to a
+      list of snippet strings: the file must exist and declare the named stem, whose list must
+      hold exactly the quoted text. The Given registers a testkit BeforeSnapshot hook. On the
+      assembled tree, before the run's initial snapshot, the hook reads the When's command and,
+      for every stem the file declares, refuses a stem other than that command's leading
+      lowercase words joined by hyphens (scen check E2E-001 gives scen-check), an empty list, a
+      blank snippet, and a fixture whose input/ also ships true-bdd/checklists/<stem>.yaml. It
+      then rewrites the run's true-bdd/checklists/<stem>.yaml, the copy the declared
+      testing.testkit.repo_layer brought: with whitespace collapsed in each snippet and each
+      Q.prompt, it keeps only the validation_prompts entries not marked skip: true whose
+      Q.prompt contains a snippet, drops sections left empty and keeps everything else. A
+      snippet matching no entry or several, two snippets matching one entry, a checklist without
+      a sections list, or one using YAML aliases, merge keys or several documents fails. The
       atomic-probes Given requires the selected fixture's list of preparation commands to be
       non-empty and checks nothing else. In engine-io-atomic, the one fixture using it, the root
       prep.sh supplies that list and plants the probes: it sets tests/mcp/ticket_test.go to mode
