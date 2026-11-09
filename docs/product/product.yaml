@@ -308,6 +308,10 @@ concepts:
         keeping the previous content. A Model's saved checklist prompt preserves the named construction rule:
         criterion selection and lineage, step block and source order, and/but modifiers, Story embedding and Feature,
         Scenario key and fields, ordered lineage without merge_date, or question and fix verbatim from its checklist.
+        It carries the complete step arguments from its Model, the architecture's rules for reading step arguments,
+        at the end of its user prompt; when step arguments are absent they add no byte: its user prompt is
+        byte-identical to a stated prompt, apart from the name of the run's directory under tmp, and its system
+        prompt keeps its stated bytes.
         A shipped Model scheme equals its declared file. Saved step-verification answers agree with the fixture's preserved expectations, each mismatch naming its saved prompt.
       terms: [project tree, glob, pattern, file change, engine, hard link, Model, checklist, Checklist item, Story, Feature, Acceptance Criterion, step, Scenario, Registry, lineage, Scenario key]
     - concept: Story content

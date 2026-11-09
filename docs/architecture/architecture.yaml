@@ -1727,10 +1727,10 @@ architecture:
       different inode from the named old hard link, and differing content. For each Model construction rule,
       read the selected fixture root's model-expectations.yaml, outside input/ and never overlaid into the run.
       Its YAML mapping keys are complete step texts without the Given/When/Then/and/but keyword; each value has
-      glob (saved user-prompt path relative to the run root), operator (matches or does not match) and pattern (regex).
+      glob (saved user or system prompt path relative to the run root), operator (matches or does not match) and pattern (regex).
       Look up the current step verbatim; missing or invalid entries fail. Follow the top-level step_arguments
       section's every-file argument rules for that comparison. An optional checklist field names the configured checklist stem:
-      substitute regex-escaped decoded Q, rationale and F scalars into {{Q}}, {{rationale}} and {{F}} in pattern,
+      substitute regex-escaped decoded Q.prompt, rationale and F scalars into {{Q}}, {{rationale}} and {{F}} in pattern,
       preserving all whitespace; each prompt must match one Q/rationale/F triple from the same checklist entry.
       These assertions precede exit-code assertions. Model scheme is shipped compares bytes at
       true-bdd/models/<model>.schema.yaml in the run root with the same relative file in the suite's
