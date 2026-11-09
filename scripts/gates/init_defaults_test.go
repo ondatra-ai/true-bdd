@@ -45,12 +45,22 @@ func TestInitDefaultsMatchProjectFiles(t *testing.T) {
 
 	delete(source, "scripts")
 
+	// #311 restores comparison of TrueBDD's temporary prompt limit override.
+	for _, config := range []map[string]any{source, copies} {
+		engine, ok := config["engine"].(map[string]any)
+		if !ok {
+			t.Fatal("configuration engine is not a mapping")
+		}
+
+		delete(engine, "max_prompt_bytes")
+	}
+
 	if _, exists := copies["scripts"]; exists {
 		t.Error("init configuration contains scripts")
 	}
 
 	if !reflect.DeepEqual(source, copies) {
-		t.Error("init configuration drift: must equal repository configuration less scripts")
+		t.Error("init configuration drift: must equal repository configuration less scripts and engine.max_prompt_bytes")
 	}
 }
 

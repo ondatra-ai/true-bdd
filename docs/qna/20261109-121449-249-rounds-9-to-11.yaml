@@ -1,0 +1,62 @@
+intent: |
+  #249's rounds 9 to 11 of 9 November, run from main one blocker at a time. Two Owner
+  decisions came up: whether scen check runs before build steps in each round, and how
+  the body apply turn of given:project tree meets the prompt limit after round 11 stopped
+  there. Evidence: #249's comments for rounds 9, 10 and 11; tmp/round9/, tmp/round10/ and
+  tmp/round11/ of the main checkout. The Owner's messages are quoted as sent; the question the Owner declined to answer through the question tool, on 9 November, is not an answer.
+
+log:
+  - decision_trace:
+      research:
+        - |
+          Round 9 stopped at concept grouping: three step-arguments steps scored 8, 7, 7
+          under file content. scen check's link Q, run alone on the same Scenarios in a copy
+          of the cut, scored the same three steps 8, 7, 7 and passed them with #307's text,
+          so scen check finds this class; nobody ran it on TrueBDD's Registry after #300,
+          and the drill refuses scen check (scripts/drill/rebuild_operation.go:20).
+        - |
+          Cost per round of scen check on cut B, from the measured turns (link $0.18-0.32,
+          quality about $0.08; 377 Scenarios, 71 changed since round 8): concept items over
+          the whole Registry about $85-140 and 3 hours at concurrency 1; all sixteen items
+          about $350-430 and 28 hours.
+      recommendation: |
+        A drill ticket for a bare scen check first, its concept items over the whole Registry,
+        with a limit of its own; merge #307's PR after green CI; leave build code to #276.
+      settled: |
+        Withdrawn by the Owner: the rounds go on as before (build steps, then build tests),
+        and #307's PR merged after green CI.
+    question: |
+      Q1 - Does each round run scen check on the cut before build steps?
+    answer: |
+      Похоже тут проблема. Эту проблему должен был бы поймать scrn check. Мы его не очень то и запускали но это именно его задача отлавливать таки проблемы и исправлять. Давай попробуем изменить стратегию: на папке с удаленными тестами и кодом сперва запускаем Scen check и если он проходит.то тогда build steps и build tests build code.
+
+      Если Scen check проблему не нашел а ее нашел build steps то мы возвращаемся к анализу почему Scen check не нашел, Фиксим потом фиксим проблему и так по кругу
+
+      Дана, давай пока отменим. Продолжай с планом как было
+  - decision_trace:
+      research:
+        - |
+          Round 11 (base 1071cd3a) passed grouping and 19 of 19 binding judgements, then
+          given:project tree's body apply turn assembled 158,251 bytes and was refused:
+          "prompt limit exceeded for codex-turn026 apply: 158251 bytes, limit 150000 bytes".
+          In the body proposal's 135,446-byte user prompt: definitions with every bound step
+          and capture 56,385 bytes, the Public interface document 25,810, Scenario keys
+          17,668, fixture directories 17,750; the apply adds the 23,165-byte proposal.
+          ADR-0039 has body applications embed all of these and forbids compaction or
+          omission to meet the limit; no change to the turn's construction that keeps that
+          evidence was found to bring it under 150,000 bytes.
+      recommendation: |
+        Three options: (1) raise TrueBDD's own engine.max_prompt_bytes, for instance to
+        200,000; (2) pass the Scenario keys and fixture directories as a file by path, about
+        35 KB less, amending ADR-0039 and re-recording body fixtures; (3) pass the proposal
+        to the apply turn by path, about 23 KB less, at the same cost. Claude recommended (2).
+      settled: |
+        TrueBDD's own engine.max_prompt_bytes becomes 250,000 bytes, recorded in ADR-0039 as
+        a temporary amendment; a separate ticket lowers it back to 150,000 later. Claude kept
+        the engine's default and the configuration init writes at 150,000, so the change is
+        TrueBDD's alone, and exempted that one value from the gate comparing the repository's
+        configuration with init's until the ticket that lowers it.
+    question: |
+      Q2 - How does the body apply turn of given:project tree meet the prompt limit?
+    answer: |
+      Давай повысим до 250кб запиши в adr с пометкой в адр и задачей отдельной снизить назад до 150 позже
