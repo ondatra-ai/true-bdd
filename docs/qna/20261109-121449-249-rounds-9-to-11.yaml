@@ -133,3 +133,59 @@ log:
       можно поднять таймаут до 300 минут
 
       опять же это временно, потом - откатываем и чиним причины.
+  - decision_trace:
+      research:
+        - |
+          Round 12 reached BUILD STEPS COMPLETE (two runs on one cut) and BUILD TESTS COMPLETE.
+          #249's first criterion also asks every Scenario red without the target, which is
+          build code's check before its first AI turn (ADR-0040); the session's instruction was
+          not to run build code.
+      recommendation: |
+        Run build code --fix on round 12's cut for its red check only, and stop it at its
+        first AI turn.
+      settled: |
+        Run. Red without target passed for all 377 Scenarios; the engine then refused its first
+        plan turn at the limit (965,310 bytes), so no AI turn ran. The Owner did not mind that
+        attempt.
+    question: |
+      Q7 - Run build code on round 12's cut for the red check only?
+    answer: |
+      1 да,
+
+      Да пофиг на ту ai work
+  - decision_trace:
+      research:
+        - |
+          See Q5: grouping and the binding judgement run outside build steps' checklist.
+      recommendation: |
+        File a ticket moving both into build steps' walk, each with an F answering cannot-fix
+        and naming the concept or binding to change.
+      settled: |
+        File it, to be grilled. The grilling started (docs/qna/20261109-190227-build-steps-
+        grouping-and-bindings-as-checklist-items.yaml) and was postponed at its Q1 by the
+        Owner's pivot: the ticket is #318, under the new epic #317.
+    question: |
+      Q8 - File the ticket moving grouping and the binding judgement into build steps'
+      checklist now?
+    answer: |
+      2. Да но его надо гриллить
+
+      Подожди. Отмени гдиллинг сделай тикет чтоб мы могли гриллить позже. Нам надо сделать следующий пивот. Закрыть 249 и перенести 311 и 314 как acceptance criteria для следующего эпика который переделывает логику Scen check, Scen check —fix build steps (—fix) этот вопрос который. Мне надо сохранить контекст
+  - decision_trace:
+      research:
+        - |
+          #314 restores the drill's three hours after finding where build steps' time goes;
+          #311 restores TrueBDD's 150,000-byte prompt limit after the body turns fit.
+      recommendation: |
+        Start with #314: its measurement needs no AI turn and also gives #311 its prompt sizes.
+      settled: |
+        #249 closes. A new epic, #317, reworks the logic of scen check, scen check --fix and
+        build steps --fix; #311 and #314 become its sub-issues and acceptance criteria, with
+        #286 and #318. #311 is retitled "Prompt limit back to 150,000 bytes" and #314 "Build
+        steps under three hours on cut B".
+    question: |
+      Q9 - What next: #314 and #311 in turn, or the rest of ADR-0038 under #249 first?
+    answer: |
+      3. Расскажи про 314 и 311 ? Напиши их тайтлы в 8 слов Макс
+
+      Подожди. Отмени гдиллинг сделай тикет чтоб мы могли гриллить позже. Нам надо сделать следующий пивот. Закрыть 249 и перенести 311 и 314 как acceptance criteria для следующего эпика который переделывает логику Scen check, Scen check —fix build steps (—fix) этот вопрос который. Мне надо сохранить контекст
