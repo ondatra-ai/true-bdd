@@ -28,8 +28,8 @@ func TestDocumentedDrillPipeline(t *testing.T) {
 	}
 
 	runner, record := fixture(t)
-	if runner.Limit != 3*time.Hour {
-		t.Fatalf("command limit diverges from drill rules: %s", runner.Limit)
+	if runner.Limit != 300*time.Minute {
+		t.Fatalf("command limit must be 300 minutes until #314: %s", runner.Limit)
 	}
 
 	cut, err := runner.Cut(t.Context(), record.Directory, "b")

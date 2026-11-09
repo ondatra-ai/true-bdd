@@ -4,7 +4,7 @@
 
 The router adds no deadline to any AI turn, for every role and CLI. It passes the caller's context through the provider and wrapper to the subprocess. Every turn has a process group; cancelling the command stops that group and its descendants. Cancellation stays fatal, including for build code's writers, rather than becoming a recoverable started-writer outcome.
 
-No request, prompt, checklist or template changes. No time, turn, token or cost budget is introduced. Recordings remain byte-identical. The existing fix-loop allowance, writer recovery and outcomes from ADR-0019, ADR-0021 and ADR-0022 stay unchanged. CLI request and tool timeouts, the drill's three-hour command limit and the separate Codex runner's limits are outside this decision.
+No request, prompt, checklist or template changes. No time, turn, token or cost budget is introduced. Recordings remain byte-identical. The existing fix-loop allowance, writer recovery and outcomes from ADR-0019, ADR-0021 and ADR-0022 stay unchanged. CLI request and tool timeouts, the drill's command limit and the separate Codex runner's limits are outside this decision.
 
 This amends ADR-0019, ADR-0020 and ADR-0022: the former 20-minute router deadline and its Claude-writer-only exemption are removed. Both ordinary and writer turns share the same unbounded, cancellable lifetime.
 

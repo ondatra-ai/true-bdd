@@ -22,10 +22,10 @@ type Runner struct {
 	Poll  time.Duration
 }
 
-// New uses the drill's three-hour command limit.
+// New uses the drill's 300-minute command limit for now, until #314.
 func New(root string) Runner {
 	const (
-		limit = 3 * time.Hour
+		limit = 300 * time.Minute
 		poll  = 100 * time.Millisecond
 	)
 

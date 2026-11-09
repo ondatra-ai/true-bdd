@@ -60,3 +60,76 @@ log:
       Q2 - How does the body apply turn of given:project tree meet the prompt limit?
     answer: |
       Давай повысим до 250кб запиши в adr с пометкой в адр и задачей отдельной снизить назад до 150 позже
+  - decision_trace:
+      research:
+        - |
+          Round 12 (base 5630fe0e) passed grouping and 19 of 19 binding judgements and wrote
+          body after body; at $27 and 10 of 19 Items the pace, about $2 to $3 an Item, put
+          the round near the $60 limit the Owner set at the session's start.
+      recommendation: |
+        A monitor that stops the run at the limit and asks.
+      settled: |
+        A round's limit is $150 of claude turns (codex turns report no cost); the running
+        round is not stopped; the monitor warns at $130 and stops the run at $150.
+    question: |
+      Q3 - What may a round cost before it stops to ask?
+    answer: |
+      Увеличивай лимит до $150 не останавливай ничего
+  - decision_trace:
+      research:
+        - |
+          The monitor reported cost, errors and engine questions, not progress.
+      recommendation: |
+        Report each concept Item whose step-coverage Q passes, as N of 19 and a percentage,
+        with the cost and the minutes of the drill's limit used.
+      settled: |
+        As recommended.
+    question: |
+      Q4 - Can the round's monitor report how much is done?
+    answer: |
+      было б круто если б он еще и % done говорил
+  - decision_trace:
+      research:
+        - |
+          build steps groups the distinct unbound step texts per block in AI turns read
+          against the product document's closed concept meanings, before its walk. The Q
+          sits in true-bdd/checklists/build-steps.yaml as concept-grouping, with no F; the
+          engine runs it before the walk and stops "before any skeleton" on a failure, as it
+          does the binding judgement. docs/adr/generation-architecture.md, ADR-0042's
+          Consequences and .claude/rules/engine-internals.md record both as checks still
+          outside the checklist, to move each through its own ticket; no ticket is open.
+      recommendation: |
+        A ticket moving grouping and the binding judgement into build steps' walk, in written
+        order, each with an F answering cannot-fix and naming the concept or binding to change.
+      settled: |
+        Open: the Owner has not answered whether to file it now.
+    question: |
+      Q5 - What is the grouping, and does it go against the architecture?
+    answer: |
+      что за группировка идет?
+
+      правильно ли я понимаю что группировка - идет в разрез с архитектурой?
+  - decision_trace:
+      research:
+        - |
+          At about 12 minutes a body Item, round 12's build steps needed about 250 minutes,
+          against the drill's three-hour limit (scripts/drill/runner.go, constant 3h), which
+          #249 also states as "three hours per command" and in its first criterion. The
+          running worker keeps the limit it was built with.
+      recommendation: |
+        Set the drill's command limit to 300 minutes in its code, test and guide, and #249's
+        rule and criterion; continue round 12 on the same cut with a second run once the first
+        stops, so the bodies already written stay.
+      settled: |
+        For now: the drill's limit is 300 minutes, temporarily, like the prompt limit of Q2,
+        an exception to #276's rule "Never answer it by raising a timeout or a limit"; #249's and
+        #276's three-hour criteria stay the target. Round 12 goes on as a second run on the same
+        cut once its first run is stopped, within the same exception. #314, the speed
+        ticket #276 asks for every overrun, finds where the time goes and sets the limit back to
+        three hours; each fix it finds is its own ticket.
+    question: |
+      Q6 - How long may one drill command run?
+    answer: |
+      можно поднять таймаут до 300 минут
+
+      опять же это временно, потом - откатываем и чиним причины.
