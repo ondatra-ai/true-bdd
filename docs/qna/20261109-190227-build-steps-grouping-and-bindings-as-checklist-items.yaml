@@ -1,0 +1,30 @@
+intent: |
+  File a ticket that moves build steps' concept grouping and binding judgement into its
+  checklist walk, as ADR-0042 asks of every check a command makes, with an F that answers
+  cannot-fix and names the concept or binding to change. The Owner, 9 November, after
+  Claude offered the ticket (docs/qna/20261109-121449-249-rounds-9-to-11.yaml, Q5):
+
+  «Да но его надо гриллить»
+
+log:
+  - decision_trace:
+      research:
+        - |
+          build steps runs concept grouping and the binding judgement before its walk and stops
+          on a failure with no F (services/true-bdd/internal/app/commands/build_steps_concepts.go:
+          ErrConceptGrouping line 25, ErrConceptBinding line 28). scen check's link Q and
+          bindings Q judge the same and their F edits the Specification after approval at the
+          menu (true-bdd/checklists/scen-check.yaml:251-282). Rule 1 and ADR-0040: build steps
+          writes only the Steps package. In the drill the fix menu is answered 1.
+      recommendation: |
+        (a) cannot-fix only, naming the concept or binding and proposing the exact text a person
+        applies, so build steps still writes only the Steps package.
+      settled: |
+        Not answered: the Owner postponed the grilling and asked for a ticket to grill later
+        (#318, under the epic #317). Resume this session at Q1.
+    question: |
+      Q1 - What may the F of grouping and bindings do in build steps: (a) cannot-fix only,
+      naming the concept or binding and the exact text a person applies; (b) as scen check's F,
+      propose a Specification change and apply it after approval at the menu; (c) otherwise?
+    answer: |
+      Подожди. Отмени гдиллинг сделай тикет чтоб мы могли гриллить позже. Нам надо сделать следующий пивот. Закрыть 249 и перенести 311 и 314 как acceptance criteria для следующего эпика который переделывает логику Scen check, Scen check —fix build steps (—fix) этот вопрос который. Мне надо сохранить контекст
