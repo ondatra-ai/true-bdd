@@ -47,7 +47,7 @@ func TestFinishedSuiteVerificationFitsTheConfiguredPromptLimit(t *testing.T) {
 		t.Fatalf("%s: %d >= %d", label, largest, limit)
 	}
 
-	const expectedLargest = 74772
+	const expectedLargest = 75133
 	if largest != expectedLargest || label != `then concept "file content"` {
 		t.Fatalf("largest %s: %d", label, largest)
 	}
